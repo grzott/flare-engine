@@ -9,21 +9,21 @@
 
 ## Phase Summary
 
-| Phase                 | Packages                                 | Depends on | Status           | Milestone                                                      |
-| --------------------- | ---------------------------------------- | ---------- | ---------------- | -------------------------------------------------------------- |
-| 0 — Repo scaffold     | —                                        | —          | ✅ DONE          | `bun install` works, `turbo build` runs, hooks enforce commits |
-| 1 — Foundation        | `math`, `events`                         | —          | ✅ DONE          | All math/event primitives, full test coverage                  |
-| 2 — Core Runtime      | `core`, `ecs`                            | Phase 1    | ✅ DONE          | GameLoop, ECS, coroutines, pooling working                     |
-| 3 — Rendering + Input | `render`, `assets`, `input`              | Phase 2    | ✅ DONE          | 100+ sprites at 60fps on device                                |
-| 4 — Systems           | `physics`, `audio`, `animation`          | Phase 2    | ✅ DONE          | Collisions, audio, tweens working                              |
-| 5 — Features          | `scene`, `tilemap`, `particles`, `debug` | Phase 3+4  | ✅ DONE          | Tiled maps, particles, scenes, dev overlay                     |
-| 6 — Integration       | `react`, `engine`                        | Phase 5    | ✅ DONE          | Full example game on iOS + Android                             |
-| 7 — Hardening         | —                                        | Phase 6    | ✅ DONE (pass 1) | Audit, optimize, fix gaps, stress-test all APIs                |
-| 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`  | Phase 7    | 🟡 in progress  | Microbench + integration bench + dashboard done; device capture pipeline ready, awaiting hardware run |
-| 9 — Demo Game         | `apps/demo`                              | Phase 6    | ✅ DONE         | Full loop verified on device: menu → play → boss → game-over/victory → menu |
-| 10 — C++ Acceleration | `native`                                 | Phase 8+9  | ⬜ data-gated    | C++ via Nitro only where benchmarks show need (particles first)|
-| 11 — OSS Launch Prep  | 14 new packages + 4 stubs + web parity + Game 2 | Phase 6 | 🟡 starting (M1–M5) | Full-stack RN+Web engine, roguelike vertical slice, docs site, web demos |
-| 12 — Launch + Content | —                                        | Phase 11   | ⬜ planned (M6) | Pre-launch content runway (7 posts) + coordinated OSS drop     |
+| Phase                 | Packages                                        | Depends on | Status              | Milestone                                                                                             |
+| --------------------- | ----------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------- |
+| 0 — Repo scaffold     | —                                               | —          | ✅ DONE             | `bun install` works, `turbo build` runs, hooks enforce commits                                        |
+| 1 — Foundation        | `math`, `events`                                | —          | ✅ DONE             | All math/event primitives, full test coverage                                                         |
+| 2 — Core Runtime      | `core`, `ecs`                                   | Phase 1    | ✅ DONE             | GameLoop, ECS, coroutines, pooling working                                                            |
+| 3 — Rendering + Input | `render`, `assets`, `input`                     | Phase 2    | ✅ DONE             | 100+ sprites at 60fps on device                                                                       |
+| 4 — Systems           | `physics`, `audio`, `animation`                 | Phase 2    | ✅ DONE             | Collisions, audio, tweens working                                                                     |
+| 5 — Features          | `scene`, `tilemap`, `particles`, `debug`        | Phase 3+4  | ✅ DONE             | Tiled maps, particles, scenes, dev overlay                                                            |
+| 6 — Integration       | `react`, `engine`                               | Phase 5    | ✅ DONE             | Full example game on iOS + Android                                                                    |
+| 7 — Hardening         | —                                               | Phase 6    | ✅ DONE (pass 1)    | Audit, optimize, fix gaps, stress-test all APIs                                                       |
+| 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`         | Phase 7    | 🟡 in progress      | Microbench + integration bench + dashboard done; device capture pipeline ready, awaiting hardware run |
+| 9 — Demo Game         | `apps/demo`                                     | Phase 6    | ✅ DONE             | Full loop verified on device: menu → play → boss → game-over/victory → menu                           |
+| 10 — C++ Acceleration | `native`                                        | Phase 8+9  | ⬜ data-gated       | C++ via Nitro only where benchmarks show need (particles first)                                       |
+| 11 — OSS Launch Prep  | 14 new packages + 4 stubs + web parity + Game 2 | Phase 6    | 🟡 starting (M1–M5) | Full-stack RN+Web engine, roguelike vertical slice, docs site, web demos                              |
+| 12 — Launch + Content | —                                               | Phase 11   | ⬜ planned (M6)     | Pre-launch content runway (7 posts) + coordinated OSS drop                                            |
 
 ---
 
@@ -233,7 +233,7 @@ Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. 
 
 ### Phase 9 — Demo Game
 
-**Genre** — vertical-scrolling shoot-em-up in the style of *Raptor: Call of the Shadows*. One playable level as a showcase (not a full game): player ship at bottom firing upward, enemies descending in waves with simple patterns, a boss at the end. Chosen over a platformer because it exercises more engine surface simultaneously (many projectiles → particles, multi-directional collision, ranged combat, enemy spawn patterns, boss fight).
+**Genre** — vertical-scrolling shoot-em-up in the style of _Raptor: Call of the Shadows_. One playable level as a showcase (not a full game): player ship at bottom firing upward, enemies descending in waves with simple patterns, a boss at the end. Chosen over a platformer because it exercises more engine surface simultaneously (many projectiles → particles, multi-directional collision, ranged combat, enemy spawn patterns, boss fight).
 
 **Special mechanic** — bomb skill: clears all non-boss enemies + enemy projectiles on screen, deals 25% HP to the boss. Limited charges per run.
 
@@ -324,21 +324,21 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 **Stage map.**
 
-| Stage | Calendar | Goal | Deliverable |
-| ----- | -------- | ---- | ----------- |
-| 11.1 | M1 W1 | npm + infra + web spike | scope reserved, CanvasKit parity report, `@flare/storage` 0.1 |
-| 11.2 | M1 W2 | reliability substrate | `@flare/errors`, `@flare/testing`, web parity in existing packages |
-| 11.3 | M1 W3–W4 | UI kit | `@flare/ui` 0.1, demo menus ported |
-| 11.4 | M2 W1–W2 | input + postfx | `@flare/input` gamepad + remap, `@flare/postfx` 0.1 |
-| 11.5 | M2 W3 | i18n + share + a11y | `@flare/localization`, `@flare/deep-links`, `@flare/share`, `@flare/a11y` light |
-| 11.6 | M2 W4 | Game 2 scaffold + atlas swap | `apps/roguelike` skeleton, Kenney atlas in demo |
-| 11.7 | M3 W1–W2 | Game 2 vertical slice + genre packages | `@flare/pathfinding`, `@flare/dialogue`, roguelike procgen + battle loop |
-| 11.8 | M3 W3–W4 | CLI + scaffolder | `@flare/cli`, `create-flare-app` |
-| 11.9 | M4 W1–W2 | Game 2 content | enemy roster, boss, meta-progression, save/load |
-| 11.10 | M4 W3–W4 | devtools + Tier-2 stubs | `@flare/devtools` partial, 4 adapter stubs |
-| 11.11 | M5 W1–W2 | web builds | both demos on staging GH Pages, perf locked |
-| 11.12 | M5 W3 | docs site | `apps/site` Docusaurus, guides, API ref |
-| 11.13 | M5 W4 | API lock + RC | snapshot tests, device bench, RC to npm |
+| Stage | Calendar | Goal                                   | Deliverable                                                                     |
+| ----- | -------- | -------------------------------------- | ------------------------------------------------------------------------------- |
+| 11.1  | M1 W1    | npm + infra + web spike                | scope reserved, CanvasKit parity report, `@flare/storage` 0.1                   |
+| 11.2  | M1 W2    | reliability substrate                  | `@flare/errors`, `@flare/testing`, web parity in existing packages              |
+| 11.3  | M1 W3–W4 | UI kit                                 | `@flare/ui` 0.1, demo menus ported                                              |
+| 11.4  | M2 W1–W2 | input + postfx                         | `@flare/input` gamepad + remap, `@flare/postfx` 0.1                             |
+| 11.5  | M2 W3    | i18n + share + a11y                    | `@flare/localization`, `@flare/deep-links`, `@flare/share`, `@flare/a11y` light |
+| 11.6  | M2 W4    | Game 2 scaffold + atlas swap           | `apps/roguelike` skeleton, Kenney atlas in demo                                 |
+| 11.7  | M3 W1–W2 | Game 2 vertical slice + genre packages | `@flare/pathfinding`, `@flare/dialogue`, roguelike procgen + battle loop        |
+| 11.8  | M3 W3–W4 | CLI + scaffolder                       | `@flare/cli`, `create-flare-app`                                                |
+| 11.9  | M4 W1–W2 | Game 2 content                         | enemy roster, boss, meta-progression, save/load                                 |
+| 11.10 | M4 W3–W4 | devtools + Tier-2 stubs                | `@flare/devtools` partial, 4 adapter stubs                                      |
+| 11.11 | M5 W1–W2 | web builds                             | both demos on staging GH Pages, perf locked                                     |
+| 11.12 | M5 W3    | docs site                              | `apps/site` Docusaurus, guides, API ref                                         |
+| 11.13 | M5 W4    | API lock + RC                          | snapshot tests, device bench, RC to npm                                         |
 
 ---
 
@@ -491,15 +491,15 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 **Stage map.**
 
-| Stage | Calendar | Goal |
-| ----- | -------- | ---- |
-| 12.1 | M1–M4 (ongoing) | Community relationship seeding (no self-promo) |
-| 12.2 | M5 W1 onward | Build-in-public cadence + devlogs |
-| 12.3 | M5 W4 | Podcast pitch + devlog #1 |
-| 12.4 | M6 W1–W3 | Technique content waves |
-| 12.5 | M6 W3 | Launch-day assets + rehearsal |
-| 12.6 | M6 W4 | Launch day (HN + all channels + podcast) |
-| 12.7 | M6 W4 onward | Post-launch operations |
+| Stage | Calendar        | Goal                                           |
+| ----- | --------------- | ---------------------------------------------- |
+| 12.1  | M1–M4 (ongoing) | Community relationship seeding (no self-promo) |
+| 12.2  | M5 W1 onward    | Build-in-public cadence + devlogs              |
+| 12.3  | M5 W4           | Podcast pitch + devlog #1                      |
+| 12.4  | M6 W1–W3        | Technique content waves                        |
+| 12.5  | M6 W3           | Launch-day assets + rehearsal                  |
+| 12.6  | M6 W4           | Launch day (HN + all channels + podcast)       |
+| 12.7  | M6 W4 onward    | Post-launch operations                         |
 
 ---
 
@@ -533,13 +533,13 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 Posts lead with a generic technique; each ends with a "this is extracted from building Flare" tag + link.
 
-| # | Week | Title | Primary venue | Crosspost | Type |
-| - | ---- | ----- | ------------- | --------- | ---- |
-| 1 | M6 W1 | Why React Native needs a proper game engine | LinkedIn article | Portfolio blog, dev.to, Hashnode | Teaser (no Flare name) |
-| 2 | M6 W2 | Zero-alloc game loops in JS | Portfolio blog | dev.to, Hashnode, r/javascript | Technique |
-| 3 | M6 W3 | Batching 1000 sprites on Skia: atlas packing + draw-call math | Portfolio blog | dev.to, Hashnode, r/reactnative | Technique |
-| 4 | M6 W3 | ECS in TypeScript without decorators or classes | Portfolio blog | dev.to, Hashnode, Lobsters | Technique |
-| 6 | M6 W1 | Building a roguelike on React Native — devlog #2 | Portfolio blog | dev.to | Build story |
+| #   | Week  | Title                                                         | Primary venue    | Crosspost                        | Type                   |
+| --- | ----- | ------------------------------------------------------------- | ---------------- | -------------------------------- | ---------------------- |
+| 1   | M6 W1 | Why React Native needs a proper game engine                   | LinkedIn article | Portfolio blog, dev.to, Hashnode | Teaser (no Flare name) |
+| 2   | M6 W2 | Zero-alloc game loops in JS                                   | Portfolio blog   | dev.to, Hashnode, r/javascript   | Technique              |
+| 3   | M6 W3 | Batching 1000 sprites on Skia: atlas packing + draw-call math | Portfolio blog   | dev.to, Hashnode, r/reactnative  | Technique              |
+| 4   | M6 W3 | ECS in TypeScript without decorators or classes               | Portfolio blog   | dev.to, Hashnode, Lobsters       | Technique              |
+| 6   | M6 W1 | Building a roguelike on React Native — devlog #2              | Portfolio blog   | dev.to                           | Build story            |
 
 - **Done when.** All 5 posts (including devlog #2) are live before launch day; each has ≥1 embedded GIF/chart.
 

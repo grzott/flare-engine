@@ -20,6 +20,8 @@ Each package is independently publishable. No circular deps.
 
 The full engine is shipping. `apps/demo` is a vertical-slice shoot-em-up that runs the complete loop on device — menu, gameplay with auto-fire + joystick + bomb skill, boss fight with FSM phases, game-over and victory transitions, and audio (music crossfade + polished SFX). It doubles as the integration smoke test for Layer 4 and the canonical example for new consumers.
 
+**OSS launch target: October 2026** (6-month runway). Phase 11 (M1–M5) adds 14 new packages (`storage`, `ui`, `postfx`, `cli`, `errors`, `localization`, `deep-links`, `testing`, `devtools`, `share`, `a11y`, `input` gamepad+remap, `pathfinding`, `dialogue`), web parity for existing packages (CanvasKit / Web Audio / pointer events / fetch loader), a second dogfooding app (`apps/roguelike`, roguelike + JRPG battle), and `apps/site` (Docusaurus). Phase 12 (M6) is a 6-week content runway + coordinated launch. See [docs/plans/build-plan.md](docs/plans/build-plan.md).
+
 ## Conventions
 
 - **Bun** for runtime, package management, and testing

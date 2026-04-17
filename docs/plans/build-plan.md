@@ -1,7 +1,7 @@
 # Flare Engine — Build Plan Overview
 
 > Engine: **Flare** — modular 2D game engine for React Native + Web on Skia
-> Package scope: `@flare-engine/*` (fallback `@flare-engine/*`) — unscoped metapackage `flare-engine`
+> Package scope: `@flare-engine/*` on npm (org reserved 2026-04-17); unscoped metapackage `flare-engine` (optional)
 > Monorepo: Bun + Turborepo + Biome
 > **OSS launch target: October 2026** (6-month runway from 2026-04-17)
 
@@ -41,9 +41,9 @@
    - No emoji in subject
    - Scope = module name: `feat(math): add Vec2.lerp`
 6. **Lint-staged**: husky pre-commit → `biome check --write`
-7. **Changesets**: `.changeset/config.json` — restricted access, independent versioning
+7. **Changesets**: `.changeset/config.json` — `access: public`, linked `@flare-engine/*` group, demo/benchmarks/bench-dashboard ignored
 8. **Build**: `tsup` per package (dual CJS+ESM, .d.ts)
-9. **CI**: GitHub Actions — `ci.yml` (PR only; release workflow removed — repo is private)
+9. **CI**: GitHub Actions — `ci.yml` (PR lint/typecheck/build/test) + `release.yml` (Changesets action, gated behind `ENABLE_RELEASE=true` repo variable so accidental first-publish is impossible)
 10. **Docs**: README.md (Mermaid arch diagram), CONTRIBUTING.md, LICENSE (MIT)
 11. **Package stubs**: 16 empty packages under `packages/`
 
@@ -342,15 +342,26 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 ---
 
+#### 11.0.1 OSS-readiness pre-work (complete before 11.13 RC)
+
+Concrete, small, unblocks the launch-week flip. Land alongside the stages they touch; don't bundle into 12.5.
+
+1. **LICENSE propagation.** Root `prepack` script (or Turbo task) copies `LICENSE` into each publishable `packages/*/` before `tsup` runs so every tarball contains the MIT text. Files entry already declares it. Land at stage 11.1.
+2. **Per-package README stubs.** 1-paragraph `README.md` in each `packages/*/` — name, one-line description, install snippet, link to docs site. Prevents empty npm landing pages at 0.1.0. Land at stage 11.12 alongside the docs site.
+3. **Governance + safety files.** `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md` (email disclosure + 90-day policy), `CODEOWNERS` (auto-assign self), `.github/ISSUE_TEMPLATE/` (bug, feature, question), `.github/PULL_REQUEST_TEMPLATE.md`. Land at stage 11.13 so the RC dry-run exercises them, not launch day.
+4. **API-snapshot tooling.** Pick **`@arethetypeswrong/cli`** (types publish-correctness) + a hand-rolled `*.d.ts` textual snapshot per package (tiny, no new heavy dep). Skip `@microsoft/api-extractor` — too heavy for 16 packages. Land at stage 11.13.
+5. **npm publish auth.** Switch `release.yml` to **npm OIDC Trusted Publishers** (configured in npm settings → Publishing Access) and drop the `NPM_TOKEN` secret. Requires npm 2FA on the account. Land at stage 11.13 before RC cut.
+6. **Build-plan archival.** At stage 11.13 after API lock, move Phases 0–9 to `docs/history/build-plan-archive.md`; keep `docs/plans/build-plan.md` forward-only. Shrinks agent token drain ~15 KB.
+
 #### 11.1 — npm + infra + web spike (M1 W1)
 
-- **Goal.** Reserve npm real estate; prove or disprove CanvasKit atlas parity before committing 5 months of work; ship the first persistence primitive.
+- **Goal.** Close out npm scope work, prove or disprove CanvasKit atlas parity before committing 5 months of work, ship the first persistence primitive.
 - **Tasks.**
-  1. Register unscoped `flare-engine` on npm (metapackage placeholder).
-  2. Attempt `npm org create flare` → use `@flare-engine/*`; fallback `npm org create flare-engine` → `@flare-engine/*`.
+  1. npm scope: `@flare-engine` org created 2026-04-17. Flip publishable `packages/*` `"private": true` → `false` only at stage 11.13 RC cut; keep apps + benchmarks private forever.
+  2. `LICENSE` propagation step from 11.0.1 (1).
   3. 2-day CanvasKit spike in a throwaway branch: atlas draw, tint, bitmap font, blend modes. Write `docs/references/canvaskit-parity.md` with a pass/fail per feature.
   4. Implement `@flare-engine/storage`: MMKV adapter (native) + IndexedDB adapter (web), typed schema with Zod-ish validator, migration runner, save slots, JSON import/export.
-- **Done when.** Scope is reserved (or fallback chosen), parity report is committed, `@flare-engine/storage` 0.1 passes `typecheck && lint && test && build` on both platforms.
+- **Done when.** Parity report is committed; `@flare-engine/storage` 0.1 passes `typecheck && lint && test && build` on both platforms; every tarball built by `bun run build` contains `LICENSE`.
 - **Exit criteria / contingency.** If CanvasKit atlas batching is broken → commit to per-sprite web path in stage 11.11 and budget extra 3 days in M5; no change to calendar.
 
 #### 11.2 — Reliability substrate (M1 W2)
@@ -462,10 +473,12 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 - **Goal.** Freeze the public surface; publish a release candidate under the reserved scope.
 - **Tasks.**
-  1. Public-API snapshot tests in each package; breaking changes require a Changeset.
-  2. Device FPS captures on iOS + Android hardware; populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
-  3. Changeset version cut to `0.1.0-rc.1`; publish all shipping packages to npm under `rc` dist-tag; dry-run install `npm create flare-app@latest` from the RC.
-- **Done when.** A fresh machine can install the RC and run both demos; API snapshots committed; device bench doc regenerated.
+  1. OSS-readiness items 11.0.1 (2)–(6): per-package READMEs, governance files, API-snapshot tooling, OIDC publishing, Phase 0–9 archival.
+  2. Public-API snapshot tests in each package (`@arethetypeswrong/cli` + `.d.ts` text snapshot); breaking changes require a Changeset.
+  3. Device FPS captures on iOS + Android hardware; populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
+  4. Flip `"private": true` → `false` on all 14 shipping `packages/*`. Keep `apps/*` and `benchmarks` private.
+  5. Changeset version cut to `0.1.0-rc.1`; publish all shipping packages to npm under `rc` dist-tag; dry-run install `npm create flare-app@latest` from the RC.
+- **Done when.** A fresh machine can install the RC and run both demos; API snapshots committed; device bench doc regenerated; governance files land before the public flip.
 
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 
@@ -549,7 +562,7 @@ Posts lead with a generic technique; each ends with a "this is extracted from bu
 - **Tasks.**
   1. Draft the HN post ("Show HN: Flare — 2D game engine for RN, with a web demo + roguelike"). First sentence: what it is. Second: live demo link. Third: repo link.
   2. Stage launch tweets/posts for LinkedIn, X, r/reactnative, r/gamedev, r/indiedev, Reactiflux, Expo Discord, Mastodon, Bluesky — all queued in a single doc, no scheduling.
-  3. Repo polish: `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue + PR templates, `GOVERNANCE.md` (single-maintainer, Discussions-first).
+  3. Repo polish carried over from 11.13: `GOVERNANCE.md` (single-maintainer, Discussions-first). The rest — `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CODEOWNERS`, issue + PR templates — landed at 11.13.
   4. Dry-run: flip a test fork to public, install from npm `rc` in a fresh VM, walk the Getting Started tutorial.
   5. Cut `0.1.0` via Changesets; publish under `latest` dist-tag the night before — scheduled for tomorrow's release notes only.
 - **Done when.** All posts drafted in a shared doc; one test-fork dry-run succeeded end-to-end; `0.1.0` is on npm but not announced.
@@ -593,7 +606,7 @@ Posts lead with a generic technique; each ends with a "this is extracted from bu
 1. **CanvasKit parity risk.** Stage 11.1 spike gives 5 months of buffer for a per-sprite web fallback in `@flare-engine/render`. Don't discover at stage 11.11.
 2. **Game 2 scope creep.** If slipping, cut content (fewer enemies, single biome, 1 boss) — never slip the launch.
 3. **Competitor watch.** Monthly check of `rn-game-engine-next`. If it adds web support + 1k+ DLs, reconsider pulling launch forward by 1 month. Otherwise ignore.
-4. **npm scope collision.** Resolved at stage 11.1 (`flare` unscoped is taken; `@flare` scope likely free, `@flare-engine` is the fallback).
+4. **npm scope collision.** Resolved 2026-04-17 — `@flare-engine` org reserved; all packages renamed from `@flare/*` → `@flare-engine/*`, unscoped `flare-engine` left optional.
 
 ---
 

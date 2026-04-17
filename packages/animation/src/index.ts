@@ -1,0 +1,35 @@
+export {
+  type SpriteAnimatorState,
+  createSpriteAnimator,
+  playAnimation,
+  stopAnimation,
+  pauseAnimation,
+  resumeAnimation,
+  updateAnimator,
+  getCurrentFrame,
+} from './sprite-animator.js';
+
+export {
+  type Tween,
+  tween,
+  updateTween,
+  chainTween,
+  resetTween,
+} from './tween.js';
+
+export {
+  type SpringConfig,
+  type Spring,
+  spring,
+  updateSpring,
+  setSpringTarget,
+  resetSpring,
+} from './spring.js';
+
+export {
+  type TweenManager,
+  createTweenManager,
+  addTween,
+  updateTweens,
+  clearTweens,
+} from './tween-manager.js';

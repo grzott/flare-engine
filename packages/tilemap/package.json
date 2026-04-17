@@ -1,0 +1,31 @@
+{
+  "name": "@flare/tilemap",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tiled/LDtk parser, culled tilemap renderer",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flare/assets": "workspace:*",
+    "@flare/math": "workspace:*",
+    "@flare/physics": "workspace:*",
+    "@flare/render": "workspace:*"
+  },
+  "sideEffects": false
+}

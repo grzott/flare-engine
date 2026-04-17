@@ -28,6 +28,10 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | `@flare-engine/testing`   | 2.5   | **DONE** — 4 modules, 23 tests, 3.4KB raw  |
 | `@flare-engine/ui`        | 3.5   | **DONE** — 10 modules, 37 tests, 15KB raw  |
 | `@flare-engine/postfx`    | 3.5   | **DONE** — 4 modules, 19 tests, 7KB raw    |
+| `@flare-engine/localization` | 2.5 | **DONE** — 5 modules, 30 tests, 6.5KB raw  |
+| `@flare-engine/deep-links` | 2.5  | **DONE** — 5 modules, 20 tests, 5.2KB raw  |
+| `@flare-engine/share`     | 2.5   | **DONE** — 2 modules, 17 tests, 4.9KB raw  |
+| `@flare-engine/a11y`      | 2.5   | **DONE** — 2 modules, 11 tests, 1.5KB raw  |
 | Phase 7 — Hardening    | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
 
 | Phase 8 — Benchmarking | —     | ⬜ not started                             |

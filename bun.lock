@@ -77,6 +77,13 @@
         "@types/node": "^25.6.0",
       },
     },
+    "packages/a11y": {
+      "name": "@flare-engine/a11y",
+      "version": "0.0.0",
+      "dependencies": {
+        "@flare-engine/events": "workspace:*",
+      },
+    },
     "packages/animation": {
       "name": "@flare-engine/animation",
       "version": "0.0.0",
@@ -121,6 +128,13 @@
         "@flare-engine/core": "workspace:*",
         "@flare-engine/ecs": "workspace:*",
         "@flare-engine/render": "workspace:*",
+      },
+    },
+    "packages/deep-links": {
+      "name": "@flare-engine/deep-links",
+      "version": "0.0.0",
+      "dependencies": {
+        "@flare-engine/events": "workspace:*",
       },
     },
     "packages/ecs": {
@@ -183,6 +197,13 @@
       },
       "peerDependencies": {
         "react-native-gesture-handler": ">=2.0.0",
+      },
+    },
+    "packages/localization": {
+      "name": "@flare-engine/localization",
+      "version": "0.0.0",
+      "dependencies": {
+        "@flare-engine/events": "workspace:*",
       },
     },
     "packages/math": {
@@ -258,6 +279,10 @@
         "@flare-engine/math": "workspace:*",
         "@flare-engine/render": "workspace:*",
       },
+    },
+    "packages/share": {
+      "name": "@flare-engine/share",
+      "version": "0.0.0",
     },
     "packages/storage": {
       "name": "@flare-engine/storage",
@@ -696,6 +721,8 @@
 
     "@flare-engine-apps/demo": ["@flare-engine-apps/demo@workspace:apps/demo"],
 
+    "@flare-engine/a11y": ["@flare-engine/a11y@workspace:packages/a11y"],
+
     "@flare-engine/animation": ["@flare-engine/animation@workspace:packages/animation"],
 
     "@flare-engine/assets": ["@flare-engine/assets@workspace:packages/assets"],
@@ -708,6 +735,8 @@
 
     "@flare-engine/debug": ["@flare-engine/debug@workspace:packages/debug"],
 
+    "@flare-engine/deep-links": ["@flare-engine/deep-links@workspace:packages/deep-links"],
+
     "@flare-engine/ecs": ["@flare-engine/ecs@workspace:packages/ecs"],
 
     "@flare-engine/engine": ["@flare-engine/engine@workspace:packages/engine"],
@@ -717,6 +746,8 @@
     "@flare-engine/events": ["@flare-engine/events@workspace:packages/events"],
 
     "@flare-engine/input": ["@flare-engine/input@workspace:packages/input"],
+
+    "@flare-engine/localization": ["@flare-engine/localization@workspace:packages/localization"],
 
     "@flare-engine/math": ["@flare-engine/math@workspace:packages/math"],
 
@@ -731,6 +762,8 @@
     "@flare-engine/render": ["@flare-engine/render@workspace:packages/render"],
 
     "@flare-engine/scene": ["@flare-engine/scene@workspace:packages/scene"],
+
+    "@flare-engine/share": ["@flare-engine/share@workspace:packages/share"],
 
     "@flare-engine/storage": ["@flare-engine/storage@workspace:packages/storage"],
 

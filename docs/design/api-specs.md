@@ -351,3 +351,86 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 - Uniform layouts are per-kind Float32Arrays (see `packUniforms`); resolution is passed via `(width, height)` for shaders that need it.
 - Actual pixel composition is the renderer's job — this package owns effect state, uniform packing, and shader caching.
 
+
+---
+
+### `@flare-engine/localization` (< 7KB raw)
+
+**Responsibility.** Localized string tables, locale negotiation, ICU-style plural + interpolation, hot-reload of tables in dev.
+
+| API | Description |
+| --- | --- |
+| `LocalizationManager` | Owns active locale + tables. `t(key, values?)` renders a message; falls through from active → fallback → raw key. |
+| `setLocale(code)` / `negotiateLocale(requested[])` | Direct set or best-match pick against available locales. |
+| `setTable(locale, table)` | Replace a locale's flat `Record<string, string>` in place. Emits `onChange` when the active locale is targeted — enables hot-reload. |
+| `onChange: Signal<LocaleCode>` | Fires when the active locale changes or its table is replaced. |
+| `formatMessage(tpl, values, locale)` | Stateless renderer supporting `{var}` interpolation and `{count, plural, =0 {...} one {# x} other {# xs}}`. `#` = numeric value. |
+| `resolveLocale(requested, available, fallback)` | Case-insensitive BCP-47 matcher: exact → language-only → fallback → first available. |
+| `pluralCategory(locale, n)` | CLDR-inspired classifier for `en`, `pl`, `ru`, `fr`, `ar`, `ja/ko/zh`, etc. Unknown locales fall back to English rules. |
+
+**Implementation notes:**
+
+- Single hard dep: `@flare-engine/events` (`Signal`).
+- Plural parser handles top-level branches only — nested `{…, plural, …}` is not supported (not needed for our message catalogue).
+- Malformed placeholders emit the remainder literally instead of throwing — safer during locale hot-reload.
+
+---
+
+### `@flare-engine/deep-links` (< 6KB raw)
+
+**Responsibility.** URL → scene+params routing with pluggable platform sources (web history, native `Linking`, in-memory for tests).
+
+| API | Description |
+| --- | --- |
+| `DeepLinkRouter` | `.register(pattern, scene)` / `.registerAll(defs[])`. Supports literal segments, `:param` captures, and a trailing `*` wildcard that binds the rest into `params.rest`. First-match wins. |
+| `.match(url): DeepLinkMatch \| null` | Parses scheme/host/path/query and runs it through the registered routes. Path params override query params of the same name. |
+| `DeepLinkManager` | Wires a `DeepLinkSource` to a router. `start()` / `stop()` manage the subscription; `handle(url)` runs a URL manually. `onMatch` / `onUnmatched` signals. `current` holds the last match. |
+| `createMemorySource(initial?)` | Test + notification-bridge source with `push(url)`. |
+| `createWebSource(window)` | Bridges `popstate` + `location.href`. Exposes `notify(url)` for programmatic `history.pushState` calls. |
+| `createNativeSource(linking)` | Wraps an RN-`Linking`-shaped module (`getInitialURL` + `addEventListener('url', ...)`). |
+| `parseUrl(url)` | Stateless parser: returns `{ scheme, host, segments, query } \| null`. Percent-decodes; strips fragments; `+` → space in query. |
+
+**Implementation notes:**
+
+- No RN/DOM imports — platform types are local interfaces (`WebWindowLike`, `LinkingLike`). Host apps wire real globals.
+- Parser is intentionally minimal (no username/password, no validation of scheme). Good enough for `scheme://host/path?query`.
+
+---
+
+### `@flare-engine/share` (< 5KB raw)
+
+**Responsibility.** Cross-platform screenshot capture (Skia `makeImageSnapshot`) + share-sheet orchestration with pluggable transports.
+
+| API | Description |
+| --- | --- |
+| `captureScreenshot(source, options?): Screenshot \| null` | `source.makeImageSnapshot()` → `SkiaImageLike`. Tries `encodeToBytes` first, falls back to `encodeToBase64`. Returns `{ bytes, base64, format, width, height }` with both encodings always populated. |
+| `ImageFormat` / `CaptureOptions` | `'png'` (default) or `'jpeg'`; JPEG `quality` defaults to 90. |
+| `bytesToBase64` / `base64ToBytes` | Platform-agnostic binary-safe codecs used internally and exported for host apps. |
+| `ShareManager` | `.register(transport)` then `.share(payload)`. Picks the first transport whose `canShare(payload)` returns true. Returns `{ dispatched, via: 'web-share' \| 'web-clipboard' \| 'native' \| 'noop' }`. |
+| `createWebShareTransport(navigator, File?)` | Bridges `navigator.share` (with optional `File` ctor for attaching screenshots via `files: [...]`). |
+| `createWebClipboardTransport(navigator)` | Fallback that writes `message + url` to `navigator.clipboard`. |
+| `createNativeShareTransport(rnShare)` | Wraps an RN `Share`-shaped module; inspects `action` to report dispatched vs dismissed. |
+
+**Implementation notes:**
+
+- Zero hard deps — Skia, RN, and the DOM are all structural `*Like` interfaces declared locally.
+- `ShareManager` is the public entry point; transports are stateless and composable. Cascade order is registration order.
+
+---
+
+### `@flare-engine/a11y` (< 2KB raw, light)
+
+**Responsibility.** Central accessibility state. Consumed by `animation`, `postfx`, and `ui` to dampen or neutralize motion/contrast/scale per user preference. Full screen-reader pass deferred to 0.3.0.
+
+| API | Description |
+| --- | --- |
+| `A11yManager` | Owns `{ reducedMotion, contrast: 'normal' \| 'high', uiScale }`. Mutators: `setReducedMotion`, `setContrast`, `setUiScale`, `update(patch)`. `onChange` fires only on real diffs. |
+| `settings` | Read-only snapshot — replaced (not mutated) on every change, so equality checks work. |
+| `motionScale({reducedMotion}, base=1)` | Returns `0` under reduced motion, else `base`. Drop-in multiplier for camera shake / tween intensity. |
+| `dampenedMotion({reducedMotion}, base, factor=0.2)` | Softens but preserves the effect (good for subtle chromatic aberration, vignette pulse). |
+| `pickContrast({contrast}, normal, high)` | Token picker for UI color choices. |
+
+**Implementation notes:**
+
+- No platform wiring; hosts bridge OS prefs (`AccessibilityInfo.isReduceMotionEnabled`, `prefers-reduced-motion`) by calling `update()` on startup.
+- Single hard dep: `@flare-engine/events` (`Signal`).

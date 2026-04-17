@@ -19,7 +19,7 @@
       },
     },
     "apps/bench-dashboard": {
-      "name": "@flare-apps/bench-dashboard",
+      "name": "@flare-engine-apps/bench-dashboard",
       "version": "0.0.0",
       "dependencies": {
         "@flare-engine/benchmarks": "workspace:*",
@@ -241,6 +241,10 @@
         "@flare-engine/math": "workspace:*",
         "@flare-engine/render": "workspace:*",
       },
+    },
+    "packages/storage": {
+      "name": "@flare-engine/storage",
+      "version": "0.0.0",
     },
     "packages/tilemap": {
       "name": "@flare-engine/tilemap",
@@ -651,7 +655,7 @@
 
     "@expo/xcpretty": ["@expo/xcpretty@4.4.3", "", { "dependencies": { "@babel/code-frame": "^7.20.0", "chalk": "^4.1.0", "js-yaml": "^4.1.0" }, "bin": { "excpretty": "build/cli.js" } }, "sha512-wC562eD3gS6vO2tWHToFhlFnmHKfKHgF1oyvojeSkLK/ZYop1bMU+7cOMiF9Sq70CzcsLy/EMRy/uRc76QmNRw=="],
 
-    "@flare-apps/bench-dashboard": ["@flare-apps/bench-dashboard@workspace:apps/bench-dashboard"],
+    "@flare-engine-apps/bench-dashboard": ["@flare-engine-apps/bench-dashboard@workspace:apps/bench-dashboard"],
 
     "@flare-engine-apps/demo": ["@flare-engine-apps/demo@workspace:apps/demo"],
 
@@ -686,6 +690,8 @@
     "@flare-engine/render": ["@flare-engine/render@workspace:packages/render"],
 
     "@flare-engine/scene": ["@flare-engine/scene@workspace:packages/scene"],
+
+    "@flare-engine/storage": ["@flare-engine/storage@workspace:packages/storage"],
 
     "@flare-engine/tilemap": ["@flare-engine/tilemap@workspace:packages/tilemap"],
 

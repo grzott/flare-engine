@@ -1,0 +1,27 @@
+{
+  "name": "@flare-apps/bench-dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "biome check app/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flare/benchmarks": "workspace:*",
+    "next": "^16",
+    "react": "^19",
+    "react-dom": "^19",
+    "recharts": "^2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "autoprefixer": "^10",
+    "postcss": "^8",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

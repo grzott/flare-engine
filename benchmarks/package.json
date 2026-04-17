@@ -1,0 +1,28 @@
+{
+  "name": "@flare/benchmarks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Off-device microbenchmarks for Flare engine hot paths",
+  "type": "module",
+  "scripts": {
+    "bench": "bun run src/index.ts",
+    "bench:md": "bun run src/index.ts --markdown > ../docs/references/benchmarks.md",
+    "bench:json": "bun run src/index.ts > /dev/null",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./results/microbench.json": "./results/microbench.json",
+    "./results/device.json": "./results/device.json"
+  },
+  "dependencies": {
+    "@flare/ecs": "workspace:*",
+    "@flare/math": "workspace:*",
+    "@flare/particles": "workspace:*",
+    "@flare/physics": "workspace:*",
+    "@flare/render": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
+  }
+}

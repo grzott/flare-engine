@@ -1,0 +1,35 @@
+{
+  "name": "@flare-engine/share",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Screenshot capture + cross-platform share sheet",
+  "keywords": ["flare-engine", "share", "screenshot", "skia"],
+  "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/engine#readme",
+  "bugs": { "url": "https://github.com/grzott/flare-engine/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/share"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "sideEffects": false
+}

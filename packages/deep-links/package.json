@@ -1,0 +1,38 @@
+{
+  "name": "@flare-engine/deep-links",
+  "version": "0.0.0",
+  "private": true,
+  "description": "URL → scene+params router with web history + native Linking adapters",
+  "keywords": ["flare-engine", "deep-links", "router", "url"],
+  "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": { "url": "https://github.com/grzott/flare-engine/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/deep-links"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flare-engine/events": "workspace:*"
+  },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "sideEffects": false
+}

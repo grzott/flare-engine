@@ -1,0 +1,189 @@
+import type { SkImageLike } from '@flare/assets';
+import type { SpriteFrame } from '@flare/assets';
+import type { Renderer } from './renderer.js';
+import type { AnySpriteEffect } from './sprite-effects.js';
+
+/** A single sprite draw request in the batch. */
+export interface SpriteDrawCommand {
+  /** Texture (Skia SkImage). */
+  image: SkImageLike;
+  /** Source rectangle in the texture. */
+  srcX: number;
+  srcY: number;
+  srcW: number;
+  srcH: number;
+  /** Destination position and size. */
+  dstX: number;
+  dstY: number;
+  dstW: number;
+  dstH: number;
+  /** Optional per-sprite effect. Shared by reference across commands in a
+   *  batch — the render adapter applies it once per batch. */
+  effect: AnySpriteEffect | undefined;
+}
+
+/** Internal grouping bucket — one per unique (texture, effect) pair. */
+interface Batch {
+  image: SkImageLike;
+  effect: AnySpriteEffect | undefined;
+  commands: SpriteDrawCommand[];
+}
+
+/**
+ * SpriteBatch — collects sprite draw commands and groups them by texture
+ * (and optionally by effect) for efficient batched rendering.
+ *
+ * Usage:
+ * 1. Call `draw()` for each sprite, optionally passing an effect
+ * 2. Call `flush()` with an atlas draw callback to execute all batched draws
+ * 3. Batching groups by texture identity, then by effect identity — so
+ *    sharing an effect instance across sprites maximizes batch size
+ *
+ * The actual Skia Atlas draw call is delegated to a callback so this module
+ * remains testable without Skia.
+ */
+export class SpriteBatch {
+  private _commands: SpriteDrawCommand[] = [];
+  private _pool: SpriteDrawCommand[] = [];
+  private _batches: Batch[] = [];
+
+  /** Number of queued draw commands. */
+  get count(): number {
+    return this._commands.length;
+  }
+
+  /** Queue a sprite draw from a frame. */
+  draw(
+    image: SkImageLike,
+    frame: SpriteFrame,
+    dstX: number,
+    dstY: number,
+    dstW?: number,
+    dstH?: number,
+    effect?: AnySpriteEffect,
+  ): void {
+    const cmd = this._acquire();
+    cmd.image = image;
+    cmd.srcX = frame.x;
+    cmd.srcY = frame.y;
+    cmd.srcW = frame.w;
+    cmd.srcH = frame.h;
+    cmd.dstX = dstX;
+    cmd.dstY = dstY;
+    cmd.dstW = dstW ?? frame.w;
+    cmd.dstH = dstH ?? frame.h;
+    cmd.effect = effect;
+    this._commands.push(cmd);
+  }
+
+  /** Queue a raw sprite draw with explicit src/dst rects. */
+  drawRaw(
+    image: SkImageLike,
+    srcX: number,
+    srcY: number,
+    srcW: number,
+    srcH: number,
+    dstX: number,
+    dstY: number,
+    dstW: number,
+    dstH: number,
+    effect?: AnySpriteEffect,
+  ): void {
+    const cmd = this._acquire();
+    cmd.image = image;
+    cmd.srcX = srcX;
+    cmd.srcY = srcY;
+    cmd.srcW = srcW;
+    cmd.srcH = srcH;
+    cmd.dstX = dstX;
+    cmd.dstY = dstY;
+    cmd.dstW = dstW;
+    cmd.dstH = dstH;
+    cmd.effect = effect;
+    this._commands.push(cmd);
+  }
+
+  /**
+   * Flush all queued commands, grouped by (texture, effect) identity.
+   *
+   * @param drawAtlas Callback invoked once per batch. Receives
+   *   `(image, commands)` — all commands in a batch share the same texture
+   *   and the same effect (readable from `commands[0].effect`).
+   * @param renderer Optional renderer to record stats.
+   */
+  flush(
+    drawAtlas: (image: SkImageLike, commands: SpriteDrawCommand[]) => void,
+    renderer?: Renderer,
+  ): void {
+    if (this._commands.length === 0) return;
+
+    // Group by (image, effect) via linear scan. Typical frames have few
+    // unique batches, so O(n·k) is effectively O(n).
+    const batches = this._batches;
+    for (const cmd of this._commands) {
+      let batch: Batch | undefined;
+      for (let i = 0; i < batches.length; i++) {
+        const b = batches[i]!;
+        if (b.image === cmd.image && b.effect === cmd.effect) {
+          batch = b;
+          break;
+        }
+      }
+      if (!batch) {
+        batch = { image: cmd.image, effect: cmd.effect, commands: [] };
+        batches.push(batch);
+      }
+      batch.commands.push(cmd);
+    }
+
+    // Draw each batch.
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i]!;
+      drawAtlas(batch.image, batch.commands);
+      if (renderer) {
+        renderer.recordDrawCall();
+        renderer.recordBatch();
+      }
+    }
+
+    // Return commands to pool. Field values remain on the command until
+    // the next draw() overwrites them — consumers must read inside the
+    // drawAtlas callback, not after flush returns.
+    for (const cmd of this._commands) {
+      this._pool.push(cmd);
+    }
+    this._commands.length = 0;
+
+    // Release batch buckets (reuse the outer array, drop inner arrays).
+    for (let i = 0; i < batches.length; i++) {
+      batches[i]!.commands.length = 0;
+    }
+    batches.length = 0;
+  }
+
+  /** Clear all queued commands without drawing. */
+  clear(): void {
+    for (const cmd of this._commands) {
+      this._pool.push(cmd);
+    }
+    this._commands.length = 0;
+  }
+
+  private _acquire(): SpriteDrawCommand {
+    if (this._pool.length > 0) {
+      return this._pool.pop()!;
+    }
+    return {
+      image: null!,
+      srcX: 0,
+      srcY: 0,
+      srcW: 0,
+      srcH: 0,
+      dstX: 0,
+      dstY: 0,
+      dstW: 0,
+      dstH: 0,
+      effect: undefined,
+    };
+  }
+}

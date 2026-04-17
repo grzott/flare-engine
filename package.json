@@ -23,9 +23,11 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "bench": "bun run --cwd benchmarks bench",
+    "propagate-license": "bun run scripts/propagate-license.ts",
+    "prebuild": "bun run propagate-license",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "turbo build --filter=./packages/* && changeset publish",
+    "release": "bun run propagate-license && turbo build --filter=./packages/* && changeset publish",
     "prepare": "husky"
   },
   "devDependencies": {

@@ -1,0 +1,6 @@
+[install]
+# Use hoisted layout so node_modules resolves packages at
+# node_modules/<pkg>/ instead of node_modules/.bun/<pkg>@<hash>/node_modules/<pkg>/.
+# Required on Windows: Gradle/CMake/ninja blow past the 260-char MAX_PATH
+# with the default nested layout (react-native-gesture-handler, expo-modules-core).
+linker = "hoisted"

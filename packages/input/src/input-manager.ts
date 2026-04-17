@@ -1,3 +1,10 @@
+import type { GamepadSource } from './gamepad-source.js';
+import {
+  type GamepadState,
+  createGamepadState,
+  resetGamepadFrame,
+  updateGamepadFromSnapshot,
+} from './gamepad.js';
 import {
   type Pointer,
   type TouchPoint,
@@ -7,6 +14,8 @@ import {
   pointerUp,
   resetPointerFrame,
 } from './pointer.js';
+import type { RemapTable } from './remap.js';
+import { applyRemap } from './remap.js';
 
 /**
  * InputManager provides a polling-based input model.
@@ -22,10 +31,17 @@ export class InputManager {
   readonly touches: TouchPoint[] = [];
 
   private _touchMap = new Map<number, TouchPoint>();
+  private _gamepads: GamepadState[] = [];
+  private _gamepadDeadZone = 0.15;
+  private _gamepadRemaps = new Map<number, RemapTable>();
 
   /** Call once per frame to reset per-frame flags. */
   update(): void {
     resetPointerFrame(this.pointer);
+    for (let i = 0; i < this._gamepads.length; i++) {
+      const pad = this._gamepads[i];
+      if (pad) resetGamepadFrame(pad);
+    }
   }
 
   /** Feed a touch/pointer begin event. */
@@ -44,6 +60,43 @@ export class InputManager {
   onPointerUp(id: number, x: number, y: number): void {
     pointerUp(this.pointer, x, y);
     this._removeTouch(id);
+  }
+
+  /** Access the gamepad state at `index`. Allocates on first access. */
+  gamepad(index: number): GamepadState {
+    let pad = this._gamepads[index];
+    if (!pad) {
+      pad = createGamepadState(index);
+      this._gamepads[index] = pad;
+    }
+    return pad;
+  }
+
+  /** Dead zone in [0, 1). Axes at or below this magnitude read as 0. */
+  setGamepadDeadZone(deadZone: number): void {
+    this._gamepadDeadZone = Math.max(0, Math.min(0.95, deadZone));
+  }
+
+  /** Install a remap table for a specific gamepad index. Pass `null` to clear. */
+  setGamepadRemap(index: number, table: RemapTable | null): void {
+    if (table === null) this._gamepadRemaps.delete(index);
+    else this._gamepadRemaps.set(index, table);
+  }
+
+  /** Poll all gamepads from the given source, applying remap + dead zones. */
+  pollGamepads(source: GamepadSource): void {
+    const snapshots = source.poll();
+    for (let i = 0; i < snapshots.length; i++) {
+      const pad = this.gamepad(i);
+      const snap = snapshots[i] ?? null;
+      const remapped =
+        snap !== null
+          ? this._gamepadRemaps.get(i)
+            ? applyRemap(snap, this._gamepadRemaps.get(i) as RemapTable)
+            : snap
+          : null;
+      updateGamepadFromSnapshot(pad, remapped, this._gamepadDeadZone);
+    }
   }
 
   private _addOrUpdateTouch(id: number, x: number, y: number, isDown: boolean): void {

@@ -11,6 +11,38 @@ export {
 export { InputManager } from './input-manager.js';
 
 export {
+  GamepadButton,
+  GamepadAxis,
+  type GamepadButtonId,
+  type GamepadAxisId,
+  type GamepadButtonState,
+  type GamepadState,
+  type GamepadSnapshot,
+  createGamepadState,
+  updateGamepadFromSnapshot,
+  resetGamepadFrame,
+  isButtonDown,
+  wasButtonPressed,
+  wasButtonReleased,
+  getAxis,
+} from './gamepad.js';
+
+export {
+  type GamepadSource,
+  createWebGamepadSource,
+} from './gamepad-source.js';
+
+export {
+  type AxisMap,
+  type RemapTable,
+  type RemapStore,
+  createIdentityRemap,
+  applyRemap,
+  saveRemap,
+  loadRemap,
+} from './remap.js';
+
+export {
   type SwipeDirection,
   type GestureConfig,
   type SwipeEvent,

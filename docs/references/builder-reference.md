@@ -12,7 +12,7 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | `@flare-engine/core`      | 1     | **DONE** — 6 modules, 70 tests, 3.3KB gzip |
 | `@flare-engine/ecs`       | 1     | **DONE** — 7 modules, 52 tests, 2.6KB gzip |
 | `@flare-engine/render`    | 2     | **DONE** — 7 modules, 68 tests, 4.4KB gzip |
-| `@flare-engine/input`     | 2     | **DONE** — 5 modules, 42 tests, 2.7KB gzip |
+| `@flare-engine/input`     | 2     | **DONE** — 8 modules, 59 tests, 15KB raw (gamepad+remap in 11.4) |
 | `@flare-engine/physics`   | 2     | **DONE** — 5 modules, 48 tests, 2.8KB gzip |
 | `@flare-engine/audio`     | 2     | **DONE** — 4 modules, 30 tests, 1.8KB gzip |
 | `@flare-engine/assets`    | 2     | **DONE** — 3 modules, 22 tests, 1.8KB gzip |
@@ -27,6 +27,7 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | `@flare-engine/errors`    | 2.5   | **DONE** — 3 modules, 14 tests, 1.7KB raw  |
 | `@flare-engine/testing`   | 2.5   | **DONE** — 4 modules, 23 tests, 3.4KB raw  |
 | `@flare-engine/ui`        | 3.5   | **DONE** — 10 modules, 37 tests, 15KB raw  |
+| `@flare-engine/postfx`    | 3.5   | **DONE** — 4 modules, 19 tests, 7KB raw    |
 | Phase 7 — Hardening    | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
 
 | Phase 8 — Benchmarking | —     | ⬜ not started                             |

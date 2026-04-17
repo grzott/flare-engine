@@ -1,0 +1,43 @@
+{
+  "name": "@flare-engine/postfx",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Skia RuntimeEffect post-processing: vignette, bloom, CRT, chromatic aberration, grayscale flash",
+  "keywords": ["flare-engine", "postfx", "shader", "skia", "vignette", "bloom", "crt"],
+  "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/postfx"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@shopify/react-native-skia": ">=1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false
+}

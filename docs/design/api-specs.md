@@ -303,3 +303,51 @@ Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, me
 - Component tests are thin (export-check) because bun-test has no RN runtime; the heavy-logic modules (`theme`, `focus`, `layout`) are fully unit-tested.
 - `apps/demo` menus + HUD port to `@flare-engine/ui` is a separate integration task (stage 11.3 task 4).
 
+---
+
+### `@flare-engine/input` — gamepad + remap (stage 11.4 extension)
+
+Extends the existing input package with poll-based gamepad state, a platform-agnostic source, and a persistent remap table. Touch/pointer APIs are unchanged.
+
+| API                                                              | Description                                                                                                                                                                       |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GamepadButton` / `GamepadAxis`                                  | W3C Standard Gamepad constants (A..Home, LeftX..RightY).                                                                                                                          |
+| `GamepadState` / `GamepadSnapshot`                               | Poll-time state (`connected`, `buttons[]` with `pressed` / `value` / `pressedThisFrame` / `releasedThisFrame`, `axes[]`, `timestamp`) vs raw snapshot (just values, no edges).    |
+| `createGamepadState(index?, buttons?, axes?)`                    | Allocates a fresh state with zeroed buttons and axes.                                                                                                                             |
+| `updateGamepadFromSnapshot(state, snapshot, deadZone?)`          | Applies a snapshot in place; recomputes `pressedThisFrame` / `releasedThisFrame`; zeroes axes inside the dead zone and rescales beyond; handles disconnect (`null` snapshot).     |
+| `resetGamepadFrame(state)` / `isButtonDown` / `wasButtonPressed` / `wasButtonReleased` / `getAxis` | Per-frame edge reset + convenience accessors.                                                                    |
+| `GamepadSource` / `createWebGamepadSource(nav?)`                 | Platform abstraction: `poll() → (GamepadSnapshot \| null)[]`. Web source wraps `navigator.getGamepads`; native adapters inject their own source. No native peer dep in-package.  |
+| `RemapTable` / `createIdentityRemap` / `applyRemap`              | Pure remap table (`buttons: number[]`, `axes: {index,invert,scale}[]`). `applyRemap(snapshot, table)` returns a logical-ordered snapshot.                                        |
+| `saveRemap(store, key, table)` / `loadRemap(store, key)`         | Persistence against the `RemapStore` interface (matches `@flare-engine/storage.StorageAdapter`; declared locally to avoid a hard cross-layer dep).                                |
+| `InputManager.gamepad(index)` / `setGamepadDeadZone` / `setGamepadRemap` / `pollGamepads(source)` | New manager surface: lazily allocates per-slot state, applies remap then dead zone, resets per-frame edges in `update()`.            |
+
+**Implementation notes:**
+
+- Dead zones rescale `[deadZone, 1] → [0, 1]` so inputs remain smooth past the threshold.
+- `GamepadSource` is the seam for the native backend — ship `createWebGamepadSource` now; `react-native-gamepad` adapter lands alongside the demo wiring.
+- `RemapStore` is intentionally a two-method subset of `StorageAdapter`; consumers pass their already-constructed storage adapter.
+
+---
+
+## Layer 3.5: Post-processing (OSS-launch addition)
+
+### `@flare-engine/postfx` (< 8KB raw)
+
+Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberration, grayscale flash. The runtime compiles SkSL on first use and short-circuits to a passthrough on devices without `RuntimeEffect` support.
+
+| API                                                                            | Description                                                                                                                                                            |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EffectKind`                                                                   | Union: `'vignette' \| 'grayscale-flash' \| 'chromatic-aberration' \| 'crt' \| 'bloom'`.                                                                                |
+| `createVignette` / `createGrayscaleFlash` / `createChromaticAberration` / `createCrt` / `createBloom` | Factory helpers returning an `Effect` (id, enabled, typed uniforms). Sensible defaults per effect.                                                |
+| `EffectChain`                                                                  | Ordered pipeline: `add` / `insert` / `remove` / `move` / `get` / `setEnabled` / `setUniforms` (kind-checked) / `clear` / `enabled()` iterator. Duplicate ids throw.    |
+| `createPostFxRuntime(skia)`                                                    | Compiles shaders against a Skia-like module: `compile(kind)` (cached), `packUniforms(effect, w, h)` (per-kind Float32Array), `buildPass(chain, w, h) → CompiledPass[]`. |
+| `CompiledPass`                                                                 | `{ id, kind, shader, uniforms }` — what the renderer consumes per-effect per-frame.                                                                                    |
+| `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` | Raw shader sources, exported for advanced consumers.                                                                                      |
+
+**Implementation notes:**
+
+- Skia is a **peer dependency** (`@shopify/react-native-skia`). Runtime uses an injected `SkiaPostFxModuleLike` so the orchestration is fully testable without a GPU.
+- `supported` reports whether `Skia.RuntimeEffect.Make` exists; callers fall through to a no-op pipeline when unsupported (explicit fallback path).
+- Uniform layouts are per-kind Float32Arrays (see `packUniforms`); resolution is passed via `(width, height)` for shaders that need it.
+- Actual pixel composition is the renderer's job — this package owns effect state, uniform packing, and shader caching.
+

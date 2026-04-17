@@ -1,4 +1,4 @@
-import type { Vec2 } from '@flare/math';
+import type { Vec2 } from '@flare-engine/math';
 
 /** Virtual joystick configuration. */
 export interface VirtualJoystickConfig {

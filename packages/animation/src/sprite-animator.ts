@@ -1,4 +1,4 @@
-import type { SpriteFrame, SpriteSheet } from '@flare/assets';
+import type { SpriteFrame, SpriteSheet } from '@flare-engine/assets';
 
 /** State of a sprite animator. */
 export interface SpriteAnimatorState {

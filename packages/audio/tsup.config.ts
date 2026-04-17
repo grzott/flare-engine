@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/events', 'react-native-audio-api'],
+  external: ['@flare-engine/events', 'react-native-audio-api'],
 });

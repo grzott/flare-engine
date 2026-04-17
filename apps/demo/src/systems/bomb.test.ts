@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { World } from '@flare/ecs';
-import { CollisionWorld } from '@flare/physics';
+import { World } from '@flare-engine/ecs';
+import { CollisionWorld } from '@flare-engine/physics';
 import { Boss, Bullet, Enemy, Hp } from '../components';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';

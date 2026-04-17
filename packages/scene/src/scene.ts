@@ -1,5 +1,5 @@
-import type { World } from '@flare/ecs';
-import type { Camera2D } from '@flare/render';
+import type { World } from '@flare-engine/ecs';
+import type { Camera2D } from '@flare-engine/render';
 
 /**
  * Scene lifecycle hooks. All methods are optional.

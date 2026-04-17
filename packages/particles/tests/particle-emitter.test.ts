@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Color } from '@flare/math';
+import { Color } from '@flare-engine/math';
 import { ParticleEmitter } from '../src/particle-emitter.js';
 
 describe('ParticleEmitter', () => {

@@ -1,11 +1,11 @@
 ---
 name: flare-scene
-description: Deep knowledge of the @flare/scene package — SceneManager, Scene interface, SceneFactory, Transition (fade, slide, none). Use when implementing game screens, scene transitions, or scene lifecycle (enter/exit/update/render).
+description: Deep knowledge of the @flare-engine/scene package — SceneManager, Scene interface, SceneFactory, Transition (fade, slide, none). Use when implementing game screens, scene transitions, or scene lifecycle (enter/exit/update/render).
 ---
 
-# @flare/scene
+# @flare-engine/scene
 
-Scene lifecycle management with animated transitions. Layer 3 — depends on `@flare/core`.
+Scene lifecycle management with animated transitions. Layer 3 — depends on `@flare-engine/core`.
 
 ## Exports
 
@@ -19,7 +19,7 @@ import {
   type SceneFactory,
   type Transition,
   type TransitionState,
-} from "@flare/scene";
+} from "@flare-engine/scene";
 ```
 
 ---
@@ -29,7 +29,7 @@ import {
 Every screen in the game implements `Scene`.
 
 ```ts
-import type { Scene } from "@flare/scene";
+import type { Scene } from "@flare-engine/scene";
 
 const MainMenuScene: Scene = {
   // Called once when first entered
@@ -61,7 +61,7 @@ const MainMenuScene: Scene = {
 A factory function `() => Scene` lets SceneManager create scenes lazily (avoids holding stale references).
 
 ```ts
-import type { SceneFactory } from "@flare/scene";
+import type { SceneFactory } from "@flare-engine/scene";
 
 const makeGameScene: SceneFactory = () => {
   // closure holds scene-local state
@@ -114,7 +114,7 @@ manager.isTransitioning; // boolean
 Built-in transition factories:
 
 ```ts
-import { noneTransition, fadeTransition, slideTransition } from "@flare/scene";
+import { noneTransition, fadeTransition, slideTransition } from "@flare-engine/scene";
 
 // Instant cut (default)
 noneTransition()
@@ -135,7 +135,7 @@ slideTransition(
 Implement the `Transition` interface:
 
 ```ts
-import type { Transition, TransitionState } from "@flare/scene";
+import type { Transition, TransitionState } from "@flare-engine/scene";
 
 const myTransition: Transition = {
   duration: 0.6,

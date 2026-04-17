@@ -1,4 +1,4 @@
-import type { SkImageLike } from '@flare/assets';
+import type { SkImageLike } from '@flare-engine/assets';
 import type { SpriteBatch } from './sprite-batch.js';
 
 /** A single glyph in a bitmap font. */

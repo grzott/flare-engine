@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import type { SkImageLike } from '@flare/assets';
-import type { SpriteFrame } from '@flare/assets';
+import type { SkImageLike } from '@flare-engine/assets';
+import type { SpriteFrame } from '@flare-engine/assets';
 import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 import { grayscale, tint } from '../src/sprite-effects.js';

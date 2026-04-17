@@ -1,5 +1,5 @@
-import type { Query, World } from '@flare/ecs';
-import { Position, Velocity } from '@flare/ecs';
+import type { Query, World } from '@flare-engine/ecs';
+import { Position, Velocity } from '@flare-engine/ecs';
 import { Boss, type BossPhase, Hp } from '../components';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';

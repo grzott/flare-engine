@@ -1,9 +1,20 @@
 {
-  "name": "@flare/react",
+  "name": "@flare-engine/react",
   "version": "0.0.0",
   "private": true,
   "description": "GameView, hooks, VirtualJoystick, VirtualButton",
+  "keywords": ["flare-engine", "react", "react-native", "game-view", "hooks"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/react"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -25,19 +36,23 @@
     "@types/react": "^18.0.0"
   },
   "dependencies": {
-    "@flare/assets": "workspace:*",
-    "@flare/audio": "workspace:*",
-    "@flare/core": "workspace:*",
-    "@flare/ecs": "workspace:*",
-    "@flare/input": "workspace:*",
-    "@flare/render": "workspace:*",
-    "@flare/scene": "workspace:*"
+    "@flare-engine/assets": "workspace:*",
+    "@flare-engine/audio": "workspace:*",
+    "@flare-engine/core": "workspace:*",
+    "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/input": "workspace:*",
+    "@flare-engine/render": "workspace:*",
+    "@flare-engine/scene": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-native": ">=0.73.0",
     "@shopify/react-native-skia": ">=1.0.0",
     "react-native-gesture-handler": ">=2.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

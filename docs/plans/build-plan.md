@@ -1,7 +1,7 @@
 # Flare Engine — Build Plan Overview
 
 > Engine: **Flare** — modular 2D game engine for React Native + Web on Skia
-> Package scope: `@flare/*` (fallback `@flare-engine/*`) — unscoped metapackage `flare-engine`
+> Package scope: `@flare-engine/*` (fallback `@flare-engine/*`) — unscoped metapackage `flare-engine`
 > Monorepo: Bun + Turborepo + Biome
 > **OSS launch target: October 2026** (6-month runway from 2026-04-17)
 
@@ -49,7 +49,7 @@
 
 ### Phase 1 — Foundation
 
-**`@flare/math`** (zero deps, < 5KB)
+**`@flare-engine/math`** (zero deps, < 5KB)
 
 - Vec2 (as `{x,y}` objects + static zero-alloc methods), Rect, Circle, Transform2D
 - Mat3 on Float32Array
@@ -59,7 +59,7 @@
 - Intersection tests (rect/circle/point/line)
 - Scalar utils (clamp, lerp, inverseLerp, map, degToRad, radToDeg)
 
-**`@flare/events`** (zero deps, < 1KB)
+**`@flare-engine/events`** (zero deps, < 1KB)
 
 - EventEmitter\<EventMap\> with type-safe generics
 - Signal\<T\> for single-event pattern
@@ -68,7 +68,7 @@
 
 ### Phase 2 — Core Runtime
 
-**`@flare/core`**
+**`@flare-engine/core`**
 
 - GameLoop (fixed + variable timestep, accumulator pattern)
 - Clock (dt, elapsed, fps, timescale, frame counter)
@@ -77,7 +77,7 @@
 - Coroutines (generator-based: yield seconds, yield frame, yield Promise)
 - Pool\<T\> (acquire, release, prewarm)
 
-**`@flare/ecs`**
+**`@flare-engine/ecs`**
 
 - World, defineComponent, defineSystem, Query (archetype bitmask)
 - Prefab factory
@@ -89,7 +89,7 @@
 
 ### Phase 3 — Rendering + Input
 
-**`@flare/render`**
+**`@flare-engine/render`**
 
 - SpriteBatch (Skia Atlas wrapper, auto-batch by texture)
 - Camera2D (follow, shake, bounds, worldToScreen/screenToWorld)
@@ -97,13 +97,13 @@
 - SpriteEffects (tint, flash, grayscale via Skia BlendColor/ColorMatrix)
 - SpriteFont (BMFont parser → atlas text rendering)
 
-**`@flare/assets`**
+**`@flare-engine/assets`**
 
 - AssetManager (manifest-based loading, progress tracking)
 - SpriteSheet parser (TexturePacker JSON hash+array, Aseprite JSON)
 - Texture wrapper (Skia SkImage)
 
-**`@flare/input`**
+**`@flare-engine/input`**
 
 - InputManager (polling + events, per-frame snapshot)
 - Pointer/Touch tracking
@@ -115,7 +115,7 @@
 
 ### Phase 4 — Systems (parallel with Phase 3 where possible)
 
-**`@flare/physics`**
+**`@flare-engine/physics`**
 
 - AABB CollisionWorld (broadphase + resolution)
 - SpatialIndex (rbush wrapper, query API)
@@ -124,14 +124,14 @@
 - Raycast
 - planck.js integration layer (optional tier)
 
-**`@flare/audio`**
+**`@flare-engine/audio`**
 
 - AudioManager (react-native-audio-api)
 - SFXPool (pre-decoded, polyphony management)
 - Music (crossfade, loop)
 - Volume channels
 
-**`@flare/animation`**
+**`@flare-engine/animation`**
 
 - SpriteAnimator (tick-based, renderer-agnostic)
 - Tween (42 easings, chainable)
@@ -140,26 +140,26 @@
 
 ### Phase 5 — Features
 
-**`@flare/scene`**
+**`@flare-engine/scene`**
 
 - SceneManager (register, go, push/pop stack)
 - Scene base class (own World + Camera, lifecycle hooks)
 - Transitions (fade, slide, none)
 
-**`@flare/tilemap`**
+**`@flare-engine/tilemap`**
 
 - Tiled .tmj parser (orthogonal, tile/object layers)
 - LDtk parser (levels, entities)
 - TilemapRenderer (culled, Atlas-batched)
 - TilemapCollider (extract solid tiles → shapes)
 
-**`@flare/particles`**
+**`@flare-engine/particles`**
 
 - ParticleEmitter (configurable: rate, lifetime, speed, color, size, alpha)
 - ParticlePool (pre-allocated, zero GC)
 - Immediate-mode Skia rendering
 
-**`@flare/debug`**
+**`@flare-engine/debug`**
 
 - Overlay: collision bounds, velocity vectors, entity origins
 - Stats: FPS, entity count, draw calls
@@ -169,14 +169,14 @@
 
 ### Phase 6 — Integration
 
-**`@flare/react`**
+**`@flare-engine/react`**
 
 - `<GameView>` (Skia Canvas + loop + input)
 - `<VirtualJoystick>`, `<VirtualButton>` (overlay RN components)
 - `useGame()`, `useEntity()`, `useGameLoop()`
 - `<LoadingScreen>`
 
-**`@flare/engine`**
+**`@flare-engine/engine`**
 
 - `createGame(config)` convenience
 - Re-exports all packages
@@ -197,13 +197,13 @@ Pass 2 (done, 2026-04-16):
 - [x] Cross-package integration bench (`benchmarks/src/integration.bench.ts`) — `world.step + coll.step + emitter.update + sortByDrawOrder + batch.flush` over 500/1K/2K entities + 300 particles.
 - [x] Heap delta check (post-GC, 500 frames). Found per-frame `world.query()` allocation in the integration bench itself; fixed by hoisting the query. Residual heap noise traces to documented `CollisionWorld` pair string keys (acceptable design tradeoff).
 - [x] API ergonomics finding: every consumer of `world.query()` should pre-create the query in setup, not per-frame. Already followed by the demo (`apps/demo/src/scenes/play.ts`); reaffirmed in `packages/ecs/CLAUDE.md` consumers.
-- Bugs from demo development — none from M2/M3 itself; device playtest later surfaced three integration-layer fixes (audio cleanup on scene exit, screen-space camera centering, RN touch-responder propagation through `<GameView>`). All fixes landed in `apps/demo` + `@flare/react`; engine layers below `react`/`engine` untouched.
+- Bugs from demo development — none from M2/M3 itself; device playtest later surfaced three integration-layer fixes (audio cleanup on scene exit, screen-space camera centering, RN touch-responder propagation through `<GameView>`). All fixes landed in `apps/demo` + `@flare-engine/react`; engine layers below `react`/`engine` untouched.
 
 Audit — api-specs.md vs shipping exports (2026-04-16):
 
-- ✅ Reconciled stale spec names: `SpriteFont` → BMFont text cluster, `VirtualJoystick`/`VirtualButton` RN component location (in `@flare/react`, not `@flare/input`), `Channels` → `createChannels`, `tickAnimator` → `updateAnimator`, `TiledParser`/`LDtkParser`/`TilemapCollider` → `parseTiled`/`parseLDtk`/`extractColliders`.
-- ⏸ `_resetComponentIds` exported from `@flare/ecs` as test seam — underscore-prefix convention signals internal; consumed by `benchmarks/` and `@flare/engine` integration tests. Keeping as-is.
-- ⏸ `QueryBuilder` (`@flare/ecs`), `drawOrderCompare` (`@flare/render`), `shapeOverlap` (`@flare/physics`), `createSkiaFrameRenderer` (`@flare/react`) — undocumented additions, working as designed. Low priority to document.
+- ✅ Reconciled stale spec names: `SpriteFont` → BMFont text cluster, `VirtualJoystick`/`VirtualButton` RN component location (in `@flare-engine/react`, not `@flare-engine/input`), `Channels` → `createChannels`, `tickAnimator` → `updateAnimator`, `TiledParser`/`LDtkParser`/`TilemapCollider` → `parseTiled`/`parseLDtk`/`extractColliders`.
+- ⏸ `_resetComponentIds` exported from `@flare-engine/ecs` as test seam — underscore-prefix convention signals internal; consumed by `benchmarks/` and `@flare-engine/engine` integration tests. Keeping as-is.
+- ⏸ `QueryBuilder` (`@flare-engine/ecs`), `drawOrderCompare` (`@flare-engine/render`), `shapeOverlap` (`@flare-engine/physics`), `createSkiaFrameRenderer` (`@flare-engine/react`) — undocumented additions, working as designed. Low priority to document.
 - No `TODO` / `FIXME` in `packages/*/src/**/*.ts` hot-path code.
 
 ### Phase 8 — Benchmarking
@@ -237,7 +237,7 @@ Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. 
 
 **Special mechanic** — bomb skill: clears all non-boss enemies + enemy projectiles on screen, deals 25% HP to the boss. Limited charges per run.
 
-**Stack** — Expo managed workflow + React Native + `@shopify/react-native-skia` + `react-native-audio-api` + `react-native-gesture-handler`, wired through `@flare/engine`. No bare RN.
+**Stack** — Expo managed workflow + React Native + `@shopify/react-native-skia` + `react-native-audio-api` + `react-native-gesture-handler`, wired through `@flare-engine/engine`. No bare RN.
 
 **Assets** — user will drop in [Kenney "Space Shooter Redux"](https://opengameart.org/content/space-shooter-redux) (CC0) as the final atlas. Initial scaffold uses a procedurally-generated placeholder atlas (colored rects drawn into an SkImage at init) so gameplay is playable before art lands. Swapping atlas = replace one asset loader + regenerate `SpriteFrame` entries.
 
@@ -251,7 +251,7 @@ Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. 
 - Particle effects: muzzle flash, hit flash, explosions, thruster
 - HUD: score, player HP, bomb count, boss HP (when active)
 - Win / game-over states
-- FPS overlay via `@flare/debug` (toggleable)
+- FPS overlay via `@flare-engine/debug` (toggleable)
 
 **Systems covered** — ECS, physics (AABB vs AABB + trigger signals), particles, audio (SFX + music), animation (tweens for hit flash, spring for HUD pops), scene manager (menu → play → victory/game-over), input (joystick + button), debug overlay.
 
@@ -263,7 +263,7 @@ Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. 
 
 **Milestones:**
 
-- **M1 Scaffold (done)** — `apps/demo` Expo app boots an empty `<GameView>` on device. Root workspaces grown to `apps/*`. Engine gaps filled: `<LoadingScreen>` (`@flare/react`), `createProceduralAtlas` (`@flare/assets`), `createFpsWidget` (`@flare/debug`).
+- **M1 Scaffold (done)** — `apps/demo` Expo app boots an empty `<GameView>` on device. Root workspaces grown to `apps/*`. Engine gaps filled: `<LoadingScreen>` (`@flare-engine/react`), `createProceduralAtlas` (`@flare-engine/assets`), `createFpsWidget` (`@flare-engine/debug`).
 - **M2 Gameplay (done, device verification pending)** — player + joystick + auto-fire, enemy waves with 2–3 patterns, enemy projectiles, HUD, collisions, win/game-over scenes.
 - **M3 Boss + polish (done, 2026-04-16)** — bomb skill, boss FSM, audio pass (music + polished SFX), and FPS overlay landed. Kenney art swap deferred; device FPS capture gated on user hardware run (bench scene + JSON pipeline ready).
 - **Device playtest (done, 2026-04-16)** — full loop runs on device: menu → play → boss fight → game-over/victory → back to menu. Three blocking playtest bugs fixed: SFX leaking across scene transitions (now `SFXPool.stopAll()` on play `onEnter`/`onExit`), camera origin off-screen (each scene now centers `Camera2D` to `viewport/2` so screen-space spawns line up with the centered-origin convention in `Renderer.applyCamera`), and joystick/bomb-button touches hijacked by parent `<GameView>` responder (`VirtualJoystick` and `VirtualButton` now claim the RN responder via `onStartShouldSetResponder` so touches inside their bounds bypass the parent). Joystick coordinate-space bug also fixed (now uses view-relative `locationX/locationY` instead of mixed page/parent coords).
@@ -297,28 +297,28 @@ Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. 
 
 Tier 1 — shipping at 0.1.0 (14):
 
-- `@flare/storage` ★ — MMKV native + IndexedDB web, typed schema, migrations, save slots, import/export
-- `@flare/ui` ★ — Skia-rendered UI kit: Panel / Button / Label / List / Modal / HUDBar / ProgressBar, focus nav (keyboard + gamepad), theme tokens, flex-like layout
-- `@flare/input` gamepad + remap ★ — Web Gamepad API + native, unified behind `InputManager`
-- `@flare/postfx` ★ — Skia RuntimeEffect stack: CRT / bloom / chromatic aberration / vignette / grayscale-flash
-- `@flare/cli` ★ — `flare pack-atlas`, `flare tiled-to-flare`, `flare new`
+- `@flare-engine/storage` ★ — MMKV native + IndexedDB web, typed schema, migrations, save slots, import/export
+- `@flare-engine/ui` ★ — Skia-rendered UI kit: Panel / Button / Label / List / Modal / HUDBar / ProgressBar, focus nav (keyboard + gamepad), theme tokens, flex-like layout
+- `@flare-engine/input` gamepad + remap ★ — Web Gamepad API + native, unified behind `InputManager`
+- `@flare-engine/postfx` ★ — Skia RuntimeEffect stack: CRT / bloom / chromatic aberration / vignette / grayscale-flash
+- `@flare-engine/cli` ★ — `flare pack-atlas`, `flare tiled-to-flare`, `flare new`
 - `create-flare-app` ★ — `npm create flare-app@latest`, Expo + Flare starter
 - Web parity inside existing packages ★ — CanvasKit in `render`, Web Audio in `audio`, pointer events in `input`, fetch loader in `assets`
-- `@flare/errors` ★ — error boundary + structured crash payload, pluggable Sentry / no-op default
-- `@flare/localization` — string tables + ICU plurals
-- `@flare/deep-links` — URL → scene router + web history API
-- `@flare/testing` — deterministic `World` factory, mock `InputManager`, scene snapshot assertions
-- `@flare/devtools` (partial) — entity inspector + time scrub + pause/step (full inspector 0.2.0)
-- `@flare/share` — screenshot + Web Share API + `expo-sharing`
-- `@flare/a11y` (light) — reduced-motion + contrast tokens for `@flare/ui` (screen-reader 0.3.0)
+- `@flare-engine/errors` ★ — error boundary + structured crash payload, pluggable Sentry / no-op default
+- `@flare-engine/localization` — string tables + ICU plurals
+- `@flare-engine/deep-links` — URL → scene router + web history API
+- `@flare-engine/testing` — deterministic `World` factory, mock `InputManager`, scene snapshot assertions
+- `@flare-engine/devtools` (partial) — entity inspector + time scrub + pause/step (full inspector 0.2.0)
+- `@flare-engine/share` — screenshot + Web Share API + `expo-sharing`
+- `@flare-engine/a11y` (light) — reduced-motion + contrast tokens for `@flare-engine/ui` (screen-reader 0.3.0)
 
-Tier 2 — interface stubs at 0.1.0, adapters later (4): `@flare/leaderboards`, `@flare/achievements`, `@flare/iap`, `@flare/analytics`. Stubs unblock consumers; adapters ship as 0.2.0.
+Tier 2 — interface stubs at 0.1.0, adapters later (4): `@flare-engine/leaderboards`, `@flare-engine/achievements`, `@flare-engine/iap`, `@flare-engine/analytics`. Stubs unblock consumers; adapters ship as 0.2.0.
 
 Tier 3 — public roadmap (10): `cloud-save`, `push`, OTA guide (doc only), `ai` (BT + Utility AI), `pathfinding`, `lighting`, `dialogue`, `cinematics`, `net`, `replay`.
 
 Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it, ship stage 11.6), `dialogue` (JRPG needs it, ship stage 11.6).
 
-**Game 2 — roguelike + JRPG battle.** Second dogfooding app at `apps/roguelike/`. Vertical slice by end of stage 11.9 (NOT shipped). Drives `@flare/pathfinding` and `@flare/dialogue` into the engine. Exercises: procgen, tilemap streaming, ECS queries (turn order, status effects), `@flare/storage` persistence, `@flare/ui` menus + battle HUD, audio layering. Post-launch content asset.
+**Game 2 — roguelike + JRPG battle.** Second dogfooding app at `apps/roguelike/`. Vertical slice by end of stage 11.9 (NOT shipped). Drives `@flare-engine/pathfinding` and `@flare-engine/dialogue` into the engine. Exercises: procgen, tilemap streaming, ECS queries (turn order, status effects), `@flare-engine/storage` persistence, `@flare-engine/ui` menus + battle HUD, audio layering. Post-launch content asset.
 
 **Scope drop order** if falling behind mid-phase: `share` → `devtools` partial → `a11y` light → `localization` → `deep-links`. `ui` + `storage` + web parity are non-negotiable.
 
@@ -326,16 +326,16 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 | Stage | Calendar | Goal                                   | Deliverable                                                                     |
 | ----- | -------- | -------------------------------------- | ------------------------------------------------------------------------------- |
-| 11.1  | M1 W1    | npm + infra + web spike                | scope reserved, CanvasKit parity report, `@flare/storage` 0.1                   |
-| 11.2  | M1 W2    | reliability substrate                  | `@flare/errors`, `@flare/testing`, web parity in existing packages              |
-| 11.3  | M1 W3–W4 | UI kit                                 | `@flare/ui` 0.1, demo menus ported                                              |
-| 11.4  | M2 W1–W2 | input + postfx                         | `@flare/input` gamepad + remap, `@flare/postfx` 0.1                             |
-| 11.5  | M2 W3    | i18n + share + a11y                    | `@flare/localization`, `@flare/deep-links`, `@flare/share`, `@flare/a11y` light |
+| 11.1  | M1 W1    | npm + infra + web spike                | scope reserved, CanvasKit parity report, `@flare-engine/storage` 0.1                   |
+| 11.2  | M1 W2    | reliability substrate                  | `@flare-engine/errors`, `@flare-engine/testing`, web parity in existing packages              |
+| 11.3  | M1 W3–W4 | UI kit                                 | `@flare-engine/ui` 0.1, demo menus ported                                              |
+| 11.4  | M2 W1–W2 | input + postfx                         | `@flare-engine/input` gamepad + remap, `@flare-engine/postfx` 0.1                             |
+| 11.5  | M2 W3    | i18n + share + a11y                    | `@flare-engine/localization`, `@flare-engine/deep-links`, `@flare-engine/share`, `@flare-engine/a11y` light |
 | 11.6  | M2 W4    | Game 2 scaffold + atlas swap           | `apps/roguelike` skeleton, Kenney atlas in demo                                 |
-| 11.7  | M3 W1–W2 | Game 2 vertical slice + genre packages | `@flare/pathfinding`, `@flare/dialogue`, roguelike procgen + battle loop        |
-| 11.8  | M3 W3–W4 | CLI + scaffolder                       | `@flare/cli`, `create-flare-app`                                                |
+| 11.7  | M3 W1–W2 | Game 2 vertical slice + genre packages | `@flare-engine/pathfinding`, `@flare-engine/dialogue`, roguelike procgen + battle loop        |
+| 11.8  | M3 W3–W4 | CLI + scaffolder                       | `@flare-engine/cli`, `create-flare-app`                                                |
 | 11.9  | M4 W1–W2 | Game 2 content                         | enemy roster, boss, meta-progression, save/load                                 |
-| 11.10 | M4 W3–W4 | devtools + Tier-2 stubs                | `@flare/devtools` partial, 4 adapter stubs                                      |
+| 11.10 | M4 W3–W4 | devtools + Tier-2 stubs                | `@flare-engine/devtools` partial, 4 adapter stubs                                      |
 | 11.11 | M5 W1–W2 | web builds                             | both demos on staging GH Pages, perf locked                                     |
 | 11.12 | M5 W3    | docs site                              | `apps/site` Docusaurus, guides, API ref                                         |
 | 11.13 | M5 W4    | API lock + RC                          | snapshot tests, device bench, RC to npm                                         |
@@ -347,37 +347,37 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 - **Goal.** Reserve npm real estate; prove or disprove CanvasKit atlas parity before committing 5 months of work; ship the first persistence primitive.
 - **Tasks.**
   1. Register unscoped `flare-engine` on npm (metapackage placeholder).
-  2. Attempt `npm org create flare` → use `@flare/*`; fallback `npm org create flare-engine` → `@flare-engine/*`.
+  2. Attempt `npm org create flare` → use `@flare-engine/*`; fallback `npm org create flare-engine` → `@flare-engine/*`.
   3. 2-day CanvasKit spike in a throwaway branch: atlas draw, tint, bitmap font, blend modes. Write `docs/references/canvaskit-parity.md` with a pass/fail per feature.
-  4. Implement `@flare/storage`: MMKV adapter (native) + IndexedDB adapter (web), typed schema with Zod-ish validator, migration runner, save slots, JSON import/export.
-- **Done when.** Scope is reserved (or fallback chosen), parity report is committed, `@flare/storage` 0.1 passes `typecheck && lint && test && build` on both platforms.
+  4. Implement `@flare-engine/storage`: MMKV adapter (native) + IndexedDB adapter (web), typed schema with Zod-ish validator, migration runner, save slots, JSON import/export.
+- **Done when.** Scope is reserved (or fallback chosen), parity report is committed, `@flare-engine/storage` 0.1 passes `typecheck && lint && test && build` on both platforms.
 - **Exit criteria / contingency.** If CanvasKit atlas batching is broken → commit to per-sprite web path in stage 11.11 and budget extra 3 days in M5; no change to calendar.
 
 #### 11.2 — Reliability substrate (M1 W2)
 
 - **Goal.** Every downstream package can rely on a uniform error/crash story and a deterministic test substrate.
 - **Tasks.**
-  1. `@flare/errors`: React error boundary, structured crash payload (serializable), pluggable transport (Sentry adapter optional, no-op default).
-  2. `@flare/testing`: deterministic `World` factory with injectable Clock, mock `InputManager`, scene snapshot assertions, fake frame clock.
-  3. Web parity fixes in `@flare/render` (CanvasKit image loader), `@flare/audio` (Web Audio backend), `@flare/input` (pointer + keyboard), `@flare/assets` (fetch loader). No API changes — backend switch behind existing exports.
-- **Done when.** `bun --cwd apps/demo run web` boots to the menu with no platform-specific code in the demo; `@flare/testing` used in at least one new test in `@flare/core`.
+  1. `@flare-engine/errors`: React error boundary, structured crash payload (serializable), pluggable transport (Sentry adapter optional, no-op default).
+  2. `@flare-engine/testing`: deterministic `World` factory with injectable Clock, mock `InputManager`, scene snapshot assertions, fake frame clock.
+  3. Web parity fixes in `@flare-engine/render` (CanvasKit image loader), `@flare-engine/audio` (Web Audio backend), `@flare-engine/input` (pointer + keyboard), `@flare-engine/assets` (fetch loader). No API changes — backend switch behind existing exports.
+- **Done when.** `bun --cwd apps/demo run web` boots to the menu with no platform-specific code in the demo; `@flare-engine/testing` used in at least one new test in `@flare-engine/core`.
 
 #### 11.3 — UI kit (M1 W3–W4)
 
 - **Goal.** Every downstream demo + Game 2 + Game 1 renders HUD and menus through one consistent kit.
 - **Tasks.**
-  1. `@flare/ui` primitives: `Panel`, `Button`, `Label`, `List`, `Modal`, `HUDBar`, `ProgressBar`.
+  1. `@flare-engine/ui` primitives: `Panel`, `Button`, `Label`, `List`, `Modal`, `HUDBar`, `ProgressBar`.
   2. Focus navigation: keyboard + gamepad (stage 11.4 feeds this), tab order, focus ring.
   3. Theme tokens (color, spacing, type scale) + flex-like layout resolver.
-  4. Port `apps/demo` menus (main, pause, game-over, victory) and HUD to `@flare/ui`; delete ad-hoc RN views.
-- **Done when.** Demo menus and HUD are `@flare/ui`-only; keyboard tab navigates the menu; snapshot tests cover each primitive.
+  4. Port `apps/demo` menus (main, pause, game-over, victory) and HUD to `@flare-engine/ui`; delete ad-hoc RN views.
+- **Done when.** Demo menus and HUD are `@flare-engine/ui`-only; keyboard tab navigates the menu; snapshot tests cover each primitive.
 
 #### 11.4 — Input (gamepad + remap) + PostFX (M2 W1–W2)
 
 - **Goal.** First-class gamepad + the visual-polish knob new users evaluate on first contact.
 - **Tasks.**
-  1. `@flare/input` gamepad: Web Gamepad API + native `react-native-gamepad` (or equivalent); unified `InputManager.gamepad(id)` surface; dead zones; button/axis remap table persisted via `@flare/storage`.
-  2. `@flare/postfx` Skia RuntimeEffect stack: CRT, bloom, chromatic aberration, vignette, grayscale-flash. Composable via an ordered effect chain on the scene's render target.
+  1. `@flare-engine/input` gamepad: Web Gamepad API + native `react-native-gamepad` (or equivalent); unified `InputManager.gamepad(id)` surface; dead zones; button/axis remap table persisted via `@flare-engine/storage`.
+  2. `@flare-engine/postfx` Skia RuntimeEffect stack: CRT, bloom, chromatic aberration, vignette, grayscale-flash. Composable via an ordered effect chain on the scene's render target.
   3. Wire 3 effects into demo (vignette always-on, grayscale-flash on hit, CRT in a settings toggle).
 - **Done when.** Gamepad drives demo menu + gameplay; postfx toggle in settings menu shows visible effect; shader fallback path documented for devices without RuntimeEffect support.
 
@@ -385,17 +385,17 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 - **Goal.** Clear the remaining horizontal concerns so M2 W4 onward is Game 2 focus.
 - **Tasks.**
-  1. `@flare/localization`: string tables, locale resolution, ICU-style plurals + interpolation, hot-reload in dev.
-  2. `@flare/deep-links`: URL → scene + params router, history API on web, `Linking` on native.
-  3. `@flare/share`: `captureScreenshot()` (Skia `makeImageSnapshot`), Web Share API + `expo-sharing` fallback.
-  4. `@flare/a11y` (light): reduced-motion flag wired into `@flare/animation` + `@flare/postfx`, contrast tokens in `@flare/ui`. Full screen-reader pass deferred to 0.3.0.
+  1. `@flare-engine/localization`: string tables, locale resolution, ICU-style plurals + interpolation, hot-reload in dev.
+  2. `@flare-engine/deep-links`: URL → scene + params router, history API on web, `Linking` on native.
+  3. `@flare-engine/share`: `captureScreenshot()` (Skia `makeImageSnapshot`), Web Share API + `expo-sharing` fallback.
+  4. `@flare-engine/a11y` (light): reduced-motion flag wired into `@flare-engine/animation` + `@flare-engine/postfx`, contrast tokens in `@flare-engine/ui`. Full screen-reader pass deferred to 0.3.0.
 - **Done when.** Demo has a working language switcher, a deep link that opens the bench scene, a share-screenshot button, and a reduced-motion setting that neutralizes screen shake + heavy postfx.
 
 #### 11.6 — Game 2 scaffold + atlas swap (M2 W4)
 
 - **Goal.** Unblock Game 2 development and close the Phase 9 carry-over.
 - **Tasks.**
-  1. `apps/roguelike/` Expo project; wire `@flare/engine`, `@flare/storage`, `@flare/ui`.
+  1. `apps/roguelike/` Expo project; wire `@flare-engine/engine`, `@flare-engine/storage`, `@flare-engine/ui`.
   2. Data model: entity archetypes for tile, actor, item; turn-queue ECS system stub.
   3. Swap `apps/demo` atlas to Kenney "Space Shooter Redux" (CC0). Replace procedural atlas loader; regenerate `SpriteFrame` entries.
 - **Done when.** `apps/roguelike` boots a blank scene on iOS + Android + web; demo runs on the Kenney atlas on device.
@@ -404,9 +404,9 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 - **Goal.** Two genre packages land by being pulled through a real consumer — the roguelike's exploration + battle loop.
 - **Tasks.**
-  1. `@flare/pathfinding`: A\* on grid + navmesh-lite on polygons; JPS optimization if A\* is a bottleneck in bench.
+  1. `@flare-engine/pathfinding`: A\* on grid + navmesh-lite on polygons; JPS optimization if A\* is a bottleneck in bench.
   2. Roguelike exploration: tilemap streaming, simple procgen (BSP rooms + corridors), player movement, encounter trigger.
-  3. `@flare/dialogue`: node graph (YAML/JSON authorable), conditions, variables, callbacks, text-over-time renderer hook.
+  3. `@flare-engine/dialogue`: node graph (YAML/JSON authorable), conditions, variables, callbacks, text-over-time renderer hook.
   4. Roguelike JRPG battle scene: turn queue, command menu (attack / skill / item / run), damage numbers, status effects (poison, stun), flee/win/lose transitions.
 - **Done when.** Walk-around → encounter → battle → return works end-to-end; both packages have ≥80% line coverage; pathfinding microbench added to `benchmarks/`.
 
@@ -414,7 +414,7 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 - **Goal.** First-time users hit a working app in <5 minutes.
 - **Tasks.**
-  1. `@flare/cli` commands: `flare pack-atlas <input>` (TexturePacker-compatible JSON + PNG), `flare tiled-to-flare <tmj>` (normalized runtime JSON), `flare new <name>` (alias for create-flare-app).
+  1. `@flare-engine/cli` commands: `flare pack-atlas <input>` (TexturePacker-compatible JSON + PNG), `flare tiled-to-flare <tmj>` (normalized runtime JSON), `flare new <name>` (alias for create-flare-app).
   2. `create-flare-app` scaffolder: Expo + Flare + minimal scene + HUD; selectable template (`blank`, `topdown`, `shmup`).
   3. CI for both on GitHub Actions; publish both under `next` dist-tag for internal testing.
 - **Done when.** On a clean machine, `npm create flare-app@latest test-game && cd test-game && bun install && bun run dev` produces a running app in <5 min.
@@ -426,16 +426,16 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
   1. Enemy roster (6–10 enemies) + abilities (attacks + status inflictors).
   2. Boss encounter with distinct pattern + HP phases.
   3. Meta-progression: persistent currency, unlocks, seed-replay.
-  4. `@flare/storage` save/load roundtrip across sessions + web IndexedDB path.
-  5. Audio: music layer per biome + battle; SFX pass using the `@flare/audio` SFXPool.
+  4. `@flare-engine/storage` save/load roundtrip across sessions + web IndexedDB path.
+  5. Audio: music layer per biome + battle; SFX pass using the `@flare-engine/audio` SFXPool.
 - **Done when.** A full run (entry → 1 biome → boss → victory or defeat → meta-progression applied) plays on iOS + Android + web.
 
 #### 11.10 — Devtools + Tier-2 stubs (M4 W3–W4)
 
 - **Goal.** Land the devtools slice that makes a screencast and the adapter surfaces that unblock 3rd-party integrations.
 - **Tasks.**
-  1. `@flare/devtools` partial: entity inspector (tap → panel), time scrub (rewind N frames from ring buffer), pause/step; web-only full panel, native-only HUD.
-  2. Interface stubs (types + no-op adapter + docs, no concrete provider): `@flare/leaderboards`, `@flare/achievements`, `@flare/iap`, `@flare/analytics`. Each exports the interface + a default `NoopProvider` + README with a table of planned providers for 0.2.0.
+  1. `@flare-engine/devtools` partial: entity inspector (tap → panel), time scrub (rewind N frames from ring buffer), pause/step; web-only full panel, native-only HUD.
+  2. Interface stubs (types + no-op adapter + docs, no concrete provider): `@flare-engine/leaderboards`, `@flare-engine/achievements`, `@flare-engine/iap`, `@flare-engine/analytics`. Each exports the interface + a default `NoopProvider` + README with a table of planned providers for 0.2.0.
 - **Done when.** Devtools demo GIF recorded; stubs typecheck and import cleanly from a consumer that mounts the no-op providers.
 
 #### 11.11 — Web builds (M5 W1–W2)
@@ -567,7 +567,7 @@ Posts lead with a generic technique; each ends with a "this is extracted from bu
 - **Issue triage SLA:** 48h to label + first response.
 - **PR review SLA:** 1 week.
 - **Content cadence:** ≥1 post every 2 weeks. Going quiet post-launch is the #1 failure mode.
-- **0.2.0 roadmap triggers:** Tier-2 adapters (leaderboards, achievements, iap, analytics), `@flare/a11y` full pass, `@flare/replay`, `@flare/lighting`. Cut when 2–3 of them are ready.
+- **0.2.0 roadmap triggers:** Tier-2 adapters (leaderboards, achievements, iap, analytics), `@flare-engine/a11y` full pass, `@flare-engine/replay`, `@flare-engine/lighting`. Cut when 2–3 of them are ready.
 - **Monthly competitor check:** `rn-game-engine-next` weekly DLs + commit cadence. If it passes 1k DL and adds web support, reassess positioning in the next devlog.
 
 ---
@@ -590,7 +590,7 @@ Posts lead with a generic technique; each ends with a "this is extracted from bu
 
 #### Phase 11 + 12 — Further considerations
 
-1. **CanvasKit parity risk.** Stage 11.1 spike gives 5 months of buffer for a per-sprite web fallback in `@flare/render`. Don't discover at stage 11.11.
+1. **CanvasKit parity risk.** Stage 11.1 spike gives 5 months of buffer for a per-sprite web fallback in `@flare-engine/render`. Don't discover at stage 11.11.
 2. **Game 2 scope creep.** If slipping, cut content (fewer enemies, single biome, 1 boss) — never slip the launch.
 3. **Competitor watch.** Monthly check of `rn-game-engine-next`. If it adds web support + 1k+ DLs, reconsider pulling launch forward by 1 month. Otherwise ignore.
 4. **npm scope collision.** Resolved at stage 11.1 (`flare` unscoped is taken; `@flare` scope likely free, `@flare-engine` is the fallback).

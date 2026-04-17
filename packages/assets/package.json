@@ -1,9 +1,20 @@
 {
-  "name": "@flare/assets",
+  "name": "@flare-engine/assets",
   "version": "0.0.0",
   "private": true,
   "description": "Asset loading, sprite sheet parsing",
+  "keywords": ["flare-engine", "assets", "sprite-sheet", "loader"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/assets"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -22,11 +33,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/core": "workspace:*",
-    "@flare/events": "workspace:*"
+    "@flare-engine/core": "workspace:*",
+    "@flare-engine/events": "workspace:*"
   },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

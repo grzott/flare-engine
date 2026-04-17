@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { GameContextValue } from '../src/game-context.js';
 
-// ---- Inline stub types (no @flare/ecs dependency) ----
+// ---- Inline stub types (no @flare-engine/ecs dependency) ----
 
 type Unsubscribe = () => void;
 

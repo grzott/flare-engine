@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { easeInQuad } from '@flare/math';
+import { easeInQuad } from '@flare-engine/math';
 import { chainTween, resetTween, tween, updateTween } from '../src/tween.js';
 
 describe('Tween', () => {

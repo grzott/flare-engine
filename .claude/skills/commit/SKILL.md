@@ -20,7 +20,7 @@ Follow [.claude/rules/git.md](.claude/rules/git.md):
 `type(scope): description`
 
 - **type**: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `chore`, `build`
-- **scope**: the `@flare/*` package name without the `@flare/` prefix — e.g. `math`, `physics`, `engine`. For cross-cutting changes use `monorepo`.
+- **scope**: the `@flare-engine/*` package name without the `@flare-engine/` prefix — e.g. `math`, `physics`, `engine`. For cross-cutting changes use `monorepo`.
 - **description**: imperative mood, lowercase, no trailing period, total line ≤ 72 chars.
 - No emoji. No narration of *what* the code does — the diff says that. Body (optional) is for the *why*.
 

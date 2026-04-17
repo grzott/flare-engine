@@ -1,4 +1,4 @@
-import { Signal } from '@flare/engine';
+import { Signal } from '@flare-engine/engine';
 
 export type SceneName = 'boot' | 'menu' | 'play' | 'game-over' | 'victory';
 

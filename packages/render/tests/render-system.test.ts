@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import type { SkImageLike } from '@flare/assets';
-import { Position as EcsPosition, World as EcsWorld } from '@flare/ecs';
-import type { ComponentDef, Query, World } from '@flare/ecs';
+import type { SkImageLike } from '@flare-engine/assets';
+import { Position as EcsPosition, World as EcsWorld } from '@flare-engine/ecs';
+import type { ComponentDef, Query, World } from '@flare-engine/ecs';
 import { Sprite as RenderSprite, createRenderSystem } from '../src/render-system.js';
 import type { PositionData, SpriteData } from '../src/render-system.js';
 import { Renderer } from '../src/renderer.js';
@@ -26,7 +26,7 @@ function mockCanvas() {
 
 /**
  * Create a minimal mock World+Query for testing the render system
- * without requiring the actual @flare/ecs runtime.
+ * without requiring the actual @flare-engine/ecs runtime.
  */
 function createMockECS() {
   const entities = new Map<number, Map<unknown, unknown>>();
@@ -161,7 +161,7 @@ describe('RenderSystem', () => {
     expect(renderer.stats.drawCalls).toBe(0);
   });
 
-  it('works with the real @flare/ecs World and canonical Sprite component', () => {
+  it('works with the real @flare-engine/ecs World and canonical Sprite component', () => {
     const world = new EcsWorld();
     const batch = new SpriteBatch();
     const renderer = new Renderer();

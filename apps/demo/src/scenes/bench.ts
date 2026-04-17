@@ -1,5 +1,5 @@
-import type { GameContextValue, Scene } from '@flare/engine';
-import { CollisionWorld, Position, Velocity } from '@flare/engine';
+import type { GameContextValue, Scene } from '@flare-engine/engine';
+import { CollisionWorld, Position, Velocity } from '@flare-engine/engine';
 import { Layer } from '../layers';
 import type { AtlasHandle } from '../spawn';
 import { spawnBullet, spawnEnemy } from '../spawn';

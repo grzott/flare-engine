@@ -2,8 +2,8 @@ import {
   type ProceduralAtlas,
   type ProceduralFrameSpec,
   createProceduralAtlas,
-} from '@flare/engine';
-import type { SkiaAtlasModuleLike } from '@flare/engine';
+} from '@flare-engine/engine';
+import type { SkiaAtlasModuleLike } from '@flare-engine/engine';
 
 const frames: ProceduralFrameSpec[] = [
   { name: 'player', w: 32, h: 32, color: 0xff66ccff },

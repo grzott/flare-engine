@@ -1,4 +1,4 @@
-import type { GameContextValue, Scene } from '@flare/engine';
+import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { gameState, notifyStateChanged, resetGameState } from '../state';
 import { shellDefaults } from './scene-shell';
 

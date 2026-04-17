@@ -1,6 +1,6 @@
-# @flare/render — package-specific rules
+# @flare-engine/render — package-specific rules
 
-Layer 2. Depends on `@flare/math`, `@flare/events`, `@flare/core`, `@flare/ecs`, `@flare/assets`. Peer depends on `@shopify/react-native-skia`.
+Layer 2. Depends on `@flare-engine/math`, `@flare-engine/events`, `@flare-engine/core`, `@flare-engine/ecs`, `@flare-engine/assets`. Peer depends on `@shopify/react-native-skia`.
 
 ## Frame lifecycle
 

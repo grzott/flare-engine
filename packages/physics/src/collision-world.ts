@@ -1,5 +1,5 @@
-import { Signal } from '@flare/events';
-import type { Rect } from '@flare/math';
+import { Signal } from '@flare-engine/events';
+import type { Rect } from '@flare-engine/math';
 import type { Shape } from './shape.js';
 import { shapeBoundsInto, shapeOverlap } from './shape.js';
 import { SpatialIndex } from './spatial-index.js';

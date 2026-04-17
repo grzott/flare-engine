@@ -1,4 +1,4 @@
-import type { Rect } from '@flare/math';
+import type { Rect } from '@flare-engine/math';
 
 /** A single tile in a tilemap grid. */
 export interface TileData {

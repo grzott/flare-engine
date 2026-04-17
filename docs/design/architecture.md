@@ -15,34 +15,34 @@ Flare is a modular, TypeScript-first 2D game engine for React Native, built on `
 ```mermaid
 graph TD
     subgraph "Layer 0 — Foundation (zero deps)"
-        MATH["@flare/math"]
-        EVENTS["@flare/events"]
+        MATH["@flare-engine/math"]
+        EVENTS["@flare-engine/events"]
     end
 
     subgraph "Layer 1 — Core"
-        CORE["@flare/core<br/>GameLoop, Clock, Coroutines, Pool, Screen"]
-        ECS["@flare/ecs<br/>World, Query, Systems, FSM"]
+        CORE["@flare-engine/core<br/>GameLoop, Clock, Coroutines, Pool, Screen"]
+        ECS["@flare-engine/ecs<br/>World, Query, Systems, FSM"]
     end
 
     subgraph "Layer 2 — Systems"
-        RENDER["@flare/render<br/>SpriteBatch, Camera2D, SpriteFont, Effects"]
-        INPUT["@flare/input<br/>Pointer, VirtualJoystick, Gestures"]
-        PHYSICS["@flare/physics<br/>AABB, planck.js, SpatialIndex"]
-        AUDIO["@flare/audio<br/>SFXPool, Music, Channels"]
-        ASSETS["@flare/assets<br/>Loader, SpriteSheet, TilemapData"]
+        RENDER["@flare-engine/render<br/>SpriteBatch, Camera2D, SpriteFont, Effects"]
+        INPUT["@flare-engine/input<br/>Pointer, VirtualJoystick, Gestures"]
+        PHYSICS["@flare-engine/physics<br/>AABB, planck.js, SpatialIndex"]
+        AUDIO["@flare-engine/audio<br/>SFXPool, Music, Channels"]
+        ASSETS["@flare-engine/assets<br/>Loader, SpriteSheet, TilemapData"]
     end
 
     subgraph "Layer 3 — Features"
-        SCENE["@flare/scene<br/>Lifecycle, Transitions, Stack"]
-        ANIM["@flare/animation<br/>SpriteAnimator, Tween, Spring"]
-        PARTICLES["@flare/particles<br/>Emitters, Pool, GPU-batched"]
-        TILEMAP["@flare/tilemap<br/>Tiled/LDtk, Culling, Collision"]
-        DEBUG["@flare/debug<br/>Overlay, Stats, Time controls"]
+        SCENE["@flare-engine/scene<br/>Lifecycle, Transitions, Stack"]
+        ANIM["@flare-engine/animation<br/>SpriteAnimator, Tween, Spring"]
+        PARTICLES["@flare-engine/particles<br/>Emitters, Pool, GPU-batched"]
+        TILEMAP["@flare-engine/tilemap<br/>Tiled/LDtk, Culling, Collision"]
+        DEBUG["@flare-engine/debug<br/>Overlay, Stats, Time controls"]
     end
 
     subgraph "Layer 4 — Integration"
-        REACT["@flare/react<br/>Hooks, Components, Skia bindings"]
-        ENGINE["@flare/engine<br/>createGame(), umbrella"]
+        REACT["@flare-engine/react<br/>Hooks, Components, Skia bindings"]
+        ENGINE["@flare-engine/engine<br/>createGame(), umbrella"]
     end
 
     MATH --> CORE
@@ -78,42 +78,42 @@ graph TD
 
 | Package         | Purpose                                                                  | Size target | Deps |
 | --------------- | ------------------------------------------------------------------------ | ----------- | ---- |
-| `@flare/math`   | Vec2, Rect, Circle, Transform2D, Mat3, 42 easings, random, intersections | < 5KB       | 0    |
-| `@flare/events` | EventEmitter\<EventMap\>, Signal\<T\>                                    | < 1KB       | 0    |
+| `@flare-engine/math`   | Vec2, Rect, Circle, Transform2D, Mat3, 42 easings, random, intersections | < 5KB       | 0    |
+| `@flare-engine/events` | EventEmitter\<EventMap\>, Signal\<T\>                                    | < 1KB       | 0    |
 
 ### Layer 1 — Core Runtime
 
 | Package       | Purpose                                                                                        | Size target | Deps         |
 | ------------- | ---------------------------------------------------------------------------------------------- | ----------- | ------------ |
-| `@flare/core` | GameLoop (fixed+variable timestep), Clock, AppLifecycle, Coroutines, ObjectPool, ScreenManager | < 3KB       | math, events |
-| `@flare/ecs`  | World, Query (archetype bitmask), defineComponent, defineSystem, Prefab, FSM                   | < 8KB       | math, events |
+| `@flare-engine/core` | GameLoop (fixed+variable timestep), Clock, AppLifecycle, Coroutines, ObjectPool, ScreenManager | < 3KB       | math, events |
+| `@flare-engine/ecs`  | World, Query (archetype bitmask), defineComponent, defineSystem, Prefab, FSM                   | < 8KB       | math, events |
 
 ### Layer 2 — System Modules
 
 | Package          | Purpose                                                                                 | Size target  | Peer deps              |
 | ---------------- | --------------------------------------------------------------------------------------- | ------------ | ---------------------- |
-| `@flare/render`  | Skia Atlas SpriteBatch, Camera2D, DrawOrder, SpriteEffects, SpriteFont                  | < 10KB       | react-native-skia      |
-| `@flare/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | gesture-handler        |
-| `@flare/physics` | AABB CollisionWorld, SpatialIndex (rbush), planck.js integration, raycast               | < 4KB (AABB) | planck.js optional     |
-| `@flare/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |
-| `@flare/assets`  | AssetManager, SpriteSheet parser (TexturePacker, Aseprite), loaders, progress           | < 6KB        | —                      |
+| `@flare-engine/render`  | Skia Atlas SpriteBatch, Camera2D, DrawOrder, SpriteEffects, SpriteFont                  | < 10KB       | react-native-skia      |
+| `@flare-engine/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | gesture-handler        |
+| `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (rbush), planck.js integration, raycast               | < 4KB (AABB) | planck.js optional     |
+| `@flare-engine/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |
+| `@flare-engine/assets`  | AssetManager, SpriteSheet parser (TexturePacker, Aseprite), loaders, progress           | < 6KB        | —                      |
 
 ### Layer 3 — Feature Modules
 
 | Package            | Purpose                                                                                  | Size target |
 | ------------------ | ---------------------------------------------------------------------------------------- | ----------- |
-| `@flare/scene`     | Scene lifecycle, SceneManager (stack, transitions: fade/slide)                           | < 4KB       |
-| `@flare/animation` | SpriteAnimator (tick-based), Tween (42 easings), Spring, Timeline                        | < 5KB       |
-| `@flare/particles` | Emitters, object-pooled, immediate-mode Skia rendering                                   | < 4KB       |
-| `@flare/tilemap`   | Tiled .tmj parser, LDtk parser, viewport culling, collision extraction                   | < 8KB       |
-| `@flare/debug`     | FPS/entity/draw-call overlay, collision bounds, time controls. Tree-shaken via `__DEV__` | < 3KB       |
+| `@flare-engine/scene`     | Scene lifecycle, SceneManager (stack, transitions: fade/slide)                           | < 4KB       |
+| `@flare-engine/animation` | SpriteAnimator (tick-based), Tween (42 easings), Spring, Timeline                        | < 5KB       |
+| `@flare-engine/particles` | Emitters, object-pooled, immediate-mode Skia rendering                                   | < 4KB       |
+| `@flare-engine/tilemap`   | Tiled .tmj parser, LDtk parser, viewport culling, collision extraction                   | < 8KB       |
+| `@flare-engine/debug`     | FPS/entity/draw-call overlay, collision bounds, time controls. Tree-shaken via `__DEV__` | < 3KB       |
 
 ### Layer 4 — Integration
 
 | Package         | Purpose                                                                          | Size target |
 | --------------- | -------------------------------------------------------------------------------- | ----------- |
-| `@flare/react`  | `<GameView>`, `useGame()`, `useEntity()`, `<VirtualJoystick>`, `<VirtualButton>` | < 10KB      |
-| `@flare/engine` | `createGame()` convenience, re-exports all packages                              | < 2KB       |
+| `@flare-engine/react`  | `<GameView>`, `useGame()`, `useEntity()`, `<VirtualJoystick>`, `<VirtualButton>` | < 10KB      |
+| `@flare-engine/engine` | `createGame()` convenience, re-exports all packages                              | < 2KB       |
 
 ---
 

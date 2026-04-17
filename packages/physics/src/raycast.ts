@@ -1,4 +1,4 @@
-import type { Vec2 } from '@flare/math';
+import type { Vec2 } from '@flare-engine/math';
 import type { Shape } from './shape.js';
 
 /** Result of a raycast hit. */

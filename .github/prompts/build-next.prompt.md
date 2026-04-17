@@ -19,8 +19,8 @@ State the order before starting. Example:
 
 ```
 Phase 2 — Core Runtime
-1. @flare/core: clock.ts → game-loop.ts → app-lifecycle.ts → screen.ts → coroutine.ts → pool.ts
-2. @flare/ecs: world.ts → component.ts → query.ts → system.ts → prefab.ts → fsm.ts
+1. @flare-engine/core: clock.ts → game-loop.ts → app-lifecycle.ts → screen.ts → coroutine.ts → pool.ts
+2. @flare-engine/ecs: world.ts → component.ts → query.ts → system.ts → prefab.ts → fsm.ts
 ```
 
 ## Step 3 — Implement with per-module verification

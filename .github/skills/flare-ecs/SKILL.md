@@ -1,11 +1,11 @@
 ---
 name: flare-ecs
-description: Deep knowledge of the @flare/ecs package — World, defineComponent, Query, defineSystem, definePrefab, FSM. Use when implementing entities, components, systems, state machines, or prefab instantiation in Flare.
+description: Deep knowledge of the @flare-engine/ecs package — World, defineComponent, Query, defineSystem, definePrefab, FSM. Use when implementing entities, components, systems, state machines, or prefab instantiation in Flare.
 ---
 
-# @flare/ecs
+# @flare-engine/ecs
 
-Archetype-based Entity-Component-System for Flare. Layer 1 — depends only on `@flare/events`.
+Archetype-based Entity-Component-System for Flare. Layer 1 — depends only on `@flare-engine/events`.
 
 ## Exports
 
@@ -24,7 +24,7 @@ import {
   Rotation,
   Scale,
   Parent,
-} from "@flare/ecs";
+} from "@flare-engine/ecs";
 ```
 
 ---
@@ -202,7 +202,7 @@ fsm.transition("chase"); // trigger state change
 ## Built-in Components
 
 ```ts
-import { Position, Velocity, Rotation, Scale, Parent } from "@flare/ecs";
+import { Position, Velocity, Rotation, Scale, Parent } from "@flare-engine/ecs";
 
 // Position: { x: number, y: number }
 // Velocity: { x: number, y: number }

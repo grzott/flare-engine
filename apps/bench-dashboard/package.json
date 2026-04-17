@@ -1,5 +1,5 @@
 {
-  "name": "@flare-apps/bench-dashboard",
+  "name": "@flare-engine-apps/bench-dashboard",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/benchmarks": "workspace:*",
+    "@flare-engine/benchmarks": "workspace:*",
     "next": "^16",
     "react": "^19",
     "react-dom": "^19",

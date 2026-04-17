@@ -1,4 +1,4 @@
-import type { Color } from '@flare/math';
+import type { Color } from '@flare-engine/math';
 import type { Particle } from './particle-pool.js';
 import { ParticlePool } from './particle-pool.js';
 

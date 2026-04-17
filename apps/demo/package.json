@@ -1,5 +1,5 @@
 {
-  "name": "@flare-apps/demo",
+  "name": "@flare-engine-apps/demo",
   "version": "0.0.0",
   "private": true,
   "description": "Flare engine demo — vertical-scrolling shoot-em-up",
@@ -13,12 +13,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/assets": "workspace:*",
-    "@flare/debug": "workspace:*",
-    "@flare/ecs": "workspace:*",
-    "@flare/engine": "workspace:*",
-    "@flare/physics": "workspace:*",
-    "@flare/render": "workspace:*",
+    "@flare-engine/assets": "workspace:*",
+    "@flare-engine/debug": "workspace:*",
+    "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/engine": "workspace:*",
+    "@flare-engine/physics": "workspace:*",
+    "@flare-engine/render": "workspace:*",
     "@shopify/react-native-skia": "2.4.18",
     "expo": "~55.0.15",
     "expo-status-bar": "~55.0.5",

@@ -1,5 +1,5 @@
-import { Signal } from '@flare/events';
-import type { Vec2 } from '@flare/math';
+import { Signal } from '@flare-engine/events';
+import type { Vec2 } from '@flare-engine/math';
 
 /** Swipe direction. */
 export type SwipeDirection = 'left' | 'right' | 'up' | 'down';

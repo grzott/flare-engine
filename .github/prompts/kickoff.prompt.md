@@ -1,18 +1,18 @@
 ---
-description: "Kickoff Phase 1 — implement @flare/math and @flare/events foundation packages"
+description: "Kickoff Phase 1 — implement @flare-engine/math and @flare-engine/events foundation packages"
 agent: builder
 ---
 
 # Phase 1 — Foundation Packages
 
-Implement `@flare/math` and `@flare/events` — the two zero-dependency foundation packages.
+Implement `@flare-engine/math` and `@flare-engine/events` — the two zero-dependency foundation packages.
 
 ## Before You Start
 
 1. Read the full API spec: `docs/design/api-specs.md` (Layer 0 section)
 2. Read the architecture: `docs/design/architecture.md`
 
-## @flare/math
+## @flare-engine/math
 
 Implement in `packages/math/src/`. One file per concept, in this order (each may depend on the previous):
 
@@ -36,7 +36,7 @@ Implement in `packages/math/src/`. One file per concept, in this order (each may
 5. Fix any failures → re-test until green
 6. Move to next module
 
-## @flare/events
+## @flare-engine/events
 
 Implement in `packages/events/src/`:
 

@@ -32,7 +32,7 @@ mock.module('@shopify/react-native-skia', () => ({
   useCanvasRef: () => ({ current: null }),
 }));
 
-mock.module('@flare/core', () => ({
+mock.module('@flare-engine/core', () => ({
   GameLoop: class {
     onPreRender = { add: () => () => {} };
     onUpdate = { add: () => () => {} };
@@ -41,11 +41,11 @@ mock.module('@flare/core', () => ({
   },
 }));
 
-mock.module('@flare/ecs', () => ({
+mock.module('@flare-engine/ecs', () => ({
   World: class {},
 }));
 
-mock.module('@flare/render', () => ({
+mock.module('@flare-engine/render', () => ({
   Camera2D: class {},
   Renderer: class {
     setCanvas() {}
@@ -54,15 +54,15 @@ mock.module('@flare/render', () => ({
   },
 }));
 
-mock.module('@flare/audio', () => ({
+mock.module('@flare-engine/audio', () => ({
   AudioManager: class {},
 }));
 
-mock.module('@flare/assets', () => ({
+mock.module('@flare-engine/assets', () => ({
   AssetManager: class {},
 }));
 
-mock.module('@flare/scene', () => ({
+mock.module('@flare-engine/scene', () => ({
   SceneManager: class {},
 }));
 

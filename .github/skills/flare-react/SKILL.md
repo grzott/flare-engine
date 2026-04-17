@@ -1,9 +1,9 @@
 ---
 name: flare-react
-description: Deep knowledge of the @flare/react package — GameView, GameConfig, useGame, useEntity, useGameLoop, VirtualJoystick, VirtualButton, GameContext. Use when wiring Flare into a React Native app, reading game state in React components, or adding on-screen touch controls.
+description: Deep knowledge of the @flare-engine/react package — GameView, GameConfig, useGame, useEntity, useGameLoop, VirtualJoystick, VirtualButton, GameContext. Use when wiring Flare into a React Native app, reading game state in React components, or adding on-screen touch controls.
 ---
 
-# @flare/react
+# @flare-engine/react
 
 React Native integration layer for Flare. Layer 4 — topmost package.
 
@@ -21,7 +21,7 @@ import {
   type GameConfig,
   type GameViewProps,
   type GameContextValue,
-} from "@flare/react";
+} from "@flare-engine/react";
 ```
 
 ---
@@ -31,7 +31,7 @@ import {
 Root component. Mounts a Skia `<Canvas>` and drives the game loop.
 
 ```tsx
-import { GameView, type GameConfig } from "@flare/react";
+import { GameView, type GameConfig } from "@flare-engine/react";
 
 const config: GameConfig = {
   width: 390, // logical resolution
@@ -70,7 +70,7 @@ export function App() {
 Access the `GameContextValue` anywhere inside `<GameView>`.
 
 ```tsx
-import { useGame } from "@flare/react";
+import { useGame } from "@flare-engine/react";
 
 function HUDOverlay() {
   const game = useGame();
@@ -84,7 +84,7 @@ function HUDOverlay() {
 Subscribe to a specific entity's component data. Re-renders when the component value changes.
 
 ```tsx
-import { useEntity } from "@flare/react";
+import { useEntity } from "@flare-engine/react";
 import { Health } from "../components";
 
 function HealthBar({ entity }: { entity: number }) {
@@ -101,7 +101,7 @@ function HealthBar({ entity }: { entity: number }) {
 Run a callback every game frame (outside the Skia canvas). Useful for syncing React state with game state.
 
 ```tsx
-import { useGameLoop } from "@flare/react";
+import { useGameLoop } from "@flare-engine/react";
 
 function ScoreDisplay() {
   const [score, setScore] = useState(0);
@@ -123,7 +123,7 @@ function ScoreDisplay() {
 On-screen analog stick for mobile input.
 
 ```tsx
-import { VirtualJoystick } from "@flare/react";
+import { VirtualJoystick } from "@flare-engine/react";
 
 <VirtualJoystick
   size={120} // outer radius px
@@ -149,7 +149,7 @@ import { VirtualJoystick } from "@flare/react";
 On-screen tap button.
 
 ```tsx
-import { VirtualButton } from "@flare/react";
+import { VirtualButton } from "@flare-engine/react";
 
 <VirtualButton
   size={64}
@@ -171,7 +171,7 @@ import { VirtualButton } from "@flare/react";
 Access the context value directly (e.g., outside function components).
 
 ```tsx
-import { GameContext, type GameContextValue } from "@flare/react";
+import { GameContext, type GameContextValue } from "@flare-engine/react";
 
 // In a class component or ref:
 const value: GameContextValue = useContext(GameContext);
@@ -191,8 +191,8 @@ const value: GameContextValue = useContext(GameContext);
 ## Minimal App Template
 
 ```tsx
-import { GameView } from "@flare/react";
-import { VirtualJoystick } from "@flare/react";
+import { GameView } from "@flare-engine/react";
+import { VirtualJoystick } from "@flare-engine/react";
 import { StyleSheet, View } from "react-native";
 
 export default function Game() {

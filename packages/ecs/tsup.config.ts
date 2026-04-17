@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/events'],
+  external: ['@flare-engine/events'],
 });

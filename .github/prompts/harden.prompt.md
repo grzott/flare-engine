@@ -19,7 +19,7 @@ agent: builder
 State all findings before fixing anything. Example:
 
 ```
-@flare/physics:
+@flare-engine/physics:
   - GAP: raycast() missing maxDistance clamping when maxDist <= 0
   - DEVIATION: CollisionWorld.step() doesn't emit onTriggerExit for removed entities
   - SMELL: Vec2 allocation in narrowphase per-pair check

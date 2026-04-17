@@ -4,7 +4,7 @@
 
 ## Architecture
 
-16 packages (`@flare/*`) in 5 layers. Dependencies flow **downward only**.
+16 packages (`@flare-engine/*`) in 5 layers. Dependencies flow **downward only**.
 
 ```
 Layer 0 (Foundation):  math, events

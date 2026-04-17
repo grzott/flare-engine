@@ -41,7 +41,7 @@ Research each asset category below. For each, find **at least 3 free and 3 paid*
 
 - Pixel art fonts, bitmap fonts compatible with SpriteFont rendering
 - TTF/OTF fonts with game-friendly licensing
-- BMFont format exports (for @flare/render SpriteFont)
+- BMFont format exports (for @flare-engine/render SpriteFont)
 
 ### 6. UI Kits
 
@@ -58,7 +58,7 @@ Research each asset category below. For each, find **at least 3 free and 3 paid*
 | **Price**               | Free / $X                                                                                |
 | **Format**              | PNG, JSON atlas, WAV, etc.                                                               |
 | **Resolution**          | Pixel size, grid size                                                                    |
-| **Flare Compatibility** | Can @flare/assets SpriteSheet loader handle this format directly? Any conversion needed? |
+| **Flare Compatibility** | Can @flare-engine/assets SpriteSheet loader handle this format directly? Any conversion needed? |
 | **Quality**             | Your assessment: professional / hobbyist / placeholder-grade                             |
 
 ## Special Focus

@@ -1,4 +1,4 @@
-import type { Rect } from '@flare/math';
+import type { Rect } from '@flare-engine/math';
 
 /** AABB shape — axis-aligned bounding box. */
 export interface AABBShape {

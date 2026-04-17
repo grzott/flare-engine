@@ -1,4 +1,4 @@
-import { type SkImageLike, createSpriteSheet } from '@flare/assets';
+import { type SkImageLike, createSpriteSheet } from '@flare-engine/assets';
 import type { AtlasHandle } from './spawn';
 
 const FRAME_NAMES = [

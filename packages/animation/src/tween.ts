@@ -1,4 +1,4 @@
-import type { EasingFn } from '@flare/math';
+import type { EasingFn } from '@flare-engine/math';
 
 /** Tween state. */
 export interface Tween {

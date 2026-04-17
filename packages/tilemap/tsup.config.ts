@@ -5,5 +5,10 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/assets', '@flare/math', '@flare/physics', '@flare/render'],
+  external: [
+    '@flare-engine/assets',
+    '@flare-engine/math',
+    '@flare-engine/physics',
+    '@flare-engine/render',
+  ],
 });

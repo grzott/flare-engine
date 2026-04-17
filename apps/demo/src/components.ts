@@ -1,4 +1,4 @@
-import { defineComponent } from '@flare/ecs';
+import { defineComponent } from '@flare-engine/ecs';
 
 export interface ShipData {
   fireRate: number;

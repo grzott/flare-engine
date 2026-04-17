@@ -1,9 +1,20 @@
 {
-  "name": "@flare/tilemap",
+  "name": "@flare-engine/tilemap",
   "version": "0.0.0",
   "private": true,
   "description": "Tiled/LDtk parser, culled tilemap renderer",
+  "keywords": ["flare-engine", "tilemap", "tiled", "ldtk"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/tilemap"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -22,10 +33,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/assets": "workspace:*",
-    "@flare/math": "workspace:*",
-    "@flare/physics": "workspace:*",
-    "@flare/render": "workspace:*"
+    "@flare-engine/assets": "workspace:*",
+    "@flare-engine/math": "workspace:*",
+    "@flare-engine/physics": "workspace:*",
+    "@flare-engine/render": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

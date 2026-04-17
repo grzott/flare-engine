@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { Camera2D } from '@flare/render';
+import { Camera2D } from '@flare-engine/render';
 import type { TileLayer, TilemapData, TilesetRef } from '../src/tilemap-data.js';
 import { TilemapRenderer } from '../src/tilemap-renderer.js';
 

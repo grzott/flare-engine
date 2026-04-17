@@ -1,9 +1,20 @@
 {
-  "name": "@flare/scene",
+  "name": "@flare-engine/scene",
   "version": "0.0.0",
   "private": true,
   "description": "Scene manager, transitions, lifecycle",
+  "keywords": ["flare-engine", "scene", "transitions"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/scene"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -22,11 +33,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/core": "workspace:*",
-    "@flare/ecs": "workspace:*",
-    "@flare/events": "workspace:*",
-    "@flare/math": "workspace:*",
-    "@flare/render": "workspace:*"
+    "@flare-engine/core": "workspace:*",
+    "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/events": "workspace:*",
+    "@flare-engine/math": "workspace:*",
+    "@flare-engine/render": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

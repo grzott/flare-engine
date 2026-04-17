@@ -1,8 +1,8 @@
-import { type SkImageLike, type SpriteSheet, getFrame } from '@flare/assets';
-import type { World } from '@flare/ecs';
-import { Position, Velocity } from '@flare/ecs';
-import { AABB, type CollisionWorld } from '@flare/physics';
-import { Sprite } from '@flare/render';
+import { type SkImageLike, type SpriteSheet, getFrame } from '@flare-engine/assets';
+import type { World } from '@flare-engine/ecs';
+import { Position, Velocity } from '@flare-engine/ecs';
+import { AABB, type CollisionWorld } from '@flare-engine/physics';
+import { Sprite } from '@flare-engine/render';
 import { Boss, Bullet, Enemy, type EnemyPattern, Hp, Lifetime, Ship } from './components';
 import { Layer, Mask } from './layers';
 

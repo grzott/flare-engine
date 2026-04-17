@@ -7,11 +7,11 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   external: [
-    '@flare/assets',
-    '@flare/core',
-    '@flare/ecs',
-    '@flare/events',
-    '@flare/math',
+    '@flare-engine/assets',
+    '@flare-engine/core',
+    '@flare-engine/ecs',
+    '@flare-engine/events',
+    '@flare-engine/math',
     '@shopify/react-native-skia',
   ],
 });

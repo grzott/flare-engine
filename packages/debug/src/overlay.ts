@@ -1,6 +1,6 @@
 /**
  * DebugOverlay — configuration for debug visualization overlays.
- * The actual rendering is done by the host (e.g., @flare/react) reading
+ * The actual rendering is done by the host (e.g., @flare-engine/react) reading
  * these flags and drawing appropriate debug shapes.
  * Wrap in `__DEV__` checks at the call site for tree-shaking.
  */

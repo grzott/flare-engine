@@ -30,13 +30,13 @@ cd packages/<name> && bun run typecheck  # Type-check one package
 ```
 
 ## Workspaces
-- `packages/*` — the 16 publishable `@flare/*` packages
-- `apps/demo` — Expo + React Native consumer app; **device-verified end-to-end loop** (menu → play → boss → game-over/victory → menu). Treat it as the canonical integration test for Layer 4 (`@flare/react`, `@flare/engine`) and as the reference for how a consumer wires scenes, audio, input, and HUD.
+- `packages/*` — the 16 publishable `@flare-engine/*` packages
+- `apps/demo` — Expo + React Native consumer app; **device-verified end-to-end loop** (menu → play → boss → game-over/victory → menu). Treat it as the canonical integration test for Layer 4 (`@flare-engine/react`, `@flare-engine/engine`) and as the reference for how a consumer wires scenes, audio, input, and HUD.
 - `apps/bench-dashboard` — visualizer for `benchmarks/results/`
 - `benchmarks/` — perf harness; results are committed under `apps/bench-dashboard`
 
 ## Package Structure
-16 packages (`@flare/*`) across 5 layers — dependencies flow **downward only**:
+16 packages (`@flare-engine/*`) across 5 layers — dependencies flow **downward only**:
 - **Layer 0**: `math`, `events`
 - **Layer 1**: `core`, `ecs`
 - **Layer 2**: `render`, `input`, `physics`, `audio`, `assets`

@@ -5,5 +5,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/core', '@flare/ecs', '@flare/render'],
+  external: ['@flare-engine/core', '@flare-engine/ecs', '@flare-engine/render'],
 });

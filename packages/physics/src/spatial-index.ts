@@ -1,4 +1,4 @@
-import type { Rect } from '@flare/math';
+import type { Rect } from '@flare-engine/math';
 
 /** Item stored in the spatial index. */
 export interface SpatialEntry<T> {

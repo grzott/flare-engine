@@ -8,11 +8,11 @@
 
 | Package                        | DL/week | Stars | Role in Flare                              | Required by                     |
 | ------------------------------ | ------- | ----- | ------------------------------------------ | ------------------------------- |
-| `@shopify/react-native-skia`   | 582K    | 8.3K  | GPU rendering, Atlas API, Canvas           | `@flare/render`, `@flare/react` |
-| `react-native-gesture-handler` | —       | —     | Touch/gesture input on native thread       | `@flare/input`                  |
-| `react-native-reanimated`      | —       | —     | UI thread worklets for rendering           | `@flare/render`                 |
-| `planck.js`                    | 142K    | —     | Box2D physics (optional tier)              | `@flare/physics` (optional)     |
-| `react-native-audio-api`       | 30K     | —     | Native C++ audio engine (Software Mansion) | `@flare/audio`                  |
+| `@shopify/react-native-skia`   | 582K    | 8.3K  | GPU rendering, Atlas API, Canvas           | `@flare-engine/render`, `@flare-engine/react` |
+| `react-native-gesture-handler` | —       | —     | Touch/gesture input on native thread       | `@flare-engine/input`                  |
+| `react-native-reanimated`      | —       | —     | UI thread worklets for rendering           | `@flare-engine/render`                 |
+| `planck.js`                    | 142K    | —     | Box2D physics (optional tier)              | `@flare-engine/physics` (optional)     |
+| `react-native-audio-api`       | 30K     | —     | Native C++ audio engine (Software Mansion) | `@flare-engine/audio`                  |
 
 ---
 
@@ -20,7 +20,7 @@
 
 | Package | DL/week | Role                                   | Used by          |
 | ------- | ------- | -------------------------------------- | ---------------- |
-| `rbush` | 4.3M    | R-tree 2D spatial index for broadphase | `@flare/physics` |
+| `rbush` | 4.3M    | R-tree 2D spatial index for broadphase | `@flare-engine/physics` |
 
 ---
 

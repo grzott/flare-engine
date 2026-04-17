@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/core', '@shopify/react-native-skia'],
+  external: ['@flare-engine/core', '@shopify/react-native-skia'],
 });

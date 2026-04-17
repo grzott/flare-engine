@@ -1,12 +1,12 @@
-import type { AssetLoader } from '@flare/assets';
-import { AssetManager } from '@flare/assets';
-import { AudioManager } from '@flare/audio';
-import { GameLoop } from '@flare/core';
-import type { GameLoopConfig } from '@flare/core';
-import { World } from '@flare/ecs';
-import { InputManager } from '@flare/input';
-import { Camera2D, Renderer, SpriteBatch } from '@flare/render';
-import { SceneManager } from '@flare/scene';
+import type { AssetLoader } from '@flare-engine/assets';
+import { AssetManager } from '@flare-engine/assets';
+import { AudioManager } from '@flare-engine/audio';
+import { GameLoop } from '@flare-engine/core';
+import type { GameLoopConfig } from '@flare-engine/core';
+import { World } from '@flare-engine/ecs';
+import { InputManager } from '@flare-engine/input';
+import { Camera2D, Renderer, SpriteBatch } from '@flare-engine/render';
+import { SceneManager } from '@flare-engine/scene';
 
 /** Configuration for createGame(). */
 export interface GameConfig extends GameLoopConfig {

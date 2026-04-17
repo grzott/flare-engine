@@ -1,5 +1,5 @@
-import type { CollisionWorld, Query, World } from '@flare/engine';
-import { Position } from '@flare/engine';
+import type { CollisionWorld, Query, World } from '@flare-engine/engine';
+import { Position } from '@flare-engine/engine';
 import { Enemy, Hp, Lifetime } from '../components';
 import { destroyEntity } from './entity-ops';
 

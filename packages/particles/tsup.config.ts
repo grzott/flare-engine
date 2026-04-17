@@ -5,5 +5,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/core', '@flare/math'],
+  external: ['@flare-engine/core', '@flare-engine/math'],
 });

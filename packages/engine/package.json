@@ -1,9 +1,20 @@
 {
-  "name": "@flare/engine",
+  "name": "@flare-engine/engine",
   "version": "0.0.0",
   "private": true,
   "description": "Flare game engine — convenience entry point, re-exports all packages",
+  "keywords": ["flare-engine", "game-engine", "2d", "react-native", "skia"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/engine"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -22,21 +33,21 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/math": "workspace:*",
-    "@flare/events": "workspace:*",
-    "@flare/core": "workspace:*",
-    "@flare/ecs": "workspace:*",
-    "@flare/render": "workspace:*",
-    "@flare/input": "workspace:*",
-    "@flare/physics": "workspace:*",
-    "@flare/audio": "workspace:*",
-    "@flare/assets": "workspace:*",
-    "@flare/scene": "workspace:*",
-    "@flare/animation": "workspace:*",
-    "@flare/particles": "workspace:*",
-    "@flare/tilemap": "workspace:*",
-    "@flare/debug": "workspace:*",
-    "@flare/react": "workspace:*"
+    "@flare-engine/math": "workspace:*",
+    "@flare-engine/events": "workspace:*",
+    "@flare-engine/core": "workspace:*",
+    "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/render": "workspace:*",
+    "@flare-engine/input": "workspace:*",
+    "@flare-engine/physics": "workspace:*",
+    "@flare-engine/audio": "workspace:*",
+    "@flare-engine/assets": "workspace:*",
+    "@flare-engine/scene": "workspace:*",
+    "@flare-engine/animation": "workspace:*",
+    "@flare-engine/particles": "workspace:*",
+    "@flare-engine/tilemap": "workspace:*",
+    "@flare-engine/debug": "workspace:*",
+    "@flare-engine/react": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -44,6 +55,10 @@
     "@shopify/react-native-skia": ">=1.0.0",
     "react-native-gesture-handler": ">=2.0.0",
     "react-native-audio-api": ">=0.3.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

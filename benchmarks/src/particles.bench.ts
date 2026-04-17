@@ -1,4 +1,4 @@
-import { ParticleEmitter } from '@flare/particles';
+import { ParticleEmitter } from '@flare-engine/particles';
 import { type BenchStats, runBench } from './harness.js';
 
 const DT = 1 / 60;

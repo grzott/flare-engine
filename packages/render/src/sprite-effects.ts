@@ -42,7 +42,7 @@ export interface OutlineEffect extends SpriteEffect {
 /**
  * Opaque pre-compiled shader program. Typically a Skia `RuntimeEffect` built
  * once at asset load time via `Skia.RuntimeEffect.Make(sksl)`. The render
- * package stays Skia-agnostic; the `@flare/react` layer narrows this to the
+ * package stays Skia-agnostic; the `@flare-engine/react` layer narrows this to the
  * concrete Skia type when applying the effect.
  */
 export type CompiledShader = object;

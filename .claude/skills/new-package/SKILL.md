@@ -1,18 +1,18 @@
 ---
 name: new-package
-description: Scaffold a new @flare/* package following the monorepo conventions
+description: Scaffold a new @flare-engine/* package following the monorepo conventions
 argument-hint: "[package-name] [layer-number]"
 allowed-tools: Read, Write, Edit, Glob, Bash(mkdir:*), Bash(bun install:*), Bash(bun run build:*)
 ---
 
-Scaffold a new `@flare/<package-name>` package in the Flare engine monorepo.
+Scaffold a new `@flare-engine/<package-name>` package in the Flare engine monorepo.
 
 ## Steps
 
 1. Create directory `packages/<package-name>/`
 2. Copy the structure from the nearest same-layer package as reference
 3. Create `package.json` with:
-   - `"name": "@flare/<package-name>"`
+   - `"name": "@flare-engine/<package-name>"`
    - `"main": "./dist/index.cjs"`, `"module": "./dist/index.js"`, `"types": "./dist/index.d.ts"`
    - Only add dependencies that belong to layers **below** this package's layer
 4. Create `tsconfig.json` extending `../../tsconfig.base.json`

@@ -1,4 +1,4 @@
-import type { Vec2 } from '@flare/math';
+import type { Vec2 } from '@flare-engine/math';
 
 /** State of a single pointer (primary touch or mouse). */
 export interface Pointer {

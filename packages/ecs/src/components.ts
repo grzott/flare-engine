@@ -1,8 +1,8 @@
-import type { Vec2 } from '@flare/math';
+import type { Vec2 } from '@flare-engine/math';
 import { defineComponent } from './component.js';
 
 /**
- * Built-in ECS components using @flare/math types.
+ * Built-in ECS components using @flare-engine/math types.
  */
 
 /** 2D position component. */

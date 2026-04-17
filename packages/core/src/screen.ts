@@ -1,5 +1,5 @@
-import { Signal } from '@flare/events';
-import type { Rect, Vec2 } from '@flare/math';
+import { Signal } from '@flare-engine/events';
+import type { Rect, Vec2 } from '@flare-engine/math';
 
 /** Scale mode for mapping design resolution to device screen. */
 export type ScaleMode = 'fit' | 'fill' | 'stretch';

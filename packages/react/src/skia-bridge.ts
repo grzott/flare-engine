@@ -1,4 +1,4 @@
-import type { SkImageLike } from '@flare/assets';
+import type { SkImageLike } from '@flare-engine/assets';
 import {
   type AnySpriteEffect,
   type CanvasLike,
@@ -10,7 +10,7 @@ import {
   type SpriteDrawCommand,
   type TintEffect,
   flashIntensity,
-} from '@flare/render';
+} from '@flare-engine/render';
 import type {
   SkCanvas,
   SkColor,
@@ -54,7 +54,7 @@ export interface SkiaFrameRenderer {
   beginFrame(): void;
   /**
    * drawAtlas callback compatible with `SpriteBatch.flush`. Accepts
-   * `SkImageLike` (the narrow `@flare/assets` type used by the batch) and
+   * `SkImageLike` (the narrow `@flare-engine/assets` type used by the batch) and
    * upcasts to a full Skia `SkImage` at the boundary — in practice callers
    * always supply a real `SkImage`.
    */

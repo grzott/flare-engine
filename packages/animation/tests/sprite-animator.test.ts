@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { SpriteSheet } from '@flare/assets';
+import type { SpriteSheet } from '@flare-engine/assets';
 import {
   createSpriteAnimator,
   getCurrentFrame,

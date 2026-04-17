@@ -1,11 +1,11 @@
-import { StatsTracker, createFpsWidget } from '@flare/debug';
+import { StatsTracker, createFpsWidget } from '@flare-engine/debug';
 import type {
   AudioContextLike,
   GameContextValue,
   SFXPool,
   VirtualButtonState,
   VirtualJoystickState,
-} from '@flare/engine';
+} from '@flare-engine/engine';
 import {
   GameView,
   Music,
@@ -13,7 +13,7 @@ import {
   VirtualButton,
   VirtualJoystick,
   createChannels,
-} from '@flare/engine';
+} from '@flare-engine/engine';
 import { Skia } from '@shopify/react-native-skia';
 import type React from 'react';
 import { StyleSheet, View } from 'react-native';

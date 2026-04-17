@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@flare/core', 'react-native-gesture-handler'],
+  external: ['@flare-engine/core', 'react-native-gesture-handler'],
 });

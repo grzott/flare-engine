@@ -4,7 +4,7 @@ import {
   createJoystickState,
   releaseJoystick,
   updateJoystick,
-} from '@flare/input';
+} from '@flare-engine/input';
 import type React from 'react';
 import { useCallback, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';

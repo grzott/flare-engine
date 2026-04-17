@@ -1,7 +1,7 @@
-import type { SkImageLike } from '@flare/assets';
-import type { Rect } from '@flare/math';
-import type { Camera2D } from '@flare/render';
-import { SpriteBatch } from '@flare/render';
+import type { SkImageLike } from '@flare-engine/assets';
+import type { Rect } from '@flare-engine/math';
+import type { Camera2D } from '@flare-engine/render';
+import { SpriteBatch } from '@flare-engine/render';
 import type { TileLayer, TilemapData } from './tilemap-data.js';
 import { getTileAt, getTilesetForGid } from './tilemap-data.js';
 

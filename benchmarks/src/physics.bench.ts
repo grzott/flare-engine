@@ -1,5 +1,5 @@
-import { SeededRNG } from '@flare/math';
-import { AABB, CollisionWorld } from '@flare/physics';
+import { SeededRNG } from '@flare-engine/math';
+import { AABB, CollisionWorld } from '@flare-engine/physics';
 import { type BenchStats, runBench } from './harness.js';
 
 type PhysicsState = {

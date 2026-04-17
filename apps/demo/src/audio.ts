@@ -1,4 +1,4 @@
-import type { AudioBufferLike, AudioContextLike } from '@flare/engine';
+import type { AudioBufferLike, AudioContextLike } from '@flare-engine/engine';
 
 interface AudioBufferFillable extends AudioBufferLike {
   getChannelData(channel: number): Float32Array;

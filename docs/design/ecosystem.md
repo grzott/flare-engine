@@ -48,16 +48,16 @@ None of these run on React Native. All are web-only.
 
 | Gap                 | Before Flare                             | Flare module       |
 | ------------------- | ---------------------------------------- | ------------------ |
-| Sprite sheets/atlas | Nothing for RN                           | `@flare/assets`    |
-| Tilemaps            | Nothing for RN                           | `@flare/tilemap`   |
-| Game loop           | DIY via requestAnimationFrame            | `@flare/core`      |
-| Physics             | planck.js works but no integration       | `@flare/physics`   |
-| Particles           | Nothing for RN                           | `@flare/particles` |
-| Audio sync          | Fragmented (expo-av, react-native-sound) | `@flare/audio`     |
-| ECS for RN          | bitECS/miniplex exist but no integration | `@flare/ecs`       |
-| Input for games     | gesture-handler not game-oriented        | `@flare/input`     |
-| Scene management    | Nothing                                  | `@flare/scene`     |
-| Camera system       | Nothing                                  | `@flare/render`    |
+| Sprite sheets/atlas | Nothing for RN                           | `@flare-engine/assets`    |
+| Tilemaps            | Nothing for RN                           | `@flare-engine/tilemap`   |
+| Game loop           | DIY via requestAnimationFrame            | `@flare-engine/core`      |
+| Physics             | planck.js works but no integration       | `@flare-engine/physics`   |
+| Particles           | Nothing for RN                           | `@flare-engine/particles` |
+| Audio sync          | Fragmented (expo-av, react-native-sound) | `@flare-engine/audio`     |
+| ECS for RN          | bitECS/miniplex exist but no integration | `@flare-engine/ecs`       |
+| Input for games     | gesture-handler not game-oriented        | `@flare-engine/input`     |
+| Scene management    | Nothing                                  | `@flare-engine/scene`     |
+| Camera system       | Nothing                                  | `@flare-engine/render`    |
 
 ---
 

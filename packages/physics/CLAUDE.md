@@ -1,6 +1,6 @@
-# @flare/physics — package-specific rules
+# @flare-engine/physics — package-specific rules
 
-Layer 2. Depends on `@flare/math` and `@flare/events`. Do not import from other `@flare/*` packages.
+Layer 2. Depends on `@flare-engine/math` and `@flare-engine/events`. Do not import from other `@flare-engine/*` packages.
 
 ## Collision model
 

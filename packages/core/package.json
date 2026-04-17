@@ -1,9 +1,20 @@
 {
-  "name": "@flare/core",
+  "name": "@flare-engine/core",
   "version": "0.0.0",
   "private": true,
   "description": "GameLoop, Clock, AppLifecycle, Pool, Coroutines",
+  "keywords": ["flare-engine", "game-loop", "coroutines", "pool"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/core"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -22,8 +33,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/math": "workspace:*",
-    "@flare/events": "workspace:*"
+    "@flare-engine/math": "workspace:*",
+    "@flare-engine/events": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

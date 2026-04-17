@@ -1,11 +1,11 @@
 ---
 name: flare-core
-description: Deep knowledge of the @flare/core package — GameLoop, Clock, Coroutines, Pool, ScreenManager, AppLifecycle. Use this skill when writing or debugging game loop logic, coroutine-based sequencing, object pooling, or screen/viewport configuration.
+description: Deep knowledge of the @flare-engine/core package — GameLoop, Clock, Coroutines, Pool, ScreenManager, AppLifecycle. Use this skill when writing or debugging game loop logic, coroutine-based sequencing, object pooling, or screen/viewport configuration.
 ---
 
-# @flare/core
+# @flare-engine/core
 
-Low-level runtime primitives for the Flare game engine. Layer 1 — depends only on `@flare/math` and `@flare/events`.
+Low-level runtime primitives for the Flare game engine. Layer 1 — depends only on `@flare-engine/math` and `@flare-engine/events`.
 
 ## Exports
 
@@ -17,7 +17,7 @@ import {
   ScreenManager, // Logical resolution, safe area
   CoroutineManager, // Generator-based sequencing
   Pool, // Object pool (zero-alloc reuse)
-} from "@flare/core";
+} from "@flare-engine/core";
 ```
 
 ---

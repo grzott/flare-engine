@@ -1,5 +1,5 @@
-import type { Query, World } from '@flare/engine';
-import { Position, Velocity } from '@flare/engine';
+import type { Query, World } from '@flare-engine/engine';
+import { Position, Velocity } from '@flare-engine/engine';
 import { Enemy } from '../components';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';

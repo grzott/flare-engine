@@ -1,5 +1,5 @@
-import { SeededRNG } from '@flare/math';
-import { type Drawable, SpriteBatch, sortByDrawOrder } from '@flare/render';
+import { SeededRNG } from '@flare-engine/math';
+import { type Drawable, SpriteBatch, sortByDrawOrder } from '@flare-engine/render';
 import { type BenchStats, runBench } from './harness.js';
 
 interface SkImageStub {

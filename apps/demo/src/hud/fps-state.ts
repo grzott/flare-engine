@@ -1,4 +1,4 @@
-import { Signal } from '@flare/engine';
+import { Signal } from '@flare-engine/engine';
 
 export const fpsState = { line: '' };
 export const fpsChanged = new Signal<void>();

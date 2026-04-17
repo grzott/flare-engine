@@ -1,5 +1,5 @@
-import { World } from '@flare/ecs';
-import { Camera2D } from '@flare/render';
+import { World } from '@flare-engine/ecs';
+import { Camera2D } from '@flare-engine/render';
 import type { Scene, SceneFactory } from './scene.js';
 import type { Transition, TransitionState } from './transition.js';
 import { noneTransition } from './transition.js';

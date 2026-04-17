@@ -1,11 +1,11 @@
 ---
 name: flare-render
-description: Deep knowledge of the @flare/render package — SpriteBatch, Camera2D, SpriteEffects, BitmapFont, Renderer, createRenderSystem. Use when implementing GPU sprite rendering, viewport/camera control, tint/flash/outline effects, or bitmap text.
+description: Deep knowledge of the @flare-engine/render package — SpriteBatch, Camera2D, SpriteEffects, BitmapFont, Renderer, createRenderSystem. Use when implementing GPU sprite rendering, viewport/camera control, tint/flash/outline effects, or bitmap text.
 ---
 
-# @flare/render
+# @flare-engine/render
 
-GPU sprite rendering via Skia Atlas. Layer 2 — depends on `@flare/core` and `@flare/assets`.
+GPU sprite rendering via Skia Atlas. Layer 2 — depends on `@flare-engine/core` and `@flare-engine/assets`.
 
 ## Exports
 
@@ -19,7 +19,7 @@ import {
   tint, flash, grayscale, outline, updateEffect, flashIntensity,
   // Font
   parseBMFontJSON, measureText, drawText,
-} from "@flare/render";
+} from "@flare-engine/render";
 ```
 
 ---
@@ -98,7 +98,7 @@ camera.update(dt); // must be called each frame to advance shake
 Modifiable visual effects applied per sprite.
 
 ```ts
-import { tint, flash, grayscale, outline, updateEffect, flashIntensity } from "@flare/render";
+import { tint, flash, grayscale, outline, updateEffect, flashIntensity } from "@flare-engine/render";
 
 // Create effects
 const myTint      = tint({ r: 255, g: 0, b: 0, a: 255 });  // red tint
@@ -121,7 +121,7 @@ batch.draw({ ..., effects: [myTint, myFlash] });
 Render bitmap font text via SpriteBatch.
 
 ```ts
-import { parseBMFontJSON, measureText, drawText } from "@flare/render";
+import { parseBMFontJSON, measureText, drawText } from "@flare-engine/render";
 
 const font = parseBMFontJSON(bmFontAtlasJson);
 
@@ -144,7 +144,7 @@ drawText(batch, font, "Score: 999", x, y, {
 ECS integration — reads `Position`+`Sprite` components and calls `SpriteBatch.draw`.
 
 ```ts
-import { createRenderSystem } from "@flare/render";
+import { createRenderSystem } from "@flare-engine/render";
 
 const renderSystem = createRenderSystem(batch, camera);
 

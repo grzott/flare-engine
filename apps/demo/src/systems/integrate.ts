@@ -1,5 +1,5 @@
-import type { Query, World } from '@flare/engine';
-import { Position, Velocity } from '@flare/engine';
+import type { Query, World } from '@flare-engine/engine';
+import { Position, Velocity } from '@flare-engine/engine';
 
 export function integrate(world: World, dt: number, query: Query): void {
   for (const id of query) {

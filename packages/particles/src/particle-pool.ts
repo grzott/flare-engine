@@ -1,5 +1,5 @@
-import { Pool } from '@flare/core';
-import type { Color } from '@flare/math';
+import { Pool } from '@flare-engine/core';
+import type { Color } from '@flare-engine/math';
 
 /** A single particle. Managed by ParticlePool — not user-facing. */
 export interface Particle {

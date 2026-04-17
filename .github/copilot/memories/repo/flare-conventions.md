@@ -15,7 +15,7 @@
 ## Test Script in Scaffolds
 
 - All 16 packages have `"test": "bun test"` — fails with exit code 1 when no test files exist
-- Use `bunx turbo test --filter=@flare/math --filter=@flare/events` to test only implemented packages
+- Use `bunx turbo test --filter=@flare-engine/math --filter=@flare-engine/events` to test only implemented packages
 
 ## Size Budgets
 

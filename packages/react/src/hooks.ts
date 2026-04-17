@@ -1,4 +1,4 @@
-import type { Query } from '@flare/ecs';
+import type { Query } from '@flare-engine/ecs';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { GameContext, type GameContextValue } from './game-context.js';
 

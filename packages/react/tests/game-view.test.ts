@@ -92,7 +92,7 @@ class MockLoop {
   _started = false;
 }
 
-mock.module('@flare/core', () => ({
+mock.module('@flare-engine/core', () => ({
   GameLoop: class extends MockLoop {
     constructor() {
       super();
@@ -101,7 +101,7 @@ mock.module('@flare/core', () => ({
   },
 }));
 
-mock.module('@flare/ecs', () => ({
+mock.module('@flare-engine/ecs', () => ({
   World: class {
     query(..._defs: unknown[]): unknown {
       return { [Symbol.iterator]: () => [][Symbol.iterator]() };
@@ -168,7 +168,7 @@ class MockBatch {
   }
 }
 
-mock.module('@flare/render', () => ({
+mock.module('@flare-engine/render', () => ({
   Camera2D: class extends MockCamera2D {
     constructor() {
       super();
@@ -195,7 +195,7 @@ mock.module('@flare/render', () => ({
   createRenderSystem: () => () => {},
 }));
 
-mock.module('@flare/audio', () => ({
+mock.module('@flare-engine/audio', () => ({
   AudioManager: class {},
 }));
 
@@ -208,7 +208,7 @@ class MockInput {
   }
 }
 
-mock.module('@flare/input', () => ({
+mock.module('@flare-engine/input', () => ({
   InputManager: class extends MockInput {
     constructor() {
       super();
@@ -224,11 +224,11 @@ mock.module('@flare/input', () => ({
   resetButtonFrame: (s: unknown) => s,
 }));
 
-mock.module('@flare/assets', () => ({
+mock.module('@flare-engine/assets', () => ({
   AssetManager: class {},
 }));
 
-mock.module('@flare/scene', () => ({
+mock.module('@flare-engine/scene', () => ({
   SceneManager: class {},
 }));
 

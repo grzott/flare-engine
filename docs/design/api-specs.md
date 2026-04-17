@@ -6,7 +6,7 @@
 
 ## Layer 0: Foundation
 
-### `@flare/math` (< 5KB gzip)
+### `@flare-engine/math` (< 5KB gzip)
 
 | API                                                           | Description                                                                                                                                          |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@
 - `Rect` and `Circle` are type + static namespace objects, not classes.
 - Float32Array for Mat3 (compatible with Skia matrix format).
 
-### `@flare/events` (< 1KB gzip)
+### `@flare-engine/events` (< 1KB gzip)
 
 | API                      | Description                                                                             |
 | ------------------------ | --------------------------------------------------------------------------------------- |
@@ -38,7 +38,7 @@
 
 ## Layer 1: Core Runtime
 
-### `@flare/core` (< 3KB gzip)
+### `@flare-engine/core` (< 3KB gzip)
 
 | API                | Description                                                                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -49,7 +49,7 @@
 | `CoroutineManager` | Generator-based. `yield number` = wait seconds (scaled time), `yield undefined` = wait 1 frame, `yield Promise` = wait async.                        |
 | `Pool<T>`          | `acquire()`, `release(obj)`, `prewarm(count)`. Generic object pool.                                                                                  |
 
-### `@flare/ecs` (< 8KB gzip)
+### `@flare-engine/ecs` (< 8KB gzip)
 
 | API                                   | Description                                                                                                                              |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -68,7 +68,7 @@
 
 ## Layer 2: System Modules
 
-### `@flare/render` (< 10KB gzip)
+### `@flare-engine/render` (< 10KB gzip)
 
 | API             | Description                                                                                                                                                 |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -83,19 +83,19 @@
 
 **Rendering modes:** Retained (Atlas) for game entities, Immediate (Picture) for particles/effects. Compose in the same Canvas.
 
-### `@flare/input` (< 6KB gzip)
+### `@flare-engine/input` (< 6KB gzip)
 
 | API               | Description                                                                       |
 | ----------------- | --------------------------------------------------------------------------------- |
 | `InputManager`    | `pointer` (primary touch), `touches[]`, `update()` per frame.                     |
 | `Pointer`         | `position: Vec2`, `isDown`, `justPressed`, `justReleased`, `delta: Vec2`          |
 | `GestureDetector` | Signals: `onTap`, `onSwipe`, `onPinch`, `onLongPress`.                            |
-| `VirtualJoystick` | Data functions only: `createJoystickState`, `updateJoystick`, `releaseJoystick`. `deadZone`, `maxRadius`, `direction: Vec2`, `magnitude`. RN component lives in `@flare/react`. |
-| `VirtualButton`   | Data functions only: `createButtonState`, `pressButton`, `releaseButton`. `isPressed`, `justPressed`, `justReleased`. RN component lives in `@flare/react`. |
+| `VirtualJoystick` | Data functions only: `createJoystickState`, `updateJoystick`, `releaseJoystick`. `deadZone`, `maxRadius`, `direction: Vec2`, `magnitude`. RN component lives in `@flare-engine/react`. |
+| `VirtualButton`   | Data functions only: `createButtonState`, `pressButton`, `releaseButton`. `isPressed`, `justPressed`, `justReleased`. RN component lives in `@flare-engine/react`. |
 
 Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` for world coords. Virtual controls render as RN Views overlaid on the Skia canvas.
 
-### `@flare/physics` (< 4KB AABB)
+### `@flare-engine/physics` (< 4KB AABB)
 
 **Tier 1 — Built-in AABB (implemented):**
 
@@ -112,7 +112,7 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 
 **Tier 2 — planck.js integration: deferred.** `PhysicsWorld`, `RigidBody`, `applyForce`, `applyImpulse` are not implemented. Revisit after Phase 8 benchmarks — only bring it in if AABB proves insufficient.
 
-### `@flare/audio` (< 4KB gzip)
+### `@flare-engine/audio` (< 4KB gzip)
 
 | API            | Description                                                                                |
 | -------------- | ------------------------------------------------------------------------------------------ |
@@ -123,24 +123,24 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 
 Auto-suspends on app background, resumes on foreground.
 
-### `@flare/assets` (< 6KB gzip)
+### `@flare-engine/assets` (< 6KB gzip)
 
 | API            | Description                                                                                  |
 | -------------- | -------------------------------------------------------------------------------------------- |
 | `AssetManager` | `load(manifest)` → Promise. `get(key)`. `progress` (0-1), `onProgress` signal.               |
-| `AssetLoader`  | Function type `(entry) => Promise<unknown>`. Injected by the host (e.g. `@flare/react`).     |
+| `AssetLoader`  | Function type `(entry) => Promise<unknown>`. Injected by the host (e.g. `@flare-engine/react`).     |
 | `Texture`      | Wraps Skia SkImage                                                                           |
 | `SpriteSheet`  | Parsed from TexturePacker JSON (hash + array) / Aseprite JSON                                |
 | `SpriteFrame`  | `{ name, x, y, w, h }` — one frame in an atlas.                                              |
-| `createProceduralAtlas(Skia, frames, opts?)` | Builds an `SkImage` + `SpriteSheet` from `{ name, w, h, color }[]`. Row-packs by `maxWidth`, honors `padding`. Narrow `SkiaAtlasModuleLike` is injected by the caller so `@flare/assets` stays runtime-agnostic. |
+| `createProceduralAtlas(Skia, frames, opts?)` | Builds an `SkImage` + `SpriteSheet` from `{ name, w, h, color }[]`. Row-packs by `maxWidth`, honors `padding`. Narrow `SkiaAtlasModuleLike` is injected by the caller so `@flare-engine/assets` stays runtime-agnostic. |
 
-Audio buffer types are defined in `@flare/audio` (`AudioBufferLike`), not here.
+Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not here.
 
 ---
 
 ## Layer 3: Feature Modules
 
-### `@flare/scene` (< 4KB gzip)
+### `@flare-engine/scene` (< 4KB gzip)
 
 | API             | Description                                                                                                                                   |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -148,7 +148,7 @@ Audio buffer types are defined in `@flare/audio` (`AudioBufferLike`), not here.
 | `Scene`         | Interface, not a class. Optional hooks: `onPreload`, `onInit`, `onEnter`, `onUpdate`, `onDraw`, `onExit`, `onDestroy`                         |
 | Transitions     | Factory functions: `noneTransition()`, `fadeTransition(duration?)`, `slideTransition(duration?, direction?)`. Each returns a `Transition` with a `kind: 'none' \| 'fade' \| 'slide'` discriminator so renderers apply the right visual effect (alpha vs. translate). |
 
-### `@flare/animation` (< 5KB gzip)
+### `@flare-engine/animation` (< 5KB gzip)
 
 | API                                    | Description                                                                                     |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -159,7 +159,7 @@ Audio buffer types are defined in `@flare/audio` (`AudioBufferLike`), not here.
 
 Animation APIs are functional (state object + free functions), not class-based — consistent with ECS/render style and tree-shakeable.
 
-### `@flare/particles` (< 4KB gzip)
+### `@flare-engine/particles` (< 4KB gzip)
 
 | API               | Description                                                                                                                                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -168,7 +168,7 @@ Animation APIs are functional (state object + free functions), not class-based �
 
 Uses immediate mode (PictureRecorder) at the draw layer — this package owns particle data and lifecycle, not rendering. Target: 200-500 particles at 60fps.
 
-### `@flare/tilemap` (< 8KB gzip)
+### `@flare-engine/tilemap` (< 8KB gzip)
 
 | API               | Description                                                                                                 |
 | ----------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -177,7 +177,7 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 | `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles, then calls `flush(this.batch)`. |
 | `extractColliders(data)` | → `TileCollider[]`. Extracts solid tiles → collision shapes for physics.                             |
 
-### `@flare/debug` (< 3KB gzip, tree-shaken in prod)
+### `@flare-engine/debug` (< 3KB gzip, tree-shaken in prod)
 
 - Collision bounds, entity origins, velocity vectors overlay
 - FPS, entity count, draw calls, atlas usage stats
@@ -189,7 +189,7 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 
 ## Layer 4: Integration
 
-### `@flare/react` (< 10KB gzip)
+### `@flare-engine/react` (< 10KB gzip)
 
 | API                     | Description                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -201,8 +201,8 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 | `useEntity(query)`      | Subscribe to ECS query changes (returns a snapshot array; React re-renders on add/remove)                          |
 | `useGameLoop(callback)` | Register a per-frame function on `loop.onUpdate`                                                                  |
 
-### `@flare/engine` (< 2KB gzip)
+### `@flare-engine/engine` (< 2KB gzip)
 
-`createGame(config) → GameInstance` — pure factory. Constructs `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`, `AudioManager`, `AssetManager`, `SceneManager`, `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare/react`.
+`createGame(config) → GameInstance` — pure factory. Constructs `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`, `AudioManager`, `AssetManager`, `SceneManager`, `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare-engine/react`.
 
-`src/index.ts` also re-exports all 14 lower `@flare/*` packages as a convenience umbrella. This is the one place tree-shaking is deliberately sacrificed for DX — every other package follows the named-export, no-barrel rule.
+`src/index.ts` also re-exports all 14 lower `@flare-engine/*` packages as a convenience umbrella. This is the one place tree-shaking is deliberately sacrificed for DX — every other package follows the named-export, no-barrel rule.

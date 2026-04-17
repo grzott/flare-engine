@@ -1,5 +1,5 @@
 {
-  "name": "@flare/benchmarks",
+  "name": "@flare-engine/benchmarks",
   "version": "0.0.0",
   "private": true,
   "description": "Off-device microbenchmarks for Flare engine hot paths",
@@ -16,11 +16,11 @@
     "./results/device.json": "./results/device.json"
   },
   "dependencies": {
-    "@flare/ecs": "workspace:*",
-    "@flare/math": "workspace:*",
-    "@flare/particles": "workspace:*",
-    "@flare/physics": "workspace:*",
-    "@flare/render": "workspace:*"
+    "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/math": "workspace:*",
+    "@flare-engine/particles": "workspace:*",
+    "@flare-engine/physics": "workspace:*",
+    "@flare-engine/render": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.6.0"

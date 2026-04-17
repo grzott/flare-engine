@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { Clock } from '@flare/core';
+import { Clock } from '@flare-engine/core';
 import { TimeControl } from '../src/time-control.js';
 
 describe('TimeControl', () => {

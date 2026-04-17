@@ -1,8 +1,8 @@
-import type { SkImageLike } from '@flare/assets';
-import type { SpriteFrame } from '@flare/assets';
-import type { World } from '@flare/ecs';
-import type { Query } from '@flare/ecs';
-import { type ComponentDef, defineComponent } from '@flare/ecs';
+import type { SkImageLike } from '@flare-engine/assets';
+import type { SpriteFrame } from '@flare-engine/assets';
+import type { World } from '@flare-engine/ecs';
+import type { Query } from '@flare-engine/ecs';
+import { type ComponentDef, defineComponent } from '@flare-engine/ecs';
 import { sortByDrawOrder } from './draw-order.js';
 import type { SpriteBatch } from './sprite-batch.js';
 import type { AnySpriteEffect } from './sprite-effects.js';

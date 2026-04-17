@@ -1,4 +1,4 @@
-import type { Clock } from '@flare/core';
+import type { Clock } from '@flare-engine/core';
 
 /**
  * TimeControl — pause, step-frame, and slow-motion via Clock.timescale.

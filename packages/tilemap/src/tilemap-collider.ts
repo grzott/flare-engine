@@ -1,5 +1,5 @@
-import { AABB } from '@flare/physics';
-import type { AABBShape } from '@flare/physics';
+import { AABB } from '@flare-engine/physics';
+import type { AABBShape } from '@flare-engine/physics';
 import type { TileLayer, TilemapData, TilesetRef } from './tilemap-data.js';
 import { getTilesetForGid } from './tilemap-data.js';
 

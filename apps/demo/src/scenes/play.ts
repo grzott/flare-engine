@@ -1,5 +1,5 @@
-import type { GameContextValue, Query, SFXPool, Scene } from '@flare/engine';
-import { CollisionWorld, Position } from '@flare/engine';
+import type { GameContextValue, Query, SFXPool, Scene } from '@flare-engine/engine';
+import { CollisionWorld, Position } from '@flare-engine/engine';
 import type { BeepKey } from '../audio';
 import { Boss, type BossPhase, Bullet, Enemy, Hp, Ship } from '../components';
 import { Layer } from '../layers';

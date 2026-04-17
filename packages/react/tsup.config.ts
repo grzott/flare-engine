@@ -6,8 +6,8 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   external: [
-    '@flare/render',
-    '@flare/input',
+    '@flare-engine/render',
+    '@flare-engine/input',
     'react',
     'react-native',
     '@shopify/react-native-skia',

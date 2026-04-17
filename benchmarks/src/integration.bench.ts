@@ -5,11 +5,11 @@ import {
   World,
   _resetComponentIds,
   defineSystem,
-} from '@flare/ecs';
-import { SeededRNG } from '@flare/math';
-import { ParticleEmitter } from '@flare/particles';
-import { AABB, CollisionWorld } from '@flare/physics';
-import { type Drawable, SpriteBatch, sortByDrawOrder } from '@flare/render';
+} from '@flare-engine/ecs';
+import { SeededRNG } from '@flare-engine/math';
+import { ParticleEmitter } from '@flare-engine/particles';
+import { AABB, CollisionWorld } from '@flare-engine/physics';
+import { type Drawable, SpriteBatch, sortByDrawOrder } from '@flare-engine/render';
 import { type BenchStats, runBench } from './harness.js';
 
 interface SkImageStub {

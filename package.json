@@ -1,6 +1,19 @@
 {
   "name": "flare-engine",
+  "version": "0.0.0",
   "private": true,
+  "description": "Modular 2D game engine for React Native, built on Skia",
+  "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git"
+  },
+  "keywords": ["flare-engine", "game-engine", "2d", "react-native", "skia", "monorepo"],
   "workspaces": ["packages/*", "benchmarks", "apps/*"],
   "scripts": {
     "build": "turbo build",
@@ -10,6 +23,9 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "bench": "bun run --cwd benchmarks bench",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo build --filter=./packages/* && changeset publish",
     "prepare": "husky"
   },
   "devDependencies": {

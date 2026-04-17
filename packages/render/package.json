@@ -1,9 +1,20 @@
 {
-  "name": "@flare/render",
+  "name": "@flare-engine/render",
   "version": "0.0.0",
   "private": true,
   "description": "SpriteBatch (Skia Atlas), Camera2D, SpriteEffects",
+  "keywords": ["flare-engine", "rendering", "skia", "sprite-batch", "camera"],
   "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/render"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -14,7 +25,7 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
@@ -22,14 +33,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare/assets": "workspace:*",
-    "@flare/core": "workspace:*",
-    "@flare/ecs": "workspace:*",
-    "@flare/events": "workspace:*",
-    "@flare/math": "workspace:*"
+    "@flare-engine/assets": "workspace:*",
+    "@flare-engine/core": "workspace:*",
+    "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/events": "workspace:*",
+    "@flare-engine/math": "workspace:*"
   },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false
 }

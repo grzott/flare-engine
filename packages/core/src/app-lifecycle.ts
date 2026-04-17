@@ -1,4 +1,4 @@
-import { Signal } from '@flare/events';
+import { Signal } from '@flare-engine/events';
 import type { GameLoop } from './game-loop.js';
 
 /**

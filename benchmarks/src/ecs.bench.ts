@@ -1,5 +1,5 @@
-import { Position, Velocity, World, _resetComponentIds, defineSystem } from '@flare/ecs';
-import { SeededRNG } from '@flare/math';
+import { Position, Velocity, World, _resetComponentIds, defineSystem } from '@flare-engine/ecs';
+import { SeededRNG } from '@flare-engine/math';
 import { type BenchStats, runBench } from './harness.js';
 
 function buildWorld(entities: number): World {

@@ -1,5 +1,5 @@
-import type { Query, World } from '@flare/ecs';
-import type { CollisionWorld } from '@flare/physics';
+import type { Query, World } from '@flare-engine/ecs';
+import type { CollisionWorld } from '@flare-engine/physics';
 import { Boss, Bullet, Enemy, Hp } from '../components';
 import { Layer } from '../layers';
 import { destroyEntity } from './entity-ops';

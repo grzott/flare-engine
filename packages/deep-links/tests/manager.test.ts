@@ -47,7 +47,9 @@ describe('createWebSource', () => {
     const win = {
       location: { href: '/init' },
       addEventListener: (t: string, l: () => void) => {
-        (listeners[t] ??= []).push(l);
+        const bucket = listeners[t] ?? [];
+        bucket.push(l);
+        listeners[t] = bucket;
       },
       removeEventListener: (t: string, l: () => void) => {
         listeners[t] = (listeners[t] ?? []).filter((x) => x !== l);

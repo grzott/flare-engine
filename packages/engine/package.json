@@ -1,0 +1,49 @@
+{
+  "name": "@flare/engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Flare game engine — convenience entry point, re-exports all packages",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flare/math": "workspace:*",
+    "@flare/events": "workspace:*",
+    "@flare/core": "workspace:*",
+    "@flare/ecs": "workspace:*",
+    "@flare/render": "workspace:*",
+    "@flare/input": "workspace:*",
+    "@flare/physics": "workspace:*",
+    "@flare/audio": "workspace:*",
+    "@flare/assets": "workspace:*",
+    "@flare/scene": "workspace:*",
+    "@flare/animation": "workspace:*",
+    "@flare/particles": "workspace:*",
+    "@flare/tilemap": "workspace:*",
+    "@flare/debug": "workspace:*",
+    "@flare/react": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.73.0",
+    "@shopify/react-native-skia": ">=1.0.0",
+    "react-native-gesture-handler": ">=2.0.0",
+    "react-native-audio-api": ">=0.3.0"
+  },
+  "sideEffects": false
+}

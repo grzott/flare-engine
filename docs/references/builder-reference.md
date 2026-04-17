@@ -1,0 +1,94 @@
+# Builder Reference
+
+Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.github/agents/builder.agent.md) for core instructions.
+
+## Current State
+
+| Package            | Layer | Status                                     |
+| ------------------ | ----- | ------------------------------------------ |
+| Monorepo scaffold  | —     | **DONE**                                   |
+| `@flare/math`      | 0     | **DONE** — 10 modules, 354 tests, 6KB gzip |
+| `@flare/events`    | 0     | **DONE** — 2 modules, 27 tests, 621B gzip  |
+| `@flare/core`      | 1     | **DONE** — 6 modules, 70 tests, 3.3KB gzip |
+| `@flare/ecs`       | 1     | **DONE** — 7 modules, 52 tests, 2.6KB gzip |
+| `@flare/render`    | 2     | **DONE** — 7 modules, 68 tests, 4.4KB gzip |
+| `@flare/input`     | 2     | **DONE** — 5 modules, 42 tests, 2.7KB gzip |
+| `@flare/physics`   | 2     | **DONE** — 5 modules, 48 tests, 2.8KB gzip |
+| `@flare/audio`     | 2     | **DONE** — 4 modules, 30 tests, 1.8KB gzip |
+| `@flare/assets`    | 2     | **DONE** — 3 modules, 22 tests, 1.8KB gzip |
+| `@flare/scene`     | 3     | **DONE** — 3 modules, 31 tests             |
+| `@flare/animation` | 3     | **DONE** — 4 modules, 44 tests, 1.3KB gzip |
+| `@flare/particles` | 3     | **DONE** — 2 modules, 25 tests             |
+| `@flare/tilemap`   | 3     | **DONE** — 5 modules, 37 tests             |
+| `@flare/debug`     | 3     | **DONE** — 3 modules, 25 tests             |
+| `@flare/react`     | 4     | **DONE** — 5 modules, 16 tests             |
+| `@flare/engine`    | 4     | **DONE** — 1 module, 6 tests + 10 integration |
+| Phase 7 — Hardening    | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
+
+| Phase 8 — Benchmarking | —     | ⬜ not started                             |
+| Phase 9 — Demo Game    | —     | ⬜ not started                             |
+| Phase 10 — C++ Accel   | —     | ⬜ data-gated (after Phase 8)              |
+| Phase 11 — Web Presence| —     | ⬜ not started                             |
+| Phase 12 — Launch      | —     | ⬜ not started                             |
+
+Each scaffolded package has: `package.json` (workspace deps), `tsconfig.json`, `tsup.config.ts`, `src/index.ts` (empty export).
+
+## Verification Protocol
+
+MANDATORY — never declare work complete without running verification.
+
+**Per-module loop** (repeat for each source file):
+
+1. Implement the module in `packages/<name>/src/<module>.ts`
+2. Export from `packages/<name>/src/index.ts`
+3. Write tests in `packages/<name>/tests/<module>.test.ts`
+4. `cd packages/<name> && bun test` → all pass
+5. Fix failures → re-test until green
+
+**Phase gate** (after all modules in a phase):
+
+1. `bun run typecheck` → zero errors
+2. `bun run lint` → zero errors
+3. `bun run build` → 16/16 packages build
+4. `bun run test` → all tests pass
+5. Verify size budgets (check `dist/` output)
+6. Update the "Current State" table above
+
+## Task Completion Guidelines
+
+**New module:**
+
+1. Implement source following API spec exactly
+2. Write tests — cover edge cases: NaN, Infinity, zero, negative, very large, degenerate inputs
+3. Export from barrel `index.ts`
+4. Verify: tests pass, build succeeds, size within budget
+
+**Bug fix:**
+
+1. Write a failing test that reproduces the bug
+2. Fix the bug
+3. Verify the test passes, no regressions
+
+**Refactor:**
+
+1. Ensure tests pass before refactoring
+2. Refactor
+3. Ensure tests still pass — identical behavior
+
+## Do Not
+
+- Do not add features beyond what the API spec defines
+- Do not create abstractions for single-use code
+- Do not add error handling for scenarios that cannot occur
+- Do not "improve" code that is not part of the current task
+- Do not use `any`, `as any`, or `@ts-ignore`
+- Do not create classes where plain objects + static functions suffice
+- Do not allocate in hot paths (game loop, render, physics tick)
+- Do not import from a higher layer
+- Do not add default exports
+- Do not overstate what works in commit messages — be honest and precise
+
+## Learnings
+
+<!-- Add lessons here when mistakes or non-obvious patterns are discovered. -->
+<!-- Format: - [topic]: [lesson] -->

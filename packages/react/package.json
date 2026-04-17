@@ -1,0 +1,43 @@
+{
+  "name": "@flare/react",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GameView, hooks, VirtualJoystick, VirtualButton",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0"
+  },
+  "dependencies": {
+    "@flare/assets": "workspace:*",
+    "@flare/audio": "workspace:*",
+    "@flare/core": "workspace:*",
+    "@flare/ecs": "workspace:*",
+    "@flare/input": "workspace:*",
+    "@flare/render": "workspace:*",
+    "@flare/scene": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.73.0",
+    "@shopify/react-native-skia": ">=1.0.0",
+    "react-native-gesture-handler": ">=2.0.0"
+  },
+  "sideEffects": false
+}

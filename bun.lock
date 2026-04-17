@@ -275,6 +275,17 @@
         "@flare-engine/render": "workspace:*",
       },
     },
+    "packages/ui": {
+      "name": "@flare-engine/ui",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/react": "^18.0.0",
+      },
+      "peerDependencies": {
+        "react": ">=18.0.0",
+        "react-native": ">=0.73.0",
+      },
+    },
   },
   "trustedDependencies": [
     "@shopify/react-native-skia",
@@ -717,6 +728,8 @@
     "@flare-engine/testing": ["@flare-engine/testing@workspace:packages/testing"],
 
     "@flare-engine/tilemap": ["@flare-engine/tilemap@workspace:packages/tilemap"],
+
+    "@flare-engine/ui": ["@flare-engine/ui@workspace:packages/ui"],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

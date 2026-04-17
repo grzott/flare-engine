@@ -24,6 +24,8 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | `@flare-engine/react`     | 4     | **DONE** — 5 modules, 16 tests             |
 | `@flare-engine/engine`    | 4     | **DONE** — 1 module, 6 tests + 10 integration |
 | `@flare-engine/storage`   | 2.5   | **DONE** — 7 modules, 44 tests, ~3KB gzip  |
+| `@flare-engine/errors`    | 2.5   | **DONE** — 3 modules, 14 tests, 1.7KB raw  |
+| `@flare-engine/testing`   | 2.5   | **DONE** — 4 modules, 23 tests, 3.4KB raw  |
 | Phase 7 — Hardening    | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
 
 | Phase 8 — Benchmarking | —     | ⬜ not started                             |

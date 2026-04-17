@@ -159,6 +159,16 @@
         "react-native-gesture-handler": ">=2.0.0",
       },
     },
+    "packages/errors": {
+      "name": "@flare-engine/errors",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/react": "^18.0.0",
+      },
+      "peerDependencies": {
+        "react": ">=18.0.0",
+      },
+    },
     "packages/events": {
       "name": "@flare-engine/events",
       "version": "0.0.0",
@@ -245,6 +255,15 @@
     "packages/storage": {
       "name": "@flare-engine/storage",
       "version": "0.0.0",
+    },
+    "packages/testing": {
+      "name": "@flare-engine/testing",
+      "version": "0.0.0",
+      "dependencies": {
+        "@flare-engine/core": "workspace:*",
+        "@flare-engine/ecs": "workspace:*",
+        "@flare-engine/input": "workspace:*",
+      },
     },
     "packages/tilemap": {
       "name": "@flare-engine/tilemap",
@@ -675,6 +694,8 @@
 
     "@flare-engine/engine": ["@flare-engine/engine@workspace:packages/engine"],
 
+    "@flare-engine/errors": ["@flare-engine/errors@workspace:packages/errors"],
+
     "@flare-engine/events": ["@flare-engine/events@workspace:packages/events"],
 
     "@flare-engine/input": ["@flare-engine/input@workspace:packages/input"],
@@ -692,6 +713,8 @@
     "@flare-engine/scene": ["@flare-engine/scene@workspace:packages/scene"],
 
     "@flare-engine/storage": ["@flare-engine/storage@workspace:packages/storage"],
+
+    "@flare-engine/testing": ["@flare-engine/testing@workspace:packages/testing"],
 
     "@flare-engine/tilemap": ["@flare-engine/tilemap@workspace:packages/tilemap"],
 

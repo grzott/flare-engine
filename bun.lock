@@ -137,6 +137,13 @@
         "@flare-engine/events": "workspace:*",
       },
     },
+    "packages/dialogue": {
+      "name": "@flare-engine/dialogue",
+      "version": "0.0.0",
+      "dependencies": {
+        "@flare-engine/events": "workspace:*",
+      },
+    },
     "packages/ecs": {
       "name": "@flare-engine/ecs",
       "version": "0.0.0",
@@ -215,6 +222,13 @@
       "version": "0.0.0",
       "dependencies": {
         "@flare-engine/core": "workspace:*",
+        "@flare-engine/math": "workspace:*",
+      },
+    },
+    "packages/pathfinding": {
+      "name": "@flare-engine/pathfinding",
+      "version": "0.0.0",
+      "dependencies": {
         "@flare-engine/math": "workspace:*",
       },
     },
@@ -737,6 +751,8 @@
 
     "@flare-engine/deep-links": ["@flare-engine/deep-links@workspace:packages/deep-links"],
 
+    "@flare-engine/dialogue": ["@flare-engine/dialogue@workspace:packages/dialogue"],
+
     "@flare-engine/ecs": ["@flare-engine/ecs@workspace:packages/ecs"],
 
     "@flare-engine/engine": ["@flare-engine/engine@workspace:packages/engine"],
@@ -752,6 +768,8 @@
     "@flare-engine/math": ["@flare-engine/math@workspace:packages/math"],
 
     "@flare-engine/particles": ["@flare-engine/particles@workspace:packages/particles"],
+
+    "@flare-engine/pathfinding": ["@flare-engine/pathfinding@workspace:packages/pathfinding"],
 
     "@flare-engine/physics": ["@flare-engine/physics@workspace:packages/physics"],
 

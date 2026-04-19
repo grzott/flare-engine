@@ -4,41 +4,43 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 
 ## Current State
 
-| Package            | Layer | Status                                     |
-| ------------------ | ----- | ------------------------------------------ |
-| Monorepo scaffold  | —     | **DONE**                                   |
-| `@flare-engine/math`      | 0     | **DONE** — 10 modules, 354 tests, 6KB gzip |
-| `@flare-engine/events`    | 0     | **DONE** — 2 modules, 27 tests, 621B gzip  |
-| `@flare-engine/core`      | 1     | **DONE** — 6 modules, 70 tests, 3.3KB gzip |
-| `@flare-engine/ecs`       | 1     | **DONE** — 7 modules, 52 tests, 2.6KB gzip |
-| `@flare-engine/render`    | 2     | **DONE** — 7 modules, 68 tests, 4.4KB gzip |
-| `@flare-engine/input`     | 2     | **DONE** — 8 modules, 59 tests, 15KB raw (gamepad+remap in 11.4) |
-| `@flare-engine/physics`   | 2     | **DONE** — 5 modules, 48 tests, 2.8KB gzip |
-| `@flare-engine/audio`     | 2     | **DONE** — 4 modules, 30 tests, 1.8KB gzip |
-| `@flare-engine/assets`    | 2     | **DONE** — 3 modules, 22 tests, 1.8KB gzip |
-| `@flare-engine/scene`     | 3     | **DONE** — 3 modules, 31 tests             |
-| `@flare-engine/animation` | 3     | **DONE** — 4 modules, 44 tests, 1.3KB gzip |
-| `@flare-engine/particles` | 3     | **DONE** — 2 modules, 25 tests             |
-| `@flare-engine/tilemap`   | 3     | **DONE** — 5 modules, 37 tests             |
-| `@flare-engine/debug`     | 3     | **DONE** — 3 modules, 25 tests             |
-| `@flare-engine/react`     | 4     | **DONE** — 5 modules, 16 tests             |
-| `@flare-engine/engine`    | 4     | **DONE** — 1 module, 6 tests + 10 integration |
-| `@flare-engine/storage`   | 2.5   | **DONE** — 7 modules, 44 tests, ~3KB gzip  |
-| `@flare-engine/errors`    | 2.5   | **DONE** — 3 modules, 14 tests, 1.7KB raw  |
-| `@flare-engine/testing`   | 2.5   | **DONE** — 4 modules, 23 tests, 3.4KB raw  |
-| `@flare-engine/ui`        | 3.5   | **DONE** — 10 modules, 37 tests, 15KB raw  |
-| `@flare-engine/postfx`    | 3.5   | **DONE** — 4 modules, 19 tests, 7KB raw    |
-| `@flare-engine/localization` | 2.5 | **DONE** — 5 modules, 30 tests, 6.5KB raw  |
-| `@flare-engine/deep-links` | 2.5  | **DONE** — 5 modules, 20 tests, 5.2KB raw  |
-| `@flare-engine/share`     | 2.5   | **DONE** — 2 modules, 17 tests, 4.9KB raw  |
-| `@flare-engine/a11y`      | 2.5   | **DONE** — 2 modules, 11 tests, 1.5KB raw  |
-| Phase 7 — Hardening    | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
+| Package                      | Layer | Status                                                                     |
+| ---------------------------- | ----- | -------------------------------------------------------------------------- |
+| Monorepo scaffold            | —     | **DONE**                                                                   |
+| `@flare-engine/math`         | 0     | **DONE** — 10 modules, 354 tests, 6KB gzip                                 |
+| `@flare-engine/events`       | 0     | **DONE** — 2 modules, 27 tests, 621B gzip                                  |
+| `@flare-engine/core`         | 1     | **DONE** — 6 modules, 70 tests, 3.3KB gzip                                 |
+| `@flare-engine/ecs`          | 1     | **DONE** — 7 modules, 52 tests, 2.6KB gzip                                 |
+| `@flare-engine/render`       | 2     | **DONE** — 7 modules, 68 tests, 4.4KB gzip                                 |
+| `@flare-engine/input`        | 2     | **DONE** — 8 modules, 59 tests, 15KB raw (gamepad+remap in 11.4)           |
+| `@flare-engine/physics`      | 2     | **DONE** — 5 modules, 48 tests, 2.8KB gzip                                 |
+| `@flare-engine/audio`        | 2     | **DONE** — 4 modules, 30 tests, 1.8KB gzip                                 |
+| `@flare-engine/assets`       | 2     | **DONE** — 3 modules, 22 tests, 1.8KB gzip                                 |
+| `@flare-engine/scene`        | 3     | **DONE** — 3 modules, 31 tests                                             |
+| `@flare-engine/animation`    | 3     | **DONE** — 4 modules, 44 tests, 1.3KB gzip                                 |
+| `@flare-engine/particles`    | 3     | **DONE** — 2 modules, 25 tests                                             |
+| `@flare-engine/tilemap`      | 3     | **DONE** — 5 modules, 37 tests                                             |
+| `@flare-engine/debug`        | 3     | **DONE** — 3 modules, 25 tests                                             |
+| `@flare-engine/react`        | 4     | **DONE** — 5 modules, 16 tests                                             |
+| `@flare-engine/engine`       | 4     | **DONE** — 1 module, 6 tests + 10 integration                              |
+| `@flare-engine/storage`      | 2.5   | **DONE** — 7 modules, 44 tests, ~3KB gzip                                  |
+| `@flare-engine/errors`       | 2.5   | **DONE** — 3 modules, 14 tests, 1.7KB raw                                  |
+| `@flare-engine/testing`      | 2.5   | **DONE** — 4 modules, 23 tests, 3.4KB raw                                  |
+| `@flare-engine/ui`           | 3.5   | **DONE** — 10 modules, 37 tests, 15KB raw                                  |
+| `@flare-engine/postfx`       | 3.5   | **DONE** — 4 modules, 19 tests, 7KB raw                                    |
+| `@flare-engine/localization` | 2.5   | **DONE** — 5 modules, 30 tests, 6.5KB raw                                  |
+| `@flare-engine/deep-links`   | 2.5   | **DONE** — 5 modules, 20 tests, 5.2KB raw                                  |
+| `@flare-engine/share`        | 2.5   | **DONE** — 2 modules, 17 tests, 4.9KB raw                                  |
+| `@flare-engine/a11y`         | 2.5   | **DONE** — 2 modules, 11 tests, 1.5KB raw                                  |
+| Phase 7 — Hardening          | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
+| `@flare-engine/pathfinding`  | 3     | **DONE** — 4 modules, 54 tests, 20KB raw                                   |
+| `@flare-engine/dialogue`     | 3     | **DONE** — 3 modules, 41 tests, 5.5KB raw                                  |
 
-| Phase 8 — Benchmarking | —     | ⬜ not started                             |
-| Phase 9 — Demo Game    | —     | ⬜ not started                             |
-| Phase 10 — C++ Accel   | —     | ⬜ data-gated (after Phase 8)              |
-| Phase 11 — Web Presence| —     | ⬜ not started                             |
-| Phase 12 — Launch      | —     | ⬜ not started                             |
+| Phase 8 — Benchmarking | — | ⬜ not started |
+| Phase 9 — Demo Game | — | ⬜ not started |
+| Phase 10 — C++ Accel | — | ⬜ data-gated (after Phase 8) |
+| Phase 11 — Web Presence| — | ⬜ not started |
+| Phase 12 — Launch | — | ⬜ not started |
 
 Each scaffolded package has: `package.json` (workspace deps), `tsconfig.json`, `tsup.config.ts`, `src/index.ts` (empty export).
 

@@ -1,7 +1,7 @@
 ---
 description: "AI environment architect — audits, designs, and builds the programmer <-> LLM development environment. Use when: create agents, write prompts, design instructions, build skills, audit AI setup, prompt engineering, optimize copilot customization, agent workflows, handoff chains"
 tools: [read, search, edit, web, agent, todo]
-model: "Claude Opus 4.6 (copilot)"
+model: "Claude Opus 4.7 (copilot)"
 agents: [Explore, builder]
 handoffs:
   - label: Start Building

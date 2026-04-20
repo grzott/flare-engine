@@ -13,6 +13,7 @@ import {
   VirtualButton,
   VirtualJoystick,
   createChannels,
+  fadeTransition,
 } from '@flare-engine/engine';
 import { Skia } from '@shopify/react-native-skia';
 import type React from 'react';
@@ -100,9 +101,13 @@ function onReady(ctx: GameContextValue): void {
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
   ctx.scenes.register('bench', createBenchScene({ ctx, atlas }));
+  ctx.scenes.setTransition(fadeTransition(0.3));
 
   const stats = new StatsTracker();
-  const fpsWidget = createFpsWidget({ showEntities: false, showDrawCalls: false });
+  const fpsWidget = createFpsWidget({
+    showEntities: false,
+    showDrawCalls: false,
+  });
   let fpsSampleFrames = 0;
 
   let lastScene: string | null = null;

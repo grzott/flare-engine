@@ -14,6 +14,8 @@ export interface GameState {
   gameOver: boolean;
   victory: boolean;
   currentScene: SceneName;
+  /** Gates Modal visibility during the arm-timer after scene enter. */
+  menuReady: boolean;
 }
 
 export const gameState: GameState = {
@@ -28,6 +30,7 @@ export const gameState: GameState = {
   gameOver: false,
   victory: false,
   currentScene: 'boot',
+  menuReady: false,
 };
 
 export const stateChanged = new Signal<void>();
@@ -42,6 +45,7 @@ export function resetGameState(): void {
   gameState.bossActive = false;
   gameState.gameOver = false;
   gameState.victory = false;
+  gameState.menuReady = false;
   stateChanged.emit();
 }
 
@@ -62,7 +66,10 @@ export interface ButtonState {
   justPressed: boolean;
 }
 
-export const bombButtonState: ButtonState = { isPressed: false, justPressed: false };
+export const bombButtonState: ButtonState = {
+  isPressed: false,
+  justPressed: false,
+};
 
 export function resetBombButtonFrame(): void {
   bombButtonState.justPressed = false;

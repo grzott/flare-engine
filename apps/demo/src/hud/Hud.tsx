@@ -1,16 +1,33 @@
+import {
+  Button,
+  FocusProvider,
+  HUDBar,
+  Label,
+  Modal,
+  ThemeProvider,
+  darkTheme,
+} from '@flare-engine/ui';
 import type React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { toggleShowFps } from './fps-state';
+import { menuActions } from './menu-actions';
 import { useFpsLine, useShowFps } from './use-fps-state';
 import { useGameState } from './use-game-state';
 
 export function Hud(): React.ReactElement {
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <FocusProvider>
+        <HudInner />
+      </FocusProvider>
+    </ThemeProvider>
+  );
+}
+
+function HudInner(): React.ReactElement {
   const s = useGameState();
   const fpsLine = useFpsLine();
   const showFps = useShowFps();
-  const hpFrac = s.playerHpMax > 0 ? s.playerHp / s.playerHpMax : 0;
-  const bossFrac = s.bossHpMax > 0 ? s.bossHp / s.bossHpMax : 0;
   const flashAlpha = s.bombFlashAlpha;
 
   return (
@@ -20,8 +37,12 @@ export function Hud(): React.ReactElement {
       ) : null}
 
       <View style={styles.topRow} pointerEvents="none">
-        <Text style={styles.score}>SCORE {s.score.toString().padStart(6, '0')}</Text>
-        <Text style={styles.bombs}>BOMB x{s.bombCharges}</Text>
+        <Label variant="lg" style={styles.score}>
+          {`SCORE ${s.score.toString().padStart(6, '0')}`}
+        </Label>
+        <Label variant="lg" tone="warning" style={styles.bombs}>
+          {`BOMB x${s.bombCharges}`}
+        </Label>
       </View>
 
       <Pressable
@@ -30,52 +51,59 @@ export function Hud(): React.ReactElement {
         style={styles.fpsHotspot}
         accessibilityLabel="Toggle FPS overlay"
       >
-        {showFps && fpsLine ? <Text style={styles.fpsText}>{fpsLine}</Text> : null}
+        {showFps && fpsLine ? (
+          <Label variant="xs" tone="success" mono>
+            {fpsLine}
+          </Label>
+        ) : null}
       </Pressable>
 
       {s.bossActive ? (
         <View style={styles.bossWrap} pointerEvents="none">
-          <Text style={styles.bossLabel}>BOSS</Text>
-          <View style={styles.bossTrack}>
-            <View style={[styles.bossFill, barStyle(bossFrac)]} />
-          </View>
+          <HUDBar label="BOSS" kind="hp" value={s.bossHp} max={s.bossHpMax} showNumbers={false} />
         </View>
       ) : null}
 
       <View style={styles.hpWrap} pointerEvents="none">
-        <View style={styles.hpTrack}>
-          <View style={[styles.hpFill, barStyle(hpFrac)]} />
-        </View>
-        <Text style={styles.hpLabel}>HP</Text>
+        <HUDBar label="HP" kind="hp" value={s.playerHp} max={s.playerHpMax} showNumbers={false} />
       </View>
 
-      {s.currentScene === 'menu' ? (
-        <View style={styles.center} pointerEvents="none">
-          <Text style={styles.title}>FLARE SHMUP</Text>
-          <Text style={styles.subtitle}>TAP TO START</Text>
+      <Modal visible={s.currentScene === 'menu' && s.menuReady}>
+        <Pressable onPress={menuActions.onTitleTap} style={styles.titleHit}>
+          <Label variant="xl" style={styles.title}>
+            FLARE SHMUP
+          </Label>
+        </Pressable>
+        <View style={styles.modalButtons}>
+          <Button label="START" variant="primary" onPress={menuActions.onStart} />
         </View>
-      ) : null}
+      </Modal>
 
-      {s.currentScene === 'game-over' ? (
-        <View style={styles.center} pointerEvents="none">
-          <Text style={styles.title}>GAME OVER</Text>
-          <Text style={styles.subtitle}>TAP TO CONTINUE</Text>
+      <Modal visible={s.currentScene === 'game-over' && s.menuReady}>
+        <Label variant="xl" style={styles.title}>
+          GAME OVER
+        </Label>
+        <Label variant="sm" tone="muted" style={styles.subtitle}>
+          {`SCORE ${s.score}`}
+        </Label>
+        <View style={styles.modalButtons}>
+          <Button label="CONTINUE" variant="primary" onPress={menuActions.onContinue} />
         </View>
-      ) : null}
+      </Modal>
 
-      {s.currentScene === 'victory' ? (
-        <View style={styles.center} pointerEvents="none">
-          <Text style={styles.title}>VICTORY</Text>
-          <Text style={styles.subtitle}>TAP TO CONTINUE</Text>
+      <Modal visible={s.currentScene === 'victory' && s.menuReady}>
+        <Label variant="xl" tone="success" style={styles.title}>
+          VICTORY
+        </Label>
+        <Label variant="sm" tone="muted" style={styles.subtitle}>
+          {`SCORE ${s.score}`}
+        </Label>
+        <View style={styles.modalButtons}>
+          <Button label="CONTINUE" variant="primary" onPress={menuActions.onContinue} />
         </View>
-      ) : null}
+      </Modal>
     </View>
   );
-}
-
-function barStyle(frac: number): ViewStyle {
-  const clamped = frac < 0 ? 0 : frac > 1 ? 1 : frac;
-  return { width: `${Math.round(clamped * 100)}%` as `${number}%` };
 }
 
 const styles = StyleSheet.create({
@@ -96,8 +124,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  score: { color: '#ffffff', fontSize: 16, fontWeight: '700', letterSpacing: 2 },
-  bombs: { color: '#ffcc66', fontSize: 16, fontWeight: '700', letterSpacing: 2 },
+  score: { letterSpacing: 2, fontWeight: '700' },
+  bombs: { letterSpacing: 2, fontWeight: '700' },
   fpsHotspot: {
     position: 'absolute',
     top: 52,
@@ -108,61 +136,20 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     alignItems: 'flex-end',
   },
-  fpsText: {
-    color: '#7fffd4',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1,
-    fontVariant: ['tabular-nums'],
-  },
   bossWrap: {
     position: 'absolute',
     top: 60,
     left: 16,
     right: 16,
-    alignItems: 'center',
   },
-  bossLabel: {
-    color: '#ff6677',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 3,
-    marginBottom: 4,
-  },
-  bossTrack: {
-    width: '100%',
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  bossFill: { height: '100%', backgroundColor: '#ff4466' },
   hpWrap: {
     position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
-  hpLabel: { color: '#ffffff', fontSize: 12, marginLeft: 8, fontWeight: '700' },
-  hpTrack: {
-    flex: 1,
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  hpFill: { height: '100%', backgroundColor: '#66ff99' },
-  center: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: { color: '#ffffff', fontSize: 36, fontWeight: '800', letterSpacing: 4 },
-  subtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 12, letterSpacing: 2 },
+  title: { letterSpacing: 4, fontWeight: '800', textAlign: 'center' },
+  subtitle: { letterSpacing: 2, marginTop: 8, textAlign: 'center' },
+  titleHit: { paddingVertical: 8 },
+  modalButtons: { marginTop: 20, alignItems: 'stretch' },
 });

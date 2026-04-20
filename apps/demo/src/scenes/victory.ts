@@ -1,30 +1,37 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
+import { clearMenuActions, setMenuActions } from '../hud/menu-actions';
 import { gameState, notifyStateChanged } from '../state';
 import { shellDefaults } from './scene-shell';
 
 export function createVictoryScene(ctx: GameContextValue): () => Scene {
   return () => {
-    let tapArmed = false;
     let armTimer = 0;
     return {
       name: 'victory',
       ...shellDefaults(),
       onEnter() {
-        tapArmed = false;
         armTimer = 0.5;
         gameState.currentScene = 'victory';
+        gameState.menuReady = false;
         notifyStateChanged();
+        setMenuActions({
+          onContinue: () => {
+            void ctx.scenes.go('menu');
+          },
+        });
       },
       onUpdate(dt: number) {
-        if (!tapArmed) {
+        if (armTimer > 0) {
           armTimer -= dt;
-          if (armTimer <= 0) tapArmed = true;
-          return;
+          if (armTimer <= 0) {
+            gameState.menuReady = true;
+            notifyStateChanged();
+          }
         }
-        if (ctx.input.pointer.justPressed) {
-          tapArmed = false;
-          void ctx.scenes.go('menu');
-        }
+      },
+      onExit() {
+        clearMenuActions();
+        gameState.menuReady = false;
       },
     };
   };

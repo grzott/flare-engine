@@ -434,3 +434,157 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 - No platform wiring; hosts bridge OS prefs (`AccessibilityInfo.isReduceMotionEnabled`, `prefers-reduced-motion`) by calling `update()` on startup.
 - Single hard dep: `@flare-engine/events` (`Signal`).
+
+---
+
+## Layer 5: Tooling (OSS-launch addition)
+
+Node-only developer tools. Not shipped to device; excluded from device bundle size budgets. Sizes below are raw install footprint (unpacked `npm pack`).
+
+---
+
+### `@flare-engine/cli` (< 15KB raw, Node-only)
+
+**Responsibility.** Pure Node dev tool exposing three commands that preprocess art/map assets and scaffold new apps. Also exports its command bodies as async functions so CI, tests, and integrations can call them programmatically without shelling out.
+
+| API | Description |
+| --- | --- |
+| `flare pack-atlas <input> [--out <dir>] [--padding N] [--max-size N] [--format png\|webp]` | Sprite folder → TexturePacker-compatible JSON + atlas PNG consumable by `@flare-engine/assets`. Default `--padding 2`, `--max-size 2048`, `--format png`. |
+| `flare tiled-to-flare <tmj> [--out <file>] [--embed-tilesets]` | Tiled `.tmj` → normalized runtime JSON consumed by `@flare-engine/tilemap`. Flattens object layers, resolves external tilesets, drops editor-only metadata. |
+| `flare new <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm]` | Thin alias that spawns `create-flare-app` with the same args. Present so `flare` is a single discoverable entrypoint. |
+| `packAtlas(opts: AtlasPackerOptions): Promise<AtlasResult>` | Programmatic form of `pack-atlas`. Returns `{ jsonPath, imagePath, frames, width, height }`. |
+| `convertTiled(opts: TiledConvertOptions): Promise<TiledResult>` | Programmatic form of `tiled-to-flare`. Returns `{ outPath, layers, tilesets }`. |
+| `AtlasPackerOptions` / `TiledConvertOptions` | Exported TS types mirroring the CLI flags. |
+
+**Implementation notes:**
+
+- Node 20+, `sharp` for image work, `commander` for arg parsing. No React Native peer dep, no runtime Flare deps.
+- `bin` entry in `package.json` exposes `flare`. Commands dispatch on first positional.
+- Integration tests write into tmp dirs (`node:fs/promises` + `os.tmpdir()`) and assert on produced files.
+- Excluded from the gzip-size CI job (tooling, not runtime). Tracked by install-tarball size instead.
+
+---
+
+### `create-flare-app` (< 30KB raw, Node-only, standalone npm package)
+
+**Responsibility.** One-shot scaffolder invoked via `npm create flare-app@latest <name>`. Produces a runnable Expo + Flare app with a minimal scene + HUD in under 5 minutes on a clean machine (build-plan §11.8 "Done when"). Named without the `@flare-engine/` scope because `npm create <x>` resolves to the unscoped `create-<x>` package by npm convention.
+
+| API | Description |
+| --- | --- |
+| `create-flare-app <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
+| Template `blank` | Empty scene, single sprite, `GameView` wired via `@flare-engine/react`. Smallest starting point. |
+| Template `topdown` | Player with 4-direction movement, tilemap + camera follow, one enemy prefab. Exercises `tilemap` + `input` + `ecs`. |
+| Template `shmup` | Auto-fire player, enemy spawner, HUD score, mirrors the minimum slice of `apps/demo`. Exercises `particles` + `audio` + `scene`. |
+| `TemplateManifest` | Exported type: `{ id, displayName, description, engines, postInstall? }`. Declared per template so contributor-authored templates can plug in identically. |
+
+**Implementation notes:**
+
+- Lives outside `packages/@flare-engine/*` as `packages/create-flare-app` to satisfy npm's `npm create` convention.
+- Templates ship inside this package as `templates/<id>/`. Copy is a plain recursive FS copy with a small set of token replacements (`__APP_NAME__`, `__FLARE_VERSION__`).
+- Package-manager detection: explicit `--package-manager` > `npm_config_user_agent` > fallback `bun`.
+- `flare new` in `@flare-engine/cli` shells out to this package's binary; the two CLIs never import each other.
+- CI smoke test creates one app per template and runs `bun install && bun run typecheck` on each; failure blocks release.
+
+---
+
+### `@flare-engine/devtools` (< 8KB gzip, tree-shaken in prod)
+
+**Responsibility.** 0.1.0 partial slice per build-plan §11.10: entity inspector, time scrub, pause/step. Web surface is a floating panel; native surface is a minimal HUD overlay. Zero overhead when the provider is not mounted — mirrors the tree-shake pattern from `@flare-engine/debug`. Full devtools parity (network inspector, profiler flamegraph, asset inspector) deferred to 0.2.0.
+
+| API | Description |
+| --- | --- |
+| `DevtoolsProvider` | React context. Subscribes to a `World` + `GameLoop`, owns the snapshot ring buffer, exposes controls via context. Props: `{ world, loop, config? }`. |
+| `<DevtoolsPanel />` | Web-only full panel. Entity tree, component inspector, time controls. No-op on native. |
+| `<DevtoolsHUD />` | Native-only compact overlay. Tap entity → inspector sheet. Pause/step/scrub buttons. No-op on web. |
+| `useEntityInspector()` | Hook returning `{ selected, select(entity), components }`. Reads from World; never mutates. |
+| `useTimeScrub()` / `TimeScrubber` | Hook + imperative controller. `.rewind(frames)` restores a snapshot from the ring buffer; `.resume()` clears the scrub state. |
+| `createSnapshotRingBuffer(size, source)` | Pre-allocated ring buffer of snapshots. `source` is `World.serialize` by default, or a user-supplied callback for consumers without ecs integration. |
+| `pause()` / `step()` / `resume()` | Imperative controls on the provider context. Also wired to HUD/panel buttons. |
+| `DevtoolsConfig` | `{ ringSize?: number = 120, captureInterval?: number = 1, enabledOnNative?: boolean = true }`. |
+
+**Implementation notes:**
+
+- Peer deps: `react`, `react-native`. Hard deps: `@flare-engine/events`, `@flare-engine/ecs`, `@flare-engine/core`, `@flare-engine/react`.
+- Tree-shaken via `__DEV__` guard in the package entry so production bundles drop the whole module when providers aren't mounted.
+- Ring buffer pre-allocates snapshot objects at construction and reuses them in place — no per-frame allocation.
+- Snapshot source is pluggable: defaults to `World.serialize()` if available, falls back to user callback. API may firm up in 0.2.0.
+- Tests: logic unit tests (ring buffer wrap/rewind, snapshot diff), plus one React Testing Library smoke test on `DevtoolsPanel`.
+
+---
+
+## Layer 6: Platform Integrations (Tier-2 stubs, 0.1.0 interface-only)
+
+Each package ships the provider interface + a default `Noop*Provider` + a React context + a `use*()` hook + payload types. **No concrete platform adapters at 0.1.0** — consumers wire their own adapter at the app boundary. Concrete providers land in 0.2.0 per the roadmap tables below.
+
+---
+
+### `@flare-engine/leaderboards` (< 1KB raw, interface-only)
+
+**Responsibility.** Leaderboard submission + query interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: Game Center, Google Play Games, Steam.
+
+| API | Description |
+| --- | --- |
+| `LeaderboardsProvider` | Interface: `submitScore(id, score, meta?)`, `getTopN(id, n)`, `getPlayerRank(id)`. All async, return typed promises. |
+| `NoopLeaderboardsProvider` | Default export. Returns empty arrays / `null` rank. Resolves submissions silently. |
+| `LeaderboardsContext` / `useLeaderboards()` | React context + hook. `useLeaderboards()` returns the provider or throws if unmounted. |
+| `ScoreEntry` / `LeaderboardId` | Payload + ID types. `ScoreEntry`: `{ playerId, displayName, score, rank, meta? }`. |
+
+**Implementation notes:**
+
+- No runtime deps beyond `@flare-engine/events`. React peer dep only for the context + hook.
+- Interface is intentionally minimal — pagination, time-window filters, and friends-only queries land in 0.2.0 alongside concrete providers.
+
+---
+
+### `@flare-engine/achievements` (< 1KB raw, interface-only)
+
+**Responsibility.** Achievement unlock + query interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: Game Center, Google Play Games, Steam.
+
+| API | Description |
+| --- | --- |
+| `AchievementsProvider` | Interface: `unlock(id, progress?)`, `getState(id)`, `getAll()`. All async. Partial progress (0–1) supported; adapters clamp and persist. |
+| `NoopAchievementsProvider` | Default export. Returns `{ unlocked: false, progress: 0 }` for any id. |
+| `AchievementsContext` / `useAchievements()` | React context + hook. |
+| `AchievementId` / `AchievementState` | Payload types. `AchievementState`: `{ id, unlocked, progress, unlockedAt? }`. |
+
+**Implementation notes:**
+
+- No runtime deps beyond `@flare-engine/events`. React peer dep only.
+- `unlock()` is idempotent by contract — adapters must dedupe; the interface does not enforce this at the type level.
+
+---
+
+### `@flare-engine/iap` (< 1KB raw, interface-only)
+
+**Responsibility.** In-app purchase interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: RevenueCat, App Store StoreKit, Google Play Billing.
+
+| API | Description |
+| --- | --- |
+| `IAPProvider` | Interface: `getProducts(ids[])`, `purchase(id)`, `restore()`, `onTransaction(cb)`. Purchase + restore return `Promise<PurchaseResult>`. `onTransaction` returns an unsubscribe function. |
+| `NoopIAPProvider` | Default export. `getProducts` → `[]`, `purchase` → `{ status: 'cancelled' }`, `restore` → `[]`, `onTransaction` → no-op unsubscribe. |
+| `IAPContext` / `useIAP()` | React context + hook. |
+| `Product` / `Transaction` / `PurchaseResult` | Payload types. `PurchaseResult`: `{ status: 'purchased'\|'cancelled'\|'failed', transaction?, error? }`. |
+
+**Implementation notes:**
+
+- No runtime deps beyond `@flare-engine/events`. React peer dep only.
+- Receipt validation is adapter-local — the interface does not expose receipt bytes at 0.1.0. May extend in 0.2.0.
+
+---
+
+### `@flare-engine/analytics` (< 1KB raw, interface-only)
+
+**Responsibility.** Event tracking interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: PostHog, Amplitude, Segment, Firebase Analytics.
+
+| API | Description |
+| --- | --- |
+| `AnalyticsProvider` | Interface: `track(event, props?)`, `identify(userId, traits?)`, `screen(name, props?)`, `flush()`. All return `Promise<void>`. |
+| `NoopAnalyticsProvider` | Default export. Resolves immediately; retains nothing. |
+| `AnalyticsContext` / `useAnalytics()` | React context + hook. |
+| `AnalyticsEvent` / `AnalyticsContext` (type) | Payload types. `AnalyticsEvent`: `{ name, props?, timestamp }`. |
+
+**Implementation notes:**
+
+- No runtime deps beyond `@flare-engine/events`. React peer dep only.
+- Batching, sampling, and offline queueing are adapter concerns — the interface is deliberately thin so any analytics SDK can back it.
+

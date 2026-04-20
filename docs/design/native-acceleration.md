@@ -1,13 +1,14 @@
 # Flare Engine — Native C++ Acceleration Strategy
 
-> Last updated: 2026-04-15
+> Last updated: 2026-04-20
 
 ---
 
 ## Strategy: JS First, C++ Second
 
-**Phase 1-6 (v1.0):** Everything in TypeScript. Ship working modules. Validate APIs.
-**Phase 7 (post-v1.0):** Profile real games on real devices. Move hottest loops to C++ via Nitro Modules.
+**Phases 1–9 (done):** Everything in TypeScript. Ship working modules. Validate APIs on device (`apps/demo` full loop verified).
+**Phase 8 (in progress):** Microbenches shipped; device FPS capture pipeline ready and pending hardware run.
+**Phase 10 (data-gated):** Once device numbers land, move the measured bottlenecks to C++ via Nitro Modules.
 
 Why not C++ from day 1? API design iterates much faster in TS. Once the API is stable and bottlenecks are _measured_ (not guessed), targeted C++ drops give the biggest wins with least complexity.
 
@@ -91,12 +92,12 @@ flowchart LR
 
 | #   | Subsystem                | Speedup | Effort             | When                               |
 | --- | ------------------------ | ------- | ------------------ | ---------------------------------- |
-| P0  | Particle simulation      | 20-100x | Low (~50 LOC C++)  | Phase 7                            |
-| P0  | ECS hot loop iteration   | 10-30x  | Medium             | Phase 7                            |
-| P1  | Spatial hash grid        | 15-50x  | Low-Med (~200 LOC) | Phase 7                            |
-| P1  | Physics (wrap Box2D C++) | 30-100x | High (~1000 LOC)   | Phase 7+                           |
-| P2  | Pathfinding (A\*/JPS)    | 20-50x  | Medium             | On demand                          |
-| P2  | Collision narrowphase    | 10-30x  | Medium             | Phase 7+                           |
+| P0  | Particle simulation      | 20-100x | Low (~50 LOC C++)  | Phase 10                           |
+| P0  | ECS hot loop iteration   | 10-30x  | Medium             | Phase 10                           |
+| P1  | Spatial hash grid        | 15-50x  | Low-Med (~200 LOC) | Phase 10                           |
+| P1  | Physics (wrap Box2D C++) | 30-100x | High (~1000 LOC)   | Phase 10+                          |
+| P2  | Pathfinding (A\*/JPS)    | 20-50x  | Medium             | On demand (pure-JS shipped in 0.1) |
+| P2  | Collision narrowphase    | 10-30x  | Medium             | Phase 10+                          |
 | P3  | Transform hierarchy      | 10-25x  | Medium             | Only if >500 hierarchical entities |
 
 ---

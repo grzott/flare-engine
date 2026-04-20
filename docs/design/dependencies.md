@@ -1,25 +1,44 @@
 # Flare Engine — Technology Dependencies
 
-> Last updated: 2026-04-15
+> Last updated: 2026-04-20
 
 ---
 
 ## Peer Dependencies (user installs)
 
-| Package                        | DL/week | Stars | Role in Flare                              | Required by                     |
-| ------------------------------ | ------- | ----- | ------------------------------------------ | ------------------------------- |
-| `@shopify/react-native-skia`   | 582K    | 8.3K  | GPU rendering, Atlas API, Canvas           | `@flare-engine/render`, `@flare-engine/react` |
-| `react-native-gesture-handler` | —       | —     | Touch/gesture input on native thread       | `@flare-engine/input`                  |
-| `react-native-reanimated`      | —       | —     | UI thread worklets for rendering           | `@flare-engine/render`                 |
-| `planck.js`                    | 142K    | —     | Box2D physics (optional tier)              | `@flare-engine/physics` (optional)     |
-| `react-native-audio-api`       | 30K     | —     | Native C++ audio engine (Software Mansion) | `@flare-engine/audio`                  |
+### Core (Phases 1–6)
+
+| Package                        | DL/week | Stars | Role in Flare                                  | Required by                                                                                 |
+| ------------------------------ | ------- | ----- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `@shopify/react-native-skia`   | 708K    | 8.3K  | GPU rendering, Atlas API, Canvas               | `@flare-engine/render`, `@flare-engine/react`                                               |
+| `react-native-gesture-handler` | —       | —     | Touch/gesture input on native thread           | `@flare-engine/input`                                                                       |
+| `react-native-reanimated`      | —       | —     | UI thread worklets for rendering               | `@flare-engine/render`                                                                      |
+| `planck.js`                    | 142K    | —     | Box2D physics (optional tier; deferred)        | `@flare-engine/physics` (optional)                                                          |
+| `react-native-audio-api`       | 37K     | —     | Native C++ audio engine (Software Mansion)     | `@flare-engine/audio`                                                                       |
+| `react`, `react-native`        | —       | —     | Required by every Layer 4 / UI / React package | `@flare-engine/react`, `@flare-engine/ui`, `@flare-engine/errors`, `@flare-engine/devtools` |
+
+### Phase 11 additions
+
+| Package             | Role in Flare                                                          | Required by                             |
+| ------------------- | ---------------------------------------------------------------------- | --------------------------------------- |
+| `react-native-mmkv` | Synchronous C++ KV store (MMKV adapter — interface-gated, no hard dep) | `@flare-engine/storage` (adapter param) |
+| `expo-sharing`      | Native share sheet fallback when Web Share API absent                  | `@flare-engine/share`                   |
+| `expo-linking`      | Native URL handling for deep links                                     | `@flare-engine/deep-links`              |
+
+### Tooling (dev-only, bundled by CLIs)
+
+| Package           | Role                                            | Used by                                 |
+| ----------------- | ----------------------------------------------- | --------------------------------------- |
+| `commander`       | CLI argument parsing                            | `@flare-engine/cli`, `create-flare-app` |
+| `sharp`           | Image decode / resize / encode for atlas packer | `@flare-engine/cli` (`pack-atlas`)      |
+| `maxrects-packer` | Rectangle bin-packing for texture atlases       | `@flare-engine/cli` (`pack-atlas`)      |
 
 ---
 
 ## Internal Dependencies (bundled/used at build)
 
-| Package | DL/week | Role                                   | Used by          |
-| ------- | ------- | -------------------------------------- | ---------------- |
+| Package | DL/week | Role                                   | Used by                 |
+| ------- | ------- | -------------------------------------- | ----------------------- |
 | `rbush` | 4.3M    | R-tree 2D spatial index for broadphase | `@flare-engine/physics` |
 
 ---

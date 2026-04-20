@@ -196,7 +196,7 @@ Pass 2 (done, 2026-04-16):
 
 - [x] Cross-package integration bench (`benchmarks/src/integration.bench.ts`) — `world.step + coll.step + emitter.update + sortByDrawOrder + batch.flush` over 500/1K/2K entities + 300 particles.
 - [x] Heap delta check (post-GC, 500 frames). Found per-frame `world.query()` allocation in the integration bench itself; fixed by hoisting the query. Residual heap noise traces to documented `CollisionWorld` pair string keys (acceptable design tradeoff).
-- [x] API ergonomics finding: every consumer of `world.query()` should pre-create the query in setup, not per-frame. Already followed by the demo (`apps/demo/src/scenes/play.ts`); reaffirmed in `packages/ecs/CLAUDE.md` consumers.
+- [x] API ergonomics finding: every consumer of `world.query()` should pre-create the query in setup, not per-frame. Already followed by the demo (`apps/demo/src/scenes/play.ts`) and reaffirmed in the ECS conventions.
 - Bugs from demo development — none from M2/M3 itself; device playtest later surfaced three integration-layer fixes (audio cleanup on scene exit, screen-space camera centering, RN touch-responder propagation through `<GameView>`). All fixes landed in `apps/demo` + `@flare-engine/react`; engine layers below `react`/`engine` untouched.
 
 Audit — api-specs.md vs shipping exports (2026-04-16):
@@ -229,7 +229,7 @@ Device-side measurements (capture pipeline ready, awaiting hardware run):
 - ⏸ Audio SFXPool polyphony limits (needs device audio pipeline)
 - ⏸ Memory / GC pressure in steady-state on device
 
-Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. Current signal from microbenches: physics is the clear outlier (~11 ms per step at 1K AABBs), matching the `<1000 dynamic entities` note in `packages/physics/CLAUDE.md`.
+Outputs gate Phase 10 — C++ only where measured speedup justifies complexity. Current signal from microbenches: physics is the clear outlier (~11 ms per step at 1K AABBs), matching the `<1000 dynamic entities` note in [.github/instructions/physics.instructions.md](../../.github/instructions/physics.instructions.md).
 
 ### Phase 9 — Demo Game
 

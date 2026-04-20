@@ -1,6 +1,6 @@
 # RN Game Engine — Ecosystem Landscape
 
-> Last updated: 2026-04-15
+> Last updated: 2026-04-20
 
 ---
 
@@ -9,7 +9,7 @@
 | Fact                                                                                                       | Source            |
 | ---------------------------------------------------------------------------------------------------------- | ----------------- |
 | `react-native-game-engine` — dead 6+ years, JS-only, renders via RN Views (not GPU)                        | npm, GitHub       |
-| `@shopify/react-native-skia` — **708K DL/week**, 8.3K stars, has `<Atlas>` API for batch sprite rendering   | npm, Apr 2026     |
+| `@shopify/react-native-skia` — **708K DL/week**, 8.3K stars, has `<Atlas>` API for batch sprite rendering  | npm, Apr 2026     |
 | Zero published libraries for: sprite sheets, tilemaps, particle systems, game audio, ECS integration in RN | npm search        |
 | One confirmed Skia game shipped: "Patterns" (Unity→RN Skia port) on both stores                            | App Store, GitHub |
 | `react-native-wgpu` — active, but low-level (needs engine layer), requires RN 0.81+ New Arch               | npm, Apr 2026     |
@@ -46,8 +46,8 @@ None of these run on React Native. All are web-only.
 
 ## What's Missing in RN Gaming (Flare fills these)
 
-| Gap                 | Before Flare                             | Flare module       |
-| ------------------- | ---------------------------------------- | ------------------ |
+| Gap                 | Before Flare                             | Flare module              |
+| ------------------- | ---------------------------------------- | ------------------------- |
 | Sprite sheets/atlas | Nothing for RN                           | `@flare-engine/assets`    |
 | Tilemaps            | Nothing for RN                           | `@flare-engine/tilemap`   |
 | Game loop           | DIY via requestAnimationFrame            | `@flare-engine/core`      |

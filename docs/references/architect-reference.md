@@ -15,7 +15,7 @@ Scan the workspace for all customization primitives:
 .github/prompts/*.prompt.md        → prompt files
 .github/skills/*/SKILL.md          → agent skills
 .github/hooks/*.json               → lifecycle hooks
-AGENTS.md, CLAUDE.md               → cross-agent instructions
+AGENTS.md                          → cross-agent instructions
 ```
 
 For each file found:

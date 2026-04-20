@@ -13,8 +13,3 @@ apps/*/android/
 apps/*/ios/
 apps/*/.expo/
 
-# Claude Code (private / local overrides — do not share)
-.claude/settings.local.json
-.claude/worktrees/
-.claude/scheduled_tasks.lock
-CLAUDE.local.md

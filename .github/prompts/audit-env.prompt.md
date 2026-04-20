@@ -19,7 +19,6 @@ Scan and list ALL customization files in the workspace:
 - `.github/skills/*/SKILL.md`
 - `.github/hooks/*.json`
 - `AGENTS.md` (root)
-- `CLAUDE.md` (root or `.claude/`)
 
 For each file, extract: name, type, description, tools, applyTo patterns.
 
@@ -27,16 +26,16 @@ For each file, extract: name, type, description, tools, applyTo patterns.
 
 For each file, evaluate:
 
-| Check | Pass/Fail |
-|-------|-----------|
-| YAML frontmatter is valid (no tabs, escaped colons, proper quoting) | |
-| Description is keyword-rich and specific | |
-| `applyTo` is scoped (not `**` unless justified) | |
-| Tool list follows least-privilege | |
-| No role confusion (description matches body) | |
-| No duplicate rules across files | |
-| No circular handoffs | |
-| No Swiss-army agents (too many responsibilities) | |
+| Check                                                               | Pass/Fail |
+| ------------------------------------------------------------------- | --------- |
+| YAML frontmatter is valid (no tabs, escaped colons, proper quoting) |           |
+| Description is keyword-rich and specific                            |           |
+| `applyTo` is scoped (not `**` unless justified)                     |           |
+| Tool list follows least-privilege                                   |           |
+| No role confusion (description matches body)                        |           |
+| No duplicate rules across files                                     |           |
+| No circular handoffs                                                |           |
+| No Swiss-army agents (too many responsibilities)                    |           |
 
 ## Step 3 — Gap Analysis
 
@@ -51,6 +50,7 @@ Identify what's MISSING by comparing against best practices:
 ## Step 4 — Research Latest Practices
 
 Fetch the latest recommendations from:
+
 - VS Code Copilot customization docs
 - awesome-copilot community repo
 - agentskills.io specification
@@ -62,15 +62,18 @@ Compare current setup against community patterns.
 Present findings as a structured report:
 
 ### Summary
+
 - Total files audited
 - Issues found (critical / warning / info)
 - Coverage score (what percentage of recommended primitives exist)
 
 ### Findings Table
+
 | File | Type | Status | Issues | Recommendation |
-|------|------|--------|--------|---------------|
+| ---- | ---- | ------ | ------ | -------------- |
 
 ### Recommended Actions (prioritized)
+
 1. [Quick wins — fix existing issues]
 2. [Medium effort — add missing coverage]
 3. [Long term — advanced patterns like handoff chains, skills]

@@ -9,21 +9,21 @@
 
 ## Phase Summary
 
-| Phase                 | Packages                                        | Depends on | Status              | Milestone                                                                                             |
-| --------------------- | ----------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------- |
-| 0 — Repo scaffold     | —                                               | —          | ✅ DONE             | `bun install` works, `turbo build` runs, hooks enforce commits                                        |
-| 1 — Foundation        | `math`, `events`                                | —          | ✅ DONE             | All math/event primitives, full test coverage                                                         |
-| 2 — Core Runtime      | `core`, `ecs`                                   | Phase 1    | ✅ DONE             | GameLoop, ECS, coroutines, pooling working                                                            |
-| 3 — Rendering + Input | `render`, `assets`, `input`                     | Phase 2    | ✅ DONE             | 100+ sprites at 60fps on device                                                                       |
-| 4 — Systems           | `physics`, `audio`, `animation`                 | Phase 2    | ✅ DONE             | Collisions, audio, tweens working                                                                     |
-| 5 — Features          | `scene`, `tilemap`, `particles`, `debug`        | Phase 3+4  | ✅ DONE             | Tiled maps, particles, scenes, dev overlay                                                            |
-| 6 — Integration       | `react`, `engine`                               | Phase 5    | ✅ DONE             | Full example game on iOS + Android                                                                    |
-| 7 — Hardening         | —                                               | Phase 6    | ✅ DONE (pass 1)    | Audit, optimize, fix gaps, stress-test all APIs                                                       |
-| 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`         | Phase 7    | 🟡 in progress      | Microbench + integration bench + dashboard done; device capture pipeline ready, awaiting hardware run |
-| 9 — Demo Game         | `apps/demo`                                     | Phase 6    | ✅ DONE             | Full loop verified on device: menu → play → boss → game-over/victory → menu                           |
-| 10 — C++ Acceleration | `native`                                        | Phase 8+9  | ⬜ data-gated       | C++ via Nitro only where benchmarks show need (particles first)                                       |
-| 11 — OSS Launch Prep  | 14 new packages + 4 stubs + web parity + Game 2 | Phase 6    | 🟡 starting (M1–M5) | Full-stack RN+Web engine, roguelike vertical slice, docs site, web demos                              |
-| 12 — Launch + Content | —                                               | Phase 11   | ⬜ planned (M6)     | Pre-launch content runway (7 posts) + coordinated OSS drop                                            |
+| Phase                 | Packages                                 | Depends on | Status                 | Milestone                                                                                             |
+| --------------------- | ---------------------------------------- | ---------- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| 0 — Repo scaffold     | —                                        | —          | ✅ DONE                | `bun install` works, `turbo build` runs, hooks enforce commits                                        |
+| 1 — Foundation        | `math`, `events`                         | —          | ✅ DONE                | All math/event primitives, full test coverage                                                         |
+| 2 — Core Runtime      | `core`, `ecs`                            | Phase 1    | ✅ DONE                | GameLoop, ECS, coroutines, pooling working                                                            |
+| 3 — Rendering + Input | `render`, `assets`, `input`              | Phase 2    | ✅ DONE                | 100+ sprites at 60fps on device                                                                       |
+| 4 — Systems           | `physics`, `audio`, `animation`          | Phase 2    | ✅ DONE                | Collisions, audio, tweens working                                                                     |
+| 5 — Features          | `scene`, `tilemap`, `particles`, `debug` | Phase 3+4  | ✅ DONE                | Tiled maps, particles, scenes, dev overlay                                                            |
+| 6 — Integration       | `react`, `engine`                        | Phase 5    | ✅ DONE                | Full example game on iOS + Android                                                                    |
+| 7 — Hardening         | —                                        | Phase 6    | ✅ DONE (pass 1)       | Audit, optimize, fix gaps, stress-test all APIs                                                       |
+| 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`  | Phase 7    | 🟡 in progress         | Microbench + integration bench + dashboard done; device capture pipeline ready, awaiting hardware run |
+| 9 — Demo Game         | `apps/demo`                              | Phase 6    | ✅ DONE                | Full loop verified on device: menu → play → boss → game-over/victory → menu                           |
+| 10 — C++ Acceleration | `native`                                 | Phase 8+9  | ⬜ data-gated          | C++ via Nitro only where benchmarks show need (particles first)                                       |
+| 11 — OSS Launch Prep  | 14 new packages + 4 stubs + web parity   | Phase 6    | 🟡 in progress (M1–M5) | Full-stack RN+Web engine, demo web build, docs site. Game 2 deferred post-launch (private dogfood).   |
+| 12 — Launch + Content | —                                        | Phase 11   | ⬜ planned (M6)        | Pre-launch content runway (7 posts) + coordinated OSS drop                                            |
 
 ---
 
@@ -318,7 +318,7 @@ Tier 3 — public roadmap (10): `cloud-save`, `push`, OTA guide (doc only), `ai`
 
 Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it, ship stage 11.6), `dialogue` (JRPG needs it, ship stage 11.6).
 
-**Game 2 — roguelike + JRPG battle.** Second dogfooding app at `apps/roguelike/`. Vertical slice by end of stage 11.9 (NOT shipped). Drives `@flare-engine/pathfinding` and `@flare-engine/dialogue` into the engine. Exercises: procgen, tilemap streaming, ECS queries (turn order, status effects), `@flare-engine/storage` persistence, `@flare-engine/ui` menus + battle HUD, audio layering. Post-launch content asset.
+**Game 2 — deferred post-launch (2026-04-20 decision).** The roguelike + JRPG battle app is moved out of the OSS launch scope and will live in a **separate private repo** as the author's own game. It becomes the real-world post-launch dogfood test of the published 0.1.0 engine — the "living-organism" test. Consequence: `@flare-engine/pathfinding` and `@flare-engine/dialogue` ship at 0.1.0 without a shipped-in-repo consumer (risk flagged in stage 11.7). Genre-package validation relies on their own test suites + the post-launch private-repo dogfood. `apps/roguelike/` is NOT created in this repo.
 
 **Scope drop order** if falling behind mid-phase: `share` → `devtools` partial → `a11y` light → `localization` → `deep-links`. `ui` + `storage` + web parity are non-negotiable.
 
@@ -346,7 +346,7 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 Concrete, small, unblocks the launch-week flip. Land alongside the stages they touch; don't bundle into 12.5.
 
-1. **LICENSE propagation.** Root `prepack` script (or Turbo task) copies `LICENSE` into each publishable `packages/*/` before `tsup` runs so every tarball contains the MIT text. Files entry already declares it. Land at stage 11.1.
+1. **LICENSE propagation.** ✅ DONE — `scripts/propagate-license.ts` wired via root `prebuild` + `release` npm scripts; `LICENSE` is copied into every `packages/*/` before `tsup` runs.
 2. **Per-package README stubs.** 1-paragraph `README.md` in each `packages/*/` — name, one-line description, install snippet, link to docs site. Prevents empty npm landing pages at 0.1.0. Land at stage 11.12 alongside the docs site.
 3. **Governance + safety files.** `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md` (email disclosure + 90-day policy), `CODEOWNERS` (auto-assign self), `.github/ISSUE_TEMPLATE/` (bug, feature, question), `.github/PULL_REQUEST_TEMPLATE.md`. Land at stage 11.13 so the RC dry-run exercises them, not launch day.
 4. **API-snapshot tooling.** Pick **`@arethetypeswrong/cli`** (types publish-correctness) + a hand-rolled `*.d.ts` textual snapshot per package (tiny, no new heavy dep). Skip `@microsoft/api-extractor` — too heavy for 16 packages. Land at stage 11.13.
@@ -362,6 +362,7 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
   3. 2-day CanvasKit spike in a throwaway branch: atlas draw, tint, bitmap font, blend modes. Fill in the "Spike Results" table of [canvaskit-parity.md](../references/canvaskit-parity.md) (the functional/API audit is already done — CanvasKit-WASM v0.41.1 has every API Flare uses; the spike confirms WebGL perf).
   4. Implement `@flare-engine/storage`: MMKV adapter (native) + IndexedDB adapter (web), typed schema with Zod-ish validator, migration runner, save slots, JSON import/export.
 - **Done when.** Parity report is committed; `@flare-engine/storage` 0.1 passes `typecheck && lint && test && build` on both platforms; every tarball built by `bun run build` contains `LICENSE`.
+- **Status (2026-04-20).** ✅ Parity report landed at [docs/references/canvaskit-parity.md](../references/canvaskit-parity.md) — no API blockers, `full` CanvasKit bundle recommended. Storage shipped. LICENSE propagation wired. Perf spike (Day 2) superseded by MP4-fallback decision taken upfront in stage 11.11.
 - **Exit criteria / contingency.** If CanvasKit atlas batching is broken → commit to per-sprite web path in stage 11.11 and budget extra 3 days in M5; no change to calendar.
 
 #### 11.2 — Reliability substrate (M1 W2)
@@ -402,24 +403,15 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
   4. `@flare-engine/a11y` (light): reduced-motion flag wired into `@flare-engine/animation` + `@flare-engine/postfx`, contrast tokens in `@flare-engine/ui`. Full screen-reader pass deferred to 0.3.0.
 - **Done when.** Demo has a working language switcher, a deep link that opens the bench scene, a share-screenshot button, and a reduced-motion setting that neutralizes screen shake + heavy postfx.
 
-#### 11.6 — Game 2 scaffold + atlas swap (M2 W4)
+#### 11.6 — ❌ DROPPED (2026-04-20)
 
-- **Goal.** Unblock Game 2 development and close the Phase 9 carry-over.
-- **Tasks.**
-  1. `apps/roguelike/` Expo project; wire `@flare-engine/engine`, `@flare-engine/storage`, `@flare-engine/ui`.
-  2. Data model: entity archetypes for tile, actor, item; turn-queue ECS system stub.
-  3. Swap `apps/demo` atlas to Kenney "Space Shooter Redux" (CC0). Replace procedural atlas loader; regenerate `SpriteFrame` entries.
-- **Done when.** `apps/roguelike` boots a blank scene on iOS + Android + web; demo runs on the Kenney atlas on device.
+Roguelike scaffold moved to post-launch private repo. Kenney atlas swap in `apps/demo` deferred to stage 11.13 as a pre-launch polish item (bundled with docs-site assets).
 
-#### 11.7 — Game 2 vertical slice + genre packages (M3 W1–W2)
+#### 11.7 — Genre packages (revised 2026-04-20)
 
-- **Goal.** Two genre packages land by being pulled through a real consumer — the roguelike's exploration + battle loop.
-- **Tasks.**
-  1. `@flare-engine/pathfinding`: A\* on grid + navmesh-lite on polygons; JPS optimization if A\* is a bottleneck in bench.
-  2. Roguelike exploration: tilemap streaming, simple procgen (BSP rooms + corridors), player movement, encounter trigger.
-  3. `@flare-engine/dialogue`: node graph (YAML/JSON authorable), conditions, variables, callbacks, text-over-time renderer hook.
-  4. Roguelike JRPG battle scene: turn queue, command menu (attack / skill / item / run), damage numbers, status effects (poison, stun), flee/win/lose transitions.
-- **Done when.** Walk-around → encounter → battle → return works end-to-end; both packages have ≥80% line coverage; pathfinding microbench added to `benchmarks/`.
+- **Goal.** Ship `@flare-engine/pathfinding` + `@flare-engine/dialogue` as standalone 0.1.0 packages. In-repo consumer validation (roguelike) deferred post-launch.
+- **Status.** ✅ Both packages shipped with their own test suites (pathfinding 54 tests, dialogue 41 tests). Pathfinding microbench added in `benchmarks/`.
+- **Known risk.** No in-repo game consumes these end-to-end before 0.1.0. The author's post-launch private roguelike is the designated real-world test; bugs discovered there will feed 0.1.x patches.
 
 #### 11.8 — CLI + scaffolder (M3 W3–W4)
 
@@ -430,16 +422,9 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
   3. CI for both on GitHub Actions; publish both under `next` dist-tag for internal testing.
 - **Done when.** On a clean machine, `npm create flare-app@latest test-game && cd test-game && bun install && bun run dev` produces a running app in <5 min.
 
-#### 11.9 — Game 2 content (M4 W1–W2)
+#### 11.9 — ❌ DROPPED (2026-04-20)
 
-- **Goal.** Enough game to make a compelling devlog + launch-week demo.
-- **Tasks.**
-  1. Enemy roster (6–10 enemies) + abilities (attacks + status inflictors).
-  2. Boss encounter with distinct pattern + HP phases.
-  3. Meta-progression: persistent currency, unlocks, seed-replay.
-  4. `@flare-engine/storage` save/load roundtrip across sessions + web IndexedDB path.
-  5. Audio: music layer per biome + battle; SFX pass using the `@flare-engine/audio` SFXPool.
-- **Done when.** A full run (entry → 1 biome → boss → victory or defeat → meta-progression applied) plays on iOS + Android + web.
+Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — launch-week demo content comes from `apps/demo` shoot-em-up (device video + optional web build).
 
 #### 11.10 — Devtools + Tier-2 stubs (M4 W3–W4)
 
@@ -449,46 +434,50 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
   2. Interface stubs (types + no-op adapter + docs, no concrete provider): `@flare-engine/leaderboards`, `@flare-engine/achievements`, `@flare-engine/iap`, `@flare-engine/analytics`. Each exports the interface + a default `NoopProvider` + README with a table of planned providers for 0.2.0.
 - **Done when.** Devtools demo GIF recorded; stubs typecheck and import cleanly from a consumer that mounts the no-op providers.
 
-#### 11.11 — Web builds (M5 W1–W2)
+#### 11.11 — Web build (demo only, revised 2026-04-20)
 
-- **Goal.** Both demos run in-browser at launch-quality perf.
+- **Goal.** `apps/demo` has a web-reachable landing-page demo surface. MP4 + poster accepted upfront as the primary path.
+- **Decision.** MP4 + poster is the default deliverable (docs-site-friendly, zero CanvasKit perf risk, simplest hosting). A live WebGL build via Expo web export is a stretch goal if it's cheap on top of stage 11.2's engine-package platform-agnosticism.
 - **Tasks.**
-  1. `apps/demo` web build via Expo web export; deploy to staging GH Pages; tune to 60 fps desktop Chrome, ≥30 fps mid-tier Android Chrome.
-  2. **MP4 fallback decision by end of M5 W1.** If CanvasKit parity (stage 11.1 report) blocked atlas batching and workarounds cost >2 days, ship an MP4 + poster image instead. Not a launch blocker.
-  3. `apps/roguelike` web build; same perf targets on desktop only (mid-tier mobile web deferred to 0.2.0).
-- **Done when.** Both URLs load on desktop + mobile browsers; DevTools shows GC-steady frame budget.
+  1. Record a ≥30 s gameplay MP4 + poster PNG from the device build (menu → play → boss → victory). Encode H.264 + VP9 for broad browser support.
+  2. _(Stretch)_ Expo web export of `apps/demo`; wire CanvasKit `full` bundle in `@flare-engine/react` skia-bridge; deploy to staging GH Pages; tune to 60 fps desktop Chrome.
+  3. Web-parity app-level audit rolled in here (from 11.2): verify `apps/demo`'s RN-specific imports gate cleanly on web (AudioContext vs `react-native-audio-api`, pointer vs `PanResponder`, fetch loader). Engine packages already use injected interfaces.
+- **Done when.** MP4 + poster land in `apps/site` static assets; if stretch taken, live demo URL green on desktop Chrome.
+- **Roguelike web build.** Removed — app lives in a separate private repo post-launch.
 
-#### 11.12 — Docs site (M5 W3)
+#### 11.12 — Docs site (M5 W3, revised 2026-04-20)
 
 - **Goal.** First-time visitor → running code in 10 minutes; power-user → API reference for every symbol.
+- **Scope change.** Deferred to pre-launch polish — treated as a bundled deliverable with stage 11.13 so it ships on fresh 0.1.0 package surface (no rework from post-RC API changes).
 - **Tasks.**
-  1. `apps/site` Docusaurus on GH Pages; custom landing page embedding both demo iframes.
+  1. `apps/site` Docusaurus on GH Pages; custom landing page embedding the demo MP4 (+ optional live iframe).
   2. Getting Started (10-min tutorial): install, first scene, first entity, first input.
   3. 14 per-package guides (~500–1000 words each): concepts, key APIs, worked example, gotchas.
   4. typedoc API reference auto-generated in CI.
   5. Architecture doc + design-rationale doc lifted from `docs/design/`.
 - **Done when.** `bun --cwd apps/site run build` ships on GH Pages staging; Lighthouse ≥90 on perf + a11y + SEO.
 
-#### 11.13 — API lock + device bench + RC (M5 W4)
+#### 11.13 — API lock + device bench + RC + pre-launch polish (M5 W4)
 
-- **Goal.** Freeze the public surface; publish a release candidate under the reserved scope.
+- **Goal.** Freeze the public surface; publish a release candidate under the reserved scope. Land every pre-launch polish item that was deferred.
 - **Tasks.**
   1. OSS-readiness items 11.0.1 (2)–(6): per-package READMEs, governance files, API-snapshot tooling, OIDC publishing, Phase 0–9 archival.
   2. Public-API snapshot tests in each package (`@arethetypeswrong/cli` + `.d.ts` text snapshot); breaking changes require a Changeset.
-  3. Device FPS captures on iOS + Android hardware; populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
-  4. Flip `"private": true` → `false` on all 14 shipping `packages/*`. Keep `apps/*` and `benchmarks` private.
-  5. Changeset version cut to `0.1.0-rc.1`; publish all shipping packages to npm under `rc` dist-tag; dry-run install `npm create flare-app@latest` from the RC.
-- **Done when.** A fresh machine can install the RC and run both demos; API snapshots committed; device bench doc regenerated; governance files land before the public flip.
+  3. Device FPS captures on iOS + Android hardware via `apps/demo` bench scene; populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
+  4. **Kenney atlas swap** in `apps/demo` (moved here from 11.6) — replace procedural atlas with "Space Shooter Redux" (CC0); regenerate `SpriteFrame` entries. Re-record landing-page MP4 against the final art.
+  5. Flip `"private": true` → `false` on the shipping `packages/*` (all 28 Tier-1 / Tier-2 / genre / stub packages that are not apps or benchmarks). Keep `apps/*` and `benchmarks` private.
+  6. Changeset version cut to `0.1.0-rc.1`; publish all shipping packages to npm under `rc` dist-tag; dry-run install `npm create flare-app@latest` from the RC.
+- **Done when.** A fresh machine can install the RC and run the demo; API snapshots committed; device bench doc regenerated; governance files land before the public flip; demo ships on final Kenney art.
 
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 
 1. All shipping packages green: `bun run typecheck && bun run lint && bun run test && bun run build`.
 2. Public-API snapshot tests lock shape; breaking changes require a Changeset.
-3. `bun --cwd apps/demo run web` → 60 fps desktop Chrome, ≥30 fps mid-tier Android Chrome.
-4. `bun --cwd apps/roguelike run web` → 60 fps desktop Chrome.
-5. `npm create flare-app@latest test-game` → running app <5 min on a clean machine.
-6. Docs site deploys green; both demo iframes load + play on mobile browsers.
-7. Device FPS JSON populated; `docs/references/benchmarks.md` regenerated (closes Phase 8 pending).
+3. Demo landing-page MP4 + poster committed (live web build optional).
+4. `npm create flare-app@latest test-game` → running app <5 min on a clean machine.
+5. Docs site deploys green; demo MP4 loads on mobile browsers.
+6. Device FPS JSON populated; `docs/references/benchmarks.md` regenerated (closes Phase 8 pending).
+7. Roguelike / Game 2 work happens in a separate private repo post-launch — not a gate for Phase 12.
 
 ---
 
@@ -594,19 +583,20 @@ Posts lead with a generic technique; each ends with a "this is extracted from bu
 #### Phase 11 + 12 — Decisions locked
 
 - Launch October 2026 (6 months from 2026-04-17). No rush.
-- RN + Web both primary; web demo is the marketing centerpiece; MP4 fallback acceptable.
-- 14 shipping + 4 stubs + 10 roadmap at 0.1.0.
-- Game 2 = roguelike + JRPG battle; starts stage 11.6; vertical slice by stage 11.9, not shipped at launch.
+- RN is primary platform; web is secondary. **Landing-page demo = MP4 + poster by default** (docs-site-friendly, zero CanvasKit perf risk); live WebGL demo is a stretch.
+- Shipping at 0.1.0: all 28 `@flare-engine/*` packages currently DONE (14 Tier-1 + 2 genre + 4 Tier-2 stubs + 8 from phases 1–6). Tier-2 adapters + `@flare-engine/a11y` full pass + roadmap packages ship in 0.2.0+.
+- **Game 2 (roguelike + JRPG battle) deferred post-launch to a separate private repo.** Acts as the post-release real-world dogfood test of the published engine; surfaces 0.1.x patch candidates for `@flare-engine/pathfinding`, `@flare-engine/dialogue`, `@flare-engine/storage`, `@flare-engine/ui`.
 - Technique posts pre-launch, not architecture posts.
 - Discussions, not Discord, at launch.
 - Do not react to `rn-game-engine-next` feature-by-feature; different tier.
 
 #### Phase 11 + 12 — Further considerations
 
-1. **CanvasKit parity risk.** Stage 11.1 spike gives 5 months of buffer for a per-sprite web fallback in `@flare-engine/render`. Don't discover at stage 11.11.
-2. **Game 2 scope creep.** If slipping, cut content (fewer enemies, single biome, 1 boss) — never slip the launch.
+1. **CanvasKit parity risk.** ✅ Resolved 2026-04-20 — parity report at [docs/references/canvaskit-parity.md](../references/canvaskit-parity.md) shows no API blockers; `full` CanvasKit bundle required for RuntimeEffect. MP4 + poster chosen as default landing-page deliverable so any residual WebGL perf surprise is off the launch critical path.
+2. **Genre-package validation risk.** `@flare-engine/pathfinding` + `@flare-engine/dialogue` ship at 0.1.0 without an in-repo game consumer (roguelike deferred). Mitigation: comprehensive unit tests already in place; post-launch private roguelike is the designated real-world dogfood and will feed 0.1.x patches.
 3. **Competitor watch.** Monthly check of `rn-game-engine-next`. If it adds web support + 1k+ DLs, reconsider pulling launch forward by 1 month. Otherwise ignore.
 4. **npm scope collision.** Resolved 2026-04-17 — `@flare-engine` org reserved; all packages renamed from `@flare/*` → `@flare-engine/*`, unscoped `flare-engine` left optional.
+5. **CLI image tooling.** ✅ Resolved 2026-04-20 — `@flare-engine/cli` uses `sharp` (image I/O, WebP encoding) + `maxrects-packer` (pure-JS bin packing) per [docs/references/cli-image-tooling.md](../references/cli-image-tooling.md). Sharp's native binary is acceptable for a Node-only dev tool.
 
 ---
 

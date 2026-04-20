@@ -41,11 +41,17 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | `@flare-engine/analytics`    | 6     | **DONE** — 2 modules, 5 tests, 451B ESM (interface-only stub)              |
 | `@flare-engine/devtools`     | 5     | **DONE (partial 0.1.0)** — 6 modules, 14 tests, ~2.8KB gzip                |
 
-| Phase 8 — Benchmarking | — | ⬜ not started |
-| Phase 9 — Demo Game | — | ⬜ not started |
+| Phase 8 — Benchmarking | — | 🟡 device FPS capture awaiting `apps/demo` hardware run (bench scene + JSON pipeline ready) |
+| Phase 9 — Demo Game | — | ✅ DONE — full loop verified on device |
 | Phase 10 — C++ Accel | — | ⬜ data-gated (after Phase 8) |
-| Phase 11 — Web Presence| — | ⬜ not started |
-| Phase 12 — Launch | — | ⬜ not started |
+| Phase 11.1 — CanvasKit parity + storage | — | ✅ DONE — parity report at `docs/references/canvaskit-parity.md`, storage shipped, LICENSE propagation wired |
+| Phase 11.2–11.5, 11.7, 11.10 — engine packages | — | ✅ DONE — all Tier-1, genre, and Tier-2 stub packages shipped |
+| Phase 11.8 — CLI + scaffolder | — | 🟡 **NEXT** — `@flare-engine/cli` (sharp + maxrects-packer) + `create-flare-app` not yet scaffolded |
+| Phase 11.11 — Demo web / MP4 | — | ⬜ not started — MP4 + poster is default deliverable; live WebGL stretch |
+| Phase 11.12 — Docs site | — | ⬜ not started — deferred to pre-launch polish alongside 11.13 |
+| Phase 11.13 — API lock + RC + pre-launch polish | — | ⬜ not started — governance files, API snapshots, Kenney atlas swap, RC publish |
+| Game 2 (roguelike) | — | ❌ DEFERRED post-launch to separate private repo (dogfood test of published 0.1.0) |
+| Phase 12 — Launch | — | ⬜ planned |
 
 Each scaffolded package has: `package.json` (workspace deps), `tsconfig.json`, `tsup.config.ts`, `src/index.ts` (empty export).
 

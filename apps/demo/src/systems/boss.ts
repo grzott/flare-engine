@@ -1,5 +1,6 @@
 import type { Query, World } from '@flare-engine/ecs';
-import { Position, Velocity } from '@flare-engine/ecs';
+import { FSM, Position, Velocity } from '@flare-engine/ecs';
+import { clamp } from '@flare-engine/math';
 import { Boss, type BossPhase, Hp } from '../components';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';
@@ -10,6 +11,7 @@ const BOSS_BULLET_SPEED = 260;
 const PHASE2_HP_RATIO = 0.5;
 const DYING_INTERVAL = 0.18;
 const DYING_TOTAL = 12;
+const BOSS_HALF_W = 48;
 
 export interface BossDeps {
   spawnCtx: SpawnCtx;
@@ -36,114 +38,247 @@ export function computeBossStatus(world: World, query: Query): BossStatus {
     const hp = world.get(id, Hp);
     if (!b || !hp) continue;
     const invulnerable = b.phase === 'entering' || b.phase === 'dying' || b.phase === 'defeated';
-    return { alive: true, hp: hp.current, hpMax: hp.max, phase: b.phase, invulnerable };
+    return {
+      alive: true,
+      hp: hp.current,
+      hpMax: hp.max,
+      phase: b.phase,
+      invulnerable,
+    };
   }
-  return { alive: false, hp: 0, hpMax: 0, phase: 'defeated', invulnerable: true };
+  return {
+    alive: false,
+    hp: 0,
+    hpMax: 0,
+    phase: 'defeated',
+    invulnerable: true,
+  };
 }
 
-function setPhase(b: { phase: BossPhase; phaseT: number }, next: BossPhase): void {
-  if (b.phase === next) return;
-  b.phase = next;
-  b.phaseT = 0;
+interface BossCtx {
+  world: World;
+  id: number;
+  deps: BossDeps;
 }
 
-function firePhase1(ctx: SpawnCtx, x: number, y: number, t: number): void {
-  const sweep = Math.sin(t * 1.8) * 160;
-  spawnBullet(ctx, x, y + 32, sweep, BOSS_BULLET_SPEED, Layer.enemy);
+function firePhase1(c: BossCtx): void {
+  const pos = c.world.get(c.id, Position);
+  const b = c.world.get(c.id, Boss);
+  if (!pos || !b) return;
+  const sweep = Math.sin(b.t * 1.8) * 160;
+  spawnBullet(c.deps.spawnCtx, pos.x, pos.y + 32, sweep, BOSS_BULLET_SPEED, Layer.enemy);
 }
 
-function firePhase2(ctx: SpawnCtx, x: number, y: number, playerX: number, playerY: number): void {
-  const dx = playerX - x;
-  const dy = playerY - y;
+function firePhase2(c: BossCtx): void {
+  const pos = c.world.get(c.id, Position);
+  if (!pos) return;
+  const dx = c.deps.playerX - pos.x;
+  const dy = c.deps.playerY - pos.y;
   const mag = Math.hypot(dx, dy) || 1;
   const baseVx = (dx / mag) * BOSS_BULLET_SPEED;
   const baseVy = (dy / mag) * BOSS_BULLET_SPEED;
   for (const angle of [-0.25, 0, 0.25]) {
-    const c = Math.cos(angle);
-    const s = Math.sin(angle);
-    const vx = baseVx * c - baseVy * s;
-    const vy = baseVx * s + baseVy * c;
-    spawnBullet(ctx, x, y + 32, vx, vy, Layer.enemy);
+    const cs = Math.cos(angle);
+    const sn = Math.sin(angle);
+    const vx = baseVx * cs - baseVy * sn;
+    const vy = baseVx * sn + baseVy * cs;
+    spawnBullet(c.deps.spawnCtx, pos.x, pos.y + 32, vx, vy, Layer.enemy);
   }
 }
 
-export function updateBoss(world: World, dt: number, deps: BossDeps): void {
-  for (const id of deps.query) {
-    const b = world.get(id, Boss);
-    const pos = world.get(id, Position);
-    const vel = world.get(id, Velocity);
-    const hp = world.get(id, Hp);
-    if (!b || !pos || !vel || !hp) continue;
+function sweepMove(c: BossCtx, speed: number): void {
+  const b = c.world.get(c.id, Boss);
+  const pos = c.world.get(c.id, Position);
+  const vel = c.world.get(c.id, Velocity);
+  if (!b || !pos || !vel) return;
+  vel.x = Math.cos(b.t * 1.1) * speed;
+  vel.y = 0;
+  if (pos.x < BOSS_HALF_W) {
+    pos.x = BOSS_HALF_W;
+    vel.x = Math.abs(vel.x);
+  } else if (pos.x > c.deps.bounds.width - BOSS_HALF_W) {
+    pos.x = c.deps.bounds.width - BOSS_HALF_W;
+    vel.x = -Math.abs(vel.x);
+  }
+}
 
-    b.t += dt;
-    b.phaseT += dt;
+function buildBossFsm(context: BossCtx): FSM<BossCtx> {
+  const fsm = new FSM<BossCtx>(context);
 
-    if (b.phase === 'entering') {
+  fsm.addState({
+    name: 'entering',
+    onEnter(c) {
+      const b = c.world.get(c.id, Boss);
+      if (b) b.phase = 'entering';
+    },
+    onUpdate(_dt, c) {
+      const b = c.world.get(c.id, Boss);
+      const pos = c.world.get(c.id, Position);
+      const vel = c.world.get(c.id, Velocity);
+      if (!b || !pos || !vel) return;
       vel.x = 0;
       vel.y = 60;
       if (pos.y >= b.targetY) {
         pos.y = b.targetY;
         vel.y = 0;
-        setPhase(b, 'phase1');
-        deps.onPhaseChange?.('phase1');
+        fsm.trigger('entered');
       }
-      continue;
-    }
+    },
+  });
 
-    if (b.phase === 'defeated') continue;
+  fsm.addState({
+    name: 'phase1',
+    onEnter(c) {
+      const b = c.world.get(c.id, Boss);
+      if (b) {
+        b.phase = 'phase1';
+        b.phaseT = 0;
+      }
+      c.deps.onPhaseChange?.('phase1');
+    },
+    onUpdate(dt, c) {
+      const b = c.world.get(c.id, Boss);
+      const hp = c.world.get(c.id, Hp);
+      if (!b || !hp) return;
+      if (hp.current <= 0) {
+        fsm.trigger('killed');
+        return;
+      }
+      if (hp.current / hp.max <= PHASE2_HP_RATIO) {
+        fsm.trigger('phase2');
+        return;
+      }
+      sweepMove(c, 70);
+      b.fireCooldown -= dt;
+      if (b.fireCooldown <= 0) {
+        firePhase1(c);
+        b.fireCooldown = 0.55;
+      }
+    },
+  });
 
-    if (b.phase === 'dying') {
+  fsm.addState({
+    name: 'phase2',
+    onEnter(c) {
+      const b = c.world.get(c.id, Boss);
+      if (b) {
+        b.phase = 'phase2';
+        b.phaseT = 0;
+      }
+      c.deps.onPhaseChange?.('phase2');
+    },
+    onUpdate(dt, c) {
+      const b = c.world.get(c.id, Boss);
+      const hp = c.world.get(c.id, Hp);
+      if (!b || !hp) return;
+      if (hp.current <= 0) {
+        fsm.trigger('killed');
+        return;
+      }
+      sweepMove(c, 110);
+      b.fireCooldown -= dt;
+      if (b.fireCooldown <= 0) {
+        firePhase2(c);
+        b.fireCooldown = 0.9;
+      }
+    },
+  });
+
+  fsm.addState({
+    name: 'dying',
+    onEnter(c) {
+      const b = c.world.get(c.id, Boss);
+      if (b) {
+        b.phase = 'dying';
+        b.phaseT = 0;
+        b.fireCooldown = 0;
+      }
+    },
+    onUpdate(dt, c) {
+      const b = c.world.get(c.id, Boss);
+      const pos = c.world.get(c.id, Position);
+      const vel = c.world.get(c.id, Velocity);
+      if (!b || !pos || !vel) return;
       vel.x = 0;
       vel.y = 0;
       b.fireCooldown -= dt;
       if (b.fireCooldown <= 0 && b.dyingExplosions < DYING_TOTAL) {
         const ox = pos.x + (Math.random() - 0.5) * 72;
         const oy = pos.y + (Math.random() - 0.5) * 48;
-        deps.onExplosion?.(ox, oy);
+        c.deps.onExplosion?.(ox, oy);
         b.dyingExplosions += 1;
         b.fireCooldown = DYING_INTERVAL;
       }
       if (b.dyingExplosions >= DYING_TOTAL) {
-        setPhase(b, 'defeated');
-        deps.onDefeated?.();
-        destroyEntity(world, deps.spawnCtx.coll, id);
+        fsm.trigger('exploded');
       }
-      continue;
-    }
+    },
+  });
 
-    if (hp.current <= 0) {
-      setPhase(b, 'dying');
-      b.fireCooldown = 0;
-      continue;
-    }
+  fsm.addState({
+    name: 'defeated',
+    onEnter(c) {
+      const b = c.world.get(c.id, Boss);
+      if (b) b.phase = 'defeated';
+      c.deps.onDefeated?.();
+      destroyEntity(c.world, c.deps.spawnCtx.coll, c.id);
+    },
+  });
 
-    if (b.phase === 'phase1' && hp.current / hp.max <= PHASE2_HP_RATIO) {
-      setPhase(b, 'phase2');
-      deps.onPhaseChange?.('phase2');
-    }
+  fsm.addTransition('entering', 'entered', 'phase1');
+  fsm.addTransition('phase1', 'phase2', 'phase2');
+  fsm.addTransition('phase1', 'killed', 'dying');
+  fsm.addTransition('phase2', 'killed', 'dying');
+  fsm.addTransition('dying', 'exploded', 'defeated');
 
-    const sweepSpeed = b.phase === 'phase2' ? 110 : 70;
-    vel.x = Math.cos(b.t * 1.1) * sweepSpeed;
-    vel.y = 0;
+  return fsm;
+}
 
-    const halfW = 48;
-    if (pos.x < halfW) {
-      pos.x = halfW;
-      vel.x = Math.abs(vel.x);
-    } else if (pos.x > deps.bounds.width - halfW) {
-      pos.x = deps.bounds.width - halfW;
-      vel.x = -Math.abs(vel.x);
-    }
+interface BossRuntime {
+  fsm: FSM<BossCtx>;
+  context: BossCtx;
+}
 
-    b.fireCooldown -= dt;
-    if (b.fireCooldown <= 0) {
-      if (b.phase === 'phase2') {
-        firePhase2(deps.spawnCtx, pos.x, pos.y, deps.playerX, deps.playerY);
-        b.fireCooldown = 0.9;
-      } else {
-        firePhase1(deps.spawnCtx, pos.x, pos.y, b.t);
-        b.fireCooldown = 0.55;
+/** Active boss runtimes keyed by entity id. Cleared on scene exit / boss death. */
+const bossRuntimes = new Map<number, BossRuntime>();
+
+export function clearBossFsms(): void {
+  bossRuntimes.clear();
+}
+
+export function updateBoss(world: World, dt: number, deps: BossDeps): void {
+  for (const id of deps.query) {
+    const b = world.get(id, Boss);
+    if (!b) continue;
+    b.t += dt;
+    b.phaseT += dt;
+
+    let runtime = bossRuntimes.get(id);
+    if (!runtime || runtime.context.world !== world) {
+      const context: BossCtx = { world, id, deps };
+      const fsm = buildBossFsm(context);
+      runtime = { fsm, context };
+      bossRuntimes.set(id, runtime);
+      fsm.start(b.phase);
+    } else {
+      runtime.context.deps = deps;
+      // If external code mutated b.phase, resync the FSM to that state.
+      const currentName = runtime.fsm.current?.name;
+      if (currentName !== b.phase) {
+        runtime.fsm.start(b.phase);
       }
+    }
+
+    runtime.fsm.update(dt);
+
+    if (b.phase === 'defeated') {
+      bossRuntimes.delete(id);
+    }
+
+    // Clamp position to bounds after any state update
+    const pos = world.get(id, Position);
+    if (pos) {
+      pos.x = clamp(pos.x, BOSS_HALF_W, deps.bounds.width - BOSS_HALF_W);
     }
   }
 }

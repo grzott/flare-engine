@@ -1,5 +1,6 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { CollisionWorld, Position, Velocity } from '@flare-engine/engine';
+import { SeededRNG } from '@flare-engine/math';
 import { Layer } from '../layers';
 import type { AtlasHandle } from '../spawn';
 import { spawnBullet, spawnEnemy } from '../spawn';
@@ -31,6 +32,7 @@ interface BenchState {
   sampleAccum: number;
   samples: Record<string, number[]>;
   spawned: number[];
+  rng: SeededRNG;
 }
 
 function spawnLoad(deps: BenchSceneDeps, state: BenchState, load: BenchLoad): void {
@@ -38,18 +40,19 @@ function spawnLoad(deps: BenchSceneDeps, state: BenchState, load: BenchLoad): vo
   const spawnCtx = { world: ctx.world, coll: state.coll, atlas };
   const W = 360;
   const H = 640;
+  const rng = state.rng;
   for (let i = 0; i < load.enemies; i++) {
-    const x = 24 + Math.random() * (W - 48);
-    const y = 40 + Math.random() * (H * 0.6);
+    const x = 24 + rng.next() * (W - 48);
+    const y = 40 + rng.next() * (H * 0.6);
     const pattern = i % 3 === 0 ? 'sine' : i % 3 === 1 ? 'diagonal' : 'straight';
     const id = spawnEnemy(spawnCtx, pattern, x, y);
     state.spawned.push(id);
   }
   for (let i = 0; i < load.bullets; i++) {
-    const x = 16 + Math.random() * (W - 32);
-    const y = 16 + Math.random() * (H - 32);
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 60 + Math.random() * 80;
+    const x = 16 + rng.next() * (W - 32);
+    const y = 16 + rng.next() * (H - 32);
+    const angle = rng.next() * Math.PI * 2;
+    const speed = 60 + rng.next() * 80;
     const layer = i % 2 === 0 ? Layer.playerBullet : Layer.enemyBullet;
     const id = spawnBullet(
       spawnCtx,
@@ -98,7 +101,9 @@ function dumpCsv(state: BenchState): void {
     }
     const avg = sum / samples.length;
     summary.push(
-      `  ${load.label} (${load.enemies}e+${load.bullets}b): min=${min.toFixed(1)} avg=${avg.toFixed(1)} max=${max.toFixed(1)} n=${samples.length}`,
+      `  ${load.label} (${load.enemies}e+${load.bullets}b): min=${min.toFixed(
+        1,
+      )} avg=${avg.toFixed(1)} max=${max.toFixed(1)} n=${samples.length}`,
     );
   }
   console.log(summary.join('\n'));
@@ -127,6 +132,7 @@ export function createBenchScene(deps: BenchSceneDeps): () => Scene {
           sampleAccum: 0,
           samples: { light: [], medium: [], heavy: [] },
           spawned: [],
+          rng: new SeededRNG(1337),
         };
         spawnLoad(deps, state, LOADS[0] as BenchLoad);
         console.log('[bench] starting — 3 loads x 10s each');

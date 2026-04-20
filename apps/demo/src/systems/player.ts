@@ -1,5 +1,6 @@
 import type { Query, World } from '@flare-engine/engine';
 import { Position, Velocity } from '@flare-engine/engine';
+import { clamp } from '@flare-engine/math';
 import { Ship } from '../components';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';
@@ -8,6 +9,7 @@ import { joystickState } from '../state';
 
 const PLAYER_SPEED = 260;
 const BULLET_SPEED = -520;
+const MARGIN = 20;
 
 export interface PlayerDeps {
   spawnCtx: SpawnCtx;
@@ -27,11 +29,8 @@ export function updatePlayer(world: World, dt: number, deps: PlayerDeps): void {
     vel.x = joystickState.dx * PLAYER_SPEED;
     vel.y = joystickState.dy * PLAYER_SPEED;
 
-    const margin = 20;
-    if (pos.x < margin) pos.x = margin;
-    else if (pos.x > bounds.width - margin) pos.x = bounds.width - margin;
-    if (pos.y < margin) pos.y = margin;
-    else if (pos.y > bounds.height - margin) pos.y = bounds.height - margin;
+    pos.x = clamp(pos.x, MARGIN, bounds.width - MARGIN);
+    pos.y = clamp(pos.y, MARGIN, bounds.height - MARGIN);
 
     ship.cooldown -= dt;
     if (ship.cooldown <= 0) {

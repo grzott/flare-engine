@@ -35,6 +35,11 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | Phase 7 — Hardening          | —     | ✅ **DONE** — 907 tests, 0 failures; 3 bugs fixed, integration suite added |
 | `@flare-engine/pathfinding`  | 3     | **DONE** — 4 modules, 54 tests, 20KB raw                                   |
 | `@flare-engine/dialogue`     | 3     | **DONE** — 3 modules, 41 tests, 5.5KB raw                                  |
+| `@flare-engine/leaderboards` | 6     | **DONE** — 2 modules, 5 tests, 496B ESM (interface-only stub)              |
+| `@flare-engine/achievements` | 6     | **DONE** — 2 modules, 5 tests, 519B ESM (interface-only stub)              |
+| `@flare-engine/iap`          | 6     | **DONE** — 2 modules, 5 tests, 504B ESM (interface-only stub)              |
+| `@flare-engine/analytics`    | 6     | **DONE** — 2 modules, 5 tests, 451B ESM (interface-only stub)              |
+| `@flare-engine/devtools`     | 5     | **DONE (partial 0.1.0)** — 6 modules, 14 tests, ~2.8KB gzip                |
 
 | Phase 8 — Benchmarking | — | ⬜ not started |
 | Phase 9 — Demo Game | — | ⬜ not started |

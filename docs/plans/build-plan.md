@@ -324,21 +324,21 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 
 **Stage map.**
 
-| Stage | Calendar | Goal                                   | Deliverable                                                                     |
-| ----- | -------- | -------------------------------------- | ------------------------------------------------------------------------------- |
-| 11.1  | M1 W1    | npm + infra + web spike                | scope reserved, CanvasKit parity report, `@flare-engine/storage` 0.1                   |
-| 11.2  | M1 W2    | reliability substrate                  | `@flare-engine/errors`, `@flare-engine/testing`, web parity in existing packages              |
-| 11.3  | M1 W3–W4 | UI kit                                 | `@flare-engine/ui` 0.1, demo menus ported                                              |
-| 11.4  | M2 W1–W2 | input + postfx                         | `@flare-engine/input` gamepad + remap, `@flare-engine/postfx` 0.1                             |
+| Stage | Calendar | Goal                                   | Deliverable                                                                                                 |
+| ----- | -------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 11.1  | M1 W1    | npm + infra + web spike                | scope reserved, CanvasKit parity report, `@flare-engine/storage` 0.1                                        |
+| 11.2  | M1 W2    | reliability substrate                  | `@flare-engine/errors`, `@flare-engine/testing`, web parity in existing packages                            |
+| 11.3  | M1 W3–W4 | UI kit                                 | `@flare-engine/ui` 0.1, demo menus ported                                                                   |
+| 11.4  | M2 W1–W2 | input + postfx                         | `@flare-engine/input` gamepad + remap, `@flare-engine/postfx` 0.1                                           |
 | 11.5  | M2 W3    | i18n + share + a11y                    | `@flare-engine/localization`, `@flare-engine/deep-links`, `@flare-engine/share`, `@flare-engine/a11y` light |
-| 11.6  | M2 W4    | Game 2 scaffold + atlas swap           | `apps/roguelike` skeleton, Kenney atlas in demo                                 |
-| 11.7  | M3 W1–W2 | Game 2 vertical slice + genre packages | `@flare-engine/pathfinding`, `@flare-engine/dialogue`, roguelike procgen + battle loop        |
-| 11.8  | M3 W3–W4 | CLI + scaffolder                       | `@flare-engine/cli`, `create-flare-app`                                                |
-| 11.9  | M4 W1–W2 | Game 2 content                         | enemy roster, boss, meta-progression, save/load                                 |
-| 11.10 | M4 W3–W4 | devtools + Tier-2 stubs                | `@flare-engine/devtools` partial, 4 adapter stubs                                      |
-| 11.11 | M5 W1–W2 | web builds                             | both demos on staging GH Pages, perf locked                                     |
-| 11.12 | M5 W3    | docs site                              | `apps/site` Docusaurus, guides, API ref                                         |
-| 11.13 | M5 W4    | API lock + RC                          | snapshot tests, device bench, RC to npm                                         |
+| 11.6  | M2 W4    | Game 2 scaffold + atlas swap           | `apps/roguelike` skeleton, Kenney atlas in demo                                                             |
+| 11.7  | M3 W1–W2 | Game 2 vertical slice + genre packages | `@flare-engine/pathfinding`, `@flare-engine/dialogue`, roguelike procgen + battle loop                      |
+| 11.8  | M3 W3–W4 | CLI + scaffolder                       | `@flare-engine/cli`, `create-flare-app`                                                                     |
+| 11.9  | M4 W1–W2 | Game 2 content                         | enemy roster, boss, meta-progression, save/load                                                             |
+| 11.10 | M4 W3–W4 | devtools + Tier-2 stubs                | `@flare-engine/devtools` partial, 4 adapter stubs                                                           |
+| 11.11 | M5 W1–W2 | web builds                             | both demos on staging GH Pages, perf locked                                                                 |
+| 11.12 | M5 W3    | docs site                              | `apps/site` Docusaurus, guides, API ref                                                                     |
+| 11.13 | M5 W4    | API lock + RC                          | snapshot tests, device bench, RC to npm                                                                     |
 
 ---
 
@@ -359,7 +359,7 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
 - **Tasks.**
   1. npm scope: `@flare-engine` org created 2026-04-17. Flip publishable `packages/*` `"private": true` → `false` only at stage 11.13 RC cut; keep apps + benchmarks private forever.
   2. `LICENSE` propagation step from 11.0.1 (1).
-  3. 2-day CanvasKit spike in a throwaway branch: atlas draw, tint, bitmap font, blend modes. Write `docs/references/canvaskit-parity.md` with a pass/fail per feature.
+  3. 2-day CanvasKit spike in a throwaway branch: atlas draw, tint, bitmap font, blend modes. Fill in the "Spike Results" table of [canvaskit-parity.md](../references/canvaskit-parity.md) (the functional/API audit is already done — CanvasKit-WASM v0.41.1 has every API Flare uses; the spike confirms WebGL perf).
   4. Implement `@flare-engine/storage`: MMKV adapter (native) + IndexedDB adapter (web), typed schema with Zod-ish validator, migration runner, save slots, JSON import/export.
 - **Done when.** Parity report is committed; `@flare-engine/storage` 0.1 passes `typecheck && lint && test && build` on both platforms; every tarball built by `bun run build` contains `LICENSE`.
 - **Exit criteria / contingency.** If CanvasKit atlas batching is broken → commit to per-sprite web path in stage 11.11 and budget extra 3 days in M5; no change to calendar.
@@ -425,7 +425,7 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
 
 - **Goal.** First-time users hit a working app in <5 minutes.
 - **Tasks.**
-  1. `@flare-engine/cli` commands: `flare pack-atlas <input>` (TexturePacker-compatible JSON + PNG), `flare tiled-to-flare <tmj>` (normalized runtime JSON), `flare new <name>` (alias for create-flare-app).
+  1. `@flare-engine/cli` commands: `flare pack-atlas <input>` (TexturePacker-compatible JSON + PNG, uses `maxrects-packer` for bin-packing + `sharp` for image I/O per [cli-image-tooling.md](../references/cli-image-tooling.md)), `flare tiled-to-flare <tmj>` (normalized runtime JSON), `flare new <name>` (alias for create-flare-app).
   2. `create-flare-app` scaffolder: Expo + Flare + minimal scene + HUD; selectable template (`blank`, `topdown`, `shmup`).
   3. CI for both on GitHub Actions; publish both under `next` dist-tag for internal testing.
 - **Done when.** On a clean machine, `npm create flare-app@latest test-game && cd test-game && bun install && bun run dev` produces a running app in <5 min.

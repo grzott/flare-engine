@@ -13,7 +13,7 @@ import {
   tickBombFlash,
   tryBomb,
 } from '../systems/bomb';
-import { computeBossStatus, updateBoss } from '../systems/boss';
+import { clearBossFsms, computeBossStatus, updateBoss } from '../systems/boss';
 import { cleanup } from '../systems/cleanup';
 import { updateEnemyAI } from '../systems/enemy-ai';
 import { destroyEntity } from '../systems/entity-ops';
@@ -55,6 +55,8 @@ interface PlayState {
   posQuery: Query;
   allMoversQuery: Query;
   bossQuery: Query;
+  /** Flag set by collision callbacks — consumed in onUpdate to fire camera shake. */
+  playerHitShake: boolean;
 }
 
 function playSfx(sfx: SFXPool | null, key: BeepKey, volume = 1): void {
@@ -128,6 +130,7 @@ function resolveCollision(
       destroyEntity(world, state.coll, otherBodyId);
     }
     playSfx(sfx, 'explode', 0.6);
+    state.playerHitShake = true;
   }
 }
 
@@ -154,6 +157,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         posQuery: ctx.world.query(Position),
         allMoversQuery: ctx.world.query(Position),
         bossQuery: ctx.world.query(Boss),
+        playerHitShake: false,
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }) => {
@@ -257,11 +261,13 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           playerX,
           playerY,
           bounds,
-          onPhaseChange: () => {
+          onPhaseChange: (phase) => {
             playSfx(sfxRef.current, 'hit', 0.7);
+            if (phase === 'phase2') ctx.camera.shake(8, 0.3);
           },
           onDefeated: () => {
             s.bossId = -1;
+            ctx.camera.shake(14, 0.6);
           },
           onExplosion: () => {
             playSfx(sfxRef.current, 'explode', 0.5);
@@ -290,6 +296,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           bulletQuery: s.bulletQuery,
           bossQuery: s.bossQuery,
           flash: s.flash,
+          camera: ctx.camera,
           onBossHit: () => playSfx(sfxRef.current, 'hit', 0.9),
           onEnemyCleared: () => playSfx(sfxRef.current, 'bomb', 0.8),
         });
@@ -322,8 +329,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.gameOver = true;
             notifyStateChanged();
             playSfx(sfxRef.current, 'explode', 1);
+            ctx.camera.shake(16, 0.7);
           },
         });
+
+        if (s.playerHitShake) {
+          s.playerHitShake = false;
+          ctx.camera.shake(6, 0.2);
+        }
 
         publishBossStatus(s);
 
@@ -346,6 +359,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       onExit() {
         if (!state) return;
         clearWorld(state);
+        clearBossFsms();
         sfxRef.current?.stopAll();
       },
     };

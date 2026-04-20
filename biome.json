@@ -44,7 +44,8 @@
       "*.d.ts",
       ".expo",
       "apps/*/ios",
-      "apps/*/android"
+      "apps/*/android",
+      "packages/create-flare-app/templates"
     ]
   }
 }

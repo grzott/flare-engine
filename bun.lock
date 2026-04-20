@@ -13,6 +13,7 @@
         "bun-types": "^1.3.12",
         "husky": "^9.0.0",
         "lint-staged": "^15.0.0",
+        "maxrects-packer": "^2.7.3",
         "tsup": "^8.0.0",
         "turbo": "^2.0.0",
         "typescript": "^5.5.0",
@@ -133,12 +134,34 @@
         "react-native-audio-api": ">=0.3.0",
       },
     },
+    "packages/cli": {
+      "name": "@flare-engine/cli",
+      "version": "0.0.0",
+      "bin": {
+        "flare": "dist/cli.js",
+      },
+      "dependencies": {
+        "commander": "^13.1.0",
+        "maxrects-packer": "^2.7.3",
+        "sharp": "^0.34.5",
+      },
+    },
     "packages/core": {
       "name": "@flare-engine/core",
       "version": "0.0.0",
       "dependencies": {
         "@flare-engine/events": "workspace:*",
         "@flare-engine/math": "workspace:*",
+      },
+    },
+    "packages/create-flare-app": {
+      "name": "create-flare-app",
+      "version": "0.0.0",
+      "bin": {
+        "create-flare-app": "dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^13.1.0",
       },
     },
     "packages/debug": {
@@ -805,6 +828,8 @@
 
     "@flare-engine/benchmarks": ["@flare-engine/benchmarks@workspace:benchmarks"],
 
+    "@flare-engine/cli": ["@flare-engine/cli@workspace:packages/cli"],
+
     "@flare-engine/core": ["@flare-engine/core@workspace:packages/core"],
 
     "@flare-engine/debug": ["@flare-engine/debug@workspace:packages/debug"],
@@ -1321,6 +1346,8 @@
 
     "cosmiconfig-typescript-loader": ["cosmiconfig-typescript-loader@6.3.0", "", { "dependencies": { "jiti": "2.6.1" }, "peerDependencies": { "@types/node": "*", "cosmiconfig": ">=9", "typescript": ">=5" } }, "sha512-Akr82WH1Wfqatyiqpj8HDkO2o2KmJRu1FhKfSNJP3K4IdXwHfEyL7MOb62i1AGQVLtIQM+iCE9CGOtrfhR+mmA=="],
 
+    "create-flare-app": ["create-flare-app@workspace:packages/create-flare-app"],
+
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
     "csstype": ["csstype@3.2.3", "", {}, "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="],
@@ -1712,6 +1739,8 @@
     "makeerror": ["makeerror@1.0.12", "", { "dependencies": { "tmpl": "1.0.5" } }, "sha512-JmqCvUhmt43madlpFzG4BQzG2Z3m6tvQDNKdClZnO3VbIudJYmxsT0FNJMeiB2+JTSlTQTSbU8QdesVmwJcmLg=="],
 
     "marky": ["marky@1.3.0", "", {}, "sha512-ocnPZQLNpvbedwTy9kNrQEsknEfgvcLMvOtz3sFeWApDq1MXH1TqkCIx58xlpESsfwQOnuBO9beyQuNGzVvuhQ=="],
+
+    "maxrects-packer": ["maxrects-packer@2.7.3", "", {}, "sha512-bG6qXujJ1QgttZVIH4WDanhoJtvbud/xP/XPyf6A69C9RdA61BM4TomFALCq2nrTa+tARRIBB4LuIFsnUQU2wA=="],
 
     "memoize-one": ["memoize-one@5.2.1", "", {}, "sha512-zYiwtZUcYyXKo/np96AGZAckk+FWWsUdJ3cHGGmld7+AhvcWmQyGCYUh1hc4Q/pkOhb65dQR/pqCyK0cOaHz4Q=="],
 

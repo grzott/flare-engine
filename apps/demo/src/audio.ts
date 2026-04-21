@@ -1,4 +1,5 @@
 import type { AudioBufferLike, AudioContextLike } from '@flare-engine/engine';
+import { MIDI_REF_FREQ, MIDI_REF_NOTE } from './config/audio';
 
 interface AudioBufferFillable extends AudioBufferLike {
   getChannelData(channel: number): Float32Array;
@@ -70,6 +71,12 @@ function sampleWave(wave: WaveShape, phase: number): number {
   return Math.random() * 2 - 1;
 }
 
+/**
+ * Render a `BeepSpec` (short one-shot SFX) into a mono audio buffer in-place.
+ * The synth applies an exponential amplitude envelope (`envExp`) and a linear
+ * frequency sweep from `startFreq` → `endFreq` over the buffer duration.
+ * Supports four waveshapes (sine / square / saw / triangle).
+ */
 function renderBeep(buf: AudioBufferFillable, spec: BeepSpec): void {
   const data = buf.getChannelData(0);
   const n = buf.length;
@@ -110,8 +117,9 @@ interface MusicTrack {
   gain: number;
 }
 
-const MIDI_A4 = 69;
-const FREQ_A4 = 440;
+const MIDI_A4 = MIDI_REF_NOTE;
+const FREQ_A4 = MIDI_REF_FREQ;
+/** Equal-temperament MIDI → Hz conversion. 12 semitones per octave. */
 const midiToFreq = (midi: number): number => FREQ_A4 * 2 ** ((midi - MIDI_A4) / 12);
 
 const tracks: Record<MusicKey, MusicTrack> = {
@@ -135,6 +143,12 @@ const tracks: Record<MusicKey, MusicTrack> = {
   },
 };
 
+/**
+ * Render a `MusicTrack` (seamlessly looping bass + lead pattern) into a mono
+ * audio buffer in-place. Each MIDI note in `leadNotes` / `bassNotes` is held
+ * for one beat; waveshapes are configured per-track. No reverb / filters —
+ * tracks are kept minimal so procedural generation stays fast at boot.
+ */
 function renderMusic(buf: AudioBufferFillable, track: MusicTrack): void {
   const data = buf.getChannelData(0);
   const n = buf.length;

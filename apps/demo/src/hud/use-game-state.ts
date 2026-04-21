@@ -1,13 +1,6 @@
-import { useEffect, useState } from 'react';
 import { gameState, stateChanged } from '../state';
+import { useSignalState } from './use-signal-state';
 
 export function useGameState(): typeof gameState {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const unsub = stateChanged.add(() => setTick((t) => t + 1));
-    return () => {
-      unsub();
-    };
-  }, []);
-  return gameState;
+  return useSignalState(stateChanged, () => gameState);
 }

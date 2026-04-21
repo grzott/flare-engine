@@ -1,5 +1,5 @@
 import { Button, Label, Modal } from '@flare-engine/ui';
-import React from 'react';
+import type React from 'react';
 import { View } from 'react-native';
 import type { GameState } from '../../state';
 import { tileTitle } from '../helpers';
@@ -8,8 +8,9 @@ import { styles } from '../styles';
 import type { UiState } from '../ui-state';
 import { LeaderboardBody } from './atoms';
 
-/** Base hub: SHOP/INVENTORY/SHIPS/SCORES tiles + LAUNCH RUN / SETTINGS / MAIN MENU. */
-export const BaseMenuModal = React.memo(function BaseMenuModal(props: {
+/** Base hub: SHOP/INVENTORY/SHIPS/SCORES tiles + LAUNCH RUN / SETTINGS / MAIN MENU.
+ *  NOT memo'd — singleton-prop refs never change, so memo would skip updates. */
+export function BaseMenuModal(props: {
   state: GameState;
   ui: UiState;
 }): React.ReactElement {
@@ -66,11 +67,11 @@ export const BaseMenuModal = React.memo(function BaseMenuModal(props: {
       </View>
     </Modal>
   );
-});
+}
 
 /** A single base-hub tile's detail modal. SCORES shows the leaderboard;
  *  other tiles show a placeholder "coming soon" message. */
-export const BaseTileModal = React.memo(function BaseTileModal(props: {
+export function BaseTileModal(props: {
   state: GameState;
   ui: UiState;
 }): React.ReactElement {
@@ -92,4 +93,4 @@ export const BaseTileModal = React.memo(function BaseTileModal(props: {
       </View>
     </Modal>
   );
-});
+}

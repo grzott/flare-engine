@@ -1,5 +1,5 @@
 import { Button, Label, Modal } from '@flare-engine/ui';
-import React from 'react';
+import type React from 'react';
 import { Pressable, View } from 'react-native';
 import type { GameState } from '../../state';
 import { menuActions } from '../menu-actions';
@@ -8,8 +8,10 @@ import type { UiState } from '../ui-state';
 import { SlotRow } from './atoms';
 
 /** Main-menu modal: NEW GAME / CONTINUE / SETTINGS. Title taps forward to
- *  `menuActions.onTitleTap` (used for the triple-tap bench easter egg). */
-export const MainMenuModal = React.memo(function MainMenuModal(props: {
+ *  `menuActions.onTitleTap` (used for the triple-tap bench easter egg).
+ *  NOT memo'd — reads the mutable `gameState` / `uiState` singletons whose
+ *  references never change, so memo would freeze the modal invisible. */
+export function MainMenuModal(props: {
   state: GameState;
   ui: UiState;
 }): React.ReactElement {
@@ -36,10 +38,10 @@ export const MainMenuModal = React.memo(function MainMenuModal(props: {
       </View>
     </Modal>
   );
-});
+}
 
 /** Slot picker: lists 3 slots with RESET-with-confirm. */
-export const SlotPickerModal = React.memo(function SlotPickerModal(props: {
+export function SlotPickerModal(props: {
   state: GameState;
   ui: UiState;
 }): React.ReactElement {
@@ -62,4 +64,4 @@ export const SlotPickerModal = React.memo(function SlotPickerModal(props: {
       </View>
     </Modal>
   );
-});
+}

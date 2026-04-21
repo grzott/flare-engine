@@ -1,14 +1,13 @@
 import { HUDBar, Label } from '@flare-engine/ui';
-import React from 'react';
+import type React from 'react';
 import { Pressable, View } from 'react-native';
 import type { GameState } from '../../state';
 import { menuActions } from '../menu-actions';
 import { styles } from '../styles';
 
-/** In-play HUD layer: score, bombs, pause button, boss bar, HP bar, bomb flash. */
-export const HudPlayLayer = React.memo(function HudPlayLayer(props: {
-  state: GameState;
-}): React.ReactElement {
+/** In-play HUD layer: score, bombs, pause button, boss bar, HP bar, bomb flash.
+ *  NOT memo'd — `state` is the mutable `gameState` singleton. */
+export function HudPlayLayer(props: { state: GameState }): React.ReactElement {
   const s = props.state;
   return (
     <>
@@ -42,4 +41,4 @@ export const HudPlayLayer = React.memo(function HudPlayLayer(props: {
       </View>
     </>
   );
-});
+}

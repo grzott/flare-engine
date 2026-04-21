@@ -1,5 +1,5 @@
 import { Button, Label, Modal } from '@flare-engine/ui';
-import React from 'react';
+import type React from 'react';
 import { View } from 'react-native';
 import type { GameState } from '../../state';
 import { menuActions } from '../menu-actions';
@@ -7,8 +7,9 @@ import { styles } from '../styles';
 import { EndSummary } from './atoms';
 
 /** Victory / Game-Over end-of-run screen. Uses the same modal, swapping title
- *  tone and action labels based on `currentScene`. */
-export const EndScreenModal = React.memo(function EndScreenModal(props: {
+ *  tone and action labels based on `currentScene`.
+ *  NOT memo'd — `state` is the mutable `gameState` singleton. */
+export function EndScreenModal(props: {
   state: GameState;
   visible: boolean;
 }): React.ReactElement {
@@ -35,4 +36,4 @@ export const EndScreenModal = React.memo(function EndScreenModal(props: {
       </View>
     </Modal>
   );
-});
+}

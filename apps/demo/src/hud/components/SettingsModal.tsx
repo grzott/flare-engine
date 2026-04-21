@@ -1,5 +1,5 @@
 import { Button, Label, Modal } from '@flare-engine/ui';
-import React from 'react';
+import type React from 'react';
 import { View } from 'react-native';
 import type { GameState } from '../../state';
 import { settingsPatch } from '../helpers';
@@ -7,8 +7,9 @@ import { menuActions } from '../menu-actions';
 import { styles } from '../styles';
 import { SettingRow, ToggleRow } from './atoms';
 
-/** Settings modal: SFX / MUSIC / SCREEN SHAKE. */
-export const SettingsModal = React.memo(function SettingsModal(props: {
+/** Settings modal: SFX / MUSIC / SCREEN SHAKE.
+ *  NOT memo'd — `state` is the mutable `gameState` singleton. */
+export function SettingsModal(props: {
   state: GameState;
   visible: boolean;
 }): React.ReactElement {
@@ -40,4 +41,4 @@ export const SettingsModal = React.memo(function SettingsModal(props: {
       </View>
     </Modal>
   );
-});
+}

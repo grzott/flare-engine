@@ -11,6 +11,8 @@ const BOSS_DAMAGE_RATIO = 0.25;
 const FLASH_DURATION = 0.35;
 const CAMERA_SHAKE_INTENSITY = 12;
 const CAMERA_SHAKE_DURATION = 0.4;
+/** Minimum gap between bomb fires. Prevents spam presses from stacking flashes. */
+const BOMB_COOLDOWN = 0.45;
 
 export interface BombFlashState {
   /** Seconds remaining for the flash. Kept for test/introspection compat. */
@@ -19,15 +21,20 @@ export interface BombFlashState {
   duration: number;
   /** Eased tween that drives `alpha` while active. */
   tween: Tween | null;
+  /** Seconds remaining before another bomb may fire. */
+  cooldown: number;
 }
 
 export function createBombFlashState(): BombFlashState {
-  return { remaining: 0, duration: FLASH_DURATION, tween: null };
+  return { remaining: 0, duration: FLASH_DURATION, tween: null, cooldown: 0 };
 }
 
 export function tickBombFlash(state: BombFlashState, dt: number): void {
   if (state.remaining > 0) {
     state.remaining = Math.max(0, state.remaining - dt);
+  }
+  if (state.cooldown > 0) {
+    state.cooldown = Math.max(0, state.cooldown - dt);
   }
   if (state.tween) {
     updateTween(state.tween, dt);
@@ -60,6 +67,7 @@ export function tryBomb(
   deps: BombDeps,
 ): number {
   if (!justPressed || charges <= 0) return charges;
+  if (deps.flash.cooldown > 0) return charges;
 
   const enemyIds: number[] = [];
   for (const id of deps.enemyQuery) enemyIds.push(id);
@@ -85,6 +93,7 @@ export function tryBomb(
   // Eased flash fade: alpha 1 → 0 with easeOutQuad.
   deps.flash.remaining = deps.flash.duration;
   deps.flash.tween = tween(1, 0, deps.flash.duration, easeOutQuad);
+  deps.flash.cooldown = BOMB_COOLDOWN;
 
   // Camera shake for bomb feel.
   deps.camera?.shake(CAMERA_SHAKE_INTENSITY, CAMERA_SHAKE_DURATION);

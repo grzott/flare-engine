@@ -146,4 +146,48 @@ describe('bomb flash state', () => {
     tickBombFlash(flash, 10);
     expect(flash.remaining).toBe(0);
   });
+
+  it('ticks down the cooldown and blocks re-firing until elapsed', () => {
+    const { world, ctx } = makeCtx();
+    spawnEnemy(ctx, 'straight', 10, 10);
+    const enemyQuery = world.query(Enemy);
+    const bulletQuery = world.query(Bullet);
+    const bossQuery = world.query(Boss);
+    const flash = createBombFlashState();
+
+    const after1 = tryBomb(world, 3, true, {
+      coll: ctx.coll,
+      enemyQuery,
+      bulletQuery,
+      bossQuery,
+      flash,
+    });
+    expect(after1).toBe(2);
+    expect(flash.cooldown).toBeGreaterThan(0);
+
+    // Immediate re-press within cooldown is ignored.
+    spawnEnemy(ctx, 'sine', 20, 20);
+    const after2 = tryBomb(world, after1, true, {
+      coll: ctx.coll,
+      enemyQuery,
+      bulletQuery,
+      bossQuery,
+      flash,
+    });
+    expect(after2).toBe(2);
+    expect(enemyQuery.count).toBe(1);
+
+    // After the cooldown elapses, another bomb goes through.
+    tickBombFlash(flash, 1);
+    expect(flash.cooldown).toBe(0);
+    const after3 = tryBomb(world, after2, true, {
+      coll: ctx.coll,
+      enemyQuery,
+      bulletQuery,
+      bossQuery,
+      flash,
+    });
+    expect(after3).toBe(1);
+    expect(enemyQuery.count).toBe(0);
+  });
 });

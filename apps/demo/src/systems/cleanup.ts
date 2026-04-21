@@ -1,6 +1,7 @@
 import type { CollisionWorld, Query, World } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import { Enemy, type EnemyPattern, Hp, Lifetime } from '../components';
+import { OFFSCREEN_PAD } from '../config/gameplay';
 import { destroyEntity } from './entity-ops';
 
 export interface CleanupDeps {
@@ -12,8 +13,6 @@ export interface CleanupDeps {
   onEnemyKilled: (scoreValue: number, x: number, y: number, pattern: EnemyPattern) => void;
   onPlayerDown: () => void;
 }
-
-const OFFSCREEN_PAD = 60;
 
 export function cleanup(world: World, dt: number, deps: CleanupDeps): void {
   for (const id of deps.bulletQuery) {

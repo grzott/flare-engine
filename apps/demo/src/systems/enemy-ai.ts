@@ -1,11 +1,18 @@
 import type { Query, World } from '@flare-engine/engine';
 import { Position, Velocity } from '@flare-engine/engine';
 import { Enemy } from '../components';
+import { BULLET_SPAWN_OFFSET } from '../config/gameplay';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';
 import { spawnBullet } from '../spawn';
+import { type Direction2D, normalizeDirection } from '../util/direction';
 
 const ENEMY_BULLET_SPEED = 280;
+/** Horizontal velocity spread for aimed enemy bullets (0..1 of base speed). */
+const AIM_SPEED_X_RATIO = 0.6;
+
+/** Reused output vector for direction normalization — avoids per-frame allocs. */
+const aim: Direction2D = { x: 0, y: 0 };
 
 export interface EnemyDeps {
   spawnCtx: SpawnCtx;
@@ -36,12 +43,15 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
 
     e.fireCooldown -= dt;
     if (e.fireCooldown <= 0) {
-      const dx = deps.playerX - pos.x;
-      const dy = deps.playerY - pos.y;
-      const mag = Math.hypot(dx, dy) || 1;
-      const vx = (dx / mag) * ENEMY_BULLET_SPEED * 0.6;
-      const vy = (dy / mag) * ENEMY_BULLET_SPEED;
-      spawnBullet(deps.spawnCtx, pos.x, pos.y + 16, vx, vy, Layer.enemy);
+      normalizeDirection(deps.playerX - pos.x, deps.playerY - pos.y, ENEMY_BULLET_SPEED, aim);
+      spawnBullet(
+        deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.enemy,
+        aim.x * AIM_SPEED_X_RATIO,
+        aim.y,
+        Layer.enemy,
+      );
       e.fireCooldown = e.fireInterval;
     }
   }

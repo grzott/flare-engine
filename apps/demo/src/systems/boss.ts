@@ -2,9 +2,11 @@ import type { Query, World } from '@flare-engine/ecs';
 import { FSM, Position, Velocity } from '@flare-engine/ecs';
 import { clamp } from '@flare-engine/math';
 import { Boss, type BossPhase, Hp } from '../components';
+import { BULLET_SPAWN_OFFSET } from '../config/gameplay';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';
 import { spawnBullet } from '../spawn';
+import { type Direction2D, normalizeDirection } from '../util/direction';
 import { destroyEntity } from './entity-ops';
 
 const BOSS_BULLET_SPEED = 260;
@@ -12,6 +14,9 @@ const PHASE2_HP_RATIO = 0.5;
 const DYING_INTERVAL = 0.18;
 const DYING_TOTAL = 12;
 const BOSS_HALF_W = 48;
+
+/** Reused output for normalizeDirection inside phase-2 fire. */
+const aim: Direction2D = { x: 0, y: 0 };
 
 export interface BossDeps {
   spawnCtx: SpawnCtx;
@@ -66,23 +71,28 @@ function firePhase1(c: BossCtx): void {
   const b = c.world.get(c.id, Boss);
   if (!pos || !b) return;
   const sweep = Math.sin(b.t * 1.8) * 160;
-  spawnBullet(c.deps.spawnCtx, pos.x, pos.y + 32, sweep, BOSS_BULLET_SPEED, Layer.enemy);
+  spawnBullet(
+    c.deps.spawnCtx,
+    pos.x,
+    pos.y + BULLET_SPAWN_OFFSET.boss,
+    sweep,
+    BOSS_BULLET_SPEED,
+    Layer.enemy,
+  );
 }
 
 function firePhase2(c: BossCtx): void {
   const pos = c.world.get(c.id, Position);
   if (!pos) return;
-  const dx = c.deps.playerX - pos.x;
-  const dy = c.deps.playerY - pos.y;
-  const mag = Math.hypot(dx, dy) || 1;
-  const baseVx = (dx / mag) * BOSS_BULLET_SPEED;
-  const baseVy = (dy / mag) * BOSS_BULLET_SPEED;
+  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BOSS_BULLET_SPEED, aim);
+  const baseVx = aim.x;
+  const baseVy = aim.y;
   for (const angle of [-0.25, 0, 0.25]) {
     const cs = Math.cos(angle);
     const sn = Math.sin(angle);
     const vx = baseVx * cs - baseVy * sn;
     const vy = baseVx * sn + baseVy * cs;
-    spawnBullet(c.deps.spawnCtx, pos.x, pos.y + 32, vx, vy, Layer.enemy);
+    spawnBullet(c.deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.boss, vx, vy, Layer.enemy);
   }
 }
 

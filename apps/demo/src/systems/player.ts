@@ -2,6 +2,7 @@ import type { Query, World } from '@flare-engine/engine';
 import { Position, Velocity } from '@flare-engine/engine';
 import { clamp } from '@flare-engine/math';
 import { Ship } from '../components';
+import { BULLET_SPAWN_OFFSET } from '../config/gameplay';
 import { Layer } from '../layers';
 import type { SpawnCtx } from '../spawn';
 import { spawnBullet } from '../spawn';
@@ -34,7 +35,14 @@ export function updatePlayer(world: World, dt: number, deps: PlayerDeps): void {
 
     ship.cooldown -= dt;
     if (ship.cooldown <= 0) {
-      spawnBullet(spawnCtx, pos.x, pos.y - 20, 0, BULLET_SPEED, Layer.player);
+      spawnBullet(
+        spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.player,
+        0,
+        BULLET_SPEED,
+        Layer.player,
+      );
       ship.cooldown = ship.fireRate;
       deps.onShoot();
     }

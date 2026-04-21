@@ -1,6 +1,7 @@
 import { type RunStats, type Settings, type SlotMeta, createSlot, defaultSettings } from '../state';
+import { runMigrations } from './migrations';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SaveFile {
   version: number;
@@ -80,15 +81,15 @@ export function parseSaveFile(raw: string | null): SaveFile {
     return defaultSaveFile();
   }
   if (data === null || typeof data !== 'object') return defaultSaveFile();
-  const o = data as Record<string, unknown>;
-  const version = isNum(o.version) ? o.version : SAVE_VERSION;
-  const settings = parseSettings(o.settings);
-  const slotsRaw = Array.isArray(o.slots) ? o.slots : [null, null, null];
+  const migrated = runMigrations(data as Record<string, unknown>, SAVE_VERSION);
+  if (!migrated) return defaultSaveFile();
+  const settings = parseSettings(migrated.settings);
+  const slotsRaw = Array.isArray(migrated.slots) ? migrated.slots : [null, null, null];
   const slots: (SlotMeta | null)[] = [0, 1, 2].map((i) => parseSlot(slotsRaw[i]));
-  const lastSlotIndex = isNum(o.lastSlotIndex)
-    ? Math.max(0, Math.min(2, Math.floor(o.lastSlotIndex)))
+  const lastSlotIndex = isNum(migrated.lastSlotIndex)
+    ? Math.max(0, Math.min(2, Math.floor(migrated.lastSlotIndex)))
     : null;
-  return { version, settings, slots, lastSlotIndex };
+  return { version: SAVE_VERSION, settings, slots, lastSlotIndex };
 }
 
 export function mergeRunIntoSlot(slot: SlotMeta, run: RunStats, victory: boolean): SlotMeta {

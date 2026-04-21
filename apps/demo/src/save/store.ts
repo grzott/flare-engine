@@ -7,7 +7,13 @@ import {
   gameState,
   notifyStateChanged,
 } from '../state';
-import { type SaveFile, defaultSaveFile, mergeRunIntoSlot, parseSaveFile } from './schema';
+import {
+  SAVE_VERSION,
+  type SaveFile,
+  defaultSaveFile,
+  mergeRunIntoSlot,
+  parseSaveFile,
+} from './schema';
 
 const KEY = 'flare-shmup:save';
 
@@ -46,7 +52,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
 
   function snapshot(): SaveFile {
     return {
-      version: 1,
+      version: SAVE_VERSION,
       settings: gameState.settings,
       slots: gameState.slots.slice(0, 3),
       lastSlotIndex: gameState.lastSlotIndex,

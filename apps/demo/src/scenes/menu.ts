@@ -1,6 +1,14 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { clearMenuActions, setMenuActions } from '../hud/menu-actions';
-import { gameState, notifyStateChanged, resetGameState } from '../state';
+import {
+  closeSettings,
+  closeSlotPicker,
+  openSettings,
+  openSlotPicker,
+  resetUi,
+} from '../hud/ui-state';
+import { getSaveStore } from '../save/ref';
+import { gameState, notifyStateChanged } from '../state';
 import { shellDefaults } from './scene-shell';
 
 const TRIPLE_TAP_WINDOW = 0.6;
@@ -23,12 +31,34 @@ export function createMenuScene(ctx: GameContextValue): () => Scene {
         ctx.camera.y = h / 2;
         ctx.camera.zoom = 1;
         ctx.camera.rotation = 0;
-        resetGameState();
         gameState.currentScene = 'menu';
+        gameState.menuReady = false;
+        gameState.paused = false;
+        resetUi();
         notifyStateChanged();
+
+        const store = getSaveStore();
         setMenuActions({
-          onStart: () => {
-            void ctx.scenes.go('play');
+          onNewGame: () => openSlotPicker(),
+          onContinue: () => {
+            const idx = gameState.lastSlotIndex;
+            if (idx === null) return;
+            void store.selectSlot(idx).then(() => {
+              void ctx.scenes.go('base');
+            });
+          },
+          onOpenSettings: () => openSettings(),
+          onCloseSettings: () => closeSettings(),
+          onPickSlot: (i) => {
+            const existing = gameState.slots[i];
+            const p = existing ? store.selectSlot(i) : store.createSlot(i);
+            void p.then(() => {
+              closeSlotPicker();
+              void ctx.scenes.go('base');
+            });
+          },
+          onResetSlot: (i) => {
+            void store.resetSlot(i);
           },
           onTitleTap: () => {
             if (titleTapTimer <= 0) titleTapCount = 0;
@@ -56,6 +86,7 @@ export function createMenuScene(ctx: GameContextValue): () => Scene {
       },
       onExit() {
         clearMenuActions();
+        resetUi();
         gameState.menuReady = false;
       },
     };

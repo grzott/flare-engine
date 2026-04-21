@@ -1,6 +1,6 @@
 import type { CollisionWorld, Query, World } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
-import { Enemy, Hp, Lifetime } from '../components';
+import { Enemy, type EnemyPattern, Hp, Lifetime } from '../components';
 import { destroyEntity } from './entity-ops';
 
 export interface CleanupDeps {
@@ -9,7 +9,7 @@ export interface CleanupDeps {
   enemyQuery: Query;
   shipQuery: Query;
   bounds: { width: number; height: number };
-  onEnemyKilled: (scoreValue: number, x: number, y: number) => void;
+  onEnemyKilled: (scoreValue: number, x: number, y: number, pattern: EnemyPattern) => void;
   onPlayerDown: () => void;
 }
 
@@ -43,7 +43,7 @@ export function cleanup(world: World, dt: number, deps: CleanupDeps): void {
     const enemy = world.get(id, Enemy);
     if (!pos || !hp || !enemy) continue;
     if (hp.current <= 0) {
-      deps.onEnemyKilled(enemy.scoreValue, pos.x, pos.y);
+      deps.onEnemyKilled(enemy.scoreValue, pos.x, pos.y, enemy.pattern);
       destroyEntity(world, deps.coll, id);
       continue;
     }

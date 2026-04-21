@@ -2,10 +2,12 @@ import type { GameContextValue, Query, SFXPool, Scene } from '@flare-engine/engi
 import { CollisionWorld, Position } from '@flare-engine/engine';
 import type { BeepKey } from '../audio';
 import { Boss, type BossPhase, Bullet, Enemy, Hp, Ship } from '../components';
+import { clearMenuActions, setMenuActions } from '../hud/menu-actions';
+import { closePause, closeSettings, openPause, openSettings, resetUi } from '../hud/ui-state';
 import { Layer } from '../layers';
 import type { AtlasHandle, SpawnCtx } from '../spawn';
 import { spawnBoss, spawnEnemy, spawnPlayer } from '../spawn';
-import { bombButtonState, gameState, notifyStateChanged } from '../state';
+import { bombButtonState, createRunStats, gameState, notifyStateChanged } from '../state';
 import {
   type BombFlashState,
   bombFlashAlpha,
@@ -107,6 +109,7 @@ function resolveCollision(
         playSfx(sfx, 'hit', 0.8);
         if (world.has(otherId, Ship)) {
           gameState.playerHp = Math.max(0, hp.current);
+          gameState.runStats.damageTaken += bullet.damage;
           notifyStateChanged();
         }
       }
@@ -124,6 +127,7 @@ function resolveCollision(
     if (shipHp) {
       shipHp.current -= 1;
       gameState.playerHp = Math.max(0, shipHp.current);
+      gameState.runStats.damageTaken += 1;
       notifyStateChanged();
     }
     if (!world.has(otherBodyId, Boss)) {
@@ -216,8 +220,35 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         gameState.bossHpMax = 0;
         gameState.gameOver = false;
         gameState.victory = false;
+        gameState.paused = false;
         gameState.currentScene = 'play';
+        gameState.runStats = createRunStats();
+        resetUi();
         notifyStateChanged();
+
+        setMenuActions({
+          onPauseOpen: () => {
+            gameState.paused = true;
+            ctx.loop.pause();
+            openPause();
+            notifyStateChanged();
+          },
+          onPauseResume: () => {
+            gameState.paused = false;
+            closePause();
+            ctx.loop.resume();
+            notifyStateChanged();
+          },
+          onPauseToMenu: () => {
+            gameState.paused = false;
+            closePause();
+            ctx.loop.resume();
+            notifyStateChanged();
+            void ctx.scenes.go('menu');
+          },
+          onOpenSettings: () => openSettings(),
+          onCloseSettings: () => closeSettings(),
+        });
 
         const w = ctx.camera.viewportWidth || 360;
         const h = ctx.camera.viewportHeight || 640;
@@ -230,10 +261,13 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
 
       onUpdate(dt: number) {
         if (!state) return;
+        if (gameState.paused) return;
+        if (gameState.gameOver || gameState.victory) return;
         const s = state;
         const w = ctx.camera.viewportWidth || 360;
         const h = ctx.camera.viewportHeight || 640;
         const bounds = { width: w, height: h };
+        gameState.runStats.durationSec += dt;
 
         const player = ctx.world.get(s.playerId, Position);
         const playerX = player?.x ?? w / 2;
@@ -263,11 +297,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           bounds,
           onPhaseChange: (phase) => {
             playSfx(sfxRef.current, 'hit', 0.7);
-            if (phase === 'phase2') ctx.camera.shake(8, 0.3);
+            if (phase === 'phase2' && gameState.settings.screenShake) ctx.camera.shake(8, 0.3);
           },
           onDefeated: () => {
             s.bossId = -1;
-            ctx.camera.shake(14, 0.6);
+            gameState.runStats.kills.boss += 1;
+            if (gameState.settings.screenShake) ctx.camera.shake(14, 0.6);
           },
           onExplosion: () => {
             playSfx(sfxRef.current, 'explode', 0.5);
@@ -296,11 +331,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           bulletQuery: s.bulletQuery,
           bossQuery: s.bossQuery,
           flash: s.flash,
-          camera: ctx.camera,
+          camera: gameState.settings.screenShake ? ctx.camera : undefined,
           onBossHit: () => playSfx(sfxRef.current, 'hit', 0.9),
           onEnemyCleared: () => playSfx(sfxRef.current, 'bomb', 0.8),
         });
         if (newCharges !== gameState.bombCharges) {
+          gameState.runStats.bombsUsed += 1;
           gameState.bombCharges = newCharges;
           notifyStateChanged();
         }
@@ -320,8 +356,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           enemyQuery: s.enemyQuery,
           shipQuery: s.shipQuery,
           bounds,
-          onEnemyKilled: (score) => {
+          onEnemyKilled: (score, _x, _y, pattern) => {
             gameState.score += score;
+            gameState.runStats.score = gameState.score;
+            gameState.runStats.kills[pattern] += 1;
             notifyStateChanged();
             playSfx(sfxRef.current, 'explode', 0.7);
           },
@@ -329,13 +367,13 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.gameOver = true;
             notifyStateChanged();
             playSfx(sfxRef.current, 'explode', 1);
-            ctx.camera.shake(16, 0.7);
+            if (gameState.settings.screenShake) ctx.camera.shake(16, 0.7);
           },
         });
 
         if (s.playerHitShake) {
           s.playerHitShake = false;
-          ctx.camera.shake(6, 0.2);
+          if (gameState.settings.screenShake) ctx.camera.shake(6, 0.2);
         }
 
         publishBossStatus(s);
@@ -361,6 +399,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         clearWorld(state);
         clearBossFsms();
         sfxRef.current?.stopAll();
+        clearMenuActions();
+        resetUi();
       },
     };
   };

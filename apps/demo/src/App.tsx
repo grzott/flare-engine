@@ -16,19 +16,24 @@ import {
   fadeTransition,
 } from '@flare-engine/engine';
 import { Skia } from '@shopify/react-native-skia';
+import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { buildPlaceholderAtlas } from './atlas';
 import { type MusicKey, createBeepBuffers, createMusicBuffers } from './audio';
 import { Hud } from './hud/Hud';
 import { publishFps } from './hud/fps-state';
+import { setSaveStore } from './save/ref';
+import { createSaveStore } from './save/store';
+import { createBaseScene } from './scenes/base';
 import { createBenchScene } from './scenes/bench';
 import { createBootScene } from './scenes/boot';
+import { createDialogueScene } from './scenes/dialogue';
 import { createGameOverScene } from './scenes/game-over';
 import { createMenuScene } from './scenes/menu';
 import { createPlayScene } from './scenes/play';
 import { createVictoryScene } from './scenes/victory';
-import { bombButtonState, joystickState, resetBombButtonFrame } from './state';
+import { bombButtonState, gameState, joystickState, resetBombButtonFrame } from './state';
 
 interface AudioApiModule {
   AudioContext: new () => AudioContextLike;
@@ -37,6 +42,7 @@ interface AudioApiModule {
 interface AudioHandles {
   pool: SFXPool;
   music: Music;
+  channels: ReturnType<typeof createChannels>;
 }
 
 async function initAudio(ctx: GameContextValue): Promise<AudioHandles | null> {
@@ -57,14 +63,23 @@ async function initAudio(ctx: GameContextValue): Promise<AudioHandles | null> {
     music.connect(audioCtx, musicChannel.node);
     const tracks = createMusicBuffers(audioCtx);
     for (const [k, buf] of Object.entries(tracks)) music.register(k, buf);
-    return { pool, music };
+    return { pool, music, channels };
   } catch {
     return null;
   }
 }
 
+function applyVolumes(channels: ReturnType<typeof createChannels>): void {
+  const sfxCh = channels.get('sfx');
+  const musicCh = channels.get('music');
+  if (sfxCh) sfxCh.volume = gameState.settings.sfxVolume;
+  if (musicCh) musicCh.volume = gameState.settings.musicVolume;
+}
+
 const sceneToTrack: Record<string, MusicKey | null> = {
   menu: 'menu',
+  base: 'menu',
+  dialogue: 'menu',
   play: 'game',
   'game-over': null,
   victory: 'menu',
@@ -87,21 +102,38 @@ function onReady(ctx: GameContextValue): void {
   const atlas = buildPlaceholderAtlas(Skia);
   const sfxRef: { current: SFXPool | null } = { current: null };
   const musicRef: { current: Music | null } = { current: null };
+  const channelsRef: { current: ReturnType<typeof createChannels> | null } = {
+    current: null,
+  };
+  const saveStore = createSaveStore();
+  setSaveStore(saveStore);
+  void saveStore.load();
   void initAudio(ctx).then((h) => {
     if (!h) return;
     sfxRef.current = h.pool;
     musicRef.current = h.music;
+    channelsRef.current = h.channels;
+    applyVolumes(h.channels);
     const current = ctx.scenes.current?.name;
     if (current) applySceneMusic(h.music, current);
   });
 
   ctx.scenes.register('boot', createBootScene(ctx));
   ctx.scenes.register('menu', createMenuScene(ctx));
+  ctx.scenes.register('base', createBaseScene(ctx));
+  ctx.scenes.register('dialogue', createDialogueScene(ctx));
   ctx.scenes.register('play', createPlayScene({ ctx, atlas, sfx: sfxRef }));
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
   ctx.scenes.register('bench', createBenchScene({ ctx, atlas }));
   ctx.scenes.setTransition(fadeTransition(0.3));
+
+  // Re-apply audio settings whenever the game state changes (settings modal edits).
+  import('./state').then(({ stateChanged }) => {
+    stateChanged.add(() => {
+      if (channelsRef.current) applyVolumes(channelsRef.current);
+    });
+  });
 
   const stats = new StatsTracker();
   const fpsWidget = createFpsWidget({
@@ -146,6 +178,7 @@ export function App(): React.ReactElement {
 
   return (
     <View style={styles.root}>
+      <StatusBar hidden />
       <GameView config={{ clearColor: 0xff0a0e1a }} onReady={onReady}>
         <VirtualJoystick onStateChange={onJoystick} style={styles.joystick} />
         <VirtualButton onStateChange={onBomb} style={styles.bombBtn} />

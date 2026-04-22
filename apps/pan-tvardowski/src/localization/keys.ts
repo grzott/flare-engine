@@ -36,6 +36,7 @@ const hud = [
   'hud.miniboss_name',
   'hud.weapon_level',
   'hud.shield_active',
+  'hud.gaze_active',
   'hud.share',
   'hud.share.victory',
   'hud.share.gameover',

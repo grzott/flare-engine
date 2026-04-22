@@ -165,3 +165,31 @@ export function buildZone5Schedule(seed: number, viewportWidth = 360): WaveEntry
   }
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-6 wave schedule. Only Wąpierz + Południca spawn.
+ * Pre-miniboss stretch 3..90 s (miniboss gate at 100 s), then a post-miniboss
+ * stretch 120..275 s before the boss gate at 290 s.
+ */
+export function buildZone6Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  const pushWaves = (from: number, to: number, intensity: number): void => {
+    let t = from;
+    while (t < to) {
+      const roll = rand();
+      const pattern: EnemyPattern = roll < 0.55 ? 'wapierz' : 'poludnica';
+      // Wąpierz is slow + tanky — fewer but bigger waves.
+      // Południca sweeps horizontally — pairs or triples.
+      const count = pattern === 'wapierz' ? 1 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 2);
+      const spacing = pattern === 'wapierz' ? 64 : 56;
+      const maxStart = viewportWidth - (count - 1) * spacing - 40;
+      const startX = 40 + rand() * Math.max(1, maxStart);
+      schedule.push({ t, count, pattern, spacing, startX });
+      t += 2.8 + rand() * (3.4 - intensity);
+    }
+  };
+  pushWaves(3, 90, 1.4); // pre-miniboss
+  pushWaves(120, 275, 1.6); // post-miniboss → pre-boss
+  return schedule;
+}

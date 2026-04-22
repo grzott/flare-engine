@@ -2,12 +2,18 @@ import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
+import type { A11yBridge } from '../a11y/manager';
 import type { AudioHandles } from '../audio/init';
 import { setZoneMusic } from '../audio/init';
 import type { MusicKey } from '../audio/synth';
 import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
 import { Boss, Bullet, Enemy, Lifetime, Miniboss, Ship } from '../components';
-import { DZIWOZONA_SKRZAT_SPAWN, PLAYER_HP_MAX, START_BOMBS } from '../config/gameplay';
+import {
+  BAZYLISZEK_GAZE_SPEED_MUL,
+  DZIWOZONA_SKRZAT_SPAWN,
+  PLAYER_HP_MAX,
+  START_BOMBS,
+} from '../config/gameplay';
 import type { ZoneConfig } from '../config/zones';
 import { ZONES } from '../config/zones';
 import type { ZoneId } from '../events';
@@ -36,6 +42,7 @@ import {
   notifyStateChanged,
   resetBombButtonFrame,
 } from '../state';
+import { countHounds, spawnPuddle } from '../systems/bazyliszek';
 import { type BombFlashState, createBombFlashState, processBomb } from '../systems/bomb';
 import { clearBossFsms, computeBossStatus, updateBoss } from '../systems/boss';
 import { cleanup } from '../systems/cleanup';
@@ -75,6 +82,9 @@ export interface PlaySceneDeps {
   skia?: SkiaPostFxModuleLike | null;
   /** Mutable ref the scene populates so <GameView>'s hooks can dispatch to it. */
   renderHooks?: PlayRenderHooks;
+  /** Optional a11y bridge — attaches camera + postfx so reduced-motion scales
+   *  screen-shake and postfx intensity globally. */
+  a11y?: A11yBridge;
 }
 
 const ZONE_MUSIC: Record<ZoneId, MusicKey> = {
@@ -83,6 +93,7 @@ const ZONE_MUSIC: Record<ZoneId, MusicKey> = {
   z3: 'zone3',
   z4: 'zone4',
   z5: 'zone5',
+  z6: 'zone6',
 };
 
 interface PlayState {
@@ -121,6 +132,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
   const { ctx, atlas, save } = deps;
   const audioRef = deps.audio;
   const postfx: PostFxController = createPanTvardowskiPostFx(deps.skia ?? null);
+  // Attach the a11y bridge once — reduced-motion then drives camera.motionScale
+  // and postfx.setMotionScale automatically through the manager's onChange.
+  if (deps.a11y) {
+    deps.a11y.attachCamera(ctx.camera);
+    deps.a11y.attachPostfx(postfx);
+  }
 
   return () => {
     let s: PlayState | null = null;
@@ -336,6 +353,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           onShoot: () => {
             audioRef?.current?.pool.play('shoot');
           },
+          speedMul: gameState.bossGazeActive ? BAZYLISZEK_GAZE_SPEED_MUL : 1,
         });
         updateEnemyAI(ctx.world, dt, {
           spawnCtx: s.spawnCtx,
@@ -356,6 +374,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           onFormChange: (form) => {
             if (!s) return;
             gameEvents.emit('miniboss-form-change', s.zone.id, form);
+          },
+          onSpawnHound: (x, y) => {
+            if (!s) return;
+            spawnEnemy(s.spawnCtx, 'hound', x, y, ((x * 37 + y * 13) | 1) >>> 0);
+          },
+          countHounds: () => {
+            if (!s) return 0;
+            return countHounds(ctx.world, s.enemyQuery);
           },
           onDefeated: () => {
             if (!s) return;
@@ -401,12 +427,23 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             spawnEnemy(s.spawnCtx, 'bies', x, y, ((x * 41 + y * 19) | 1) >>> 0);
             gameEvents.emit('boss-summon', s.zone.id, 'bies');
           },
+          onGazeChange: (active) => {
+            if (!s) return;
+            gameState.bossGazeActive = active;
+            gameEvents.emit('boss-gaze-changed', s.zone.id, active);
+            notifyStateChanged();
+          },
+          onSpawnPuddle: (x, y) => {
+            if (!s) return;
+            spawnPuddle(s.spawnCtx, x, y);
+          },
           onDefeated: () => {
             if (!s) return;
             s.bossId = -1;
             gameState.runStats.kills.boss += 1;
             if (gameState.settings.screenShake) ctx.camera.shake(14, 0.6);
             gameState.bossActive = false;
+            gameState.bossGazeActive = false;
             gameEvents.emit('zone-complete', s.zone.id, gameState.score);
             const next = s.zone.nextZone;
             if (next) {

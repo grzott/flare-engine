@@ -15,6 +15,8 @@ export interface PlayerDeps {
   query: Query;
   bounds: { width: number; height: number };
   onShoot?: () => void;
+  /** Multiplier applied to player movement speed. Defaults to 1. */
+  speedMul?: number;
 }
 
 /**
@@ -23,14 +25,15 @@ export interface PlayerDeps {
  */
 export function updatePlayer(world: World, dt: number, deps: PlayerDeps): void {
   const { bounds, spawnCtx, query } = deps;
+  const speedMul = deps.speedMul ?? 1;
   for (const id of query) {
     const pos = world.get(id, Position);
     const vel = world.get(id, Velocity);
     const ship = world.get(id, Ship);
     if (!pos || !vel || !ship) continue;
 
-    vel.x = joystickState.dx * PLAYER_SPEED;
-    vel.y = joystickState.dy * PLAYER_SPEED;
+    vel.x = joystickState.dx * PLAYER_SPEED * speedMul;
+    vel.y = joystickState.dy * PLAYER_SPEED * speedMul;
 
     pos.x = clamp(pos.x, MARGIN, bounds.width - MARGIN);
     pos.y = clamp(pos.y, MARGIN, bounds.height - MARGIN);

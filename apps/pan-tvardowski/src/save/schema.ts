@@ -62,9 +62,10 @@ function parseSettings(v: unknown): Settings {
   if (v === null || typeof v !== 'object') return defaultSettings();
   const o = v as Record<string, unknown>;
   const shake = isBool(o.screenShake) ? o.screenShake : true;
+  const reducedMotion = isBool(o.reducedMotion) ? o.reducedMotion : false;
   const rawLocale = typeof o.locale === 'string' ? o.locale : 'en';
   const locale: Settings['locale'] = rawLocale === 'pl' ? 'pl' : 'en';
-  return { screenShake: shake, locale };
+  return { screenShake: shake, reducedMotion, locale };
 }
 
 export function parseSaveFile(raw: string | null): SaveFile {

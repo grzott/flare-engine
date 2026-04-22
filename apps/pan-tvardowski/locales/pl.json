@@ -29,6 +29,7 @@
   "hud.miniboss_name": "{name}",
   "hud.weapon_level": "POZ {level}",
   "hud.shield_active": "Tarcza aktywna",
+  "hud.gaze_active": "Wzrok kamieniejący",
   "hud.share": "Udostępnij",
   "hud.share.victory": "Pokonałem Pana Twardowskiego z wynikiem {score}!",
   "hud.share.gameover": "Diabeł mnie dopadł z wynikiem {score} w Pan Twardowski!",

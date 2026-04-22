@@ -107,7 +107,7 @@ export function createSfxBuffers(ctx: AudioContextLike): Record<SfxKey, AudioBuf
 
 // ---- Music tracks — one per zone (§5) --------------------------------------
 
-export type MusicKey = 'zone1' | 'zone2' | 'zone3' | 'zone4' | 'zone5';
+export type MusicKey = 'zone1' | 'zone2' | 'zone3' | 'zone4' | 'zone5' | 'zone6';
 
 interface MusicTrack {
   bpm: number;
@@ -175,6 +175,17 @@ const TRACKS: Record<MusicKey, MusicTrack> = {
     leadWave: 'sine',
     bassWave: 'sine',
     gain: 0.22,
+  },
+  // Zone 6 — Katakumby: gothic organ drone. Very slow 48 bpm, sine lead over
+  // sine sub, D-minor with a lowered-2 (E♭) to evoke crypt/basilisk.
+  zone6: {
+    bpm: 48,
+    beats: 16,
+    bassNotes: [26, 26, 26, 26, 29, 29, 29, 29, 27, 27, 27, 27, 26, 26, 26, 26],
+    leadNotes: [50, 53, 57, 53, 50, 53, 56, 53, 50, 51, 53, 51, 50, 48, 50, 48],
+    leadWave: 'sine',
+    bassWave: 'sine',
+    gain: 0.24,
   },
 };
 

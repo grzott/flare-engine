@@ -3,6 +3,7 @@ import type { Query, World } from '@flare-engine/engine';
 import { clamp } from '@flare-engine/math';
 import { Boss, type BossPattern, type BossPhase, Bullet, Hp } from '../components';
 import {
+  BAZYLISZEK_TELEPORT_SEC,
   BORUTA_SUMMON_COUNT,
   BULLET_SPAWN_OFFSET,
   BULLET_SPEED,
@@ -40,6 +41,10 @@ export interface BossDeps {
   onShieldBroken?: () => void;
   /** Boruta: called once per summoned Bies when entering phase 2. */
   onSpawnSummon?: (x: number, y: number) => void;
+  /** Bazyliszek: called whenever the phase-1 stone-gaze state toggles. */
+  onGazeChange?: (active: boolean) => void;
+  /** Bazyliszek phase 2: drop a persistent venom puddle at (x, y). */
+  onSpawnPuddle?: (x: number, y: number) => void;
 }
 
 export interface BossStatus {
@@ -369,12 +374,81 @@ const babaJagaScript: PhaseScript = {
   },
 };
 
+// ---- Bazyliszek Warszawski (Zone 6) ----------------------------------------
+// Phase 1: stone-gaze cone — narrow 3-way cone in player's direction. The
+//          scene listens to `onGazeChange` to slow the player while active.
+// Phase 2: venom spit — single heavy aimed shot + persistent puddle drop via
+//          `onSpawnPuddle` (scene spawns a downward-drifting enemy bullet).
+// Phase 3: gaze-beam maze — 10 radial spokes spun by `b.t`; combined with
+//          periodic teleport (handled in the FSM phase3 onUpdate block).
+const bazyliszekScript: PhaseScript = {
+  sweepSpeed1: 45,
+  sweepSpeed2: 80,
+  sweepSpeed3: 25,
+  fire1Cooldown: 0.7,
+  fire2Cooldown: 0.55,
+  fire3Cooldown: 0.22,
+  fire1(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    for (let i = -1; i <= 1; i++) {
+      const a = baseAngle + i * 0.12;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        Math.cos(a) * BULLET_SPEED.boss,
+        Math.sin(a) * BULLET_SPEED.boss,
+        Layer.enemy,
+      );
+    }
+  },
+  fire2(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    // Heavy aimed shot.
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      aim.x,
+      aim.y,
+      Layer.enemy,
+    );
+    // Drop a persistent venom puddle slightly ahead of the boss.
+    c.deps.onSpawnPuddle?.(pos.x, pos.y + BULLET_SPAWN_OFFSET.boss + 20);
+  },
+  fire3(c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (!pos || !b) return;
+    // Gaze-beam maze — 10 radial spokes spun by b.t.
+    const rays = 10;
+    const spin = b.t * 1.35;
+    for (let i = 0; i < rays; i++) {
+      const a = spin + (i / rays) * Math.PI * 2;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y,
+        Math.cos(a) * BULLET_SPEED.boss * 0.9,
+        Math.sin(a) * BULLET_SPEED.boss * 0.9,
+        Layer.enemy,
+      );
+    }
+  },
+};
+
 const SCRIPTS: Record<BossPattern, PhaseScript> = {
   'smok-krzemionkowski': smokScript,
   'borowy-krol': borowyScript,
   'wodnik-wislanny': wodnikScript,
   boruta: borutaScript,
   'baba-jaga': babaJagaScript,
+  'bazyliszek-warszawski': bazyliszekScript,
 };
 
 function sweepMove(c: BossCtx, speed: number): void {
@@ -478,6 +552,7 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         b.fireCooldown = 0.4;
       }
       c.deps.onPhaseChange?.('phase1');
+      if (b?.pattern === 'bazyliszek-warszawski') c.deps.onGazeChange?.(true);
     },
     onUpdate(dt, c) {
       const b = c.world.get(c.id, Boss);
@@ -487,7 +562,8 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('killed');
         return;
       }
-      const p2Ratio = b.pattern === 'baba-jaga' ? THREE_PHASE_P2_RATIO : PHASE2_HP_RATIO;
+      const threePhase = b.pattern === 'baba-jaga' || b.pattern === 'bazyliszek-warszawski';
+      const p2Ratio = threePhase ? THREE_PHASE_P2_RATIO : PHASE2_HP_RATIO;
       if (hp.current / hp.max <= p2Ratio) {
         fsm.trigger('phase2');
         return;
@@ -502,6 +578,8 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
     },
     onExit(c) {
       clearEnemyBullets(c);
+      const b = c.world.get(c.id, Boss);
+      if (b?.pattern === 'bazyliszek-warszawski') c.deps.onGazeChange?.(false);
     },
   });
 
@@ -540,7 +618,8 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         return;
       }
       // 3-phase bosses (Baba Jaga onward) transition phase2 → phase3 at 1/3 HP.
-      if (b.pattern === 'baba-jaga' && hp.current / hp.max <= PHASE3_HP_RATIO) {
+      const threePhase = b.pattern === 'baba-jaga' || b.pattern === 'bazyliszek-warszawski';
+      if (threePhase && hp.current / hp.max <= PHASE3_HP_RATIO) {
         fsm.trigger('phase3');
         return;
       }
@@ -573,20 +652,41 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         b.phase = 'phase3';
         b.phaseT = 0;
         b.fireCooldown = 0.4;
+        b.teleportT = 0;
       }
       c.deps.onPhaseChange?.('phase3');
     },
     onUpdate(dt, c) {
       const b = c.world.get(c.id, Boss);
       const hp = c.world.get(c.id, Hp);
-      if (!b || !hp) return;
+      const pos = c.world.get(c.id, Position);
+      if (!b || !hp || !pos) return;
       if (hp.current <= 0) {
         fsm.trigger('killed');
         return;
       }
       const script = SCRIPTS[b.pattern];
-      const speed3 = script.sweepSpeed3 ?? script.sweepSpeed2;
-      sweepMove(c, speed3);
+      // Bazyliszek phase-3 teleport instead of sweeping movement.
+      if (b.pattern === 'bazyliszek-warszawski') {
+        b.teleportT += dt;
+        if (b.teleportT >= BAZYLISZEK_TELEPORT_SEC) {
+          b.teleportT = 0;
+          // Deterministic hash of b.t gives reproducible (testable) positions.
+          const h = Math.abs(Math.sin(b.t * 12.9898) * 43758.5453);
+          const u = h - Math.floor(h);
+          const left = BOSS_HALF_W;
+          const right = c.deps.bounds.width - BOSS_HALF_W;
+          pos.x = left + u * (right - left);
+          const vel = c.world.get(c.id, Velocity);
+          if (vel) {
+            vel.x = 0;
+            vel.y = 0;
+          }
+        }
+      } else {
+        const speed3 = script.sweepSpeed3 ?? script.sweepSpeed2;
+        sweepMove(c, speed3);
+      }
       b.fireCooldown -= dt;
       if (b.fireCooldown <= 0) {
         script.fire3?.(c);

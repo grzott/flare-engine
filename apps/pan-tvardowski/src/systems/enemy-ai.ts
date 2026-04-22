@@ -79,6 +79,22 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
       // Slow hover — drifts sideways gently, non-firing summoner.
       vel.x = Math.sin(e.t * 0.9) * 30;
       vel.y = e.speed;
+    } else if (e.pattern === 'wapierz') {
+      // Slow heavy tank — gentle side-drift, steady descent.
+      vel.x = Math.sin(e.t * 0.7) * 60;
+      vel.y = e.speed;
+    } else if (e.pattern === 'poludnica') {
+      // Cross-screen rush — fast horizontal, slow descent; flip sides each ~4 s.
+      const dir = Math.sin(e.t * 0.8) >= 0 ? 1 : -1;
+      vel.x = dir * 180;
+      vel.y = e.speed;
+    } else if (e.pattern === 'hound') {
+      // Homing hound — locks onto the player direction each tick.
+      const dx = deps.playerX - pos.x;
+      const dy = deps.playerY - pos.y;
+      const len = Math.hypot(dx, dy) || 1;
+      vel.x = (dx / len) * e.speed;
+      vel.y = (dy / len) * e.speed;
     } else {
       vel.x = 0;
       vel.y = e.speed;
@@ -150,6 +166,24 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
           const a = (i / 8) * Math.PI * 2;
           const vx = Math.cos(a) * BULLET_SPEED.enemy;
           const vy = Math.sin(a) * BULLET_SPEED.enemy;
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
+        }
+      } else if (e.pattern === 'wapierz') {
+        // Heavy 5-way cross: cardinal-ish fan around the aim vector.
+        const base = Math.atan2(aim.y, aim.x);
+        for (let i = -2; i <= 2; i++) {
+          const a = base + i * 0.22;
+          const vx = Math.cos(a) * BULLET_SPEED.enemy;
+          const vy = Math.sin(a) * BULLET_SPEED.enemy;
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
+        }
+      } else if (e.pattern === 'poludnica') {
+        // Wide scythe sweep — 5 bullets fanned horizontally.
+        const base = Math.atan2(aim.y, aim.x);
+        for (let i = -2; i <= 2; i++) {
+          const a = base + i * 0.32;
+          const vx = Math.cos(a) * BULLET_SPEED.enemy * 1.05;
+          const vy = Math.sin(a) * BULLET_SPEED.enemy * 1.05;
           spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
         }
       } else {

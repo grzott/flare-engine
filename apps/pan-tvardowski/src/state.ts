@@ -15,6 +15,9 @@ export type KillKind =
   | 'licho'
   | 'nocnica'
   | 'dziwozona'
+  | 'wapierz'
+  | 'poludnica'
+  | 'hound'
   | 'miniboss'
   | 'boss';
 
@@ -31,6 +34,9 @@ export interface RunStats {
     licho: number;
     nocnica: number;
     dziwozona: number;
+    wapierz: number;
+    poludnica: number;
+    hound: number;
     miniboss: number;
     boss: number;
   };
@@ -53,6 +59,9 @@ export function createRunStats(): RunStats {
       licho: 0,
       nocnica: 0,
       dziwozona: 0,
+      wapierz: 0,
+      poludnica: 0,
+      hound: 0,
       miniboss: 0,
       boss: 0,
     },
@@ -64,10 +73,11 @@ export function createRunStats(): RunStats {
 
 export interface Settings {
   screenShake: boolean;
+  reducedMotion: boolean;
   locale: 'en' | 'pl';
 }
 export function defaultSettings(): Settings {
-  return { screenShake: true, locale: 'en' };
+  return { screenShake: true, reducedMotion: false, locale: 'en' };
 }
 
 export interface ZoneBannerInfo {
@@ -92,6 +102,8 @@ export interface GameState {
   minibossNameKey: string;
   /** Wodnik bubble shield is up — HUD shows indicator, player shots blocked. */
   bossShieldActive: boolean;
+  /** Bazyliszek phase-1 stone-gaze is active — HUD indicator + player slow. */
+  bossGazeActive: boolean;
   gameOver: boolean;
   victory: boolean;
   currentScene: SceneName;
@@ -115,6 +127,7 @@ export const gameState: GameState = {
   minibossActive: false,
   minibossNameKey: 'minibosses.rokita.name',
   bossShieldActive: false,
+  bossGazeActive: false,
   gameOver: false,
   victory: false,
   currentScene: 'boot',

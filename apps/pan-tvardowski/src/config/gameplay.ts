@@ -80,6 +80,27 @@ export const ENEMY_SPECS: Record<EnemyPattern, EnemySpec> = {
     speed: 45,
     fireInterval: Number.POSITIVE_INFINITY,
   },
+  wapierz: {
+    frame: 'wapierz',
+    hp: 8,
+    score: 420,
+    speed: 55,
+    fireInterval: 1.8,
+  },
+  poludnica: {
+    frame: 'poludnica',
+    hp: 5,
+    score: 360,
+    speed: 40,
+    fireInterval: 2.2,
+  },
+  hound: {
+    frame: 'hound',
+    hp: 3,
+    score: 0,
+    speed: 170,
+    fireInterval: Number.POSITIVE_INFINITY,
+  },
 };
 
 export const BULLET_SPEED = {
@@ -169,3 +190,27 @@ export const THREE_PHASE_P2_RATIO = 2 / 3;
 
 /** Dziwożona splits into this many Skrzats on death (build plan §7 “spawns 2 Skrzats on death”). */
 export const DZIWOZONA_SKRZAT_SPAWN = 2;
+
+/** Nocny Łowca miniboss HP (build plan §8). */
+export const NOCNY_LOWCA_HP = 250;
+
+/** Number of homing hounds Nocny Łowca keeps in the arena. */
+export const NOCNY_LOWCA_HOUND_COUNT = 4;
+
+/** Bazyliszek Warszawski HP per phase (build plan §9). */
+export const BAZYLISZEK_PHASE_HP = 600;
+export const BAZYLISZEK_HP_MAX = BAZYLISZEK_PHASE_HP * 3;
+
+/** Seconds before the Zone-6 miniboss (Nocny Łowca) enters (§5 length = 5:30). */
+export const ZONE6_MINIBOSS_T = 100;
+/** Seconds before the Zone-6 boss (Bazyliszek Warszawski) enters. */
+export const ZONE6_BOSS_T = 290;
+
+/** Bazyliszek phase-3 teleport cadence (seconds between relocations). */
+export const BAZYLISZEK_TELEPORT_SEC = 3;
+
+/** Venom puddle persistence (seconds) — Bazyliszek phase 2. */
+export const BAZYLISZEK_PUDDLE_LIFETIME_SEC = 4;
+
+/** Player speed multiplier while Bazyliszek phase-1 stone-gaze is active. */
+export const BAZYLISZEK_GAZE_SPEED_MUL = 0.55;

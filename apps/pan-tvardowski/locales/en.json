@@ -29,6 +29,7 @@
   "hud.miniboss_name": "{name}",
   "hud.weapon_level": "LV {level}",
   "hud.shield_active": "Shield active",
+  "hud.gaze_active": "Petrifying gaze",
   "hud.share": "Share",
   "hud.share.victory": "I beat Pan Tvardowski and scored {score}!",
   "hud.share.gameover": "The Devil got me with {score} points in Pan Tvardowski!",

@@ -94,6 +94,13 @@ const enemies = {
       strokeWidth: 2,
     },
   ],
+  hound: [
+    { kind: 'circle', r: 11, fill: BLACK },
+    { kind: 'triangle', size: 5, fill: BLACK, ox: -6, oy: -9 },
+    { kind: 'triangle', size: 5, fill: BLACK, ox: 6, oy: -9 },
+    { kind: 'circle', r: 2, fill: DARK_RED, ox: -4, oy: -1 },
+    { kind: 'circle', r: 2, fill: DARK_RED, ox: 4, oy: -1 },
+  ],
   dziwozona: [
     { kind: 'ngon', n: 5, r: 16, fill: TEAL },
     { kind: 'triangle', size: 6, fill: TEAL, ox: -18, oy: 0 },

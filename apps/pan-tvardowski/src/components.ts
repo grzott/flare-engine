@@ -9,7 +9,7 @@ export const Ship = defineComponent<ShipData>('Ship', () => ({
   cooldown: 0,
 }));
 
-/** Enemy kinds across Zones 1–5. */
+/** Enemy kinds across Zones 1–6. */
 export type EnemyPattern =
   | 'skrzat'
   | 'latawiec'
@@ -20,7 +20,10 @@ export type EnemyPattern =
   | 'mamuna'
   | 'licho'
   | 'nocnica'
-  | 'dziwozona';
+  | 'dziwozona'
+  | 'wapierz'
+  | 'poludnica'
+  | 'hound';
 
 export interface EnemyData {
   pattern: EnemyPattern;
@@ -73,7 +76,8 @@ export type BossPattern =
   | 'borowy-krol'
   | 'wodnik-wislanny'
   | 'boruta'
-  | 'baba-jaga';
+  | 'baba-jaga'
+  | 'bazyliszek-warszawski';
 
 export interface BossData {
   pattern: BossPattern;
@@ -91,6 +95,8 @@ export interface BossData {
   shieldDownFor: number;
   /** Boruta: number of Bies summons spawned so far this encounter. */
   summonsSpawned: number;
+  /** Bazyliszek phase 3: seconds since last teleport. */
+  teleportT: number;
 }
 export const Boss = defineComponent<BossData>('Boss', () => ({
   pattern: 'smok-krzemionkowski',
@@ -104,9 +110,10 @@ export const Boss = defineComponent<BossData>('Boss', () => ({
   minionsAlive: 0,
   shieldDownFor: 0,
   summonsSpawned: 0,
+  teleportT: 0,
 }));
 
-export type MinibossPattern = 'rokita' | 'leszy';
+export type MinibossPattern = 'rokita' | 'leszy' | 'nocny-lowca';
 export type MinibossPhase = 'entering' | 'active' | 'dying' | 'defeated';
 
 /** Leszy shape-shift forms. */
@@ -126,6 +133,8 @@ export interface MinibossData {
   form: LeszyForm;
   /** Leszy: seconds spent in the current form. */
   formT: number;
+  /** Nocny Łowca: count of live homing hounds (re-summons on 0). */
+  hounds: number;
 }
 export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
   pattern: 'rokita',
@@ -138,4 +147,5 @@ export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
   rootProgress: 0,
   form: 'deer',
   formT: 0,
+  hounds: 0,
 }));

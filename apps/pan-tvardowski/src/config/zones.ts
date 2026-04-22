@@ -6,14 +6,17 @@ import {
   buildZone3Schedule,
   buildZone4Schedule,
   buildZone5Schedule,
+  buildZone6Schedule,
 } from '../systems/spawner';
 import type { WaveEntry } from '../systems/spawner';
 import {
   BABA_JAGA_HP_MAX,
+  BAZYLISZEK_HP_MAX,
   BOROWY_HP_MAX,
   BORUTA_HP_MAX,
   BOSS_SPAWN_T,
   LESZY_HP,
+  NOCNY_LOWCA_HP,
   ROKITA_HP,
   SMOK_HP_MAX,
   WODNIK_HP_MAX,
@@ -23,6 +26,8 @@ import {
   ZONE4_BOSS_T,
   ZONE4_MINIBOSS_T,
   ZONE5_BOSS_T,
+  ZONE6_BOSS_T,
+  ZONE6_MINIBOSS_T,
 } from './gameplay';
 
 export interface ZoneConfig {
@@ -103,6 +108,19 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: 0,
     minibossT: Number.POSITIVE_INFINITY,
     buildSchedule: buildZone5Schedule,
+    nextZone: 'z6',
+  },
+  z6: {
+    id: 'z6',
+    nameKey: 'zones.6.name',
+    bossNameKey: 'bosses.bazyliszek-warszawski.name',
+    bossPattern: 'bazyliszek-warszawski',
+    bossHp: BAZYLISZEK_HP_MAX,
+    bossT: ZONE6_BOSS_T,
+    minibossPattern: 'nocny-lowca',
+    minibossHp: NOCNY_LOWCA_HP,
+    minibossT: ZONE6_MINIBOSS_T,
+    buildSchedule: buildZone6Schedule,
     nextZone: null,
   },
 };

@@ -9,7 +9,12 @@ import {
   type MinibossPattern,
   type MinibossPhase,
 } from '../components';
-import { BULLET_SPAWN_OFFSET, BULLET_SPEED, LESZY_FORM_SEC } from '../config/gameplay';
+import {
+  BULLET_SPAWN_OFFSET,
+  BULLET_SPEED,
+  LESZY_FORM_SEC,
+  NOCNY_LOWCA_HOUND_COUNT,
+} from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
 import { type Direction2D, normalizeDirection } from '../util/direction';
@@ -34,6 +39,10 @@ export interface MinibossDeps {
   onExplosion?: (x: number, y: number) => void;
   /** Leszy: fired the instant `form` changes. */
   onFormChange?: (form: LeszyForm) => void;
+  /** Nocny Łowca: spawn one homing hound at (x, y). Re-summoned when pack dies. */
+  onSpawnHound?: (x: number, y: number) => void;
+  /** Nocny Łowca: count of live hounds in the world right now. */
+  countHounds?: () => number;
 }
 
 export interface MinibossStatus {
@@ -44,6 +53,7 @@ export interface MinibossStatus {
   pattern: MinibossPattern | null;
   rootProgress: number;
   form: LeszyForm;
+  hounds: number;
 }
 
 export function computeMinibossStatus(world: World, query: Query): MinibossStatus {
@@ -59,6 +69,7 @@ export function computeMinibossStatus(world: World, query: Query): MinibossStatu
       pattern: m.pattern,
       rootProgress: m.rootProgress,
       form: m.form,
+      hounds: m.hounds,
     };
   }
   return {
@@ -69,6 +80,7 @@ export function computeMinibossStatus(world: World, query: Query): MinibossStatu
     pattern: null,
     rootProgress: 0,
     form: 'deer',
+    hounds: 0,
   };
 }
 
@@ -170,6 +182,39 @@ function nextLeszyForm(current: LeszyForm): LeszyForm {
   return FORM_ORDER[(idx + 1) % FORM_ORDER.length] ?? 'deer';
 }
 
+/** Nocny Łowca fires an aimed pair whip-shot while the hounds do the chasing. */
+function nocnyLowcaFire(c: MinibossCtx): number {
+  const pos = c.world.get(c.id, Position);
+  if (!pos) return 1;
+  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+  const base = Math.atan2(aim.y, aim.x);
+  for (let i = -1; i <= 1; i += 2) {
+    const a = base + i * 0.18;
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      Math.cos(a) * BULLET_SPEED.boss,
+      Math.sin(a) * BULLET_SPEED.boss,
+      Layer.enemy,
+    );
+  }
+  return 0.9;
+}
+
+/** Summon `NOCNY_LOWCA_HOUND_COUNT` hounds arcing around the miniboss. */
+function summonHounds(c: MinibossCtx): void {
+  const pos = c.world.get(c.id, Position);
+  const m = c.world.get(c.id, Miniboss);
+  if (!pos || !m || !c.deps.onSpawnHound) return;
+  const half = (NOCNY_LOWCA_HOUND_COUNT - 1) / 2;
+  for (let i = 0; i < NOCNY_LOWCA_HOUND_COUNT; i++) {
+    const offset = (i - half) * 46;
+    c.deps.onSpawnHound(pos.x + offset, pos.y + 30);
+  }
+  m.hounds = NOCNY_LOWCA_HOUND_COUNT;
+}
+
 function clearEnemyBullets(c: MinibossCtx): void {
   const toDrop: number[] = [];
   const q = c.world.query(Bullet);
@@ -217,6 +262,7 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
       c.deps.onPhaseChange?.('active');
       const m2 = c.world.get(c.id, Miniboss);
       if (m2 && m2.pattern === 'leszy') c.deps.onFormChange?.(m2.form);
+      if (m2 && m2.pattern === 'nocny-lowca') summonHounds(c);
     },
     onUpdate(dt, c) {
       const m = c.world.get(c.id, Miniboss);
@@ -248,6 +294,17 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
         m.fireCooldown -= dt;
         if (m.fireCooldown <= 0) {
           m.fireCooldown = leszyFire(c);
+        }
+      } else if (m.pattern === 'nocny-lowca') {
+        // Spectral-horse sweep — faster than Rokita/Leszy-bear.
+        sweepMove(c, 120);
+        // Re-summon if the pack was wiped.
+        const live = c.deps.countHounds?.() ?? m.hounds;
+        m.hounds = live;
+        if (live === 0) summonHounds(c);
+        m.fireCooldown -= dt;
+        if (m.fireCooldown <= 0) {
+          m.fireCooldown = nocnyLowcaFire(c);
         }
       }
     },

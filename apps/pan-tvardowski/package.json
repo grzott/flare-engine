@@ -15,6 +15,7 @@
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "@flare-engine/a11y": "workspace:*",
     "@flare-engine/animation": "workspace:*",
     "@flare-engine/assets": "workspace:*",
     "@flare-engine/audio": "workspace:*",

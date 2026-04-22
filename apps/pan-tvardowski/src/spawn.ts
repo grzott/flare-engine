@@ -46,7 +46,12 @@ export function spawnPlayer(ctx: SpawnCtx, x: number, y: number): number {
   const f = frame(atlas.sheet, 'kogut-zloty');
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
-  world.add(id, Sprite, { image: atlas.image, frame: f, z: 10, anchor: CENTER_ANCHOR });
+  world.add(id, Sprite, {
+    image: atlas.image,
+    frame: f,
+    z: 10,
+    anchor: CENTER_ANCHOR,
+  });
   world.add(id, Ship, { fireRate: 0.18, cooldown: 0 });
   world.add(id, Hp, { current: 100, max: 100 });
   coll.add(id, AABB(f.w * 0.6, f.h * 0.6), x, y, false, Layer.player, Mask.player);
@@ -66,7 +71,12 @@ export function spawnEnemy(
   const f = frame(atlas.sheet, spec.frame);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
-  world.add(id, Sprite, { image: atlas.image, frame: f, z: 8, anchor: CENTER_ANCHOR });
+  world.add(id, Sprite, {
+    image: atlas.image,
+    frame: f,
+    z: 8,
+    anchor: CENTER_ANCHOR,
+  });
   world.add(id, Enemy, {
     pattern,
     t: 0,
@@ -96,7 +106,12 @@ export function spawnBoss(
   const f = frame(atlas.sheet, pattern);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
-  world.add(id, Sprite, { image: atlas.image, frame: f, z: 9, anchor: CENTER_ANCHOR });
+  world.add(id, Sprite, {
+    image: atlas.image,
+    frame: f,
+    z: 9,
+    anchor: CENTER_ANCHOR,
+  });
   world.add(id, Boss, {
     pattern,
     phase: 'entering',
@@ -105,6 +120,9 @@ export function spawnBoss(
     fireCooldown: 1.5,
     dyingExplosions: 0,
     targetY: 100,
+    shieldActive: false,
+    minionsAlive: 0,
+    shieldDownFor: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);
@@ -123,7 +141,12 @@ export function spawnMiniboss(
   const f = frame(atlas.sheet, pattern);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
-  world.add(id, Sprite, { image: atlas.image, frame: f, z: 9, anchor: CENTER_ANCHOR });
+  world.add(id, Sprite, {
+    image: atlas.image,
+    frame: f,
+    z: 9,
+    anchor: CENTER_ANCHOR,
+  });
   world.add(id, Miniboss, {
     pattern,
     phase: 'entering',
@@ -156,7 +179,12 @@ export function spawnBullet(
   const f = frame(atlas.sheet, name);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: vx, y: vy });
-  world.add(id, Sprite, { image: atlas.image, frame: f, z: 6, anchor: CENTER_ANCHOR });
+  world.add(id, Sprite, {
+    image: atlas.image,
+    frame: f,
+    z: 6,
+    anchor: CENTER_ANCHOR,
+  });
   world.add(id, Bullet, { damage: 1, ownerLayer });
   world.add(id, Lifetime, { remaining: 3 });
   coll.add(id, AABB(f.w, f.h), x, y, true, layer, mask);

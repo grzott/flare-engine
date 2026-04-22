@@ -38,6 +38,20 @@ export const ENEMY_SPECS: Record<EnemyPattern, EnemySpec> = {
     speed: 100,
     fireInterval: 1.6,
   },
+  topielec: {
+    frame: 'topielec',
+    hp: 4,
+    score: 260,
+    speed: -120,
+    fireInterval: 2.0,
+  },
+  strzyga: {
+    frame: 'strzyga',
+    hp: 3,
+    score: 220,
+    speed: 130,
+    fireInterval: 1.9,
+  },
 };
 
 export const BULLET_SPEED = {
@@ -63,6 +77,16 @@ export const BOROWY_HP_MAX = BOROWY_PHASE_HP * 2;
 /** Rokita miniboss HP (build plan §8). */
 export const ROKITA_HP = 150;
 
+/** Wodnik Wiślany HP per phase (build plan §9). */
+export const WODNIK_PHASE_HP = 600;
+export const WODNIK_HP_MAX = WODNIK_PHASE_HP * 2;
+
+/** How many shield minions Wodnik spawns each time the bubble re-raises. */
+export const WODNIK_SHIELD_MINIONS = 4;
+
+/** Seconds between shield rebuilds after all minions die. */
+export const WODNIK_SHIELD_REBUILD_SEC = 5;
+
 /** Padding past the play-field before an entity is culled. */
 export const OFFSCREEN_PAD = 64;
 
@@ -78,3 +102,5 @@ export const BOSS_SPAWN_T = 150;
 export const ZONE2_MINIBOSS_T = 90;
 /** Seconds before the Zone-2 boss (Borowy Król) enters. */
 export const ZONE2_BOSS_T = 200;
+/** Seconds before the Zone-3 boss (Wodnik Wiślany) enters (§5 length = 4:00). */
+export const ZONE3_BOSS_T = 220;

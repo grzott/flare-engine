@@ -9,8 +9,8 @@ export const Ship = defineComponent<ShipData>('Ship', () => ({
   cooldown: 0,
 }));
 
-/** Enemy kinds across Zones 1–2. */
-export type EnemyPattern = 'skrzat' | 'latawiec' | 'czart' | 'bies';
+/** Enemy kinds across Zones 1–3. */
+export type EnemyPattern = 'skrzat' | 'latawiec' | 'czart' | 'bies' | 'topielec' | 'strzyga';
 
 export interface EnemyData {
   pattern: EnemyPattern;
@@ -55,7 +55,7 @@ export const Lifetime = defineComponent<LifetimeData>('Lifetime', () => ({
 
 export type BossPhase = 'entering' | 'phase1' | 'phase2' | 'dying' | 'defeated';
 
-export type BossPattern = 'smok-krzemionkowski' | 'borowy-krol';
+export type BossPattern = 'smok-krzemionkowski' | 'borowy-krol' | 'wodnik-wislanny';
 
 export interface BossData {
   pattern: BossPattern;
@@ -65,6 +65,12 @@ export interface BossData {
   fireCooldown: number;
   dyingExplosions: number;
   targetY: number;
+  /** Wodnik Wiślany: true while bubble-shield minions are alive. */
+  shieldActive: boolean;
+  /** Count of currently-alive shield minions (Wodnik phase 2). */
+  minionsAlive: number;
+  /** Seconds since shield last dropped; used to gate re-raising the shield. */
+  shieldDownFor: number;
 }
 export const Boss = defineComponent<BossData>('Boss', () => ({
   pattern: 'smok-krzemionkowski',
@@ -74,6 +80,9 @@ export const Boss = defineComponent<BossData>('Boss', () => ({
   fireCooldown: 0,
   dyingExplosions: 0,
   targetY: 90,
+  shieldActive: false,
+  minionsAlive: 0,
+  shieldDownFor: 0,
 }));
 
 export type MinibossPattern = 'rokita';

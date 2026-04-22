@@ -97,3 +97,24 @@ export function buildZone2Schedule(seed: number, viewportWidth = 360): WaveEntry
   pushWaves(110, 185, 1.4); // post-miniboss → pre-boss
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-3 wave schedule. Only Topielec + Strzyga spawn.
+ * No miniboss in Zone 3; schedule fills the stretch before the boss at 220 s.
+ */
+export function buildZone3Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  let t = 3;
+  while (t < 200) {
+    const roll = rand();
+    const pattern: EnemyPattern = roll < 0.5 ? 'topielec' : 'strzyga';
+    const count = pattern === 'topielec' ? 1 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 2);
+    const spacing = pattern === 'topielec' ? 80 : 56;
+    const maxStart = viewportWidth - (count - 1) * spacing - 40;
+    const startX = 40 + rand() * Math.max(1, maxStart);
+    schedule.push({ t, count, pattern, spacing, startX });
+    t += 2.6 + rand() * 1.8;
+  }
+  return schedule;
+}

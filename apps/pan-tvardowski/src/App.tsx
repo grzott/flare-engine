@@ -20,6 +20,7 @@ import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
 import { createBootScene } from './scenes/boot';
 import { createGameOverScene, createVictoryScene } from './scenes/end';
+import type { PlayRenderHooks } from './scenes/play';
 import { createPlayScene } from './scenes/play';
 import { buildShapeAtlas } from './shape-atlas';
 import { bombButtonState, gameState, joystickState, resetBombButtonFrame } from './state';
@@ -28,10 +29,18 @@ interface AudioRef {
   current: AudioHandles | null;
 }
 
-function onReady(ctx: GameContextValue, localization: LocalizationManager): void {
+function onReady(
+  ctx: GameContextValue,
+  localization: LocalizationManager,
+  renderHooks: PlayRenderHooks,
+): void {
   const atlas = buildShapeAtlas(Skia);
   const saveStore = createSaveStore();
   const audioRef: AudioRef = { current: null };
+  // PostFx: pass `null` Skia module — visible SkSL compositing requires a
+  // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
+  // The chain + uniform packing are still exercised via tests (postfx.test.ts).
+  const skiaPostFx = null;
 
   ctx.scenes.register(
     'boot',
@@ -45,7 +54,17 @@ function onReady(ctx: GameContextValue, localization: LocalizationManager): void
       audioRef,
     ),
   );
-  ctx.scenes.register('play', createPlayScene({ ctx, atlas, save: saveStore, audio: audioRef }));
+  ctx.scenes.register(
+    'play',
+    createPlayScene({
+      ctx,
+      atlas,
+      save: saveStore,
+      audio: audioRef,
+      skia: skiaPostFx,
+      renderHooks,
+    }),
+  );
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
   ctx.scenes.setTransition(fadeTransition(0.3));
@@ -75,6 +94,7 @@ function onReady(ctx: GameContextValue, localization: LocalizationManager): void
 export function App(): React.ReactElement {
   const localization = useMemo(() => createLocalization(), []);
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
+  const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
 
   const onJoystick = (s: VirtualJoystickState): void => {
     joystickState.dx = s.direction.x;
@@ -102,10 +122,14 @@ export function App(): React.ReactElement {
     <View style={styles.root}>
       <StatusBar hidden />
       <GameView
-        config={{ clearColor: 0xff1a0e0a }}
+        config={{
+          clearColor: 0xff1a0e0a,
+          onRenderBackground: (ctx, canvas) => renderHooks.background?.(ctx, canvas),
+          onRenderPostFx: (ctx, canvas) => renderHooks.postfx?.(ctx, canvas),
+        }}
         onReady={(ctx) => {
           ctxRef.current = ctx;
-          onReady(ctx, localization);
+          onReady(ctx, localization, renderHooks);
         }}
       >
         <VirtualJoystick onStateChange={onJoystick} style={styles.joystick} />

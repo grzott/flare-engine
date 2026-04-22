@@ -4,7 +4,15 @@ import type { ZoneId } from './events';
 
 export type SceneName = 'boot' | 'play' | 'game-over' | 'victory';
 
-export type KillKind = 'skrzat' | 'latawiec' | 'czart' | 'bies' | 'miniboss' | 'boss';
+export type KillKind =
+  | 'skrzat'
+  | 'latawiec'
+  | 'czart'
+  | 'bies'
+  | 'topielec'
+  | 'strzyga'
+  | 'miniboss'
+  | 'boss';
 
 export interface RunStats {
   score: number;
@@ -13,6 +21,8 @@ export interface RunStats {
     latawiec: number;
     czart: number;
     bies: number;
+    topielec: number;
+    strzyga: number;
     miniboss: number;
     boss: number;
   };
@@ -24,7 +34,16 @@ export interface RunStats {
 export function createRunStats(): RunStats {
   return {
     score: 0,
-    kills: { skrzat: 0, latawiec: 0, czart: 0, bies: 0, miniboss: 0, boss: 0 },
+    kills: {
+      skrzat: 0,
+      latawiec: 0,
+      czart: 0,
+      bies: 0,
+      topielec: 0,
+      strzyga: 0,
+      miniboss: 0,
+      boss: 0,
+    },
     bombsUsed: 0,
     damageTaken: 0,
     durationSec: 0,
@@ -59,6 +78,8 @@ export interface GameState {
   minibossHpMax: number;
   minibossActive: boolean;
   minibossNameKey: string;
+  /** Wodnik bubble shield is up — HUD shows indicator, player shots blocked. */
+  bossShieldActive: boolean;
   gameOver: boolean;
   victory: boolean;
   currentScene: SceneName;
@@ -81,6 +102,7 @@ export const gameState: GameState = {
   minibossHpMax: 0,
   minibossActive: false,
   minibossNameKey: 'minibosses.rokita.name',
+  bossShieldActive: false,
   gameOver: false,
   victory: false,
   currentScene: 'boot',

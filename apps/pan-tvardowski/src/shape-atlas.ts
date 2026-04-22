@@ -117,6 +117,32 @@ function buildFrames(): FrameBuild[] {
     },
   });
 
+  // Tile frames for the Zone-3 tilemap background.
+  frames.push({
+    name: 'tile-water',
+    w: 32,
+    h: 32,
+    draw: (Skia, canvas) => {
+      const base = Skia.Paint();
+      base.setColor(argb(0xff2f5f7a));
+      canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), base);
+      const ripple = Skia.Paint();
+      ripple.setColor(argb(0x66d9e4e7));
+      canvas.drawRect(Skia.XYWHRect(4, 8, 24, 2), ripple);
+      canvas.drawRect(Skia.XYWHRect(8, 20, 20, 2), ripple);
+    },
+  });
+  frames.push({
+    name: 'tile-fog',
+    w: 32,
+    h: 32,
+    draw: (Skia, canvas) => {
+      const paint = Skia.Paint();
+      paint.setColor(argb(0x44e4f0ff));
+      canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), paint);
+    },
+  });
+
   return frames;
 }
 

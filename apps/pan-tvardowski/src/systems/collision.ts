@@ -8,7 +8,12 @@ import { destroyEntity } from './entity-ops';
 function isBossInvulnerable(world: World, id: number): boolean {
   const boss = world.get(id, Boss);
   if (!boss) return false;
-  return boss.phase === 'entering' || boss.phase === 'dying' || boss.phase === 'defeated';
+  return (
+    boss.phase === 'entering' ||
+    boss.phase === 'dying' ||
+    boss.phase === 'defeated' ||
+    boss.shieldActive
+  );
 }
 
 function isMinibossInvulnerable(world: World, id: number): boolean {

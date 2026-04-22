@@ -23,7 +23,7 @@ export interface ZoneDeepLinkHandlers {
 }
 
 /**
- * Build a deep-link manager that routes `pantvardowski://zone/:n` (n in 1..2)
+ * Build a deep-link manager that routes `pantvardowski://zone/:n` (n in 1..3)
  * into a scene jump. Unknown zone numbers fall through to `onUnmatched`.
  */
 export function createPanTvardowskiDeepLinks(
@@ -37,6 +37,7 @@ export function createPanTvardowskiDeepLinks(
       const zoneParam = String(match.params.n ?? '');
       if (zoneParam === '1') handlers.onZoneRequest('z1');
       else if (zoneParam === '2') handlers.onZoneRequest('z2');
+      else if (zoneParam === '3') handlers.onZoneRequest('z3');
       else handlers.onUnmatched?.(match.url);
     } else {
       handlers.onUnmatched?.(match.url);

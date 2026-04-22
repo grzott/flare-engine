@@ -33,6 +33,7 @@ const hud = [
   'hud.boss_name',
   'hud.miniboss_name',
   'hud.weapon_level',
+  'hud.shield_active',
 ] as const;
 
 const zones = [

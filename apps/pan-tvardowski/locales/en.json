@@ -26,6 +26,7 @@
   "hud.boss_name": "{name}",
   "hud.miniboss_name": "{name}",
   "hud.weapon_level": "LV {level}",
+  "hud.shield_active": "Shield active",
 
   "zones.1.name": "Kraków Rooftops",
   "zones.1.subtitle": "Dusk over Wawel",

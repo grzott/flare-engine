@@ -1,15 +1,18 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import { CollisionWorld } from '@flare-engine/physics';
+import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { AudioHandles } from '../audio/init';
 import { setZoneMusic } from '../audio/init';
 import type { MusicKey } from '../audio/synth';
+import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
 import { Boss, Bullet, Enemy, Lifetime, Miniboss, Ship } from '../components';
 import { PLAYER_HP_MAX, START_BOMBS } from '../config/gameplay';
 import type { ZoneConfig } from '../config/zones';
 import { ZONES } from '../config/zones';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
+import { type PostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
 import {
   type ZoneBannerState,
   createZoneBannerState,
@@ -49,10 +52,16 @@ import {
   createSpawnerState,
   tickSpawner,
 } from '../systems/spawner';
+import { countTopielecMinions } from '../systems/wodnik';
 import { shellDefaults } from './scene-shell';
 
 export interface AudioRef {
   current: AudioHandles | null;
+}
+
+export interface PlayRenderHooks {
+  background: ((ctx: GameContextValue, canvas: unknown) => void) | null;
+  postfx: ((ctx: GameContextValue, canvas: unknown) => void) | null;
 }
 
 export interface PlaySceneDeps {
@@ -62,9 +71,17 @@ export interface PlaySceneDeps {
   audio?: AudioRef;
   /** Seed for the wave schedule. Tests override; runtime uses Date.now(). */
   seed?: number;
+  /** Skia module for postfx. Tests may pass null (runtime → unsupported passthrough). */
+  skia?: SkiaPostFxModuleLike | null;
+  /** Mutable ref the scene populates so <GameView>'s hooks can dispatch to it. */
+  renderHooks?: PlayRenderHooks;
 }
 
-const ZONE_MUSIC: Record<ZoneId, MusicKey> = { z1: 'zone1', z2: 'zone2' };
+const ZONE_MUSIC: Record<ZoneId, MusicKey> = {
+  z1: 'zone1',
+  z2: 'zone2',
+  z3: 'zone3',
+};
 
 interface PlayState {
   zone: ZoneConfig;
@@ -92,11 +109,16 @@ interface PlayState {
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
+  /** Zone 3 only — drives the scrolling water + fog background. */
+  tilemapBg: TilemapBgController | null;
+  /** Previous-frame playerHp — used to detect damage and flash postfx. */
+  lastPlayerHp: number;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
   const { ctx, atlas, save } = deps;
   const audioRef = deps.audio;
+  const postfx: PostFxController = createPanTvardowskiPostFx(deps.skia ?? null);
 
   return () => {
     let s: PlayState | null = null;
@@ -130,6 +152,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
+        tilemapBg: null,
+        lastPlayerHp: PLAYER_HP_MAX,
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -147,6 +171,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     }
 
     function clearWorld(state: PlayState): void {
+      if (state.tilemapBg) {
+        state.tilemapBg.destroy();
+        state.tilemapBg = null;
+      }
       const ids: number[] = [];
       for (const id of state.posQuery) ids.push(id);
       for (const id of ids) destroyEntity(ctx.world, state.coll, id);
@@ -188,7 +216,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       gameState.bossNameKey = zone.bossNameKey;
       gameState.minibossNameKey =
         zone.minibossPattern !== null ? `minibosses.${zone.minibossPattern}.name` : '';
-      const zoneNum = zone.id === 'z1' ? '1' : '2';
+      const zoneNum = zone.id.slice(1); // 'z1' → '1', 'z3' → '3'
       gameState.zoneBanner.nameKey = `zones.${zoneNum}.name`;
       gameState.zoneBanner.subtitleKey = `zones.${zoneNum}.subtitle`;
     }
@@ -230,8 +258,29 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       ctx.camera.rotation = 0;
       s.playerId = spawnPlayer(s.spawnCtx, s.bounds.width / 2, s.bounds.height - 90);
 
+      if (zoneId === 'z3') {
+        s.tilemapBg = createZone3TilemapBg({
+          world: ctx.world,
+          atlas,
+          viewportWidth: s.bounds.width,
+          viewportHeight: s.bounds.height,
+        });
+      }
+
       setZoneMusic(audioRef?.current?.music ?? null, ZONE_MUSIC[zoneId]);
       gameEvents.emit('zone-start', zoneId);
+    }
+
+    if (deps.renderHooks) {
+      // Background: tile entities live in the ECS world so the sprite system
+      // draws them naturally — no raw canvas work needed here.
+      deps.renderHooks.background = null;
+      deps.renderHooks.postfx = (_ctx, _canvas) => {
+        if (!s) return;
+        // Build the per-frame compiled pass list. Visible pixel application
+        // awaits the GameView SkCanvas bridge — see M3 change-log entry.
+        postfx.buildPass(s.bounds.width, s.bounds.height);
+      };
     }
 
     return {
@@ -256,6 +305,13 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         refreshBounds(s);
         s.elapsed += dt;
         gameState.runStats.durationSec += dt;
+
+        if (s.tilemapBg) s.tilemapBg.update(dt, s.bounds.height);
+        postfx.update(dt);
+
+        // Hit-flash on player damage: diff playerHp against last observed value.
+        if (gameState.playerHp < s.lastPlayerHp) postfx.triggerHitFlash();
+        s.lastPlayerHp = gameState.playerHp;
 
         updateZoneBanner(s.banner, dt);
         if (
@@ -317,7 +373,21 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           bounds: s.bounds,
           onPhaseChange: (phase) => {
             if (gameState.settings.screenShake) ctx.camera.shake(8, 0.3);
+            postfx.triggerHitFlash();
             if (s) gameEvents.emit('boss-phase-change', s.zone.id, phase);
+          },
+          onSpawnShieldMinion: (x, y) => {
+            if (!s) return;
+            spawnEnemy(s.spawnCtx, 'topielec', x, y, (x * 53 + y * 11) | 1);
+          },
+          countShieldMinions: () => {
+            if (!s) return 0;
+            return countTopielecMinions(ctx.world, s.enemyQuery);
+          },
+          onShieldBroken: () => {
+            if (!s) return;
+            postfx.triggerHitFlash();
+            gameEvents.emit('boss-shield-broken', s.zone.id);
           },
           onDefeated: () => {
             if (!s) return;
@@ -350,7 +420,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         const gateOpen = !s.bossSpawned && !gameState.minibossActive;
         if (gateOpen) tickSpawner(s.spawner, s.schedule, dt, s.spawnEvents);
         for (const ev of s.spawnEvents) {
-          spawnEnemy(s.spawnCtx, ev.pattern, ev.x, ev.y, ev.seed);
+          // Topielec emerges from the bottom of the arena, not the top.
+          const y = ev.pattern === 'topielec' ? s.bounds.height + 40 : ev.y;
+          spawnEnemy(s.spawnCtx, ev.pattern, ev.x, y, ev.seed);
         }
         if (
           !s.minibossSpawned &&
@@ -439,6 +511,19 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         gameState.bossActive = status.alive;
         gameState.bossHp = status.hp;
         gameState.bossHpMax = status.hpMax;
+        // Publish Wodnik shield state for HUD + collision gating.
+        let shieldActive = false;
+        for (const bid of s.bossQuery) {
+          const b = ctx.world.get(bid, Boss);
+          if (b) {
+            shieldActive = b.shieldActive;
+            break;
+          }
+        }
+        if (gameState.bossShieldActive !== shieldActive) {
+          gameState.bossShieldActive = shieldActive;
+          notifyStateChanged();
+        }
         const mbStatus = computeMinibossStatus(ctx.world, s.minibossQuery);
         gameState.minibossActive = mbStatus.alive;
         gameState.minibossHp = mbStatus.hp;
@@ -450,6 +535,11 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         clearWorld(s);
         clearBossFsms();
         clearMinibossFsms();
+        gameState.bossShieldActive = false;
+        if (deps.renderHooks) {
+          deps.renderHooks.background = null;
+          deps.renderHooks.postfx = null;
+        }
         audioRef?.current?.pool.stopAll();
       },
     };

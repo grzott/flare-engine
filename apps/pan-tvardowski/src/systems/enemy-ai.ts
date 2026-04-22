@@ -45,6 +45,14 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
         vel.x = Math.sin(e.t * 1.4) * 140;
         vel.y = 30;
       }
+    } else if (e.pattern === 'topielec') {
+      // Emerges from the bottom: negative vy (upward). Gentle side-to-side drift.
+      vel.x = Math.sin(e.t * 1.6) * 40;
+      vel.y = e.speed;
+    } else if (e.pattern === 'strzyga') {
+      // Swooping arc: cosine-driven horizontal with slight vertical wave.
+      vel.x = Math.cos(e.t * 1.8) * 150;
+      vel.y = e.speed * (0.7 + 0.3 * Math.sin(e.t * 1.3));
     } else {
       vel.x = 0;
       vel.y = e.speed;
@@ -66,6 +74,26 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
         // Aimed 3-burst, tight ±7°.
         for (let i = -1; i <= 1; i++) {
           const a = Math.atan2(aim.y, aim.x) + i * 0.12;
+          const vx = Math.cos(a) * BULLET_SPEED.enemy;
+          const vy = Math.sin(a) * BULLET_SPEED.enemy;
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
+        }
+      } else if (e.pattern === 'topielec') {
+        // 4-way upward burst (N, NE, NW, + aimed); bullets come from top of sprite.
+        const off = -BULLET_SPAWN_OFFSET.enemy;
+        const speeds: [number, number][] = [
+          [0, -BULLET_SPEED.enemy],
+          [BULLET_SPEED.enemy * 0.5, -BULLET_SPEED.enemy * 0.85],
+          [-BULLET_SPEED.enemy * 0.5, -BULLET_SPEED.enemy * 0.85],
+          [aim.x, aim.y],
+        ];
+        for (const [vx, vy] of speeds) {
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + off, vx, vy, Layer.enemy);
+        }
+      } else if (e.pattern === 'strzyga') {
+        // Paired 2-way aimed shot ±12°.
+        for (let i = -1; i <= 1; i += 2) {
+          const a = Math.atan2(aim.y, aim.x) + i * 0.21;
           const vx = Math.cos(a) * BULLET_SPEED.enemy;
           const vy = Math.sin(a) * BULLET_SPEED.enemy;
           spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);

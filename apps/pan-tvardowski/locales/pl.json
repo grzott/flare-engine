@@ -26,6 +26,7 @@
   "hud.boss_name": "{name}",
   "hud.miniboss_name": "{name}",
   "hud.weapon_level": "POZ {level}",
+  "hud.shield_active": "Tarcza aktywna",
 
   "zones.1.name": "Dachy Krakowa",
   "zones.1.subtitle": "Zmierzch nad Wawelem",

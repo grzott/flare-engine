@@ -107,7 +107,7 @@ export function createSfxBuffers(ctx: AudioContextLike): Record<SfxKey, AudioBuf
 
 // ---- Music tracks — one per zone (§5) --------------------------------------
 
-export type MusicKey = 'zone1' | 'zone2';
+export type MusicKey = 'zone1' | 'zone2' | 'zone3';
 
 interface MusicTrack {
   bpm: number;
@@ -143,6 +143,16 @@ const TRACKS: Record<MusicKey, MusicTrack> = {
     leadWave: 'square',
     bassWave: 'saw',
     gain: 0.28,
+  },
+  // Zone 3 — slow sine drones over the Wisła: long-breath pad, deep bass.
+  zone3: {
+    bpm: 60,
+    beats: 16,
+    bassNotes: [36, 36, 36, 36, 38, 38, 38, 38, 41, 41, 41, 41, 36, 36, 36, 36],
+    leadNotes: [60, 62, 64, 65, 64, 62, 60, 59, 60, 62, 64, 67, 65, 64, 62, 60],
+    leadWave: 'sine',
+    bassWave: 'sine',
+    gain: 0.2,
   },
 };
 

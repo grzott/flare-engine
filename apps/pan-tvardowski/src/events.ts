@@ -1,13 +1,14 @@
 import { EventEmitter } from '@flare-engine/events';
 import type { BossPhase } from './components';
 
-export type ZoneId = 'z1' | 'z2';
+export type ZoneId = 'z1' | 'z2' | 'z3';
 
 export type GameEventMap = {
   'zone-start': (zone: ZoneId) => void;
   'zone-complete': (zone: ZoneId, score: number) => void;
   'miniboss-defeated': (zone: ZoneId) => void;
   'boss-phase-change': (zone: ZoneId, phase: BossPhase) => void;
+  'boss-shield-broken': (zone: ZoneId) => void;
   'shard-collected': (zone: ZoneId) => void;
 };
 

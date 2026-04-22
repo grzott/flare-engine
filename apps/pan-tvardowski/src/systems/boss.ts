@@ -2,7 +2,12 @@ import { FSM, Position, Velocity } from '@flare-engine/ecs';
 import type { Query, World } from '@flare-engine/engine';
 import { clamp } from '@flare-engine/math';
 import { Boss, type BossPattern, type BossPhase, Bullet, Hp } from '../components';
-import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../config/gameplay';
+import {
+  BULLET_SPAWN_OFFSET,
+  BULLET_SPEED,
+  WODNIK_SHIELD_MINIONS,
+  WODNIK_SHIELD_REBUILD_SEC,
+} from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
 import { type Direction2D, normalizeDirection } from '../util/direction';
@@ -24,6 +29,12 @@ export interface BossDeps {
   onPhaseChange?: (phase: BossPhase) => void;
   onDefeated?: () => void;
   onExplosion?: (x: number, y: number) => void;
+  /** Wodnik: spawn a Topielec shield minion at (x, y). */
+  onSpawnShieldMinion?: (x: number, y: number) => void;
+  /** Wodnik: count how many live Topielec minions exist. */
+  countShieldMinions?: () => number;
+  /** Wodnik: fired the instant all minions die and the shield drops. */
+  onShieldBroken?: () => void;
 }
 
 export interface BossStatus {
@@ -40,7 +51,8 @@ export function computeBossStatus(world: World, query: Query): BossStatus {
     const b = world.get(id, Boss);
     const hp = world.get(id, Hp);
     if (!b || !hp) continue;
-    const invulnerable = b.phase === 'entering' || b.phase === 'dying' || b.phase === 'defeated';
+    const invulnerable =
+      b.phase === 'entering' || b.phase === 'dying' || b.phase === 'defeated' || b.shieldActive;
     return {
       alive: true,
       hp: hp.current,
@@ -165,9 +177,59 @@ const borowyScript: PhaseScript = {
   },
 };
 
+// ---- Wodnik Wiślany (Zone 3) -----------------------------------------------
+
+// Phase 1: three staggered vertical water-spout columns (downward, slight drift).
+// Phase 2: lighter aimed spout; bubble-shield logic runs in FSM phase2 state.
+const wodnikScript: PhaseScript = {
+  sweepSpeed1: 70,
+  sweepSpeed2: 95,
+  fire1Cooldown: 0.45,
+  fire2Cooldown: 0.9,
+  fire1(c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (!pos || !b) return;
+    const bases: [number, number][] = [
+      [-70, 0],
+      [0, 10],
+      [70, 20],
+    ];
+    for (const [dx, dyOff] of bases) {
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x + dx,
+        pos.y + BULLET_SPAWN_OFFSET.boss + dyOff,
+        Math.sin(b.t * 1.2 + dx * 0.02) * 40,
+        BULLET_SPEED.boss * 0.95,
+        Layer.enemy,
+      );
+    }
+  },
+  fire2(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(
+      c.deps.playerX - pos.x,
+      c.deps.playerY - pos.y,
+      BULLET_SPEED.boss * 0.9,
+      aim,
+    );
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      aim.x,
+      aim.y,
+      Layer.enemy,
+    );
+  },
+};
+
 const SCRIPTS: Record<BossPattern, PhaseScript> = {
   'smok-krzemionkowski': smokScript,
   'borowy-krol': borowyScript,
+  'wodnik-wislanny': wodnikScript,
 };
 
 function sweepMove(c: BossCtx, speed: number): void {
@@ -195,6 +257,46 @@ function clearEnemyBullets(c: BossCtx): void {
     if (b && b.ownerLayer === Layer.enemy) toDrop.push(bid);
   }
   for (const id of toDrop) destroyEntity(c.world, c.deps.spawnCtx.coll, id);
+}
+
+/** Wodnik: raise the bubble shield and spawn WODNIK_SHIELD_MINIONS Topielec minions. */
+function raiseWodnikShield(c: BossCtx): void {
+  const b = c.world.get(c.id, Boss);
+  const pos = c.world.get(c.id, Position);
+  if (!b || !pos) return;
+  b.shieldActive = true;
+  b.shieldDownFor = 0;
+  b.minionsAlive = WODNIK_SHIELD_MINIONS;
+  const spawn = c.deps.onSpawnShieldMinion;
+  if (!spawn) return;
+  // Spawn minions in an arc around the boss at the bottom of the arena.
+  const bottomY = c.deps.bounds.height + 40;
+  const halfCount = (WODNIK_SHIELD_MINIONS - 1) / 2;
+  for (let i = 0; i < WODNIK_SHIELD_MINIONS; i++) {
+    const offset = (i - halfCount) * 70;
+    spawn(clamp(pos.x + offset, 40, c.deps.bounds.width - 40), bottomY);
+  }
+}
+
+/** Wodnik: per-frame shield-state update. Drops shield when minions all die,
+ *  then re-raises after WODNIK_SHIELD_REBUILD_SEC. */
+function tickWodnikShield(dt: number, c: BossCtx): void {
+  const b = c.world.get(c.id, Boss);
+  if (!b) return;
+  const live = c.deps.countShieldMinions?.() ?? 0;
+  b.minionsAlive = live;
+  if (b.shieldActive) {
+    if (live === 0) {
+      b.shieldActive = false;
+      b.shieldDownFor = 0;
+      c.deps.onShieldBroken?.();
+    }
+  } else {
+    b.shieldDownFor += dt;
+    if (b.shieldDownFor >= WODNIK_SHIELD_REBUILD_SEC) {
+      raiseWodnikShield(c);
+    }
+  }
 }
 
 function buildBossFsm(context: BossCtx): FSM<BossCtx> {
@@ -265,6 +367,9 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         b.phase = 'phase2';
         b.phaseT = 0;
         b.fireCooldown = 0.6;
+        if (b.pattern === 'wodnik-wislanny') {
+          raiseWodnikShield(c);
+        }
       }
       c.deps.onPhaseChange?.('phase2');
     },
@@ -276,6 +381,9 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('killed');
         return;
       }
+      if (b.pattern === 'wodnik-wislanny') {
+        tickWodnikShield(dt, c);
+      }
       const script = SCRIPTS[b.pattern];
       sweepMove(c, script.sweepSpeed2);
       b.fireCooldown -= dt;
@@ -286,6 +394,11 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
     },
     onExit(c) {
       clearEnemyBullets(c);
+      const b = c.world.get(c.id, Boss);
+      if (b) {
+        b.shieldActive = false;
+        b.minionsAlive = 0;
+      }
     },
   });
 

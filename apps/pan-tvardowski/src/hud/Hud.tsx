@@ -68,6 +68,9 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
                   ]}
                 />
               </View>
+              {s.bossShieldActive ? (
+                <Text style={styles.shieldActive}>{t('hud.shield_active')}</Text>
+              ) : null}
             </View>
           ) : null}
           {s.minibossActive && s.minibossHpMax > 0 && !s.bossActive ? (
@@ -207,4 +210,11 @@ const styles = StyleSheet.create({
   },
   bannerSub: { color: '#fff', fontSize: 18, marginTop: 12 },
   tapHint: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginTop: 24 },
+  shieldActive: {
+    color: '#5BCFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+    letterSpacing: 1,
+  },
 });

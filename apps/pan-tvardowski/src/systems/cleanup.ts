@@ -49,7 +49,7 @@ export function cleanup(world: World, dt: number, deps: CleanupDeps): void {
       destroyEntity(world, deps.coll, id);
       continue;
     }
-    if (pos.y > deps.bounds.height + OFFSCREEN_PAD) {
+    if (pos.y > deps.bounds.height + OFFSCREEN_PAD || pos.y < -OFFSCREEN_PAD) {
       destroyEntity(world, deps.coll, id);
     }
   }

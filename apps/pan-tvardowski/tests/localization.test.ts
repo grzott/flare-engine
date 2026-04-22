@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createLocalization } from '../src/localization/index.js';
+import { createLocalization } from '../src/localization/index';
 
 describe('localization', () => {
   test('resolves EN key by default', () => {

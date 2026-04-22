@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import en from '../locales/en.json' with { type: 'json' };
 import pl from '../locales/pl.json' with { type: 'json' };
-import { LOCALIZATION_KEYS } from '../src/localization/keys.js';
+import { LOCALIZATION_KEYS } from '../src/localization/keys';
 
 describe('locale parity', () => {
   const enKeys = Object.keys(en).sort();

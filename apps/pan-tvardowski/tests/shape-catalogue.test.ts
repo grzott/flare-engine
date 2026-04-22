@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { SHAPE_CATALOGUE } from '../src/shape-catalogue.js';
+import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
 
 const VALID_KINDS = new Set([
   'circle',

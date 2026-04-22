@@ -1,4 +1,4 @@
-export { ZONE_PALETTES, type ZonePalette, type ZoneId } from './palette.js';
+export { ZONE_PALETTES, type ZonePalette, type ZoneId } from './palette';
 export type {
   ShapeSpec,
   CircleSpec,
@@ -9,11 +9,11 @@ export type {
   RingSpec,
   PolylineSpec,
   GradientRectSpec,
-} from './shapes.js';
-export { SHAPE_CATALOGUE, type EntityId } from './shape-catalogue.js';
+} from './shapes';
+export { SHAPE_CATALOGUE, type EntityId } from './shape-catalogue';
 export {
   createLocalization,
   SUPPORTED_LOCALES,
   type SupportedLocale,
-} from './localization/index.js';
-export { LOCALIZATION_KEYS } from './localization/keys.js';
+} from './localization/index';
+export { LOCALIZATION_KEYS } from './localization/keys';

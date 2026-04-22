@@ -15,6 +15,8 @@
   "menu.victory.title": "Mirror Whole",
   "menu.tap_retry": "Tap to retry",
   "menu.tap_continue": "Tap to continue",
+  "menu.error.title": "Something went wrong",
+  "menu.error.reset": "Tap to restart",
 
   "hud.score": "Score: {score}",
   "hud.hp": "HP: {hp}/{max}",

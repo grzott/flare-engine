@@ -9,7 +9,7 @@ export const Ship = defineComponent<ShipData>('Ship', () => ({
   cooldown: 0,
 }));
 
-/** Enemy kinds across Zones 1–4. */
+/** Enemy kinds across Zones 1–5. */
 export type EnemyPattern =
   | 'skrzat'
   | 'latawiec'
@@ -18,7 +18,9 @@ export type EnemyPattern =
   | 'topielec'
   | 'strzyga'
   | 'mamuna'
-  | 'licho';
+  | 'licho'
+  | 'nocnica'
+  | 'dziwozona';
 
 export interface EnemyData {
   pattern: EnemyPattern;
@@ -64,9 +66,14 @@ export const Lifetime = defineComponent<LifetimeData>('Lifetime', () => ({
   remaining: 1,
 }));
 
-export type BossPhase = 'entering' | 'phase1' | 'phase2' | 'dying' | 'defeated';
+export type BossPhase = 'entering' | 'phase1' | 'phase2' | 'phase3' | 'dying' | 'defeated';
 
-export type BossPattern = 'smok-krzemionkowski' | 'borowy-krol' | 'wodnik-wislanny' | 'boruta';
+export type BossPattern =
+  | 'smok-krzemionkowski'
+  | 'borowy-krol'
+  | 'wodnik-wislanny'
+  | 'boruta'
+  | 'baba-jaga';
 
 export interface BossData {
   pattern: BossPattern;

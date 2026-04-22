@@ -15,6 +15,8 @@
   "menu.victory.title": "Zwierciadło całe",
   "menu.tap_retry": "Stuknij, aby spróbować ponownie",
   "menu.tap_continue": "Stuknij, aby kontynuować",
+  "menu.error.title": "Coś poszło nie tak",
+  "menu.error.reset": "Stuknij, aby zrestartować",
 
   "hud.score": "Wynik: {score}",
   "hud.hp": "HP: {hp}/{max}",

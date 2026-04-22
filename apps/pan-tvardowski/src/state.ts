@@ -13,6 +13,8 @@ export type KillKind =
   | 'strzyga'
   | 'mamuna'
   | 'licho'
+  | 'nocnica'
+  | 'dziwozona'
   | 'miniboss'
   | 'boss';
 
@@ -27,6 +29,8 @@ export interface RunStats {
     strzyga: number;
     mamuna: number;
     licho: number;
+    nocnica: number;
+    dziwozona: number;
     miniboss: number;
     boss: number;
   };
@@ -47,6 +51,8 @@ export function createRunStats(): RunStats {
       strzyga: 0,
       mamuna: 0,
       licho: 0,
+      nocnica: 0,
+      dziwozona: 0,
       miniboss: 0,
       boss: 0,
     },

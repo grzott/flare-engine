@@ -71,6 +71,14 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
       }
       vel.x = 0;
       vel.y = e.speed;
+    } else if (e.pattern === 'nocnica') {
+      // Fast straight descent; no horizontal drift.
+      vel.x = 0;
+      vel.y = e.speed;
+    } else if (e.pattern === 'dziwozona') {
+      // Slow hover — drifts sideways gently, non-firing summoner.
+      vel.x = Math.sin(e.t * 0.9) * 30;
+      vel.y = e.speed;
     } else {
       vel.x = 0;
       vel.y = e.speed;
@@ -136,6 +144,14 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
           aim.y * 0.9,
           Layer.enemy,
         );
+      } else if (e.pattern === 'nocnica') {
+        // Radial 8-way burst.
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2;
+          const vx = Math.cos(a) * BULLET_SPEED.enemy;
+          const vy = Math.sin(a) * BULLET_SPEED.enemy;
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
+        }
       } else {
         // latawiec — single aimed shot, softened x.
         spawnBullet(

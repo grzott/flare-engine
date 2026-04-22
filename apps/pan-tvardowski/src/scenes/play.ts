@@ -7,7 +7,7 @@ import { setZoneMusic } from '../audio/init';
 import type { MusicKey } from '../audio/synth';
 import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
 import { Boss, Bullet, Enemy, Lifetime, Miniboss, Ship } from '../components';
-import { PLAYER_HP_MAX, START_BOMBS } from '../config/gameplay';
+import { DZIWOZONA_SKRZAT_SPAWN, PLAYER_HP_MAX, START_BOMBS } from '../config/gameplay';
 import type { ZoneConfig } from '../config/zones';
 import { ZONES } from '../config/zones';
 import type { ZoneId } from '../events';
@@ -82,6 +82,7 @@ const ZONE_MUSIC: Record<ZoneId, MusicKey> = {
   z2: 'zone2',
   z3: 'zone3',
   z4: 'zone4',
+  z5: 'zone5',
 };
 
 interface PlayState {
@@ -501,6 +502,20 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.runStats.kills[pattern] += 1;
             burstExplosion(ctx.world, atlas, x, y, 8, (x * 31 + y * 17) | 0 || 1);
             audioRef?.current?.pool.play('explode');
+            // Dziwożona splits on death — spawn DZIWOZONA_SKRZAT_SPAWN Skrzats.
+            if (pattern === 'dziwozona' && s) {
+              const halfCount = (DZIWOZONA_SKRZAT_SPAWN - 1) / 2;
+              for (let i = 0; i < DZIWOZONA_SKRZAT_SPAWN; i++) {
+                const offset = (i - halfCount) * 28;
+                spawnEnemy(
+                  s.spawnCtx,
+                  'skrzat',
+                  x + offset,
+                  y,
+                  ((x * 13 + y * 7 + i * 101) | 0) >>> 0 || 1,
+                );
+              }
+            }
             notifyStateChanged();
           },
           onPlayerDown: () => {

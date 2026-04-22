@@ -144,3 +144,24 @@ export function buildZone4Schedule(seed: number, viewportWidth = 360): WaveEntry
   pushWaves(120, 215, 1.5); // post-miniboss → pre-boss
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-5 wave schedule. Only Nocnica + Dziwożona spawn.
+ * No miniboss in Zone 5; schedule fills the stretch before the boss at 260 s.
+ */
+export function buildZone5Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  let t = 3;
+  while (t < 245) {
+    const roll = rand();
+    const pattern: EnemyPattern = roll < 0.6 ? 'nocnica' : 'dziwozona';
+    const count = pattern === 'nocnica' ? 2 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+    const spacing = pattern === 'nocnica' ? 40 : 70;
+    const maxStart = viewportWidth - (count - 1) * spacing - 40;
+    const startX = 40 + rand() * Math.max(1, maxStart);
+    schedule.push({ t, count, pattern, spacing, startX });
+    t += 2.3 + rand() * 1.6;
+  }
+  return schedule;
+}

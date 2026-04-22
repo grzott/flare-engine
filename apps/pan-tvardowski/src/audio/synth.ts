@@ -107,7 +107,7 @@ export function createSfxBuffers(ctx: AudioContextLike): Record<SfxKey, AudioBuf
 
 // ---- Music tracks — one per zone (§5) --------------------------------------
 
-export type MusicKey = 'zone1' | 'zone2' | 'zone3' | 'zone4';
+export type MusicKey = 'zone1' | 'zone2' | 'zone3' | 'zone4' | 'zone5';
 
 interface MusicTrack {
   bpm: number;
@@ -164,6 +164,17 @@ const TRACKS: Record<MusicKey, MusicTrack> = {
     leadWave: 'square',
     bassWave: 'saw',
     gain: 0.26,
+  },
+  // Zone 5 — Łysa Góra: ritual choir. Slow 54 bpm sine drone/pad over sine
+  // sub-bass, D-minor voicings (D/F/A) to evoke the sabbath.
+  zone5: {
+    bpm: 54,
+    beats: 16,
+    bassNotes: [38, 38, 38, 38, 41, 41, 41, 41, 45, 45, 45, 45, 38, 38, 38, 38],
+    leadNotes: [62, 65, 69, 65, 62, 65, 69, 72, 69, 65, 62, 65, 69, 65, 62, 60],
+    leadWave: 'sine',
+    bassWave: 'sine',
+    gain: 0.22,
   },
 };
 

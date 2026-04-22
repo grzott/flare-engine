@@ -5,9 +5,11 @@ import {
   buildZone2Schedule,
   buildZone3Schedule,
   buildZone4Schedule,
+  buildZone5Schedule,
 } from '../systems/spawner';
 import type { WaveEntry } from '../systems/spawner';
 import {
+  BABA_JAGA_HP_MAX,
   BOROWY_HP_MAX,
   BORUTA_HP_MAX,
   BOSS_SPAWN_T,
@@ -20,6 +22,7 @@ import {
   ZONE3_BOSS_T,
   ZONE4_BOSS_T,
   ZONE4_MINIBOSS_T,
+  ZONE5_BOSS_T,
 } from './gameplay';
 
 export interface ZoneConfig {
@@ -87,6 +90,19 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: LESZY_HP,
     minibossT: ZONE4_MINIBOSS_T,
     buildSchedule: buildZone4Schedule,
+    nextZone: 'z5',
+  },
+  z5: {
+    id: 'z5',
+    nameKey: 'zones.5.name',
+    bossNameKey: 'bosses.baba-jaga.name',
+    bossPattern: 'baba-jaga',
+    bossHp: BABA_JAGA_HP_MAX,
+    bossT: ZONE5_BOSS_T,
+    minibossPattern: null,
+    minibossHp: 0,
+    minibossT: Number.POSITIVE_INFINITY,
+    buildSchedule: buildZone5Schedule,
     nextZone: null,
   },
 };

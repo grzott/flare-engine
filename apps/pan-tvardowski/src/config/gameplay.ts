@@ -66,6 +66,20 @@ export const ENEMY_SPECS: Record<EnemyPattern, EnemySpec> = {
     speed: 70,
     fireInterval: 2.6,
   },
+  nocnica: {
+    frame: 'nocnica',
+    hp: 2,
+    score: 200,
+    speed: 220,
+    fireInterval: 3.0,
+  },
+  dziwozona: {
+    frame: 'dziwozona',
+    hp: 4,
+    score: 300,
+    speed: 45,
+    fireInterval: Number.POSITIVE_INFINITY,
+  },
 };
 
 export const BULLET_SPEED = {
@@ -139,3 +153,19 @@ export const ZONE4_BOSS_T = 230;
 
 /** Licho teleport-blink cadence (seconds). */
 export const LICHO_BLINK_SEC = 1.8;
+
+/** Baba Jaga HP per phase (build plan §9). */
+export const BABA_JAGA_PHASE_HP = 500;
+export const BABA_JAGA_HP_MAX = BABA_JAGA_PHASE_HP * 3;
+
+/** Seconds before the Zone-5 boss (Baba Jaga) enters (§5 length = 5:00). */
+export const ZONE5_BOSS_T = 260;
+
+/** HP ratio threshold at which 3-phase bosses transition phase2 → phase3. */
+export const PHASE3_HP_RATIO = 1 / 3;
+
+/** HP ratio threshold at which 3-phase bosses transition phase1 → phase2 (2/3 gate). */
+export const THREE_PHASE_P2_RATIO = 2 / 3;
+
+/** Dziwożona splits into this many Skrzats on death (build plan §7 “spawns 2 Skrzats on death”). */
+export const DZIWOZONA_SKRZAT_SPAWN = 2;

@@ -36,6 +36,17 @@ describe('deep links', () => {
     expect(requested).toEqual(['z3']);
   });
 
+  test('/zone/4 → z4', async () => {
+    const source = createMemorySource();
+    const requested: ZoneId[] = [];
+    const manager = createPanTvardowskiDeepLinks(source, {
+      onZoneRequest: (zone) => requested.push(zone),
+    });
+    await manager.start();
+    source.push('pantvardowski://zone/4');
+    expect(requested).toEqual(['z4']);
+  });
+
   test('/zone/9 falls through to onUnmatched', async () => {
     const source = createMemorySource();
     const requested: ZoneId[] = [];

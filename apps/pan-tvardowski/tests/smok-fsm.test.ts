@@ -37,6 +37,9 @@ function spawnMockBoss(world: World, hp: number): number {
     fireCooldown: 999, // prevent fire paths from running in tests
     dyingExplosions: 0,
     targetY: 100,
+    shieldActive: false,
+    minionsAlive: 0,
+    shieldDownFor: 0,
   });
   world.add(id, Hp, { current: hp, max: hp });
   return id;

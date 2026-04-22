@@ -51,12 +51,15 @@ Each invocation = **one milestone** from the game's build plan. Typical mileston
 4. **Test.** Write deterministic tests where it pays off (boss FSM transitions, score math, ICU plural resolution, dialogue-graph branches). Skip tests for rendering-only concerns — those are verified by device smoke.
 5. **Run gates.** See "Phase gates" below. Stop + report on any failure; do NOT auto-fix speculatively.
 6. **Update plan.** Tick the engine-coverage checkboxes for the milestone in `docs/plans/<game>-build-plan.md`.
-7. **Produce commit message(s).** Conventional Commits, scope = `<game>` (e.g. `feat(pan-tvardowski): zone 2 gameplay + Rokita miniboss`). Split into multiple commits when the change crosses concerns:
+7. **Produce commit commands.** Conventional Commits, scope = `<game>`. Split into multiple commits when the change crosses concerns:
    - `feat(<game>): …` for gameplay
    - `test(<game>): …` for new tests
    - `docs(<game>): tick M<n> engine-coverage boxes`
    - `chore(<game>): add dep <name>` if you added to `apps/<game>/package.json`
-8. **Hand off.** Print each commit message in a fenced block, clearly labelled, ready for the user to paste into `git commit -m ...`. **Never commit yourself.**
+8. **Hand off.** For each commit, print **two paste-ready bash commands** in a single fenced ```bash block:
+   1. `git add <exact file list>` — only the files belonging to that commit
+   2. `git commit -m "<subject>"` — subject-only, single-line, ≤72 chars, no body
+      Each commit gets its own fenced block labelled `### Commit N/M`. **Never commit yourself.** Never run `git add`, `git commit`, `git push`, or any state-changing git command.
 
 ---
 
@@ -99,33 +102,44 @@ After implementation, before producing commit messages:
 
 ---
 
-## Commit-message conventions
+## Commit-command conventions
 
 - Format: `type(scope): description` (matches [git.instructions.md](../instructions/git.instructions.md))
 - Scope: the game app folder name (`pan-tvardowski`, `demo`)
-- Max 72 chars subject, imperative mood, lowercase, no trailing period
-- Body optional — use it for the _why_ when non-obvious
+- **Subject only, single-line, ≤72 chars**, imperative mood, lowercase, no trailing period
+- **No `-m` body.** Keep it short — the _what_ is the diff, the _why_ lives in the plan doc
 - Breaking changes unlikely at game level; use `!` only if changing save-file format
+- `git add` must list exact paths (repo-root-relative). No wildcards like `apps/<game>/.` or `-A`.
+- Split commits by concern — never mix `feat` + `test` + `docs` in one commit.
 
 Example output at end of a milestone:
 
+### Commit 1/4
+
+```bash
+git add apps/pan-tvardowski/src/scenes/zone-2.ts apps/pan-tvardowski/src/enemies/czart.ts apps/pan-tvardowski/src/enemies/bies.ts
+git commit -m "feat(pan-tvardowski): zone 2 gameplay, Czart + Bies enemies"
 ```
-feat(pan-tvardowski): zone 2 gameplay, Czart + Bies enemies
 
-Adds scrolling Mazovian forest scene, two new enemy types with sine
-and hover patterns, wave spawner coroutine.
+### Commit 2/4
 
----
+```bash
+git add apps/pan-tvardowski/src/bosses/rokita.ts
+git commit -m "feat(pan-tvardowski): Rokita miniboss with growing-roots pattern"
+```
 
-feat(pan-tvardowski): Rokita miniboss with growing-roots pattern
+### Commit 3/4
 
----
+```bash
+git add apps/pan-tvardowski/tests/borowy-krol.test.ts
+git commit -m "test(pan-tvardowski): boss-script determinism for Borowy Król"
+```
 
-test(pan-tvardowski): boss-script determinism for Borowy Król
+### Commit 4/4
 
----
-
-docs(pan-tvardowski): tick M2 engine-coverage boxes
+```bash
+git add docs/plans/pan-tvardowski-build-plan.md apps/pan-tvardowski/README.md
+git commit -m "docs(pan-tvardowski): tick M2 engine-coverage boxes"
 ```
 
 ---

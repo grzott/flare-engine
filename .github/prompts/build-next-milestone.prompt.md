@@ -85,7 +85,7 @@ In `docs/plans/<game>-build-plan.md`:
 1. Tick the completed engine-coverage checkboxes for this milestone.
 2. Append a line to the "Change log" section (date + one-line summary).
 
-## Step 8 — Commit messages
+## Step 8 — Commit commands (paste-ready)
 
 Produce one or more Conventional Commits. Scope = game folder name. Split by concern:
 
@@ -95,21 +95,29 @@ Produce one or more Conventional Commits. Scope = game folder name. Split by con
 - `docs(<game>): tick M<n> engine-coverage boxes`
 - `chore(<game>): add dep <name>` (if any new deps)
 
-Print each in a fenced code block clearly labelled, ready for `git commit -m ...`:
+For each commit, print **two paste-ready bash commands** inside a single fenced ```bash block:
+
+1. `git add <exact file list>` — only the files for that commit, repo-root-relative, no wildcards
+2. `git commit -m "<subject>"` — subject-only, single-line, ≤72 chars, **no body**
+
+Example:
 
 ````
 ### Commit 1/4
 
-```
-feat(pan-tvardowski): zone 2 gameplay, Czart + Bies enemies
-
-Adds scrolling Mazovian forest scene with sine + hover enemy
-patterns and a wave spawner coroutine. Camera shake on enemy
-explosion gated through @flare-engine/a11y.
+```bash
+git add apps/pan-tvardowski/src/scenes/zone-2.ts apps/pan-tvardowski/src/enemies/czart.ts apps/pan-tvardowski/src/enemies/bies.ts
+git commit -m "feat(pan-tvardowski): zone 2 gameplay, Czart + Bies enemies"
 ```
 
 ### Commit 2/4
+
+```bash
+git add apps/pan-tvardowski/src/bosses/rokita.ts
+git commit -m "feat(pan-tvardowski): Rokita miniboss with growing-roots pattern"
+```
+
 ...
 ````
 
-**STOP here.** Do not run `git commit`. Do not run `git push`. Wait for the user.
+**STOP here.** Do not run `git add`, `git commit`, or `git push`. Wait for the user.

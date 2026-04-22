@@ -69,6 +69,13 @@
         "@types/react": "~19.2.0",
       },
     },
+    "apps/pan-tvardowski": {
+      "name": "@flare-engine-apps/pan-tvardowski",
+      "version": "0.0.0",
+      "dependencies": {
+        "@flare-engine/localization": "workspace:*",
+      },
+    },
     "benchmarks": {
       "name": "@flare-engine/benchmarks",
       "version": "0.0.0",
@@ -818,6 +825,8 @@
     "@flare-engine-apps/bench-dashboard": ["@flare-engine-apps/bench-dashboard@workspace:apps/bench-dashboard"],
 
     "@flare-engine-apps/demo": ["@flare-engine-apps/demo@workspace:apps/demo"],
+
+    "@flare-engine-apps/pan-tvardowski": ["@flare-engine-apps/pan-tvardowski@workspace:apps/pan-tvardowski"],
 
     "@flare-engine/a11y": ["@flare-engine/a11y@workspace:packages/a11y"],
 

@@ -7,6 +7,7 @@ import { type GameState, gameState, stateChanged } from '../state';
 export interface HudActions {
   onRetry: () => void;
   onContinue: () => void;
+  onShare: () => void;
 }
 
 function cloneState(): GameState {
@@ -109,6 +110,9 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
           <Text style={styles.bannerTitle}>{t('menu.game_over.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_retry')}</Text>
+          <Pressable style={styles.shareBtn} onPress={actions.onShare}>
+            <Text style={styles.shareBtnLabel}>{t('hud.share')}</Text>
+          </Pressable>
         </Pressable>
       ) : null}
 
@@ -117,6 +121,9 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
           <Text style={styles.bannerTitle}>{t('menu.victory.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_continue')}</Text>
+          <Pressable style={styles.shareBtn} onPress={actions.onShare}>
+            <Text style={styles.shareBtnLabel}>{t('hud.share')}</Text>
+          </Pressable>
         </Pressable>
       ) : null}
     </View>
@@ -210,6 +217,19 @@ const styles = StyleSheet.create({
   },
   bannerSub: { color: '#fff', fontSize: 18, marginTop: 12 },
   tapHint: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginTop: 24 },
+  shareBtn: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#F3C262',
+    borderRadius: 6,
+  },
+  shareBtnLabel: {
+    color: '#1a0e0a',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
   shieldActive: {
     color: '#5BCFFF',
     fontSize: 12,

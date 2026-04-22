@@ -1,3 +1,4 @@
+import { DevtoolsHUD, DevtoolsProvider } from '@flare-engine/devtools';
 import type {
   GameContextValue,
   VirtualButtonState,
@@ -5,14 +6,17 @@ import type {
 } from '@flare-engine/engine';
 import { GameView, VirtualButton, VirtualJoystick, fadeTransition } from '@flare-engine/engine';
 import type { LocalizationManager } from '@flare-engine/localization';
+import type { ShareManager } from '@flare-engine/share';
 import { Skia } from '@shopify/react-native-skia';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
-import { useMemo } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Linking, Share, StyleSheet, View } from 'react-native';
 import type { AudioHandles } from './audio/init';
 import { initAudio } from './audio/init';
+import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
+import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { Hud } from './hud/Hud';
@@ -23,6 +27,7 @@ import { createGameOverScene, createVictoryScene } from './scenes/end';
 import type { PlayRenderHooks } from './scenes/play';
 import { createPlayScene } from './scenes/play';
 import { buildShapeAtlas } from './shape-atlas';
+import { createShareManager, shareHighScore } from './share/manager';
 import { bombButtonState, gameState, joystickState, resetBombButtonFrame } from './state';
 
 interface AudioRef {
@@ -95,6 +100,8 @@ export function App(): React.ReactElement {
   const localization = useMemo(() => createLocalization(), []);
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
+  const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
+  const [ctx, setCtx] = useState<GameContextValue | null>(null);
 
   const onJoystick = (s: VirtualJoystickState): void => {
     joystickState.dx = s.direction.x;
@@ -114,9 +121,37 @@ export function App(): React.ReactElement {
       onContinue: () => {
         void ctxRef.current?.scenes.go('play');
       },
+      onShare: () => {
+        void shareHighScore({
+          manager: shareManager,
+          score: gameState.score,
+          victory: gameState.victory,
+          t: (key, params) => localization.t(key, params as Record<string, string | number>),
+        });
+      },
     }),
-    [ctxRef],
+    [ctxRef, shareManager, localization],
   );
+
+  // Snapshot source: requires stable pre-created queries from the live World.
+  const snapshotSource = useMemo(() => {
+    if (!ctx) return null;
+    const enemyQuery = ctx.world.query(Enemy);
+    const bulletQuery = ctx.world.query(Bullet);
+    const bossQuery = ctx.world.query(Boss);
+    let elapsed = 0;
+    ctx.loop.onUpdate.add((dt) => {
+      elapsed += dt;
+    });
+    return (): GameSnapshot =>
+      createGameSnapshot({
+        world: ctx.world,
+        enemyQuery,
+        bulletQuery,
+        bossQuery,
+        elapsed: () => elapsed,
+      });
+  }, [ctx]);
 
   return (
     <View style={styles.root}>
@@ -129,6 +164,7 @@ export function App(): React.ReactElement {
         }}
         onReady={(ctx) => {
           ctxRef.current = ctx;
+          setCtx(ctx);
           onReady(ctx, localization, renderHooks);
         }}
       >
@@ -136,6 +172,11 @@ export function App(): React.ReactElement {
         <VirtualButton onStateChange={onBomb} style={styles.bombBtn} />
       </GameView>
       <Hud localization={localization} actions={actions} />
+      {__DEV__ && ctx && snapshotSource ? (
+        <DevtoolsProvider world={ctx.world} loop={ctx.loop} snapshot={snapshotSource}>
+          <DevtoolsHUD />
+        </DevtoolsProvider>
+      ) : null}
     </View>
   );
 }

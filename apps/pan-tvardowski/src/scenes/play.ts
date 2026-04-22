@@ -4,7 +4,7 @@ import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { A11yBridge } from '../a11y/manager';
 import type { AudioHandles } from '../audio/init';
-import { setZoneMusic } from '../audio/init';
+import { playSfx, setZoneMusic } from '../audio/init';
 import type { MusicKey } from '../audio/synth';
 import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
 import { Boss, Bullet, Enemy, Lifetime, Miniboss, Ship } from '../components';
@@ -126,6 +126,9 @@ interface PlayState {
   tilemapBg: TilemapBgController | null;
   /** Previous-frame playerHp — used to detect damage and flash postfx. */
   lastPlayerHp: number;
+  /** Set in onExit — deferred / signal-driven callbacks bail out when true
+   *  so a zone-transition or scene.go() mid-frame can't touch a stale world. */
+  disposed: boolean;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -173,13 +176,15 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         viewportReady: false,
         tilemapBg: null,
         lastPlayerHp: PLAYER_HP_MAX,
+        disposed: false,
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
+        if (state.disposed) return;
         resolveCollision(ctx.world, state.coll, pair.entityA, pair.entityB, {
           requestShake: () => {
             state.pendingShake = true;
-            audioRef?.current?.pool.play('hit');
+            playSfx(audioRef?.current, 'hit');
           },
         });
       };
@@ -315,7 +320,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       },
 
       onUpdate(dt: number) {
-        if (!s) return;
+        if (!s || s.disposed) return;
         if (gameState.gameOver || gameState.victory) {
           resetBombButtonFrame();
           return;
@@ -351,7 +356,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           query: s.shipQuery,
           bounds: s.bounds,
           onShoot: () => {
-            audioRef?.current?.pool.play('shoot');
+            playSfx(audioRef?.current, 'shoot');
           },
           speedMul: gameState.bossGazeActive ? BAZYLISZEK_GAZE_SPEED_MUL : 1,
         });
@@ -395,7 +400,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           },
           onExplosion: (x: number, y: number) => {
             burstExplosion(ctx.world, atlas, x, y, 12, ((s?.elapsed ?? 0) * 1000) | 1);
-            audioRef?.current?.pool.play('explode');
+            playSfx(audioRef?.current, 'explode');
           },
         });
         updateBoss(ctx.world, dt, {
@@ -459,7 +464,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           },
           onExplosion: (x: number, y: number) => {
             burstExplosion(ctx.world, atlas, x, y, 14, ((s?.elapsed ?? 0) * 1000) | 1);
-            audioRef?.current?.pool.play('explode');
+            playSfx(audioRef?.current, 'explode');
           },
         });
         integrate(ctx.world, dt, s.posQuery);
@@ -514,7 +519,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           minibossQuery: s.minibossQuery,
           flash: s.flash,
           onFired: () => {
-            audioRef?.current?.pool.play('bomb');
+            playSfx(audioRef?.current, 'bomb');
           },
         });
         resetBombButtonFrame();
@@ -538,7 +543,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.runStats.score = gameState.score;
             gameState.runStats.kills[pattern] += 1;
             burstExplosion(ctx.world, atlas, x, y, 8, (x * 31 + y * 17) | 0 || 1);
-            audioRef?.current?.pool.play('explode');
+            playSfx(audioRef?.current, 'explode');
             // Dziwożona splits on death — spawn DZIWOZONA_SKRZAT_SPAWN Skrzats.
             if (pattern === 'dziwozona' && s) {
               const halfCount = (DZIWOZONA_SKRZAT_SPAWN - 1) / 2;
@@ -595,6 +600,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
 
       onExit() {
         if (!s) return;
+        s.disposed = true;
         clearWorld(s);
         clearBossFsms();
         clearMinibossFsms();
@@ -603,7 +609,11 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           deps.renderHooks.background = null;
           deps.renderHooks.postfx = null;
         }
-        audioRef?.current?.pool.stopAll();
+        const a = audioRef?.current;
+        if (a) {
+          a.pool.stopAll();
+          a.music.stop();
+        }
       },
     };
   };

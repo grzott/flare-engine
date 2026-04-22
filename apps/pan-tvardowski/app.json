@@ -5,12 +5,18 @@
     "version": "0.0.1",
     "orientation": "portrait",
     "newArchEnabled": true,
+    "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "dev.flare.pantvardowski",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIStatusBarHidden": true,
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
     },
     "android": {
-      "package": "dev.flare.pantvardowski"
+      "package": "dev.flare.pantvardowski",
+      "edgeToEdgeEnabled": true
     }
   }
 }

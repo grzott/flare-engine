@@ -4,7 +4,13 @@ import type {
   VirtualButtonState,
   VirtualJoystickState,
 } from '@flare-engine/engine';
-import { GameView, VirtualButton, VirtualJoystick, fadeTransition } from '@flare-engine/engine';
+import {
+  AppLifecycle,
+  GameView,
+  VirtualButton,
+  VirtualJoystick,
+  fadeTransition,
+} from '@flare-engine/engine';
 import { ErrorBoundary, createConsoleTransport } from '@flare-engine/errors';
 import type { CrashPayload } from '@flare-engine/errors';
 import type { LocalizationManager } from '@flare-engine/localization';
@@ -12,11 +18,13 @@ import type { ShareManager } from '@flare-engine/share';
 import { Skia } from '@shopify/react-native-skia';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
-import { useMemo, useState } from 'react';
-import { Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { AppState, Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import type { AppStateStatus } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createA11yBridge } from './a11y/manager';
 import type { AudioHandles } from './audio/init';
-import { initAudio } from './audio/init';
+import { disposeAudio, initAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
 import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
@@ -31,23 +39,30 @@ import type { PlayRenderHooks } from './scenes/play';
 import { createPlayScene } from './scenes/play';
 import { buildShapeAtlas } from './shape-atlas';
 import { createShareManager, shareHighScore } from './share/manager';
-import { bombButtonState, gameState, joystickState, resetBombButtonFrame } from './state';
+import {
+  bombButtonState,
+  gameState,
+  joystickState,
+  resetBombButtonFrame,
+  resetGameState,
+} from './state';
 
 interface AudioRef {
   current: AudioHandles | null;
 }
 
-function onReady(
+type RuntimeDisposer = () => void;
+
+function bootstrap(
   ctx: GameContextValue,
   localization: LocalizationManager,
   renderHooks: PlayRenderHooks,
-): void {
+  audioRef: AudioRef,
+): RuntimeDisposer {
   const atlas = buildShapeAtlas(Skia);
   const saveStore = createSaveStore();
-  const audioRef: AudioRef = { current: null };
   // PostFx: pass `null` Skia module — visible SkSL compositing requires a
   // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
-  // The chain + uniform packing are still exercised via tests (postfx.test.ts).
   const skiaPostFx = null;
 
   const a11y = createA11yBridge();
@@ -80,7 +95,7 @@ function onReady(
   ctx.scenes.register('victory', createVictoryScene(ctx));
   ctx.scenes.setTransition(fadeTransition(0.3));
 
-  ctx.loop.onUpdate.add((dt) => {
+  const offUpdate = ctx.loop.onUpdate.add((dt) => {
     ctx.scenes.update(dt);
     resetBombButtonFrame();
   });
@@ -94,20 +109,68 @@ function onReady(
   });
   void manager.start();
 
-  // Bridge engine-side zone events for external observers (devtools, analytics).
-  gameEvents.on('zone-start', () => {
-    /* hook point */
+  // AppState bridge → engine AppLifecycle. Pauses the loop + suspends audio
+  // on background; resumes both on foreground. Without this, minimising and
+  // restoring the app causes the old loop + audio graph to linger while a
+  // remount would spin up a second one — visible on device as "a second game
+  // starts" and "all sounds overlap".
+  const lifecycle = new AppLifecycle(ctx.loop);
+  const offBackground = lifecycle.onBackground.add(() => {
+    void ctx.audio.suspend();
+    audioRef.current?.music.stop();
   });
+  const offForeground = lifecycle.onForeground.add(() => {
+    void ctx.audio.resume();
+  });
+  const onAppStateChange = (next: AppStateStatus): void => {
+    if (next === 'active') lifecycle.foreground();
+    else if (next === 'background' || next === 'inactive') lifecycle.background();
+  };
+  const appStateSub = AppState.addEventListener('change', onAppStateChange);
 
   void ctx.scenes.go('boot');
+
+  return () => {
+    appStateSub.remove();
+    offBackground();
+    offForeground();
+    manager.stop();
+    offUpdate();
+    gameEvents.removeAll();
+    disposeAudio();
+    audioRef.current = null;
+    resetGameState();
+  };
 }
 
 export function App(): React.ReactElement {
+  return (
+    <SafeAreaProvider>
+      <AppRoot />
+    </SafeAreaProvider>
+  );
+}
+
+function AppRoot(): React.ReactElement {
+  const insets = useSafeAreaInsets();
   const localization = useMemo(() => createLocalization(), []);
+  const audioRef = useMemo<AudioRef>(() => ({ current: null }), []);
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
+  const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
   const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
+
+  // Release runtime resources on unmount — prevents a second game from
+  // booting when the component remounts (OS relaunch, hot reload, Android
+  // config-change while singleTask is set).
+  useEffect(() => {
+    return () => {
+      disposerRef.current?.();
+      disposerRef.current = null;
+      ctxRef.current = null;
+    };
+  }, [disposerRef, ctxRef]);
 
   const onJoystick = (s: VirtualJoystickState): void => {
     joystickState.dx = s.direction.x;
@@ -139,7 +202,6 @@ export function App(): React.ReactElement {
     [ctxRef, shareManager, localization],
   );
 
-  // Snapshot source: requires stable pre-created queries from the live World.
   const snapshotSource = useMemo(() => {
     if (!ctx) return null;
     const enemyQuery = ctx.world.query(Enemy);
@@ -158,6 +220,23 @@ export function App(): React.ReactElement {
         elapsed: () => elapsed,
       });
   }, [ctx]);
+
+  const joystickStyle = useMemo(
+    () => ({
+      ...styles.joystick,
+      left: 24 + insets.left,
+      bottom: 48 + insets.bottom,
+    }),
+    [insets.left, insets.bottom],
+  );
+  const bombStyle = useMemo(
+    () => ({
+      ...styles.bombBtn,
+      right: 24 + insets.right,
+      bottom: 48 + insets.bottom,
+    }),
+    [insets.right, insets.bottom],
+  );
 
   return (
     <ErrorBoundary
@@ -181,16 +260,19 @@ export function App(): React.ReactElement {
             onRenderBackground: (ctx, canvas) => renderHooks.background?.(ctx, canvas),
             onRenderPostFx: (ctx, canvas) => renderHooks.postfx?.(ctx, canvas),
           }}
-          onReady={(ctx) => {
-            ctxRef.current = ctx;
-            setCtx(ctx);
-            onReady(ctx, localization, renderHooks);
+          onReady={(ready) => {
+            // StrictMode / hot-reload safety — if a prior bootstrap is still
+            // live, tear it down before replacing it.
+            disposerRef.current?.();
+            ctxRef.current = ready;
+            setCtx(ready);
+            disposerRef.current = bootstrap(ready, localization, renderHooks, audioRef);
           }}
         >
-          <VirtualJoystick onStateChange={onJoystick} style={styles.joystick} />
-          <VirtualButton onStateChange={onBomb} style={styles.bombBtn} />
+          <VirtualJoystick onStateChange={onJoystick} style={joystickStyle} />
+          <VirtualButton onStateChange={onBomb} style={bombStyle} />
         </GameView>
-        <Hud localization={localization} actions={actions} />
+        <Hud localization={localization} actions={actions} insets={insets} />
         {__DEV__ && ctx && snapshotSource ? (
           <DevtoolsProvider world={ctx.world} loop={ctx.loop} snapshot={snapshotSource}>
             <DevtoolsHUD />
@@ -231,15 +313,11 @@ const styles = StyleSheet.create({
   crashButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   joystick: {
     position: 'absolute',
-    left: 24,
-    bottom: 48,
     width: 120,
     height: 120,
   },
   bombBtn: {
     position: 'absolute',
-    right: 24,
-    bottom: 48,
     width: 72,
     height: 72,
   },

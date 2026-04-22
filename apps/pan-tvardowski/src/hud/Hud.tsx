@@ -10,6 +10,15 @@ export interface HudActions {
   onShare: () => void;
 }
 
+/** Minimal structural shape of safe-area insets. Kept local so tests and
+ *  typecheck don't need to resolve `react-native-safe-area-context`. */
+export interface HudInsets {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 function cloneState(): GameState {
   return {
     ...gameState,
@@ -22,9 +31,12 @@ function cloneState(): GameState {
 export interface HudProps {
   localization: LocalizationManager;
   actions: HudActions;
+  /** Safe-area insets from the hosting `<SafeAreaProvider>`. Optional so
+   *  the HUD can still render in tests that don't install the provider. */
+  insets?: HudInsets;
 }
 
-export function Hud({ localization, actions }: HudProps): React.ReactElement {
+export function Hud({ localization, actions, insets }: HudProps): React.ReactElement {
   const [s, setS] = useState<GameState>(() => cloneState());
 
   useEffect(() => {
@@ -37,6 +49,36 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
     [localization],
   );
 
+  const topInset = insets?.top ?? 0;
+  const horizontalInsetLeft = insets?.left ?? 0;
+  const horizontalInsetRight = insets?.right ?? 0;
+  const topLeftStyle = useMemo(
+    () => [styles.topLeft, { top: 32 + topInset, left: 16 + horizontalInsetLeft }],
+    [topInset, horizontalInsetLeft],
+  );
+  const bossBarStyle = useMemo(
+    () => [
+      styles.bossBar,
+      {
+        top: 32 + topInset,
+        left: 16 + horizontalInsetLeft,
+        right: 16 + horizontalInsetRight,
+      },
+    ],
+    [topInset, horizontalInsetLeft, horizontalInsetRight],
+  );
+  const minibossBarStyle = useMemo(
+    () => [
+      styles.minibossBar,
+      {
+        top: 56 + topInset,
+        left: 16 + horizontalInsetLeft,
+        right: 16 + horizontalInsetRight,
+      },
+    ],
+    [topInset, horizontalInsetLeft, horizontalInsetRight],
+  );
+
   const inPlay = s.currentScene === 'play';
   const isGameOver = s.currentScene === 'game-over';
   const isVictory = s.currentScene === 'victory';
@@ -45,7 +87,7 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
     <View pointerEvents="none" style={styles.root}>
       {inPlay ? (
         <>
-          <View style={styles.topLeft}>
+          <View style={topLeftStyle}>
             <Text style={styles.score}>{t('hud.score', { score: s.score })}</Text>
             <Text style={styles.hp}>
               {t('hud.hp', { hp: Math.max(0, s.playerHp), max: s.playerHpMax })}
@@ -53,7 +95,7 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
             <Text style={styles.bombs}>{t('hud.bombs_remaining', { n: s.bombCharges })}</Text>
           </View>
           {s.bossActive && s.bossHpMax > 0 ? (
-            <View style={styles.bossBar}>
+            <View style={bossBarStyle}>
               <Text style={styles.bossName}>
                 {t('hud.boss_name', {
                   name: t(s.bossNameKey),
@@ -75,7 +117,7 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
             </View>
           ) : null}
           {s.minibossActive && s.minibossHpMax > 0 && !s.bossActive ? (
-            <View style={styles.minibossBar}>
+            <View style={minibossBarStyle}>
               <Text style={styles.minibossName}>
                 {t('hud.miniboss_name', {
                   name: t(s.minibossNameKey),

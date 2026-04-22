@@ -155,3 +155,42 @@ export const bombButtonState = { justPressed: false, isPressed: false };
 export function resetBombButtonFrame(): void {
   bombButtonState.justPressed = false;
 }
+
+/**
+ * Reset all module-level game state to first-boot defaults. Called on
+ * runtime dispose (app teardown / component unmount) so a remount cannot
+ * inherit residual flags from a prior run (gameOver, bossActive, etc.).
+ * Settings are preserved — those live in the save store.
+ */
+export function resetGameState(): void {
+  const settings = gameState.settings;
+  gameState.score = 0;
+  gameState.playerHp = PLAYER_HP_MAX;
+  gameState.playerHpMax = PLAYER_HP_MAX;
+  gameState.bombCharges = START_BOMBS;
+  gameState.bossHp = 0;
+  gameState.bossHpMax = 0;
+  gameState.bossActive = false;
+  gameState.bossNameKey = 'bosses.smok-krzemionkowski.name';
+  gameState.minibossHp = 0;
+  gameState.minibossHpMax = 0;
+  gameState.minibossActive = false;
+  gameState.minibossNameKey = 'minibosses.rokita.name';
+  gameState.bossShieldActive = false;
+  gameState.bossGazeActive = false;
+  gameState.gameOver = false;
+  gameState.victory = false;
+  gameState.currentScene = 'boot';
+  gameState.currentZone = 'z1';
+  gameState.zoneBanner.visible = false;
+  gameState.zoneBanner.opacity = 0;
+  gameState.zoneBanner.nameKey = 'zones.1.name';
+  gameState.zoneBanner.subtitleKey = 'zones.1.subtitle';
+  gameState.settings = settings;
+  gameState.runStats = createRunStats();
+  joystickState.dx = 0;
+  joystickState.dy = 0;
+  joystickState.active = false;
+  bombButtonState.justPressed = false;
+  bombButtonState.isPressed = false;
+}

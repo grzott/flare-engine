@@ -125,11 +125,9 @@ function onReady(ctx: GameContextValue): void {
   ctx.scenes.register('play', createPlayScene({ ctx, atlas, sfx: sfxRef }));
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
-  // Dev-only bench harness (triple-tap title to enter). Release bundles
-  // strip this via the `__DEV__` dead-code branch.
-  if (__DEV__) {
-    ctx.scenes.register('bench', createBenchScene({ ctx, atlas }));
-  }
+  // Bench harness — triple-tap the menu title to enter. Kept in release
+  // builds so we can capture on-device FPS from production bundles.
+  ctx.scenes.register('bench', createBenchScene({ ctx, atlas }));
   ctx.scenes.setTransition(fadeTransition(0.3));
 
   // Re-apply audio settings whenever the game state changes (settings modal edits).

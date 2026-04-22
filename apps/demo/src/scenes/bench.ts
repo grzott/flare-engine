@@ -148,16 +148,23 @@ export function createBenchScene(deps: BenchSceneDeps): () => Scene {
           (state.samples[load.label] as number[]).push(fps);
         }
 
-        // Drift bullets/enemies a bit so the scene actually moves
-        const W = 360;
-        const H = 640;
+        // Integrate positions and bounce off the viewport edges so the
+        // scene actually moves — exercises render + collision each frame.
+        const W = ctx.camera.viewportWidth || 360;
+        const H = ctx.camera.viewportHeight || 640;
         for (const id of state.spawned) {
           const p = ctx.world.get(id, Position);
           const v = ctx.world.get(id, Velocity);
           if (!p || !v) continue;
-          if (p.x < 0 || p.x > W) v.x = -v.x;
-          if (p.y < 0 || p.y > H) v.y = -v.y;
+          p.x += v.x * dt;
+          p.y += v.y * dt;
+          if (p.x < 0 && v.x < 0) v.x = -v.x;
+          else if (p.x > W && v.x > 0) v.x = -v.x;
+          if (p.y < 0 && v.y < 0) v.y = -v.y;
+          else if (p.y > H && v.y > 0) v.y = -v.y;
+          state.coll.setPosition(id, p.x, p.y);
         }
+        state.coll.step();
 
         if (state.elapsed >= SECONDS_PER_LOAD) {
           state.elapsed = 0;

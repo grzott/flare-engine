@@ -20,6 +20,8 @@ const menu = [
   'menu.victory.title',
   'menu.tap_retry',
   'menu.tap_continue',
+  'menu.error.title',
+  'menu.error.reset',
 ] as const;
 
 const hud = [

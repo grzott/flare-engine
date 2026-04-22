@@ -179,4 +179,75 @@ describe('Camera2D', () => {
       expect(cam.effectiveY).toBe(cam.y);
     });
   });
+
+  describe('motionScale', () => {
+    it('defaults to 1', () => {
+      const cam = new Camera2D();
+      expect(cam.motionScale).toBe(1);
+    });
+
+    it('clamps negatives to 0', () => {
+      const cam = new Camera2D();
+      cam.setMotionScale(-0.5);
+      expect(cam.motionScale).toBe(0);
+    });
+
+    it('motionScale=0 suppresses shake entirely', () => {
+      const cam = new Camera2D();
+      cam.setMotionScale(0);
+      cam.shake(20, 0.5);
+      cam.update(0.1);
+      expect(cam.effectiveX).toBe(cam.x);
+      expect(cam.effectiveY).toBe(cam.y);
+    });
+
+    it('motionScale scales amplitude', () => {
+      // Use very small dt so decay ≈ 1 for both — isolates amplitude scaling.
+      const camFull = new Camera2D();
+      const camHalf = new Camera2D();
+      camHalf.setMotionScale(0.5);
+      camFull.shake(100, 10);
+      camHalf.shake(100, 10);
+      camFull.update(1e-4);
+      camHalf.update(1e-4);
+      const full = Math.abs(camFull.effectiveX - camFull.x);
+      const half = Math.abs(camHalf.effectiveX - camHalf.x);
+      // camHalf's duration also scales (10 → 5), so decay factors differ by
+      // a negligible amount at this dt. Amplitude ratio dominates.
+      expect(half / full).toBeCloseTo(0.5, 2);
+    });
+
+    it('motionScale scales duration', () => {
+      const cam = new Camera2D();
+      cam.setMotionScale(0.5);
+      cam.shake(10, 0.4); // scaled to 0.2s
+      cam.update(0.25); // past scaled duration
+      expect(cam.effectiveX).toBe(cam.x);
+      expect(cam.effectiveY).toBe(cam.y);
+    });
+
+    it('only affects subsequent shake() calls, not in-flight shake', () => {
+      const cam = new Camera2D();
+      cam.shake(100, 1);
+      cam.update(0.05);
+      const before = Math.abs(cam.effectiveX - cam.x);
+      // Change scale mid-shake
+      cam.setMotionScale(0);
+      cam.update(0.05);
+      // Existing shake continues — still produces an offset
+      const after = Math.abs(cam.effectiveX - cam.x);
+      expect(before).toBeGreaterThan(0);
+      expect(after).toBeGreaterThan(0);
+    });
+
+    it('motionScale=1 preserves legacy behavior', () => {
+      const cam = new Camera2D();
+      cam.setMotionScale(1);
+      cam.shake(15, 0.3);
+      cam.update(0.1);
+      // Still shakes (non-zero offset at t < duration)
+      const offset = Math.abs(cam.effectiveX - cam.x);
+      expect(offset).toBeGreaterThan(0);
+    });
+  });
 });

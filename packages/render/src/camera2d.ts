@@ -54,6 +54,7 @@ export class Camera2D {
   private _follow: { target: Vec2; options: FollowOptions } | null = null;
   private _shake: ShakeState | null = null;
   private _shakeSeed = 0;
+  private _motionScale = 1;
 
   /** Set viewport dimensions. */
   setViewport(width: number, height: number): void {
@@ -71,11 +72,36 @@ export class Camera2D {
     this._follow = null;
   }
 
+  /**
+   * Global motion multiplier applied to subsequent `shake()` calls. Scales
+   * both amplitude and duration. Default 1 (no-op). 0 fully suppresses
+   * shake. Intended to be driven by `@flare-engine/a11y` reduced-motion so
+   * callers don't have to guard every shake site.
+   *
+   * Only affects future `shake()` calls — does not retroactively modify an
+   * in-flight shake.
+   *
+   * Clamped to `>= 0`.
+   */
+  setMotionScale(scale: number): void {
+    this._motionScale = scale < 0 ? 0 : scale;
+  }
+
+  /** Current motion scale (default 1). */
+  get motionScale(): number {
+    return this._motionScale;
+  }
+
   /** Start camera shake. */
   shake(intensity: number, duration: number): void {
+    const k = this._motionScale;
+    if (k <= 0) {
+      this._shake = null;
+      return;
+    }
     this._shake = {
-      intensity,
-      duration,
+      intensity: intensity * k,
+      duration: duration * k,
       elapsed: 0,
       offsetX: 0,
       offsetY: 0,

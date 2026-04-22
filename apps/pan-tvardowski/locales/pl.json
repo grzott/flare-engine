@@ -27,6 +27,9 @@
   "hud.miniboss_name": "{name}",
   "hud.weapon_level": "POZ {level}",
   "hud.shield_active": "Tarcza aktywna",
+  "hud.share": "Udostępnij",
+  "hud.share.victory": "Pokonałem Pana Twardowskiego z wynikiem {score}!",
+  "hud.share.gameover": "Diabeł mnie dopadł z wynikiem {score} w Pan Twardowski!",
 
   "zones.1.name": "Dachy Krakowa",
   "zones.1.subtitle": "Zmierzch nad Wawelem",
@@ -60,6 +63,9 @@
 
   "minibosses.rokita.name": "Rokita",
   "minibosses.leszy.name": "Leszy",
+  "minibosses.leszy.form.deer": "Jeleń",
+  "minibosses.leszy.form.bear": "Niedźwiedź",
+  "minibosses.leszy.form.owl": "Sowa",
   "minibosses.nocny-lowca.name": "Nocny Łowca",
   "minibosses.madej.name": "Madej",
 

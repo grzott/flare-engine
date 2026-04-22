@@ -27,6 +27,9 @@
   "hud.miniboss_name": "{name}",
   "hud.weapon_level": "LV {level}",
   "hud.shield_active": "Shield active",
+  "hud.share": "Share",
+  "hud.share.victory": "I beat Pan Tvardowski and scored {score}!",
+  "hud.share.gameover": "The Devil got me with {score} points in Pan Tvardowski!",
 
   "zones.1.name": "Kraków Rooftops",
   "zones.1.subtitle": "Dusk over Wawel",
@@ -60,6 +63,9 @@
 
   "minibosses.rokita.name": "Rokita",
   "minibosses.leszy.name": "Leszy",
+  "minibosses.leszy.form.deer": "Deer",
+  "minibosses.leszy.form.bear": "Bear",
+  "minibosses.leszy.form.owl": "Owl",
   "minibosses.nocny-lowca.name": "The Night Hunter",
   "minibosses.madej.name": "Madej",
 

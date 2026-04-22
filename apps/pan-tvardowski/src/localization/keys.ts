@@ -34,6 +34,9 @@ const hud = [
   'hud.miniboss_name',
   'hud.weapon_level',
   'hud.shield_active',
+  'hud.share',
+  'hud.share.victory',
+  'hud.share.gameover',
 ] as const;
 
 const zones = [
@@ -73,6 +76,9 @@ const enemies = [
 const minibosses = [
   'minibosses.rokita.name',
   'minibosses.leszy.name',
+  'minibosses.leszy.form.deer',
+  'minibosses.leszy.form.bear',
+  'minibosses.leszy.form.owl',
   'minibosses.nocny-lowca.name',
   'minibosses.madej.name',
 ] as const;

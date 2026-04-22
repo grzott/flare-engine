@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Pan Tvardowski",
+    "slug": "pan-tvardowski",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "dev.flare.pantvardowski",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "dev.flare.pantvardowski"
+    }
+  }
+}

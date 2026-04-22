@@ -24,6 +24,7 @@
   "hud.shards_collected": "{n, plural, =0 {Brak odłamków} one {Zebrano # odłamek} few {Zebrano # odłamki} many {Zebrano # odłamków} other {Zebrano # odłamków}}",
   "hud.zone_banner": "Kraina {n} — {name}",
   "hud.boss_name": "{name}",
+  "hud.miniboss_name": "{name}",
   "hud.weapon_level": "POZ {level}",
 
   "zones.1.name": "Dachy Krakowa",

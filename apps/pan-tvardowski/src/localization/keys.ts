@@ -31,6 +31,7 @@ const hud = [
   'hud.shards_collected',
   'hud.zone_banner',
   'hud.boss_name',
+  'hud.miniboss_name',
   'hud.weapon_level',
 ] as const;
 

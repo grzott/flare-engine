@@ -14,6 +14,7 @@ function cloneState(): GameState {
     ...gameState,
     settings: { ...gameState.settings },
     runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
+    zoneBanner: { ...gameState.zoneBanner },
   };
 }
 
@@ -54,7 +55,7 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
             <View style={styles.bossBar}>
               <Text style={styles.bossName}>
                 {t('hud.boss_name', {
-                  name: t('bosses.smok-krzemionkowski.name'),
+                  name: t(s.bossNameKey),
                 })}
               </Text>
               <View style={styles.bossBarBg}>
@@ -67,6 +68,34 @@ export function Hud({ localization, actions }: HudProps): React.ReactElement {
                   ]}
                 />
               </View>
+            </View>
+          ) : null}
+          {s.minibossActive && s.minibossHpMax > 0 && !s.bossActive ? (
+            <View style={styles.minibossBar}>
+              <Text style={styles.minibossName}>
+                {t('hud.miniboss_name', {
+                  name: t(s.minibossNameKey),
+                })}
+              </Text>
+              <View style={styles.minibossBarBg}>
+                <View
+                  style={[
+                    styles.minibossBarFill,
+                    {
+                      width: `${Math.max(0, Math.min(1, s.minibossHp / s.minibossHpMax)) * 100}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          ) : null}
+          {s.zoneBanner.visible && s.zoneBanner.opacity > 0.01 ? (
+            <View
+              style={[styles.zoneBanner, { opacity: s.zoneBanner.opacity }]}
+              pointerEvents="none"
+            >
+              <Text style={styles.zoneBannerTitle}>{t(s.zoneBanner.nameKey)}</Text>
+              <Text style={styles.zoneBannerSub}>{t(s.zoneBanner.subtitleKey)}</Text>
             </View>
           ) : null}
         </>
@@ -118,6 +147,47 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   bossBarFill: { height: '100%', backgroundColor: '#C0392B' },
+  minibossBar: {
+    position: 'absolute',
+    top: 56,
+    left: 16,
+    right: 16,
+    alignItems: 'center',
+  },
+  minibossName: {
+    color: '#E67E22',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  minibossBarBg: {
+    width: '70%',
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  minibossBarFill: { height: '100%', backgroundColor: '#E67E22' },
+  zoneBanner: {
+    position: 'absolute',
+    top: '38%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  zoneBannerTitle: {
+    color: '#F3C262',
+    fontSize: 26,
+    fontWeight: '800',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
+  zoneBannerSub: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 6,
+    letterSpacing: 1,
+  },
   centerOverlay: {
     position: 'absolute',
     top: 0,

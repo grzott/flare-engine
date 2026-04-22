@@ -24,6 +24,7 @@
   "hud.shards_collected": "{n, plural, =0 {No shards} one {# shard} other {# shards}} collected",
   "hud.zone_banner": "Zone {n} — {name}",
   "hud.boss_name": "{name}",
+  "hud.miniboss_name": "{name}",
   "hud.weapon_level": "LV {level}",
 
   "zones.1.name": "Kraków Rooftops",

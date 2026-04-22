@@ -72,4 +72,23 @@ describe('EffectChain', () => {
     chain.clear();
     expect(chain.length).toBe(0);
   });
+
+  test('globalIntensity defaults to 1', () => {
+    const chain = new EffectChain();
+    expect(chain.globalIntensity).toBe(1);
+  });
+
+  test('globalIntensity clamps negatives to 0', () => {
+    const chain = new EffectChain();
+    chain.globalIntensity = -0.5;
+    expect(chain.globalIntensity).toBe(0);
+    chain.setGlobalIntensity(-10);
+    expect(chain.globalIntensity).toBe(0);
+  });
+
+  test('setGlobalIntensity accepts values above 1', () => {
+    const chain = new EffectChain();
+    chain.setGlobalIntensity(1.5);
+    expect(chain.globalIntensity).toBe(1.5);
+  });
 });

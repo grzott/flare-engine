@@ -6,9 +6,40 @@ import type { Effect, EffectUniforms } from './effect.js';
  */
 export class EffectChain {
   private _effects: Effect[] = [];
+  private _globalIntensity = 1;
 
   get length(): number {
     return this._effects.length;
+  }
+
+  /**
+   * Global intensity multiplier applied to every enabled effect's
+   * "strength" uniform when the pass is built. Default 1 (no-op).
+   *
+   * Scales the following uniform fields at pass-build time:
+   *  - vignette.intensity
+   *  - grayscale-flash.intensity
+   *  - chromatic-aberration.amount
+   *  - crt.scanlineIntensity
+   *  - bloom.intensity
+   *
+   * Geometry-like uniforms (radius, curvature, threshold) are not scaled.
+   * Intended for a11y reduced-motion (set to 0 to null all dampen-able
+   * effects in one call) without touching per-effect state.
+   *
+   * Clamped to `>= 0`. Negative values are clamped to 0.
+   */
+  get globalIntensity(): number {
+    return this._globalIntensity;
+  }
+
+  set globalIntensity(value: number) {
+    this._globalIntensity = value < 0 ? 0 : value;
+  }
+
+  /** Convenience setter — mirrors the getter/setter. */
+  setGlobalIntensity(value: number): void {
+    this.globalIntensity = value;
   }
 
   /** Snapshot view of the chain. Do not mutate. */

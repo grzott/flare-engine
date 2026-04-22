@@ -89,14 +89,17 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
     buildPass(chain, width, height) {
       const out: CompiledPass[] = [];
       if (!supported) return out;
+      const scale = chain.globalIntensity;
       for (const effect of chain.enabled()) {
         const compiled = this.compile(effect.uniforms.kind);
         if (!compiled) continue;
+        const uniforms = packUniforms(effect.uniforms, width, height);
+        if (scale !== 1) scaleIntensity(effect.uniforms.kind, uniforms, scale);
         out.push({
           id: effect.id,
           kind: effect.uniforms.kind,
           shader: compiled.effect,
-          uniforms: packUniforms(effect.uniforms, width, height),
+          uniforms,
         });
       }
       return out;
@@ -120,5 +123,34 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
       return new Float32Array([width, height, u.scanlineIntensity, u.curvature]);
     case 'bloom':
       return new Float32Array([width, height, u.threshold, u.intensity]);
+  }
+}
+
+/**
+ * Scale the "strength" slot of a packed uniform buffer in place. Geometry
+ * fields (radius, curvature, threshold) are intentionally left alone.
+ */
+function scaleIntensity(kind: EffectKind, packed: Float32Array, scale: number): void {
+  switch (kind) {
+    case 'vignette':
+      // [width, height, intensity, radius]
+      packed[2] = (packed[2] ?? 0) * scale;
+      return;
+    case 'grayscale-flash':
+      // [intensity]
+      packed[0] = (packed[0] ?? 0) * scale;
+      return;
+    case 'chromatic-aberration':
+      // [width, height, amount]
+      packed[2] = (packed[2] ?? 0) * scale;
+      return;
+    case 'crt':
+      // [width, height, scanlineIntensity, curvature]
+      packed[2] = (packed[2] ?? 0) * scale;
+      return;
+    case 'bloom':
+      // [width, height, threshold, intensity]
+      packed[3] = (packed[3] ?? 0) * scale;
+      return;
   }
 }

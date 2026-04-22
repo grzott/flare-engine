@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { EffectChain } from '../src/chain.js';
-import { createBloom, createCrt, createGrayscaleFlash, createVignette } from '../src/effect.js';
+import {
+  createBloom,
+  createChromaticAberration,
+  createCrt,
+  createGrayscaleFlash,
+  createVignette,
+} from '../src/effect.js';
 import {
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
@@ -89,5 +95,101 @@ describe('createPostFxRuntime', () => {
     const pass = rt.buildPass(chain, 800, 600);
     expect(pass.map((p) => p.id)).toEqual(['v', 'c']);
     expect(pass.every((p) => p.uniforms.length > 0)).toBe(true);
+  });
+
+  describe('chain.globalIntensity modulates packed uniforms', () => {
+    test('default (1.0) leaves uniforms untouched', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createVignette('v', { intensity: 0.5, radius: 0.8 }));
+      const pass = rt.buildPass(chain, 800, 600);
+      expect(pass[0]?.uniforms[2]).toBeCloseTo(0.5, 5);
+      expect(pass[0]?.uniforms[3]).toBeCloseTo(0.8, 5);
+    });
+
+    test('vignette — intensity scales, radius does not', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createVignette('v', { intensity: 0.8, radius: 0.7 }));
+      chain.globalIntensity = 0.5;
+      const pass = rt.buildPass(chain, 800, 600);
+      expect(pass[0]?.uniforms[2]).toBeCloseTo(0.4, 5);
+      expect(pass[0]?.uniforms[3]).toBeCloseTo(0.7, 5);
+    });
+
+    test('grayscale-flash — intensity scales', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createGrayscaleFlash('g', { intensity: 0.6 }));
+      chain.globalIntensity = 0.25;
+      const pass = rt.buildPass(chain, 800, 600);
+      expect(pass[0]?.uniforms[0]).toBeCloseTo(0.15, 5);
+    });
+
+    test('chromatic-aberration — amount scales', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createChromaticAberration('ca', { amount: 0.02 }));
+      chain.globalIntensity = 0.5;
+      const pass = rt.buildPass(chain, 800, 600);
+      expect(pass[0]?.uniforms[2]).toBeCloseTo(0.01, 6);
+    });
+
+    test('crt — scanlineIntensity scales, curvature does not', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createCrt('c', { scanlineIntensity: 0.4, curvature: 0.2 }));
+      chain.globalIntensity = 0.5;
+      const pass = rt.buildPass(chain, 800, 600);
+      expect(pass[0]?.uniforms[2]).toBeCloseTo(0.2, 5);
+      expect(pass[0]?.uniforms[3]).toBeCloseTo(0.2, 5);
+    });
+
+    test('bloom — intensity scales, threshold does not', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createBloom('b', { threshold: 0.7, intensity: 0.8 }));
+      chain.globalIntensity = 0.5;
+      const pass = rt.buildPass(chain, 800, 600);
+      expect(pass[0]?.uniforms[2]).toBeCloseTo(0.7, 5);
+      expect(pass[0]?.uniforms[3]).toBeCloseTo(0.4, 5);
+    });
+
+    test('setting globalIntensity=0 zeroes strength uniforms across kinds', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createVignette('v', { intensity: 0.8, radius: 0.7 }));
+      chain.add(createBloom('b', { threshold: 0.7, intensity: 0.8 }));
+      chain.add(createGrayscaleFlash('g', { intensity: 1 }));
+      chain.globalIntensity = 0;
+      const pass = rt.buildPass(chain, 800, 600);
+      // vignette intensity
+      expect(pass[0]?.uniforms[2]).toBe(0);
+      // bloom intensity (threshold unchanged)
+      expect(pass[1]?.uniforms[2]).toBeCloseTo(0.7, 5);
+      expect(pass[1]?.uniforms[3]).toBe(0);
+      // grayscale-flash intensity
+      expect(pass[2]?.uniforms[0]).toBe(0);
+    });
+
+    test('does not mutate the underlying effect uniforms', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const chain = new EffectChain();
+      chain.add(createVignette('v', { intensity: 0.8, radius: 0.7 }));
+      chain.globalIntensity = 0.25;
+      rt.buildPass(chain, 800, 600);
+      const e = chain.get('v');
+      if (e && e.uniforms.kind === 'vignette') {
+        expect(e.uniforms.intensity).toBe(0.8);
+      }
+    });
   });
 });

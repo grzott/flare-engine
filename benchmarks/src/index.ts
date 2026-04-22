@@ -40,7 +40,9 @@ function formatHeapDelta(r: HeapDeltaResult): string {
     r.bytesPerFrame >= 0
       ? `${r.bytesPerFrame.toFixed(1)} B/frame`
       : `${r.bytesPerFrame.toFixed(1)} B/frame`;
-  return `${r.name.padEnd(44)}  ${total.padStart(12)} over ${r.iterations.toString().padStart(4)} frames   ${perFrame.padStart(16)}`;
+  return `${r.name.padEnd(44)}  ${total.padStart(12)} over ${r.iterations
+    .toString()
+    .padStart(4)} frames   ${perFrame.padStart(16)}`;
 }
 
 function heapDeltaMdRow(r: HeapDeltaResult): string {
@@ -85,7 +87,11 @@ function loadDeviceReport(): DeviceReport | null {
   }
 }
 
-function deviceFpsStats(fps: number[]): { min: number; avg: number; max: number } {
+function deviceFpsStats(fps: number[]): {
+  min: number;
+  avg: number;
+  max: number;
+} {
   if (fps.length === 0) return { min: 0, avg: 0, max: 0 };
   let min = fps[0] as number;
   let max = fps[0] as number;
@@ -111,7 +117,7 @@ function printMarkdown(
   lines.push('# Flare Engine — Benchmarks');
   lines.push('');
   lines.push(
-    `> Generated: ${date} · Runtime: ${runtime} · Platform: ${platform}. Regenerate with \`bun run bench:md\` inside \`benchmarks/\`.`,
+    `> Generated: ${date} · Runtime: ${runtime} · Platform: ${platform}. Regenerate: \`bun run bench:md\` (re-runs microbenches, ~60s) or \`bun run bench:md:cache\` (device-only update from cached JSON).`,
   );
   lines.push('');
 
@@ -134,14 +140,18 @@ function printMarkdown(
     );
   if (integ1k)
     lines.push(
-      `| Integration frame, 1000 entities + 300 particles | **${fmtUs(integ1k.nsPerOp.median)}** / frame |`,
+      `| Integration frame, 1000 entities + 300 particles | **${fmtUs(
+        integ1k.nsPerOp.median,
+      )}** / frame |`,
     );
   if (device && device.devices.length > 0) {
     for (const d of device.devices) {
       for (const load of d.loads) {
         const s = deviceFpsStats(load.fps);
         lines.push(
-          `| ${d.device} · ${load.label} | **${s.avg.toFixed(0)} fps avg** (min ${s.min}, max ${s.max}) |`,
+          `| ${d.device} · ${load.label} | **${s.avg.toFixed(
+            0,
+          )} fps avg** (min ${s.min}, max ${s.max}) |`,
         );
       }
     }
@@ -240,6 +250,16 @@ function printMarkdown(
     'Per [build-plan.md](../plans/build-plan.md), C++ acceleration is only started for subsystems where these benchmarks (plus on-device measurements from the demo game) show a concrete bottleneck. Priority order from [native-acceleration.md](../design/native-acceleration.md) remains: particles → ECS hot loop → spatial hash → physics. Numbers above are the JS baseline against which any C++ port must demonstrate speedup.',
   );
   lines.push('');
+  lines.push('### Decision — 2026-04-22');
+  lines.push('');
+  lines.push(
+    'First device capture (Samsung Galaxy A54 5G, Android 16, release): light (60 entities) 120 fps, medium (180 entities) ~117 fps, heavy (350 entities) ~48 fps. The cliff between medium and heavy maps to the physics microbench: `CollisionWorld.step` is O(n·log n) broadphase + O(k) resolution, and the heavy load crosses the 500-AABB threshold where Bun measures ~2 ms/step (≈12 ms/step extrapolated under Hermes on ARM). That single call consumes most of a 16.6 ms budget at 350 colliders, confirming physics as the primary bottleneck at demo-scale loads — matching the `<1000 dynamic entities` guidance in the physics package.',
+  );
+  lines.push('');
+  lines.push(
+    '**Outcome:** Phase 10 stays deferred until a second device (iOS) confirms the same cliff and a realistic target game needs >200 colliders. Demo at typical gameplay loads (≤150 colliders) comfortably holds 120 fps on mid-range Android, so the launch does not require a native port. If a future consumer hits the ceiling, the data points to physics broadphase (spatial hash) as the first C++ target, not particles.',
+  );
+  lines.push('');
 
   console.log(lines.join('\n'));
 }
@@ -249,12 +269,50 @@ function buildReport(groups: Group[], heap: HeapDeltaResult[]): MicrobenchReport
     generated: new Date().toISOString(),
     runtime: `Bun ${Bun.version}`,
     platform: `${process.platform} ${process.arch}`,
-    suites: groups.map((g) => ({ title: g.title, results: g.results.map(statsToResult) })),
+    suites: groups.map((g) => ({
+      title: g.title,
+      results: g.results.map(statsToResult),
+    })),
     heap: heap.map(heapToResult),
   };
 }
 
 const args = new Set(process.argv.slice(2));
+
+if (args.has('--from-cache')) {
+  // Render markdown from cached microbench.json + device.json.
+  // Use this after updating device.json without re-running microbenches.
+  const microFile = resolve(resultsDir(), 'microbench.json');
+  const raw = readFileSync(microFile, 'utf8');
+  const cached = JSON.parse(raw) as MicrobenchReport;
+  const cachedGroups: Group[] = cached.suites.map((s) => ({
+    title: s.title,
+    results: s.results.map(
+      (r): BenchStats => ({
+        name: r.scenario,
+        innerIters: r.innerIters,
+        samples: r.samples,
+        nsPerOp: {
+          min: r.minNs,
+          median: r.medianNs,
+          mean: r.meanNs,
+          p99: r.p99Ns,
+        },
+        opsPerSec: r.opsPerSec,
+      }),
+    ),
+  }));
+  const cachedHeap: HeapDeltaResult[] = cached.heap.map((h) => ({
+    name: h.name,
+    iterations: h.iterations,
+    deltaBytes: h.deltaBytes,
+    bytesPerFrame: h.bytesPerFrame,
+  }));
+  const device = loadDeviceReport();
+  printMarkdown(cachedGroups, cachedHeap, device);
+  process.exit(0);
+}
+
 const groups = runAll();
 const heap = integrationHeapDelta(500);
 

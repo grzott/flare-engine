@@ -1,0 +1,114 @@
+import { type SpriteSheet, getFrame } from '@flare-engine/assets';
+import type { World } from '@flare-engine/ecs';
+import { Position, Velocity } from '@flare-engine/ecs';
+import { AABB, type CollisionWorld } from '@flare-engine/physics';
+import { Sprite } from '@flare-engine/render';
+import type { SkImage } from '@shopify/react-native-skia';
+import { Boss, Bullet, Enemy, type EnemyPattern, Hp, Lifetime, Ship } from './components';
+import { ENEMY_SPECS } from './config/gameplay';
+import { Layer, Mask } from './layers';
+
+export interface AtlasHandle {
+  image: SkImage;
+  sheet: SpriteSheet;
+}
+
+export interface SpawnCtx {
+  world: World;
+  coll: CollisionWorld;
+  atlas: AtlasHandle;
+}
+
+function frame(sheet: SpriteSheet, name: string) {
+  const f = getFrame(sheet, name);
+  if (!f) throw new Error(`pan-tvardowski: missing sprite frame "${name}"`);
+  return f;
+}
+
+export function spawnPlayer(ctx: SpawnCtx, x: number, y: number): number {
+  const { world, coll, atlas } = ctx;
+  const id = world.spawn();
+  const f = frame(atlas.sheet, 'kogut-zloty');
+  world.add(id, Position, { x, y });
+  world.add(id, Velocity, { x: 0, y: 0 });
+  world.add(id, Sprite, { image: atlas.image, frame: f, z: 10 });
+  world.add(id, Ship, { fireRate: 0.18, cooldown: 0 });
+  world.add(id, Hp, { current: 100, max: 100 });
+  coll.add(id, AABB(f.w * 0.6, f.h * 0.6), x, y, false, Layer.player, Mask.player);
+  return id;
+}
+
+export function spawnEnemy(
+  ctx: SpawnCtx,
+  pattern: EnemyPattern,
+  x: number,
+  y: number,
+  seed: number,
+): number {
+  const { world, coll, atlas } = ctx;
+  const spec = ENEMY_SPECS[pattern];
+  const id = world.spawn();
+  const f = frame(atlas.sheet, spec.frame);
+  world.add(id, Position, { x, y });
+  world.add(id, Velocity, { x: 0, y: 0 });
+  world.add(id, Sprite, { image: atlas.image, frame: f, z: 8 });
+  world.add(id, Enemy, {
+    pattern,
+    t: 0,
+    baseX: x,
+    speed: spec.speed,
+    scoreValue: spec.score,
+    fireInterval: spec.fireInterval,
+    // Deterministic offset (0..fireInterval) seeded by the entity's spawn index.
+    fireCooldown: Number.isFinite(spec.fireInterval)
+      ? spec.fireInterval * 0.3 + (seed % 17) * 0.05
+      : Number.POSITIVE_INFINITY,
+  });
+  world.add(id, Hp, { current: spec.hp, max: spec.hp });
+  coll.add(id, AABB(f.w * 0.7, f.h * 0.7), x, y, false, Layer.enemy, Mask.enemy);
+  return id;
+}
+
+export function spawnBoss(ctx: SpawnCtx, x: number, y: number, hpMax: number): number {
+  const { world, coll, atlas } = ctx;
+  const id = world.spawn();
+  const f = frame(atlas.sheet, 'smok-krzemionkowski');
+  world.add(id, Position, { x, y });
+  world.add(id, Velocity, { x: 0, y: 0 });
+  world.add(id, Sprite, { image: atlas.image, frame: f, z: 9 });
+  world.add(id, Boss, {
+    phase: 'entering',
+    t: 0,
+    phaseT: 0,
+    fireCooldown: 1.5,
+    dyingExplosions: 0,
+    targetY: 100,
+  });
+  world.add(id, Hp, { current: hpMax, max: hpMax });
+  coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);
+  return id;
+}
+
+export function spawnBullet(
+  ctx: SpawnCtx,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  ownerLayer: number,
+): number {
+  const { world, coll, atlas } = ctx;
+  const id = world.spawn();
+  const isPlayer = ownerLayer === Layer.player;
+  const name = isPlayer ? 'player-bullet' : 'enemy-bullet';
+  const mask = isPlayer ? Mask.playerBullet : Mask.enemyBullet;
+  const layer = isPlayer ? Layer.playerBullet : Layer.enemyBullet;
+  const f = frame(atlas.sheet, name);
+  world.add(id, Position, { x, y });
+  world.add(id, Velocity, { x: vx, y: vy });
+  world.add(id, Sprite, { image: atlas.image, frame: f, z: 6 });
+  world.add(id, Bullet, { damage: 1, ownerLayer });
+  world.add(id, Lifetime, { remaining: 3 });
+  coll.add(id, AABB(f.w, f.h), x, y, true, layer, mask);
+  return id;
+}

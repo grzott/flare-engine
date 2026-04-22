@@ -1,6 +1,6 @@
 import type { World } from '@flare-engine/engine';
 import type { CollisionWorld } from '@flare-engine/physics';
-import { Boss, Bullet, type BulletData, Hp, Ship } from '../components';
+import { Boss, Bullet, type BulletData, Hp, Miniboss, Ship } from '../components';
 import { Layer } from '../layers';
 import { gameState, notifyStateChanged } from '../state';
 import { destroyEntity } from './entity-ops';
@@ -11,6 +11,12 @@ function isBossInvulnerable(world: World, id: number): boolean {
   return boss.phase === 'entering' || boss.phase === 'dying' || boss.phase === 'defeated';
 }
 
+function isMinibossInvulnerable(world: World, id: number): boolean {
+  const m = world.get(id, Miniboss);
+  if (!m) return false;
+  return m.phase === 'entering' || m.phase === 'dying' || m.phase === 'defeated';
+}
+
 function handlePlayerBullet(
   world: World,
   coll: CollisionWorld,
@@ -19,6 +25,10 @@ function handlePlayerBullet(
   bullet: BulletData,
 ): void {
   if (world.has(targetId, Boss) && isBossInvulnerable(world, targetId)) {
+    destroyEntity(world, coll, bulletId);
+    return;
+  }
+  if (world.has(targetId, Miniboss) && isMinibossInvulnerable(world, targetId)) {
     destroyEntity(world, coll, bulletId);
     return;
   }
@@ -59,7 +69,8 @@ function handleShipContact(
     gameState.runStats.damageTaken += 10;
     notifyStateChanged();
   }
-  if (!world.has(otherId, Boss)) destroyEntity(world, coll, otherId);
+  if (!world.has(otherId, Boss) && !world.has(otherId, Miniboss))
+    destroyEntity(world, coll, otherId);
   return { shake: true };
 }
 

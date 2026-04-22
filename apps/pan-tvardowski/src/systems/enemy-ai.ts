@@ -16,9 +16,11 @@ export interface EnemyDeps {
 }
 
 /**
- * Zone-1 enemy AI:
+ * Enemy AI for Zones 1–2:
  *  - skrzat: zig-zag sine kamikaze (fires nothing).
  *  - latawiec: straight dive + aimed single shot every `fireInterval` s.
+ *  - czart: sine wave + aimed 3-way spread.
+ *  - bies: hover + strafe + aimed 3-burst (tight cluster).
  */
 export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
   for (const id of deps.query) {
@@ -31,6 +33,18 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
     if (e.pattern === 'skrzat') {
       vel.x = Math.cos(e.t * 3.2) * 90;
       vel.y = e.speed;
+    } else if (e.pattern === 'czart') {
+      vel.x = Math.cos(e.t * 2.1) * 110;
+      vel.y = e.speed;
+    } else if (e.pattern === 'bies') {
+      // Hover-descend then strafe once past y=140.
+      if (pos.y < 140) {
+        vel.x = 0;
+        vel.y = e.speed;
+      } else {
+        vel.x = Math.sin(e.t * 1.4) * 140;
+        vel.y = 30;
+      }
     } else {
       vel.x = 0;
       vel.y = e.speed;
@@ -40,14 +54,33 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
     e.fireCooldown -= dt;
     if (e.fireCooldown <= 0) {
       normalizeDirection(deps.playerX - pos.x, deps.playerY - pos.y, BULLET_SPEED.enemy, aim);
-      spawnBullet(
-        deps.spawnCtx,
-        pos.x,
-        pos.y + BULLET_SPAWN_OFFSET.enemy,
-        aim.x * 0.6,
-        aim.y,
-        Layer.enemy,
-      );
+      if (e.pattern === 'czart') {
+        // 3-way spread ±20°.
+        for (let i = -1; i <= 1; i++) {
+          const a = Math.atan2(aim.y, aim.x) + i * 0.35;
+          const vx = Math.cos(a) * BULLET_SPEED.enemy;
+          const vy = Math.sin(a) * BULLET_SPEED.enemy;
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
+        }
+      } else if (e.pattern === 'bies') {
+        // Aimed 3-burst, tight ±7°.
+        for (let i = -1; i <= 1; i++) {
+          const a = Math.atan2(aim.y, aim.x) + i * 0.12;
+          const vx = Math.cos(a) * BULLET_SPEED.enemy;
+          const vy = Math.sin(a) * BULLET_SPEED.enemy;
+          spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
+        }
+      } else {
+        // latawiec — single aimed shot, softened x.
+        spawnBullet(
+          deps.spawnCtx,
+          pos.x,
+          pos.y + BULLET_SPAWN_OFFSET.enemy,
+          aim.x * 0.6,
+          aim.y,
+          Layer.enemy,
+        );
+      }
       e.fireCooldown = e.fireInterval;
     }
   }

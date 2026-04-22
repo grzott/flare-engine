@@ -9,8 +9,8 @@ export const Ship = defineComponent<ShipData>('Ship', () => ({
   cooldown: 0,
 }));
 
-/** Zone-1 enemy kinds. */
-export type EnemyPattern = 'skrzat' | 'latawiec';
+/** Enemy kinds across Zones 1–2. */
+export type EnemyPattern = 'skrzat' | 'latawiec' | 'czart' | 'bies';
 
 export interface EnemyData {
   pattern: EnemyPattern;
@@ -55,7 +55,10 @@ export const Lifetime = defineComponent<LifetimeData>('Lifetime', () => ({
 
 export type BossPhase = 'entering' | 'phase1' | 'phase2' | 'dying' | 'defeated';
 
+export type BossPattern = 'smok-krzemionkowski' | 'borowy-krol';
+
 export interface BossData {
+  pattern: BossPattern;
   phase: BossPhase;
   t: number;
   phaseT: number;
@@ -64,10 +67,36 @@ export interface BossData {
   targetY: number;
 }
 export const Boss = defineComponent<BossData>('Boss', () => ({
+  pattern: 'smok-krzemionkowski',
   phase: 'entering',
   t: 0,
   phaseT: 0,
   fireCooldown: 0,
   dyingExplosions: 0,
   targetY: 90,
+}));
+
+export type MinibossPattern = 'rokita';
+export type MinibossPhase = 'entering' | 'active' | 'dying' | 'defeated';
+
+export interface MinibossData {
+  pattern: MinibossPattern;
+  phase: MinibossPhase;
+  t: number;
+  phaseT: number;
+  fireCooldown: number;
+  dyingExplosions: number;
+  targetY: number;
+  /** Horizontal root-line growth progress 0..1 (Rokita). */
+  rootProgress: number;
+}
+export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
+  pattern: 'rokita',
+  phase: 'entering',
+  t: 0,
+  phaseT: 0,
+  fireCooldown: 0,
+  dyingExplosions: 0,
+  targetY: 110,
+  rootProgress: 0,
 }));

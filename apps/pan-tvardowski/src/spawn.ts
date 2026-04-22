@@ -4,7 +4,18 @@ import { Position, Velocity } from '@flare-engine/ecs';
 import { AABB, type CollisionWorld } from '@flare-engine/physics';
 import { Sprite } from '@flare-engine/render';
 import type { SkImage } from '@shopify/react-native-skia';
-import { Boss, Bullet, Enemy, type EnemyPattern, Hp, Lifetime, Ship } from './components';
+import {
+  Boss,
+  type BossPattern,
+  Bullet,
+  Enemy,
+  type EnemyPattern,
+  Hp,
+  Lifetime,
+  Miniboss,
+  type MinibossPattern,
+  Ship,
+} from './components';
 import { ENEMY_SPECS } from './config/gameplay';
 import { Layer, Mask } from './layers';
 
@@ -69,14 +80,21 @@ export function spawnEnemy(
   return id;
 }
 
-export function spawnBoss(ctx: SpawnCtx, x: number, y: number, hpMax: number): number {
+export function spawnBoss(
+  ctx: SpawnCtx,
+  pattern: BossPattern,
+  x: number,
+  y: number,
+  hpMax: number,
+): number {
   const { world, coll, atlas } = ctx;
   const id = world.spawn();
-  const f = frame(atlas.sheet, 'smok-krzemionkowski');
+  const f = frame(atlas.sheet, pattern);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Sprite, { image: atlas.image, frame: f, z: 9 });
   world.add(id, Boss, {
+    pattern,
     phase: 'entering',
     t: 0,
     phaseT: 0,
@@ -86,6 +104,34 @@ export function spawnBoss(ctx: SpawnCtx, x: number, y: number, hpMax: number): n
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);
+  return id;
+}
+
+export function spawnMiniboss(
+  ctx: SpawnCtx,
+  pattern: MinibossPattern,
+  x: number,
+  y: number,
+  hpMax: number,
+): number {
+  const { world, coll, atlas } = ctx;
+  const id = world.spawn();
+  const f = frame(atlas.sheet, pattern);
+  world.add(id, Position, { x, y });
+  world.add(id, Velocity, { x: 0, y: 0 });
+  world.add(id, Sprite, { image: atlas.image, frame: f, z: 9 });
+  world.add(id, Miniboss, {
+    pattern,
+    phase: 'entering',
+    t: 0,
+    phaseT: 0,
+    fireCooldown: 1.2,
+    dyingExplosions: 0,
+    targetY: 110,
+    rootProgress: 0,
+  });
+  world.add(id, Hp, { current: hpMax, max: hpMax });
+  coll.add(id, AABB(f.w * 0.75, f.h * 0.75), x, y, false, Layer.enemy, Mask.enemy);
   return id;
 }
 

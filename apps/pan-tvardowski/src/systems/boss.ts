@@ -1,7 +1,7 @@
 import { FSM, Position, Velocity } from '@flare-engine/ecs';
 import type { Query, World } from '@flare-engine/engine';
 import { clamp } from '@flare-engine/math';
-import { Boss, type BossPhase, Bullet, Hp } from '../components';
+import { Boss, type BossPattern, type BossPhase, Bullet, Hp } from '../components';
 import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
@@ -32,6 +32,7 @@ export interface BossStatus {
   hpMax: number;
   phase: BossPhase;
   invulnerable: boolean;
+  pattern: BossPattern | null;
 }
 
 export function computeBossStatus(world: World, query: Query): BossStatus {
@@ -46,6 +47,7 @@ export function computeBossStatus(world: World, query: Query): BossStatus {
       hpMax: hp.max,
       phase: b.phase,
       invulnerable,
+      pattern: b.pattern,
     };
   }
   return {
@@ -54,6 +56,7 @@ export function computeBossStatus(world: World, query: Query): BossStatus {
     hpMax: 0,
     phase: 'defeated',
     invulnerable: true,
+    pattern: null,
   };
 }
 
@@ -63,31 +66,57 @@ interface BossCtx {
   deps: BossDeps;
 }
 
-/** Phase 1 — fire-cone sweep L→R. Emits a bullet at a swept horizontal angle. */
-function firePhase1(c: BossCtx): void {
-  const pos = c.world.get(c.id, Position);
-  const b = c.world.get(c.id, Boss);
-  if (!pos || !b) return;
-  // Triangle-wave sweep left↔right; period ~4s.
-  const sweep = Math.sin(b.t * 1.6) * 180;
-  spawnBullet(
-    c.deps.spawnCtx,
-    pos.x,
-    pos.y + BULLET_SPAWN_OFFSET.boss,
-    sweep,
-    BULLET_SPEED.boss,
-    Layer.enemy,
-  );
+interface PhaseScript {
+  /** Movement speed in phase 1 vs phase 2 (sweep). */
+  sweepSpeed1: number;
+  sweepSpeed2: number;
+  /** Phase-1 fire cadence (seconds). */
+  fire1Cooldown: number;
+  /** Phase-2 fire cadence. */
+  fire2Cooldown: number;
+  fire1: (c: BossCtx) => void;
+  fire2: (c: BossCtx) => void;
 }
 
-/** Phase 2 — swooping dives + 6-way radial. */
-function firePhase2(c: BossCtx): void {
-  const pos = c.world.get(c.id, Position);
-  if (!pos) return;
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    aim.x = Math.cos(a) * BULLET_SPEED.boss;
-    aim.y = Math.sin(a) * BULLET_SPEED.boss;
+// ---- Smok Krzemionkowski (Zone 1) ------------------------------------------
+
+const smokScript: PhaseScript = {
+  sweepSpeed1: 80,
+  sweepSpeed2: 140,
+  fire1Cooldown: 0.5,
+  fire2Cooldown: 1.1,
+  fire1(c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (!pos || !b) return;
+    // Triangle-wave sweep left↔right; period ~4s.
+    const sweep = Math.sin(b.t * 1.6) * 180;
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      sweep,
+      BULLET_SPEED.boss,
+      Layer.enemy,
+    );
+  },
+  fire2(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      aim.x = Math.cos(a) * BULLET_SPEED.boss;
+      aim.y = Math.sin(a) * BULLET_SPEED.boss;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        aim.x,
+        aim.y,
+        Layer.enemy,
+      );
+    }
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     spawnBullet(
       c.deps.spawnCtx,
       pos.x,
@@ -96,11 +125,50 @@ function firePhase2(c: BossCtx): void {
       aim.y,
       Layer.enemy,
     );
-  }
-  // Plus one aimed burst at the player for pressure.
-  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-  spawnBullet(c.deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.boss, aim.x, aim.y, Layer.enemy);
-}
+  },
+};
+
+// ---- Borowy Król (Zone 2) --------------------------------------------------
+
+const borowyScript: PhaseScript = {
+  sweepSpeed1: 60,
+  sweepSpeed2: 110,
+  fire1Cooldown: 0.7,
+  fire2Cooldown: 0.55,
+  // Phase 1: rolling boulders — 2 arcing shots that fall heavy (large vy, small vx drift).
+  fire1(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    for (let i = -1; i <= 1; i += 2) {
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x + i * 18,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        i * 60,
+        BULLET_SPEED.boss * 0.9,
+        Layer.enemy,
+      );
+    }
+  },
+  // Phase 2: aimed seed-shots from "root walls" — tight 5-way aim at player.
+  fire2(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    for (let i = -2; i <= 2; i++) {
+      const a = baseAngle + i * 0.18;
+      const vx = Math.cos(a) * BULLET_SPEED.boss;
+      const vy = Math.sin(a) * BULLET_SPEED.boss;
+      spawnBullet(c.deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.boss, vx, vy, Layer.enemy);
+    }
+  },
+};
+
+const SCRIPTS: Record<BossPattern, PhaseScript> = {
+  'smok-krzemionkowski': smokScript,
+  'borowy-krol': borowyScript,
+};
 
 function sweepMove(c: BossCtx, speed: number): void {
   const b = c.world.get(c.id, Boss);
@@ -176,11 +244,12 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('phase2');
         return;
       }
-      sweepMove(c, 80);
+      const script = SCRIPTS[b.pattern];
+      sweepMove(c, script.sweepSpeed1);
       b.fireCooldown -= dt;
       if (b.fireCooldown <= 0) {
-        firePhase1(c);
-        b.fireCooldown = 0.5;
+        script.fire1(c);
+        b.fireCooldown = script.fire1Cooldown;
       }
     },
     onExit(c) {
@@ -207,11 +276,12 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('killed');
         return;
       }
-      sweepMove(c, 140);
+      const script = SCRIPTS[b.pattern];
+      sweepMove(c, script.sweepSpeed2);
       b.fireCooldown -= dt;
       if (b.fireCooldown <= 0) {
-        firePhase2(c);
-        b.fireCooldown = 1.1;
+        script.fire2(c);
+        b.fireCooldown = script.fire2Cooldown;
       }
     },
     onExit(c) {

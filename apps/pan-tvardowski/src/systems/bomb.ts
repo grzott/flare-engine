@@ -1,6 +1,6 @@
 import type { Query, World } from '@flare-engine/engine';
 import type { CollisionWorld } from '@flare-engine/physics';
-import { Boss, Enemy, Hp } from '../components';
+import { Boss, Enemy, Hp, Miniboss } from '../components';
 import { bombButtonState, gameState, notifyStateChanged } from '../state';
 import { destroyEntity } from './entity-ops';
 
@@ -17,6 +17,7 @@ export interface BombDeps {
   coll: CollisionWorld;
   enemyQuery: Query;
   bossQuery: Query;
+  minibossQuery: Query;
   flash: BombFlashState;
   onFired?: () => void;
 }
@@ -50,6 +51,12 @@ export function processBomb(world: World, dt: number, deps: BombDeps): void {
       const hp = world.get(id, Hp);
       if (!b || !hp) continue;
       if (b.phase === 'phase1' || b.phase === 'phase2') hp.current -= Math.floor(hp.max * 0.25);
+    }
+    for (const id of deps.minibossQuery) {
+      const m = world.get(id, Miniboss);
+      const hp = world.get(id, Hp);
+      if (!m || !hp) continue;
+      if (m.phase === 'active') hp.current -= Math.floor(hp.max * 0.25);
     }
     notifyStateChanged();
   }

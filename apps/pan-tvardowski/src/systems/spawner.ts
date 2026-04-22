@@ -70,3 +70,30 @@ export function buildZone1Schedule(seed: number, viewportWidth = 360): WaveEntry
   }
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-2 wave schedule. Only Czart + Bies spawn.
+ * Spans ~80 s before the miniboss gate at 90 s, then a lighter 80 s stretch
+ * before the boss at 200 s.
+ */
+export function buildZone2Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  const pushWaves = (from: number, to: number, intensity: number): number => {
+    let t = from;
+    while (t < to) {
+      const roll = rand();
+      const pattern: EnemyPattern = roll < 0.55 ? 'czart' : 'bies';
+      const count = 1 + Math.floor(rand() * (pattern === 'czart' ? 2 : 3));
+      const spacing = 50;
+      const maxStart = viewportWidth - (count - 1) * spacing - 40;
+      const startX = 40 + rand() * Math.max(1, maxStart);
+      schedule.push({ t, count, pattern, spacing, startX });
+      t += 2.4 + rand() * (3.0 - intensity);
+    }
+    return t;
+  };
+  pushWaves(3, 80, 1.2); // pre-miniboss
+  pushWaves(110, 185, 1.4); // post-miniboss → pre-boss
+  return schedule;
+}

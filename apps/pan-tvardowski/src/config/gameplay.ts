@@ -52,6 +52,20 @@ export const ENEMY_SPECS: Record<EnemyPattern, EnemySpec> = {
     speed: 130,
     fireInterval: 1.9,
   },
+  mamuna: {
+    frame: 'mamuna',
+    hp: 3,
+    score: 240,
+    speed: 60,
+    fireInterval: 1.4,
+  },
+  licho: {
+    frame: 'licho',
+    hp: 4,
+    score: 320,
+    speed: 70,
+    fireInterval: 2.6,
+  },
 };
 
 export const BULLET_SPEED = {
@@ -104,3 +118,24 @@ export const ZONE2_MINIBOSS_T = 90;
 export const ZONE2_BOSS_T = 200;
 /** Seconds before the Zone-3 boss (Wodnik Wiślany) enters (§5 length = 4:00). */
 export const ZONE3_BOSS_T = 220;
+
+/** Leszy miniboss HP (build plan §8). */
+export const LESZY_HP = 200;
+
+/** Seconds per Leszy form before shape-shifting to the next (build plan §8). */
+export const LESZY_FORM_SEC = 10;
+
+/** Boruta HP per phase (build plan §9). */
+export const BORUTA_PHASE_HP = 700;
+export const BORUTA_HP_MAX = BORUTA_PHASE_HP * 2;
+
+/** Number of Bies summoned when Boruta enters phase 2 (build plan §9). */
+export const BORUTA_SUMMON_COUNT = 3;
+
+/** Seconds before the Zone-4 miniboss (Leszy) enters (§5 length = 4:30). */
+export const ZONE4_MINIBOSS_T = 100;
+/** Seconds before the Zone-4 boss (Boruta) enters. */
+export const ZONE4_BOSS_T = 230;
+
+/** Licho teleport-blink cadence (seconds). */
+export const LICHO_BLINK_SEC = 1.8;

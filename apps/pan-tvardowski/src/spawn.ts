@@ -88,6 +88,8 @@ export function spawnEnemy(
     fireCooldown: Number.isFinite(spec.fireInterval)
       ? spec.fireInterval * 0.3 + (seed % 17) * 0.05
       : Number.POSITIVE_INFINITY,
+    // Licho teleport interval; harmless for other patterns.
+    blinkT: pattern === 'licho' ? 1.8 : 0,
   });
   world.add(id, Hp, { current: spec.hp, max: spec.hp });
   coll.add(id, AABB(f.w * 0.7, f.h * 0.7), x, y, false, Layer.enemy, Mask.enemy);
@@ -123,6 +125,7 @@ export function spawnBoss(
     shieldActive: false,
     minionsAlive: 0,
     shieldDownFor: 0,
+    summonsSpawned: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);
@@ -156,6 +159,8 @@ export function spawnMiniboss(
     dyingExplosions: 0,
     targetY: 110,
     rootProgress: 0,
+    form: 'deer',
+    formT: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.75, f.h * 0.75), x, y, false, Layer.enemy, Mask.enemy);

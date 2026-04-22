@@ -118,3 +118,29 @@ export function buildZone3Schedule(seed: number, viewportWidth = 360): WaveEntry
   }
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-4 wave schedule. Only Mamuna + Licho spawn.
+ * Pre-miniboss stretch 3..90 s (miniboss gate at 100 s), then a
+ * post-miniboss stretch 120..215 s before the boss gate at 230 s.
+ */
+export function buildZone4Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  const pushWaves = (from: number, to: number, intensity: number): void => {
+    let t = from;
+    while (t < to) {
+      const roll = rand();
+      const pattern: EnemyPattern = roll < 0.55 ? 'mamuna' : 'licho';
+      const count = pattern === 'mamuna' ? 1 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+      const spacing = pattern === 'mamuna' ? 48 : 64;
+      const maxStart = viewportWidth - (count - 1) * spacing - 40;
+      const startX = 40 + rand() * Math.max(1, maxStart);
+      schedule.push({ t, count, pattern, spacing, startX });
+      t += 2.5 + rand() * (3.2 - intensity);
+    }
+  };
+  pushWaves(3, 90, 1.3); // pre-miniboss
+  pushWaves(120, 215, 1.5); // post-miniboss → pre-boss
+  return schedule;
+}

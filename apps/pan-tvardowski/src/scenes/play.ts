@@ -81,6 +81,7 @@ const ZONE_MUSIC: Record<ZoneId, MusicKey> = {
   z1: 'zone1',
   z2: 'zone2',
   z3: 'zone3',
+  z4: 'zone4',
 };
 
 interface PlayState {
@@ -340,6 +341,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           query: s.enemyQuery,
           playerX: px,
           playerY: py,
+          bounds: s.bounds,
         });
         updateMiniboss(ctx.world, dt, {
           spawnCtx: s.spawnCtx,
@@ -349,6 +351,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           bounds: s.bounds,
           onPhaseChange: () => {
             if (gameState.settings.screenShake) ctx.camera.shake(4, 0.18);
+          },
+          onFormChange: (form) => {
+            if (!s) return;
+            gameEvents.emit('miniboss-form-change', s.zone.id, form);
           },
           onDefeated: () => {
             if (!s) return;
@@ -388,6 +394,11 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             if (!s) return;
             postfx.triggerHitFlash();
             gameEvents.emit('boss-shield-broken', s.zone.id);
+          },
+          onSpawnSummon: (x, y) => {
+            if (!s) return;
+            spawnEnemy(s.spawnCtx, 'bies', x, y, ((x * 41 + y * 19) | 1) >>> 0);
+            gameEvents.emit('boss-summon', s.zone.id, 'bies');
           },
           onDefeated: () => {
             if (!s) return;

@@ -1,7 +1,7 @@
 import type { Query, World } from '@flare-engine/engine';
 import { Position, Velocity } from '@flare-engine/engine';
 import { Enemy } from '../components';
-import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../config/gameplay';
+import { BULLET_SPAWN_OFFSET, BULLET_SPEED, LICHO_BLINK_SEC } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
 import { type Direction2D, normalizeDirection } from '../util/direction';
@@ -13,6 +13,7 @@ export interface EnemyDeps {
   query: Query;
   playerX: number;
   playerY: number;
+  bounds?: { width: number; height: number };
 }
 
 /**
@@ -53,6 +54,23 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
       // Swooping arc: cosine-driven horizontal with slight vertical wave.
       vel.x = Math.cos(e.t * 1.8) * 150;
       vel.y = e.speed * (0.7 + 0.3 * Math.sin(e.t * 1.3));
+    } else if (e.pattern === 'mamuna') {
+      // Horizontal sweep with a steady slow descent.
+      vel.x = Math.sin(e.t * 1.1) * 140;
+      vel.y = e.speed;
+    } else if (e.pattern === 'licho') {
+      // Slow drift; teleports sideways at LICHO_BLINK_SEC intervals.
+      e.blinkT -= dt;
+      if (e.blinkT <= 0) {
+        const bw = deps.bounds?.width ?? 360;
+        // Deterministic-ish jitter per enemy: hash t into [0,1).
+        const h = Math.sin(e.t * 12.9898 + pos.x * 78.233) * 43758.5453;
+        const r = h - Math.floor(h);
+        pos.x = 40 + r * Math.max(1, bw - 80);
+        e.blinkT = LICHO_BLINK_SEC;
+      }
+      vel.x = 0;
+      vel.y = e.speed;
     } else {
       vel.x = 0;
       vel.y = e.speed;
@@ -98,6 +116,26 @@ export function updateEnemyAI(world: World, dt: number, deps: EnemyDeps): void {
           const vy = Math.sin(a) * BULLET_SPEED.enemy;
           spawnBullet(deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.enemy, vx, vy, Layer.enemy);
         }
+      } else if (e.pattern === 'mamuna') {
+        // Drops a mine: short-range downward bullet.
+        spawnBullet(
+          deps.spawnCtx,
+          pos.x,
+          pos.y + BULLET_SPAWN_OFFSET.enemy,
+          0,
+          BULLET_SPEED.enemy * 0.6,
+          Layer.enemy,
+        );
+      } else if (e.pattern === 'licho') {
+        // Heavy single aimed shot, slightly slower but otherwise just one bullet.
+        spawnBullet(
+          deps.spawnCtx,
+          pos.x,
+          pos.y + BULLET_SPAWN_OFFSET.enemy,
+          aim.x * 0.9,
+          aim.y * 0.9,
+          Layer.enemy,
+        );
       } else {
         // latawiec — single aimed shot, softened x.
         spawnBullet(

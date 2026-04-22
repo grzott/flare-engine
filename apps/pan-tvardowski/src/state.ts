@@ -11,6 +11,8 @@ export type KillKind =
   | 'bies'
   | 'topielec'
   | 'strzyga'
+  | 'mamuna'
+  | 'licho'
   | 'miniboss'
   | 'boss';
 
@@ -23,6 +25,8 @@ export interface RunStats {
     bies: number;
     topielec: number;
     strzyga: number;
+    mamuna: number;
+    licho: number;
     miniboss: number;
     boss: number;
   };
@@ -41,6 +45,8 @@ export function createRunStats(): RunStats {
       bies: 0,
       topielec: 0,
       strzyga: 0,
+      mamuna: 0,
+      licho: 0,
       miniboss: 0,
       boss: 0,
     },

@@ -9,8 +9,16 @@ export const Ship = defineComponent<ShipData>('Ship', () => ({
   cooldown: 0,
 }));
 
-/** Enemy kinds across Zones 1–3. */
-export type EnemyPattern = 'skrzat' | 'latawiec' | 'czart' | 'bies' | 'topielec' | 'strzyga';
+/** Enemy kinds across Zones 1–4. */
+export type EnemyPattern =
+  | 'skrzat'
+  | 'latawiec'
+  | 'czart'
+  | 'bies'
+  | 'topielec'
+  | 'strzyga'
+  | 'mamuna'
+  | 'licho';
 
 export interface EnemyData {
   pattern: EnemyPattern;
@@ -20,6 +28,8 @@ export interface EnemyData {
   scoreValue: number;
   fireInterval: number;
   fireCooldown: number;
+  /** Licho-only: seconds until next teleport blink. */
+  blinkT: number;
 }
 export const Enemy = defineComponent<EnemyData>('Enemy', () => ({
   pattern: 'skrzat',
@@ -29,6 +39,7 @@ export const Enemy = defineComponent<EnemyData>('Enemy', () => ({
   scoreValue: 100,
   fireInterval: 2.4,
   fireCooldown: 1.5,
+  blinkT: 0,
 }));
 
 export interface BulletData {
@@ -55,7 +66,7 @@ export const Lifetime = defineComponent<LifetimeData>('Lifetime', () => ({
 
 export type BossPhase = 'entering' | 'phase1' | 'phase2' | 'dying' | 'defeated';
 
-export type BossPattern = 'smok-krzemionkowski' | 'borowy-krol' | 'wodnik-wislanny';
+export type BossPattern = 'smok-krzemionkowski' | 'borowy-krol' | 'wodnik-wislanny' | 'boruta';
 
 export interface BossData {
   pattern: BossPattern;
@@ -71,6 +82,8 @@ export interface BossData {
   minionsAlive: number;
   /** Seconds since shield last dropped; used to gate re-raising the shield. */
   shieldDownFor: number;
+  /** Boruta: number of Bies summons spawned so far this encounter. */
+  summonsSpawned: number;
 }
 export const Boss = defineComponent<BossData>('Boss', () => ({
   pattern: 'smok-krzemionkowski',
@@ -83,10 +96,14 @@ export const Boss = defineComponent<BossData>('Boss', () => ({
   shieldActive: false,
   minionsAlive: 0,
   shieldDownFor: 0,
+  summonsSpawned: 0,
 }));
 
-export type MinibossPattern = 'rokita';
+export type MinibossPattern = 'rokita' | 'leszy';
 export type MinibossPhase = 'entering' | 'active' | 'dying' | 'defeated';
+
+/** Leszy shape-shift forms. */
+export type LeszyForm = 'deer' | 'bear' | 'owl';
 
 export interface MinibossData {
   pattern: MinibossPattern;
@@ -98,6 +115,10 @@ export interface MinibossData {
   targetY: number;
   /** Horizontal root-line growth progress 0..1 (Rokita). */
   rootProgress: number;
+  /** Leszy: current shape-shift form. */
+  form: LeszyForm;
+  /** Leszy: seconds spent in the current form. */
+  formT: number;
 }
 export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
   pattern: 'rokita',
@@ -108,4 +129,6 @@ export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
   dyingExplosions: 0,
   targetY: 110,
   rootProgress: 0,
+  form: 'deer',
+  formT: 0,
 }));

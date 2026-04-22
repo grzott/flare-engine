@@ -1,16 +1,25 @@
 import type { BossPattern, MinibossPattern } from '../components';
 import type { ZoneId } from '../events';
-import { buildZone1Schedule, buildZone2Schedule, buildZone3Schedule } from '../systems/spawner';
+import {
+  buildZone1Schedule,
+  buildZone2Schedule,
+  buildZone3Schedule,
+  buildZone4Schedule,
+} from '../systems/spawner';
 import type { WaveEntry } from '../systems/spawner';
 import {
   BOROWY_HP_MAX,
+  BORUTA_HP_MAX,
   BOSS_SPAWN_T,
+  LESZY_HP,
   ROKITA_HP,
   SMOK_HP_MAX,
   WODNIK_HP_MAX,
   ZONE2_BOSS_T,
   ZONE2_MINIBOSS_T,
   ZONE3_BOSS_T,
+  ZONE4_BOSS_T,
+  ZONE4_MINIBOSS_T,
 } from './gameplay';
 
 export interface ZoneConfig {
@@ -65,6 +74,19 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: 0,
     minibossT: Number.POSITIVE_INFINITY,
     buildSchedule: buildZone3Schedule,
+    nextZone: 'z4',
+  },
+  z4: {
+    id: 'z4',
+    nameKey: 'zones.4.name',
+    bossNameKey: 'bosses.boruta.name',
+    bossPattern: 'boruta',
+    bossHp: BORUTA_HP_MAX,
+    bossT: ZONE4_BOSS_T,
+    minibossPattern: 'leszy',
+    minibossHp: LESZY_HP,
+    minibossT: ZONE4_MINIBOSS_T,
+    buildSchedule: buildZone4Schedule,
     nextZone: null,
   },
 };

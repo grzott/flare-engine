@@ -1,8 +1,15 @@
 import { FSM, Position, Velocity } from '@flare-engine/ecs';
 import type { Query, World } from '@flare-engine/engine';
 import { clamp } from '@flare-engine/math';
-import { Bullet, Hp, Miniboss, type MinibossPattern, type MinibossPhase } from '../components';
-import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../config/gameplay';
+import {
+  Bullet,
+  Hp,
+  type LeszyForm,
+  Miniboss,
+  type MinibossPattern,
+  type MinibossPhase,
+} from '../components';
+import { BULLET_SPAWN_OFFSET, BULLET_SPEED, LESZY_FORM_SEC } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
 import { type Direction2D, normalizeDirection } from '../util/direction';
@@ -25,6 +32,8 @@ export interface MinibossDeps {
   onPhaseChange?: (phase: MinibossPhase) => void;
   onDefeated?: () => void;
   onExplosion?: (x: number, y: number) => void;
+  /** Leszy: fired the instant `form` changes. */
+  onFormChange?: (form: LeszyForm) => void;
 }
 
 export interface MinibossStatus {
@@ -34,6 +43,7 @@ export interface MinibossStatus {
   phase: MinibossPhase;
   pattern: MinibossPattern | null;
   rootProgress: number;
+  form: LeszyForm;
 }
 
 export function computeMinibossStatus(world: World, query: Query): MinibossStatus {
@@ -48,6 +58,7 @@ export function computeMinibossStatus(world: World, query: Query): MinibossStatu
       phase: m.phase,
       pattern: m.pattern,
       rootProgress: m.rootProgress,
+      form: m.form,
     };
   }
   return {
@@ -57,6 +68,7 @@ export function computeMinibossStatus(world: World, query: Query): MinibossStatu
     phase: 'defeated',
     pattern: null,
     rootProgress: 0,
+    form: 'deer',
   };
 }
 
@@ -101,6 +113,63 @@ function rokitaFire(c: MinibossCtx): void {
   spawnBullet(c.deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.boss, aim.x, aim.y, Layer.enemy);
 }
 
+/** Leszy fires per-form: deer=ram downward, bear=slow AOE single big bullet,
+ *  owl=radial 8-way burst. Returns the next fire cooldown in seconds. */
+function leszyFire(c: MinibossCtx): number {
+  const pos = c.world.get(c.id, Position);
+  const m = c.world.get(c.id, Miniboss);
+  if (!pos || !m) return 1;
+  const ox = pos.x;
+  const oy = pos.y + BULLET_SPAWN_OFFSET.boss;
+  if (m.form === 'deer') {
+    // Ram: fast aimed single + two flanking shots ±8°.
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    for (let i = -1; i <= 1; i++) {
+      const a = baseAngle + i * 0.14;
+      spawnBullet(
+        c.deps.spawnCtx,
+        ox,
+        oy,
+        Math.cos(a) * BULLET_SPEED.boss,
+        Math.sin(a) * BULLET_SPEED.boss,
+        Layer.enemy,
+      );
+    }
+    return 0.8;
+  }
+  if (m.form === 'bear') {
+    // Slow AOE: single heavy bullet aimed at player.
+    normalizeDirection(
+      c.deps.playerX - pos.x,
+      c.deps.playerY - pos.y,
+      BULLET_SPEED.boss * 0.55,
+      aim,
+    );
+    spawnBullet(c.deps.spawnCtx, ox, oy, aim.x, aim.y, Layer.enemy);
+    return 1.3;
+  }
+  // owl — radial 8-way burst.
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    spawnBullet(
+      c.deps.spawnCtx,
+      ox,
+      oy,
+      Math.cos(a) * BULLET_SPEED.enemy,
+      Math.sin(a) * BULLET_SPEED.enemy,
+      Layer.enemy,
+    );
+  }
+  return 1.6;
+}
+
+const FORM_ORDER: readonly LeszyForm[] = ['deer', 'bear', 'owl'];
+function nextLeszyForm(current: LeszyForm): LeszyForm {
+  const idx = FORM_ORDER.indexOf(current);
+  return FORM_ORDER[(idx + 1) % FORM_ORDER.length] ?? 'deer';
+}
+
 function clearEnemyBullets(c: MinibossCtx): void {
   const toDrop: number[] = [];
   const q = c.world.query(Bullet);
@@ -143,8 +212,11 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
         m.phase = 'active';
         m.phaseT = 0;
         m.fireCooldown = 0.6;
+        m.formT = 0;
       }
       c.deps.onPhaseChange?.('active');
+      const m2 = c.world.get(c.id, Miniboss);
+      if (m2 && m2.pattern === 'leszy') c.deps.onFormChange?.(m2.form);
     },
     onUpdate(dt, c) {
       const m = c.world.get(c.id, Miniboss);
@@ -154,12 +226,29 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
         fsm.trigger('killed');
         return;
       }
-      m.rootProgress = clamp(m.phaseT / ROKITA_ROOT_GROW_SEC, 0, 1);
-      sweepMove(c, 55);
-      m.fireCooldown -= dt;
-      if (m.fireCooldown <= 0) {
-        rokitaFire(c);
-        m.fireCooldown = 1.1;
+      if (m.pattern === 'rokita') {
+        m.rootProgress = clamp(m.phaseT / ROKITA_ROOT_GROW_SEC, 0, 1);
+        sweepMove(c, 55);
+        m.fireCooldown -= dt;
+        if (m.fireCooldown <= 0) {
+          rokitaFire(c);
+          m.fireCooldown = 1.1;
+        }
+      } else if (m.pattern === 'leszy') {
+        // Shape-shift every LESZY_FORM_SEC.
+        m.formT += dt;
+        if (m.formT >= LESZY_FORM_SEC) {
+          m.formT -= LESZY_FORM_SEC;
+          m.form = nextLeszyForm(m.form);
+          c.deps.onFormChange?.(m.form);
+        }
+        // Movement: deer rams faster, bear is slow, owl hovers fast side-to-side.
+        const speed = m.form === 'deer' ? 95 : m.form === 'bear' ? 35 : 130;
+        sweepMove(c, speed);
+        m.fireCooldown -= dt;
+        if (m.fireCooldown <= 0) {
+          m.fireCooldown = leszyFire(c);
+        }
       }
     },
     onExit(c) {

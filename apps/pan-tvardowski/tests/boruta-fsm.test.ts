@@ -38,6 +38,7 @@ function spawnMockBoruta(world: World, hp: number): number {
     minionsAlive: 0,
     shieldDownFor: 0,
     summonsSpawned: 0,
+    teleportT: 0,
   });
   world.add(id, Hp, { current: hp, max: hp });
   return id;

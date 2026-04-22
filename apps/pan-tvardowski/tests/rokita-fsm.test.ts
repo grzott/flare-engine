@@ -37,6 +37,7 @@ function spawnMockMiniboss(world: World, hp: number): number {
     rootProgress: 0,
     form: 'deer',
     formT: 0,
+    hounds: 0,
   });
   world.add(id, Hp, { current: hp, max: hp });
   return id;

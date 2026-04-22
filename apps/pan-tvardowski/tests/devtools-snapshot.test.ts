@@ -64,6 +64,7 @@ describe('devtools / game snapshot', () => {
       minionsAlive: 0,
       shieldDownFor: 0,
       summonsSpawned: 3,
+      teleportT: 0,
     });
 
     const s2 = createGameSnapshot({

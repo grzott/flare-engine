@@ -19,7 +19,7 @@
 | 5 — Features          | `scene`, `tilemap`, `particles`, `debug` | Phase 3+4  | ✅ DONE                | Tiled maps, particles, scenes, dev overlay                                                                                                                                                                          |
 | 6 — Integration       | `react`, `engine`                        | Phase 5    | ✅ DONE                | Full example game on iOS + Android                                                                                                                                                                                  |
 | 7 — Hardening         | —                                        | Phase 6    | ✅ DONE (pass 1)       | Audit, optimize, fix gaps, stress-test all APIs                                                                                                                                                                     |
-| 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`  | Phase 7    | 🟡 in progress         | Microbench + integration bench + dashboard done; device capture pipeline ready, awaiting hardware run                                                                                                               |
+| 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`  | Phase 7    | ✅ DONE                | Microbench + integration bench + dashboard done; Android device capture recorded (Galaxy A54 5G release); Phase 10 gating decision written; iOS capture optional follow-up                                          |
 | 9 — Demo Game         | `apps/demo`                              | Phase 6    | ✅ READY TO PLAY       | Playable end-to-end on device (placeholder art, final assets pending): menu + 3 save slots → base hub → dialogue → play (w/ pause) → end summary → base; MMKV-persisted saves + settings; shipped under PolyForm-NC |
 | 10 — C++ Acceleration | `native`                                 | Phase 8+9  | ⬜ data-gated          | C++ via Nitro only where benchmarks show need (particles first)                                                                                                                                                     |
 | 11 — OSS Launch Prep  | 14 new packages + 4 stubs + web parity   | Phase 6    | 🟡 in progress (M1–M5) | Full-stack RN+Web engine, demo web build, docs site. Game 2 deferred post-launch (private dogfood).                                                                                                                 |
@@ -219,13 +219,15 @@ Off-device microbenches (done, 2026-04-16):
 - [x] Results written to `docs/references/benchmarks.md` (with headline numbers box) and structured `benchmarks/results/microbench.json` for the dashboard
 - [x] Root `bun run bench` runs the suite (also writes JSON automatically)
 
-Device-side measurements (capture pipeline ready, awaiting hardware run):
+Device-side measurements (Android done, iOS optional follow-up):
 
 - [x] FPS overlay mounted in demo HUD (long-press top-right to toggle)
 - [x] Bench scene at `apps/demo/src/scenes/bench.ts` — three load levels (light/medium/heavy = 10/30/50 enemies + 50/150/300 bullets), 10s each, samples FPS once per second, dumps CSV to console between BENCH FPS CSV BEGIN / END markers
 - [x] Hidden triple-tap on menu title launches bench scene
-- [x] `benchmarks/results/device.json` schema + dashboard `/device` route ready to consume hand-filled samples
-- ⏸ User to run on iOS + Android hardware, copy console CSV, populate `benchmarks/results/device.json`, then `bun run bench:md` regenerates `docs/references/benchmarks.md` device section
+- [x] Bench scene bugs fixed during first capture: bench now integrates `Position += Velocity*dt` + `coll.step()` per frame (previously didn't move); bench registration no longer gated on `__DEV__` so release builds can be measured.
+- [x] `benchmarks/results/device.json` populated with Samsung Galaxy A54 5G (Android 16, release build). `bun run bench:md:cache` renders `docs/references/benchmarks.md` device section from JSON without re-running microbenches.
+- [x] Phase 10 gating decision recorded in `benchmarks.md` — stay deferred; if ever needed, physics broadphase is first C++ target (cliff at 350 colliders maps to the physics microbench).
+- ⏸ iOS capture — optional, not launch-blocking. Same flow (release build → triple-tap title → copy CSV → append to `device.json` → `bun run bench:md:cache`).
 - ⏸ Audio SFXPool polyphony limits (needs device audio pipeline)
 - ⏸ Memory / GC pressure in steady-state on device
 

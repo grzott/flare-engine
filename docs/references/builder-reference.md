@@ -43,7 +43,7 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | `@flare-engine/cli`          | 5     | **DONE** — 4 modules, 11 tests, ~8.7KB raw (sharp + maxrects-packer + commander) |
 | `create-flare-app`           | 5     | **DONE** — 4 modules + 3 templates (blank/topdown/shmup), 12 tests, ~8KB raw     |
 
-| Phase 8 — Benchmarking | — | 🟡 device FPS capture awaiting `apps/demo` hardware run (bench scene + JSON pipeline ready) |
+| Phase 8 — Benchmarking | — | ✅ **DONE** — Android capture (Galaxy A54 5G release) populated in `benchmarks/results/device.json`; doc regenerated via `bench:md:cache`. iOS capture pending as follow-up; Phase 10 gating decision recorded (stay deferred, physics is first C++ target if ever needed). |
 | Phase 9 — Demo Game | — | ✅ DONE — full loop verified on device |
 | Phase 10 — C++ Accel | — | ⬜ data-gated (after Phase 8) |
 | Phase 11.1 — CanvasKit parity + storage | — | ✅ DONE — parity report at `docs/references/canvaskit-parity.md`, storage shipped, LICENSE propagation wired |

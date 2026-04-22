@@ -1,4 +1,27 @@
 {
-  "generated": "2026-04-16",
-  "devices": []
+  "generated": "2026-04-22",
+  "devices": [
+    {
+      "device": "Samsung Galaxy A54 5G",
+      "os": "Android 16 / One UI 8.0",
+      "notes": "Release build via `npx expo run:android --variant release`. Hermes enabled. 120 Hz display, uncapped. Bench scene: bullets with random velocities + wall-bounce integration + `coll.step()` per frame; enemies static. Samples = 1/sec, 10s per load.",
+      "loads": [
+        {
+          "label": "light (10 enemies + 50 bullets)",
+          "entities": 60,
+          "fps": [120.39, 120.41, 120.31, 120.22, 120.24, 120.13, 120.28, 120.31, 119.79, 120.33]
+        },
+        {
+          "label": "medium (30 enemies + 150 bullets)",
+          "entities": 180,
+          "fps": [118.11, 111.37, 117.73, 114.55, 119.21, 119.52, 119.5, 115.34, 113.53, 116.97]
+        },
+        {
+          "label": "heavy (50 enemies + 300 bullets)",
+          "entities": 350,
+          "fps": [48.82, 47.53, 48.21, 47.76, 48.73, 48.13, 48.45, 47.77, 47.57, 46.88]
+        }
+      ]
+    }
+  ]
 }

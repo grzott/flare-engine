@@ -15,6 +15,12 @@ import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-
 import { GameContext, type GameContextValue } from './game-context.js';
 import { createSkiaFrameRenderer } from './skia-bridge.js';
 
+/** Render hook invoked during the frame — receives the game context and
+ *  the active Skia canvas for direct draw calls. Hooks run between
+ *  `renderer.applyCamera()` and `renderer.end()`, so the camera transform
+ *  is already applied. */
+export type RenderHook = (ctx: GameContextValue, canvas: unknown) => void;
+
 /** Configuration passed to <GameView>. */
 export interface GameConfig {
   /** Fixed timestep in seconds (default 1/60). */
@@ -25,6 +31,12 @@ export interface GameConfig {
   clearColor?: number;
   /** Asset loader function — injected into AssetManager at construction. */
   assetLoader?: AssetLoader;
+  /** Called after camera transform and before the sprite render system.
+   *  Intended for tilemap / background layer rendering. */
+  onRenderBackground?: RenderHook;
+  /** Called after the sprite batch has been flushed, before `renderer.end()`.
+   *  Intended for post-processing / full-screen effects (postfx). */
+  onRenderPostFx?: RenderHook;
 }
 
 /** Props for the <GameView> component. */
@@ -74,6 +86,8 @@ export function GameView({ config, onReady, style, children }: GameViewProps): R
     ctx.renderer.setCanvas(bridge.canvas);
 
     const clearColor = config?.clearColor ?? 0xff000000;
+    const onRenderBackground = config?.onRenderBackground;
+    const onRenderPostFx = config?.onRenderPostFx;
 
     const spriteQuery = ctx.world.query(Position, Sprite);
     const renderSystem = createRenderSystem(ctx.world, spriteQuery, Position, Sprite, ctx.batch);
@@ -94,8 +108,10 @@ export function GameView({ config, onReady, style, children }: GameViewProps): R
         ctx.camera.viewportWidth,
         ctx.camera.viewportHeight,
       );
+      if (onRenderBackground) onRenderBackground(ctx, ctx.renderer.canvas);
       renderSystem();
       ctx.batch.flush(bridge.drawAtlas, ctx.renderer);
+      if (onRenderPostFx) onRenderPostFx(ctx, ctx.renderer.canvas);
       ctx.renderer.end();
       const pic = bridge.endFrame();
       if (pic !== null) setPicture(pic);

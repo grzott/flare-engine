@@ -91,6 +91,7 @@ interface PlayState {
   lifetimeQuery: ReturnType<GameContextValue['world']['query']>;
   bounds: { width: number; height: number };
   pendingShake: boolean;
+  viewportReady: boolean;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -128,6 +129,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         lifetimeQuery: ctx.world.query(Lifetime),
         bounds: { width: 360, height: 640 },
         pendingShake: false,
+        viewportReady: false,
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -153,8 +155,32 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     }
 
     function refreshBounds(state: PlayState): void {
-      state.bounds.width = ctx.camera.viewportWidth || 360;
-      state.bounds.height = ctx.camera.viewportHeight || 640;
+      const vw = ctx.camera.viewportWidth;
+      const vh = ctx.camera.viewportHeight;
+      const hasViewport = vw > 0 && vh > 0;
+      const prevW = state.bounds.width;
+      state.bounds.width = hasViewport ? vw : 360;
+      state.bounds.height = hasViewport ? vh : 640;
+      // Keep the camera centered on the current viewport so the world isn't
+      // offset when the real device layout arrives after the scene mounts.
+      ctx.camera.x = state.bounds.width / 2;
+      ctx.camera.y = state.bounds.height / 2;
+      // First real layout: re-anchor entities that were placed against the
+      // fallback 360-wide bounds so they sit on the new viewport midline.
+      if (hasViewport && !state.viewportReady) {
+        state.viewportReady = true;
+        const dx = state.bounds.width / 2 - prevW / 2;
+        if (dx !== 0) {
+          const recenter = (id: number): void => {
+            if (id < 0) return;
+            const p = ctx.world.get(id, Position);
+            if (p) p.x += dx;
+          };
+          recenter(state.playerId);
+          recenter(state.bossId);
+          recenter(state.minibossId);
+        }
+      }
     }
 
     function setupZoneHud(zone: ZoneConfig): void {

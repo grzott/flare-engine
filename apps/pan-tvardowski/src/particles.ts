@@ -6,6 +6,7 @@ import { Lifetime } from './components';
 import type { AtlasHandle } from './spawn';
 
 const PARTICLE_Z = 20;
+const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
 
 /**
  * Emit a burst of short-lived sprite "particles" — shape-atlas frames with
@@ -33,7 +34,7 @@ export function burstExplosion(
     const id = world.spawn();
     world.add(id, Position, { x, y });
     world.add(id, Velocity, { x: Math.cos(a) * sp, y: Math.sin(a) * sp });
-    world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z });
+    world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
     world.add(id, Lifetime, { remaining: 0.35 + r01 * 0.3 });
   }
 }
@@ -44,6 +45,6 @@ export function burstMuzzleFlash(world: World, atlas: AtlasHandle, x: number, y:
   const id = world.spawn();
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: -40 });
-  world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z });
+  world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
   world.add(id, Lifetime, { remaining: 0.08 });
 }

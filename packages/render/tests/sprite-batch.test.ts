@@ -100,6 +100,56 @@ describe('SpriteBatch', () => {
     expect(batch.count).toBe(0);
   });
 
+  describe('anchor', () => {
+    it('defaults to top-left when omitted', () => {
+      const batch = new SpriteBatch();
+      batch.draw(mockImage('a'), frame(0, 0, 32, 32), 100, 200);
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.dstX).toBe(100);
+      expect(commands[0]?.dstY).toBe(200);
+    });
+
+    it('centers the sprite on the given position with anchor (0.5, 0.5)', () => {
+      const batch = new SpriteBatch();
+      batch.draw(
+        mockImage('a'),
+        frame(0, 0, 32, 32),
+        100,
+        200,
+        undefined,
+        undefined,
+        undefined,
+        0.5,
+        0.5,
+      );
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.dstX).toBe(84);
+      expect(commands[0]?.dstY).toBe(184);
+      expect(commands[0]?.dstW).toBe(32);
+      expect(commands[0]?.dstH).toBe(32);
+    });
+
+    it('respects custom dst size when computing anchor offset', () => {
+      const batch = new SpriteBatch();
+      batch.draw(mockImage('a'), frame(0, 0, 32, 32), 100, 200, 64, 48, undefined, 0.5, 1);
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.dstX).toBe(68);
+      expect(commands[0]?.dstY).toBe(152);
+    });
+
+    it('drawRaw applies anchor to explicit rects', () => {
+      const batch = new SpriteBatch();
+      batch.drawRaw(mockImage('a'), 0, 0, 16, 16, 100, 200, 40, 20, undefined, 0.5, 0.5);
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.dstX).toBe(80);
+      expect(commands[0]?.dstY).toBe(190);
+    });
+  });
+
   it('pools command objects for reuse', () => {
     const batch = new SpriteBatch();
     const img = mockImage('a');

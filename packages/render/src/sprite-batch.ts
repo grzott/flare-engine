@@ -52,7 +52,12 @@ export class SpriteBatch {
     return this._commands.length;
   }
 
-  /** Queue a sprite draw from a frame. */
+  /** Queue a sprite draw from a frame.
+   *
+   *  `anchorX` / `anchorY` define the pivot point of the sprite as a
+   *  fraction of its destination size — `(0, 0)` = top-left (default),
+   *  `(0.5, 0.5)` = center, `(1, 1)` = bottom-right. `dstX` / `dstY`
+   *  then refer to the anchor point instead of the top-left corner. */
   draw(
     image: SkImageLike,
     frame: SpriteFrame,
@@ -61,22 +66,27 @@ export class SpriteBatch {
     dstW?: number,
     dstH?: number,
     effect?: AnySpriteEffect,
+    anchorX = 0,
+    anchorY = 0,
   ): void {
     const cmd = this._acquire();
+    const w = dstW ?? frame.w;
+    const h = dstH ?? frame.h;
     cmd.image = image;
     cmd.srcX = frame.x;
     cmd.srcY = frame.y;
     cmd.srcW = frame.w;
     cmd.srcH = frame.h;
-    cmd.dstX = dstX;
-    cmd.dstY = dstY;
-    cmd.dstW = dstW ?? frame.w;
-    cmd.dstH = dstH ?? frame.h;
+    cmd.dstX = dstX - anchorX * w;
+    cmd.dstY = dstY - anchorY * h;
+    cmd.dstW = w;
+    cmd.dstH = h;
     cmd.effect = effect;
     this._commands.push(cmd);
   }
 
-  /** Queue a raw sprite draw with explicit src/dst rects. */
+  /** Queue a raw sprite draw with explicit src/dst rects. `dstX` / `dstY`
+   *  refer to the anchor point — offset by `anchorX * dstW` / `anchorY * dstH`. */
   drawRaw(
     image: SkImageLike,
     srcX: number,
@@ -88,6 +98,8 @@ export class SpriteBatch {
     dstW: number,
     dstH: number,
     effect?: AnySpriteEffect,
+    anchorX = 0,
+    anchorY = 0,
   ): void {
     const cmd = this._acquire();
     cmd.image = image;
@@ -95,8 +107,8 @@ export class SpriteBatch {
     cmd.srcY = srcY;
     cmd.srcW = srcW;
     cmd.srcH = srcH;
-    cmd.dstX = dstX;
-    cmd.dstY = dstY;
+    cmd.dstX = dstX - anchorX * dstW;
+    cmd.dstY = dstY - anchorY * dstH;
     cmd.dstW = dstW;
     cmd.dstH = dstH;
     cmd.effect = effect;

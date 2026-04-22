@@ -1,5 +1,5 @@
 export { GameContext, type GameContextValue } from './game-context.js';
-export { GameView, type GameConfig, type GameViewProps } from './game-view.js';
+export { GameView, type GameConfig, type GameViewProps, type RenderHook } from './game-view.js';
 export { useGame, useEntity, useGameLoop } from './hooks.js';
 export {
   createSkiaFrameRenderer,

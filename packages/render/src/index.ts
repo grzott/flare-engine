@@ -50,6 +50,7 @@ export {
 export {
   type PositionData,
   type SpriteData,
+  type SpriteAnchor,
   Sprite,
   createRenderSystem,
 } from './render-system.js';

@@ -224,4 +224,35 @@ describe('RenderSystem', () => {
     expect(captured).toHaveLength(1);
     expect(captured[0]?.effect).toBe(fx);
   });
+
+  it('passes Sprite.anchor through to the batch command', () => {
+    const { world, query } = createMockECS();
+    const batch = new SpriteBatch();
+    const renderer = new Renderer();
+    renderer.setCanvas(mockCanvas());
+
+    const img = mockImage();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const e1 = world.spawn();
+    world.add(e1, Position, { x: 100, y: 200 });
+    world.add(e1, Sprite, {
+      image: img,
+      frame: { name: 'a', x: 0, y: 0, w: 32, h: 32 },
+      z: 0,
+      anchor: { x: 0.5, y: 0.5 },
+    });
+
+    const captured: SpriteDrawCommand[] = [];
+    renderer.begin();
+    renderSystem();
+    batch.flush((_image, commands) => {
+      captured.push(...commands.map((c) => ({ ...c })));
+    }, renderer);
+    renderer.end();
+
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.dstX).toBe(84);
+    expect(captured[0]?.dstY).toBe(184);
+  });
 });

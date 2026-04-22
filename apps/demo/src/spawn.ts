@@ -2,8 +2,10 @@ import { type SkImageLike, type SpriteSheet, getFrame } from '@flare-engine/asse
 import type { World } from '@flare-engine/ecs';
 import { Position, Velocity } from '@flare-engine/ecs';
 import { AABB, type CollisionWorld } from '@flare-engine/physics';
-import { Sprite } from '@flare-engine/render';
+import { Sprite, type SpriteAnchor } from '@flare-engine/render';
 import { Boss, Bullet, Enemy, type EnemyPattern, Hp, Lifetime, Ship } from './components';
+
+const CENTER_ANCHOR: SpriteAnchor = { x: 0.5, y: 0.5 };
 import { ENEMY_SPECS } from './config/enemies';
 import { Layer, Mask } from './layers';
 
@@ -33,6 +35,7 @@ export function spawnPlayer(ctx: SpawnCtx, x: number, y: number): number {
     image: atlas.image,
     frame: frame(atlas.sheet, 'player'),
     z: 10,
+    anchor: CENTER_ANCHOR,
   });
   world.add(id, Ship, { fireRate: 0.18, cooldown: 0 });
   world.add(id, Hp, { current: 3, max: 3 });
@@ -50,6 +53,7 @@ export function spawnEnemy(ctx: SpawnCtx, pattern: EnemyPattern, x: number, y: n
     image: atlas.image,
     frame: frame(atlas.sheet, spec.frame),
     z: 8,
+    anchor: CENTER_ANCHOR,
   });
   world.add(id, Enemy, {
     pattern,
@@ -74,6 +78,7 @@ export function spawnBoss(ctx: SpawnCtx, x: number, y: number, hpMax: number): n
     image: atlas.image,
     frame: frame(atlas.sheet, 'boss'),
     z: 9,
+    anchor: CENTER_ANCHOR,
   });
   world.add(id, Boss, {
     phase: 'entering',
@@ -107,6 +112,7 @@ export function spawnBullet(
     image: atlas.image,
     frame: frame(atlas.sheet, name),
     z: 6,
+    anchor: CENTER_ANCHOR,
   });
   world.add(id, Bullet, { damage: 1, ownerLayer });
   world.add(id, Lifetime, { remaining: 3 });

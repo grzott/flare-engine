@@ -13,6 +13,15 @@ export interface PositionData {
   y: number;
 }
 
+/** Sprite anchor as a fraction of the destination rect — `(0, 0)` is
+ *  top-left (default), `(0.5, 0.5)` is center, `(1, 1)` is bottom-right.
+ *  When present, `Position` refers to the anchor point rather than the
+ *  sprite's top-left corner. */
+export interface SpriteAnchor {
+  x: number;
+  y: number;
+}
+
 /** Sprite component data expected by the render system. */
 export interface SpriteData {
   image: SkImageLike;
@@ -24,6 +33,8 @@ export interface SpriteData {
    *  Shared instances are batched together — prefer reusing an effect
    *  reference across entities that should render identically. */
   effect?: AnySpriteEffect;
+  /** Optional pivot point for the sprite. Defaults to top-left `(0, 0)`. */
+  anchor?: SpriteAnchor;
 }
 
 /** Cached entry for sorting. Reused each frame to avoid allocs. */
@@ -91,6 +102,7 @@ export function createRenderSystem(
       const sprite = world.get(entry.entityId, spriteDef);
       if (!pos || !sprite) continue;
 
+      const anchor = sprite.anchor;
       batch.draw(
         sprite.image,
         sprite.frame,
@@ -99,6 +111,8 @@ export function createRenderSystem(
         sprite.width,
         sprite.height,
         sprite.effect,
+        anchor ? anchor.x : 0,
+        anchor ? anchor.y : 0,
       );
     }
   };

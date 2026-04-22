@@ -30,6 +30,7 @@ function spawnMockBoss(world: World, hp: number): number {
   world.add(id, Position, { x: 180, y: -40 });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Boss, {
+    pattern: 'smok-krzemionkowski',
     phase: 'entering',
     t: 0,
     phaseT: 0,

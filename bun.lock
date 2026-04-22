@@ -80,6 +80,7 @@
         "@flare-engine/devtools": "workspace:*",
         "@flare-engine/ecs": "workspace:*",
         "@flare-engine/engine": "workspace:*",
+        "@flare-engine/errors": "workspace:*",
         "@flare-engine/events": "workspace:*",
         "@flare-engine/localization": "workspace:*",
         "@flare-engine/math": "workspace:*",

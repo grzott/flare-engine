@@ -14,8 +14,9 @@
 **Pre-release — 0.1.0 coming October 2026.**
 
 - 34 packages implemented and tested (~1100+ tests, 0 failures)
-- [`apps/demo`](apps/demo) — device-verified vertical-slice shoot-em-up (menu → play → boss → game-over/victory → menu) on iOS + Android
-- Phase 11 (OSS launch prep) is in progress — remaining work: web build of the demo, Docusaurus site, device FPS capture, API snapshot lock, governance files, RC publish
+- [`apps/demo`](apps/demo) — proof-of-concept + integration smoke test; device-verified vertical-slice shoot-em-up on Android (procedural placeholder art)
+- [`apps/pan-tvardowski`](apps/pan-tvardowski) — the canonical showcase game (Polish-folklore shmup, 8 zones, PL+EN). Pre-production; design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md)
+- Phase 11 (OSS launch prep) is in progress — remaining work: landing-page MP4 + store-page links, Docusaurus site, device FPS capture, API snapshot lock, governance files, EUIPO trademark filing, RC publish
 - `@flare-engine` npm scope reserved 2026-04-17; packages flip `"private": false` at RC cut
 - Full roadmap: [docs/plans/build-plan.md](docs/plans/build-plan.md)
 
@@ -50,42 +51,42 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 
 ## Packages
 
-| Package                        | Layer | Status                  | Description                                                                      |
-| ------------------------------ | ----- | ----------------------- | -------------------------------------------------------------------------------- |
-| `@flare-engine/math`           | 0     | shipping                | Vec2, Rect, Transform, Mat3, Color, 42 easings, seeded RNG, intersections        |
-| `@flare-engine/events`         | 0     | shipping                | Type-safe `EventEmitter` and `Signal`                                            |
-| `@flare-engine/core`           | 1     | shipping                | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool           |
-| `@flare-engine/ecs`            | 1     | shipping                | Archetype ECS — `World`, `Query`, systems, prefabs, FSM                          |
-| `@flare-engine/render`         | 2     | shipping                | Skia Atlas `SpriteBatch`, `Camera2D`, sprite effects, BMFont text                |
-| `@flare-engine/input`          | 2     | shipping                | `InputManager`, pointer/touch, gestures, joystick/button state                   |
-| `@flare-engine/physics`        | 2     | shipping                | AABB `CollisionWorld`, spatial index, raycasting                                 |
-| `@flare-engine/audio`          | 2     | shipping                | `AudioManager`, `SFXPool`, music crossfade, channels                             |
-| `@flare-engine/assets`         | 2     | shipping                | `AssetManager`, TexturePacker/Aseprite parser, procedural atlas                  |
-| `@flare-engine/storage`        | 2.5   | shipping                | Typed KV persistence — MMKV / IndexedDB / memory adapters                        |
-| `@flare-engine/errors`         | 2.5   | shipping                | Error boundary + structured crash payload + pluggable transport                  |
-| `@flare-engine/testing`        | 2.5   | shipping                | Deterministic fake clock, test world, mock input, scene snapshots                |
-| `@flare-engine/localization`   | 2.5   | shipping                | String tables, ICU plurals, locale resolution                                    |
-| `@flare-engine/deep-links`     | 2.5   | shipping                | URL → scene router, history API, `Linking` integration                           |
-| `@flare-engine/share`          | 2.5   | shipping                | `captureScreenshot()` + Web Share API + `expo-sharing` fallback                  |
-| `@flare-engine/a11y`           | 2.5   | shipping (light)        | Reduced-motion + contrast tokens (screen-reader deferred to 0.3.0)               |
-| `@flare-engine/scene`          | 3     | shipping                | `SceneManager`, lifecycle, fade/slide transitions                                |
-| `@flare-engine/animation`      | 3     | shipping                | Sprite animator, tweens (42 easings), springs, timelines                         |
-| `@flare-engine/particles`      | 3     | shipping                | Pooled emitters, immediate-mode Skia rendering                                   |
-| `@flare-engine/tilemap`        | 3     | shipping                | Tiled `.tmj` + LDtk parsers, culled renderer, collider extraction                |
-| `@flare-engine/debug`          | 3     | shipping                | FPS widget, stats, time controls, overlay                                        |
-| `@flare-engine/pathfinding`    | 3     | shipping                | A\* grid + JPS, flow fields                                                      |
-| `@flare-engine/dialogue`       | 3     | shipping                | Branching dialogue graph, runtime evaluator                                      |
-| `@flare-engine/ui`             | 3.5   | shipping                | Skia-free UI kit: Panel / Button / Label / List / Modal / HUDBar + focus nav     |
-| `@flare-engine/postfx`         | 3.5   | shipping                | Skia RuntimeEffect stack: CRT, bloom, vignette, grayscale-flash                  |
-| `@flare-engine/react`          | 4     | shipping                | `<GameView>`, hooks, `<VirtualJoystick>`, `<VirtualButton>`, `<LoadingScreen>`   |
-| `@flare-engine/engine`         | 4     | shipping                | `createGame()` convenience + umbrella re-exports                                 |
-| `@flare-engine/cli`            | —     | shipping                | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                          |
-| `@flare-engine/devtools`       | —     | shipping (partial 0.1.0)| Entity inspector + time scrub + pause/step                                       |
-| `create-flare-app`             | —     | shipping                | `npm create flare-app@latest` — blank / topdown / shmup templates                |
-| `@flare-engine/leaderboards`   | —     | stub (0.1.0)            | Interface + no-op provider; concrete adapters in 0.2.0                           |
-| `@flare-engine/achievements`   | —     | stub (0.1.0)            | Interface + no-op provider; concrete adapters in 0.2.0                           |
-| `@flare-engine/iap`            | —     | stub (0.1.0)            | Interface + no-op provider; concrete adapters in 0.2.0                           |
-| `@flare-engine/analytics`      | —     | stub (0.1.0)            | Interface + no-op provider; concrete adapters in 0.2.0                           |
+| Package                      | Layer | Status                   | Description                                                                    |
+| ---------------------------- | ----- | ------------------------ | ------------------------------------------------------------------------------ |
+| `@flare-engine/math`         | 0     | shipping                 | Vec2, Rect, Transform, Mat3, Color, 42 easings, seeded RNG, intersections      |
+| `@flare-engine/events`       | 0     | shipping                 | Type-safe `EventEmitter` and `Signal`                                          |
+| `@flare-engine/core`         | 1     | shipping                 | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool         |
+| `@flare-engine/ecs`          | 1     | shipping                 | Archetype ECS — `World`, `Query`, systems, prefabs, FSM                        |
+| `@flare-engine/render`       | 2     | shipping                 | Skia Atlas `SpriteBatch`, `Camera2D`, sprite effects, BMFont text              |
+| `@flare-engine/input`        | 2     | shipping                 | `InputManager`, pointer/touch, gestures, joystick/button state                 |
+| `@flare-engine/physics`      | 2     | shipping                 | AABB `CollisionWorld`, spatial index, raycasting                               |
+| `@flare-engine/audio`        | 2     | shipping                 | `AudioManager`, `SFXPool`, music crossfade, channels                           |
+| `@flare-engine/assets`       | 2     | shipping                 | `AssetManager`, TexturePacker/Aseprite parser, procedural atlas                |
+| `@flare-engine/storage`      | 2.5   | shipping                 | Typed KV persistence — MMKV / IndexedDB / memory adapters                      |
+| `@flare-engine/errors`       | 2.5   | shipping                 | Error boundary + structured crash payload + pluggable transport                |
+| `@flare-engine/testing`      | 2.5   | shipping                 | Deterministic fake clock, test world, mock input, scene snapshots              |
+| `@flare-engine/localization` | 2.5   | shipping                 | String tables, ICU plurals, locale resolution                                  |
+| `@flare-engine/deep-links`   | 2.5   | shipping                 | URL → scene router, history API, `Linking` integration                         |
+| `@flare-engine/share`        | 2.5   | shipping                 | `captureScreenshot()` + Web Share API + `expo-sharing` fallback                |
+| `@flare-engine/a11y`         | 2.5   | shipping (light)         | Reduced-motion + contrast tokens (screen-reader deferred to 0.3.0)             |
+| `@flare-engine/scene`        | 3     | shipping                 | `SceneManager`, lifecycle, fade/slide transitions                              |
+| `@flare-engine/animation`    | 3     | shipping                 | Sprite animator, tweens (42 easings), springs, timelines                       |
+| `@flare-engine/particles`    | 3     | shipping                 | Pooled emitters, immediate-mode Skia rendering                                 |
+| `@flare-engine/tilemap`      | 3     | shipping                 | Tiled `.tmj` + LDtk parsers, culled renderer, collider extraction              |
+| `@flare-engine/debug`        | 3     | shipping                 | FPS widget, stats, time controls, overlay                                      |
+| `@flare-engine/pathfinding`  | 3     | shipping                 | A\* grid + JPS, flow fields                                                    |
+| `@flare-engine/dialogue`     | 3     | shipping                 | Branching dialogue graph, runtime evaluator                                    |
+| `@flare-engine/ui`           | 3.5   | shipping                 | Skia-free UI kit: Panel / Button / Label / List / Modal / HUDBar + focus nav   |
+| `@flare-engine/postfx`       | 3.5   | shipping                 | Skia RuntimeEffect stack: CRT, bloom, vignette, grayscale-flash                |
+| `@flare-engine/react`        | 4     | shipping                 | `<GameView>`, hooks, `<VirtualJoystick>`, `<VirtualButton>`, `<LoadingScreen>` |
+| `@flare-engine/engine`       | 4     | shipping                 | `createGame()` convenience + umbrella re-exports                               |
+| `@flare-engine/cli`          | —     | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
+| `@flare-engine/devtools`     | —     | shipping (partial 0.1.0) | Entity inspector + time scrub + pause/step                                     |
+| `create-flare-app`           | —     | shipping                 | `npm create flare-app@latest` — blank / topdown / shmup templates              |
+| `@flare-engine/leaderboards` | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
+| `@flare-engine/achievements` | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
+| `@flare-engine/iap`          | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
+| `@flare-engine/analytics`    | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).
 
@@ -116,17 +117,17 @@ npm create flare-app@latest my-game
 
 ## Tech Stack
 
-| Area               | Choice                                                                                  |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| Runtime            | [Bun](https://bun.sh)                                                                   |
-| Monorepo           | [Turborepo](https://turbo.build)                                                        |
-| Lint + Format      | [Biome](https://biomejs.dev)                                                            |
-| Build              | [tsup](https://tsup.egoist.dev) (dual CJS/ESM + `.d.ts`)                                |
-| Test               | Bun test                                                                                |
-| Commits            | Conventional Commits (commitlint + Husky)                                               |
-| Versioning         | [Changesets](https://github.com/changesets/changesets) (independent SemVer per package) |
-| Rendering (native) | [`@shopify/react-native-skia`](https://shopify.github.io/react-native-skia/)            |
-| Rendering (web)    | CanvasKit WASM                                                                          |
+| Area               | Choice                                                                                             |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| Runtime            | [Bun](https://bun.sh)                                                                              |
+| Monorepo           | [Turborepo](https://turbo.build)                                                                   |
+| Lint + Format      | [Biome](https://biomejs.dev)                                                                       |
+| Build              | [tsup](https://tsup.egoist.dev) (dual CJS/ESM + `.d.ts`)                                           |
+| Test               | Bun test                                                                                           |
+| Commits            | Conventional Commits (commitlint + Husky)                                                          |
+| Versioning         | [Changesets](https://github.com/changesets/changesets) (independent SemVer per package)            |
+| Rendering (native) | [`@shopify/react-native-skia`](https://shopify.github.io/react-native-skia/)                       |
+| Rendering (web)    | CanvasKit WASM                                                                                     |
 | Audio              | [`react-native-audio-api`](https://github.com/software-mansion/react-native-audio-api) / Web Audio |
 
 Tooling rationale: see the Tooling section of [docs/design/architecture.md](docs/design/architecture.md).
@@ -147,4 +148,3 @@ Tooling rationale: see the Tooling section of [docs/design/architecture.md](docs
 ## License
 
 [MIT](./LICENSE)
-

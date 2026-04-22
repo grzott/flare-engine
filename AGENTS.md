@@ -24,9 +24,14 @@ Each package is independently publishable. No circular deps. Full diagram in [do
 
 ## Status
 
-The full engine is shipping. [`apps/demo`](apps/demo) is a vertical-slice shoot-em-up — **ready to play end-to-end on device** (procedural placeholder art, final assets pending). It runs the complete loop: main menu with three persistent save slots and settings, a home-base hub (2×2 tiles + launch-run), pre-run and post-victory dialogue, auto-fire + joystick + bomb (with cooldown) gameplay, two-phase boss fight, pause modal, end-screen run summary, and audio (music crossfade + polished SFX). Saves + settings are MMKV-backed via `@flare-engine/storage`. It doubles as the integration smoke test for Layer 4 and the canonical example for new consumers; the demo ships under the [PolyForm Noncommercial License](apps/demo/LICENSE) while the engine packages remain MIT.
+The full engine is shipping. Two apps in the monorepo:
 
-**OSS launch target: October 2026.** Phase 11 (M1–M5) ships the full-stack RN+Web surface — 14 added packages plus web parity for the existing packages (CanvasKit / Web Audio / pointer events / fetch loader), `apps/demo` landing-page demo (MP4 + poster default, live WebGL stretch), and `apps/site` (Docusaurus). Game 2 (roguelike + JRPG battle) is deferred post-launch to a separate private repo as the real-world dogfood test. Phase 12 (M6) is a 6-week content runway + coordinated launch. See [docs/plans/build-plan.md](docs/plans/build-plan.md).
+- [`apps/demo`](apps/demo) — **proof-of-concept + integration smoke test.** Minimal vertical-slice shoot-em-up, device-verified end-to-end on Android (procedural placeholder art). Covers the full engine loop: menu + 3 save slots → base hub → dialogue → play (w/ pause) → end summary. MMKV-backed saves + settings. PolyForm Noncommercial license.
+- [`apps/pan-tvardowski`](apps/pan-tvardowski) — **the canonical showcase.** Full-scope vertical shmup themed on Polish folklore (_Pan Twardowski_ legend). 8 zones, 12 enemies, 4 weapons, PL+EN, shape-atlas visuals at 0.1.x. Exercises every shipping `@flare-engine/*` package except `pathfinding` (covered by a separate post-launch project). Pre-production as of 2026-04-22; design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md).
+
+Engine packages ship MIT; game apps ship PolyForm Noncommercial.
+
+**OSS launch target: October 2026.** Phase 11 (M1–M5) ships the full-stack RN+Web surface — 14 added packages plus web parity for the existing packages (CanvasKit / Web Audio / pointer events / fetch loader), a landing-page MP4 placeholder + store-page links (Google Play, App Store; Steam deferred to 0.2.0), and `apps/site` (Docusaurus). Game 2 (roguelike + JRPG battle) is deferred post-launch to a separate private repo as the real-world dogfood test. Phase 12 (M6) is a 6-week content runway + coordinated launch. See [docs/plans/build-plan.md](docs/plans/build-plan.md).
 
 ## Conventions
 

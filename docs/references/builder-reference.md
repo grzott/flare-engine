@@ -49,9 +49,11 @@ Detailed protocols for the `@builder` agent. See [builder.agent.md](../../.githu
 | Phase 11.1 — CanvasKit parity + storage | — | ✅ DONE — parity report at `docs/references/canvaskit-parity.md`, storage shipped, LICENSE propagation wired |
 | Phase 11.2–11.5, 11.7, 11.10 — engine packages | — | ✅ DONE — all Tier-1, genre, and Tier-2 stub packages shipped |
 | Phase 11.8 — CLI + scaffolder | — | ✅ **DONE** — `@flare-engine/cli` (pack-atlas, tiled-to-flare, new) + `create-flare-app` with blank/topdown/shmup templates |
-| Phase 11.11 — Demo web / MP4 | — | ⬜ not started — MP4 + poster is default deliverable; live WebGL stretch |
+| Phase 11.11 — Landing-page MP4 + store links | — | ⬜ not started — MP4 placeholder (URL swap), store-page links in docs. Live web build dropped 2026-04-22. |
 | Phase 11.12 — Docs site | — | ⬜ not started — deferred to pre-launch polish alongside 11.13 |
-| Phase 11.13 — API lock + RC + pre-launch polish | — | ⬜ not started — governance files, API snapshots, Kenney atlas swap, RC publish |
+| Phase 11.13 — API lock + RC + pre-launch polish | — | ⬜ not started — governance files, API snapshots, EUIPO trademark filing, RC publish |
+| `apps/demo` (proof-of-concept) | — | ✅ shipping — vertical-slice shmup, integration smoke test. Procedural placeholder art (no Kenney swap — dropped 2026-04-22). |
+| `apps/pan-tvardowski` (showcase) | — | 📍 **pre-production** — design locked ([plan](../plans/pan-tvardowski-build-plan.md)); scaffold + M1 pending |
 | Game 2 (roguelike) | — | ❌ DEFERRED post-launch to separate private repo (dogfood test of published 0.1.0) |
 | Phase 12 — Launch | — | ⬜ planned |
 

@@ -6,6 +6,8 @@ import {
   BORUTA_SUMMON_COUNT,
   BULLET_SPAWN_OFFSET,
   BULLET_SPEED,
+  PHASE3_HP_RATIO,
+  THREE_PHASE_P2_RATIO,
   WODNIK_SHIELD_MINIONS,
   WODNIK_SHIELD_REBUILD_SEC,
 } from '../config/gameplay';
@@ -91,6 +93,10 @@ interface PhaseScript {
   fire2Cooldown: number;
   fire1: (c: BossCtx) => void;
   fire2: (c: BossCtx) => void;
+  /** Phase-3 fields are set only for 3-phase bosses (Baba Jaga onward). */
+  sweepSpeed3?: number;
+  fire3Cooldown?: number;
+  fire3?: (c: BossCtx) => void;
 }
 
 // ---- Smok Krzemionkowski (Zone 1) ------------------------------------------
@@ -283,11 +289,92 @@ const borutaScript: PhaseScript = {
   },
 };
 
+// ---- Baba Jaga (Zone 5) ----------------------------------------------------
+// Phase 1: cauldron bombs — 3 arcing heavy shots with slight aim spread.
+// Phase 2: mortar flight — aimed rush, single heavy shot + flank pair ±10°.
+// Phase 3: broom-laser 360° sweep — 12-ray radial pinwheel spun by `b.t`.
+const babaJagaScript: PhaseScript = {
+  sweepSpeed1: 50,
+  sweepSpeed2: 120,
+  sweepSpeed3: 35,
+  fire1Cooldown: 0.85,
+  fire2Cooldown: 0.6,
+  fire3Cooldown: 0.18,
+  fire1(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(
+      c.deps.playerX - pos.x,
+      c.deps.playerY - pos.y,
+      BULLET_SPEED.boss * 0.85,
+      aim,
+    );
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    for (let i = -1; i <= 1; i++) {
+      const a = baseAngle + i * 0.22;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        Math.cos(a) * BULLET_SPEED.boss * 0.85,
+        Math.sin(a) * BULLET_SPEED.boss * 0.85,
+        Layer.enemy,
+      );
+    }
+  },
+  fire2(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    // Heavy central shot + flank pair ±10°.
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      aim.x,
+      aim.y,
+      Layer.enemy,
+    );
+    for (let i = -1; i <= 1; i += 2) {
+      const a = baseAngle + i * 0.175;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        Math.cos(a) * BULLET_SPEED.boss,
+        Math.sin(a) * BULLET_SPEED.boss,
+        Layer.enemy,
+      );
+    }
+  },
+  fire3(c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (!pos || !b) return;
+    // Broom-laser 360° sweep: 12 radial spokes spun by b.t.
+    const rays = 12;
+    const spin = b.t * 1.6;
+    for (let i = 0; i < rays; i++) {
+      const a = spin + (i / rays) * Math.PI * 2;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y,
+        Math.cos(a) * BULLET_SPEED.boss * 0.95,
+        Math.sin(a) * BULLET_SPEED.boss * 0.95,
+        Layer.enemy,
+      );
+    }
+  },
+};
+
 const SCRIPTS: Record<BossPattern, PhaseScript> = {
   'smok-krzemionkowski': smokScript,
   'borowy-krol': borowyScript,
   'wodnik-wislanny': wodnikScript,
   boruta: borutaScript,
+  'baba-jaga': babaJagaScript,
 };
 
 function sweepMove(c: BossCtx, speed: number): void {
@@ -400,7 +487,8 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('killed');
         return;
       }
-      if (hp.current / hp.max <= PHASE2_HP_RATIO) {
+      const p2Ratio = b.pattern === 'baba-jaga' ? THREE_PHASE_P2_RATIO : PHASE2_HP_RATIO;
+      if (hp.current / hp.max <= p2Ratio) {
         fsm.trigger('phase2');
         return;
       }
@@ -451,6 +539,11 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('killed');
         return;
       }
+      // 3-phase bosses (Baba Jaga onward) transition phase2 → phase3 at 1/3 HP.
+      if (b.pattern === 'baba-jaga' && hp.current / hp.max <= PHASE3_HP_RATIO) {
+        fsm.trigger('phase3');
+        return;
+      }
       if (b.pattern === 'wodnik-wislanny') {
         tickWodnikShield(dt, c);
       }
@@ -469,6 +562,39 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         b.shieldActive = false;
         b.minionsAlive = 0;
       }
+    },
+  });
+
+  fsm.addState({
+    name: 'phase3',
+    onEnter(c) {
+      const b = c.world.get(c.id, Boss);
+      if (b) {
+        b.phase = 'phase3';
+        b.phaseT = 0;
+        b.fireCooldown = 0.4;
+      }
+      c.deps.onPhaseChange?.('phase3');
+    },
+    onUpdate(dt, c) {
+      const b = c.world.get(c.id, Boss);
+      const hp = c.world.get(c.id, Hp);
+      if (!b || !hp) return;
+      if (hp.current <= 0) {
+        fsm.trigger('killed');
+        return;
+      }
+      const script = SCRIPTS[b.pattern];
+      const speed3 = script.sweepSpeed3 ?? script.sweepSpeed2;
+      sweepMove(c, speed3);
+      b.fireCooldown -= dt;
+      if (b.fireCooldown <= 0) {
+        script.fire3?.(c);
+        b.fireCooldown = script.fire3Cooldown ?? script.fire2Cooldown;
+      }
+    },
+    onExit(c) {
+      clearEnemyBullets(c);
     },
   });
 
@@ -515,7 +641,9 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
   fsm.addTransition('entering', 'entered', 'phase1');
   fsm.addTransition('phase1', 'phase2', 'phase2');
   fsm.addTransition('phase1', 'killed', 'dying');
+  fsm.addTransition('phase2', 'phase3', 'phase3');
   fsm.addTransition('phase2', 'killed', 'dying');
+  fsm.addTransition('phase3', 'killed', 'dying');
   fsm.addTransition('dying', 'exploded', 'defeated');
 
   return fsm;

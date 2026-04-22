@@ -50,7 +50,8 @@ export function processBomb(world: World, dt: number, deps: BombDeps): void {
       const b = world.get(id, Boss);
       const hp = world.get(id, Hp);
       if (!b || !hp) continue;
-      if (b.phase === 'phase1' || b.phase === 'phase2') hp.current -= Math.floor(hp.max * 0.25);
+      if (b.phase === 'phase1' || b.phase === 'phase2' || b.phase === 'phase3')
+        hp.current -= Math.floor(hp.max * 0.25);
     }
     for (const id of deps.minibossQuery) {
       const m = world.get(id, Miniboss);

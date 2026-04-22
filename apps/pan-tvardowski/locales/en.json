@@ -13,6 +13,8 @@
   "menu.pause.quit": "Quit to menu",
   "menu.game_over.title": "The Devil claims his bond",
   "menu.victory.title": "Mirror Whole",
+  "menu.tap_retry": "Tap to retry",
+  "menu.tap_continue": "Tap to continue",
 
   "hud.score": "Score: {score}",
   "hud.hp": "HP: {hp}/{max}",

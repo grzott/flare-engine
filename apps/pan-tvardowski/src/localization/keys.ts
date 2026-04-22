@@ -18,6 +18,8 @@ const menu = [
   'menu.pause.quit',
   'menu.game_over.title',
   'menu.victory.title',
+  'menu.tap_retry',
+  'menu.tap_continue',
 ] as const;
 
 const hud = [

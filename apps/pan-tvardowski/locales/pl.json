@@ -13,6 +13,8 @@
   "menu.pause.quit": "Wyjdź do menu",
   "menu.game_over.title": "Diabeł wypomniał kontrakt",
   "menu.victory.title": "Zwierciadło całe",
+  "menu.tap_retry": "Stuknij, aby spróbować ponownie",
+  "menu.tap_continue": "Stuknij, aby kontynuować",
 
   "hud.score": "Wynik: {score}",
   "hud.hp": "HP: {hp}/{max}",

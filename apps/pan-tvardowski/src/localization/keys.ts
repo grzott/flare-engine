@@ -1,0 +1,176 @@
+/**
+ * Canonical key list for the game's string tables. Source: build plan §15.
+ * Locale files MUST define exactly these keys — parity enforced by test.
+ */
+
+const menu = [
+  'menu.title',
+  'menu.play',
+  'menu.continue',
+  'menu.settings',
+  'menu.quit',
+  'menu.settings.language',
+  'menu.settings.reduced_motion',
+  'menu.settings.sfx_volume',
+  'menu.settings.music_volume',
+  'menu.pause.title',
+  'menu.pause.resume',
+  'menu.pause.quit',
+  'menu.game_over.title',
+  'menu.victory.title',
+] as const;
+
+const hud = [
+  'hud.score',
+  'hud.hp',
+  'hud.bombs',
+  'hud.bombs_remaining',
+  'hud.shards',
+  'hud.shards_collected',
+  'hud.zone_banner',
+  'hud.boss_name',
+  'hud.weapon_level',
+] as const;
+
+const zones = [
+  'zones.1.name',
+  'zones.1.subtitle',
+  'zones.2.name',
+  'zones.2.subtitle',
+  'zones.3.name',
+  'zones.3.subtitle',
+  'zones.4.name',
+  'zones.4.subtitle',
+  'zones.5.name',
+  'zones.5.subtitle',
+  'zones.6.name',
+  'zones.6.subtitle',
+  'zones.7.name',
+  'zones.7.subtitle',
+  'zones.8.name',
+  'zones.8.subtitle',
+] as const;
+
+const enemies = [
+  'enemies.skrzat.name',
+  'enemies.latawiec.name',
+  'enemies.czart.name',
+  'enemies.bies.name',
+  'enemies.licho.name',
+  'enemies.strzyga.name',
+  'enemies.topielec.name',
+  'enemies.mamuna.name',
+  'enemies.nocnica.name',
+  'enemies.poludnica.name',
+  'enemies.wapierz.name',
+  'enemies.dziwozona.name',
+] as const;
+
+const minibosses = [
+  'minibosses.rokita.name',
+  'minibosses.leszy.name',
+  'minibosses.nocny-lowca.name',
+  'minibosses.madej.name',
+] as const;
+
+const bosses = [
+  'bosses.smok-krzemionkowski.name',
+  'bosses.borowy-krol.name',
+  'bosses.wodnik-wislanny.name',
+  'bosses.boruta.name',
+  'bosses.baba-jaga.name',
+  'bosses.bazyliszek-warszawski.name',
+  'bosses.mefistofeles.name',
+  'bosses.lucyper-ksiezycowy.name',
+] as const;
+
+const weapons = [
+  'weapons.iskry.name',
+  'weapons.iskry.desc',
+  'weapons.piorun.name',
+  'weapons.piorun.desc',
+  'weapons.sol-swiecona.name',
+  'weapons.sol-swiecona.desc',
+  'weapons.znak-pentagramu.name',
+  'weapons.znak-pentagramu.desc',
+] as const;
+
+const ships = [
+  'ships.kogut-zloty.name',
+  'ships.kogut-zloty.desc',
+  'ships.alembik.name',
+  'ships.alembik.desc',
+  'ships.zwierciadlo.name',
+  'ships.zwierciadlo.desc',
+] as const;
+
+const upgrades = [
+  'upgrades.czarna-ksiega.name',
+  'upgrades.czarna-ksiega.desc',
+  'upgrades.siedmiomilowe-buty.name',
+  'upgrades.siedmiomilowe-buty.desc',
+  'upgrades.amulet-wegrowski.name',
+  'upgrades.amulet-wegrowski.desc',
+  'upgrades.koguci-pioro.name',
+  'upgrades.koguci-pioro.desc',
+  'upgrades.srebrna-tarcza.name',
+  'upgrades.srebrna-tarcza.desc',
+  'upgrades.kamien-filozoficzny.name',
+  'upgrades.kamien-filozoficzny.desc',
+] as const;
+
+const dialogue = [
+  'dialogue.opening.king.1',
+  'dialogue.opening.twardowski.1',
+  'dialogue.opening.king.2',
+  'dialogue.zone4.boruta.1',
+  'dialogue.zone7.innkeeper.1',
+  'dialogue.zone7.twardowski.1',
+  'dialogue.zone7.innkeeper.2',
+  'dialogue.zone8.lucyper.1',
+  'dialogue.victory.twardowski.1',
+  'dialogue.victory.spider.1',
+] as const;
+
+const achievements = [
+  'achievements.first_shard.name',
+  'achievements.first_shard.desc',
+  'achievements.no_bomb_boss.name',
+  'achievements.no_bomb_boss.desc',
+  'achievements.all_shards.name',
+  'achievements.all_shards.desc',
+  'achievements.three_ships.name',
+  'achievements.three_ships.desc',
+  'achievements.iskry_master.name',
+  'achievements.iskry_master.desc',
+  'achievements.piorun_master.name',
+  'achievements.piorun_master.desc',
+  'achievements.sol_master.name',
+  'achievements.sol_master.desc',
+  'achievements.pentagram_master.name',
+  'achievements.pentagram_master.desc',
+  'achievements.no_hit_z1.name',
+  'achievements.no_hit_z1.desc',
+  'achievements.twelve_enemies.name',
+  'achievements.twelve_enemies.desc',
+  'achievements.karczma_perfect.name',
+  'achievements.karczma_perfect.desc',
+  'achievements.rome_condition.name',
+  'achievements.rome_condition.desc',
+] as const;
+
+export const LOCALIZATION_KEYS = [
+  ...menu,
+  ...hud,
+  ...zones,
+  ...enemies,
+  ...minibosses,
+  ...bosses,
+  ...weapons,
+  ...ships,
+  ...upgrades,
+  ...dialogue,
+  ...achievements,
+] as const;
+
+export type LocalizationKey = (typeof LOCALIZATION_KEYS)[number];

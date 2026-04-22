@@ -1,0 +1,16 @@
+{
+  "name": "@flare-engine-apps/pan-tvardowski",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pan Tvardowski — canonical showcase game for the Flare engine (vertical shmup, Polish folklore)",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "biome check src/ tests/",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "@flare-engine/localization": "workspace:*"
+  }
+}

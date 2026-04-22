@@ -11,7 +11,7 @@ A vertical-scrolling shoot-em-up inspired by the Polish legend of **Pan Twardows
 
 ## Status
 
-📐 **Pre-production.** Design locked, implementation not started. Scaffolding lands at stage 11.11 of the engine build plan.
+📐 **M0 complete (pre-production).** Directory layout, shape-atlas spec, zone palette, localization scaffold (EN + PL, 143 keys). M1 scaffolds the Expo app + Zone 1.
 
 ## Concept
 

@@ -480,3 +480,4 @@ Not required for DIY filing. Only needed if opposition filed (unlikely for folk-
 ## Change log
 
 - **2026-04-22** — initial plan landed. Pre-production phase. Pathfinding excluded by design.
+- **2026-04-22** — **M0 complete.** Directory layout (`apps/pan-tvardowski/{src,tests,locales}`), shape atlas type spec (`ShapeSpec` union), zone palette (8 zones × primary/accent/hazard ARGB), shape catalogue for all 12 enemies / 4 minibosses / 8 bosses / 3 ships / 4 weapon pickups / 6 upgrade pickups, localization scaffold (EN + PL tables, 143 keys, ICU plurals for bombs/shards), 14 tests passing. `@flare-engine/localization` exercised at runtime in tests; `@flare-engine/assets` (procedural atlas) wiring deferred to M1 when Skia runtime is available.

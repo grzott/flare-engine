@@ -6,9 +6,16 @@ API contract source of truth: [docs/design/api-specs.md](../docs/design/api-spec
 
 ## Agents
 
-- `@builder` — implements packages, writes tests, builds the engine
+- `@builder` — implements engine packages (`packages/**`), writes tests, builds the engine
+- `@game-builder` — implements game apps (`apps/<game>/**`), wires engine packages into gameplay, produces commit messages (never commits). Reusable for any Flare game
 - `@architect` — audits and designs the AI development environment
 - `@researcher` — surveys libraries, techniques, assets, and competitor engines
+
+## Prompts
+
+- `/build-next` — engine builder: next phase from `docs/plans/build-plan.md`
+- `/build-next-milestone` — game builder: next milestone from `docs/plans/<game>-build-plan.md`
+- `/continue-game` — resume in-flight game work
 
 ## Scoped instructions
 

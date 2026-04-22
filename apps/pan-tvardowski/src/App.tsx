@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { createA11yBridge } from './a11y/manager';
 import type { AudioHandles } from './audio/init';
 import { initAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
@@ -49,6 +50,8 @@ function onReady(
   // The chain + uniform packing are still exercised via tests (postfx.test.ts).
   const skiaPostFx = null;
 
+  const a11y = createA11yBridge();
+
   ctx.scenes.register(
     'boot',
     createBootScene(
@@ -70,6 +73,7 @@ function onReady(
       audio: audioRef,
       skia: skiaPostFx,
       renderHooks,
+      a11y,
     }),
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));

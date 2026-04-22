@@ -34,6 +34,8 @@ export interface PostFxController {
   update(dt: number): void;
   /** Build the per-frame compiled pass list (empty if runtime is unsupported). */
   buildPass(width: number, height: number): CompiledPass[];
+  /** Scale every effect's perceived strength (0 = fully neutralized). */
+  setMotionScale(k: number): void;
 }
 
 export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): PostFxController {
@@ -65,6 +67,9 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Po
     },
     buildPass(width: number, height: number): CompiledPass[] {
       return runtime.buildPass(chain, width, height);
+    },
+    setMotionScale(k: number): void {
+      chain.setGlobalIntensity(k);
     },
   };
 }

@@ -9,7 +9,12 @@ import { Skia } from '@shopify/react-native-skia';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
+import type { AudioHandles } from './audio/init';
+import { initAudio } from './audio/init';
+import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
+import { gameEvents } from './events';
+import type { ZoneId } from './events';
 import { Hud } from './hud/Hud';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
@@ -19,18 +24,28 @@ import { createPlayScene } from './scenes/play';
 import { buildShapeAtlas } from './shape-atlas';
 import { bombButtonState, gameState, joystickState, resetBombButtonFrame } from './state';
 
+interface AudioRef {
+  current: AudioHandles | null;
+}
+
 function onReady(ctx: GameContextValue, localization: LocalizationManager): void {
   const atlas = buildShapeAtlas(Skia);
   const saveStore = createSaveStore();
+  const audioRef: AudioRef = { current: null };
 
   ctx.scenes.register(
     'boot',
-    createBootScene(ctx, async () => {
-      await saveStore.load();
-      localization.setLocale(gameState.settings.locale);
-    }),
+    createBootScene(
+      ctx,
+      async () => {
+        await saveStore.load();
+        localization.setLocale(gameState.settings.locale);
+      },
+      () => initAudio(ctx),
+      audioRef,
+    ),
   );
-  ctx.scenes.register('play', createPlayScene({ ctx, atlas, save: saveStore }));
+  ctx.scenes.register('play', createPlayScene({ ctx, atlas, save: saveStore, audio: audioRef }));
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
   ctx.scenes.setTransition(fadeTransition(0.3));
@@ -38,6 +53,20 @@ function onReady(ctx: GameContextValue, localization: LocalizationManager): void
   ctx.loop.onUpdate.add((dt) => {
     ctx.scenes.update(dt);
     resetBombButtonFrame();
+  });
+
+  // Deep links — `pantvardowski://zone/:n` jumps into the requested zone.
+  const manager = createPanTvardowskiDeepLinks(createNativeSource(Linking), {
+    onZoneRequest: (zone: ZoneId) => {
+      gameState.currentZone = zone;
+      void ctx.scenes.go('play');
+    },
+  });
+  void manager.start();
+
+  // Bridge engine-side zone events for external observers (devtools, analytics).
+  gameEvents.on('zone-start', () => {
+    /* hook point */
   });
 
   void ctx.scenes.go('boot');

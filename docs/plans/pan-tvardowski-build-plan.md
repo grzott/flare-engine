@@ -397,7 +397,7 @@ Eight milestones, one per zone, plus pre-production and post-content. Each miles
 | **M4** | Zone 4 (Łęczyckie Błota) | Summons mechanic for Boruta, Leszy shape-shift                                                | devtools ✅, share ✅                                                           |
 | **M5** | Zone 5 (Łysa Góra)       | First 3-phase boss, night-time palette, ritual SFX                                            | testing (boss-replay tests), errors                                             |
 | **M6** | Zone 6 (Katakumby)       | Gaze-beam maze (first postfx-heavy boss)                                                      | a11y (reduced-motion toggle)                                                    |
-| **M7** | Zone 7 (Karczma "Rzym")  | Dialogue system, mirror-twin phase, dialogue graph                                            | dialogue                                                                        |
+| **M7** | Zone 7 (Karczma "Rzym")  | Dialogue system, mirror-twin phase, dialogue graph                                            | dialogue ✅                                                                     |
 | **M8** | Zone 8 (Księżyc)         | Final boss, full bullet hell, ending cutscene                                                 | analytics, leaderboards, achievements, iap stubs mounted                        |
 | **M9** | Polish pass              | Balance tuning, PL+EN dialogue final, achievement hookup, screenshot captures for store pages | — (all packages revisited)                                                      |
 

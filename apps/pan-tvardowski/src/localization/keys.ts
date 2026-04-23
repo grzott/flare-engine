@@ -40,6 +40,7 @@ const hud = [
   'hud.share',
   'hud.share.victory',
   'hud.share.gameover',
+  'hud.dialogue.continue',
 ] as const;
 
 const zones = [
@@ -143,6 +144,9 @@ const dialogue = [
   'dialogue.zone8.lucyper.1',
   'dialogue.victory.twardowski.1',
   'dialogue.victory.spider.1',
+  'dialogue.speaker.king',
+  'dialogue.speaker.twardowski',
+  'dialogue.speaker.innkeeper',
 ] as const;
 
 const achievements = [

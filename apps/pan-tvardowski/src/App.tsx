@@ -28,8 +28,10 @@ import { disposeAudio, initAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
 import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
+import { createDialogueController } from './dialogue';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
+import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
@@ -58,6 +60,7 @@ function bootstrap(
   localization: LocalizationManager,
   renderHooks: PlayRenderHooks,
   audioRef: AudioRef,
+  dialogue: ReturnType<typeof createDialogueController>,
 ): RuntimeDisposer {
   const atlas = buildShapeAtlas(Skia);
   const saveStore = createSaveStore();
@@ -89,6 +92,7 @@ function bootstrap(
       skia: skiaPostFx,
       renderHooks,
       a11y,
+      dialogue,
     }),
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));
@@ -155,6 +159,7 @@ function AppRoot(): React.ReactElement {
   const insets = useSafeAreaInsets();
   const localization = useMemo(() => createLocalization(), []);
   const audioRef = useMemo<AudioRef>(() => ({ current: null }), []);
+  const dialogueController = useMemo(() => createDialogueController(), []);
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
@@ -266,13 +271,20 @@ function AppRoot(): React.ReactElement {
             disposerRef.current?.();
             ctxRef.current = ready;
             setCtx(ready);
-            disposerRef.current = bootstrap(ready, localization, renderHooks, audioRef);
+            disposerRef.current = bootstrap(
+              ready,
+              localization,
+              renderHooks,
+              audioRef,
+              dialogueController,
+            );
           }}
         >
           <VirtualJoystick onStateChange={onJoystick} style={joystickStyle} />
           <VirtualButton onStateChange={onBomb} style={bombStyle} />
         </GameView>
         <Hud localization={localization} actions={actions} insets={insets} />
+        <DialogueOverlay localization={localization} controller={dialogueController} />
         {__DEV__ && ctx && snapshotSource ? (
           <DevtoolsProvider world={ctx.world} loop={ctx.loop} snapshot={snapshotSource}>
             <DevtoolsHUD />

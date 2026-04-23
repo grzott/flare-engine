@@ -33,6 +33,7 @@
   "hud.share": "Udostępnij",
   "hud.share.victory": "Pokonałem Pana Twardowskiego z wynikiem {score}!",
   "hud.share.gameover": "Diabeł mnie dopadł z wynikiem {score} w Pan Twardowski!",
+  "hud.dialogue.continue": "Dotknij, aby kontynuować",
 
   "zones.1.name": "Dachy Krakowa",
   "zones.1.subtitle": "Zmierzch nad Wawelem",
@@ -120,6 +121,9 @@
   "dialogue.zone8.lucyper.1": "Śpiewałeś niegdyś godzinki, Twardowski. Zaśpiewaj jeszcze raz. Poczekam.",
   "dialogue.victory.twardowski.1": "Siedem odłamków. Zwierciadło całe. A Diabeł? Na Księżycu, tam gdzie jego miejsce.",
   "dialogue.victory.spider.1": "…a nowiny z dołu, Mistrzu?",
+  "dialogue.speaker.king": "Król Zygmunt I",
+  "dialogue.speaker.twardowski": "Twardowski",
+  "dialogue.speaker.innkeeper": "Karczmarz",
 
   "achievements.first_shard.name": "Pierwszy Odłamek",
   "achievements.first_shard.desc": "Ukończ Krainę 1.",

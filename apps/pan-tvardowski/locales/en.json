@@ -33,6 +33,7 @@
   "hud.share": "Share",
   "hud.share.victory": "I beat Pan Tvardowski and scored {score}!",
   "hud.share.gameover": "The Devil got me with {score} points in Pan Tvardowski!",
+  "hud.dialogue.continue": "Tap to continue",
 
   "zones.1.name": "Kraków Rooftops",
   "zones.1.subtitle": "Dusk over Wawel",
@@ -120,6 +121,9 @@
   "dialogue.zone8.lucyper.1": "You sang a hymn once, Twardowski. Sing it again. I will wait.",
   "dialogue.victory.twardowski.1": "Seven shards. The Mirror whole. And the Devil? On the Moon where he belongs.",
   "dialogue.victory.spider.1": "…and news from below, Master?",
+  "dialogue.speaker.king": "King Zygmunt I",
+  "dialogue.speaker.twardowski": "Twardowski",
+  "dialogue.speaker.innkeeper": "Innkeeper",
 
   "achievements.first_shard.name": "First Shard",
   "achievements.first_shard.desc": "Clear Zone 1.",

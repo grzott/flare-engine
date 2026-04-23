@@ -21,6 +21,7 @@
     "@flare-engine/audio": "workspace:*",
     "@flare-engine/deep-links": "workspace:*",
     "@flare-engine/devtools": "workspace:*",
+    "@flare-engine/dialogue": "workspace:*",
     "@flare-engine/ecs": "workspace:*",
     "@flare-engine/engine": "workspace:*",
     "@flare-engine/errors": "workspace:*",

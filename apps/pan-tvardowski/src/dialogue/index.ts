@@ -9,8 +9,12 @@ import { gameState, notifyStateChanged } from '../state';
 export {
   OPENING_GRAPH_ID,
   ZONE7_ENTRY_GRAPH_ID,
+  ZONE8_INTRO_GRAPH_ID,
+  VICTORY_GRAPH_ID,
   createOpeningGraph,
   createZone7EntryGraph,
+  createZone8IntroGraph,
+  createVictoryGraph,
 } from './graphs';
 
 export interface DialogueController {

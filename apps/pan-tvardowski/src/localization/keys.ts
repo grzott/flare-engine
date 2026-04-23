@@ -147,6 +147,8 @@ const dialogue = [
   'dialogue.speaker.king',
   'dialogue.speaker.twardowski',
   'dialogue.speaker.innkeeper',
+  'dialogue.speaker.lucyper',
+  'dialogue.speaker.spider',
 ] as const;
 
 const achievements = [

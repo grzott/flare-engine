@@ -16,7 +16,12 @@ import {
 import type { ZoneConfig } from '../config/zones';
 import { ZONES } from '../config/zones';
 import type { DialogueController } from '../dialogue';
-import { createOpeningGraph, createZone7EntryGraph } from '../dialogue';
+import {
+  createOpeningGraph,
+  createVictoryGraph,
+  createZone7EntryGraph,
+  createZone8IntroGraph,
+} from '../dialogue';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
 import { type PostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
@@ -307,6 +312,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         });
       } else if (dlg && zoneId === 'z7') {
         dlg.play(createZone7EntryGraph());
+      } else if (dlg && zoneId === 'z8') {
+        dlg.play(createZone8IntroGraph());
       }
     }
 
@@ -498,7 +505,17 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               gameState.victory = true;
               notifyStateChanged();
               void save.commitRun(gameState.score, true);
-              void ctx.scenes.go('victory');
+              // Ending cutscene: queue the victory dialogue before handing off
+              // to the victory summary scene. If no dialogue controller is
+              // wired (tests, headless), transition immediately.
+              const goVictory = () => {
+                void ctx.scenes.go('victory');
+              };
+              if (deps.dialogue) {
+                deps.dialogue.play(createVictoryGraph(), goVictory);
+              } else {
+                goVictory();
+              }
             }
           },
           onExplosion: (x: number, y: number) => {

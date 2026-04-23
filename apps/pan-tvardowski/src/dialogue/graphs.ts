@@ -60,3 +60,37 @@ export function createZone7EntryGraph(): DialogueGraph {
     },
   });
 }
+
+/** Zone-8 intro: Lucyper taunts Twardowski from the Moon. */
+export const ZONE8_INTRO_GRAPH_ID = 'zone8-intro';
+
+export function createZone8IntroGraph(): DialogueGraph {
+  return createDialogueGraph(ZONE8_INTRO_GRAPH_ID, 'lucyper1', {
+    lucyper1: {
+      kind: 'line',
+      speaker: 'dialogue.speaker.lucyper',
+      text: 'dialogue.zone8.lucyper.1',
+      next: null,
+    },
+  });
+}
+
+/** Ending cutscene: Twardowski reflects; the Spider asks for news from below. */
+export const VICTORY_GRAPH_ID = 'victory';
+
+export function createVictoryGraph(): DialogueGraph {
+  return createDialogueGraph(VICTORY_GRAPH_ID, 'twardowski1', {
+    twardowski1: {
+      kind: 'line',
+      speaker: 'dialogue.speaker.twardowski',
+      text: 'dialogue.victory.twardowski.1',
+      next: 'spider1',
+    },
+    spider1: {
+      kind: 'line',
+      speaker: 'dialogue.speaker.spider',
+      text: 'dialogue.victory.spider.1',
+      next: null,
+    },
+  });
+}

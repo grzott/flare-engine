@@ -13,6 +13,8 @@ import {
   BULLET_SPAWN_OFFSET,
   BULLET_SPEED,
   LESZY_FORM_SEC,
+  MADEJ_FIRE_COOLDOWN,
+  MADEJ_SPIKE_SEC,
   NOCNY_LOWCA_HOUND_COUNT,
 } from '../config/gameplay';
 import { Layer } from '../layers';
@@ -43,6 +45,8 @@ export interface MinibossDeps {
   onSpawnHound?: (x: number, y: number) => void;
   /** Nocny Łowca: count of live hounds in the world right now. */
   countHounds?: () => number;
+  /** Madej: spawn a spike-lane ground hazard at column `laneX`. */
+  onSpawnSpikeLane?: (laneX: number) => void;
 }
 
 export interface MinibossStatus {
@@ -54,6 +58,7 @@ export interface MinibossStatus {
   rootProgress: number;
   form: LeszyForm;
   hounds: number;
+  spikeIndex: number;
 }
 
 export function computeMinibossStatus(world: World, query: Query): MinibossStatus {
@@ -70,6 +75,7 @@ export function computeMinibossStatus(world: World, query: Query): MinibossStatu
       rootProgress: m.rootProgress,
       form: m.form,
       hounds: m.hounds,
+      spikeIndex: m.spikeIndex,
     };
   }
   return {
@@ -81,6 +87,7 @@ export function computeMinibossStatus(world: World, query: Query): MinibossStatu
     rootProgress: 0,
     form: 'deer',
     hounds: 0,
+    spikeIndex: 0,
   };
 }
 
@@ -202,6 +209,37 @@ function nocnyLowcaFire(c: MinibossCtx): number {
   return 0.9;
 }
 
+/** Madej: aimed heavy shot paired with a spike-lane drop on fixed cadence. */
+function madejFire(c: MinibossCtx): number {
+  const pos = c.world.get(c.id, Position);
+  if (!pos) return MADEJ_FIRE_COOLDOWN;
+  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+  const base = Math.atan2(aim.y, aim.x);
+  for (let i = -1; i <= 1; i++) {
+    const a = base + i * 0.22;
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      Math.cos(a) * BULLET_SPEED.boss,
+      Math.sin(a) * BULLET_SPEED.boss,
+      Layer.enemy,
+    );
+  }
+  return MADEJ_FIRE_COOLDOWN;
+}
+
+/** Madej: drop a persistent spike column in lane (spikeIndex % 3). */
+function madejSpike(c: MinibossCtx): void {
+  const m = c.world.get(c.id, Miniboss);
+  if (!m || !c.deps.onSpawnSpikeLane) return;
+  const laneIdx = m.spikeIndex % 3;
+  const laneW = c.deps.bounds.width / 3;
+  const laneX = laneW * (0.5 + laneIdx);
+  c.deps.onSpawnSpikeLane(laneX);
+  m.spikeIndex += 1;
+}
+
 /** Summon `NOCNY_LOWCA_HOUND_COUNT` hounds arcing around the miniboss. */
 function summonHounds(c: MinibossCtx): void {
   const pos = c.world.get(c.id, Position);
@@ -263,6 +301,13 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
       const m2 = c.world.get(c.id, Miniboss);
       if (m2 && m2.pattern === 'leszy') c.deps.onFormChange?.(m2.form);
       if (m2 && m2.pattern === 'nocny-lowca') summonHounds(c);
+      if (m2 && m2.pattern === 'madej') {
+        // First spike drops after MADEJ_SPIKE_SEC — `formT` doubles as the
+        // spike-lane countdown (0 = due). Start at 0 so the first spike lands
+        // quickly after the intro.
+        m2.formT = MADEJ_SPIKE_SEC * 0.6;
+        m2.spikeIndex = 0;
+      }
     },
     onUpdate(dt, c) {
       const m = c.world.get(c.id, Miniboss);
@@ -305,6 +350,17 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
         m.fireCooldown -= dt;
         if (m.fireCooldown <= 0) {
           m.fireCooldown = nocnyLowcaFire(c);
+        }
+      } else if (m.pattern === 'madej') {
+        sweepMove(c, 50);
+        m.formT += dt;
+        if (m.formT >= MADEJ_SPIKE_SEC) {
+          m.formT -= MADEJ_SPIKE_SEC;
+          madejSpike(c);
+        }
+        m.fireCooldown -= dt;
+        if (m.fireCooldown <= 0) {
+          m.fireCooldown = madejFire(c);
         }
       }
     },

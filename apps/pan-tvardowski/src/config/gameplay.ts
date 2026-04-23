@@ -214,3 +214,40 @@ export const BAZYLISZEK_PUDDLE_LIFETIME_SEC = 4;
 
 /** Player speed multiplier while Bazyliszek phase-1 stone-gaze is active. */
 export const BAZYLISZEK_GAZE_SPEED_MUL = 0.55;
+
+/** Madej miniboss HP (build plan §8). */
+export const MADEJ_HP = 300;
+
+/** Madej spike-lane cadence: spawns a vertical hazard on one of 3 columns. */
+export const MADEJ_SPIKE_SEC = 3.2;
+
+/** Madej aimed heavy fire cadence (between spike-lane drops). */
+export const MADEJ_FIRE_COOLDOWN = 1.1;
+
+/** Madej spike hazard lifetime (a slow downward drifting enemy bullet). */
+export const MADEJ_SPIKE_LIFETIME_SEC = 2.6;
+
+/** Mefistofeles HP per phase (build plan §9, 700/700/700). */
+export const MEFISTOFELES_PHASE_HP = 700;
+export const MEFISTOFELES_HP_MAX = MEFISTOFELES_PHASE_HP * 3;
+
+/** Mefistofeles phase-1 contract-scroll fire cadence. */
+export const MEFISTOFELES_P1_FIRE = 1.4;
+
+/** Mefistofeles phase-2 horn-shot cadence + fire-pit drop cadence. */
+export const MEFISTOFELES_P2_FIRE = 0.9;
+export const MEFISTOFELES_FIREPIT_SEC = 2.4;
+
+/** Mefistofeles phase-2 fire-pit lifetime (persistent ground hazard). */
+export const MEFISTOFELES_FIREPIT_LIFETIME_SEC = 5;
+
+/** Mefistofeles phase-3 mirror-twin downward fire cadence. */
+export const MEFISTOFELES_TWIN_FIRE = 0.6;
+
+/** Mefistofeles phase-3 mirror-twin vertical offset from player y. */
+export const MEFISTOFELES_TWIN_Y_OFFSET = -40;
+
+/** Seconds before the Zone-7 miniboss (Madej) enters (§5 length = 6:00). */
+export const ZONE7_MINIBOSS_T = 105;
+/** Seconds before the Zone-7 boss (Mefistofeles) enters. */
+export const ZONE7_BOSS_T = 300;

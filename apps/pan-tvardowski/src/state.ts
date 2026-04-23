@@ -87,6 +87,17 @@ export interface ZoneBannerInfo {
   subtitleKey: string;
 }
 
+/**
+ * Dialogue overlay state published by the dialogue runner. Presence of a
+ * non-null value pauses gameplay; overlay reads `speakerKey` + `textKey`
+ * and resolves them via the LocalizationManager at render time.
+ */
+export interface DialogueHudState {
+  graphId: string;
+  speakerKey: string;
+  textKey: string;
+}
+
 export interface GameState {
   score: number;
   playerHp: number;
@@ -111,6 +122,8 @@ export interface GameState {
   zoneBanner: ZoneBannerInfo;
   settings: Settings;
   runStats: RunStats;
+  /** Active dialogue line; null = gameplay runs, non-null = paused. */
+  dialogue: DialogueHudState | null;
 }
 
 export const gameState: GameState = {
@@ -140,6 +153,7 @@ export const gameState: GameState = {
   },
   settings: defaultSettings(),
   runStats: createRunStats(),
+  dialogue: null,
 };
 
 export const stateChanged = new Signal<void>();
@@ -188,6 +202,7 @@ export function resetGameState(): void {
   gameState.zoneBanner.subtitleKey = 'zones.1.subtitle';
   gameState.settings = settings;
   gameState.runStats = createRunStats();
+  gameState.dialogue = null;
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

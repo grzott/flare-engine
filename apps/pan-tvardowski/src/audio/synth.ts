@@ -107,7 +107,7 @@ export function createSfxBuffers(ctx: AudioContextLike): Record<SfxKey, AudioBuf
 
 // ---- Music tracks — one per zone (§5) --------------------------------------
 
-export type MusicKey = 'zone1' | 'zone2' | 'zone3' | 'zone4' | 'zone5' | 'zone6';
+export type MusicKey = 'zone1' | 'zone2' | 'zone3' | 'zone4' | 'zone5' | 'zone6' | 'zone7';
 
 interface MusicTrack {
   bpm: number;
@@ -185,6 +185,17 @@ const TRACKS: Record<MusicKey, MusicTrack> = {
     leadNotes: [50, 53, 57, 53, 50, 53, 56, 53, 50, 51, 53, 51, 50, 48, 50, 48],
     leadWave: 'sine',
     bassWave: 'sine',
+    gain: 0.24,
+  },
+  // Zone 7 — Karczma "Rzym": mocking tavern fiddle. Pizzicato saw lead over
+  // sparse square bass in A-minor with playful arpeggios — bright and taunting.
+  zone7: {
+    bpm: 104,
+    beats: 16,
+    bassNotes: [45, 45, 47, 47, 48, 48, 47, 47, 45, 45, 43, 43, 48, 48, 47, 47],
+    leadNotes: [69, 72, 76, 72, 69, 72, 76, 79, 77, 76, 74, 72, 69, 67, 69, 72],
+    leadWave: 'saw',
+    bassWave: 'square',
     gain: 0.24,
   },
 };

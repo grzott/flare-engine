@@ -193,3 +193,46 @@ export function buildZone6Schedule(seed: number, viewportWidth = 360): WaveEntry
   pushWaves(120, 275, 1.6); // post-miniboss → pre-boss
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-7 wave schedule. The Karczma "Rzym" is the final
+ * gauntlet before the moon — any of the 12 prior enemies may appear. Pre-Madej
+ * gate at 105 s, pre-Mefistofeles gate at 300 s.
+ */
+export function buildZone7Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  const POOL: EnemyPattern[] = [
+    'skrzat',
+    'latawiec',
+    'czart',
+    'bies',
+    'licho',
+    'strzyga',
+    'topielec',
+    'mamuna',
+    'nocnica',
+    'poludnica',
+    'wapierz',
+    'dziwozona',
+  ];
+  const pick = (): EnemyPattern => {
+    const idx = Math.floor(rand() * POOL.length);
+    return POOL[idx] ?? 'skrzat';
+  };
+  const pushWaves = (from: number, to: number, intensity: number): void => {
+    let t = from;
+    while (t < to) {
+      const pattern = pick();
+      const count = 1 + Math.floor(rand() * 3);
+      const spacing = 48;
+      const maxStart = viewportWidth - (count - 1) * spacing - 40;
+      const startX = 40 + rand() * Math.max(1, maxStart);
+      schedule.push({ t, count, pattern, spacing, startX });
+      t += 2.4 + rand() * (3.0 - intensity);
+    }
+  };
+  pushWaves(3, 95, 1.3); // pre-miniboss
+  pushWaves(120, 285, 1.7); // post-miniboss → pre-boss
+  return schedule;
+}

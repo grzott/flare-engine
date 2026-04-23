@@ -5,9 +5,8 @@ import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { A11yBridge } from '../a11y/manager';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
-import type { MusicKey } from '../audio/synth';
 import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
-import { Boss, Bullet, Enemy, Lifetime, Miniboss, Ship } from '../components';
+import { Boss, Bullet, Enemy, Lifetime, Miniboss, MirrorTwin, Ship } from '../components';
 import {
   BAZYLISZEK_GAZE_SPEED_MUL,
   DZIWOZONA_SKRZAT_SPAWN,
@@ -16,6 +15,8 @@ import {
 } from '../config/gameplay';
 import type { ZoneConfig } from '../config/zones';
 import { ZONES } from '../config/zones';
+import type { DialogueController } from '../dialogue';
+import { createOpeningGraph, createZone7EntryGraph } from '../dialogue';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
 import { type PostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
@@ -50,6 +51,13 @@ import { resolveCollision } from '../systems/collision';
 import { updateEnemyAI } from '../systems/enemy-ai';
 import { destroyEntity } from '../systems/entity-ops';
 import { integrate } from '../systems/integrate';
+import {
+  despawnMirrorTwin,
+  spawnFirepit,
+  spawnMirrorTwin,
+  spawnSpikeLane,
+  updateMirrorTwin,
+} from '../systems/mefistofeles';
 import { clearMinibossFsms, computeMinibossStatus, updateMiniboss } from '../systems/miniboss';
 import { syncColliders } from '../systems/physics-sync';
 import { updatePlayer } from '../systems/player';
@@ -85,16 +93,9 @@ export interface PlaySceneDeps {
   /** Optional a11y bridge — attaches camera + postfx so reduced-motion scales
    *  screen-shake and postfx intensity globally. */
   a11y?: A11yBridge;
+  /** Dialogue controller — pauses gameplay while a graph is running. */
+  dialogue?: DialogueController;
 }
-
-const ZONE_MUSIC: Record<ZoneId, MusicKey> = {
-  z1: 'zone1',
-  z2: 'zone2',
-  z3: 'zone3',
-  z4: 'zone4',
-  z5: 'zone5',
-  z6: 'zone6',
-};
 
 interface PlayState {
   zone: ZoneConfig;
@@ -119,6 +120,7 @@ interface PlayState {
   bossQuery: ReturnType<GameContextValue['world']['query']>;
   minibossQuery: ReturnType<GameContextValue['world']['query']>;
   lifetimeQuery: ReturnType<GameContextValue['world']['query']>;
+  mirrorTwinQuery: ReturnType<GameContextValue['world']['query']>;
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
@@ -171,6 +173,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bossQuery: ctx.world.query(Boss),
         minibossQuery: ctx.world.query(Miniboss),
         lifetimeQuery: ctx.world.query(Lifetime),
+        mirrorTwinQuery: ctx.world.query(MirrorTwin),
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
@@ -291,8 +294,20 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         });
       }
 
-      setZoneMusic(audioRef?.current?.music ?? null, ZONE_MUSIC[zoneId]);
+      setZoneMusic(audioRef?.current?.music ?? null, s.zone.music);
       gameEvents.emit('zone-start', zoneId);
+
+      // M7: play the zone-entry dialogue (if any) before the first wave spawns.
+      // The dialogue controller sets gameState.dialogue; the main update loop
+      // treats that as a hard pause gate.
+      const dlg = deps.dialogue;
+      if (dlg && zoneId === 'z1' && !save.introSeen()) {
+        dlg.play(createOpeningGraph(), () => {
+          void save.markIntroSeen();
+        });
+      } else if (dlg && zoneId === 'z7') {
+        dlg.play(createZone7EntryGraph());
+      }
     }
 
     if (deps.renderHooks) {
@@ -322,6 +337,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       onUpdate(dt: number) {
         if (!s || s.disposed) return;
         if (gameState.gameOver || gameState.victory) {
+          resetBombButtonFrame();
+          return;
+        }
+        // Pause gameplay while a dialogue graph is on screen. Camera + postfx
+        // keep ticking so the banner can fade; sim systems are gated below.
+        if (gameState.dialogue !== null) {
+          refreshBounds(s);
+          postfx.update(dt);
           resetBombButtonFrame();
           return;
         }
@@ -388,6 +411,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             if (!s) return 0;
             return countHounds(ctx.world, s.enemyQuery);
           },
+          onSpawnSpikeLane: (laneX) => {
+            if (!s) return;
+            spawnSpikeLane(s.spawnCtx, laneX, -20);
+          },
           onDefeated: () => {
             if (!s) return;
             s.minibossId = -1;
@@ -442,6 +469,18 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             if (!s) return;
             spawnPuddle(s.spawnCtx, x, y);
           },
+          onSpawnFirepit: (x, y) => {
+            if (!s) return;
+            spawnFirepit(s.spawnCtx, x, y);
+          },
+          onSpawnMirrorTwin: (x, y) => {
+            if (!s) return -1;
+            return spawnMirrorTwin(s.spawnCtx, x, y);
+          },
+          onDespawnMirrorTwin: (id) => {
+            if (!s) return;
+            despawnMirrorTwin(ctx.world, id);
+          },
           onDefeated: () => {
             if (!s) return;
             s.bossId = -1;
@@ -468,6 +507,15 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           },
         });
         integrate(ctx.world, dt, s.posQuery);
+
+        // Mirror-twin (Mefistofeles phase 3): mirrors player.x and fires down.
+        updateMirrorTwin(ctx.world, dt, {
+          spawnCtx: s.spawnCtx,
+          query: s.mirrorTwinQuery,
+          playerX: px,
+          playerY: py,
+          bounds: s.bounds,
+        });
 
         // Spawning — halt regular spawns while miniboss or boss is on screen.
         s.spawnEvents.length = 0;

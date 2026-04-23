@@ -77,7 +77,8 @@ export type BossPattern =
   | 'wodnik-wislanny'
   | 'boruta'
   | 'baba-jaga'
-  | 'bazyliszek-warszawski';
+  | 'bazyliszek-warszawski'
+  | 'mefistofeles';
 
 export interface BossData {
   pattern: BossPattern;
@@ -97,6 +98,10 @@ export interface BossData {
   summonsSpawned: number;
   /** Bazyliszek phase 3: seconds since last teleport. */
   teleportT: number;
+  /** Mefistofeles phase 3: entity id of the mirror-twin clone, or -1. */
+  twinId: number;
+  /** Mefistofeles phase 2: cooldown until next fire-pit spawn. */
+  firepitCooldown: number;
 }
 export const Boss = defineComponent<BossData>('Boss', () => ({
   pattern: 'smok-krzemionkowski',
@@ -111,9 +116,11 @@ export const Boss = defineComponent<BossData>('Boss', () => ({
   shieldDownFor: 0,
   summonsSpawned: 0,
   teleportT: 0,
+  twinId: -1,
+  firepitCooldown: 0,
 }));
 
-export type MinibossPattern = 'rokita' | 'leszy' | 'nocny-lowca';
+export type MinibossPattern = 'rokita' | 'leszy' | 'nocny-lowca' | 'madej';
 export type MinibossPhase = 'entering' | 'active' | 'dying' | 'defeated';
 
 /** Leszy shape-shift forms. */
@@ -135,6 +142,8 @@ export interface MinibossData {
   formT: number;
   /** Nocny Łowca: count of live homing hounds (re-summons on 0). */
   hounds: number;
+  /** Madej: count of spike-lane drops emitted so far (lane = idx % 3). */
+  spikeIndex: number;
 }
 export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
   pattern: 'rokita',
@@ -148,4 +157,15 @@ export const Miniboss = defineComponent<MinibossData>('Miniboss', () => ({
   form: 'deer',
   formT: 0,
   hounds: 0,
+  spikeIndex: 0,
+}));
+
+/** Tag marking an entity as Mefistofeles's mirror-twin clone — not damageable. */
+export interface MirrorTwinData {
+  ownerId: number;
+  fireCooldown: number;
+}
+export const MirrorTwin = defineComponent<MirrorTwinData>('MirrorTwin', () => ({
+  ownerId: -1,
+  fireCooldown: 0,
 }));

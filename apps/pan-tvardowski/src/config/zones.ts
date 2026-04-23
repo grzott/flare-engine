@@ -1,3 +1,4 @@
+import type { MusicKey } from '../audio/synth';
 import type { BossPattern, MinibossPattern } from '../components';
 import type { ZoneId } from '../events';
 import {
@@ -7,6 +8,7 @@ import {
   buildZone4Schedule,
   buildZone5Schedule,
   buildZone6Schedule,
+  buildZone7Schedule,
 } from '../systems/spawner';
 import type { WaveEntry } from '../systems/spawner';
 import {
@@ -16,6 +18,8 @@ import {
   BORUTA_HP_MAX,
   BOSS_SPAWN_T,
   LESZY_HP,
+  MADEJ_HP,
+  MEFISTOFELES_HP_MAX,
   NOCNY_LOWCA_HP,
   ROKITA_HP,
   SMOK_HP_MAX,
@@ -28,6 +32,8 @@ import {
   ZONE5_BOSS_T,
   ZONE6_BOSS_T,
   ZONE6_MINIBOSS_T,
+  ZONE7_BOSS_T,
+  ZONE7_MINIBOSS_T,
 } from './gameplay';
 
 export interface ZoneConfig {
@@ -41,6 +47,7 @@ export interface ZoneConfig {
   readonly minibossHp: number;
   readonly minibossT: number;
   readonly buildSchedule: (seed: number, viewportWidth?: number) => WaveEntry[];
+  readonly music: MusicKey;
   readonly nextZone: ZoneId | null;
 }
 
@@ -56,6 +63,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: 0,
     minibossT: Number.POSITIVE_INFINITY,
     buildSchedule: buildZone1Schedule,
+    music: 'zone1',
     nextZone: 'z2',
   },
   z2: {
@@ -69,6 +77,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: ROKITA_HP,
     minibossT: ZONE2_MINIBOSS_T,
     buildSchedule: buildZone2Schedule,
+    music: 'zone2',
     nextZone: 'z3',
   },
   z3: {
@@ -82,6 +91,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: 0,
     minibossT: Number.POSITIVE_INFINITY,
     buildSchedule: buildZone3Schedule,
+    music: 'zone3',
     nextZone: 'z4',
   },
   z4: {
@@ -95,6 +105,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: LESZY_HP,
     minibossT: ZONE4_MINIBOSS_T,
     buildSchedule: buildZone4Schedule,
+    music: 'zone4',
     nextZone: 'z5',
   },
   z5: {
@@ -108,6 +119,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: 0,
     minibossT: Number.POSITIVE_INFINITY,
     buildSchedule: buildZone5Schedule,
+    music: 'zone5',
     nextZone: 'z6',
   },
   z6: {
@@ -121,6 +133,21 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossHp: NOCNY_LOWCA_HP,
     minibossT: ZONE6_MINIBOSS_T,
     buildSchedule: buildZone6Schedule,
+    music: 'zone6',
+    nextZone: 'z7',
+  },
+  z7: {
+    id: 'z7',
+    nameKey: 'zones.7.name',
+    bossNameKey: 'bosses.mefistofeles.name',
+    bossPattern: 'mefistofeles',
+    bossHp: MEFISTOFELES_HP_MAX,
+    bossT: ZONE7_BOSS_T,
+    minibossPattern: 'madej',
+    minibossHp: MADEJ_HP,
+    minibossT: ZONE7_MINIBOSS_T,
+    buildSchedule: buildZone7Schedule,
+    music: 'zone7',
     nextZone: null,
   },
 };

@@ -127,6 +127,8 @@ export function spawnBoss(
     shieldDownFor: 0,
     summonsSpawned: 0,
     teleportT: 0,
+    twinId: -1,
+    firepitCooldown: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);
@@ -163,6 +165,7 @@ export function spawnMiniboss(
     form: 'deer',
     formT: 0,
     hounds: 0,
+    spikeIndex: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.75, f.h * 0.75), x, y, false, Layer.enemy, Mask.enemy);

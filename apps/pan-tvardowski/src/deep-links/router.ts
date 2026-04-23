@@ -41,6 +41,7 @@ export function createPanTvardowskiDeepLinks(
       else if (zoneParam === '4') handlers.onZoneRequest('z4');
       else if (zoneParam === '5') handlers.onZoneRequest('z5');
       else if (zoneParam === '6') handlers.onZoneRequest('z6');
+      else if (zoneParam === '7') handlers.onZoneRequest('z7');
       else handlers.onUnmatched?.(match.url);
     } else {
       handlers.onUnmatched?.(match.url);

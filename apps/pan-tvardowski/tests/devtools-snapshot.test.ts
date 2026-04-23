@@ -67,6 +67,8 @@ describe('devtools / game snapshot', () => {
       teleportT: 0,
       twinId: -1,
       firepitCooldown: 0,
+      shatterIdx: 0,
+      shatterT: 0,
     });
 
     const s2 = createGameSnapshot({

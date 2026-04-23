@@ -14,7 +14,7 @@ const VALID_KINDS = new Set([
 
 describe('shape catalogue', () => {
   test('category counts match design', () => {
-    expect(Object.keys(SHAPE_CATALOGUE.enemies)).toHaveLength(13);
+    expect(Object.keys(SHAPE_CATALOGUE.enemies)).toHaveLength(14);
     expect(Object.keys(SHAPE_CATALOGUE.minibosses)).toHaveLength(4);
     expect(Object.keys(SHAPE_CATALOGUE.bosses)).toHaveLength(8);
     expect(Object.keys(SHAPE_CATALOGUE.ships)).toHaveLength(3);

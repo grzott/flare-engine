@@ -41,6 +41,8 @@ function spawnMockBoss(world: World, hp: number): number {
     teleportT: 0,
     twinId: -1,
     firepitCooldown: 0,
+    shatterIdx: 0,
+    shatterT: 0,
   });
   world.add(id, Hp, { current: hp, max: hp });
   return id;

@@ -38,6 +38,7 @@ function spawnMockLeszy(world: World, hp: number): number {
     form: 'deer',
     formT: 0,
     hounds: 0,
+    spikeIndex: 0,
   });
   world.add(id, Hp, { current: hp, max: hp });
   return id;

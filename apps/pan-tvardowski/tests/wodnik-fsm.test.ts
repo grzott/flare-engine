@@ -43,6 +43,8 @@ function spawnMockBoss(world: World, hp: number): number {
     shieldDownFor: 0,
     summonsSpawned: 0,
     teleportT: 0,
+    twinId: -1,
+    firepitCooldown: 0,
   });
   world.add(id, Hp, { current: hp, max: hp });
   return id;

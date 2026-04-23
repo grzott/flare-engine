@@ -65,6 +65,8 @@ describe('devtools / game snapshot', () => {
       shieldDownFor: 0,
       summonsSpawned: 3,
       teleportT: 0,
+      twinId: -1,
+      firepitCooldown: 0,
     });
 
     const s2 = createGameSnapshot({

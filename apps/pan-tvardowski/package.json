@@ -16,6 +16,8 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@flare-engine/a11y": "workspace:*",
+    "@flare-engine/achievements": "workspace:*",
+    "@flare-engine/analytics": "workspace:*",
     "@flare-engine/animation": "workspace:*",
     "@flare-engine/assets": "workspace:*",
     "@flare-engine/audio": "workspace:*",
@@ -26,6 +28,8 @@
     "@flare-engine/engine": "workspace:*",
     "@flare-engine/errors": "workspace:*",
     "@flare-engine/events": "workspace:*",
+    "@flare-engine/iap": "workspace:*",
+    "@flare-engine/leaderboards": "workspace:*",
     "@flare-engine/localization": "workspace:*",
     "@flare-engine/math": "workspace:*",
     "@flare-engine/particles": "workspace:*",

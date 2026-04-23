@@ -20,6 +20,8 @@ export interface SaveStore {
   commitRun(score: number, victory: boolean): Promise<void>;
   getSlot(index: number): SlotData | null;
   activeSlot(): number | null;
+  introSeen(): boolean;
+  markIntroSeen(): Promise<void>;
 }
 
 function makeMmkvAdapter(): StorageAdapter | null {
@@ -53,6 +55,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       settings: gameState.settings,
       slots: state.slots,
       activeSlot: state.activeSlot,
+      introSeen: state.introSeen,
     };
   }
 
@@ -94,6 +97,15 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     },
     activeSlot() {
       return state.activeSlot;
+    },
+    introSeen() {
+      return state.introSeen;
+    },
+    async markIntroSeen() {
+      if (state.introSeen) return;
+      state = { ...state, introSeen: true };
+      await a.set(KEY, JSON.stringify(state));
+      notifyStateChanged();
     },
   };
 }

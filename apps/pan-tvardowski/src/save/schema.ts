@@ -1,7 +1,7 @@
 import type { Settings } from '../state';
 import { defaultSettings } from '../state';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SlotData {
   readonly index: number;
@@ -17,6 +17,8 @@ export interface SaveFile {
   readonly settings: Settings;
   readonly slots: ReadonlyArray<SlotData | null>;
   readonly activeSlot: number | null;
+  /** Whether the opening cutscene has been shown. Introduced in v2 (M7). */
+  readonly introSeen: boolean;
 }
 
 export function defaultSaveFile(): SaveFile {
@@ -25,6 +27,7 @@ export function defaultSaveFile(): SaveFile {
     settings: defaultSettings(),
     slots: [null, null, null],
     activeSlot: null,
+    introSeen: false,
   };
 }
 
@@ -83,11 +86,15 @@ export function parseSaveFile(raw: string | null): SaveFile {
   const activeSlot = isNum(o.activeSlot)
     ? Math.max(0, Math.min(2, Math.floor(o.activeSlot)))
     : null;
+  // v1 → v2 migration: if `introSeen` is absent, replay the prologue once
+  // (acts as a re-introduction after update).
+  const introSeen = isBool(o.introSeen) ? o.introSeen : false;
   return {
     version: SAVE_VERSION,
     settings: parseSettings(o.settings),
     slots,
     activeSlot,
+    introSeen,
   };
 }
 

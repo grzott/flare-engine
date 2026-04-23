@@ -18,6 +18,7 @@ export type KillKind =
   | 'wapierz'
   | 'poludnica'
   | 'hound'
+  | 'moon-wraith'
   | 'miniboss'
   | 'boss';
 
@@ -37,6 +38,7 @@ export interface RunStats {
     wapierz: number;
     poludnica: number;
     hound: number;
+    'moon-wraith': number;
     miniboss: number;
     boss: number;
   };
@@ -62,6 +64,7 @@ export function createRunStats(): RunStats {
       wapierz: 0,
       poludnica: 0,
       hound: 0,
+      'moon-wraith': 0,
       miniboss: 0,
       boss: 0,
     },

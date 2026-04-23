@@ -3,6 +3,7 @@ import { babaJagaScript } from './baba-jaga';
 import { bazyliszekScript } from './bazyliszek';
 import { borowyScript } from './borowy';
 import { borutaScript } from './boruta';
+import { lucyperScript } from './lucyper';
 import { mefistofelesScript } from './mefistofeles';
 import { smokScript } from './smok';
 import type { PhaseScript } from './types';
@@ -16,4 +17,5 @@ export const BOSS_SCRIPTS: Record<BossPattern, PhaseScript> = {
   'baba-jaga': babaJagaScript,
   'bazyliszek-warszawski': bazyliszekScript,
   mefistofeles: mefistofelesScript,
+  'lucyper-ksiezycowy': lucyperScript,
 };

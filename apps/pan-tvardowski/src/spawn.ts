@@ -129,6 +129,8 @@ export function spawnBoss(
     teleportT: 0,
     twinId: -1,
     firepitCooldown: 0,
+    shatterIdx: 0,
+    shatterT: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);

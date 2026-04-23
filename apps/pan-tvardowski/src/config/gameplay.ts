@@ -101,6 +101,13 @@ export const ENEMY_SPECS: Record<EnemyPattern, EnemySpec> = {
     speed: 170,
     fireInterval: Number.POSITIVE_INFINITY,
   },
+  'moon-wraith': {
+    frame: 'moon-wraith',
+    hp: 2,
+    score: 200,
+    speed: 160,
+    fireInterval: 2.2,
+  },
 };
 
 export const BULLET_SPEED = {
@@ -251,3 +258,22 @@ export const MEFISTOFELES_TWIN_Y_OFFSET = -40;
 export const ZONE7_MINIBOSS_T = 105;
 /** Seconds before the Zone-7 boss (Mefistofeles) enters. */
 export const ZONE7_BOSS_T = 300;
+
+/** Lucyper Księżycowy HP per phase (build plan §9, 800/800/800). */
+export const LUCYPER_PHASE_HP = 800;
+export const LUCYPER_HP_MAX = LUCYPER_PHASE_HP * 3;
+
+/** Lucyper phase-1 cosmic-rain cadence (heavy 10-way radial). */
+export const LUCYPER_P1_FIRE = 1.3;
+
+/** Lucyper phase-2 eclipse spotlight cadence (aimed 3-way spotlight sweep). */
+export const LUCYPER_P2_FIRE = 0.85;
+
+/** Lucyper phase-3 shattered-mirror cadence (round-robin of prior-boss scripts). */
+export const LUCYPER_P3_FIRE = 0.55;
+
+/** Lucyper phase-3: seconds between shattered-mirror pattern rotations. */
+export const LUCYPER_SHATTER_CYCLE = 3.2;
+
+/** Seconds before the Zone-8 boss (Lucyper Księżycowy) enters (§5 length = 6:30). */
+export const ZONE8_BOSS_T = 340;

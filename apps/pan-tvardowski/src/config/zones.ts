@@ -9,6 +9,7 @@ import {
   buildZone5Schedule,
   buildZone6Schedule,
   buildZone7Schedule,
+  buildZone8Schedule,
 } from '../systems/spawner';
 import type { WaveEntry } from '../systems/spawner';
 import {
@@ -18,6 +19,7 @@ import {
   BORUTA_HP_MAX,
   BOSS_SPAWN_T,
   LESZY_HP,
+  LUCYPER_HP_MAX,
   MADEJ_HP,
   MEFISTOFELES_HP_MAX,
   NOCNY_LOWCA_HP,
@@ -34,6 +36,7 @@ import {
   ZONE6_MINIBOSS_T,
   ZONE7_BOSS_T,
   ZONE7_MINIBOSS_T,
+  ZONE8_BOSS_T,
 } from './gameplay';
 
 export interface ZoneConfig {
@@ -148,6 +151,20 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     minibossT: ZONE7_MINIBOSS_T,
     buildSchedule: buildZone7Schedule,
     music: 'zone7',
+    nextZone: 'z8',
+  },
+  z8: {
+    id: 'z8',
+    nameKey: 'zones.8.name',
+    bossNameKey: 'bosses.lucyper-ksiezycowy.name',
+    bossPattern: 'lucyper-ksiezycowy',
+    bossHp: LUCYPER_HP_MAX,
+    bossT: ZONE8_BOSS_T,
+    minibossPattern: null,
+    minibossHp: 0,
+    minibossT: Number.POSITIVE_INFINITY,
+    buildSchedule: buildZone8Schedule,
+    music: 'zone8',
     nextZone: null,
   },
 };

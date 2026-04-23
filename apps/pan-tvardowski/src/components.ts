@@ -23,7 +23,8 @@ export type EnemyPattern =
   | 'dziwozona'
   | 'wapierz'
   | 'poludnica'
-  | 'hound';
+  | 'hound'
+  | 'moon-wraith';
 
 export interface EnemyData {
   pattern: EnemyPattern;
@@ -78,7 +79,8 @@ export type BossPattern =
   | 'boruta'
   | 'baba-jaga'
   | 'bazyliszek-warszawski'
-  | 'mefistofeles';
+  | 'mefistofeles'
+  | 'lucyper-ksiezycowy';
 
 export interface BossData {
   pattern: BossPattern;
@@ -102,6 +104,10 @@ export interface BossData {
   twinId: number;
   /** Mefistofeles phase 2: cooldown until next fire-pit spawn. */
   firepitCooldown: number;
+  /** Lucyper phase 3: shattered-mirror round-robin index over prior-boss patterns. */
+  shatterIdx: number;
+  /** Lucyper phase 3: seconds since last shatter-pattern advance. */
+  shatterT: number;
 }
 export const Boss = defineComponent<BossData>('Boss', () => ({
   pattern: 'smok-krzemionkowski',
@@ -118,6 +124,8 @@ export const Boss = defineComponent<BossData>('Boss', () => ({
   teleportT: 0,
   twinId: -1,
   firepitCooldown: 0,
+  shatterIdx: 0,
+  shatterT: 0,
 }));
 
 export type MinibossPattern = 'rokita' | 'leszy' | 'nocny-lowca' | 'madej';

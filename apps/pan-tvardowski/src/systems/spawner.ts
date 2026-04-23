@@ -236,3 +236,26 @@ export function buildZone7Schedule(seed: number, viewportWidth = 360): WaveEntry
   pushWaves(120, 285, 1.7); // post-miniboss → pre-boss
   return schedule;
 }
+
+/**
+ * Build a deterministic Zone-8 wave schedule. Moon surface — the moon-wraith
+ * is the only enemy (palette-swap §5), mixed with sparse Nocnica swarms.
+ * No miniboss; boss gate at `ZONE8_BOSS_T` (340 s).
+ */
+export function buildZone8Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
+  const rand = mulberry32(seed);
+  const schedule: WaveEntry[] = [];
+  let t = 3;
+  while (t < 325) {
+    const roll = rand();
+    const pattern: EnemyPattern = roll < 0.7 ? 'moon-wraith' : 'nocnica';
+    const count =
+      pattern === 'moon-wraith' ? 2 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+    const spacing = 46;
+    const maxStart = viewportWidth - (count - 1) * spacing - 40;
+    const startX = 40 + rand() * Math.max(1, maxStart);
+    schedule.push({ t, count, pattern, spacing, startX });
+    t += 2.2 + rand() * 1.8;
+  }
+  return schedule;
+}

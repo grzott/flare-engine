@@ -29,6 +29,8 @@ export interface BossDeps {
   onSpawnMirrorTwin?: (x: number, y: number) => number;
   /** Mefistofeles phase 3 / dying: despawn the mirror-twin entity by id. */
   onDespawnMirrorTwin?: (id: number) => void;
+  /** Lucyper phase 2: toggle eclipse mode (dim + spotlight postfx on HUD). */
+  onEclipseChange?: (active: boolean) => void;
 }
 
 export interface BossStatus {
@@ -69,6 +71,7 @@ export interface PhaseScript {
   onPhase2Update?: (dt: number, c: BossCtx) => void;
   onPhase2Exit?: (c: BossCtx) => void;
   onPhase3Enter?: (c: BossCtx) => void;
+  onPhase3Update?: (dt: number, c: BossCtx) => void;
   onPhase3Exit?: (c: BossCtx) => void;
   /** Override default sweep movement in phase 3 (e.g. Bazyliszek teleport). */
   phase3Movement?: (dt: number, c: BossCtx) => void;

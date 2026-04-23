@@ -177,6 +177,7 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
       } else {
         sweepMove(c, script.sweepSpeed3 ?? script.sweepSpeed2);
       }
+      script.onPhase3Update?.(dt, c);
       b.fireCooldown -= dt;
       if (b.fireCooldown <= 0) {
         script.fire3?.(c);

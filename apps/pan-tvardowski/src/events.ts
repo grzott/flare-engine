@@ -1,7 +1,7 @@
 import { EventEmitter } from '@flare-engine/events';
 import type { BossPhase, EnemyPattern, LeszyForm } from './components';
 
-export type ZoneId = 'z1' | 'z2' | 'z3' | 'z4' | 'z5' | 'z6' | 'z7';
+export type ZoneId = 'z1' | 'z2' | 'z3' | 'z4' | 'z5' | 'z6' | 'z7' | 'z8';
 
 export type GameEventMap = {
   'zone-start': (zone: ZoneId) => void;

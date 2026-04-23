@@ -264,4 +264,23 @@ export const ENEMY_BEHAVIORS: Record<EnemyPattern, EnemyBehavior> = {
       vel.y = (dy / len) * e.speed;
     },
   },
+
+  'moon-wraith': {
+    // Lunar palette-swap — straight-dive with slow horizontal drift.
+    move(e, _pos, vel) {
+      vel.x = Math.sin(e.t * 1.4) * 50;
+      vel.y = e.speed;
+    },
+    // Sparse aimed single shot.
+    fire(_e, pos, aim, deps) {
+      spawnBullet(
+        deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.enemy,
+        aim.x,
+        aim.y,
+        Layer.enemy,
+      );
+    },
+  },
 };

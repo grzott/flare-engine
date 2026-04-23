@@ -106,6 +106,11 @@ const enemies = {
     { kind: 'triangle', size: 6, fill: TEAL, ox: -18, oy: 0 },
     { kind: 'triangle', size: 6, fill: TEAL, ox: 18, oy: 0 },
   ],
+  'moon-wraith': [
+    { kind: 'triangle', size: 14, fill: 0xff2b2d5a },
+    { kind: 'ring', r: 10, stroke: MIRROR, strokeWidth: 1.5 },
+    { kind: 'circle', r: 2, fill: MIRROR, ox: 0, oy: -2 },
+  ],
 } as const satisfies Record<string, readonly ShapeSpec[]>;
 
 // ---- Mini-bosses (4) --------------------------------------------------------

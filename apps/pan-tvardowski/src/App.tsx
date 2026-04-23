@@ -48,6 +48,7 @@ import {
   resetBombButtonFrame,
   resetGameState,
 } from './state';
+import { mountTier2Wiring } from './tier2/wiring';
 
 interface AudioRef {
   current: AudioHandles | null;
@@ -176,6 +177,14 @@ function AppRoot(): React.ReactElement {
       ctxRef.current = null;
     };
   }, [disposerRef, ctxRef]);
+
+  // Tier-2 wiring (analytics / leaderboards / achievements / iap) — the
+  // 0.1.x build ships noop providers; this call exercises the interface
+  // surface so gameplay events flow through the providers end-to-end.
+  useEffect(() => {
+    const unmount = mountTier2Wiring();
+    return unmount;
+  }, []);
 
   const onJoystick = (s: VirtualJoystickState): void => {
     joystickState.dx = s.direction.x;

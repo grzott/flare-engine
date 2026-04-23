@@ -1,0 +1,88 @@
+import { Position } from '@flare-engine/ecs';
+import { Boss } from '../../components';
+import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
+import { Layer } from '../../layers';
+import { spawnBullet } from '../../spawn';
+import { type Direction2D, normalizeDirection } from '../../util/direction';
+import type { PhaseScript } from './types';
+
+const aim: Direction2D = { x: 0, y: 0 };
+
+// Baba Jaga (Zone 5).
+// Phase 1: cauldron bombs — 3 arcing heavy shots with slight aim spread.
+// Phase 2: mortar flight — aimed rush, single heavy + flank pair ±10°.
+// Phase 3: broom-laser 360° sweep — 12-ray radial pinwheel spun by b.t.
+export const babaJagaScript: PhaseScript = {
+  threePhase: true,
+  sweepSpeed1: 50,
+  sweepSpeed2: 120,
+  sweepSpeed3: 35,
+  fire1Cooldown: 0.85,
+  fire2Cooldown: 0.6,
+  fire3Cooldown: 0.18,
+  fire1(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(
+      c.deps.playerX - pos.x,
+      c.deps.playerY - pos.y,
+      BULLET_SPEED.boss * 0.85,
+      aim,
+    );
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    for (let i = -1; i <= 1; i++) {
+      const a = baseAngle + i * 0.22;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        Math.cos(a) * BULLET_SPEED.boss * 0.85,
+        Math.sin(a) * BULLET_SPEED.boss * 0.85,
+        Layer.enemy,
+      );
+    }
+  },
+  fire2(c) {
+    const pos = c.world.get(c.id, Position);
+    if (!pos) return;
+    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    const baseAngle = Math.atan2(aim.y, aim.x);
+    spawnBullet(
+      c.deps.spawnCtx,
+      pos.x,
+      pos.y + BULLET_SPAWN_OFFSET.boss,
+      aim.x,
+      aim.y,
+      Layer.enemy,
+    );
+    for (let i = -1; i <= 1; i += 2) {
+      const a = baseAngle + i * 0.175;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y + BULLET_SPAWN_OFFSET.boss,
+        Math.cos(a) * BULLET_SPEED.boss,
+        Math.sin(a) * BULLET_SPEED.boss,
+        Layer.enemy,
+      );
+    }
+  },
+  fire3(c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (!pos || !b) return;
+    const rays = 12;
+    const spin = b.t * 1.6;
+    for (let i = 0; i < rays; i++) {
+      const a = spin + (i / rays) * Math.PI * 2;
+      spawnBullet(
+        c.deps.spawnCtx,
+        pos.x,
+        pos.y,
+        Math.cos(a) * BULLET_SPEED.boss * 0.95,
+        Math.sin(a) * BULLET_SPEED.boss * 0.95,
+        Layer.enemy,
+      );
+    }
+  },
+};

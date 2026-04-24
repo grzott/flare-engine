@@ -26,3 +26,5 @@ File-scoped rules live in [.github/instructions/](instructions/) and load automa
 - `testing.instructions.md` — test conventions (`**/tests/**`, `**/*.test.ts`)
 - `git.instructions.md` — commit and branch conventions (all files)
 - `engine.instructions.md`, `physics.instructions.md`, `render.instructions.md` — per-package non-obvious rules
+- `status-sync.instructions.md` — single-source-of-truth + pre/post-work doc sync (`docs/plans/**`, `docs/references/builder-reference.md`)
+- `release-readiness.instructions.md` — asset-swap / localization / IAP / privacy discipline (`apps/pan-tvardowski/**`, `packages/iap/**`, `packages/share/**`, `docs/plans/release-readiness-checklist.md`)

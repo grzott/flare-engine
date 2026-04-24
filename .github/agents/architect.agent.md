@@ -43,6 +43,15 @@ This workspace is the **Flare game engine** monorepo. Always respect its convent
 
 Full workflow details and anti-pattern checklist in [architect-reference.md](../../docs/references/architect-reference.md).
 
+## Extraction-review gate (called at every Pan Tvardowski M9.x close)
+
+At the end of each M9.x milestone in [pan-tvardowski-build-plan.md](../../docs/plans/pan-tvardowski-build-plan.md), review whether the milestone produced any genre-agnostic pattern worth extracting into an engine package (see [build-plan.md §11.14](../../docs/plans/build-plan.md#1114--extraction--reusability--demo-retirement) for the strict filter).
+
+- If yes: add a row to the Extraction candidates table in [builder-reference.md](../../docs/references/builder-reference.md) with target package + rationale.
+- If no: state so explicitly in the milestone changelog (one line). Never skip the review silently.
+
+Genre-agnostic rule: the pattern must be useful for **any 2D / 2.5D mobile game genre** (shmup, top-down, card, platformer, puzzle). Shmup-specific patterns (wave spawner, boss phase scripts) are rejected.
+
 ---
 
 ## Constraints

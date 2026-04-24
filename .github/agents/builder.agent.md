@@ -24,12 +24,13 @@ Read these BEFORE implementing:
 
 ## Workflow
 
+0. **Verify state first.** Read [builder-reference.md](../../docs/references/builder-reference.md) Current State + [build-plan.md](../../docs/plans/build-plan.md) Phase Summary. If they disagree, or if docs disagree with `packages/<name>/` on disk, halt and reconcile. See [status-sync.instructions.md](../instructions/status-sync.instructions.md).
 1. Read the relevant API spec section
 2. Implement in `packages/<name>/src/`, export from `src/index.ts`
 3. Write tests in `packages/<name>/tests/`
 4. `cd packages/<name> && bun test` → all pass
 5. `bun run build` to verify the full chain
-6. Update the Current State table in [builder-reference.md](../../docs/references/builder-reference.md)
+6. **Sync docs (MANDATORY).** Update the Current State table in [builder-reference.md](../../docs/references/builder-reference.md) with exact module/test/size counts; update [build-plan.md](../../docs/plans/build-plan.md) Phase Summary row if phase state changed; add a dated note to the phase section. Never mark DONE without tests + build green.
 
 ---
 

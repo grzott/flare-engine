@@ -7,17 +7,21 @@ agent: game-builder
 
 Execute one milestone end-to-end for a Flare game app (`apps/<game>/`). Stop before committing; hand commit messages to the user.
 
+Follows [status-sync.instructions.md](../instructions/status-sync.instructions.md). Verify on entry, sync on exit.
+
 ## Step 0 — Detect the game
 
 If the user didn't specify, list all `apps/*/` directories that contain a `docs/plans/<name>-build-plan.md`. Ask which one. If exactly one candidate, use it without asking.
 
 Load the game's plan doc at `docs/plans/<game>-build-plan.md`.
 
-## Step 1 — Identify next milestone
+## Step 1 — Identify next milestone + verify state (MANDATORY)
 
-1. Open the plan's §17 Milestones table.
-2. Find the **lowest-numbered `M<n>`** whose engine-coverage checkboxes (in §16 or in-milestone) are not all ticked.
-3. If every milestone is complete → report "game is feature-complete" and stop.
+1. Open the plan's §17 Milestones table AND the Change log section at the bottom of the plan.
+2. Verify the changelog is consistent with the repo: run `git log --oneline -n 20 -- apps/<game>` and confirm the last milestone entry matches recent commit history. If the changelog claims Mn done but no matching commits exist — or commits show Mn+1 work but changelog stops at Mn-1 — **stop and surface the drift**.
+3. Cross-check the mirror row in `docs/references/builder-reference.md` (`apps/<game>` entry). If it contradicts the plan's changelog, the plan wins; note the mirror needs updating in Step 7.
+4. Find the **lowest-numbered `M<n>`** whose engine-coverage checkboxes (in §16 or in-milestone) are not all ticked.
+5. If every milestone is complete → report "game is feature-complete" and stop.
 
 State the target milestone and what engine packages it exercises.
 
@@ -78,12 +82,22 @@ bun --cwd apps/<game> run android --device
 
 Halt. Wait for user to paste outcome. If device smoke passes, continue; if it fails, diagnose from the paste and propose a fix plan (back to step 3 if needed).
 
-## Step 7 — Update plan doc
+## Step 7 — Sync docs (MANDATORY — do not skip)
 
 In `docs/plans/<game>-build-plan.md`:
 
 1. Tick the completed engine-coverage checkboxes for this milestone.
-2. Append a line to the "Change log" section (date + one-line summary).
+2. Append a dated entry to the "Change log" section: `**YYYY-MM-DD** — **Mn complete.** <one paragraph, same cadence as prior entries>`.
+
+In `docs/references/builder-reference.md`:
+
+3. Update the single `apps/<game>` mirror row to `🟡 Mn done, M(n+1) pending (YYYY-MM-DD) — <X> tests green`. This is the only row to touch.
+
+In `docs/plans/release-readiness-checklist.md`:
+
+4. Tick every checklist item this milestone satisfied. If the milestone surfaced a release gap not already on the checklist, ADD it as a new item — don't silently absorb it.
+
+See [status-sync.instructions.md](../instructions/status-sync.instructions.md) + [release-readiness.instructions.md](../instructions/release-readiness.instructions.md) for the full contract.
 
 ## Step 8 — Commit commands (paste-ready)
 

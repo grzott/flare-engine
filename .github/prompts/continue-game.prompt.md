@@ -16,9 +16,16 @@ git log --oneline -n 10
 
 Identify which `apps/<game>/` has recent modifications.
 
-## Step 2 — Read the game plan
+## Step 2 — Read the game plan + verify consistency
 
 Open `docs/plans/<game>-build-plan.md`. Find the lowest milestone with **incomplete engine-coverage checkboxes**.
+
+Verify doc ↔ code consistency (per [status-sync.instructions.md](../instructions/status-sync.instructions.md)):
+
+1. The plan's Change log last entry should match recent commits from `git log --oneline -n 20 -- apps/<game>`.
+2. The `apps/<game>` mirror row in `docs/references/builder-reference.md` should agree with the plan.
+
+If any contradiction is found, **stop and surface it** — do not plan on stale docs.
 
 ## Step 3 — Decide mode
 

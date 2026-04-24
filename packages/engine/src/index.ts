@@ -1,5 +1,18 @@
 // Engine convenience API
 export { createGame, type GameConfig, type GameInstance } from './engine.js';
+export {
+  type AchievementRule,
+  type AnalyticsRule,
+  type LeaderboardRule,
+  type Tier2AchievementsLike,
+  type Tier2AnalyticsLike,
+  type Tier2EventSource,
+  type Tier2LeaderboardsLike,
+  type Tier2Providers,
+  type Tier2Rule,
+  type Tier2WiringOptions,
+  createTier2Wiring,
+} from './tier2-wiring.js';
 
 // Re-export all packages
 export * from '@flare-engine/math';

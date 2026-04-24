@@ -38,6 +38,9 @@ const { List } = await import('../src/list.js');
 const { Modal } = await import('../src/modal.js');
 const { FocusProvider } = await import('../src/focus-provider.js');
 const { ThemeProvider } = await import('../src/theme.js');
+const { DialoguePanel } = await import('../src/dialogue-panel.js');
+const { ShopPanel } = await import('../src/shop-panel.js');
+const { MainMenuKit } = await import('../src/main-menu-kit.js');
 
 describe('UI primitives', () => {
   it('exports Panel as a function', () => {
@@ -66,5 +69,14 @@ describe('UI primitives', () => {
   });
   it('exports ThemeProvider as a function', () => {
     expect(typeof ThemeProvider).toBe('function');
+  });
+  it('exports DialoguePanel as a function', () => {
+    expect(typeof DialoguePanel).toBe('function');
+  });
+  it('exports ShopPanel as a function', () => {
+    expect(typeof ShopPanel).toBe('function');
+  });
+  it('exports MainMenuKit as a function', () => {
+    expect(typeof MainMenuKit).toBe('function');
   });
 });

@@ -20,9 +20,9 @@ You are a **game development researcher**. Your job is to systematically survey 
 
 ## Workspace Context
 
-Flare is a modular 2D game engine for React Native built on `@shopify/react-native-skia`. Read these for context:
+Flare is a modular 2D game engine for React Native + Web built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). Read these for context:
 
-- [AGENTS.md](../../AGENTS.md) — architecture, 16 packages in 5 layers
+- [AGENTS.md](../../AGENTS.md) — architecture, 34 packages across 7+ tiers
 - [architecture.md](../../docs/design/architecture.md) — layered design, rendering pipeline
 - [ecosystem.md](../../docs/design/ecosystem.md) — competitive landscape
 

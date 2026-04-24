@@ -48,10 +48,35 @@ runner.advance(); // or runner.choose(choiceIndex)
 runner.current; // current node + substituted text
 ```
 
+## `speakerPortraitKey` (Phase 11.14)
+
+`LineNode` carries an optional `speakerPortraitKey?: string` that is forwarded verbatim through `runner.onLine` events as `DialogueLineEvent.speakerPortraitKey`. The dialogue package never resolves portraits — it only carries the key. UI consumers (typically `@flare-engine/ui` `DialoguePanel`) map the key to an image, Skia atlas frame, or shape avatar.
+
+```ts
+const graph: DialogueGraph = {
+  start: "twardowski_intro",
+  nodes: {
+    twardowski_intro: {
+      kind: "line",
+      speaker: "twardowski",
+      speakerPortraitKey: "twardowski-young", // ← carried through to onLine
+      text: "The pact is signed.",
+      next: "king_reply",
+    },
+  },
+};
+
+runner.onLine.add((event) => {
+  // event.speakerPortraitKey === "twardowski-young"
+  setPortrait(portraits[event.speakerPortraitKey ?? "default"]);
+});
+```
+
 ## Rules
 
 - The runner is pure-state — serialize `runner.state` into a save file via `@flare-engine/storage`.
 - Conditional expressions are a minimal `{lhs, op, rhs}` shape — deliberately not a DSL. Compose in code for complex logic.
 - Text interpolation uses `{name}` tokens resolved from the variable bag.
+- `speakerPortraitKey` is optional and asset-agnostic — the dialogue package never loads images.
 
 Spec: [docs/design/api-specs.md § @flare-engine/dialogue](../../../docs/design/api-specs.md).

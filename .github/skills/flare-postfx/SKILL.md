@@ -32,10 +32,44 @@ const chain = new EffectChain([
 chain.applyTo(canvas, renderTarget, { time, dt });
 ```
 
+## `createPostFxController` (Phase 11.14)
+
+Game-facing bridge: owns the chain + a `PostFxRuntime`, exposes hit-flash and a single a11y motion knob.
+
+```ts
+import {
+  createPostFxController,
+  bloom,
+  vignette,
+  grayscaleFlash,
+} from "@flare-engine/postfx";
+
+const fx = createPostFxController({
+  effects: [
+    vignette({ id: "vig", strength: 0.35, radius: 0.82 }),
+    bloom({ id: "bloom", threshold: 0.72, intensity: 0.5 }),
+    grayscaleFlash({ id: "flash", intensity: 0 }),
+  ],
+  skia: SkiaModule, // pass `null` to keep buildPass() returning [] (unsupported runtime)
+  flash: { id: "flash", decay: 4.2 }, // 4.2 / s ≈ 0.24 s fade from 1
+});
+
+// per-frame:
+fx.update(dt);
+const passes = fx.buildPass(width, height); // CompiledPass[] for the renderer
+
+// on player hit:
+fx.triggerHitFlash();
+
+// a11y reduced-motion (forwards to chain.setGlobalIntensity):
+fx.setMotionScale(reducedMotion ? 0 : 1);
+```
+
 ## Rules
 
 - Effects are composable but order matters — bloom before vignette, grayscale last.
 - `grayscaleFlash` and `chromaticAberration` have a duration — call their `.trigger()` method instead of rebuilding the chain.
 - On devices without RuntimeEffect support (older iOS), the effect `apply()` is a no-op — your visuals degrade gracefully.
+- `createPostFxController` is the recommended consumer surface. Build chains directly only if you need fine-grained per-effect timing not covered by the controller.
 
 Spec: [docs/design/api-specs.md § @flare-engine/postfx](../../../docs/design/api-specs.md).

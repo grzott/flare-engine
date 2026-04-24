@@ -50,6 +50,8 @@ const { image, sheet } = createProceduralAtlas(
 );
 ```
 
+**Canonical placeholder-atlas pattern:** [`apps/pan-tvardowski/src/shape-atlas.ts`](../../../apps/pan-tvardowski/src/shape-atlas.ts) draws a full game's worth of enemies / bullets / particles as Skia shapes onto an offscreen surface and emits a `SpriteSheet`. Production sprite art drops into the same manifest slot at M9.5 with no code change. Mirror this pattern for any new game that wants to start without commissioned art.
+
 ## Rules
 
 - Audio buffer types live in `@flare-engine/audio` (`AudioBufferLike`), not here. Don't add audio types to this package.

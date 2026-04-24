@@ -1,7 +1,7 @@
 ---
 description: "Game dev researcher — surveys the web, GitHub, forums, papers, and marketplaces for the latest tools, techniques, assets, and community knowledge relevant to 2D React Native game development. Use when: research game dev, find assets, audit ecosystem, latest techniques, compare libraries, find resources, survey landscape, what's new in, browse marketplace, science articles, community trends"
 tools: [read, search, web, agent]
-model: "Claude Opus 4.6 (copilot)"
+model: "Claude Opus 4.7 (copilot)"
 agents: [Explore]
 handoffs:
   - label: Design Infrastructure

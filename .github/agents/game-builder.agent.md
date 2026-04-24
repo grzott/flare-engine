@@ -1,7 +1,7 @@
 ---
 description: "Flare game builder — implements game apps built on @flare-engine/*. Use when: building a Flare game app, implementing zones/levels/scenes, adding gameplay mechanics, scene FSMs, HUDs, boss scripts, wiring engine packages into a game. Scope: apps/<game>/**. Does NOT modify engine packages (that is @builder)."
 tools: [execute, read, edit, search, todo, agent]
-model: "Claude Opus 4.7 (copilot)"
+model: "Claude Sonnet 4.6 (copilot)"
 agents: [builder, researcher]
 ---
 

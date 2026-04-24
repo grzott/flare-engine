@@ -1,7 +1,7 @@
 ---
 description: "Flare engine builder — implements the @flare-engine/* game engine monorepo. Use when: build flare packages, implement modules, scaffold features, write tests, flare engine development"
 tools: [execute, read, edit, search, todo]
-model: "Claude Opus 4.7 (copilot)"
+model: "Claude Sonnet 4.6 (copilot)"
 agents: []
 ---
 

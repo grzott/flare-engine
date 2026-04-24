@@ -21,7 +21,7 @@ Active + pending work is tracked at phase / app / milestone granularity:
 | Phase 11.11 — Landing-page MP4 + store links             | ⬜ not started — MP4 placeholder (URL swap), store-page links in docs. Live web build dropped 2026-04-22.                                                                                                                                                                                                                                      |
 | Phase 11.12 — Docs site                                  | ⬜ not started — deferred to pre-launch polish alongside 11.13                                                                                                                                                                                                                                                                                 |
 | Phase 11.13 — API lock + RC + pre-launch polish          | ⬜ not started — governance files, API snapshots, EUIPO trademark filing, RC publish                                                                                                                                                                                                                                                           |
-| Phase 11.14 — Extraction + reusability + demo retirement | ⬜ not started (parallel with PT M9.x) — harvest genre-agnostic patterns from PT into engine minor bumps; delete `apps/demo`. See [build-plan.md §11.14](../plans/build-plan.md#1114--extraction--reusability--demo-retirement).                                                                                                               |
+| Phase 11.14 — Extraction + reusability + demo retirement | 🟡 **in progress** — 8/8 engine extractions shipped (2026-04-24); `apps/demo` deletion + skill/doc sweep pending PT M9.1. See [build-plan.md §11.14](../plans/build-plan.md#1114--extraction--reusability--demo-retirement).                                                                                                                   |
 | `apps/demo` (proof-of-concept)                           | 🟡 **retiring at stage 11.14** — kept until PT M9.1 ships the main menu; then deleted. PT free zones 1–3 (see [pan-tvardowski-build-plan.md §20](../plans/pan-tvardowski-build-plan.md#20--monetization-model)) become the canonical end-to-end reference.                                                                                     |
 | `apps/pan-tvardowski` (showcase + canonical demo)        | 🟡 **M0–M8 done, M9.1–M9.6 pending** (2026-04-22) — all 8 zones playable, 119 tests green. M9 split into M9.1 UI kit · M9.2 inventory/codex · M9.3 shop + entitlements · M9.4 dialogue avatar · M9.5 asset-swap infra · M9.6 store-ready bundle. See [pan-tvardowski-build-plan.md §17](../plans/pan-tvardowski-build-plan.md#17--milestones). |
 | Game 2 (roguelike)                                       | ❌ DEFERRED post-launch to separate private repo (dogfood test of published 0.1.0)                                                                                                                                                                                                                                                             |
@@ -31,16 +31,16 @@ Active + pending work is tracked at phase / app / milestone granularity:
 
 Strict genre-agnostic filter: extractions must work for any 2D / 2.5D mobile game genre. See [pan-tvardowski-build-plan.md §21](../plans/pan-tvardowski-build-plan.md#21--engine-extraction-notes-feeds-phase-1114) for rejected items + rationale.
 
-| Extraction                                           | Target package                                | Status     |
-| ---------------------------------------------------- | --------------------------------------------- | ---------- |
-| `createPostFxController`                             | `@flare-engine/postfx`                        | ⬜ planned |
-| `createA11yBridge`                                   | `@flare-engine/a11y`                          | ⬜ planned |
-| `createTier2Wiring`                                  | `@flare-engine/engine`                        | ⬜ planned |
-| `MainMenuKit`                                        | `@flare-engine/ui`                            | ⬜ planned |
-| `DialoguePanel` (avatar slot) + `speakerPortraitKey` | `@flare-engine/ui` + `@flare-engine/dialogue` | ⬜ planned |
-| `ShopPanel` + `ProductCatalog` + `EntitlementStore`  | `@flare-engine/ui` + `@flare-engine/iap`      | ⬜ planned |
-| `createScreenshotScene`                              | `@flare-engine/share`                         | ⬜ planned |
-| Canonical placeholder-atlas docs                     | `@flare-engine/assets` (example-only)         | ⬜ planned |
+| Extraction                                           | Target package                                | Status                                                  |
+| ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| `createPostFxController`                             | `@flare-engine/postfx`                        | ✅ shipped 2026-04-24 (37 tests)                        |
+| `createA11yBridge`                                   | `@flare-engine/a11y`                          | ✅ shipped 2026-04-24 (17 tests)                        |
+| `createTier2Wiring`                                  | `@flare-engine/engine`                        | ✅ shipped 2026-04-24 (19 tests)                        |
+| `MainMenuKit`                                        | `@flare-engine/ui`                            | ✅ shipped 2026-04-24 (40 tests total)                  |
+| `DialoguePanel` (avatar slot) + `speakerPortraitKey` | `@flare-engine/ui` + `@flare-engine/dialogue` | ✅ shipped 2026-04-24 (42 + 40 tests)                   |
+| `ShopPanel` + `ProductCatalog` + `EntitlementStore`  | `@flare-engine/ui` + `@flare-engine/iap`      | ✅ shipped 2026-04-24 (40 + 17 tests)                   |
+| `createScreenshotScene`                              | `@flare-engine/share`                         | ✅ shipped 2026-04-24 (22 tests)                        |
+| Canonical placeholder-atlas docs                     | `@flare-engine/assets` (example-only)         | ✅ shipped 2026-04-24 (JSDoc pointer to PT shape-atlas) |
 
 > **Source-of-truth rule.** Engine phases + packages → this table + [build-plan.md Phase Summary](../plans/build-plan.md). Game apps → `docs/plans/<game>-build-plan.md` changelog; this table mirrors only the last-milestone marker. See [status-sync.instructions.md](../../.github/instructions/status-sync.instructions.md).
 

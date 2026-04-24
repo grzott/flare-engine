@@ -265,6 +265,19 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 - **Per-package skill updates.** Every package that gains an extracted helper gets its SKILL.md updated with the new API + a worked example ported from PT. No new skill files.
 - **Done when.** All 8 extractions shipped as minor bumps with tests; `apps/demo` removed; every `apps/demo` reference across docs + customization points at PT; `bun run test && bun run build` green; `packages/create-flare-app` tests still pass.
 
+**2026-04-24 — 8/8 engine extractions shipped.** All genre-agnostic helpers landed in engine packages; monorepo `typecheck + lint + build + test` green (1582 tests pass, 36 build tasks). PT M9.x is now unblocked.
+
+- `@flare-engine/dialogue` — `LineNode.speakerPortraitKey?` + `DialogueLineEvent.speakerPortraitKey` forwarded through `runner.onLine` (42 tests).
+- `@flare-engine/iap` — `ProductCatalog` (`createProductCatalog`, `getGrantsForProduct`, `getCatalogEntry`) + `EntitlementStore` (`isEntitled`, `grant`, `grantProduct`, `revoke`, `snapshot`, `restoreOnBoot`, `attachProvider`, `onChange: Signal`). New dep: `@flare-engine/events` (17 tests).
+- `@flare-engine/postfx` — `createPostFxController({ effects, skia?, flash })` returns `{ chain, runtime, triggerHitFlash, update, buildPass, setMotionScale }`; grayscale-flash decay (default 4.2/s); `setMotionScale` forwards to `chain.setGlobalIntensity` for a11y (37 tests).
+- `@flare-engine/a11y` — `createA11yBridge({ manager? })` returns `{ manager, attach, attachCamera, attachPostfx }`; `attach(target)` duck-types on `{ setMotionScale(k) }` so no render/postfx deps; subscribes to `manager.onChange` and returns unsubscribe (17 tests).
+- `@flare-engine/ui` — `DialoguePanel` (portrait slot + speaker label + choices / tap-advance), `ShopPanel` (items + `isEntitled` + owned-state rendering), `MainMenuKit` (title / subtitle / vertical focusable item list / footer) (40 tests).
+- `@flare-engine/share` — `createScreenshotScene({ source, targets, setup?, defaults? })` returns `{ targets, capture(id), captureAll() }` for store-asset capture workflows (22 tests).
+- `@flare-engine/engine` — `createTier2Wiring({ events, providers, rules })` using structural `Tier2EventSource` + `Tier2Providers` interfaces (no new deps); `AnalyticsRule` / `LeaderboardRule` / `AchievementRule` map game events to provider calls; returns teardown fn; unknown providers skip. Tests import from `../src/tier2-wiring.js` directly — barrel pulls `@flare-engine/react` which crashes `bun test` under RN (19 tests).
+- `@flare-engine/assets` — JSDoc note on `createProceduralAtlas` pointing at `apps/pan-tvardowski/src/shape-atlas.ts` as the canonical placeholder-atlas example (code unchanged).
+
+**Still pending for 11.14 close-out:** `apps/demo` deletion (gated on PT M9.1 main menu shipping), skill + doc sweep to replace remaining `apps/demo` references with PT free zones 1–3, per-package SKILL.md updates for the 8 new helpers.
+
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 
 1. All shipping packages green: `bun run typecheck && bun run lint && bun run test && bun run build`.

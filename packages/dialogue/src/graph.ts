@@ -17,6 +17,12 @@ export interface LineNode {
   readonly kind: 'line';
   /** Speaker name / id. */
   readonly speaker: string;
+  /**
+   * Optional portrait key resolved by the UI layer to an avatar image /
+   * shape / atlas frame. The dialogue runtime is portrait-agnostic — it
+   * forwards the key via `DialogueLineEvent.speakerPortraitKey`.
+   */
+  readonly speakerPortraitKey?: string;
   /** Text template. Supports `{var}` interpolation via the runner's variable bag. */
   readonly text: string;
   /** Next node id, or null to end. */

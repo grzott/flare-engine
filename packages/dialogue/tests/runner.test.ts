@@ -310,4 +310,25 @@ describe('createDialogueRunner', () => {
     runner.start(graph);
     expect(runner.state).toBe('ended');
   });
+
+  test('forwards speakerPortraitKey from LineNode to DialogueLineEvent', () => {
+    const nodes: Record<string, DialogueNode> = {
+      l1: {
+        kind: 'line',
+        speaker: 'NPC',
+        speakerPortraitKey: 'portrait:rokita',
+        text: 'Greetings.',
+        next: 'l2',
+      },
+      l2: { kind: 'line', speaker: 'Hero', text: 'Hello.', next: null },
+    };
+    const graph = createDialogueGraph('portraits', 'l1', nodes);
+    const runner = createDialogueRunner();
+    const keys: Array<string | undefined> = [];
+    runner.onLine.add((e) => keys.push(e.speakerPortraitKey));
+
+    runner.start(graph);
+    runner.advance();
+    expect(keys).toEqual(['portrait:rokita', undefined]);
+  });
 });

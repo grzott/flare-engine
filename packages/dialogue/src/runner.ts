@@ -15,6 +15,8 @@ export type VariableBag = Record<string, string | number>;
 
 export interface DialogueLineEvent {
   readonly speaker: string;
+  /** Optional portrait key forwarded verbatim from the source LineNode. */
+  readonly speakerPortraitKey?: string;
   readonly text: string;
   readonly nodeId: string;
 }
@@ -116,7 +118,12 @@ export function createDialogueRunner(options?: DialogueRunnerOptions): DialogueR
   function processLine(node: LineNode, nodeId: string): void {
     setState('running');
     const text = interpolate(node.text, _vars);
-    onLine.emit({ speaker: node.speaker, text, nodeId });
+    onLine.emit({
+      speaker: node.speaker,
+      speakerPortraitKey: node.speakerPortraitKey,
+      text,
+      nodeId,
+    });
   }
 
   function processChoice(node: ChoiceNode, nodeId: string): void {

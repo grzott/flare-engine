@@ -33,3 +33,10 @@ export {
   CRT_SKSL,
   BLOOM_SKSL,
 } from './shaders.js';
+
+export {
+  type PostFxController,
+  type PostFxControllerOptions,
+  type PostFxFlashConfig,
+  createPostFxController,
+} from './controller.js';

@@ -1,4 +1,5 @@
 import { type StorageAdapter, createMemoryAdapter, createMmkvAdapter } from '@flare-engine/storage';
+import type { ZoneId } from '../events';
 import { gameState, notifyStateChanged } from '../state';
 import {
   SAVE_VERSION,
@@ -17,7 +18,7 @@ export interface SaveStore {
   persist(): Promise<void>;
   selectSlot(index: number): Promise<void>;
   createSlot(index: number): Promise<void>;
-  commitRun(score: number, victory: boolean): Promise<void>;
+  commitRun(score: number, victory: boolean, zoneReached?: ZoneId): Promise<void>;
   getSlot(index: number): SlotData | null;
   activeSlot(): number | null;
   introSeen(): boolean;
@@ -47,6 +48,9 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
   function apply(file: SaveFile): void {
     state = file;
     gameState.settings = file.settings;
+    if (file.activeSlot !== null) {
+      gameState.activeSlot = Math.max(0, Math.min(2, file.activeSlot)) as 0 | 1 | 2;
+    }
   }
 
   function snapshot(): SaveFile {
@@ -72,22 +76,26 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     },
     persist: write,
     async selectSlot(index) {
-      state = { ...state, activeSlot: index };
+      const clamped = Math.max(0, Math.min(2, index)) as 0 | 1 | 2;
+      state = { ...state, activeSlot: clamped };
+      gameState.activeSlot = clamped;
       await a.set(KEY, JSON.stringify(state));
       notifyStateChanged();
     },
     async createSlot(index) {
+      const clamped = Math.max(0, Math.min(2, index)) as 0 | 1 | 2;
       const slots = state.slots.slice();
-      slots[index] = createSlot(index);
-      state = { ...state, slots, activeSlot: index };
+      slots[clamped] = createSlot(clamped);
+      state = { ...state, slots, activeSlot: clamped };
+      gameState.activeSlot = clamped;
       await a.set(KEY, JSON.stringify(state));
       notifyStateChanged();
     },
-    async commitRun(score, victory) {
+    async commitRun(score, victory, zoneReached) {
       const idx = state.activeSlot ?? 0;
       const slots = state.slots.slice();
       const current = slots[idx] ?? createSlot(idx);
-      slots[idx] = mergeRun(current, score, victory);
+      slots[idx] = mergeRun(current, score, victory, zoneReached ?? current.zoneReached);
       state = { ...state, slots, activeSlot: idx };
       await a.set(KEY, JSON.stringify(state));
       notifyStateChanged();

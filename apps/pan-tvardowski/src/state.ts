@@ -2,7 +2,27 @@ import { Signal } from '@flare-engine/events';
 import { PLAYER_HP_MAX, START_BOMBS } from './config/gameplay';
 import type { ZoneId } from './events';
 
-export type SceneName = 'boot' | 'play' | 'game-over' | 'victory';
+export type SceneName =
+  | 'boot'
+  | 'menu'
+  | 'save-select'
+  | 'settings'
+  | 'credits'
+  | 'play'
+  | 'game-over'
+  | 'victory';
+
+export type JoystickSide = 'left' | 'right';
+export type FireButtonSide = 'left' | 'right';
+
+export interface ControlsSettings {
+  joystickSide: JoystickSide;
+  fireButtonSide: FireButtonSide;
+}
+
+export function defaultControls(): ControlsSettings {
+  return { joystickSide: 'left', fireButtonSide: 'right' };
+}
 
 export type KillKind =
   | 'skrzat'
@@ -78,9 +98,21 @@ export interface Settings {
   screenShake: boolean;
   reducedMotion: boolean;
   locale: 'en' | 'pl';
+  masterVolume: number;
+  musicVolume: number;
+  sfxVolume: number;
+  controls: ControlsSettings;
 }
 export function defaultSettings(): Settings {
-  return { screenShake: true, reducedMotion: false, locale: 'en' };
+  return {
+    screenShake: true,
+    reducedMotion: false,
+    locale: 'en',
+    masterVolume: 1,
+    musicVolume: 1,
+    sfxVolume: 1,
+    controls: defaultControls(),
+  };
 }
 
 export interface ZoneBannerInfo {
@@ -122,6 +154,8 @@ export interface GameState {
   victory: boolean;
   currentScene: SceneName;
   currentZone: ZoneId;
+  /** Active save slot (0..2). Picked from the save-select menu. */
+  activeSlot: 0 | 1 | 2;
   zoneBanner: ZoneBannerInfo;
   settings: Settings;
   runStats: RunStats;
@@ -148,6 +182,7 @@ export const gameState: GameState = {
   victory: false,
   currentScene: 'boot',
   currentZone: 'z1',
+  activeSlot: 0,
   zoneBanner: {
     visible: false,
     opacity: 0,
@@ -199,6 +234,7 @@ export function resetGameState(): void {
   gameState.victory = false;
   gameState.currentScene = 'boot';
   gameState.currentZone = 'z1';
+  gameState.activeSlot = 0;
   gameState.zoneBanner.visible = false;
   gameState.zoneBanner.opacity = 0;
   gameState.zoneBanner.nameKey = 'zones.1.name';

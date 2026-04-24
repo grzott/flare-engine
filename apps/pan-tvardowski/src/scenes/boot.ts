@@ -1,5 +1,6 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import type { AudioHandles } from '../audio/init';
+import { gameState, notifyStateChanged } from '../state';
 import { shellDefaults } from './scene-shell';
 
 export interface AudioInitResult {
@@ -7,7 +8,9 @@ export interface AudioInitResult {
 }
 
 /**
- * Boot scene — loads the save file, initializes audio, then jumps to play.
+ * Boot scene — loads the save file, initializes audio, then jumps to the
+ * main menu. Deep-links (`pantvardowski://zone/N`) handled by the router
+ * in `App.tsx` still bypass the menu and go straight to `play`.
  */
 export function createBootScene(
   ctx: GameContextValue,
@@ -19,12 +22,14 @@ export function createBootScene(
     name: 'boot',
     ...shellDefaults(),
     onEnter() {
+      gameState.currentScene = 'boot';
+      notifyStateChanged();
       void (async () => {
         await loadSave();
         if (initAudio && audioRef) {
           audioRef.current = await initAudio();
         }
-        void ctx.scenes.go('play');
+        void ctx.scenes.go('menu');
       })();
     },
   });

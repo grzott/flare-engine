@@ -1,7 +1,10 @@
-import type { Settings } from '../state';
-import { defaultSettings } from '../state';
+import type { ZoneId } from '../events';
+import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
+import { defaultControls, defaultSettings } from '../state';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+
+const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
 export interface SlotData {
   readonly index: number;
@@ -10,6 +13,8 @@ export interface SlotData {
   readonly lastScore: number;
   readonly bossDefeated: boolean;
   readonly savedAt: number;
+  /** Highest zone the player has started or cleared in this slot. */
+  readonly zoneReached: ZoneId;
 }
 
 export interface SaveFile {
@@ -37,6 +42,9 @@ function isNum(v: unknown): v is number {
 function isBool(v: unknown): v is boolean {
   return typeof v === 'boolean';
 }
+function isZone(v: unknown): v is ZoneId {
+  return typeof v === 'string' && (ZONE_IDS as readonly string[]).includes(v);
+}
 
 function parseSlot(v: unknown): SlotData | null {
   if (v === null || typeof v !== 'object') return null;
@@ -51,6 +59,8 @@ function parseSlot(v: unknown): SlotData | null {
   ) {
     return null;
   }
+  // v1/v2 → v3: `zoneReached` absent → default 'z1'.
+  const zoneReached: ZoneId = isZone(o.zoneReached) ? o.zoneReached : 'z1';
   return {
     index: o.index,
     runs: o.runs,
@@ -58,7 +68,23 @@ function parseSlot(v: unknown): SlotData | null {
     lastScore: o.lastScore,
     bossDefeated: o.bossDefeated,
     savedAt: o.savedAt,
+    zoneReached,
   };
+}
+
+function parseControls(v: unknown): ControlsSettings {
+  if (v === null || typeof v !== 'object') return defaultControls();
+  const o = v as Record<string, unknown>;
+  const joystickSide: JoystickSide = o.joystickSide === 'right' ? 'right' : 'left';
+  const fireButtonSide: FireButtonSide = o.fireButtonSide === 'left' ? 'left' : 'right';
+  return { joystickSide, fireButtonSide };
+}
+
+function clamp01(n: number): number {
+  if (!Number.isFinite(n)) return 1;
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
 }
 
 function parseSettings(v: unknown): Settings {
@@ -68,7 +94,20 @@ function parseSettings(v: unknown): Settings {
   const reducedMotion = isBool(o.reducedMotion) ? o.reducedMotion : false;
   const rawLocale = typeof o.locale === 'string' ? o.locale : 'en';
   const locale: Settings['locale'] = rawLocale === 'pl' ? 'pl' : 'en';
-  return { screenShake: shake, reducedMotion, locale };
+  // v2 → v3: volumes + controls absent → defaults.
+  const masterVolume = isNum(o.masterVolume) ? clamp01(o.masterVolume) : 1;
+  const musicVolume = isNum(o.musicVolume) ? clamp01(o.musicVolume) : 1;
+  const sfxVolume = isNum(o.sfxVolume) ? clamp01(o.sfxVolume) : 1;
+  const controls = parseControls(o.controls);
+  return {
+    screenShake: shake,
+    reducedMotion,
+    locale,
+    masterVolume,
+    musicVolume,
+    sfxVolume,
+    controls,
+  };
 }
 
 export function parseSaveFile(raw: string | null): SaveFile {
@@ -106,10 +145,16 @@ export function createSlot(index: number): SlotData {
     lastScore: 0,
     bossDefeated: false,
     savedAt: 0,
+    zoneReached: 'z1',
   };
 }
 
-export function mergeRun(slot: SlotData, score: number, victory: boolean): SlotData {
+export function mergeRun(
+  slot: SlotData,
+  score: number,
+  victory: boolean,
+  zoneReached: ZoneId = slot.zoneReached,
+): SlotData {
   return {
     ...slot,
     runs: slot.runs + 1,
@@ -117,5 +162,10 @@ export function mergeRun(slot: SlotData, score: number, victory: boolean): SlotD
     lastScore: score,
     bossDefeated: slot.bossDefeated || victory,
     savedAt: Date.now(),
+    zoneReached: maxZone(slot.zoneReached, zoneReached),
   };
+}
+
+function maxZone(a: ZoneId, b: ZoneId): ZoneId {
+  return ZONE_IDS.indexOf(b) > ZONE_IDS.indexOf(a) ? b : a;
 }

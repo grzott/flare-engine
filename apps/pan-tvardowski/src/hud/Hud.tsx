@@ -8,6 +8,7 @@ export interface HudActions {
   onRetry: () => void;
   onContinue: () => void;
   onShare: () => void;
+  onMainMenu: () => void;
 }
 
 /** Minimal structural shape of safe-area insets. Kept local so tests and
@@ -152,9 +153,14 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
           <Text style={styles.bannerTitle}>{t('menu.game_over.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_retry')}</Text>
-          <Pressable style={styles.shareBtn} onPress={actions.onShare}>
-            <Text style={styles.shareBtnLabel}>{t('hud.share')}</Text>
-          </Pressable>
+          <View style={styles.overlayBtnRow}>
+            <Pressable style={styles.shareBtn} onPress={actions.onShare}>
+              <Text style={styles.shareBtnLabel}>{t('hud.share')}</Text>
+            </Pressable>
+            <Pressable style={styles.menuBtn} onPress={actions.onMainMenu}>
+              <Text style={styles.menuBtnLabel}>{t('hud.main_menu')}</Text>
+            </Pressable>
+          </View>
         </Pressable>
       ) : null}
 
@@ -163,9 +169,14 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
           <Text style={styles.bannerTitle}>{t('menu.victory.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_continue')}</Text>
-          <Pressable style={styles.shareBtn} onPress={actions.onShare}>
-            <Text style={styles.shareBtnLabel}>{t('hud.share')}</Text>
-          </Pressable>
+          <View style={styles.overlayBtnRow}>
+            <Pressable style={styles.shareBtn} onPress={actions.onShare}>
+              <Text style={styles.shareBtnLabel}>{t('hud.share')}</Text>
+            </Pressable>
+            <Pressable style={styles.menuBtn} onPress={actions.onMainMenu}>
+              <Text style={styles.menuBtnLabel}>{t('hud.main_menu')}</Text>
+            </Pressable>
+          </View>
         </Pressable>
       ) : null}
     </View>
@@ -268,6 +279,24 @@ const styles = StyleSheet.create({
   },
   shareBtnLabel: {
     color: '#1a0e0a',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  overlayBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  menuBtn: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 6,
+  },
+  menuBtnLabel: {
+    color: '#F3C262',
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,

@@ -24,7 +24,7 @@ import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createA11yBridge } from './a11y/manager';
 import type { AudioHandles } from './audio/init';
-import { disposeAudio, initAudio } from './audio/init';
+import { disposeAudio, getAudio, initAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
 import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
@@ -33,12 +33,17 @@ import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
+import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
 import { createBootScene } from './scenes/boot';
+import { createCreditsScene } from './scenes/credits';
 import { createGameOverScene, createVictoryScene } from './scenes/end';
+import { createMenuScene } from './scenes/menu';
 import type { PlayRenderHooks } from './scenes/play';
 import { createPlayScene } from './scenes/play';
+import { createSaveSelectScene } from './scenes/save-select';
+import { createSettingsScene } from './scenes/settings';
 import { buildShapeAtlas } from './shape-atlas';
 import { createShareManager, shareHighScore } from './share/manager';
 import {
@@ -56,15 +61,28 @@ interface AudioRef {
 
 type RuntimeDisposer = () => void;
 
-function bootstrap(
-  ctx: GameContextValue,
-  localization: LocalizationManager,
-  renderHooks: PlayRenderHooks,
-  audioRef: AudioRef,
-  dialogue: ReturnType<typeof createDialogueController>,
-): RuntimeDisposer {
+interface BootstrapDeps {
+  ctx: GameContextValue;
+  localization: LocalizationManager;
+  renderHooks: PlayRenderHooks;
+  audioRef: AudioRef;
+  dialogue: ReturnType<typeof createDialogueController>;
+  saveStore: ReturnType<typeof createSaveStore>;
+}
+
+function applyVolumes(audio: AudioHandles | null): void {
+  if (!audio) return;
+  const master = audio.channels.get('master');
+  const music = audio.channels.get('music');
+  const sfx = audio.channels.get('sfx');
+  if (master) master.volume = gameState.settings.masterVolume;
+  if (music) music.volume = gameState.settings.musicVolume;
+  if (sfx) sfx.volume = gameState.settings.sfxVolume;
+}
+
+function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
+  const { ctx, localization, renderHooks, audioRef, dialogue, saveStore } = deps;
   const atlas = buildShapeAtlas(Skia);
-  const saveStore = createSaveStore();
   // PostFx: pass `null` Skia module — visible SkSL compositing requires a
   // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
   const skiaPostFx = null;
@@ -79,10 +97,18 @@ function bootstrap(
         await saveStore.load();
         localization.setLocale(gameState.settings.locale);
       },
-      () => initAudio(ctx),
+      async () => {
+        const handles = await initAudio(ctx);
+        applyVolumes(handles);
+        return handles;
+      },
       audioRef,
     ),
   );
+  ctx.scenes.register('menu', createMenuScene(ctx));
+  ctx.scenes.register('save-select', createSaveSelectScene(ctx));
+  ctx.scenes.register('settings', createSettingsScene(ctx));
+  ctx.scenes.register('credits', createCreditsScene(ctx));
   ctx.scenes.register(
     'play',
     createPlayScene({
@@ -161,11 +187,15 @@ function AppRoot(): React.ReactElement {
   const localization = useMemo(() => createLocalization(), []);
   const audioRef = useMemo<AudioRef>(() => ({ current: null }), []);
   const dialogueController = useMemo(() => createDialogueController(), []);
+  const saveStore = useMemo(() => createSaveStore(), []);
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
   const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
+  // Re-render trigger for controls-side changes so joystick / bomb swap
+  // position as soon as the settings toggle is flipped.
+  const [controlsTick, setControlsTick] = useState(0);
 
   // Release runtime resources on unmount — prevents a second game from
   // booting when the component remounts (OS relaunch, hot reload, Android
@@ -212,8 +242,42 @@ function AppRoot(): React.ReactElement {
           t: (key, params) => localization.t(key, params as Record<string, string | number>),
         });
       },
+      onMainMenu: () => {
+        void ctxRef.current?.scenes.go('menu');
+      },
     }),
     [ctxRef, shareManager, localization],
+  );
+
+  const menuActions = useMemo<MenuOverlayActions>(
+    () => ({
+      goMenu: () => {
+        void ctxRef.current?.scenes.go('menu');
+      },
+      goSaveSelect: () => {
+        void ctxRef.current?.scenes.go('save-select');
+      },
+      goSettings: () => {
+        void ctxRef.current?.scenes.go('settings');
+      },
+      goCredits: () => {
+        void ctxRef.current?.scenes.go('credits');
+      },
+      startSlot: (index) => {
+        void (async () => {
+          const existing = saveStore.getSlot(index);
+          if (existing === null) await saveStore.createSlot(index);
+          else await saveStore.selectSlot(index);
+          void ctxRef.current?.scenes.go('play');
+        })();
+      },
+      persistSettings: () => {
+        setControlsTick((n) => n + 1);
+        applyVolumes(getAudio());
+        localization.setLocale(gameState.settings.locale);
+      },
+    }),
+    [ctxRef, saveStore, localization],
   );
 
   const snapshotSource = useMemo(() => {
@@ -235,22 +299,26 @@ function AppRoot(): React.ReactElement {
       });
   }, [ctx]);
 
-  const joystickStyle = useMemo(
-    () => ({
-      ...styles.joystick,
-      left: 24 + insets.left,
-      bottom: 48 + insets.bottom,
-    }),
-    [insets.left, insets.bottom],
-  );
-  const bombStyle = useMemo(
-    () => ({
-      ...styles.bombBtn,
-      right: 24 + insets.right,
-      bottom: 48 + insets.bottom,
-    }),
-    [insets.right, insets.bottom],
-  );
+  // `controlsTick` is a manual bump counter — `gameState` is a mutable
+  // singleton, so reading `gameState.settings.controls.*` alone does not
+  // trigger re-computation; bumping `controlsTick` in the settings-scene
+  // completion callback forces these memos to re-evaluate.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  const joystickStyle = useMemo(() => {
+    const side = gameState.settings.controls.joystickSide;
+    const base = { ...styles.joystick, bottom: 48 + insets.bottom };
+    return side === 'left'
+      ? { ...base, left: 24 + insets.left }
+      : { ...base, right: 24 + insets.right };
+  }, [insets.left, insets.right, insets.bottom, controlsTick]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  const bombStyle = useMemo(() => {
+    const side = gameState.settings.controls.fireButtonSide;
+    const base = { ...styles.bombBtn, bottom: 48 + insets.bottom };
+    return side === 'right'
+      ? { ...base, right: 24 + insets.right }
+      : { ...base, left: 24 + insets.left };
+  }, [insets.left, insets.right, insets.bottom, controlsTick]);
 
   return (
     <ErrorBoundary
@@ -280,19 +348,28 @@ function AppRoot(): React.ReactElement {
             disposerRef.current?.();
             ctxRef.current = ready;
             setCtx(ready);
-            disposerRef.current = bootstrap(
-              ready,
+            disposerRef.current = bootstrap({
+              ctx: ready,
               localization,
               renderHooks,
               audioRef,
-              dialogueController,
-            );
+              dialogue: dialogueController,
+              saveStore,
+            });
           }}
         >
           <VirtualJoystick onStateChange={onJoystick} style={joystickStyle} />
           <VirtualButton onStateChange={onBomb} style={bombStyle} />
         </GameView>
         <Hud localization={localization} actions={actions} insets={insets} />
+        <MenuOverlay
+          localization={localization}
+          save={saveStore}
+          actions={menuActions}
+          appVersion="0.1.0"
+          onLocaleChange={(loc) => localization.setLocale(loc)}
+          onVolumesChange={() => applyVolumes(getAudio())}
+        />
         <DialogueOverlay localization={localization} controller={dialogueController} />
         {__DEV__ && ctx && snapshotSource ? (
           <DevtoolsProvider world={ctx.world} loop={ctx.loop} snapshot={snapshotSource}>

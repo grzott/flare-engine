@@ -41,8 +41,11 @@
 **Non-goals.**
 
 - Not a commercial hit. Score-attack shmups have a small audience; that's fine.
-- Not a replacement for `apps/demo`. That demo stays as the minimal-scope integration smoke test.
 - Not a showcase for `@flare-engine/pathfinding` — that package will be exercised by a different post-launch project.
+
+**Store lineup (engine promotion).** Pan Tvardowski is the **first of three planned Flare-built games** that will ship to stores as living proof the engine handles end-to-end delivery across genres. The other two (a top-down action-adventure and a deck-builder) are **not planned in this repo** — they follow PT and are out of scope here. Mentioned only so readers understand PT's role is "canonical + first", not "only".
+
+**Demo retirement.** `apps/demo` is retired at stage 11.14. PT with zones 1–3 unlocked free (see §20 Monetization) replaces it as the canonical end-to-end reference game and as the target of `npm create flare-app`-style scaffolding inspiration. Minimal blank/topdown/shmup scaffolds continue to live in [`packages/create-flare-app`](../../packages/create-flare-app).
 
 ---
 
@@ -388,20 +391,25 @@ Target: every shipping `@flare-engine/*` package exercised by at least one mecha
 
 Eight milestones, one per zone, plus pre-production and post-content. Each milestone ends with a build that runs on device and has the listed engine-coverage checkboxes ticked.
 
-| M      | Name                     | Deliverable                                                                                   | New engine coverage                                                             |
-| ------ | ------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| **M0** | Pre-production           | Shape atlas spec, localization scaffold, asset palette, directory layout                      | assets, localization                                                            |
-| **M1** | Zone 1 (Kraków rooftops) | Scaffold `apps/pan-tvardowski`, first zone + boss, shape atlas, 2 enemies                     | core, ecs, render, input, physics, scene, ui, engine, react, storage, particles |
-| **M2** | Zone 2 (Puszcza)         | Miniboss framework, Rokita, Borowy Król                                                       | animation, audio, events, deep-links                                            |
-| **M3** | Zone 3 (Wisła)           | Water-layer effects, bubble-shield boss mechanic                                              | postfx ✅, tilemap ✅                                                           |
-| **M4** | Zone 4 (Łęczyckie Błota) | Summons mechanic for Boruta, Leszy shape-shift                                                | devtools ✅, share ✅                                                           |
-| **M5** | Zone 5 (Łysa Góra)       | First 3-phase boss, night-time palette, ritual SFX                                            | testing (boss-replay tests), errors                                             |
-| **M6** | Zone 6 (Katakumby)       | Gaze-beam maze (first postfx-heavy boss)                                                      | a11y (reduced-motion toggle)                                                    |
-| **M7** | Zone 7 (Karczma "Rzym")  | Dialogue system, mirror-twin phase, dialogue graph                                            | dialogue ✅                                                                     |
-| **M8** | Zone 8 (Księżyc)         | Final boss, full bullet hell, ending cutscene                                                 | analytics ✅, leaderboards ✅, achievements ✅, iap ✅ stubs mounted            |
-| **M9** | Polish pass              | Balance tuning, PL+EN dialogue final, achievement hookup, screenshot captures for store pages | — (all packages revisited)                                                      |
+| M        | Name                              | Deliverable                                                                                                                                                                                                                               | New engine coverage                                                                      |
+| -------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **M0**   | Pre-production                    | Shape atlas spec, localization scaffold, asset palette, directory layout                                                                                                                                                                  | assets, localization                                                                     |
+| **M1**   | Zone 1 (Kraków rooftops)          | Scaffold `apps/pan-tvardowski`, first zone + boss, shape atlas, 2 enemies                                                                                                                                                                 | core, ecs, render, input, physics, scene, ui, engine, react, storage, particles          |
+| **M2**   | Zone 2 (Puszcza)                  | Miniboss framework, Rokita, Borowy Król                                                                                                                                                                                                   | animation, audio, events, deep-links                                                     |
+| **M3**   | Zone 3 (Wisła)                    | Water-layer effects, bubble-shield boss mechanic                                                                                                                                                                                          | postfx ✅, tilemap ✅                                                                    |
+| **M4**   | Zone 4 (Łęczyckie Błota)          | Summons mechanic for Boruta, Leszy shape-shift                                                                                                                                                                                            | devtools ✅, share ✅                                                                    |
+| **M5**   | Zone 5 (Łysa Góra)                | First 3-phase boss, night-time palette, ritual SFX                                                                                                                                                                                        | testing (boss-replay tests), errors                                                      |
+| **M6**   | Zone 6 (Katakumby)                | Gaze-beam maze (first postfx-heavy boss)                                                                                                                                                                                                  | a11y (reduced-motion toggle)                                                             |
+| **M7**   | Zone 7 (Karczma "Rzym")           | Dialogue system, mirror-twin phase, dialogue graph                                                                                                                                                                                        | dialogue ✅                                                                              |
+| **M8**   | Zone 8 (Księżyc)                  | Final boss, full bullet hell, ending cutscene                                                                                                                                                                                             | analytics ✅, leaderboards ✅, achievements ✅, iap ✅ stubs mounted                     |
+| **M9.1** | UI kit: menu + settings + credits | Title screen, 3 save slots w/ preview, language switch, audio sliders, reduced-motion, controls remap, credits scroll                                                                                                                     | `@flare-engine/ui` MainMenuKit (new, extracted at stage 11.14)                           |
+| **M9.2** | Inventory / codex                 | Shards browser, boss codex, zone-clear stats, achievement tracker screen                                                                                                                                                                  | — (uses existing `ui`)                                                                   |
+| **M9.3** | Shop + entitlements               | Single "Full Game" IAP unlocks zones 4–8; optional cosmetic IAP slots reserved; in-app currency purchases for shards → upgrades                                                                                                           | `@flare-engine/iap` entitlements, `@flare-engine/ui` ShopPanel (both extracted at 11.14) |
+| **M9.4** | Dialogue avatar slot              | Speaker portrait frame in dialogue panel; `speakerPortraitKey` in graph; shape-portrait placeholders manifest-swappable                                                                                                                   | `@flare-engine/dialogue` schema ext, `@flare-engine/ui` DialoguePanel                    |
+| **M9.5** | Asset-swap infrastructure         | Manifest-driven sprite-atlas + audio-atlas; shape atlas becomes "placeholder manifest"; drop-in swap validated by a dry-run atlas drop                                                                                                    | `@flare-engine/assets` manifest pattern documented                                       |
+| **M9.6** | Store-ready bundle                | EAS build profile + keystore docs, privacy UI + data-safety declaration, crash-transport binding (provider-agnostic), screenshot + trailer capture scene, balance freeze, localization audit (EN+PL key parity), save-migrator v1→v2 test | `@flare-engine/share` screenshot scene, `@flare-engine/storage` migrator (documented)    |
 
-**Gates between milestones:** `bun run test` green; `bun run build` green; device smoke test on Android (release build).
+**Gates between milestones:** `bun run test` green; `bun run build` green; device smoke test on Android (release build); [release-readiness-checklist.md](./release-readiness-checklist.md) items checked off for this milestone.
 
 ---
 
@@ -474,6 +482,65 @@ EUIPO word mark **"Pan Tvardowski"**, Classes 9 (software/games) + 41 (entertain
 ### Lawyer
 
 Not required for DIY filing. Only needed if opposition filed (unlikely for folk-legend-derived name) or broader design mark sought (logo + typography).
+
+---
+
+## 20 — Monetization model
+
+**Freemium + single full-game unlock.** Same flow powers "buy the game" AND "buy a content pack" AND optional cosmetics — one IAP surface, three use cases.
+
+### Product catalogue (PT 0.1.0)
+
+| Product ID                      | Type           | Effect                                         | Notes                                                    |
+| ------------------------------- | -------------- | ---------------------------------------------- | -------------------------------------------------------- |
+| `pan_tvardowski.full_game`      | non-consumable | Unlocks zones 4–8 + all endings                | Primary revenue. Price TBD at M9.6.                      |
+| `pan_tvardowski.supporter_pack` | non-consumable | Alt palettes for Kogut Źłoty + credits billing | Pure cosmetic, optional, no gameplay impact.             |
+| `pan_tvardowski.shards_small`   | consumable     | +100 shards (shop currency)                    | Reserved slot; disabled at 0.1.0 unless enabled at M9.6. |
+| `pan_tvardowski.shards_large`   | consumable     | +500 shards                                    | Same — reserved slot.                                    |
+
+### Free tier (always playable)
+
+- Zones 1–3 (Kraków → Puszcza → Wisła) + first 3 bosses.
+- Full UI kit, all settings, all languages, all player ships, weapons 1–2.
+- Score submission + achievements enabled.
+- Paywall UI appears on zone-3 defeat screen and from the main-menu "Zones" list (locked zones are visible + clickable → paywall modal).
+
+### Free/paid variant build
+
+Engine must support both "100% free" (other future games may ship free) and "buy-once + free trial" (PT) **without code branching**. Implemented at stage 11.14 as an `EntitlementStore` + `ProductCatalog` in `@flare-engine/iap`. Games declare which product IDs gate which content; the engine treats a missing catalogue as "all free".
+
+### Privacy surface
+
+No analytics at 0.1.0 by default (Noop providers). If the user opts in to a crash provider in settings, the consent is logged in `settings.privacy.crashOptIn`. Data-safety declaration on Google Play + App Store reflects this.
+
+---
+
+## 21 — Engine extraction notes (feeds Phase 11.14)
+
+What PT produced that belongs back in the engine. Strict rule: **genre-agnostic only** (must be useful for top-down, card-based, platformer, or shmup games).
+
+### Accepted (extract into engine at Phase 11.14)
+
+| Item                                              | Source in PT                                    | Destination                                       |
+| ------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| PostFx controller bridge                          | `src/fx/`                                       | `@flare-engine/postfx` — `createPostFxController` |
+| A11y bridge (reducedMotion → fx/camera)           | `src/a11y/manager.ts`                           | `@flare-engine/a11y` — `createA11yBridge`         |
+| Tier-2 wiring (events → provider calls)           | `src/tier2/wiring.ts`                           | `@flare-engine/engine` — `createTier2Wiring`      |
+| MainMenuKit                                       | (new at M9.1; design lives here, code extracts) | `@flare-engine/ui`                                |
+| DialoguePanel w/ avatar slot                      | (new at M9.4)                                   | `@flare-engine/ui` + `@flare-engine/dialogue`     |
+| ShopPanel + `EntitlementStore` + `ProductCatalog` | (new at M9.3)                                   | `@flare-engine/ui` + `@flare-engine/iap`          |
+| Screenshot + trailer capture scene                | (new at M9.6)                                   | `@flare-engine/share`                             |
+
+### Rejected (game-specific, stays in `apps/pan-tvardowski`)
+
+| Item                              | Why                                                                              |
+| --------------------------------- | -------------------------------------------------------------------------------- |
+| Boss FSM + `PhaseScript` dispatch | Shmup-specific structure. Top-down / card games don't phase bosses this way.     |
+| Miniboss dispatch + form-cycle    | Same — shmup-specific.                                                           |
+| Deterministic wave spawner        | Shmup-specific timing model. Top-down rooms / card encounters spawn differently. |
+| Shape catalogue (Kogut, Smok, …)  | PT-specific IP; stays in game code.                                              |
+
+Extraction reviews run at each M9.x gate (see [release-readiness-checklist.md](./release-readiness-checklist.md)).
 
 ---
 

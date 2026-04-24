@@ -20,7 +20,7 @@
 | 6 — Integration       | `react`, `engine`                        | Phase 5    | ✅ DONE                | Full example game on iOS + Android                                                                                                                                                                                           |
 | 7 — Hardening         | —                                        | Phase 6    | ✅ DONE (pass 1)       | Audit, optimize, fix gaps, stress-test all APIs                                                                                                                                                                              |
 | 8 — Benchmarking      | `benchmarks/` + `apps/bench-dashboard/`  | Phase 7    | ✅ DONE                | Microbench + integration bench + dashboard done; Android device capture recorded (Galaxy A54 5G release); Phase 10 gating decision written; iOS capture optional follow-up                                                   |
-| 9 — Demo Game         | `apps/demo`                              | Phase 6    | ✅ READY TO PLAY       | Playable end-to-end on device (placeholder art, final assets pending): menu + 3 save slots → base hub → dialogue → play (w/ pause) → end summary → base; MMKV-persisted saves + settings; shipped under PolyForm-NC          |
+| 9 — Demo Game         | `apps/demo` (retired 2026-04-24)          | Phase 6    | ✅ DONE (retired)      | `apps/demo` shipped as proof-of-concept + integration smoke test (menu + save slots → base hub → dialogue → play → end summary; MMKV-persisted; PolyForm-NC). Retired at stage 11.14 once `apps/pan-tvardowski` main menu (M9.1) shipped. PT free zones 1–3 are now the canonical end-to-end reference.          |
 | 10 — C++ Acceleration | `native`                                 | Phase 8+9  | ⬜ data-gated          | C++ via Nitro only where benchmarks show need (particles first)                                                                                                                                                              |
 | 11 — OSS Launch Prep  | 14 new packages + 4 stubs + web parity   | Phase 6    | 🟡 in progress (M1–M5) | Full-stack RN+Web engine, landing-page MP4 (live web build dropped 2026-04-22), docs site, Pan Tvardowski showcase game ([plan](./pan-tvardowski-build-plan.md)). Game 2 (roguelike) deferred post-launch (private dogfood). |
 | 12 — Launch + Content | —                                        | Phase 11   | ⬜ planned (M6)        | Pre-launch content runway (7 posts) + coordinated OSS drop                                                                                                                                                                   |
@@ -38,7 +38,7 @@ Summary of what shipped:
 - **P0–P6 — engine core** (16 packages across foundation → core → rendering/input → systems → features → integration). All green on device.
 - **P7 — hardening** (2 passes): API audit, zero-alloc pass on hot paths (`CollisionWorld.step`, `RenderSystem`, `Camera2D`, `ParticlePool`, `TilemapRenderer`), integration bench + heap-delta check.
 - **P8 — benchmarking**: microbenches + integration bench shipped; Android device capture (Samsung Galaxy A54 5G, release build) recorded in [`benchmarks/results/device.json`](../../benchmarks/results/device.json). Gating decision: Phase 10 stays deferred; physics broadphase would be the first C++ target if ever needed. iOS capture + audio/GC device measurements are optional follow-ups.
-- **P9 — demo game**: `apps/demo` shmup, playable end-to-end on device. Kenney atlas swap dropped 2026-04-22. Demo itself retires at stage 11.14 — PT free zones 1–3 become the canonical end-to-end reference.
+- **P9 — demo game**: `apps/demo` shmup shipped, playable end-to-end on device. Kenney atlas swap dropped 2026-04-22. Retired at stage 11.14 once PT M9.1 main menu shipped — `apps/pan-tvardowski` free zones 1–3 are now the canonical end-to-end reference.
 
 ### Phase 10 — C++ Acceleration (data-gated)
 
@@ -114,7 +114,7 @@ Genre-enabling pulled forward (Game 2 demand): `pathfinding` (roguelike needs it
 | 11.11 | M5 W1–W2      | web builds                                 | both demos on staging GH Pages, perf locked                                                                 |
 | 11.12 | M5 W3         | docs site                                  | `apps/site` Docusaurus, guides, API ref                                                                     |
 | 11.13 | M5 W4         | API lock + RC                              | snapshot tests, device bench, RC to npm                                                                     |
-| 11.14 | parallel M9.x | Extraction + reusability + demo retirement | Extract PT's genre-agnostic patterns back into engine; retire `apps/demo`                                   |
+| 11.14 | parallel M9.x | Extraction + reusability + demo retirement | Extract PT's genre-agnostic patterns back into engine; retire `apps/demo` (✅ closed 2026-04-24)      |
 
 **Store lineup (engine promotion, post-0.1.0).** The engine's launch is anchored by **three planned games** built on it: **Pan Tvardowski** (shmup, PT = the 0.1.0 anchor), a top-down action-adventure, and a deck-builder. Only PT is planned in this repo; the other two are noted here so readers understand the reusability intent driving stage 11.14's genre-agnostic rule. Details of the other two games are out of scope until PT ships.
 
@@ -150,7 +150,7 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
   1. `@flare-engine/errors`: React error boundary, structured crash payload (serializable), pluggable transport (Sentry adapter optional, no-op default).
   2. `@flare-engine/testing`: deterministic `World` factory with injectable Clock, mock `InputManager`, scene snapshot assertions, fake frame clock.
   3. Web parity fixes in `@flare-engine/render` (CanvasKit image loader), `@flare-engine/audio` (Web Audio backend), `@flare-engine/input` (pointer + keyboard), `@flare-engine/assets` (fetch loader). No API changes — backend switch behind existing exports.
-- **Done when.** `bun --cwd apps/demo run web` boots to the menu with no platform-specific code in the demo; `@flare-engine/testing` used in at least one new test in `@flare-engine/core`.
+- **Done when.** `bun --cwd apps/pan-tvardowski run web` boots to the menu with no platform-specific code in the game; `@flare-engine/testing` used in at least one new test in `@flare-engine/core`.
 
 #### 11.3 — UI kit (M1 W3–W4)
 
@@ -159,7 +159,7 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
   1. `@flare-engine/ui` primitives: `Panel`, `Button`, `Label`, `List`, `Modal`, `HUDBar`, `ProgressBar`.
   2. Focus navigation: keyboard + gamepad (stage 11.4 feeds this), tab order, focus ring.
   3. Theme tokens (color, spacing, type scale) + flex-like layout resolver.
-  4. Port `apps/demo` menus (main, pause, game-over, victory) and HUD to `@flare-engine/ui`; delete ad-hoc RN views.
+  4. Port the in-repo game's menus (main, pause, game-over, victory) and HUD to `@flare-engine/ui`; delete ad-hoc RN views.
 - **Done when.** Demo menus and HUD are `@flare-engine/ui`-only; keyboard tab navigates the menu; snapshot tests cover each primitive.
 
 #### 11.4 — Input (gamepad + remap) + PostFX (M2 W1–W2)
@@ -183,7 +183,7 @@ Concrete, small, unblocks the launch-week flip. Land alongside the stages they t
 
 #### 11.6 — ❌ DROPPED (2026-04-20)
 
-Roguelike scaffold moved to post-launch private repo. Kenney atlas swap in `apps/demo` deferred to stage 11.13 as a pre-launch polish item (bundled with docs-site assets).
+Roguelike scaffold moved to post-launch private repo. Kenney atlas swap dropped entirely (the original `apps/demo` target was retired at stage 11.14); PT uses a shape-atlas visual style instead of sprite art.
 
 #### 11.7 — Genre packages (revised 2026-04-20)
 
@@ -202,7 +202,7 @@ Roguelike scaffold moved to post-launch private repo. Kenney atlas swap in `apps
 
 #### 11.9 — ❌ DROPPED (2026-04-20)
 
-Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — launch-week demo content comes from `apps/demo` shoot-em-up (device video + optional web build).
+Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — launch-week demo content comes from `apps/pan-tvardowski` (device video + store-page links).
 
 #### 11.10 — Devtools + Tier-2 stubs (M4 W3–W4)
 
@@ -215,10 +215,10 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 #### 11.11 — Landing-page demo (revised 2026-04-22)
 
 - **Goal.** Landing page has a visible gameplay surface + a path from docs to a published store page, proving the engine ships end-to-end games.
-- **Decision (2026-04-22).** Live web build dropped entirely for 0.1.0. Engine-side CanvasKit parity is already proven (see [canvaskit-parity.md](../references/canvaskit-parity.md)); a live web demo adds hosting and perf-tuning surface with no launch-week payoff. The showcase game **Pan Tvardowski** ([docs/plans/pan-tvardowski-build-plan.md](./pan-tvardowski-build-plan.md)) supplies both the landing-page MP4 and the store-page link; `apps/demo` stays as the proof-of-concept + integration smoke test.
+- **Decision (2026-04-22).** Live web build dropped entirely for 0.1.0. Engine-side CanvasKit parity is already proven (see [canvaskit-parity.md](../references/canvaskit-parity.md)); a live web demo adds hosting and perf-tuning surface with no launch-week payoff. The showcase game **Pan Tvardowski** ([docs/plans/pan-tvardowski-build-plan.md](./pan-tvardowski-build-plan.md)) supplies both the landing-page MP4 and the store-page link; `apps/demo` was retired at stage 11.14 once PT M9.1 shipped.
 - **Tasks.**
   1. Placeholder MP4 slot in `apps/site` — an empty `<video>` element with a swappable URL. User drops in the final file when Pan Tvardowski gameplay is recordable.
-  2. Record the placeholder MP4 from `apps/demo` (device build, menu → play → boss → victory) so the site never ships with a broken embed; replace with Pan Tvardowski gameplay before RC.
+  2. Record the placeholder MP4 from `apps/pan-tvardowski` (device build, menu → play → boss) so the site never ships with a broken embed; replace with the final PT gameplay reel before RC.
   3. Docs-site store-page links (per [pan-tvardowski-build-plan.md §18](./pan-tvardowski-build-plan.md#18--publishing-plan)): Google Play + App Store first; Steam as 0.2.0 stretch.
 - **Done when.** MP4 + poster placeholders live on the Docusaurus site; store-page links exist (even if listed as "coming soon" at RC cut).
 - **Dropped.** Expo web export, CanvasKit live bundle tuning, Tauri wrap. All moved to post-0.1.0.
@@ -241,8 +241,8 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 - **Tasks.**
   1. OSS-readiness items 11.0.1 (2)–(6): per-package READMEs, governance files, API-snapshot tooling, OIDC publishing, Phase 0–9 archival.
   2. Public-API snapshot tests in each package (`@arethetypeswrong/cli` + `.d.ts` text snapshot); breaking changes require a Changeset.
-  3. Device FPS captures on iOS + Android hardware via the `apps/pan-tvardowski` bench scene (or its predecessor in `apps/demo` if 11.14 hasn't retired it yet); populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
-  4. **Kenney atlas swap — DROPPED (2026-04-22).** Replaced by the Pan Tvardowski showcase game ([pan-tvardowski-build-plan.md](./pan-tvardowski-build-plan.md)), which uses a shape-atlas visual style instead of sprite art. `apps/demo` is retired at stage 11.14; PT's free zones 1–3 become the canonical end-to-end reference.
+  3. Device FPS captures on iOS + Android hardware via the `apps/pan-tvardowski` bench scene (landing at M9.6); populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
+  4. **Kenney atlas swap — DROPPED (2026-04-22).** Replaced by the Pan Tvardowski showcase game ([pan-tvardowski-build-plan.md](./pan-tvardowski-build-plan.md)), which uses a shape-atlas visual style instead of sprite art. `apps/demo` was retired at stage 11.14; PT's free zones 1–3 are the canonical end-to-end reference.
   5. **EUIPO trademark filing.** File word mark "Pan Tvardowski" in Classes 9 + 41 (details in [pan-tvardowski-build-plan.md §19](./pan-tvardowski-build-plan.md#19--trademark-plan)). ~€900 DIY; filing date protects rights pre-launch even though certificate arrives post-launch.
   6. Flip `"private": true` → `false` on the shipping `packages/*` (all 28 Tier-1 / Tier-2 / genre / stub packages that are not apps or benchmarks). Keep `apps/*` and `benchmarks` private.
   7. Changeset version cut to `0.1.0-rc.1`; publish all shipping packages to npm under `rc` dist-tag; dry-run install `npm create flare-app@latest` from the RC.
@@ -261,9 +261,11 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
   6. `@flare-engine/iap` — `ProductCatalog` type + `EntitlementStore` (entitlement cache, `isEntitled`, restore-on-boot, gate hook). Powers the "free/paid variant build" pattern: 100 % free games, buy-once games, and freemium content-gated games use the same API.
   7. `@flare-engine/share` — `createScreenshotScene` for store-asset capture.
   8. `@flare-engine/assets` — document canonical placeholder-atlas pattern (`createProceduralAtlas` already exists; PT's shape atlas becomes the canonical example).
-- **Demo retirement.** Delete `apps/demo` after PT M9.1 ships (main menu exists in PT). Update `README.md`, `AGENTS.md`, `docs/design/architecture.md`, and any skill/agent that references `apps/demo` to point at `apps/pan-tvardowski` (free zones 1–3) as the canonical end-to-end reference. `packages/create-flare-app` templates (blank / topdown / shmup) remain as the first-run scaffold; they already cover the "tiny starter" role the demo used to play.
+- **Demo retirement.** `apps/demo` deleted 2026-04-24 once PT M9.1 main menu shipped. `README.md`, `AGENTS.md`, `docs/design/architecture.md`, and every skill/agent that referenced `apps/demo` now point at `apps/pan-tvardowski` (free zones 1–3) as the canonical end-to-end reference. `packages/create-flare-app` templates (blank / topdown / shmup) remain as the first-run scaffold; they already cover the "tiny starter" role the demo used to play.
 - **Per-package skill updates.** Every package that gains an extracted helper gets its SKILL.md updated with the new API + a worked example ported from PT. No new skill files.
 - **Done when.** All 8 extractions shipped as minor bumps with tests; `apps/demo` removed; every `apps/demo` reference across docs + customization points at PT; `bun run test && bun run build` green; `packages/create-flare-app` tests still pass.
+
+**2026-04-24 — ✅ STAGE 11.14 COMPLETE.** 8/8 engine extractions shipped; 8/8 per-package SKILL.md files updated; PT M9.1 (main menu + save-select + settings + credits shell) shipped with 135 tests green; `apps/demo` deleted and every reference across docs + customization files swept to point at `apps/pan-tvardowski`. Monorepo `typecheck + lint + build + test` green.
 
 **2026-04-24 — 8/8 engine extractions shipped.** All genre-agnostic helpers landed in engine packages; monorepo `typecheck + lint + build + test` green (1582 tests pass, 36 build tasks). PT M9.x is now unblocked.
 
@@ -276,7 +278,7 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 - `@flare-engine/engine` — `createTier2Wiring({ events, providers, rules })` using structural `Tier2EventSource` + `Tier2Providers` interfaces (no new deps); `AnalyticsRule` / `LeaderboardRule` / `AchievementRule` map game events to provider calls; returns teardown fn; unknown providers skip. Tests import from `../src/tier2-wiring.js` directly — barrel pulls `@flare-engine/react` which crashes `bun test` under RN (19 tests).
 - `@flare-engine/assets` — JSDoc note on `createProceduralAtlas` pointing at `apps/pan-tvardowski/src/shape-atlas.ts` as the canonical placeholder-atlas example (code unchanged).
 
-**Still pending for 11.14 close-out:** `apps/demo` deletion (gated on PT M9.1 main menu shipping), skill + doc sweep to replace remaining `apps/demo` references with PT free zones 1–3, per-package SKILL.md updates for the 8 new helpers.
+**Still pending for 11.14 close-out:** (none) — stage 11.14 closed 2026-04-24.
 
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 

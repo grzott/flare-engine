@@ -187,7 +187,7 @@ Keep `apps/<game>/locales/en.json` and `pl.json` in sync. A test can assert `Obj
 
 ---
 
-## Pitfalls (from `apps/demo` post-mortem)
+## Pitfalls (from Flare game post-mortems)
 
 Do not re-discover these:
 

@@ -87,7 +87,7 @@ Heap growth across N steady-state frames after warmup, measured `process.memoryU
 
 ## Device
 
-On-device FPS samples captured from `apps/demo`'s benchmark scene (hidden triple-tap on title). Each sample = one second; load levels spawn fixed entity/particle counts.
+On-device FPS samples captured from a device benchmark scene (hidden triple-tap on title). Each sample = one second; load levels spawn fixed entity/particle counts.
 
 ### Samsung Galaxy A54 5G (Android 16 / One UI 8.0)
 

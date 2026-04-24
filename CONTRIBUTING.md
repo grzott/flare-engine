@@ -14,7 +14,7 @@ bun run build        # Build all 34 packages (turbo, dependency-ordered)
 bun run test         # Run the full test suite
 ```
 
-First-time setup needs [Bun](https://bun.sh) 1.1+. The demo app additionally needs an Expo-compatible iOS / Android environment — see [apps/demo/README.md](apps/demo) for details.
+First-time setup needs [Bun](https://bun.sh) 1.1+. The reference game additionally needs an Expo-compatible iOS / Android environment — see [apps/pan-tvardowski/README.md](apps/pan-tvardowski) for details.
 
 ---
 
@@ -52,7 +52,7 @@ First-time setup needs [Bun](https://bun.sh) 1.1+. The demo app additionally nee
 ## Project Layout
 
 - [packages/](packages/) — the `@flare-engine/*` packages (34 total). See [README.md](README.md#packages) for the layer map.
-- [apps/demo/](apps/demo/) — device-verified Expo consumer app; doubles as an integration test.
+- [apps/pan-tvardowski/](apps/pan-tvardowski/) — device-verified Expo consumer app; canonical end-to-end reference + integration smoke test.
 - [apps/bench-dashboard/](apps/bench-dashboard/) — Next.js visualizer for benchmark results.
 - [benchmarks/](benchmarks/) — perf harness.
 - [docs/](docs/README.md) — design, plans, references.

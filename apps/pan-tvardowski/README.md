@@ -1,8 +1,8 @@
 # Pan Tvardowski
 
-A vertical-scrolling shoot-em-up inspired by the Polish legend of **Pan Twardowski** — the alchemist who bargained with the Devil, served King Sigismund II Augustus at Wawel, and was exiled to the Moon. The canonical showcase game for the [Flare engine](../../README.md).
+A vertical-scrolling shoot-em-up inspired by the Polish legend of **Pan Twardowski** — the alchemist who bargained with the Devil, served King Sigismund II Augustus at Wawel, and was exiled to the Moon. The canonical end-to-end showcase + integration smoke test for the [Flare engine](../../README.md).
 
-**Not the engine demo.** [`apps/demo`](../demo) remains the minimal proof-of-concept + integration smoke test. `apps/pan-tvardowski` is the end-to-end showcase — every shipping `@flare-engine/*` package is exercised by at least one game mechanic.
+`apps/pan-tvardowski` exercises every shipping `@flare-engine/*` package except `pathfinding` (post-launch) via at least one game mechanic. Free zones 1–3 replace the retired `apps/demo` as the canonical reference game. New-project scaffolds live in [`packages/create-flare-app`](../../packages/create-flare-app).
 
 ## Design docs
 

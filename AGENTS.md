@@ -24,10 +24,11 @@ Each package is independently publishable. No circular deps. Full diagram in [do
 
 ## Status
 
-The full engine is shipping. Two apps in the monorepo:
+The full engine is shipping. One game app in the monorepo:
 
-- [`apps/demo`](apps/demo) — **proof-of-concept + integration smoke test.** Minimal vertical-slice shoot-em-up, device-verified end-to-end on Android (procedural placeholder art). Covers the full engine loop: menu + 3 save slots → base hub → dialogue → play (w/ pause) → end summary. MMKV-backed saves + settings. PolyForm Noncommercial license.
-- [`apps/pan-tvardowski`](apps/pan-tvardowski) — **the canonical showcase.** Full-scope vertical shmup themed on Polish folklore (_Pan Twardowski_ legend). 8 zones, 12 enemies, 4 weapons, PL+EN, shape-atlas visuals at 0.1.x. Exercises every shipping `@flare-engine/*` package except `pathfinding` (covered by a separate post-launch project). Pre-production as of 2026-04-22; design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md).
+- [`apps/pan-tvardowski`](apps/pan-tvardowski) — **the canonical end-to-end reference + integration smoke test.** Full-scope vertical shmup themed on Polish folklore (_Pan Twardowski_ legend). 8 zones, 12 enemies, 4 weapons, PL+EN, shape-atlas visuals at 0.1.x. Exercises every shipping `@flare-engine/*` package except `pathfinding` (covered by a separate post-launch project). Free zones 1–3 are the canonical end-to-end reference — see [pan-tvardowski-build-plan.md §20](docs/plans/pan-tvardowski-build-plan.md#20--monetization-model). Design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md).
+
+`apps/demo` (the original minimal proof-of-concept) was retired at stage 11.14 once PT's main menu shipped. New-project scaffolds live in [`packages/create-flare-app`](packages/create-flare-app) (blank / topdown / shmup templates).
 
 Engine packages ship MIT; game apps ship PolyForm Noncommercial.
 

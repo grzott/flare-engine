@@ -16,7 +16,7 @@ Select packages, choose bump type (patch/minor/major), and write a short summary
 2. Review the diff, commit, merge to `main`.
 3. `bun run release` — builds every package and publishes to npm.
 
-All `@flare-engine/*` packages are versioned in lockstep via the `linked` group in `config.json`. `@flare-engine/benchmarks` and `@flare-engine-apps/demo` are ignored (never published).
+All `@flare-engine/*` packages are versioned in lockstep via the `linked` group in `config.json`. `@flare-engine/benchmarks` is ignored (never published).
 
 ## Publishing prerequisites (one-time)
 

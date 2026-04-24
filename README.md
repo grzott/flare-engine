@@ -14,8 +14,7 @@
 **Pre-release — 0.1.0 coming October 2026.**
 
 - 34 packages implemented and tested (~1100+ tests, 0 failures)
-- [`apps/demo`](apps/demo) — proof-of-concept + integration smoke test; device-verified vertical-slice shoot-em-up on Android (procedural placeholder art)
-- [`apps/pan-tvardowski`](apps/pan-tvardowski) — the canonical showcase game (Polish-folklore shmup, 8 zones, PL+EN). Pre-production; design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md)
+- [`apps/pan-tvardowski`](apps/pan-tvardowski) — the canonical end-to-end reference + integration smoke test. Polish-folklore shmup, 8 zones playable, PL+EN; free zones 1–3 replace the retired `apps/demo` as the reference game. Design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md)
 - Phase 11 (OSS launch prep) is in progress — remaining work: landing-page MP4 + store-page links, Docusaurus site, device FPS capture, API snapshot lock, governance files, EUIPO trademark filing, RC publish
 - `@flare-engine` npm scope reserved 2026-04-17; packages flip `"private": false` at RC cut
 - Full roadmap: [docs/plans/build-plan.md](docs/plans/build-plan.md)
@@ -100,10 +99,10 @@ bun run build
 bun run test
 ```
 
-The demo app runs via Expo:
+The reference game runs via Expo:
 
 ```bash
-cd apps/demo
+cd apps/pan-tvardowski
 bun run start
 ```
 

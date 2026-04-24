@@ -6,7 +6,7 @@
 
 ## Strategy: JS First, C++ Second
 
-**Phases 1–9 (done):** Everything in TypeScript. Ship working modules. Validate APIs on device (`apps/demo` full loop verified).
+**Phases 1–9 (done):** Everything in TypeScript. Ship working modules. Validate APIs on device (`apps/demo` full loop verified pre-retirement; `apps/pan-tvardowski` is the current canonical reference).
 **Phase 8 (in progress):** Microbenches shipped; device FPS capture pipeline ready and pending hardware run.
 **Phase 10 (data-gated):** Once device numbers land, move the measured bottlenecks to C++ via Nitro Modules.
 

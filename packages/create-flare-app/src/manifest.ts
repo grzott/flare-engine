@@ -31,7 +31,8 @@ export const TEMPLATES: Record<string, TemplateManifest> = {
   shmup: {
     id: 'shmup',
     displayName: 'Shoot-em-up',
-    description: 'Auto-fire player, enemy spawner, HUD score — mirrors apps/demo minimum slice.',
+    description:
+      'Auto-fire player, enemy spawner, HUD score — mirrors a minimum vertical-slice shmup.',
     engines: { node: '>=20' },
     postInstall: 'bun run start',
   },

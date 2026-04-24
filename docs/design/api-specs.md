@@ -301,7 +301,7 @@ Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, me
 - `FocusManager` is the single source of truth for keyboard / gamepad navigation. Drivers (keyboard listener, gamepad dpad) just call `next` / `prev` / `activate`. Gamepad wiring lands in stage 11.4 without any UI-kit changes.
 - `resolveLayout` is pure and allocation-light (one output array); useful for Skia-rendered HUD that needs deterministic pixel positions outside the React Native flex engine.
 - Component tests are thin (export-check) because bun-test has no RN runtime; the heavy-logic modules (`theme`, `focus`, `layout`) are fully unit-tested.
-- `apps/demo` menus + HUD port to `@flare-engine/ui` is a separate integration task (stage 11.3 task 4).
+- `apps/pan-tvardowski` menus + HUD consume `@flare-engine/ui` end-to-end (M9.1).
 
 ---
 
@@ -474,7 +474,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | `create-flare-app <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
 | Template `blank` | Empty scene, single sprite, `GameView` wired via `@flare-engine/react`. Smallest starting point. |
 | Template `topdown` | Player with 4-direction movement, tilemap + camera follow, one enemy prefab. Exercises `tilemap` + `input` + `ecs`. |
-| Template `shmup` | Auto-fire player, enemy spawner, HUD score, mirrors the minimum slice of `apps/demo`. Exercises `particles` + `audio` + `scene`. |
+| Template `shmup` | Auto-fire player, enemy spawner, HUD score — minimum vertical-slice shmup. Exercises `particles` + `audio` + `scene`. For the full-scope showcase, see `apps/pan-tvardowski`. |
 | `TemplateManifest` | Exported type: `{ id, displayName, description, engines, postInstall? }`. Declared per template so contributor-authored templates can plug in identically. |
 
 **Implementation notes:**

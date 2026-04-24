@@ -199,7 +199,7 @@ function printMarkdown(
   lines.push('');
   if (device && device.devices.length > 0) {
     lines.push(
-      "On-device FPS samples captured from `apps/demo`'s benchmark scene (hidden triple-tap on title). Each sample = one second; load levels spawn fixed entity/particle counts.",
+      'On-device FPS samples captured from a device benchmark scene (hidden triple-tap on title). Each sample = one second; load levels spawn fixed entity/particle counts.',
     );
     lines.push('');
     for (const d of device.devices) {
@@ -221,7 +221,7 @@ function printMarkdown(
     }
   } else {
     lines.push(
-      'No device samples captured yet. Run `apps/demo` on hardware, open the bench scene (triple-tap the menu title), copy CSV from console, and append entries to `benchmarks/results/device.json`.',
+      'No device samples captured yet. Run a release build on hardware, open the bench scene (triple-tap the menu title), copy CSV from console, and append entries to `benchmarks/results/device.json`.',
     );
     lines.push('');
   }

@@ -11,7 +11,7 @@ Private, never published to npm. Not part of the engine runtime.
 | `/`            | `benchmarks/results/microbench.json` | Headline cards — ECS / particles / render / integration     |
 | `/micro`       | `benchmarks/results/microbench.json` | Per-suite tables + charts (ECS, physics, particles, render) |
 | `/integration` | `benchmarks/results/microbench.json` | Integration-frame cost + heap delta                         |
-| `/device`      | `benchmarks/results/device.json`     | On-device FPS captures from `apps/demo` bench scene         |
+| `/device`      | `benchmarks/results/device.json`     | On-device FPS captures from a device bench scene            |
 
 JSON files are read at build time via `app/lib/data.ts`. Changing results = rerun the bench generators (see below) and rebuild.
 
@@ -36,9 +36,9 @@ cd benchmarks
 bun run bench        # writes benchmarks/results/microbench.json
 ```
 
-**Device JSON** — hand-append samples from `apps/demo`:
+**Device JSON** — hand-append samples from a device bench scene (the original `apps/demo` source was retired at stage 11.14; `apps/pan-tvardowski` M9.6 will re-introduce an in-game bench scene):
 
-1. Release build the demo on hardware: `cd apps/demo && npx expo run:android --variant release --device`
+1. Release build on hardware: `cd apps/pan-tvardowski && npx expo run:android --variant release --device`
 2. Triple-tap the menu title → bench scene runs 3 × 10 s
 3. Copy CSV between `BENCH FPS CSV BEGIN` / `END` markers from logcat (`adb logcat ReactNativeJS:V *:S`)
 4. Append a device entry to [`benchmarks/results/device.json`](../../benchmarks/results/device.json) following the existing schema

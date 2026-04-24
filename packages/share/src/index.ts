@@ -19,3 +19,10 @@ export {
   type SharePayload,
   type ShareTransport,
 } from './share.js';
+export {
+  type ScreenshotScene,
+  type ScreenshotSceneOptions,
+  type ScreenshotTarget,
+  type ScreenshotResult,
+  createScreenshotScene,
+} from './screenshot-scene.js';

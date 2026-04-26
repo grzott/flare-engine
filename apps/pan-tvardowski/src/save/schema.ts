@@ -2,7 +2,7 @@ import type { ZoneId } from '../events';
 import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
 import { defaultControls, defaultSettings } from '../state';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
@@ -24,6 +24,8 @@ export interface SaveFile {
   readonly activeSlot: number | null;
   /** Whether the opening cutscene has been shown. Introduced in v2 (M7). */
   readonly introSeen: boolean;
+  /** Codex entry ids that have been unlocked across all slots. Introduced in v4 (M9.2). */
+  readonly codexUnlocked: readonly string[];
 }
 
 export function defaultSaveFile(): SaveFile {
@@ -33,6 +35,7 @@ export function defaultSaveFile(): SaveFile {
     slots: [null, null, null],
     activeSlot: null,
     introSeen: false,
+    codexUnlocked: [],
   };
 }
 
@@ -128,12 +131,17 @@ export function parseSaveFile(raw: string | null): SaveFile {
   // v1 → v2 migration: if `introSeen` is absent, replay the prologue once
   // (acts as a re-introduction after update).
   const introSeen = isBool(o.introSeen) ? o.introSeen : false;
+  // v3 → v4 migration: `codexUnlocked` absent → empty (all locked).
+  const codexUnlocked: string[] = Array.isArray(o.codexUnlocked)
+    ? (o.codexUnlocked as unknown[]).filter((v): v is string => typeof v === 'string')
+    : [];
   return {
     version: SAVE_VERSION,
     settings: parseSettings(o.settings),
     slots,
     activeSlot,
     introSeen,
+    codexUnlocked,
   };
 }
 

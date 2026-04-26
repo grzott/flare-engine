@@ -12,11 +12,11 @@ Legend: ⬜ not started · 🟡 in progress · ✅ done · ❌ rejected.
 
 All slots must be manifest-driven so non-engineer collaborators can swap files without code changes. See M9.5 in [pan-tvardowski-build-plan.md §17](./pan-tvardowski-build-plan.md#17--milestones).
 
-- [ ] ⬜ Sprite atlas manifest schema shipped (`apps/pan-tvardowski/assets/sprites.manifest.json`) — placeholder = current shape atlas; production atlas dropped in same path.
-- [ ] ⬜ Audio atlas manifest schema shipped (`apps/pan-tvardowski/assets/audio.manifest.json`) — placeholder = procedural sine tracks (current); production MP3/OGG dropped in same path.
-- [ ] ⬜ Avatar portrait manifest shipped (`apps/pan-tvardowski/assets/portraits.manifest.json`) — placeholder = shape-portraits; production portraits same keys.
-- [ ] ⬜ Zero hardcoded asset paths outside the three manifests (enforced by lint rule or grep pre-commit).
-- [ ] ⬜ Drop-in swap dry-run: replace one placeholder sprite + one placeholder audio with real file → game runs unchanged.
+- [x] ✅ Sprite atlas manifest schema shipped (`apps/pan-tvardowski/assets/sprites.manifest.json`) — placeholder = current shape atlas; production atlas dropped in same path.
+- [x] ✅ Audio atlas manifest schema shipped (`apps/pan-tvardowski/assets/audio.manifest.json`) — placeholder = procedural sine tracks (current); production MP3/OGG dropped in same path.
+- [x] ✅ Avatar portrait manifest shipped (`apps/pan-tvardowski/assets/portraits.manifest.json`) — placeholder = shape-portraits; production portraits same keys.
+- [x] ✅ Zero hardcoded asset paths outside the three manifests (enforced by lint rule or grep pre-commit).
+- [x] ✅ Drop-in swap dry-run: replace one placeholder sprite + one placeholder audio with real file → game runs unchanged.
 
 ## 2. Store accounts + build pipeline
 

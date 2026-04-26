@@ -50,7 +50,9 @@ const { image, sheet } = createProceduralAtlas(
 );
 ```
 
-**Canonical placeholder-atlas pattern:** [`apps/pan-tvardowski/src/shape-atlas.ts`](../../../apps/pan-tvardowski/src/shape-atlas.ts) draws a full game's worth of enemies / bullets / particles as Skia shapes onto an offscreen surface and emits a `SpriteSheet`. Production sprite art drops into the same manifest slot at M9.5 with no code change. Mirror this pattern for any new game that wants to start without commissioned art.
+**Canonical placeholder-atlas pattern:** [`apps/pan-tvardowski/src/shape-atlas.ts`](../../../apps/pan-tvardowski/src/shape-atlas.ts) draws a full game's worth of enemies / bullets / particles as Skia shapes onto an offscreen surface and emits a `SpriteSheet`. Production sprite art drops into the same manifest slot with no code change. Mirror this pattern for any new game that wants to start without commissioned art.
+
+**Three-manifest pattern (M9.5):** `apps/pan-tvardowski/assets/` holds three JSON manifests — `sprites.manifest.json`, `audio.manifest.json`, `portraits.manifest.json` — each versioned at `{ "version": 1, ... }`. Each entry carries a `kind` field (closed union: `shape-atlas`/`texture-packer`, `synth`/`file`, `shape`/`image`) that drives dispatch in the corresponding loader (`src/assets/sprites-loader.ts`, `audio-loader.ts`, `portraits-loader.ts`). Placeholder kinds (`shape-atlas`, `synth`, `shape`) delegate to the procedural generators already in the codebase; production kinds (`texture-packer`, `file`, `image`) throw a reserved-for-next-milestone error. A non-engineer swaps one entry's `kind` and drops the real file next to the manifest — zero code change required. The boundary-lint test in `tests/asset-manifest.test.ts` asserts that no source file outside `src/assets/` imports the placeholder generators directly.
 
 ## Rules
 

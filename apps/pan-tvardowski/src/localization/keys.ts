@@ -11,6 +11,7 @@ const menu = [
   'menu.settings',
   'menu.credits',
   'menu.inventory',
+  'menu.shop',
   'menu.quit',
   'menu.settings.title',
   'menu.settings.language',
@@ -154,6 +155,22 @@ const upgrades = [
   'upgrades.kamien-filozoficzny.desc',
 ] as const;
 
+const shop = [
+  'shop.title',
+  'shop.subtitle',
+  'shop.full_game.title',
+  'shop.full_game.desc',
+  'shop.full_game.price',
+  'shop.shards_small.title',
+  'shop.shards_small.desc',
+  'shop.shards_small.price',
+  'shop.owned',
+  'shop.restore',
+  'shop.back',
+  'shop.gate.title',
+  'shop.gate.desc',
+] as const;
+
 const inventory = [
   'inventory.tab.codex',
   'inventory.tab.shards',
@@ -273,6 +290,7 @@ export const LOCALIZATION_KEYS = [
   ...weapons,
   ...ships,
   ...upgrades,
+  ...shop,
   ...inventory,
   ...dialogue,
   ...achievements,

@@ -33,14 +33,14 @@ All slots must be manifest-driven so non-engineer collaborators can swap files w
 
 The engine must support **three ship modes** without branching: (a) 100 % free, (b) buy-once, (c) freemium with content gates. PT is mode (c); see [pan-tvardowski-build-plan.md §20](./pan-tvardowski-build-plan.md#20--monetization-model).
 
-- [ ] ⬜ `ProductCatalog` type + `EntitlementStore` shipped in `@flare-engine/iap` (Phase 11.14).
-- [ ] ⬜ PT catalogue defined in `apps/pan-tvardowski/src/iap/catalog.ts` (single source; referenced by ShopPanel + zone-gate logic).
+- [x] ✅ `ProductCatalog` type + `EntitlementStore` shipped in `@flare-engine/iap` (Phase 11.14).
+- [x] ✅ PT catalogue defined in `apps/pan-tvardowski/src/iap/catalog.ts` (single source; referenced by ShopPanel + zone-gate logic).
 - [ ] ⬜ Google Play Console: `pan_tvardowski.full_game` (non-consumable) created; price set; localized name + description.
 - [ ] ⬜ Google Play Console: `pan_tvardowski.supporter_pack` (non-consumable) created.
 - [ ] ⬜ Google Play Console: `pan_tvardowski.shards_small` / `_large` (consumable) created — **or explicitly disabled in catalogue**.
 - [ ] ⬜ App Store Connect: matching product IDs + metadata + screenshots.
 - [ ] ⬜ IAP provider adapter chosen (RevenueCat / native StoreKit + Play Billing / other) — recorded in [pan-tvardowski-build-plan.md §20](./pan-tvardowski-build-plan.md#20--monetization-model).
-- [ ] ⬜ Restore Purchases UI wired in Settings.
+- [x] ✅ Restore Purchases UI wired in ShopOverlay (M9.3).
 - [ ] ⬜ Entitlement-lost fallback: if user owned zones 4–8 and entitlement lapses (edge case), app gracefully returns them to free-mode without data loss.
 
 ## 4. Legal

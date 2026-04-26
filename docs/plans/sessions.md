@@ -33,6 +33,14 @@ Short-horizon, executable session plan. Sits between the long-horizon roadmaps (
 | 12 | pending | [game] | M9.4 dialogue graph speakerPortraitKey plumbing for opening + zone-7 + victory | apps/pan-tvardowski/src/dialogue/graphs.ts, src/dialogue/portraits.ts, tests/dialogue-portraits.test.ts | lint, typecheck, test (+3) | 2 | — | — | — |
 | 13 | pending | [game] | M9.4 DialoguePanel avatar slot wiring with shape-portrait placeholders | apps/pan-tvardowski/src/hud/DialogueOverlay.tsx, src/dialogue/shape-portraits.ts, tests/dialogue-overlay-avatar.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #12 | — | — |
 | 14 | pending | [game] | M9.4 close: tick §17 M9.4 checkbox; Change log + mirror row sync | docs/plans/pan-tvardowski-build-plan.md, docs/references/builder-reference.md | lint, typecheck, test | 1 | #13 | — | — |
+| 15 | pending | [game] | M9.6 EAS build profile + keystore docs + version-bump policy | apps/pan-tvardowski/eas.json, apps/pan-tvardowski/docs/keystore.md, apps/pan-tvardowski/app.json | lint, typecheck, test, build | 2 | — | — | — |
+| 16 | pending | [game] | M9.6 privacy UI + data-safety declaration; add PL+EN keys for settings.privacy | apps/pan-tvardowski/src/scenes/settings.ts, src/hud/PrivacyOverlay.tsx, src/save/schema.ts, locales/en.json, locales/pl.json, tests/privacy-overlay.test.ts | lint, typecheck, test (+3), build, device-smoke | 3 | — | — | — |
+| 17 | pending | [game] | M9.6 Sentry crash-transport binding gated behind crashOptIn | apps/pan-tvardowski/src/errors/transport.ts, src/App.tsx, tests/crash-transport.test.ts | lint, typecheck, test (+3), build | 3 | #16 | — | — |
+| 18 | pending | [game] | M9.6 screenshot capture scene via @flare-engine/share createScreenshotScene | apps/pan-tvardowski/src/scenes/capture.ts, src/share/manager.ts, tests/capture-scene.test.ts | lint, typecheck, test (+2), build, device-smoke | 3 | — | — | — |
+| 19 | pending | [game] | M9.6 balance freeze with BALANCE_FROZEN_AT + grep pre-commit guard | apps/pan-tvardowski/src/config/zones.ts, src/config/enemies.ts, src/config/upgrades.ts, scripts/check-balance-freeze.sh | lint, typecheck, test, build | 2 | — | — | — |
+| 20 | pending | [game] | M9.6 locale parity audit script + fix any EN/PL drift | apps/pan-tvardowski/scripts/check-locale-parity.ts, package.json, locales/en.json, locales/pl.json | lint, typecheck, test (+1), build | 2 | #16 | — | — |
+| 21 | pending | [game] | M9.6 save-migrator with synthetic fixture round-trip (full v→current chain) | apps/pan-tvardowski/src/save/migrate.ts, src/save/schema.ts, tests/save-migrator.test.ts | lint, typecheck, test (+4), build | 3 | #16 | — | — |
+| 22 | pending | [game] | M9.6 close: tick §17 M9.6 + release-checklist §2/§4/§5/§7/§8 + mirror sync | docs/plans/pan-tvardowski-build-plan.md, docs/plans/release-readiness-checklist.md, docs/references/builder-reference.md | lint, typecheck, test, build | 1 | #15, #17, #18, #19, #20, #21 | — | — |
 
 ## Archive
 

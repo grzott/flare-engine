@@ -13,6 +13,7 @@ import {
 } from '@flare-engine/engine';
 import { ErrorBoundary, createConsoleTransport } from '@flare-engine/errors';
 import type { CrashPayload } from '@flare-engine/errors';
+import { type EntitlementStore, NoopIAPProvider } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
 import type { ShareManager } from '@flare-engine/share';
 import { Skia } from '@shopify/react-native-skia';
@@ -35,6 +36,9 @@ import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
 import { InventoryOverlay } from './hud/InventoryOverlay';
 import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
+import { ShopOverlay } from './hud/ShopOverlay';
+import { PT_ENTITLEMENT } from './iap/catalog';
+import { createPTEntitlementStore } from './iap/store';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
 import { createBootScene } from './scenes/boot';
@@ -46,16 +50,24 @@ import type { PlayRenderHooks } from './scenes/play';
 import { createPlayScene } from './scenes/play';
 import { createSaveSelectScene } from './scenes/save-select';
 import { createSettingsScene } from './scenes/settings';
+import { createShopScene } from './scenes/shop';
 import { buildShapeAtlas } from './shape-atlas';
 import { createShareManager, shareHighScore } from './share/manager';
 import {
   bombButtonState,
   gameState,
   joystickState,
+  notifyStateChanged,
   resetBombButtonFrame,
   resetGameState,
 } from './state';
 import { mountTier2Wiring } from './tier2/wiring';
+
+const GATED_ZONES = new Set<string>(['z4', 'z5', 'z6', 'z7', 'z8']);
+
+function isGatedZone(zone: ZoneId): boolean {
+  return GATED_ZONES.has(zone);
+}
 
 interface AudioRef {
   current: AudioHandles | null;
@@ -70,6 +82,7 @@ interface BootstrapDeps {
   audioRef: AudioRef;
   dialogue: ReturnType<typeof createDialogueController>;
   saveStore: ReturnType<typeof createSaveStore>;
+  entitlementStore: EntitlementStore;
 }
 
 function applyVolumes(audio: AudioHandles | null): void {
@@ -83,7 +96,7 @@ function applyVolumes(audio: AudioHandles | null): void {
 }
 
 function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
-  const { ctx, localization, renderHooks, audioRef, dialogue, saveStore } = deps;
+  const { ctx, localization, renderHooks, audioRef, dialogue, saveStore, entitlementStore } = deps;
   const atlas = buildShapeAtlas(Skia);
   // PostFx: pass `null` Skia module — visible SkSL compositing requires a
   // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
@@ -98,6 +111,9 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
       async () => {
         await saveStore.load();
         localization.setLocale(gameState.settings.locale);
+        for (const key of saveStore.entitlements()) {
+          entitlementStore.grant(key);
+        }
       },
       async () => {
         const handles = await initAudio(ctx);
@@ -112,6 +128,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   ctx.scenes.register('settings', createSettingsScene(ctx));
   ctx.scenes.register('credits', createCreditsScene(ctx));
   ctx.scenes.register('inventory', createInventoryScene(ctx));
+  ctx.scenes.register('shop', createShopScene(ctx));
   ctx.scenes.register(
     'play',
     createPlayScene({
@@ -191,6 +208,7 @@ function AppRoot(): React.ReactElement {
   const audioRef = useMemo<AudioRef>(() => ({ current: null }), []);
   const dialogueController = useMemo(() => createDialogueController(), []);
   const saveStore = useMemo(() => createSaveStore(), []);
+  const entitlementStore = useMemo(() => createPTEntitlementStore(), []);
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
@@ -269,11 +287,26 @@ function AppRoot(): React.ReactElement {
       goInventory: () => {
         void ctxRef.current?.scenes.go('inventory');
       },
+      goShop: () => {
+        void ctxRef.current?.scenes.go('shop');
+      },
       startSlot: (index) => {
         void (async () => {
           const existing = saveStore.getSlot(index);
           if (existing === null) await saveStore.createSlot(index);
           else await saveStore.selectSlot(index);
+          const slot = saveStore.getSlot(index);
+          if (
+            slot !== null &&
+            isGatedZone(slot.zoneReached) &&
+            !entitlementStore.isEntitled(PT_ENTITLEMENT.FULL_GAME)
+          ) {
+            gameState.shopGateVisible = true;
+            notifyStateChanged();
+            void ctxRef.current?.scenes.go('shop');
+            return;
+          }
+          gameState.shopGateVisible = false;
           void ctxRef.current?.scenes.go('play');
         })();
       },
@@ -283,7 +316,7 @@ function AppRoot(): React.ReactElement {
         localization.setLocale(gameState.settings.locale);
       },
     }),
-    [ctxRef, saveStore, localization],
+    [ctxRef, saveStore, localization, entitlementStore],
   );
 
   const snapshotSource = useMemo(() => {
@@ -361,6 +394,7 @@ function AppRoot(): React.ReactElement {
               audioRef,
               dialogue: dialogueController,
               saveStore,
+              entitlementStore,
             });
           }}
         >
@@ -380,6 +414,13 @@ function AppRoot(): React.ReactElement {
           localization={localization}
           save={saveStore}
           actions={{ goMenu: menuActions.goMenu }}
+        />
+        <ShopOverlay
+          localization={localization}
+          save={saveStore}
+          entitlementStore={entitlementStore}
+          iapProvider={NoopIAPProvider}
+          actions={{ goMenu: menuActions.goMenu, goSaveSelect: menuActions.goSaveSelect }}
         />
         <DialogueOverlay localization={localization} controller={dialogueController} />
         {__DEV__ && ctx && snapshotSource ? (

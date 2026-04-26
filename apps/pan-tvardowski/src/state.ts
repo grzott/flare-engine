@@ -9,6 +9,7 @@ export type SceneName =
   | 'settings'
   | 'credits'
   | 'inventory'
+  | 'shop'
   | 'play'
   | 'game-over'
   | 'victory';
@@ -162,6 +163,12 @@ export interface GameState {
   runStats: RunStats;
   /** Active dialogue line; null = gameplay runs, non-null = paused. */
   dialogue: DialogueHudState | null;
+  /**
+   * When true, the SaveSelect screen shows a "Unlock Full Game" gate instead
+   * of launching the slot directly. Set by startSlot for zones 4–8 if the
+   * player lacks the full_game entitlement.
+   */
+  shopGateVisible: boolean;
 }
 
 export const gameState: GameState = {
@@ -193,6 +200,7 @@ export const gameState: GameState = {
   settings: defaultSettings(),
   runStats: createRunStats(),
   dialogue: null,
+  shopGateVisible: false,
 };
 
 export const stateChanged = new Signal<void>();
@@ -243,6 +251,7 @@ export function resetGameState(): void {
   gameState.settings = settings;
   gameState.runStats = createRunStats();
   gameState.dialogue = null;
+  gameState.shopGateVisible = false;
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

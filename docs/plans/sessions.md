@@ -19,7 +19,20 @@ Short-horizon, executable session plan. Sits between the long-horizon roadmaps (
 
 | # | status | scope | goal | touched paths | gates | target commits | depends on | opened | closed |
 |---|--------|-------|------|---------------|-------|----------------|------------|--------|--------|
-| _ | _ | _ | _(run `/plan-sessions` to populate)_ | _ | _ | _ | _ | _ | _ |
+| 1 | done | [game] | M9.2 codex data model + PL/EN key scaffold for bestiary entries | apps/pan-tvardowski/src/codex/entries.ts, src/codex/index.ts, locales/en.json, locales/pl.json, tests/codex-entries.test.ts | lint, typecheck, test (+4) | 3 | — | 2026-04-25 | 2026-04-25 |
+| 2 | pending | [game] | M9.2 shards browser scene wired to save-slot shard count + codex unlocks | apps/pan-tvardowski/src/scenes/codex-shards.ts, src/hud/CodexOverlay.tsx, src/App.tsx, tests/codex-shards-scene.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #1 | — | — |
+| 3 | pending | [game] | M9.2 boss codex view with per-phase stats; add PL+EN keys for boss codex labels | apps/pan-tvardowski/src/codex/boss-entries.ts, src/hud/CodexOverlay.tsx, locales/en.json, locales/pl.json, tests/boss-codex.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #1 | — | — |
+| 4 | pending | [game] | M9.2 per-zone clear-stats tracker on SaveFile (deaths, best time, no-hit flag) | apps/pan-tvardowski/src/save/schema.ts, src/save/store.ts, src/scenes/play.ts, tests/zone-stats.test.ts | lint, typecheck, test (+4) | 3 | — | — | — |
+| 5 | pending | [game] | M9.2 achievement tracker screen + PL+EN keys for 12 achievement entries | apps/pan-tvardowski/src/scenes/achievements.ts, src/hud/AchievementsOverlay.tsx, locales/en.json, locales/pl.json, tests/achievements-screen.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #4 | — | — |
+| 6 | pending | [game] | M9.2 close: tick §17 M9.2 checkbox + Change log entry; update mirror row | docs/plans/pan-tvardowski-build-plan.md, docs/references/builder-reference.md | lint, typecheck, test | 1 | #2, #3, #5 | — | — |
+| 7 | pending | [game] | M9.3 ProductCatalog wiring for pan_tvardowski.full_game + supporter_pack | apps/pan-tvardowski/src/iap/catalog.ts, src/iap/index.ts, tests/iap-catalog.test.ts | lint, typecheck, test (+3) | 2 | — | — | — |
+| 8 | pending | [game] | M9.3 EntitlementStore bootstrap + zone-gate guard on zones 4–8 | apps/pan-tvardowski/src/iap/entitlements.ts, src/scenes/play.ts, src/config/zones.ts, tests/zone-gate.test.ts | lint, typecheck, test (+4) | 3 | #7 | — | — |
+| 9 | pending | [game] | M9.3 ShopPanel + paywall modal on zone-3 defeat; add PL+EN keys for paywall copy | apps/pan-tvardowski/src/scenes/shop.ts, src/hud/PaywallOverlay.tsx, locales/en.json, locales/pl.json, tests/paywall-flow.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #7, #8 | — | — |
+| 10 | pending | [game] | M9.3 Restore Purchases action in settings; add PL+EN keys for restore states | apps/pan-tvardowski/src/scenes/settings.ts, src/hud/MenuOverlay.tsx, locales/en.json, locales/pl.json, tests/restore-purchases.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #7 | — | — |
+| 11 | pending | [game] | M9.3 close: tick §17 M9.3 + release-checklist §3 IAP items; changelog + mirror sync | docs/plans/pan-tvardowski-build-plan.md, docs/plans/release-readiness-checklist.md, docs/references/builder-reference.md | lint, typecheck, test | 1 | #9, #10 | — | — |
+| 12 | pending | [game] | M9.4 dialogue graph speakerPortraitKey plumbing for opening + zone-7 + victory | apps/pan-tvardowski/src/dialogue/graphs.ts, src/dialogue/portraits.ts, tests/dialogue-portraits.test.ts | lint, typecheck, test (+3) | 2 | — | — | — |
+| 13 | pending | [game] | M9.4 DialoguePanel avatar slot wiring with shape-portrait placeholders | apps/pan-tvardowski/src/hud/DialogueOverlay.tsx, src/dialogue/shape-portraits.ts, tests/dialogue-overlay-avatar.test.ts | lint, typecheck, test (+3), device-smoke | 3 | #12 | — | — |
+| 14 | pending | [game] | M9.4 close: tick §17 M9.4 checkbox; Change log + mirror row sync | docs/plans/pan-tvardowski-build-plan.md, docs/references/builder-reference.md | lint, typecheck, test | 1 | #13 | — | — |
 
 ## Archive
 

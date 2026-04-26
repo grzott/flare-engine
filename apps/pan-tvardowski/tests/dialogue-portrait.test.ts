@@ -23,7 +23,7 @@ import {
   createZone7EntryGraph,
   createZone8IntroGraph,
 } from '../src/dialogue';
-import { PORTRAIT_MANIFEST, resolvePortrait } from '../src/dialogue/portrait-manifest';
+import { PORTRAIT_MANIFEST, resolvePortraitShape } from '../src/dialogue/portrait-manifest';
 import type { PortraitKey } from '../src/dialogue/portrait-manifest';
 import { gameEvents } from '../src/events';
 import { gameState, resetGameState } from '../src/state';
@@ -58,18 +58,18 @@ describe('portrait manifest', () => {
     }
   });
 
-  test('resolvePortrait returns shapes for a known key', () => {
-    const shapes = resolvePortrait('portrait.king');
+  test('resolvePortraitShape returns shapes for a known key', () => {
+    const shapes = resolvePortraitShape('portrait.king');
     expect(shapes).toBeDefined();
     expect((shapes ?? []).length).toBeGreaterThan(0);
   });
 
-  test('resolvePortrait returns undefined for an unknown key', () => {
-    expect(resolvePortrait('portrait.unknown')).toBeUndefined();
+  test('resolvePortraitShape returns undefined for an unknown key', () => {
+    expect(resolvePortraitShape('portrait.unknown')).toBeUndefined();
   });
 
-  test('resolvePortrait returns undefined for undefined input', () => {
-    expect(resolvePortrait(undefined)).toBeUndefined();
+  test('resolvePortraitShape returns undefined for undefined input', () => {
+    expect(resolvePortraitShape(undefined)).toBeUndefined();
   });
 });
 

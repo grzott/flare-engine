@@ -1,8 +1,10 @@
 import type { LocalizationManager } from '@flare-engine/localization';
+import { DialoguePanel, ThemeProvider, darkTheme } from '@flare-engine/ui';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { DialogueController } from '../dialogue';
+import { resolvePortrait } from '../dialogue/portrait-manifest';
 import { type DialogueHudState, gameState, stateChanged } from '../state';
 
 export interface DialogueOverlayProps {
@@ -11,9 +13,10 @@ export interface DialogueOverlayProps {
 }
 
 /**
- * Renders the dialogue overlay when `gameState.dialogue` is non-null. Consumes
- * one tap per line via the dialogue controller; speaker + body are resolved
- * through the LocalizationManager so language switch is instantaneous.
+ * Renders the dialogue overlay when `gameState.dialogue` is non-null. Uses
+ * `<DialoguePanel>` from `@flare-engine/ui` with a shape-portrait placeholder
+ * resolved from `PORTRAIT_MANIFEST` via `portraitKey`. Speaker + body text are
+ * resolved through the LocalizationManager so language switch is instantaneous.
  */
 export function DialogueOverlay({
   localization,
@@ -28,14 +31,35 @@ export function DialogueOverlay({
 
   if (!line) return null;
 
+  const shapes = resolvePortrait(line.portraitKey);
+
   return (
-    <Pressable style={styles.root} onPress={() => controller.advance()}>
-      <View style={styles.box}>
-        <Text style={styles.speaker}>{localization.t(line.speakerKey)}</Text>
-        <Text style={styles.text}>{localization.t(line.textKey)}</Text>
-        <Text style={styles.hint}>{localization.t('hud.dialogue.continue')}</Text>
+    <ThemeProvider theme={darkTheme}>
+      <View style={styles.root}>
+        <DialoguePanel
+          speaker={localization.t(line.speakerKey)}
+          text={localization.t(line.textKey)}
+          portrait={
+            shapes !== undefined ? (
+              <View style={styles.portraitSlot}>
+                {/* Shape portrait placeholder: 48×48 box. Actual Skia draw is
+                    device-verified — the manifest drives the spec, not inline art. */}
+                <View
+                  style={[
+                    styles.portraitBox,
+                    {
+                      backgroundColor: `#${(shapes[0]?.fill ?? 0xff333333).toString(16).slice(2)}`,
+                    },
+                  ]}
+                />
+              </View>
+            ) : undefined
+          }
+          onAdvance={() => controller.advance()}
+          style={styles.panel}
+        />
       </View>
-    </Pressable>
+    </ThemeProvider>
   );
 }
 
@@ -50,28 +74,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: 24,
   },
-  box: {
+  panel: {
     borderWidth: 2,
     borderColor: '#d6a54e',
-    backgroundColor: 'rgba(14,10,6,0.92)',
-    padding: 16,
+  },
+  portraitSlot: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  portraitBox: {
+    width: 44,
+    height: 44,
     borderRadius: 4,
-  },
-  speaker: {
-    color: '#d6a54e',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  text: {
-    color: '#eae1cc',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  hint: {
-    color: '#9a8a66',
-    fontSize: 11,
-    marginTop: 12,
-    textAlign: 'right',
+    opacity: 0.9,
   },
 });

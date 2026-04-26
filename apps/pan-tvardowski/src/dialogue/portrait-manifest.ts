@@ -58,11 +58,14 @@ export const PORTRAIT_MANIFEST: Record<PortraitKey, readonly ShapeSpec[]> = {
 };
 
 /**
- * Resolve a `speakerPortraitKey` string (set on LineNode) to its ShapeSpec[].
- * Returns undefined when the key is absent or not in the manifest (no portrait
- * slot is rendered in that case).
+ * Placeholder data source for the `'shape'` kind in `portraits.manifest.json`.
+ * Called by `resolvePortraitViaManifest` in `src/assets/portraits-loader.ts`
+ * when a manifest entry has `kind: 'shape'`.
+ *
+ * Direct callers outside `src/assets/` should migrate to
+ * `resolvePortraitViaManifest` (manifest-driven path).
  */
-export function resolvePortrait(key: string | undefined): readonly ShapeSpec[] | undefined {
+export function resolvePortraitShape(key: string | undefined): readonly ShapeSpec[] | undefined {
   if (key === undefined) return undefined;
   return (PORTRAIT_MANIFEST as Record<string, readonly ShapeSpec[] | undefined>)[key];
 }

@@ -24,6 +24,7 @@ import { AppState, Linking, Pressable, Share, StyleSheet, Text, View } from 'rea
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createA11yBridge } from './a11y/manager';
+import { SPRITES_MANIFEST, loadSpriteAtlas } from './assets';
 import type { AudioHandles } from './audio/init';
 import { disposeAudio, getAudio, initAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
@@ -51,7 +52,6 @@ import { createPlayScene } from './scenes/play';
 import { createSaveSelectScene } from './scenes/save-select';
 import { createSettingsScene } from './scenes/settings';
 import { createShopScene } from './scenes/shop';
-import { buildShapeAtlas } from './shape-atlas';
 import { createShareManager, shareHighScore } from './share/manager';
 import {
   bombButtonState,
@@ -97,7 +97,7 @@ function applyVolumes(audio: AudioHandles | null): void {
 
 function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   const { ctx, localization, renderHooks, audioRef, dialogue, saveStore, entitlementStore } = deps;
-  const atlas = buildShapeAtlas(Skia);
+  const atlas = loadSpriteAtlas(Skia, SPRITES_MANIFEST);
   // PostFx: pass `null` Skia module — visible SkSL compositing requires a
   // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
   const skiaPostFx = null;

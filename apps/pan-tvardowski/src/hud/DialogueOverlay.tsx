@@ -3,8 +3,8 @@ import { DialoguePanel, ThemeProvider, darkTheme } from '@flare-engine/ui';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { PORTRAITS_MANIFEST, resolvePortraitViaManifest } from '../assets';
 import type { DialogueController } from '../dialogue';
-import { resolvePortrait } from '../dialogue/portrait-manifest';
 import { type DialogueHudState, gameState, stateChanged } from '../state';
 
 export interface DialogueOverlayProps {
@@ -31,7 +31,7 @@ export function DialogueOverlay({
 
   if (!line) return null;
 
-  const shapes = resolvePortrait(line.portraitKey);
+  const shapes = resolvePortraitViaManifest(PORTRAITS_MANIFEST, line.portraitKey ?? '');
 
   return (
     <ThemeProvider theme={darkTheme}>

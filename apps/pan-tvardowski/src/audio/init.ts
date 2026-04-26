@@ -5,8 +5,8 @@ import type {
   SFXPool as SFXPoolT,
 } from '@flare-engine/engine';
 import { Music, SFXPool, createChannels } from '@flare-engine/engine';
+import { AUDIO_MANIFEST, loadMusicBuffers, loadSfxBuffers } from '../assets';
 import { resetSfxThrottle } from './sfx';
-import { type MusicKey, type SfxKey, createMusicBuffers, createSfxBuffers } from './synth';
 
 interface AudioApiModule {
   AudioContext: new () => AudioContextLike;
@@ -46,18 +46,15 @@ export async function initAudio(ctx: GameContextValue): Promise<AudioHandles | n
 
       const pool = new SFXPool(16);
       pool.connect(audioCtx, sfxChannel.node);
-      const sfxBuffers = createSfxBuffers(audioCtx);
-      for (const [k, buf] of Object.entries(sfxBuffers) as [
-        SfxKey,
-        (typeof sfxBuffers)[SfxKey],
-      ][]) {
+      const sfxBuffers = loadSfxBuffers(audioCtx, AUDIO_MANIFEST);
+      for (const [k, buf] of Object.entries(sfxBuffers)) {
         pool.register(k, buf);
       }
 
       const music = new Music();
       music.connect(audioCtx, musicChannel.node);
-      const tracks = createMusicBuffers(audioCtx);
-      for (const [k, buf] of Object.entries(tracks) as [MusicKey, (typeof tracks)[MusicKey]][]) {
+      const tracks = loadMusicBuffers(audioCtx, AUDIO_MANIFEST);
+      for (const [k, buf] of Object.entries(tracks)) {
         music.register(k, buf);
       }
 

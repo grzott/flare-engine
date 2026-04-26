@@ -25,6 +25,8 @@ export interface SaveStore {
   markIntroSeen(): Promise<void>;
   codexUnlocked(): readonly string[];
   unlockCodexEntry(id: string): Promise<void>;
+  entitlements(): readonly string[];
+  grantEntitlement(key: string): Promise<void>;
 }
 
 function makeMmkvAdapter(): StorageAdapter | null {
@@ -63,6 +65,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       activeSlot: state.activeSlot,
       introSeen: state.introSeen,
       codexUnlocked: state.codexUnlocked,
+      entitlements: state.entitlements,
     };
   }
 
@@ -124,6 +127,15 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async unlockCodexEntry(id) {
       if (state.codexUnlocked.includes(id)) return;
       state = { ...state, codexUnlocked: [...state.codexUnlocked, id] };
+      await a.set(KEY, JSON.stringify(state));
+      notifyStateChanged();
+    },
+    entitlements() {
+      return state.entitlements;
+    },
+    async grantEntitlement(key) {
+      if (state.entitlements.includes(key)) return;
+      state = { ...state, entitlements: [...state.entitlements, key] };
       await a.set(KEY, JSON.stringify(state));
       notifyStateChanged();
     },

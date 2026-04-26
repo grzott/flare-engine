@@ -2,7 +2,7 @@ import type { ZoneId } from '../events';
 import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
 import { defaultControls, defaultSettings } from '../state';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
@@ -26,6 +26,8 @@ export interface SaveFile {
   readonly introSeen: boolean;
   /** Codex entry ids that have been unlocked across all slots. Introduced in v4 (M9.2). */
   readonly codexUnlocked: readonly string[];
+  /** IAP entitlement keys owned by this player. Introduced in v5 (M9.3). */
+  readonly entitlements: readonly string[];
 }
 
 export function defaultSaveFile(): SaveFile {
@@ -36,6 +38,7 @@ export function defaultSaveFile(): SaveFile {
     activeSlot: null,
     introSeen: false,
     codexUnlocked: [],
+    entitlements: [],
   };
 }
 
@@ -135,6 +138,10 @@ export function parseSaveFile(raw: string | null): SaveFile {
   const codexUnlocked: string[] = Array.isArray(o.codexUnlocked)
     ? (o.codexUnlocked as unknown[]).filter((v): v is string => typeof v === 'string')
     : [];
+  // v4 → v5 migration: `entitlements` absent → empty (no IAP owned).
+  const entitlements: string[] = Array.isArray(o.entitlements)
+    ? (o.entitlements as unknown[]).filter((v): v is string => typeof v === 'string')
+    : [];
   return {
     version: SAVE_VERSION,
     settings: parseSettings(o.settings),
@@ -142,6 +149,7 @@ export function parseSaveFile(raw: string | null): SaveFile {
     activeSlot,
     introSeen,
     codexUnlocked,
+    entitlements,
   };
 }
 

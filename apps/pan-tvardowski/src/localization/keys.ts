@@ -10,6 +10,7 @@ const menu = [
   'menu.continue',
   'menu.settings',
   'menu.credits',
+  'menu.inventory',
   'menu.quit',
   'menu.settings.title',
   'menu.settings.language',
@@ -153,6 +154,19 @@ const upgrades = [
   'upgrades.kamien-filozoficzny.desc',
 ] as const;
 
+const inventory = [
+  'inventory.tab.codex',
+  'inventory.tab.shards',
+  'inventory.tab.stats',
+  'inventory.tab.achievements',
+  'inventory.codex.locked',
+  'inventory.shards.collected',
+  'inventory.stats.zone',
+  'inventory.stats.best_score',
+  'inventory.stats.runs',
+  'inventory.back',
+] as const;
+
 const dialogue = [
   'dialogue.opening.king.1',
   'dialogue.opening.twardowski.1',
@@ -259,6 +273,7 @@ export const LOCALIZATION_KEYS = [
   ...weapons,
   ...ships,
   ...upgrades,
+  ...inventory,
   ...dialogue,
   ...achievements,
   ...codex,

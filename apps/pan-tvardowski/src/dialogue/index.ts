@@ -8,10 +8,12 @@ import { gameState, notifyStateChanged } from '../state';
 
 export {
   OPENING_GRAPH_ID,
+  ZONE4_BORUTA_GRAPH_ID,
   ZONE7_ENTRY_GRAPH_ID,
   ZONE8_INTRO_GRAPH_ID,
   VICTORY_GRAPH_ID,
   createOpeningGraph,
+  createZone4BorutaGraph,
   createZone7EntryGraph,
   createZone8IntroGraph,
   createVictoryGraph,
@@ -41,6 +43,7 @@ export function createDialogueController(): DialogueController {
       graphId: runner.graphId ?? '',
       speakerKey: ev.speaker,
       textKey: ev.text,
+      portraitKey: ev.speakerPortraitKey,
     };
     notifyStateChanged();
   });

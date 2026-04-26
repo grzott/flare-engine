@@ -33,12 +33,14 @@ import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
+import { InventoryOverlay } from './hud/InventoryOverlay';
 import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
 import { createBootScene } from './scenes/boot';
 import { createCreditsScene } from './scenes/credits';
 import { createGameOverScene, createVictoryScene } from './scenes/end';
+import { createInventoryScene } from './scenes/inventory';
 import { createMenuScene } from './scenes/menu';
 import type { PlayRenderHooks } from './scenes/play';
 import { createPlayScene } from './scenes/play';
@@ -109,6 +111,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   ctx.scenes.register('save-select', createSaveSelectScene(ctx));
   ctx.scenes.register('settings', createSettingsScene(ctx));
   ctx.scenes.register('credits', createCreditsScene(ctx));
+  ctx.scenes.register('inventory', createInventoryScene(ctx));
   ctx.scenes.register(
     'play',
     createPlayScene({
@@ -263,6 +266,9 @@ function AppRoot(): React.ReactElement {
       goCredits: () => {
         void ctxRef.current?.scenes.go('credits');
       },
+      goInventory: () => {
+        void ctxRef.current?.scenes.go('inventory');
+      },
       startSlot: (index) => {
         void (async () => {
           const existing = saveStore.getSlot(index);
@@ -369,6 +375,11 @@ function AppRoot(): React.ReactElement {
           appVersion="0.1.0"
           onLocaleChange={(loc) => localization.setLocale(loc)}
           onVolumesChange={() => applyVolumes(getAudio())}
+        />
+        <InventoryOverlay
+          localization={localization}
+          save={saveStore}
+          actions={{ goMenu: menuActions.goMenu }}
         />
         <DialogueOverlay localization={localization} controller={dialogueController} />
         {__DEV__ && ctx && snapshotSource ? (

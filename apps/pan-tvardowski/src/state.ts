@@ -8,6 +8,7 @@ export type SceneName =
   | 'save-select'
   | 'settings'
   | 'credits'
+  | 'inventory'
   | 'play'
   | 'game-over'
   | 'victory';

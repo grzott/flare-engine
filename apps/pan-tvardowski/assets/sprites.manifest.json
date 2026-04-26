@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "shape-atlas",
+      "kind": "shape-atlas",
+      "source": "src/shape-catalogue.ts"
+    }
+  ]
+}

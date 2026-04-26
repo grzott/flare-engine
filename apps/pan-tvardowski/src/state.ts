@@ -133,6 +133,8 @@ export interface DialogueHudState {
   graphId: string;
   speakerKey: string;
   textKey: string;
+  /** Forwarded verbatim from `LineNode.speakerPortraitKey`. Undefined = no portrait. */
+  portraitKey?: string;
 }
 
 export interface GameState {

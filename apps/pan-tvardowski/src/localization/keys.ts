@@ -200,6 +200,7 @@ const dialogue = [
   'dialogue.speaker.innkeeper',
   'dialogue.speaker.lucyper',
   'dialogue.speaker.spider',
+  'dialogue.speaker.boruta',
 ] as const;
 
 const codex = [

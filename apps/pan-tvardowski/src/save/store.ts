@@ -2,6 +2,7 @@ import { type StorageAdapter, createMemoryAdapter, createMmkvAdapter } from '@fl
 import type { ZoneId } from '../events';
 import { gameState, notifyStateChanged } from '../state';
 import {
+  type PrivacySettings,
   SAVE_VERSION,
   type SaveFile,
   type SlotData,
@@ -34,6 +35,8 @@ export interface SaveStore {
   recordZoneOutcome(zoneId: ZoneId, outcome: ZoneClearOutcome): Promise<void>;
   unlockedAchievements(): readonly string[];
   unlockAchievement(id: string): Promise<void>;
+  privacy(): PrivacySettings;
+  setPrivacy(p: PrivacySettings): Promise<void>;
 }
 
 function makeMmkvAdapter(): StorageAdapter | null {
@@ -74,6 +77,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       codexUnlocked: state.codexUnlocked,
       entitlements: state.entitlements,
       unlockedAchievements: state.unlockedAchievements,
+      privacy: state.privacy,
     };
   }
 
@@ -167,6 +171,14 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async unlockAchievement(id) {
       if (state.unlockedAchievements.includes(id)) return;
       state = { ...state, unlockedAchievements: [...state.unlockedAchievements, id] };
+      await a.set(KEY, JSON.stringify(state));
+      notifyStateChanged();
+    },
+    privacy() {
+      return state.privacy;
+    },
+    async setPrivacy(p) {
+      state = { ...state, privacy: p };
       await a.set(KEY, JSON.stringify(state));
       notifyStateChanged();
     },

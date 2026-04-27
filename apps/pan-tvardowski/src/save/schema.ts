@@ -2,7 +2,7 @@ import type { ZoneId } from '../events';
 import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
 import { defaultControls, defaultSettings } from '../state';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
@@ -32,6 +32,12 @@ export interface SlotData {
   readonly zoneStats: Partial<Record<ZoneId, ZoneClearStats>>;
 }
 
+/** Opt-in telemetry preferences. Introduced in v7 (M9.6). */
+export interface PrivacySettings {
+  readonly analyticsOptIn: boolean;
+  readonly crashOptIn: boolean;
+}
+
 export interface SaveFile {
   readonly version: number;
   readonly settings: Settings;
@@ -45,6 +51,8 @@ export interface SaveFile {
   readonly entitlements: readonly string[];
   /** Achievement ids unlocked across all slots. Introduced in v6. */
   readonly unlockedAchievements: readonly string[];
+  /** User privacy/telemetry opt-in choices. Introduced in v7 (M9.6). */
+  readonly privacy: PrivacySettings;
 }
 
 export function defaultSaveFile(): SaveFile {
@@ -57,6 +65,7 @@ export function defaultSaveFile(): SaveFile {
     codexUnlocked: [],
     entitlements: [],
     unlockedAchievements: [],
+    privacy: { analyticsOptIn: false, crashOptIn: false },
   };
 }
 
@@ -152,6 +161,17 @@ function parseSettings(v: unknown): Settings {
   };
 }
 
+function parsePrivacy(v: unknown): PrivacySettings {
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) {
+    return { analyticsOptIn: false, crashOptIn: false };
+  }
+  const o = v as Record<string, unknown>;
+  return {
+    analyticsOptIn: isBool(o.analyticsOptIn) ? o.analyticsOptIn : false,
+    crashOptIn: isBool(o.crashOptIn) ? o.crashOptIn : false,
+  };
+}
+
 export function parseSaveFile(raw: string | null): SaveFile {
   if (!raw) return defaultSaveFile();
   let data: unknown;
@@ -182,6 +202,8 @@ export function parseSaveFile(raw: string | null): SaveFile {
   const unlockedAchievements: string[] = Array.isArray(o.unlockedAchievements)
     ? (o.unlockedAchievements as unknown[]).filter((v): v is string => typeof v === 'string')
     : [];
+  // v6 → v7 migration: `privacy` absent → both opt-ins default to false.
+  const privacy: PrivacySettings = parsePrivacy(o.privacy);
   return {
     version: SAVE_VERSION,
     settings: parseSettings(o.settings),
@@ -191,6 +213,7 @@ export function parseSaveFile(raw: string | null): SaveFile {
     codexUnlocked,
     entitlements,
     unlockedAchievements,
+    privacy,
   };
 }
 

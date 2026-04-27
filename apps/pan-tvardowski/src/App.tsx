@@ -31,6 +31,7 @@ import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
 import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
 import { createDialogueController } from './dialogue';
+import { composeTransports, createSentryCrashTransport, tryLoadSentry } from './errors/transport';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { AchievementsOverlay } from './hud/AchievementsOverlay';
@@ -221,6 +222,21 @@ function AppRoot(): React.ReactElement {
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
   const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
+  // Crash transport: console (always, dev visibility) + Sentry (gated by
+  // crashOptIn). Sentry binding is optional — `@sentry/react-native` is loaded
+  // lazily and falls back to noop when missing or when DSN env var is unset.
+  const crashTransport = useMemo(
+    () =>
+      composeTransports(
+        createConsoleTransport(),
+        createSentryCrashTransport({
+          optIn: () => saveStore.privacy().crashOptIn,
+          sentry: tryLoadSentry(),
+          dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? null,
+        }),
+      ),
+    [saveStore],
+  );
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   // Re-render trigger for controls-side changes so joystick / bomb swap
@@ -386,7 +402,7 @@ function AppRoot(): React.ReactElement {
 
   return (
     <ErrorBoundary
-      transport={createConsoleTransport()}
+      transport={crashTransport}
       fallback={(payload: CrashPayload, reset: () => void) => (
         <View style={styles.crashRoot}>
           <StatusBar hidden />

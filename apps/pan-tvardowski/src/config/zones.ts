@@ -41,6 +41,13 @@ import {
   ZONE8_BOSS_T,
 } from './gameplay';
 
+/**
+ * Balance freeze date — `YYYY-MM-DD`. After this date, edits to this file are
+ * blocked by `scripts/check-balance-freeze.sh` unless `ALLOW_BALANCE_CHANGE=1`
+ * is set in the environment. Bump only with intent (post-launch balance pass).
+ */
+export const BALANCE_FROZEN_AT = '2026-04-28';
+
 export interface ZoneConfig {
   readonly id: ZoneId;
   readonly nameKey: string;

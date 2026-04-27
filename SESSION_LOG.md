@@ -259,3 +259,128 @@ Note: This is the FIRST engine session in the M9.3 batch (rows #23–#25, then g
 **Next session:** #24 "new package @flare-engine/ui-shop — reusable ShopPanel + PaywallModal + RestorePurchasesButton primitives"
 
 ---
+
+## Session 24 — 2026-04-27 (scope: [engine])
+
+**Goal (from sessions.md row #24):** new package @flare-engine/ui-shop — reusable ShopPanel + PaywallModal + RestorePurchasesButton primitives consuming IAPContext + EntitlementStore
+
+**Touched files**
+- `packages/ui-shop/package.json` (new)
+- `packages/ui-shop/tsup.config.ts` (new)
+- `packages/ui-shop/tsconfig.json` (new)
+- `packages/ui-shop/README.md` (new)
+- `packages/ui-shop/src/types.ts` (new — `ShopItemCopy`, `ShopPanelStrings`, `PaywallStrings`, `RestoreStrings`, `LocalizeFn`)
+- `packages/ui-shop/src/ShopPanel.tsx` (new — smart ShopPanel: fetches products on mount, subscribes to `EntitlementStore.onChange`, splits owned/available, in-flight CTA disable)
+- `packages/ui-shop/src/PaywallModal.tsx` (new — soft-dismissible single-product modal, parent-owns-visibility, auto-dismiss on purchase)
+- `packages/ui-shop/src/RestorePurchasesButton.tsx` (new — restore() → grantProduct loop with success/empty/error banners)
+- `packages/ui-shop/src/index.ts` (new — barrel re-exports)
+- `packages/ui-shop/tests/ShopPanel.test.ts` (new — +4 tests)
+- `packages/ui-shop/tests/PaywallModal.test.ts` (new — +3 tests)
+- `packages/ui-shop/tests/RestorePurchasesButton.test.ts` (new — +2 tests)
+- `bun.lock` (workspace pickup)
+- `docs/plans/build-plan.md` † (builder appended a 2-line note documenting sessions #23 + #24 shipped under Phase 11.14 close-out)
+- `docs/references/builder-reference.md` † (builder appended Session #23 + #24 rows to the active-work table; mirror row's M9.3 status was prematurely flipped to ✅ and corrected back to 🟡 in this close)
+
+† Drift from declared `touched paths` (which named only `packages/ui-shop/**`). The build-plan + builder-reference touches are eligible doc-syncs that would otherwise have to land in session #25 or #11; surfaced for audit. The premature M9.3 ✅ mark was a builder error and is reverted here — M9.3 stays 🟡 until session #11 closes the milestone.
+
+Note: Test files are `.ts` not `.tsx` (spec listed `.tsx`). Bun's JSX parser conflicts with TypeScript generics inside test mock callbacks; tests are logic-only with no inline JSX, so `.ts` is the correct extension. Sessions.md row #24 was updated to match.
+
+`@flare-engine/ui` primitives consumed: `Panel`, `Label`, `Button`, `Modal` — not re-implemented. Note: the existing `ShopPanel` in `@flare-engine/ui` is a presentational primitive (static items, no async); ui-shop's `ShopPanel` is the smart component above it that owns the async product-fetch + purchase flow.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean)
+- typecheck: ✅ (`tsc --noEmit` clean; no other package broke)
+- test: ✅ (+9 new, 9 pass / 0 fail in `packages/ui-shop`, 36 expect() calls, 3 files)
+- build: ✅ (`tsup`)
+
+**Docs synced**
+- `docs/plans/build-plan.md` — 2-line note added under Phase 11.14 close-out documenting sessions #23 + #24 shipped (drift accepted).
+- `docs/references/builder-reference.md` — Session #23 + #24 rows added to active-work table; mirror row's M9.3 ✅ corrected back to 🟡 with note that engine packages are done but game wiring sessions #7–#11 are pending.
+- `docs/design/api-specs.md` — no update this session; api-specs entries for both new packages are owned by session #25.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `feat(ui-shop): scaffold package`
+2. `feat(ui-shop): ShopPanel with entitlement reactivity`
+3. `feat(ui-shop): PaywallModal soft-dismissible`
+4. `feat(ui-shop): RestorePurchasesButton`
+5. `test(ui-shop): primitives (+9)`
+6. `docs(ui-shop): README + sync build-plan + builder-reference`
+7. `docs(plans): close session #24 — ui-shop scaffold`
+
+**Next session:** #25 "cross-package integration tests (Noop → ShopPanel → purchase → grantProduct) + api-specs.md entries for iap-revenuecat + ui-shop"
+
+---
+
+## Session 25 — 2026-04-27 (scope: [engine])
+
+**Goal (from sessions.md row #25):** cross-package integration tests (Noop → ShopPanel → purchase → grantProduct) + api-specs.md entries for iap-revenuecat + ui-shop
+
+**Touched files**
+- `packages/iap-revenuecat/tests/integration.test.ts` (new — +2 tests; real `ProductCatalog` + real `EntitlementStore` + RevenueCatProvider against mocked SDK; covers end-to-end purchase wiring + restoreOnBoot)
+- `packages/ui-shop/tests/integration.test.ts` (new — +2 tests; real `NoopIAPProvider` from `@flare-engine/iap` wrapped with overridden `purchase()`; covers Noop→ShopPanel→purchase→grantProduct re-render and PaywallModal+RestorePurchasesButton round trip)
+- `docs/design/api-specs.md` — two new sections inserted adjacent to `@flare-engine/iap`: `@flare-engine/iap-revenuecat` (< 4 KB raw, RevenueCat adapter) and `@flare-engine/ui-shop` (< 6 KB raw, smart shop primitives). Match existing format (header + Responsibility + API table + Implementation notes).
+- `docs/references/builder-reference.md` † (builder added Session #25 row to active-work table; cumulative test count updated)
+- `docs/plans/sessions.md` (row #25 status `pending` → `done`, opened/closed dates filled, `.tsx` → `.ts` extension corrected)
+
+† Drift from declared `touched paths` (which named only `packages/iap-revenuecat/tests/integration.test.ts`, `packages/ui-shop/tests/integration.test.tsx`, `docs/design/api-specs.md`). The builder-reference row addition is an eligible doc-sync; surfaced for audit. Test file extension correction (`.tsx` → `.ts`) matches the package's existing convention (Bun's JSX parser conflicts with TS generics in test mock callbacks).
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean in both packages)
+- typecheck: ✅ (`tsc --noEmit` clean in both packages; no other package broke)
+- test: ✅ (`@flare-engine/iap-revenuecat`: 6 → 8 (+2); `@flare-engine/ui-shop`: 9 → 11 (+2); 19 total across the two new packages)
+- build: ✅ (no build scripts touched)
+
+**Docs synced**
+- `docs/design/api-specs.md` — two new package sections added (responsibility + API table + implementation notes).
+- `docs/references/builder-reference.md` — Session #25 row added to active-work table; cumulative test count incremented.
+- `docs/plans/build-plan.md` — no update this session (sessions #23 + #24 already documented in build-plan during session #24 close; #25 is integration polish).
+- `docs/plans/release-readiness-checklist.md` — no new ticks; M9.3 close (release-checklist §3 IAP items) lands in session #11.
+
+Note: This session closes the engine half of the M9.3 batch (#23 RevenueCat adapter + #24 ui-shop primitives + #25 integration tests + api-specs). Game-side work picks up at session #7 (PT_CATALOG SKU update) which now consumes both new engine packages.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `test(iap-revenuecat): integration with real EntitlementStore (+2)`
+2. `test(ui-shop): integration with NoopProvider (+2)`
+3. `docs(api-specs): add iap-revenuecat + ui-shop sections`
+4. `docs(plans): close session #25 — integration + api-specs`
+
+**Next session:** #7 "M9.3 update PT_CATALOG SKUs to pan_tvardowski.full_game + supporter_pack (deprecate pt.shards_small); consumes @flare-engine/iap"
+
+---
+
+## Session 7 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #7):** M9.3 update PT_CATALOG SKUs to pan_tvardowski.full_game + supporter_pack (deprecate pt.shards_small); consumes @flare-engine/iap
+
+**Touched files**
+- `apps/pan-tvardowski/src/iap/catalog.ts` — replaced product IDs with storefront-namespaced `pan_tvardowski.full_game` + `pan_tvardowski.supporter_pack`; added `SKU_FULL_GAME`, `SKU_SUPPORTER_PACK`, `ENTITLEMENT_FULL_GAME`, `ENTITLEMENT_SUPPORTER` named constants; kept `PT_ENTITLEMENT` as a deprecated re-export for compatibility; deleted `pt.shards_small` entry.
+- `apps/pan-tvardowski/tests/iap-catalog.test.ts` (new — +5 tests: catalog entry count, both product IDs present, grants for both SKUs, unknown-product returns empty, deprecated `pt.shards_small` confirmed absent)
+- `apps/pan-tvardowski/tests/shop-entitlements.test.ts` † — updated 4 existing tests in the `PT_CATALOG product IDs` describe block (replaced old product IDs; replaced `pt.shards_small is consumable` with `supporter_pack is non-consumable`)
+
+† Drift from declared `touched paths` (which named only `src/iap/catalog.ts` + `tests/iap-catalog.test.ts`). The shop-entitlements.test.ts changes are mandatory blast-radius fixes for the SKU rename — ignoring them would have broken the test suite. Surfaced for audit.
+
+**Callsites of deprecated `pt.shards_small`** still present in code (deferred to session #9 by design — that session swaps the hand-rolled ShopOverlay for `<ShopPanel>`):
+- `src/hud/ShopOverlay.tsx:80-84` — hard-coded string; no typecheck error since `productId` is typed as `string`. `grantProduct('pt.shards_small')` silently no-ops (correct).
+- `src/localization/keys.ts:166-168` — three deprecated key entries; locale parity test still green.
+- `locales/en.json:143-145`, `locales/pl.json:143-145` — corresponding strings; remain until #9 cleanup.
+
+These are intentional deferrals to keep this session's diff scoped to catalog data only.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean)
+- typecheck: ✅ (`tsc --noEmit` clean — no callsite breaks)
+- test: ✅ (211 → 215 net (+4 from baseline; +5 new in iap-catalog, -1 retired in shop-entitlements). 215 pass / 0 fail, 5518 expect() calls, 49 files)
+- build: ✅ (stub echo)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update this session; M9.3 close (§17 + Change-log + mirror row + release-checklist §3) lands in session #11.
+- `docs/references/builder-reference.md` — no update; mid-batch state.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `feat(pan-tvardowski): M9.3 PT_CATALOG full_game + supporter_pack`
+2. `test(pan-tvardowski): M9.3 iap-catalog + shop-entitlements (+4)`
+3. `docs(plans): close session #7 — PT_CATALOG SKU update`
+
+**Next session:** #8 "M9.3 wire createRevenueCatProvider in App.tsx (env-var keys); zone-gate guard on zones 4–8 via EntitlementStore.isEntitled('pt.full_game')"
+
+---

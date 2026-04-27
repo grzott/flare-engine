@@ -55,7 +55,7 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 
 ## 5. Build + reliability
 
-- [ ] ⬜ Crash transport provider chosen (Sentry / Bugsnag / custom) — wired in PT, not just the Noop transport.
+- [x] ✅ Crash transport provider chosen (Sentry / Bugsnag / custom) — wired in PT, not just the Noop transport. — `createSentryCrashTransport` (gated by `crashOptIn`) + `composeTransports` in `apps/pan-tvardowski/src/errors/transport.ts`, wired in `App.tsx`; `@sentry/react-native` loads lazily and falls back to noop when missing/DSN unset. Session #17, 2026-04-27.
 - [x] ✅ Crash-opt-in surface in Settings (`settings.privacy.crashOptIn`, default = off) — `PrivacyOverlay` wired in Settings, session #16, 2026-04-27.
 - [ ] ⬜ Save-schema migrator v1 → v2 pathway tested with synthetic old save.
 - [ ] ⬜ Deep-link registration in `app.json` / `Info.plist` / `AndroidManifest.xml` — `pantvardowski://zone/N` routes wired end-to-end in prod build.

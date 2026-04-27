@@ -704,3 +704,33 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** #17 "M9.6 Sentry crash-transport binding gated behind crashOptIn"
 
 ---
+
+## Session 17 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #17):** M9.6 Sentry crash-transport binding gated behind crashOptIn
+
+**Touched files**
+- `apps/pan-tvardowski/src/errors/transport.ts` (new) — `createSentryCrashTransport`, `composeTransports`, `tryLoadSentry`
+- `apps/pan-tvardowski/src/App.tsx` — wired `<ErrorBoundary>` transport from `createConsoleTransport()` to the composed (console + gated-Sentry) transport
+- `apps/pan-tvardowski/tests/crash-transport.test.ts` (new) — 5 transport tests + 3 composer tests
+
+**Scope extensions (pre-approved by user):** Plan called for "3+ tests"; landed 8 to cover composer + stack-preservation. Added `composeTransports` helper inline (rather than relying solely on a single Sentry transport) so console logging stays available in dev while Sentry is gated by opt-in. `@sentry/react-native` intentionally NOT added to `dependencies` — `tryLoadSentry()` is a runtime `require` that returns `null` if the module is absent, keeping the 0.1.0 dep set clean.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean across 155 files; no errors after auto-fix of 2 formatting nits in App.tsx + crash-transport.test.ts)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`; pre-existing `packages/**` test typing errors are out of scope for this app)
+- test: ✅ (+8 new, total 237 pass / 0 fail, 5670 expect() calls, 54 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — `**2026-04-27** — **M9.6 partial (session #17).**` change-log entry appended; `**release-readiness-checklist.md** §5` "Crash transport provider chosen" item ticked (with file path + factory name pointers)
+- `docs/plans/sessions.md` — row #17 flipped `pending → done` with 2026-04-27 dates and `test (+8)` count
+- `docs/references/builder-reference.md` — no update; mid-M9.6 batch; mirror row update deferred to session #22 (M9.6 close)
+
+**Commits** (subjects only — full blocks emitted below in chat)
+1. `feat(pan-tvardowski): M9.6 gated Sentry crash transport + composer`
+2. `feat(pan-tvardowski): wire ErrorBoundary to composed crash transport`
+3. `test(pan-tvardowski): crash-transport +8 tests (gating + composer)`
+4. `docs(pan-tvardowski): M9.6 session #17 changelog + checklist tick`
+
+**Next session:** #18 "M9.6 screenshot capture scene via @flare-engine/share createScreenshotScene"

@@ -45,6 +45,12 @@ const menu = [
   'menu.tap_continue',
   'menu.error.title',
   'menu.error.reset',
+  'menu.zone.locked',
+  'settings.restore.cta',
+  'settings.restore.loading',
+  'settings.restore.success',
+  'settings.restore.empty',
+  'settings.restore.error',
 ] as const;
 
 const hud = [
@@ -158,19 +164,33 @@ const upgrades = [
 ] as const;
 
 const shop = [
-  'shop.title',
-  'shop.subtitle',
+  'shop.heading',
+  'shop.empty',
+  'shop.loading',
+  'shop.error',
+  'shop.owned_section',
+  'shop.available_section',
   'shop.full_game.title',
-  'shop.full_game.desc',
-  'shop.full_game.price',
-  'shop.shards_small.title',
-  'shop.shards_small.desc',
-  'shop.shards_small.price',
-  'shop.owned',
+  'shop.full_game.description',
+  'shop.full_game.cta',
+  'shop.full_game.owned',
+  'shop.supporter_pack.title',
+  'shop.supporter_pack.description',
+  'shop.supporter_pack.cta',
+  'shop.supporter_pack.owned',
   'shop.restore',
   'shop.back',
   'shop.gate.title',
   'shop.gate.desc',
+] as const;
+
+const paywall = [
+  'paywall.heading',
+  'paywall.body',
+  'paywall.cta',
+  'paywall.dismiss',
+  'paywall.loading',
+  'paywall.error',
 ] as const;
 
 const inventory = [
@@ -319,6 +339,7 @@ export const LOCALIZATION_KEYS = [
   ...ships,
   ...upgrades,
   ...shop,
+  ...paywall,
   ...inventory,
   ...dialogue,
   ...achievements,

@@ -11,7 +11,9 @@
     "build": "echo 'pan-tvardowski: native build via bun run android|ios'",
     "lint": "biome check src/ tests/",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:locales": "bun run scripts/check-locale-parity.ts",
+    "check:balance": "bash scripts/check-balance-freeze.sh"
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {

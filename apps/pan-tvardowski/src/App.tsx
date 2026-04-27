@@ -13,7 +13,7 @@ import {
 } from '@flare-engine/engine';
 import { ErrorBoundary, createConsoleTransport } from '@flare-engine/errors';
 import type { CrashPayload } from '@flare-engine/errors';
-import { type EntitlementStore, NoopIAPProvider } from '@flare-engine/iap';
+import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
 import type { ShareManager } from '@flare-engine/share';
 import { Skia } from '@shopify/react-native-skia';
@@ -39,6 +39,7 @@ import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
 import { InventoryOverlay } from './hud/InventoryOverlay';
 import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
+import { PaywallOverlay } from './hud/PaywallOverlay';
 import { ShopOverlay } from './hud/ShopOverlay';
 import { PT_ENTITLEMENT } from './iap/catalog';
 import { createPTEntitlementStore } from './iap/store';
@@ -146,6 +147,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
       renderHooks,
       a11y,
       dialogue,
+      entitlementStore,
     }),
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));
@@ -220,6 +222,7 @@ function AppRoot(): React.ReactElement {
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
   const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
+  const [paywallVisible, setPaywallVisible] = useState(false);
   // Re-render trigger for controls-side changes so joystick / bomb swap
   // position as soon as the settings toggle is flipped.
   const [controlsTick, setControlsTick] = useState(0);
@@ -234,6 +237,15 @@ function AppRoot(): React.ReactElement {
       ctxRef.current = null;
     };
   }, [disposerRef, ctxRef]);
+
+  useEffect(() => {
+    const offTrigger = gameEvents.on('paywall-trigger', () => setPaywallVisible(true));
+    const offPurchased = gameEvents.on('purchase-completed', () => setPaywallVisible(false));
+    return () => {
+      offTrigger();
+      offPurchased();
+    };
+  }, []);
 
   // Tier-2 wiring (analytics / leaderboards / achievements / iap) — the
   // 0.1.x build ships noop providers; this call exercises the interface
@@ -313,6 +325,7 @@ function AppRoot(): React.ReactElement {
             isGatedZone(slot.zoneReached) &&
             !entitlementStore.isEntitled(PT_ENTITLEMENT.FULL_GAME)
           ) {
+            gameEvents.emit('paywall-trigger', 'zone-locked-click');
             gameState.shopGateVisible = true;
             notifyStateChanged();
             void ctxRef.current?.scenes.go('shop');
@@ -421,6 +434,7 @@ function AppRoot(): React.ReactElement {
           appVersion="0.1.0"
           onLocaleChange={(loc) => localization.setLocale(loc)}
           onVolumesChange={() => applyVolumes(getAudio())}
+          entitlementStore={entitlementStore}
         />
         <InventoryOverlay
           localization={localization}
@@ -439,10 +453,14 @@ function AppRoot(): React.ReactElement {
         />
         <ShopOverlay
           localization={localization}
-          save={saveStore}
           entitlementStore={entitlementStore}
-          iapProvider={NoopIAPProvider}
           actions={{ goMenu: menuActions.goMenu, goSaveSelect: menuActions.goSaveSelect }}
+        />
+        <PaywallOverlay
+          localization={localization}
+          entitlementStore={entitlementStore}
+          visible={paywallVisible}
+          onDismiss={() => setPaywallVisible(false)}
         />
         <DialogueOverlay localization={localization} controller={dialogueController} />
         {__DEV__ && ctx && snapshotSource ? (

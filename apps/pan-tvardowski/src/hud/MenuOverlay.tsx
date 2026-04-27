@@ -1,3 +1,4 @@
+import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
 import {
   Button,
@@ -8,9 +9,13 @@ import {
   ThemeProvider,
   darkTheme,
 } from '@flare-engine/ui';
+import { RestorePurchasesButton } from '@flare-engine/ui-shop';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ZONES } from '../config/zones';
+import { gameEvents } from '../events';
+import { ENTITLEMENT_FULL_GAME } from '../iap/catalog';
 import { formatLastPlayed, slotPreview } from '../save/preview';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
@@ -37,6 +42,7 @@ export interface MenuOverlayProps {
   appVersion: string;
   onLocaleChange(locale: 'en' | 'pl'): void;
   onVolumesChange(volumes: { master: number; music: number; sfx: number }): void;
+  entitlementStore?: EntitlementStore;
 }
 
 function cloneState(): GameState {
@@ -101,9 +107,16 @@ function MenuView({ localization: l, actions, appVersion }: MenuOverlayProps): R
   );
 }
 
-function SaveSelectView({ localization: l, save, actions }: MenuOverlayProps): React.ReactElement {
+function SaveSelectView({
+  localization: l,
+  save,
+  actions,
+  entitlementStore,
+}: MenuOverlayProps): React.ReactElement {
   const t = useMemo(() => (k: string, p?: Record<string, string | number>) => l.t(k, p), [l]);
   const previews = useMemo(() => [0, 1, 2].map((i) => slotPreview(i, save.getSlot(i))), [save]);
+  const isFullGameOwned = entitlementStore?.isEntitled(ENTITLEMENT_FULL_GAME) ?? false;
+
   return (
     <View style={styles.panelContainer}>
       <Panel padding="lg" radius="lg" style={styles.panel}>
@@ -113,6 +126,11 @@ function SaveSelectView({ localization: l, save, actions }: MenuOverlayProps): R
         {previews.map((p) => {
           const zoneNum = p.zoneReached.slice(1);
           const when = formatLastPlayed(p.lastPlayed, l.locale === 'pl' ? 'pl' : 'en');
+          const zoneConfig = ZONES[p.zoneReached];
+          const isLocked =
+            !isFullGameOwned &&
+            zoneConfig !== undefined &&
+            zoneConfig.requiresEntitlement !== undefined;
           return (
             <Panel
               key={p.index}
@@ -122,7 +140,13 @@ function SaveSelectView({ localization: l, save, actions }: MenuOverlayProps): R
               style={{ marginBottom: 8 }}
             >
               <Pressable
-                onPress={() => actions.startSlot(p.index as 0 | 1 | 2)}
+                onPress={() => {
+                  if (isLocked) {
+                    gameEvents.emit('paywall-trigger', 'zone-locked-click');
+                    return;
+                  }
+                  actions.startSlot(p.index as 0 | 1 | 2);
+                }}
                 accessibilityRole="button"
               >
                 {p.status === 'empty' ? (
@@ -131,9 +155,16 @@ function SaveSelectView({ localization: l, save, actions }: MenuOverlayProps): R
                   </Label>
                 ) : (
                   <View>
-                    <Label variant="md">
-                      {`#${p.index + 1} — ${t('menu.save_select.zone', { zone: zoneNum })}`}
-                    </Label>
+                    <View style={styles.slotRow}>
+                      <Label variant="md">
+                        {`#${p.index + 1} — ${t('menu.save_select.zone', { zone: zoneNum })}`}
+                      </Label>
+                      {isLocked ? (
+                        <Label variant="sm" tone="muted" style={styles.lockedBadge}>
+                          {t('menu.zone.locked')}
+                        </Label>
+                      ) : null}
+                    </View>
                     <Label variant="sm" tone="muted">
                       {t('menu.save_select.best_score', { score: p.bestScore })}
                     </Label>
@@ -167,6 +198,7 @@ function SettingsView({
   onLocaleChange,
   onVolumesChange,
   save,
+  entitlementStore,
 }: SettingsViewProps): React.ReactElement {
   const t = useMemo(() => (k: string, p?: Record<string, string | number>) => l.t(k, p), [l]);
 
@@ -294,6 +326,32 @@ function SettingsView({
           </View>
         </View>
 
+        {entitlementStore !== undefined ? (
+          <View style={{ marginTop: 12 }}>
+            <RestorePurchasesButton
+              entitlementStore={entitlementStore}
+              strings={{
+                ctaKey: 'settings.restore.cta',
+                loadingKey: 'settings.restore.loading',
+                successKey: 'settings.restore.success',
+                emptyKey: 'settings.restore.empty',
+                errorKey: 'settings.restore.error',
+              }}
+              localize={(key) => t(key)}
+              onComplete={(results) => {
+                for (let i = 0; i < results.length; i++) {
+                  const r = results[i];
+                  if (r && r.status === 'purchased' && r.transaction) {
+                    gameEvents.emit('purchase-completed', r.transaction.productId);
+                  }
+                }
+              }}
+              onError={(error) => {
+                console.warn('[restore]', error);
+              }}
+            />
+          </View>
+        ) : null}
         <View style={{ marginTop: 12 }}>
           <Button
             label={t('menu.settings.back')}
@@ -351,6 +409,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   panel: { alignSelf: 'stretch', maxWidth: 420, width: '100%' },
+  slotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  lockedBadge: {
+    marginLeft: 8,
+    color: '#a05c2a',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

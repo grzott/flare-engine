@@ -1,0 +1,53 @@
+{
+  "name": "@flare-engine/ui-shop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable ShopPanel, PaywallModal, and RestorePurchasesButton consuming IAPContext + EntitlementStore",
+  "keywords": ["flare-engine", "ui", "shop", "iap", "paywall", "react-native"],
+  "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/ui-shop"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flare-engine/events": "workspace:*",
+    "@flare-engine/iap": "workspace:*",
+    "@flare-engine/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false
+}

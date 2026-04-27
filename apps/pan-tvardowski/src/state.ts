@@ -14,7 +14,8 @@ export type SceneName =
   | 'shop'
   | 'play'
   | 'game-over'
-  | 'victory';
+  | 'victory'
+  | 'capture';
 
 export type JoystickSide = 'left' | 'right';
 export type FireButtonSide = 'left' | 'right';

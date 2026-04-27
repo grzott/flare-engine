@@ -80,3 +80,144 @@ Source-of-truth for session status remains [docs/plans/sessions.md](docs/plans/s
 **Next session:** #3 "M9.2 boss codex view with per-phase stats; add PL+EN keys for boss codex labels"
 
 ---
+
+## Session 3 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #3):** M9.2 boss codex view with per-phase stats; add PL+EN keys for boss codex labels
+
+**Touched files**
+- `apps/pan-tvardowski/src/codex/boss-entries.ts` (new)
+- `apps/pan-tvardowski/src/hud/CodexOverlay.tsx`
+- `apps/pan-tvardowski/src/localization/keys.ts` †
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/boss-codex.test.ts` (new)
+
+† `src/localization/keys.ts` is not listed in row #3's declared `touched paths` but was required to register new `boss.*` keys in `LOCALIZATION_KEYS` so `locales-parity.test.ts` and TS type-check validate them. Same justification as sessions #1 and #2; not scope creep.
+
+**Gates**
+- lint: ✅ (140 files via `biome check src/ tests/`, 0 errors)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+3 new, total 203 pass / 0 fail, 5428 expect() calls, 46 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run start`
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update this session; M9.2 close (§17 checkbox + Change-log entry + mirror row) is deferred to session #6 per the slice plan.
+- `docs/references/builder-reference.md` — no update; mirror row already reads `M0–M9.5 done, M9.6 pending`; mid-milestone per-session state is not tracked in that row.
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no checklist items are gated solely on the boss codex view.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): M9.2 boss codex per-phase stats`
+2. `feat(pan-tvardowski): M9.2 PL+EN boss-phase keys`
+3. `test(pan-tvardowski): M9.2 boss-codex (+3 tests)`
+4. `docs(plans): close session #3 — boss codex view`
+
+**Next session:** #4 "M9.2 per-zone clear-stats tracker on SaveFile (deaths, best time, no-hit flag)"
+
+---
+
+## Session 4 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #4):** M9.2 per-zone clear-stats tracker on SaveFile (deaths, best time, no-hit flag)
+
+**Touched files**
+- `apps/pan-tvardowski/src/save/schema.ts` (SAVE_VERSION 5→6; ZoneClearStats, ZoneClearOutcome interfaces; mergeZoneOutcome, parseZoneStats helpers; v5→v6 migration in parseSlot + parseSaveFile; unlockedAchievements field on SaveFile)
+- `apps/pan-tvardowski/src/save/store.ts` (zoneStats, recordZoneOutcome, unlockedAchievements, unlockAchievement methods on SaveStore)
+- `apps/pan-tvardowski/src/scenes/play.ts` (recordZoneOutcome call at zone-complete and player-down)
+- `apps/pan-tvardowski/tests/zone-stats.test.ts` (new — +4 tests)
+- `apps/pan-tvardowski/tests/codex-shards-scene.test.ts` † (one-line drift fix)
+
+† Drift from declared `touched paths`. `codex-shards-scene.test.ts` required a one-line `zoneStats: {}` addition to its `SlotData` stub because the new required field on the interface broke its compile. Minimal blast-radius fix, not scope creep.
+
+Note: `unlockedAchievements` was added to the SaveFile schema in this session (carried in the single v5→v6 bump) but is not yet rendered. Session #5 (achievements tracker screen) will be its first consumer. This was a user-approved schema-consolidation decision to avoid a v7 bump one session later.
+
+**Gates**
+- lint: ✅ (141 files via `biome check src/ tests/`, 0 errors)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+4 new, total 207 pass / 0 fail, 5445 expect() calls, 47 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run start`
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update this session; M9.2 close (§17 checkbox + Change-log entry + mirror row) is deferred to session #6 per the slice plan.
+- `docs/references/builder-reference.md` — no update; mirror row already reads `M0–M9.5 done, M9.6 pending`; mid-milestone per-session state is not tracked in that row.
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no checklist items are gated solely on the zone-stats tracker.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): M9.2 SaveFile v6 zoneStats + achievements`
+2. `feat(pan-tvardowski): M9.2 record zone outcomes in play scene`
+3. `test(pan-tvardowski): M9.2 zone-stats (+4 tests)`
+4. `docs(plans): close session #4 — zone-stats tracker`
+
+**Next session:** #5 "M9.2 achievement tracker screen + PL+EN keys for 12 achievement entries"
+
+---
+
+## Session 5 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #5):** M9.2 achievement tracker screen + PL+EN keys for 12 achievement entries
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/achievements.ts` (new — ACHIEVEMENT_ENTRIES (12), factory, filterAchievements)
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.tsx` (new)
+- `apps/pan-tvardowski/src/localization/keys.ts` (5 keys: menu.achievements, achievements.title/locked_hint/unlocked_section/locked_section)
+- `apps/pan-tvardowski/locales/en.json` (5 keys)
+- `apps/pan-tvardowski/locales/pl.json` (5 keys)
+- `apps/pan-tvardowski/src/state.ts` ('achievements' added to SceneName)
+- `apps/pan-tvardowski/src/App.tsx` (scene register + overlay render + action wire)
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx` (goAchievements + menu item)
+- `apps/pan-tvardowski/tests/achievements-screen.test.ts` (new — +3 tests)
+
+**Gates**
+- lint: ✅ (144 files via `biome check src/ tests/`, 0 errors)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+3 new, total 210 pass / 0 fail, 5505 expect() calls, 48 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run start`
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update this session; M9.2 close (§17 checkbox + Change-log entry + mirror row) is deferred to session #6 per the slice plan.
+- `docs/references/builder-reference.md` — no update; mirror row already reads `M0–M9.5 done, M9.6 pending`; mid-milestone per-session state is not tracked in that row.
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no checklist items are gated solely on the achievements screen.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): M9.2 achievements scene + overlay`
+2. `feat(pan-tvardowski): M9.2 wire achievements into App + menu`
+3. `feat(pan-tvardowski): M9.2 PL+EN achievements UI keys`
+4. `test(pan-tvardowski): M9.2 achievements (+3 tests)`
+5. `docs(plans): close session #5 — achievements screen`
+
+**Next session:** #6 "M9.2 close: tick §17 M9.2 checkbox + Change log entry; update mirror row"
+
+---
+
+## Session 6 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #6):** M9.2 close: tick §17 M9.2 checkbox + Change log entry; update mirror row
+
+**Touched files**
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (144 files via `biome check src/ tests/`, 0 errors)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+0 new, total 210 pass / 0 fail, 5505 expect() calls, 48 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- device smoke: N/A — docs-only session; no source changes.
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — M9.2 row ticked: cell updated from `— (uses existing \`ui\`)` to `✅ — (uses existing \`ui\`)`. Change-log entry appended: `**2026-04-27** — **M9.2 complete.**` summarising boss codex per-phase stats, SaveFile v5→v6 zone-stats + achievements, AchievementsOverlay (12 entries), +10 tests (210 total).
+- `docs/references/builder-reference.md` — mirror row updated: date-stamp `(2026-04-26)` → `(2026-04-27)`, test count `57+ tests green` → `210 tests green`, M9.2-closed wording added (boss codex, SaveFile v5→v6, AchievementsOverlay).
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no M9.2-tagged items present.
+
+Note: This session closes out the M9.2 milestone batch entirely. Sessions #3–#6 together deliver the complete M9.2 scope: boss codex per-phase stats (#3), per-zone clear-stats tracker (#4), achievement tracker screen (#5), and this milestone-close doc sync (#6).
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): M9.2 complete — codex/zone-stats/achievements`
+2. `docs(plans): close session #6 — M9.2 milestone close`
+
+**Next session:** #7 "M9.3 ProductCatalog wiring for pan_tvardowski.full_game + supporter_pack"
+
+---

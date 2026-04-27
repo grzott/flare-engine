@@ -156,21 +156,23 @@ describe('PT_CATALOG product IDs', () => {
     expect(PT_CATALOG.entries).toHaveLength(2);
   });
 
-  test('pt.full_game grants the FULL_GAME entitlement key', () => {
+  test('pan_tvardowski.full_game grants the FULL_GAME entitlement key', () => {
     if (!PT_CATALOG || !getGrantsForProduct || !PT_ENTITLEMENT) return;
-    const grants = getGrantsForProduct(PT_CATALOG, 'pt.full_game');
+    const grants = getGrantsForProduct(PT_CATALOG, 'pan_tvardowski.full_game');
     expect(grants).toContain(PT_ENTITLEMENT.FULL_GAME);
     expect(grants).toHaveLength(1);
   });
 
-  test('pt.shards_small is consumable with no entitlement grants', () => {
+  // pt.shards_small removed in M9.3 — replaced by pan_tvardowski.supporter_pack
+  test('pan_tvardowski.supporter_pack is non-consumable granting pt.supporter', () => {
     if (!PT_CATALOG || !getGrantsForProduct) return;
-    const grants = getGrantsForProduct(PT_CATALOG, 'pt.shards_small');
-    expect(grants).toHaveLength(0);
+    const grants = getGrantsForProduct(PT_CATALOG, 'pan_tvardowski.supporter_pack');
+    expect(grants).toHaveLength(1);
+    expect(grants[0]).toBe('pt.supporter');
     const entry = PT_CATALOG.entries.find(
-      (e: { productId: string }) => e.productId === 'pt.shards_small',
+      (e: { productId: string }) => e.productId === 'pan_tvardowski.supporter_pack',
     );
-    expect(entry?.type).toBe('consumable');
+    expect(entry?.type).toBe('non-consumable');
   });
 
   test('entitlement store starts empty', () => {
@@ -186,25 +188,25 @@ describe('PT_CATALOG product IDs', () => {
     expect(store.isEntitled(PT_ENTITLEMENT.FULL_GAME)).toBe(true);
   });
 
-  test('grantProduct(pt.full_game) makes full_game entitled', () => {
+  test('grantProduct(pan_tvardowski.full_game) makes full_game entitled', () => {
     if (!createPTEntitlementStore || !PT_ENTITLEMENT) return;
     const store = createPTEntitlementStore();
-    store.grantProduct('pt.full_game');
+    store.grantProduct('pan_tvardowski.full_game');
     expect(store.isEntitled(PT_ENTITLEMENT.FULL_GAME)).toBe(true);
   });
 
-  test('grantProduct(pt.shards_small) grants nothing', () => {
+  test('grantProduct(unknown) grants nothing', () => {
     if (!createPTEntitlementStore) return;
     const store = createPTEntitlementStore();
-    store.grantProduct('pt.shards_small');
+    store.grantProduct('unknown.product');
     expect(store.snapshot()).toHaveLength(0);
   });
 
   test('grantProduct is idempotent', () => {
     if (!createPTEntitlementStore || !PT_ENTITLEMENT) return;
     const store = createPTEntitlementStore();
-    store.grantProduct('pt.full_game');
-    store.grantProduct('pt.full_game');
+    store.grantProduct('pan_tvardowski.full_game');
+    store.grantProduct('pan_tvardowski.full_game');
     const keys = store.snapshot();
     expect(keys).toHaveLength(1);
     expect(keys[0]).toBe(PT_ENTITLEMENT.FULL_GAME);

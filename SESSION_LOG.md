@@ -618,3 +618,89 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** #17 "M9.6 Sentry crash-transport binding gated behind crashOptIn"
 
 ---
+
+## Session 12 — 2026-04-26 (scope: [game]) — retroactive close
+
+**Goal (from sessions.md row #12):** M9.4 dialogue graph speakerPortraitKey plumbing for opening + zone-7 + victory
+
+**Touched files** (as-shipped 2026-04-26; diverges from declared `touched paths` — see sessions.md footnote ‡)
+- `apps/pan-tvardowski/src/dialogue/portrait-manifest.ts` (new) ‡ — replaces planner-declared `src/dialogue/portraits.ts`
+- `apps/pan-tvardowski/src/dialogue/graphs.ts` — `speakerPortraitKey` added to all `LineNode` entries (12 occurrences across opening, zone7-entry, zone8-intro, victory, plus new `createZone4BorutaGraph`)
+- `apps/pan-tvardowski/src/dialogue/index.ts` — re-export of `createZone4BorutaGraph`
+- `apps/pan-tvardowski/src/localization/keys.ts` — `dialogue.speaker.boruta` registration
+- `apps/pan-tvardowski/locales/en.json` + `pl.json` — `dialogue.speaker.boruta` ("Boruta" both locales)
+- `apps/pan-tvardowski/tests/dialogue-portrait.test.ts` (new) ‡ — covers manifest + graph plumbing in a single suite (replaces planner-declared `tests/dialogue-portraits.test.ts`)
+
+**Retroactive close note.** This block is appended on 2026-04-27 to mirror the actual 2026-04-26 implementation that landed without flipping sessions.md row #12. Build-plan §17 M9.4 checkbox + the `**2026-04-26** — **M9.4 complete.**` change-log entry at `docs/plans/pan-tvardowski-build-plan.md` line 562 confirm the work shipped. Engine-coverage already ticked: `@flare-engine/dialogue` `speakerPortraitKey` schema ext ✅.
+
+**Gates** (verified at write-time, 2026-04-27, by re-running on the as-shipped tree)
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (16 tests in `dialogue-portrait.test.ts` — 6 manifest + 10 graph/controller; full app suite green)
+- build: ✅
+- device smoke: ✅ (covered jointly with row #13)
+
+**Docs synced** (already done 2026-04-26 by the original implementation pass)
+- `docs/plans/pan-tvardowski-build-plan.md` — change-log entry at line 562 + §17 M9.4 box ticked
+- `docs/references/builder-reference.md` — mirror row already reads "M9.4 dialogue avatar slot ✅"
+
+**Commits** (subjects only — original commits from 2026-04-26 series; no new commits this retroactive close)
+1. (original) `feat(pan-tvardowski): M9.4 portrait manifest + graph speakerPortraitKey`
+
+**Next session:** #13 "M9.4 DialoguePanel avatar slot wiring with shape-portrait placeholders"
+
+---
+
+## Session 13 — 2026-04-26 (scope: [game]) — retroactive close
+
+**Goal (from sessions.md row #13):** M9.4 DialoguePanel avatar slot wiring with shape-portrait placeholders
+
+**Touched files** (as-shipped 2026-04-26; diverges from declared `touched paths` — see sessions.md footnote ‡)
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.tsx` — replaced custom render with `<ThemeProvider>` + `<DialoguePanel>` from `@flare-engine/ui`; portrait slot is a 44×44 colour block driven by `PORTRAIT_MANIFEST[key].fill[0]` channel
+- `apps/pan-tvardowski/src/dialogue/portrait-manifest.ts` ‡ — `resolvePortraitShape(key)` accessor consumed by overlay (file shared with row #12)
+- `apps/pan-tvardowski/tests/dialogue-portrait.test.ts` ‡ — overlay coverage merged into the shared dialogue-portrait suite (replaces planner-declared `tests/dialogue-overlay-avatar.test.ts`)
+
+**Retroactive close note.** Appended 2026-04-27. Original implementation 2026-04-26. Engine-coverage already ticked: `@flare-engine/ui` `DialoguePanel` ✅.
+
+**Gates** (verified 2026-04-27)
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (overlay coverage included in the 16-test `dialogue-portrait.test.ts`)
+- build: ✅
+- device smoke: ✅ (Skia 44×44 portrait block confirmed on Android emulator 2026-04-26)
+
+**Docs synced** (done 2026-04-26)
+- `docs/plans/pan-tvardowski-build-plan.md` — change-log entry at line 562 covers both #12 + #13
+
+**Commits** (original 2026-04-26 series; no new commits)
+1. (original) `feat(pan-tvardowski): M9.4 DialoguePanel + ThemeProvider in DialogueOverlay`
+
+**Next session:** #14 "M9.4 close: tick §17 M9.4 checkbox; Change log + mirror row sync"
+
+---
+
+## Session 14 — 2026-04-26 (scope: [game]) — retroactive close
+
+**Goal (from sessions.md row #14):** M9.4 close: tick §17 M9.4 checkbox; Change log + mirror row sync
+
+**Touched files**
+- `docs/plans/pan-tvardowski-build-plan.md` — §17 M9.4 box ticked + `**2026-04-26** — **M9.4 complete.**` change-log entry (line 562)
+- `docs/references/builder-reference.md` — mirror row reads `M9.4 dialogue avatar slot ✅`
+
+**Retroactive close note.** Appended 2026-04-27. The docs ticks were already in place as of 2026-04-26; the missing piece was the sessions.md row flip. This batch reconciles that.
+
+**Gates**
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (no source delta)
+
+**Docs synced**
+- `docs/plans/sessions.md` — rows #12, #13, #14 flipped `pending → done` with 2026-04-26 dates + footnotes †‡ added (this batch, 2026-04-27)
+- `SESSION_LOG.md` — three retroactive blocks (12, 13, 14) appended (this batch, 2026-04-27)
+
+**Commits** (this batch — to be emitted at the end of the M9.4 reconciliation step)
+1. `docs(plans): reconcile M9.4 zombie rows #12-14`
+
+**Next session:** #17 "M9.6 Sentry crash-transport binding gated behind crashOptIn"
+
+---

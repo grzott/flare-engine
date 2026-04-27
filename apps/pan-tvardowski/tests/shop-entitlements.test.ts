@@ -91,9 +91,9 @@ describe('zone-gate — zones 4–8 gated, 1–3 free', () => {
 describe('locale keys — shop keys in EN + PL', () => {
   const shopKeys = LOCALIZATION_KEYS.filter((k) => k.startsWith('shop.'));
 
-  test('there are 14 shop-related keys (13 shop.* + menu.shop)', () => {
+  test('there are 19 shop-related keys (18 shop.* + menu.shop)', () => {
     const allShopish = LOCALIZATION_KEYS.filter((k) => k.startsWith('shop.') || k === 'menu.shop');
-    expect(allShopish).toHaveLength(14);
+    expect(allShopish).toHaveLength(19);
   });
 
   test('all shop.* keys exist in en.json', () => {

@@ -51,6 +51,14 @@ const menu = [
   'settings.restore.success',
   'settings.restore.empty',
   'settings.restore.error',
+  'settings.privacy.title',
+  'settings.privacy.analytics_label',
+  'settings.privacy.crash_label',
+  'settings.privacy.on',
+  'settings.privacy.off',
+  'settings.privacy.data_heading',
+  'settings.privacy.data_note',
+  'settings.privacy.close',
 ] as const;
 
 const hud = [

@@ -20,6 +20,7 @@ import { formatLastPlayed, slotPreview } from '../save/preview';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
 import type { FireButtonSide, JoystickSide } from '../state';
+import { PrivacyOverlay } from './PrivacyOverlay';
 import { CREDITS_SECTIONS } from './credits-sections';
 
 export interface MenuOverlayActions {
@@ -201,6 +202,7 @@ function SettingsView({
   entitlementStore,
 }: SettingsViewProps): React.ReactElement {
   const t = useMemo(() => (k: string, p?: Record<string, string | number>) => l.t(k, p), [l]);
+  const [privacyVisible, setPrivacyVisible] = useState(false);
 
   const setLocale = (loc: 'en' | 'pl'): void => {
     gameState.settings.locale = loc;
@@ -354,6 +356,13 @@ function SettingsView({
         ) : null}
         <View style={{ marginTop: 12 }}>
           <Button
+            label={t('settings.privacy.title')}
+            variant="secondary"
+            onPress={() => setPrivacyVisible(true)}
+          />
+        </View>
+        <View style={{ marginTop: 12 }}>
+          <Button
             label={t('menu.settings.back')}
             variant="ghost"
             onPress={() => {
@@ -364,6 +373,12 @@ function SettingsView({
           />
         </View>
       </Panel>
+      <PrivacyOverlay
+        localization={l}
+        save={save}
+        visible={privacyVisible}
+        onClose={() => setPrivacyVisible(false)}
+      />
     </View>
   );
 }

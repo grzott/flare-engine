@@ -3,8 +3,8 @@ import { createMemoryAdapter } from '@flare-engine/storage';
 import { parseSaveFile } from '../src/save/schema';
 import { createSaveStore } from '../src/save/store';
 
-describe('zone-stats / v5→v6 migration', () => {
-  test('v5 save (no zoneStats, no unlockedAchievements) migrates to v6 defaults and round-trips', () => {
+describe('zone-stats / v5→current migration', () => {
+  test('v5 save (no zoneStats, no unlockedAchievements) migrates to current defaults and round-trips', () => {
     const v5Raw = JSON.stringify({
       version: 5,
       settings: {
@@ -36,7 +36,7 @@ describe('zone-stats / v5→v6 migration', () => {
     });
 
     const parsed = parseSaveFile(v5Raw);
-    expect(parsed.version).toBe(6);
+    expect(parsed.version).toBe(7);
     expect(parsed.unlockedAchievements).toEqual([]);
     const slot = parsed.slots[0];
     expect(slot).not.toBeNull();
@@ -45,7 +45,7 @@ describe('zone-stats / v5→v6 migration', () => {
     // Round-trip: serialise then re-parse — shape must be identical.
     const reRaw = JSON.stringify(parsed);
     const reParsed = parseSaveFile(reRaw);
-    expect(reParsed.version).toBe(6);
+    expect(reParsed.version).toBe(7);
     expect(reParsed.unlockedAchievements).toEqual([]);
     expect(reParsed.slots[0]!.zoneStats).toEqual({});
   });

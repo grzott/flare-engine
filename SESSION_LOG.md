@@ -769,3 +769,38 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 4. `docs(pan-tvardowski): M9.6 session #18 changelog`
 
 **Next session:** #19 "M9.6 balance freeze with BALANCE_FROZEN_AT + grep pre-commit guard"
+
+---
+
+## Session 19 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #19):** M9.6 balance freeze with BALANCE_FROZEN_AT + grep pre-commit guard
+
+**Touched files**
+- `apps/pan-tvardowski/src/config/gameplay.ts` ¶ — added `BALANCE_FROZEN_AT = '2026-04-28'`
+- `apps/pan-tvardowski/src/config/zones.ts` — added `BALANCE_FROZEN_AT = '2026-04-28'`
+- `apps/pan-tvardowski/scripts/check-balance-freeze.sh` (new, executable) — git-diff-based freeze enforcer
+- `apps/pan-tvardowski/tests/balance-freeze.test.ts` (new) ¶ — 4 tests asserting both files agree on the date
+
+**Path drift (¶):** Planner declared `src/config/enemies.ts` + `src/config/upgrades.ts`; neither exists in the codebase. The two real balance files are `gameplay.ts` (enemy specs, boss HPs, fire/spawn timings) + `zones.ts` (per-zone configs). Both received the constant. Drive-by `tests/balance-freeze.test.ts` added (not in declared paths) so future drift between the two `BALANCE_FROZEN_AT` constants is caught at test time rather than only by the bash script.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean across 158 files)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+4 new, total 248 pass / 0 fail, 5704 expect() calls, 56 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- script verify: ✅ (`ALLOW_BALANCE_CHANGE=1` bypass exits 0; default invocation correctly exits 1 because both protected files are dirty after this session's edits — the intended behaviour after a freeze is set)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — `**2026-04-28** — **M9.6 partial (session #19).**` change-log entry appended after #18
+- `docs/plans/sessions.md` — row #19 flipped `pending → done` with 2026-04-28 dates, `test (+4)` count, and `¶` (path-drift footnote)
+- `docs/references/builder-reference.md` — no update; mid-M9.6 batch; mirror row update deferred to session #22
+- `docs/plans/release-readiness-checklist.md` — no tick (no checklist item maps cleanly to "balance freeze" — that's an internal hygiene gate, not a store-submission requirement)
+
+**Commits** (subjects only — full blocks emitted below in chat)
+1. `feat(pan-tvardowski): M9.6 BALANCE_FROZEN_AT constants in gameplay + zones`
+2. `feat(pan-tvardowski): check-balance-freeze.sh git-diff freeze enforcer`
+3. `test(pan-tvardowski): balance-freeze +4 tests (cross-file agreement)`
+4. `docs(pan-tvardowski): M9.6 session #19 changelog`
+
+**Next session:** #20 "M9.6 locale parity audit script + fix any EN/PL drift"

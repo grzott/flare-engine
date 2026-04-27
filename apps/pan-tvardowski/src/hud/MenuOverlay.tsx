@@ -23,6 +23,7 @@ export interface MenuOverlayActions {
   goSettings(): void;
   goCredits(): void;
   goInventory(): void;
+  goCodex(): void;
   goShop(): void;
   startSlot(index: 0 | 1 | 2): void;
   persistSettings(): void;
@@ -79,6 +80,7 @@ function MenuView({ localization: l, actions, appVersion }: MenuOverlayProps): R
     { id: 'play', label: t('menu.play'), onPress: actions.goSaveSelect },
     { id: 'shop', label: t('menu.shop'), onPress: actions.goShop },
     { id: 'inventory', label: t('menu.inventory'), onPress: actions.goInventory },
+    { id: 'codex', label: t('menu.codex'), onPress: actions.goCodex },
     { id: 'settings', label: t('menu.settings'), onPress: actions.goSettings },
     { id: 'credits', label: t('menu.credits'), onPress: actions.goCredits },
   ];

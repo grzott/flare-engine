@@ -11,6 +11,7 @@ const menu = [
   'menu.settings',
   'menu.credits',
   'menu.inventory',
+  'menu.codex',
   'menu.shop',
   'menu.quit',
   'menu.settings.title',
@@ -204,6 +205,7 @@ const dialogue = [
 ] as const;
 
 const codex = [
+  'codex.title',
   'codex.skrzat.lore',
   'codex.skrzat.stats',
   'codex.latawiec.lore',

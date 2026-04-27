@@ -7,6 +7,7 @@
   "menu.credits": "Twórcy",
   "menu.inventory": "Bestiariusz",
   "menu.shop": "Sklep",
+  "menu.codex": "Kodeks",
   "menu.quit": "Wyjdź",
   "menu.settings.title": "Ustawienia",
   "menu.settings.language": "Język",
@@ -157,6 +158,8 @@
   "inventory.stats.best_score": "Najlepszy wynik: {score}",
   "inventory.stats.runs": "{n, plural, =0 {Brak podejść} one {# podejście} few {# podejścia} many {# podejść} other {# podejść}}",
   "inventory.back": "Wróć",
+
+  "codex.title": "Kodeks",
 
   "dialogue.opening.king.1": "Twardowski. Zwierciadło pęknięte. Siedem odłamków rozrzuconych po Koronie, siedmiu pomiotów piekielnych strzeże ich. Dosiądź Koguta. Odzyskaj je, nim Diabeł wypomni ci kontrakt.",
   "dialogue.opening.twardowski.1": "Jeden warunek, Miłościwy Panie. Rzym mnie nie tyka.",

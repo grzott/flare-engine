@@ -33,6 +33,7 @@ import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
 import { createDialogueController } from './dialogue';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
+import { CodexOverlay } from './hud/CodexOverlay';
 import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
 import { InventoryOverlay } from './hud/InventoryOverlay';
@@ -43,6 +44,7 @@ import { createPTEntitlementStore } from './iap/store';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
 import { createBootScene } from './scenes/boot';
+import { createCodexShardsScene } from './scenes/codex-shards';
 import { createCreditsScene } from './scenes/credits';
 import { createGameOverScene, createVictoryScene } from './scenes/end';
 import { createInventoryScene } from './scenes/inventory';
@@ -128,6 +130,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   ctx.scenes.register('settings', createSettingsScene(ctx));
   ctx.scenes.register('credits', createCreditsScene(ctx));
   ctx.scenes.register('inventory', createInventoryScene(ctx));
+  ctx.scenes.register('codex-shards', createCodexShardsScene(ctx));
   ctx.scenes.register('shop', createShopScene(ctx));
   ctx.scenes.register(
     'play',
@@ -287,6 +290,9 @@ function AppRoot(): React.ReactElement {
       goInventory: () => {
         void ctxRef.current?.scenes.go('inventory');
       },
+      goCodex: () => {
+        void ctxRef.current?.scenes.go('codex-shards');
+      },
       goShop: () => {
         void ctxRef.current?.scenes.go('shop');
       },
@@ -411,6 +417,11 @@ function AppRoot(): React.ReactElement {
           onVolumesChange={() => applyVolumes(getAudio())}
         />
         <InventoryOverlay
+          localization={localization}
+          save={saveStore}
+          actions={{ goMenu: menuActions.goMenu }}
+        />
+        <CodexOverlay
           localization={localization}
           save={saveStore}
           actions={{ goMenu: menuActions.goMenu }}

@@ -7,6 +7,7 @@
   "menu.credits": "Credits",
   "menu.inventory": "Bestiary",
   "menu.shop": "Shop",
+  "menu.codex": "Codex",
   "menu.quit": "Quit",
   "menu.settings.title": "Settings",
   "menu.settings.language": "Language",
@@ -157,6 +158,8 @@
   "inventory.stats.best_score": "Best score: {score}",
   "inventory.stats.runs": "{n, plural, =0 {No runs} one {# run} other {# runs}}",
   "inventory.back": "Back",
+
+  "codex.title": "Codex",
 
   "dialogue.opening.king.1": "Twardowski. The Mirror is broken. Seven shards scatter the realm, seven lieutenants of Hell hold them. Ride your rooster. Bring them back before the Devil claims his bond.",
   "dialogue.opening.twardowski.1": "One condition, Majesty. Rome does not touch me.",

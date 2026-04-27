@@ -53,6 +53,7 @@ describe('codex-shards scene', () => {
         runs: 1,
         bossDefeated: false,
         savedAt: Date.now(),
+        zoneStats: {},
       }),
       codexUnlocked: () => ['skrzat'] as readonly string[],
     };

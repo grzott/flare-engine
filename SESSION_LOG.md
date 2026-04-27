@@ -384,3 +384,164 @@ These are intentional deferrals to keep this session's diff scoped to catalog da
 **Next session:** #8 "M9.3 wire createRevenueCatProvider in App.tsx (env-var keys); zone-gate guard on zones 4–8 via EntitlementStore.isEntitled('pt.full_game')"
 
 ---
+
+## Session 8 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #8):** M9.3 wire createRevenueCatProvider in App.tsx (env-var keys); zone-gate guard on zones 4–8 via EntitlementStore.isEntitled('pt.full_game')
+
+**Touched files**
+- `apps/pan-tvardowski/src/iap/provider.ts` (new) — `createGameIapProvider()` with env-var-gated lazy `await import('@flare-engine/iap-revenuecat')`; falls back to `NoopIAPProvider` when `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS` and `..._ANDROID` are both empty.
+- `apps/pan-tvardowski/src/iap/zone-gate.ts` (new) — `canStartZone(zoneConfig, entitlementStore): boolean` helper.
+- `apps/pan-tvardowski/src/tier2/providers.ts` — iap field now calls `createGameIapProvider()` instead of returning `NoopIAPProvider` directly.
+- `apps/pan-tvardowski/src/App.tsx` — removed direct `NoopIAPProvider` import; passes `entitlementStore` down to `MenuOverlay` + `createPlayScene`; `ShopOverlay.iapProvider` now sources from `getTier2Providers().iap`.
+- `apps/pan-tvardowski/src/config/zones.ts` — added `requiresEntitlement?: EntitlementKey` field to `ZoneConfig`; set to `ENTITLEMENT_FULL_GAME` for zones 4–8.
+- `apps/pan-tvardowski/src/scenes/play.ts` — added optional `entitlementStore` to `PlaySceneDeps`; guards next-zone transition in boss `onDefeated`: if gate fails, emits `zone-gated`, surfaces shop gate, transitions to shop.
+- `apps/pan-tvardowski/src/events.ts` — added `'zone-gated'` event to `GameEventMap` (payload: `{ zoneId, requiredEntitlement }`).
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx` — `SaveSelectView` shows locked badge for gated zones (z4–z8) when not entitled; click is still routed through `startSlot` which already enforces the gate.
+- `apps/pan-tvardowski/src/localization/keys.ts` — added `'menu.zone.locked'`.
+- `apps/pan-tvardowski/locales/en.json` — `"menu.zone.locked": "Locked"`.
+- `apps/pan-tvardowski/locales/pl.json` — `"menu.zone.locked": "Zablokowane"`.
+- `apps/pan-tvardowski/tests/zone-gate.test.ts` (new — +4 tests).
+
+**Drift from declared paths.** Spec listed `App.tsx, scenes/play.ts, config/zones.ts, tests/zone-gate.test.ts`. Eight extras were required for the zone-gate to plug in cleanly: the new `iap/provider.ts` and `iap/zone-gate.ts` helpers (couldn't live anywhere else); `tier2/providers.ts` (the actual env-var fallback wiring); `events.ts` (typed `zone-gated` event); `hud/MenuOverlay.tsx` (locked-badge surface — flagged in the spec narrative); `localization/keys.ts` + `locales/en.json` + `locales/pl.json` (one new key for the locked badge — required by the locale-parity test). All ten extras are necessary blast-radius and were called out in the approved plan.
+
+Builder note on `iap/provider.ts` lazy import: `@flare-engine/iap-revenuecat`'s tsup dist is not built during test runs, so a static `import` from it would fail at module-load time in any test file that transitively imports `tier2/providers.ts`. The lazy `await import()` wrapper preserves the Noop-fallback contract and keeps CI/test runs green. Confirmed by 219 passing tests with no real native SDK installed.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+4 new, 215 → 219 pass / 0 fail, 5534 expect() calls, 50 files)
+- build: ✅ (stub echo)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run start`. Verify: (a) menu shows locked badge on zones 4–8 in a fresh save, (b) clicking a locked zone bounces to shop, (c) zone-3 boss defeat transitions to shop instead of zone-4 when not entitled.
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update; M9.3 close + tick lands in session #11.
+- `docs/references/builder-reference.md` — no update; mid-batch state.
+- `docs/plans/release-readiness-checklist.md` — no new ticks; §3 IAP items land in session #11.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `feat(pan-tvardowski): M9.3 RevenueCat provider with Noop fallback`
+2. `feat(pan-tvardowski): M9.3 zone-gate guard for zones 4–8`
+3. `feat(pan-tvardowski): M9.3 menu locked-zone visuals + locked event`
+4. `test(pan-tvardowski): M9.3 zone-gate (+4 tests)`
+5. `docs(plans): close session #8 — RevenueCat wire + zone gate`
+
+**Next session:** #9 "M9.3 swap hand-rolled ShopOverlay for @flare-engine/ui-shop ShopPanel; add PaywallModal on zone-3 boss defeat (soft-dismissible) + EN/PL paywall copy"
+
+---
+
+## Session 9 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #9):** M9.3 swap hand-rolled ShopOverlay for @flare-engine/ui-shop ShopPanel; add PaywallModal on zone-3 boss defeat (soft-dismissible) + EN/PL paywall copy
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/PaywallOverlay.tsx` (new) — wraps `<PaywallModal>` from `@flare-engine/ui-shop`. Targets `SKU_FULL_GAME` + `ENTITLEMENT_FULL_GAME`. Reads localizer from `LocalizationManager`; props: `visible`, `onDismiss`.
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx` — full rewrite as a thin wrapper around `<ShopPanel>` from `@flare-engine/ui-shop`. Old hand-rolled implementation deleted. Passes `PT_CATALOG`, per-SKU `ShopItemCopy` for `SKU_FULL_GAME` + `SKU_SUPPORTER_PACK`, and `ShopPanelStrings`. Uses `useIAP()` internally; `iapProvider` prop removed.
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx` — locked-zone Pressable now emits `gameEvents.emit('paywall-trigger', 'zone-locked-click')` instead of starting the slot when the player is not entitled.
+- `apps/pan-tvardowski/src/App.tsx` — added `paywallVisible` React state; subscribes to `'paywall-trigger'` (sets visible) and `'purchase-completed'` (clears visible); renders `<PaywallOverlay>` adjacent to the existing overlays. Removed unused `getTier2Providers` import + `save`/`iapProvider` props from the new `<ShopOverlay>` (the smart ShopPanel uses `useIAP()`).
+- `apps/pan-tvardowski/src/scenes/play.ts` — at the zone-3 boss `onDefeated` site (when zone-4 transition is gated), emits `gameEvents.emit('paywall-trigger', 'zone-3-defeat')` before bouncing to shop.
+- `apps/pan-tvardowski/src/events.ts` — added typed events `'paywall-trigger': (reason: PaywallReason) => void` and `'purchase-completed': (productId: ProductId) => void`. `PaywallReason` is `'zone-3-defeat' | 'zone-locked-click'`.
+- `apps/pan-tvardowski/src/localization/keys.ts` — added 6 paywall keys (heading, body, cta, dismiss, loading, error) + 14 shop keys (6 generic + 4 per-SKU × 2 SKUs); kept legacy `shop.restore`, `shop.back`, `shop.gate.title`, `shop.gate.desc` for the existing gate-banner flow. Total new keys ≈ 20.
+- `apps/pan-tvardowski/locales/en.json` — added EN strings for every new key.
+- `apps/pan-tvardowski/locales/pl.json` — added PL strings for every new key.
+- `apps/pan-tvardowski/tests/paywall-flow.test.ts` (new — +4 tests: paywall-trigger event invokes handlers with reason; granting SKU_FULL_GAME flips isEntitled to true; purchase-completed event fires with productId payload; soft-dismiss handler runs without granting).
+- `apps/pan-tvardowski/tests/shop-entitlements.test.ts` — updated the locale-key count assertion from 14 → 19 (18 shop.* + menu.shop) to reflect the new shop key bucket.
+- `apps/pan-tvardowski/package.json` — added `@flare-engine/ui-shop: workspace:*` dependency.
+
+**Drift from declared paths.** Spec listed 6 paths; 11 were touched. Extras: `hud/MenuOverlay.tsx` (locked-click event emit — required for the soft-paywall trigger from menu), `events.ts` (typed events the modal subscribes to), `tier2/providers.ts` (no actual change in this session, lingering from #8), `localization/keys.ts` (key registrations required by the parity test), `App.tsx` (state + render — the actual paywall mount point), `package.json` (workspace dep), `tests/shop-entitlements.test.ts` (locale-count assertion blast-radius). All extras are mandatory for the feature to function end-to-end.
+
+Builder note: the original game-builder agent stopped mid-task before wiring `<PaywallOverlay>` into App.tsx and before creating `tests/paywall-flow.test.ts`. Inline cleanup: created the missing test file (+4 tests), wired the missing render in App.tsx, fixed a typecheck error from the obsolete `<ShopOverlay save=…>` prop, hooked `gameEvents.emit('paywall-trigger', 'zone-locked-click')` into the MenuOverlay locked-click handler (the agent had imported `gameEvents` but not called it), and corrected the locale-count assertion. All gates re-verified after the cleanup.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean — 150 files, 0 errors after one auto-format on ShopOverlay.tsx)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+4 new (paywall-flow), 219 → 223 pass / 0 fail, 5594 expect() calls, 51 files)
+- build: ✅ (stub echo)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run start`. Verify: (a) clicking a locked save-slot opens the paywall modal; (b) defeating the zone-3 boss without entitlement opens the paywall after the victory screen; (c) "Maybe later" dismisses the modal; (d) ShopPanel shows both SKUs with localized copy; (e) the deprecated `pt.shards_small` line is gone from the shop UI.
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update; M9.3 close + tick lands in session #11.
+- `docs/references/builder-reference.md` — no update; mid-batch state.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `feat(pan-tvardowski): M9.3 ShopOverlay swaps to ui-shop ShopPanel`
+2. `feat(pan-tvardowski): M9.3 PaywallOverlay + paywall-trigger event`
+3. `feat(pan-tvardowski): M9.3 menu locked-zone paywall trigger`
+4. `feat(pan-tvardowski): M9.3 PL+EN paywall + shop copy`
+5. `test(pan-tvardowski): M9.3 paywall flow (+4 tests)`
+6. `docs(plans): close session #9 — ShopPanel + PaywallOverlay`
+
+**Next session:** #10 "M9.3 add @flare-engine/ui-shop RestorePurchasesButton to settings; EN/PL restore-state keys"
+
+---
+
+## Session 10 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #10):** M9.3 add @flare-engine/ui-shop RestorePurchasesButton to settings; EN/PL restore-state keys
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx` — `SettingsView` destructures `entitlementStore` and renders `<RestorePurchasesButton>` from `@flare-engine/ui-shop` above the Back button. `onComplete` handler emits `gameEvents.emit('purchase-completed', productId)` per restored `'purchased'` result so the existing paywall close-on-purchase wiring picks up restored entitlements.
+- `apps/pan-tvardowski/src/localization/keys.ts` — 5 new keys: `settings.restore.cta`, `settings.restore.loading`, `settings.restore.success`, `settings.restore.empty`, `settings.restore.error`.
+- `apps/pan-tvardowski/locales/en.json` — 5 EN restore strings.
+- `apps/pan-tvardowski/locales/pl.json` — 5 PL restore strings (idiomatic).
+- `apps/pan-tvardowski/tests/restore-purchases.test.ts` (new — +3 tests using the conditional require guard pattern: empty restore returns no entitlements; single `purchased` result grants entitlement; thrown error path leaves store unchanged).
+
+**Drift from declared paths.** Spec listed `src/scenes/settings.ts` but settings is a sub-view of `MenuOverlay.tsx` (`SettingsView`) in this app — no separate settings.ts file exists. The spec also listed `src/hud/MenuOverlay.tsx` correctly. Net: no functional drift; the spec's `settings.ts` reference was stale. `App.tsx` was NOT touched — `entitlementStore` was already wired into `<MenuOverlay>` via the `MenuOverlayProps` chain from session #9, just not destructured in SettingsView.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean — 151 files, 0 errors)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+3 new, 223 → 226 pass / 0 fail, 5618 expect() calls, 52 files)
+- build: ✅ (stub echo)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run start`. Verify: (a) Settings → "Restore purchases" button visible above Back; (b) tap with no prior purchases shows "No previous purchases found"; (c) on a device with a prior `pan_tvardowski.full_game` purchase, restore re-grants `pt.full_game` and the paywall (if open) auto-dismisses via the `'purchase-completed'` event.
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no update; M9.3 close + tick lands in session #11.
+- `docs/references/builder-reference.md` — no update; mid-batch state.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `feat(pan-tvardowski): M9.3 RestorePurchasesButton in settings`
+2. `feat(pan-tvardowski): M9.3 PL+EN restore-state keys`
+3. `test(pan-tvardowski): M9.3 restore-purchases (+3 tests)`
+4. `docs(plans): close session #10 — RestorePurchasesButton`
+
+**Next session:** #11 "M9.3 close: tick §17 M9.3 + release-checklist §3 IAP items; changelog + mirror sync"
+
+---
+
+## Session 11 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #11):** M9.3 close: tick §17 M9.3 + release-checklist §3 IAP items; changelog + mirror sync
+
+**Touched files** (docs only)
+- `docs/plans/pan-tvardowski-build-plan.md` — appended a 2026-04-27 M9.3 change-log entry that supersedes the 2026-04-26 entry. Documents the engine-first re-ship: three new packages (`@flare-engine/iap-revenuecat`, `@flare-engine/ui-shop`, integration tests + api-specs entries), game-side wiring across sessions #7–#10, all new locale keys, and net +14 game-side tests (211 → 226). §17 row already carried ✅ in the engine-packages column from the 2026-04-26 work; no further tick needed.
+- `docs/plans/release-readiness-checklist.md` §3 — ticked three IAP items: (a) `pan_tvardowski.shards_small` consumable explicitly removed from catalogue (M9.3 / session #7); (b) IAP provider adapter chosen — RevenueCat via `@flare-engine/iap-revenuecat` (engine session #23); (c) Restore Purchases UI wired (M9.3 / session #10). Three other items remain unticked (Play Console / App Store Connect product IDs + entitlement-lost fallback) — those are storefront-config and edge-case work, not engine code.
+- `docs/references/builder-reference.md` mirror row — updated M9.3 status from 🟡 to ✅ with note that the milestone re-shipped on engine primitives. Cumulative test count + mirror date stamp unchanged (other rows from #23/#24/#25 already set them).
+
+**Drift from declared paths.** None. Spec listed exactly these three docs.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean — 151 files; docs-only changes, no source touched)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski` — 226 tests)
+- test: ✅ (no source changes; 226 pass / 0 fail held)
+- build: ✅ (stub echo)
+
+**Docs synced** (this session IS the doc sync)
+- `docs/plans/pan-tvardowski-build-plan.md` — M9.3 superseding change-log entry appended (2026-04-27).
+- `docs/plans/release-readiness-checklist.md` §3 — 3 ticks added.
+- `docs/references/builder-reference.md` — M9.3 status flipped to ✅.
+
+**M9.3 batch summary (sessions #23, #24, #25, #7, #8, #9, #10, #11 — 8 sessions):**
+- Engine: 2 new packages shipped (`@flare-engine/iap-revenuecat` 8 tests, `@flare-engine/ui-shop` 11 tests), api-specs entries added.
+- Game: PT_CATALOG re-SKU'd to storefront names, RevenueCat provider wired with Noop fallback, zone-gate guard on z4–z8, soft paywall on zone-3 defeat + locked-zone click, ShopPanel/PaywallModal/RestorePurchasesButton primitives consumed, 14 new game-side tests.
+- All locale parity preserved (EN+PL).
+- Cumulative test count: engine ~1,214 (+19 from #23/#24/#25), game 226 (+14 from baseline 211).
+- Net result: M0–M9.5 done; M9.6 (store-ready bundle) is the only remaining game milestone.
+
+**Commits** (subjects only — full block emitted in chat)
+1. `docs(pan-tvardowski): M9.3 complete — re-ship on engine primitives`
+2. `docs(plans): close session #11 — M9.3 milestone close`
+
+**Next session:** #12 "M9.4 dialogue graph speakerPortraitKey plumbing for opening + zone-7 + victory" (NOTE: M9.4 was already shipped per the existing 2026-04-22 change-log entry; sessions #12–#14 may already be complete or need re-evaluation by the planner before kickoff).
+
+---

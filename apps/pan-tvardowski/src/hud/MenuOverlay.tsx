@@ -24,6 +24,7 @@ export interface MenuOverlayActions {
   goCredits(): void;
   goInventory(): void;
   goCodex(): void;
+  goAchievements(): void;
   goShop(): void;
   startSlot(index: 0 | 1 | 2): void;
   persistSettings(): void;
@@ -81,6 +82,7 @@ function MenuView({ localization: l, actions, appVersion }: MenuOverlayProps): R
     { id: 'shop', label: t('menu.shop'), onPress: actions.goShop },
     { id: 'inventory', label: t('menu.inventory'), onPress: actions.goInventory },
     { id: 'codex', label: t('menu.codex'), onPress: actions.goCodex },
+    { id: 'achievements', label: t('menu.achievements'), onPress: actions.goAchievements },
     { id: 'settings', label: t('menu.settings'), onPress: actions.goSettings },
     { id: 'credits', label: t('menu.credits'), onPress: actions.goCredits },
   ];

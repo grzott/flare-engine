@@ -33,6 +33,7 @@ import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
 import { createDialogueController } from './dialogue';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
+import { AchievementsOverlay } from './hud/AchievementsOverlay';
 import { CodexOverlay } from './hud/CodexOverlay';
 import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
@@ -43,6 +44,7 @@ import { PT_ENTITLEMENT } from './iap/catalog';
 import { createPTEntitlementStore } from './iap/store';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
+import { createAchievementsScene } from './scenes/achievements';
 import { createBootScene } from './scenes/boot';
 import { createCodexShardsScene } from './scenes/codex-shards';
 import { createCreditsScene } from './scenes/credits';
@@ -131,6 +133,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   ctx.scenes.register('credits', createCreditsScene(ctx));
   ctx.scenes.register('inventory', createInventoryScene(ctx));
   ctx.scenes.register('codex-shards', createCodexShardsScene(ctx));
+  ctx.scenes.register('achievements', createAchievementsScene(ctx));
   ctx.scenes.register('shop', createShopScene(ctx));
   ctx.scenes.register(
     'play',
@@ -293,6 +296,9 @@ function AppRoot(): React.ReactElement {
       goCodex: () => {
         void ctxRef.current?.scenes.go('codex-shards');
       },
+      goAchievements: () => {
+        void ctxRef.current?.scenes.go('achievements');
+      },
       goShop: () => {
         void ctxRef.current?.scenes.go('shop');
       },
@@ -422,6 +428,11 @@ function AppRoot(): React.ReactElement {
           actions={{ goMenu: menuActions.goMenu }}
         />
         <CodexOverlay
+          localization={localization}
+          save={saveStore}
+          actions={{ goMenu: menuActions.goMenu }}
+        />
+        <AchievementsOverlay
           localization={localization}
           save={saveStore}
           actions={{ goMenu: menuActions.goMenu }}

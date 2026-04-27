@@ -9,6 +9,7 @@ export type SceneName =
   | 'settings'
   | 'credits'
   | 'inventory'
+  | 'codex-shards'
   | 'shop'
   | 'play'
   | 'game-over'

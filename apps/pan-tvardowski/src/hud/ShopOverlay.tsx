@@ -1,18 +1,12 @@
-import type { EntitlementStore, IAPProvider } from '@flare-engine/iap';
+import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
-import {
-  Button,
-  FocusProvider,
-  Label,
-  Panel,
-  ShopPanel,
-  ThemeProvider,
-  darkTheme,
-} from '@flare-engine/ui';
+import { Button, FocusProvider, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { ShopPanel } from '@flare-engine/ui-shop';
+import type { ShopItemCopy, ShopPanelStrings } from '@flare-engine/ui-shop';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { SaveStore } from '../save/store';
+import { PT_CATALOG, SKU_FULL_GAME, SKU_SUPPORTER_PACK } from '../iap/catalog';
 import { type GameState, gameState, stateChanged } from '../state';
 
 export interface ShopOverlayActions {
@@ -22,9 +16,7 @@ export interface ShopOverlayActions {
 
 export interface ShopOverlayProps {
   localization: LocalizationManager;
-  save: SaveStore;
   entitlementStore: EntitlementStore;
-  iapProvider: IAPProvider;
   actions: ShopOverlayActions;
 }
 
@@ -37,7 +29,35 @@ function cloneState(): GameState {
   };
 }
 
-export function ShopOverlay(props: ShopOverlayProps): React.ReactElement | null {
+const SHOP_COPY: Record<string, ShopItemCopy> = {
+  [SKU_FULL_GAME]: {
+    titleKey: 'shop.full_game.title',
+    descriptionKey: 'shop.full_game.description',
+    ctaKey: 'shop.full_game.cta',
+    ownedLabelKey: 'shop.full_game.owned',
+  },
+  [SKU_SUPPORTER_PACK]: {
+    titleKey: 'shop.supporter_pack.title',
+    descriptionKey: 'shop.supporter_pack.description',
+    ctaKey: 'shop.supporter_pack.cta',
+    ownedLabelKey: 'shop.supporter_pack.owned',
+  },
+};
+
+const SHOP_STRINGS: ShopPanelStrings = {
+  headingKey: 'shop.heading',
+  emptyKey: 'shop.empty',
+  loadingKey: 'shop.loading',
+  errorKey: 'shop.error',
+  ownedSectionKey: 'shop.owned_section',
+  availableSectionKey: 'shop.available_section',
+};
+
+export function ShopOverlay({
+  localization,
+  entitlementStore,
+  actions,
+}: ShopOverlayProps): React.ReactElement | null {
   const [s, setS] = useState<GameState>(() => cloneState());
 
   useEffect(() => {
@@ -45,100 +65,28 @@ export function ShopOverlay(props: ShopOverlayProps): React.ReactElement | null 
     return () => off();
   }, []);
 
+  const t = useMemo(() => (key: string) => localization.t(key), [localization]);
+
   if (s.currentScene !== 'shop') return null;
 
   return (
     <View style={styles.root}>
       <ThemeProvider theme={darkTheme}>
         <FocusProvider>
-          <ShopView {...props} />
+          <View style={styles.content}>
+            <ShopPanel
+              catalog={PT_CATALOG}
+              entitlementStore={entitlementStore}
+              copy={SHOP_COPY}
+              strings={SHOP_STRINGS}
+              localize={t}
+            />
+            <View style={styles.backRow}>
+              <Button label={t('shop.back')} variant="ghost" onPress={actions.goMenu} />
+            </View>
+          </View>
         </FocusProvider>
       </ThemeProvider>
-    </View>
-  );
-}
-
-function ShopView({
-  localization: l,
-  entitlementStore,
-  iapProvider,
-  actions,
-  save,
-}: ShopOverlayProps): React.ReactElement {
-  const t = useMemo(() => (k: string, p?: Record<string, string | number>) => l.t(k, p), [l]);
-
-  const items = useMemo(
-    () => [
-      {
-        productId: 'pt.full_game',
-        title: t('shop.full_game.title'),
-        priceDisplay: t('shop.full_game.price'),
-        description: t('shop.full_game.desc'),
-        ownedKeys: ['pt.full_game'],
-      },
-      {
-        productId: 'pt.shards_small',
-        title: t('shop.shards_small.title'),
-        priceDisplay: t('shop.shards_small.price'),
-        description: t('shop.shards_small.desc'),
-      },
-    ],
-    [t],
-  );
-
-  const handlePurchase = (productId: string): void => {
-    void (async () => {
-      const result = await iapProvider.purchase(productId);
-      if (result.status === 'purchased') {
-        entitlementStore.grantProduct(productId);
-        const keys = entitlementStore.snapshot();
-        for (const key of keys) {
-          await save.grantEntitlement(key);
-        }
-        if (productId === 'pt.full_game') {
-          actions.goSaveSelect();
-        }
-      }
-    })();
-  };
-
-  return (
-    <View style={styles.panelContainer}>
-      <Panel padding="lg" radius="lg" style={styles.panel}>
-        <Label variant="xl" tone="accent" style={styles.title}>
-          {t('shop.title')}
-        </Label>
-        <Label variant="sm" tone="muted" style={styles.subtitle}>
-          {t('shop.subtitle')}
-        </Label>
-
-        <ShopPanel
-          items={items}
-          isEntitled={(key) => entitlementStore.isEntitled(key)}
-          onPurchase={handlePurchase}
-          ownedLabel={t('shop.owned')}
-          style={styles.shopPanel}
-        />
-
-        <View style={styles.restoreRow}>
-          <Button
-            label={t('shop.restore')}
-            variant="ghost"
-            onPress={() => {
-              void entitlementStore.restoreOnBoot(iapProvider).then(async () => {
-                const keys = entitlementStore.snapshot();
-                for (const key of keys) {
-                  await save.grantEntitlement(key);
-                }
-              });
-            }}
-          />
-        </View>
-
-        <View style={styles.backRow}>
-          <Button label={t('shop.back')} variant="ghost" onPress={actions.goMenu} />
-        </View>
-      </Panel>
     </View>
   );
 }
@@ -149,16 +97,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10, 6, 16, 0.92)',
     justifyContent: 'center',
   },
-  panelContainer: {
+  content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
   },
-  panel: { alignSelf: 'stretch', maxWidth: 420, width: '100%' },
-  title: { marginBottom: 4 },
-  subtitle: { marginBottom: 16 },
-  shopPanel: { marginBottom: 4 },
-  restoreRow: { marginTop: 12 },
-  backRow: { marginTop: 4 },
+  backRow: { marginTop: 8 },
 });

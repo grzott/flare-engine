@@ -221,3 +221,41 @@ Note: This session closes out the M9.2 milestone batch entirely. Sessions #3–#
 **Next session:** #7 "M9.3 ProductCatalog wiring for pan_tvardowski.full_game + supporter_pack"
 
 ---
+
+## Session 23 — 2026-04-27 (scope: [engine])
+
+**Goal (from sessions.md row #23):** new package @flare-engine/iap-revenuecat — concrete IAPProvider adapter wrapping react-native-purchases (peer dep); mock-SDK tests
+
+**Touched files**
+- `packages/iap-revenuecat/package.json` (new)
+- `packages/iap-revenuecat/tsup.config.ts` (new)
+- `packages/iap-revenuecat/tsconfig.json` (new)
+- `packages/iap-revenuecat/README.md` (new)
+- `packages/iap-revenuecat/src/index.ts` (new)
+- `packages/iap-revenuecat/src/provider.ts` (new — `createRevenueCatProvider` with lazy `await import('react-native-purchases')`)
+- `packages/iap-revenuecat/src/types.ts` (new — `RevenueCatConfig`, minimal SDK module shape)
+- `packages/iap-revenuecat/tests/provider.test.ts` (new — +6 tests, mock SDK via `mock.module()`)
+- `bun.lock` (workspace pickup)
+
+**Gates**
+- lint: ✅ (`biome check src/` clean)
+- typecheck: ✅ (`tsc --noEmit` clean; no other package broke)
+- test: ✅ (+6 new, 6 pass / 0 fail in `packages/iap-revenuecat`)
+- build: ✅ (`tsup`; `react-native-purchases` externalized — appears only as a dynamic `import()` string in dist, not bundled)
+
+**Docs synced**
+- `docs/design/api-specs.md` — no update this session; api-specs entry for `@flare-engine/iap-revenuecat` is deferred to session #25 (cross-package integration tests + api-specs entries for both new packages).
+- No mid-batch updates to build-plan.md required; M9.3 close (§17 + release-checklist) lands in session #11.
+
+Note: This is the FIRST engine session in the M9.3 batch (rows #23–#25, then game rows #7–#11). The `react-native-purchases` peer dep is by design — only apps that install `@flare-engine/iap-revenuecat` pull it; core `@flare-engine/iap` stays dep-free. The 0.2.0 roadmap milestone (Phase 12.7) lands early to support full IAP in Pan Tvardowski. Lazy SDK import means consumers without the SDK installed (e.g. test/CI environments) don't crash on package import.
+
+**Commits** (subjects only — full blocks emitted in chat)
+1. `feat(iap-revenuecat): scaffold package + peer-dep`
+2. `feat(iap-revenuecat): IAPProvider impl with lazy SDK import`
+3. `test(iap-revenuecat): mock-SDK provider tests (+6)`
+4. `docs(iap-revenuecat): README with install + usage snippet`
+5. `docs(plans): close session #23 — iap-revenuecat scaffold`
+
+**Next session:** #24 "new package @flare-engine/ui-shop — reusable ShopPanel + PaywallModal + RestorePurchasesButton primitives"
+
+---

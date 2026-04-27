@@ -3,9 +3,15 @@
     "name": "Pan Tvardowski",
     "slug": "pan-tvardowski",
     "version": "0.0.1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "newArchEnabled": true,
     "userInterfaceStyle": "dark",
+    "updates": {
+      "url": "https://u.expo.dev/TODO"
+    },
     "ios": {
       "bundleIdentifier": "dev.flare.pantvardowski",
       "supportsTablet": true,
@@ -17,6 +23,11 @@
     "android": {
       "package": "dev.flare.pantvardowski",
       "edgeToEdgeEnabled": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "TODO"
+      }
     }
   }
 }

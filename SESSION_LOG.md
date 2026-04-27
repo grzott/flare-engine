@@ -545,3 +545,36 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** #12 "M9.4 dialogue graph speakerPortraitKey plumbing for opening + zone-7 + victory" (NOTE: M9.4 was already shipped per the existing 2026-04-22 change-log entry; sessions #12–#14 may already be complete or need re-evaluation by the planner before kickoff).
 
 ---
+
+## Session 15 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #15):** M9.6 EAS build profile + keystore docs + version-bump policy
+
+**Touched files**
+- `apps/pan-tvardowski/eas.json` (new) — `development` (internal APK + iOS simulator devClient), `preview` (internal APK + iOS device), `production` (store app-bundle, `autoIncrement: true`) profiles; `submit.production` stubs for Android service-account path and iOS Apple IDs.
+- `apps/pan-tvardowski/app.json` — added `runtimeVersion: { policy: "appVersion" }`, `updates.url` (EAS Update endpoint placeholder), `extra.eas.projectId` (TODO placeholder until `eas init`).
+- `apps/pan-tvardowski/docs/keystore.md` (new) — Android keytool generation snippet, EAS Credentials vault rule, iOS auto-managed signing, lost-keystore recovery procedure, version-bump policy table (semver in `app.json` / `versionCode`+`buildNumber` auto-managed via `autoIncrement`).
+- `docs/plans/pan-tvardowski-build-plan.md` — M9.6 partial change-log entry appended (2026-04-27, session #15, EAS profiles + keystore guide + version-bump policy).
+- `docs/plans/release-readiness-checklist.md` — §2 ticked: `EAS build profile: production + preview` (✅) and `Version bump policy documented` (✅); Android signing keystore line remains ⬜.
+
+**Drift from declared paths.** `docs/plans/pan-tvardowski-build-plan.md` and `docs/plans/release-readiness-checklist.md` are not in the row's `touched paths` column, but doc-sync edits are always expected at session close per the session-close protocol. No other drift.
+
+**Gates**
+- lint: ✅ (game-scope — `biome check src/ tests/` clean; no source files changed in this session)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+0 new, 226 pass / 0 fail held — config/docs-only session)
+- build: ✅ (stub echo — native build via `eas build`)
+- device smoke: N/A — no source or scene changes; config + docs only.
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — M9.6 partial change-log entry appended: `**2026-04-27** — **M9.6 partial (session #15).**` covering EAS profiles, `app.json` OTA fields, and `keystore.md`.
+- `docs/plans/release-readiness-checklist.md` §2 — two items ticked: `EAS build profile: production + preview in eas.json` (✅) and `Version bump policy documented in keystore.md` (✅). Android signing keystore line correctly remains ⬜ (EAS vault setup is a human/storefront step).
+- `docs/references/builder-reference.md` — no update; mid-M9.6 batch state; mirror row update deferred to session #22 (M9.6 close).
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): EAS build profiles + version-bump policy in app.json`
+2. `docs(pan-tvardowski): keystore + signing operator guide + M9.6 partial sync`
+
+**Next session:** #16 "M9.6 privacy UI + data-safety declaration; add PL+EN keys for settings.privacy"
+
+---

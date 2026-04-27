@@ -5,9 +5,12 @@ import {
   SAVE_VERSION,
   type SaveFile,
   type SlotData,
+  type ZoneClearOutcome,
+  type ZoneClearStats,
   createSlot,
   defaultSaveFile,
   mergeRun,
+  mergeZoneOutcome,
   parseSaveFile,
 } from './schema';
 
@@ -27,6 +30,10 @@ export interface SaveStore {
   unlockCodexEntry(id: string): Promise<void>;
   entitlements(): readonly string[];
   grantEntitlement(key: string): Promise<void>;
+  zoneStats(zoneId: ZoneId): ZoneClearStats;
+  recordZoneOutcome(zoneId: ZoneId, outcome: ZoneClearOutcome): Promise<void>;
+  unlockedAchievements(): readonly string[];
+  unlockAchievement(id: string): Promise<void>;
 }
 
 function makeMmkvAdapter(): StorageAdapter | null {
@@ -66,6 +73,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       introSeen: state.introSeen,
       codexUnlocked: state.codexUnlocked,
       entitlements: state.entitlements,
+      unlockedAchievements: state.unlockedAchievements,
     };
   }
 
@@ -136,6 +144,29 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async grantEntitlement(key) {
       if (state.entitlements.includes(key)) return;
       state = { ...state, entitlements: [...state.entitlements, key] };
+      await a.set(KEY, JSON.stringify(state));
+      notifyStateChanged();
+    },
+    zoneStats(zoneId) {
+      const idx = state.activeSlot ?? 0;
+      const slot = state.slots[idx];
+      return slot?.zoneStats[zoneId] ?? { deaths: 0, bestTimeMs: null, noHit: false };
+    },
+    async recordZoneOutcome(zoneId, outcome) {
+      const idx = state.activeSlot ?? 0;
+      const slots = state.slots.slice();
+      const current = slots[idx] ?? createSlot(idx);
+      slots[idx] = mergeZoneOutcome(current, zoneId, outcome);
+      state = { ...state, slots };
+      await a.set(KEY, JSON.stringify(state));
+      notifyStateChanged();
+    },
+    unlockedAchievements() {
+      return state.unlockedAchievements;
+    },
+    async unlockAchievement(id) {
+      if (state.unlockedAchievements.includes(id)) return;
+      state = { ...state, unlockedAchievements: [...state.unlockedAchievements, id] };
       await a.set(KEY, JSON.stringify(state));
       notifyStateChanged();
     },

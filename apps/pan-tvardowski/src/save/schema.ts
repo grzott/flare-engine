@@ -2,9 +2,22 @@ import type { ZoneId } from '../events';
 import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
 import { defaultControls, defaultSettings } from '../state';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
+
+export interface ZoneClearStats {
+  readonly deaths: number;
+  readonly bestTimeMs: number | null;
+  readonly noHit: boolean;
+}
+
+export interface ZoneClearOutcome {
+  readonly cleared: boolean;
+  readonly died: boolean;
+  readonly timeMs: number | null;
+  readonly noHit: boolean;
+}
 
 export interface SlotData {
   readonly index: number;
@@ -15,6 +28,8 @@ export interface SlotData {
   readonly savedAt: number;
   /** Highest zone the player has started or cleared in this slot. */
   readonly zoneReached: ZoneId;
+  /** Per-zone clear statistics — keyed by ZoneId. Introduced in v6. */
+  readonly zoneStats: Partial<Record<ZoneId, ZoneClearStats>>;
 }
 
 export interface SaveFile {
@@ -28,6 +43,8 @@ export interface SaveFile {
   readonly codexUnlocked: readonly string[];
   /** IAP entitlement keys owned by this player. Introduced in v5 (M9.3). */
   readonly entitlements: readonly string[];
+  /** Achievement ids unlocked across all slots. Introduced in v6. */
+  readonly unlockedAchievements: readonly string[];
 }
 
 export function defaultSaveFile(): SaveFile {
@@ -39,6 +56,7 @@ export function defaultSaveFile(): SaveFile {
     introSeen: false,
     codexUnlocked: [],
     entitlements: [],
+    unlockedAchievements: [],
   };
 }
 
@@ -50,6 +68,21 @@ function isBool(v: unknown): v is boolean {
 }
 function isZone(v: unknown): v is ZoneId {
   return typeof v === 'string' && (ZONE_IDS as readonly string[]).includes(v);
+}
+
+function parseZoneStats(v: unknown): Partial<Record<ZoneId, ZoneClearStats>> {
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return {};
+  const o = v as Record<string, unknown>;
+  const result: Partial<Record<ZoneId, ZoneClearStats>> = {};
+  for (const id of ZONE_IDS) {
+    const entry = o[id];
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const e = entry as Record<string, unknown>;
+    if (!isNum(e.deaths) || !isBool(e.noHit)) continue;
+    const bestTimeMs = e.bestTimeMs === null ? null : isNum(e.bestTimeMs) ? e.bestTimeMs : null;
+    result[id] = { deaths: e.deaths, bestTimeMs, noHit: e.noHit };
+  }
+  return result;
 }
 
 function parseSlot(v: unknown): SlotData | null {
@@ -67,6 +100,8 @@ function parseSlot(v: unknown): SlotData | null {
   }
   // v1/v2 → v3: `zoneReached` absent → default 'z1'.
   const zoneReached: ZoneId = isZone(o.zoneReached) ? o.zoneReached : 'z1';
+  // v5 → v6: `zoneStats` absent → empty (no per-zone history recorded yet).
+  const zoneStats: Partial<Record<ZoneId, ZoneClearStats>> = parseZoneStats(o.zoneStats);
   return {
     index: o.index,
     runs: o.runs,
@@ -75,6 +110,7 @@ function parseSlot(v: unknown): SlotData | null {
     bossDefeated: o.bossDefeated,
     savedAt: o.savedAt,
     zoneReached,
+    zoneStats,
   };
 }
 
@@ -142,6 +178,10 @@ export function parseSaveFile(raw: string | null): SaveFile {
   const entitlements: string[] = Array.isArray(o.entitlements)
     ? (o.entitlements as unknown[]).filter((v): v is string => typeof v === 'string')
     : [];
+  // v5 → v6 migration: `unlockedAchievements` absent → empty.
+  const unlockedAchievements: string[] = Array.isArray(o.unlockedAchievements)
+    ? (o.unlockedAchievements as unknown[]).filter((v): v is string => typeof v === 'string')
+    : [];
   return {
     version: SAVE_VERSION,
     settings: parseSettings(o.settings),
@@ -150,6 +190,7 @@ export function parseSaveFile(raw: string | null): SaveFile {
     introSeen,
     codexUnlocked,
     entitlements,
+    unlockedAchievements,
   };
 }
 
@@ -162,6 +203,7 @@ export function createSlot(index: number): SlotData {
     bossDefeated: false,
     savedAt: 0,
     zoneReached: 'z1',
+    zoneStats: {},
   };
 }
 
@@ -184,4 +226,31 @@ export function mergeRun(
 
 function maxZone(a: ZoneId, b: ZoneId): ZoneId {
   return ZONE_IDS.indexOf(b) > ZONE_IDS.indexOf(a) ? b : a;
+}
+
+export function mergeZoneOutcome(
+  slot: SlotData,
+  zoneId: ZoneId,
+  outcome: ZoneClearOutcome,
+): SlotData {
+  const prev: ZoneClearStats = slot.zoneStats[zoneId] ?? {
+    deaths: 0,
+    bestTimeMs: null,
+    noHit: false,
+  };
+  const deaths = prev.deaths + (outcome.died ? 1 : 0);
+  const bestTimeMs =
+    outcome.cleared && outcome.timeMs !== null
+      ? prev.bestTimeMs === null
+        ? outcome.timeMs
+        : Math.min(prev.bestTimeMs, outcome.timeMs)
+      : prev.bestTimeMs;
+  // noHit is sticky-true: once set it cannot be cleared.
+  // It only gets set on a cleared run where noHit === true.
+  const noHit = prev.noHit || (outcome.cleared && outcome.noHit);
+  const updated: ZoneClearStats = { deaths, bestTimeMs, noHit };
+  return {
+    ...slot,
+    zoneStats: { ...slot.zoneStats, [zoneId]: updated },
+  };
 }

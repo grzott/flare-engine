@@ -572,6 +572,53 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
+### `@flare-engine/iap-revenuecat` (< 4 KB raw, RevenueCat adapter)
+
+**Responsibility.** Concrete `IAPProvider` implementation wrapping `react-native-purchases`. The app passes API keys (iOS + Android) and an optional `appUserId`; the package handles SDK configuration, `getProducts`, `purchase`, `restore`, and customer-info listener subscription. The SDK is loaded via lazy `await import()` so the package is safe to include in builds that run on platforms without the native module installed (e.g., web bundles).
+
+| API | Description |
+| --- | --- |
+| `createRevenueCatProvider(config)` | Factory. Returns an `IAPProvider` backed by RevenueCat. Lazily configures the SDK on first call to `getProducts` or `purchase`. |
+| `RevenueCatConfig` | Config type: `{ apiKeyIos, apiKeyAndroid, appUserId? }`. |
+| `RevenueCatPurchasesModule` | Minimal interface for the `react-native-purchases` SDK surface the adapter uses. Declared here so the package does not hard-depend on the SDK's own type package. |
+
+**Implementation notes:**
+
+- Peer dep: `react-native-purchases >=8`. Does not list it as a hard dep — keeps the package safe to install in web-only projects.
+- Lazy `await import('react-native-purchases')` pattern: SDK is never in the synchronous module graph.
+- No-throw contract on `purchase` and `restore` — all paths return a `PurchaseResult` (status `'purchased' | 'cancelled' | 'failed'`) rather than rejecting.
+- Fully mock-testable via `bun:test` `mock.module('react-native-purchases', ...)` without any native module.
+
+---
+
+### `@flare-engine/ui-shop` (< 6 KB raw, smart shop primitives)
+
+**Responsibility.** Reusable React Native shop UI primitives. Three components: `ShopPanel` (smart, fetches products + tracks entitlements), `PaywallModal` (single-product soft-dismissible modal), and `RestorePurchasesButton` (one-tap restore + entitlement re-grant). Apps pass catalog data and localized copy via props; the engine handles the purchase loop, loading states, error banners, and entitlement reactivity. No i18n framework dependency — all text goes through a host-supplied `LocalizeFn`.
+
+| API | Description |
+| --- | --- |
+| `<ShopPanel>` | Smart component. Reads `IAPContext` via `useIAP()`. Fetches products on mount; splits them into owned / available sections based on `EntitlementStore`. Calls `entitlementStore.grantProduct(id)` on confirmed purchase. |
+| `ShopPanelProps` | `{ catalog, entitlementStore, copy, strings, localize, onPurchase?, onError? }`. |
+| `<PaywallModal>` | Soft-dismissible single-product modal. `visible` owned by parent — modal never hides itself except on successful purchase. Calls `entitlementStore.grant(entitlementKey)` + `onPurchased` + `onDismiss` on success. |
+| `PaywallModalProps` | `{ visible, productId, entitlementKey, entitlementStore, strings, localize, onDismiss, onPurchased?, onError? }`. |
+| `<RestorePurchasesButton>` | Calls `provider.restore()` and `entitlementStore.grantProduct` for each purchased result. Shows success / empty / error banner inline. |
+| `RestorePurchasesButtonProps` | `{ entitlementStore, strings, localize, onComplete?, onError? }`. |
+| `ShopItemCopy` | Per-product copy bag: `{ titleKey, descriptionKey, ctaKey, ownedLabelKey }`. Keys passed to `localize`. |
+| `ShopPanelStrings` | Panel-level string keys: `headingKey`, `emptyKey`, `loadingKey`, `errorKey`, `ownedSectionKey`, `availableSectionKey`. |
+| `PaywallStrings` | `{ headingKey, bodyKey, ctaKey, dismissKey, loadingKey, errorKey }`. |
+| `RestoreStrings` | `{ ctaKey, loadingKey, successKey, emptyKey, errorKey }`. |
+| `LocalizeFn` | `(key: string) => string`. Host supplies the translation lookup; engine never imports an i18n library. |
+
+**Implementation notes:**
+
+- Deps: `@flare-engine/iap` (interface + catalog + entitlements), `@flare-engine/ui` (Panel / Button / Label / Modal primitives), `@flare-engine/events` (Signal via EntitlementStore.onChange).
+- Peer deps: `react >=18`, `react-native >=0.74`.
+- `EntitlementStore.onChange` subscription drives re-render after purchase; no manual `getProducts` refresh is needed.
+- Localizer-as-prop pattern keeps all text in the app layer — engine emits zero strings.
+- `PaywallModal` does not toggle `visible` itself. Parent-owns-visibility avoids double-close races with navigation stacks.
+
+---
+
 ### `@flare-engine/analytics` (< 1KB raw, interface-only)
 
 **Responsibility.** Event tracking interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: PostHog, Amplitude, Segment, Firebase Analytics.

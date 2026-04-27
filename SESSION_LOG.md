@@ -804,3 +804,39 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 4. `docs(pan-tvardowski): M9.6 session #19 changelog`
 
 **Next session:** #20 "M9.6 locale parity audit script + fix any EN/PL drift"
+
+---
+
+## Session 20 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #20):** M9.6 locale parity audit script + fix any EN/PL drift
+
+**Touched files**
+- `apps/pan-tvardowski/scripts/check-locale-parity.ts` (new) — `auditLocaleParity` + `isReportClean` + `formatReport` + main entry
+- `apps/pan-tvardowski/package.json` ° — added `check:locales` script entry; folded in `check:balance` (carry-over from session #19, which left no `package.json` change)
+- `apps/pan-tvardowski/tests/check-locale-parity.test.ts` (new) ° — 3 tests covering the comparator + formatter
+
+**No drift to fix:** Initial `bun run check:locales` reported `clean (288 keys, en + pl in parity)`. Live `locales/en.json` + `locales/pl.json` were not edited.
+
+**Scope notes (°):** Drive-by `check:balance` package.json entry is small but surfaces session #19's freeze script under the same `bun run check:*` namespace. New test file uses `with { type: 'json' }` import (matches the existing `tests/locales-parity.test.ts` style); plan's row called for "+1 test", landed +3 to also cover the synthetic-drift and formatter paths.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/ scripts/` clean across 160 files; auto-fixed 1 minor formatting nit in the new test)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+3 new, total 251 pass / 0 fail, 5716 expect() calls, 57 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- script verify: ✅ (`bun run check:locales` exits 0 with `clean (288 keys, en + pl in parity)`)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — `**2026-04-28** — **M9.6 partial (session #20).**` change-log entry appended after #19
+- `docs/plans/sessions.md` — row #20 flipped `pending → done` with 2026-04-28 dates, `test (+3)` count, and `°` (scope-notes footnote)
+- `docs/plans/release-readiness-checklist.md` — no tick (locale parity is a quality gate, not a launch checklist line item)
+- `docs/references/builder-reference.md` — no update; mid-M9.6 batch; mirror row update deferred to session #22
+
+**Commits** (subjects only — full blocks emitted below in chat)
+1. `feat(pan-tvardowski): M9.6 check-locale-parity script + comparator helpers`
+2. `chore(pan-tvardowski): add check:locales + check:balance npm scripts`
+3. `test(pan-tvardowski): check-locale-parity +3 tests`
+4. `docs(pan-tvardowski): M9.6 session #20 changelog`
+
+**Next session:** #21 "M9.6 save-migrator with synthetic fixture round-trip (full v→current chain)" — pending, deferred to next batch per the original plan

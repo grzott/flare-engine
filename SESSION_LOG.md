@@ -734,3 +734,38 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 4. `docs(pan-tvardowski): M9.6 session #17 changelog + checklist tick`
 
 **Next session:** #18 "M9.6 screenshot capture scene via @flare-engine/share createScreenshotScene"
+
+---
+
+## Session 18 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #18):** M9.6 screenshot capture scene via @flare-engine/share createScreenshotScene
+
+**Touched files**
+- `apps/pan-tvardowski/src/share/manager.ts` — added `PT_SCREENSHOT_TARGETS` (4 portrait phone slots) + `createPTScreenshotScene({ source, targets?, setup? })` factory
+- `apps/pan-tvardowski/src/scenes/capture.ts` (new) — `createCaptureScene(ctx, { screenshots, onComplete?, onError? })` orchestration scene
+- `apps/pan-tvardowski/src/state.ts` § — `SceneName` union extended with `'capture'`
+- `apps/pan-tvardowski/tests/capture-scene.test.ts` (new) — 7 tests across 3 describe blocks
+
+**Scope extensions (pre-approved by user):** `src/state.ts` `SceneName` extension is justified (row #2 set the precedent for adding scene names alongside scene factories). Scene is **not** registered in `App.tsx` — the GameView Skia surface does not yet expose a `CaptureSource`-compatible shim, so end-to-end wiring (debug button → `ctx.scenes.go('capture')`) is deferred to a follow-up session. The row's deliverable is the factory + tests, both green.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean across 157 files; auto-fixed 2 formatting nits in capture-scene.test.ts + share/manager.ts)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+7 new, total 244 pass / 0 fail, 5699 expect() calls, 55 files)
+- build: ✅ (stub echo — native build via `bun run android|ios`)
+- device smoke: deferred — capture-source wiring not yet in App.tsx; no on-device surface to exercise. Full device smoke gate moves to the registration follow-up.
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — `**2026-04-27** — **M9.6 partial (session #18).**` change-log entry appended after #17
+- `docs/plans/sessions.md` — row #18 flipped `pending → done` with 2026-04-27 dates, `test (+7)` count, and `src/state.ts §` (scope-extension footnote added)
+- `docs/plans/release-readiness-checklist.md` — no tick yet (the §1/§2 trailer-capture / store-screenshot items will be ticked at session #22 close once the scene is wired into a debug trigger)
+- `docs/references/builder-reference.md` — no update; mid-M9.6 batch; mirror row update deferred to session #22
+
+**Commits** (subjects only — full blocks emitted below in chat)
+1. `feat(pan-tvardowski): M9.6 PT screenshot targets + screenshot-scene factory`
+2. `feat(pan-tvardowski): M9.6 capture scene + 'capture' SceneName`
+3. `test(pan-tvardowski): capture-scene +7 tests`
+4. `docs(pan-tvardowski): M9.6 session #18 changelog`
+
+**Next session:** #19 "M9.6 balance freeze with BALANCE_FROZEN_AT + grep pre-commit guard"

@@ -280,6 +280,10 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 
 **Still pending for 11.14 close-out:** (none) — stage 11.14 closed 2026-04-24.
 
+**2026-04-27 — Session #23 shipped: `@flare-engine/iap-revenuecat`.** RevenueCat concrete `IAPProvider` adapter; `createRevenueCatProvider(config)` wraps `react-native-purchases`; 6 tests green; peer-dep on `react-native-purchases >=8`.
+
+**2026-04-27 — Session #24 shipped: `@flare-engine/ui-shop`.** New package — `ShopPanel`, `PaywallModal`, `RestorePurchasesButton` smart components consuming `IAPContext` + `EntitlementStore` + `ProductCatalog`. Consumes `@flare-engine/ui` Panel/Button/Label/Modal for rendering. 9 tests green; build + typecheck + biome lint green.
+
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 
 1. All shipping packages green: `bun run typecheck && bun run lint && bun run test && bun run build`.

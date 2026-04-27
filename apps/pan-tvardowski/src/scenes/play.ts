@@ -1,5 +1,6 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
+import type { EntitlementStore } from '@flare-engine/iap';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { A11yBridge } from '../a11y/manager';
@@ -31,6 +32,7 @@ import {
   showZoneBanner,
   updateZoneBanner,
 } from '../hud/zone-banner';
+import { canStartZone } from '../iap/zone-gate';
 import { burstExplosion } from '../particles';
 import type { SaveStore } from '../save/store';
 import {
@@ -100,6 +102,8 @@ export interface PlaySceneDeps {
   a11y?: A11yBridge;
   /** Dialogue controller — pauses gameplay while a graph is running. */
   dialogue?: DialogueController;
+  /** Entitlement store — guards zone transitions for premium zones. */
+  entitlementStore?: EntitlementStore;
 }
 
 interface PlayState {
@@ -504,6 +508,20 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             });
             const next = s.zone.nextZone;
             if (next) {
+              const nextConfig = ZONES[next];
+              if (
+                deps.entitlementStore !== undefined &&
+                !canStartZone(nextConfig, deps.entitlementStore)
+              ) {
+                gameEvents.emit('zone-gated', next, nextConfig.requiresEntitlement ?? '');
+                if (s.zone.id === 'z3') {
+                  gameEvents.emit('paywall-trigger', 'zone-3-defeat');
+                }
+                gameState.shopGateVisible = true;
+                notifyStateChanged();
+                void ctx.scenes.go('shop');
+                return;
+              }
               gameState.currentZone = next;
               notifyStateChanged();
               startZone(next, false);

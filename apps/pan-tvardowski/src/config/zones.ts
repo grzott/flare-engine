@@ -1,6 +1,8 @@
+import type { EntitlementKey } from '@flare-engine/iap';
 import type { MusicKey } from '../audio/synth';
 import type { BossPattern, MinibossPattern } from '../components';
 import type { ZoneId } from '../events';
+import { ENTITLEMENT_FULL_GAME } from '../iap/catalog';
 import {
   buildZone1Schedule,
   buildZone2Schedule,
@@ -52,6 +54,8 @@ export interface ZoneConfig {
   readonly buildSchedule: (seed: number, viewportWidth?: number) => WaveEntry[];
   readonly music: MusicKey;
   readonly nextZone: ZoneId | null;
+  /** Zones 4–8 require this entitlement; undefined = free zone. */
+  readonly requiresEntitlement?: EntitlementKey;
 }
 
 export const ZONES: Record<ZoneId, ZoneConfig> = {
@@ -110,6 +114,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     buildSchedule: buildZone4Schedule,
     music: 'zone4',
     nextZone: 'z5',
+    requiresEntitlement: ENTITLEMENT_FULL_GAME,
   },
   z5: {
     id: 'z5',
@@ -124,6 +129,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     buildSchedule: buildZone5Schedule,
     music: 'zone5',
     nextZone: 'z6',
+    requiresEntitlement: ENTITLEMENT_FULL_GAME,
   },
   z6: {
     id: 'z6',
@@ -138,6 +144,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     buildSchedule: buildZone6Schedule,
     music: 'zone6',
     nextZone: 'z7',
+    requiresEntitlement: ENTITLEMENT_FULL_GAME,
   },
   z7: {
     id: 'z7',
@@ -152,6 +159,7 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     buildSchedule: buildZone7Schedule,
     music: 'zone7',
     nextZone: 'z8',
+    requiresEntitlement: ENTITLEMENT_FULL_GAME,
   },
   z8: {
     id: 'z8',
@@ -166,5 +174,6 @@ export const ZONES: Record<ZoneId, ZoneConfig> = {
     buildSchedule: buildZone8Schedule,
     music: 'zone8',
     nextZone: null,
+    requiresEntitlement: ENTITLEMENT_FULL_GAME,
   },
 };

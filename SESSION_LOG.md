@@ -578,3 +578,43 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** #16 "M9.6 privacy UI + data-safety declaration; add PL+EN keys for settings.privacy"
 
 ---
+
+## Session 16 — 2026-04-27 (scope: [game])
+
+**Goal (from sessions.md row #16):** M9.6 privacy UI + data-safety declaration; add PL+EN keys for settings.privacy
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/PrivacyOverlay.tsx` (new)
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/save/schema.ts`
+- `apps/pan-tvardowski/src/save/store.ts`
+- `apps/pan-tvardowski/src/localization/keys.ts`
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/privacy-overlay.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-stats.test.ts`
+
+**Scope extensions (pre-approved by user):** `src/scenes/settings.ts` not touched (UI lives in `MenuOverlay.tsx`). Added: `src/hud/MenuOverlay.tsx` (Privacy button wiring), `src/localization/keys.ts` (8 new keys), `src/save/store.ts` (privacy accessor). `SAVE_VERSION` bumped v6→v7 here with inline migration (instead of waiting for session #21). `tests/zone-stats.test.ts` updated `toBe(6)→toBe(7)` to match version bump (necessary drive-by).
+
+**Gates**
+- lint: ✅ (0 errors — `biome check src/ tests/` clean across 153 files)
+- typecheck: ✅ (0 errors — `tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+3 new, total 229 pass / 0 fail, 5655 expect() calls, 53 files)
+- build: ✅ (all 38 turbo tasks successful; pan-tvardowski native build via `eas build` as expected)
+- device smoke: ✅ (user-confirmed 2026-04-27)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — M9.6 partial change-log entry appended: `**2026-04-27** — **M9.6 partial (session #16).**` covering `PrivacySettings` schema, v6→v7 migration, `PrivacyOverlay`, Settings wiring, 8 EN+PL keys, +3 tests (229 total).
+- `docs/plans/release-readiness-checklist.md` §5 — one item ticked: `Crash-opt-in surface in Settings (settings.privacy.crashOptIn, default = off)` (✅, session #16, 2026-04-27).
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — M9.6 main checkbox stays unticked; milestone not complete until session #22 closes the full batch.
+- `docs/references/builder-reference.md` — no update; mid-M9.6 batch; mirror row update deferred to session #22 (M9.6 close).
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): PrivacySettings schema + store accessor (save v6→v7)`
+2. `feat(pan-tvardowski): PrivacyOverlay + Settings wiring + PL+EN privacy keys`
+3. `test(pan-tvardowski): privacy-overlay +3 tests; zone-stats version bump`
+4. `docs(pan-tvardowski): M9.6 session #16 changelog + crash-opt-in checklist tick`
+
+**Next session:** #17 "M9.6 Sentry crash-transport binding gated behind crashOptIn"
+
+---

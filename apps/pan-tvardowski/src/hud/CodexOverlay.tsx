@@ -4,6 +4,7 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { CODEX_ENTRIES } from '../codex';
+import { findBossExtra } from '../codex/boss-entries';
 import type { SaveStore } from '../save/store';
 import { filterCodexEntries } from '../scenes/codex-shards';
 import { type GameState, gameState, stateChanged } from '../state';
@@ -76,16 +77,28 @@ function CodexView({ localization: l, save, actions }: CodexOverlayProps): React
         </Label>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-          {unlockedEntries.map((entry) => (
-            <View key={entry.id} style={styles.entryRow}>
-              <Label variant="sm" tone="accent">
-                {t(entry.nameKey)}
-              </Label>
-              <Label variant="xs" tone="muted">
-                {t(entry.loreKey)}
-              </Label>
-            </View>
-          ))}
+          {unlockedEntries.map((entry) => {
+            const bossExtra = entry.category === 'boss' ? findBossExtra(entry.id) : undefined;
+            return (
+              <View key={entry.id} style={styles.entryRow}>
+                <Label variant="sm" tone="accent">
+                  {t(entry.nameKey)}
+                </Label>
+                <Label variant="xs" tone="muted">
+                  {t(entry.loreKey)}
+                </Label>
+                {bossExtra !== undefined && (
+                  <View style={styles.phaseBlock}>
+                    {bossExtra.phaseStatsKeys.map((key) => (
+                      <Label key={key} variant="xs" tone="muted" style={styles.phaseLine}>
+                        {t(key)}
+                      </Label>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })}
           {lockedEntries.map((entry) => (
             <View key={entry.id} style={[styles.entryRow, styles.entryLocked]}>
               <Label variant="sm" tone="muted">
@@ -130,5 +143,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   entryLocked: { opacity: 0.5 },
+  phaseBlock: { marginTop: 4, gap: 2 },
+  phaseLine: { opacity: 0.75 },
   backRow: { marginTop: 12 },
 });

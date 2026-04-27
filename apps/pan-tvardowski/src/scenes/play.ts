@@ -496,6 +496,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.bossActive = false;
             gameState.bossGazeActive = false;
             gameEvents.emit('zone-complete', s.zone.id, gameState.score);
+            void save.recordZoneOutcome(s.zone.id, {
+              cleared: true,
+              died: false,
+              timeMs: Math.round(s.elapsed * 1000),
+              noHit: gameState.runStats.damageTaken === 0,
+            });
             const next = s.zone.nextZone;
             if (next) {
               gameState.currentZone = next;
@@ -630,6 +636,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             notifyStateChanged();
             if (gameState.settings.screenShake) ctx.camera.shake(16, 0.7);
             void save.commitRun(gameState.score, false);
+            if (s) {
+              void save.recordZoneOutcome(s.zone.id, {
+                cleared: false,
+                died: true,
+                timeMs: null,
+                noHit: false,
+              });
+            }
             void ctx.scenes.go('game-over');
           },
         });

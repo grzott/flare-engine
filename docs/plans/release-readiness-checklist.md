@@ -37,10 +37,10 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 - [x] ✅ PT catalogue defined in `apps/pan-tvardowski/src/iap/catalog.ts` (single source; referenced by ShopPanel + zone-gate logic).
 - [ ] ⬜ Google Play Console: `pan_tvardowski.full_game` (non-consumable) created; price set; localized name + description.
 - [ ] ⬜ Google Play Console: `pan_tvardowski.supporter_pack` (non-consumable) created.
-- [ ] ⬜ Google Play Console: `pan_tvardowski.shards_small` / `_large` (consumable) created — **or explicitly disabled in catalogue**.
+- [x] ✅ `pan_tvardowski.shards_small` consumable explicitly removed from catalogue (M9.3 / session #7) — supporter_pack non-consumable replaces it.
 - [ ] ⬜ App Store Connect: matching product IDs + metadata + screenshots.
-- [ ] ⬜ IAP provider adapter chosen (RevenueCat / native StoreKit + Play Billing / other) — recorded in [pan-tvardowski-build-plan.md §20](./pan-tvardowski-build-plan.md#20--monetization-model).
-- [x] ✅ Restore Purchases UI wired in ShopOverlay (M9.3).
+- [x] ✅ IAP provider adapter chosen — **RevenueCat** via `@flare-engine/iap-revenuecat` (engine session #23, 2026-04-27); env-var gated (`EXPO_PUBLIC_REVENUECAT_API_KEY_IOS/_ANDROID`) with `NoopIAPProvider` fallback for CI/dev.
+- [x] ✅ Restore Purchases UI wired (M9.3 / session #10) — `<RestorePurchasesButton>` from `@flare-engine/ui-shop` in Settings; `'purchase-completed'` event auto-dismisses paywall after restore.
 - [ ] ⬜ Entitlement-lost fallback: if user owned zones 4–8 and entitlement lapses (edge case), app gracefully returns them to free-mode without data loss.
 
 ## 4. Legal

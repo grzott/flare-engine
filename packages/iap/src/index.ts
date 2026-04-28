@@ -21,3 +21,4 @@ export {
   type EntitlementStoreOptions,
   createEntitlementStore,
 } from './entitlements.js';
+export { type ContentSpec, canAccessContent } from './gate.js';

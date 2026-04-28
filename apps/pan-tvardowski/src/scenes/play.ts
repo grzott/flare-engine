@@ -34,6 +34,7 @@ import {
   showZoneBanner,
   updateZoneBanner,
 } from '../hud/zone-banner';
+import type { EntitlementFallbackHandler } from '../iap/fallback';
 import { burstExplosion } from '../particles';
 import type { SaveStore } from '../save/store';
 import {
@@ -105,6 +106,8 @@ export interface PlaySceneDeps {
   dialogue?: DialogueController;
   /** Entitlement store — guards zone transitions for premium zones. */
   entitlementStore?: EntitlementStore;
+  /** Fallback handler — allows stale-access when entitlement check fails. */
+  entitlementFallback?: EntitlementFallbackHandler;
 }
 
 interface PlayState {
@@ -514,13 +517,19 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 deps.entitlementStore !== undefined &&
                 !canAccessContent(nextConfig, deps.entitlementStore)
               ) {
-                gameEvents.emit('zone-gated', next, nextConfig.requiresEntitlement ?? '');
-                if (s.zone.id === 'z3') {
-                  gameEvents.emit('paywall-trigger', 'zone-3-defeat');
+                if (deps.entitlementFallback?.shouldAllowStaleAccess(next, deps.save)) {
+                  gameState.currentZone = next;
+                  notifyStateChanged();
+                  startZone(next, false);
+                } else {
+                  gameEvents.emit('zone-gated', next, nextConfig.requiresEntitlement ?? '');
+                  if (s.zone.id === 'z3') {
+                    gameEvents.emit('paywall-trigger', 'zone-3-defeat');
+                  }
+                  gameState.shopGateVisible = true;
+                  notifyStateChanged();
+                  void ctx.scenes.go('shop');
                 }
-                gameState.shopGateVisible = true;
-                notifyStateChanged();
-                void ctx.scenes.go('shop');
                 return;
               }
               gameState.currentZone = next;

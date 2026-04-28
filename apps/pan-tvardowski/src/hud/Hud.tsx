@@ -2,8 +2,13 @@ import type { LocalizationManager } from '@flare-engine/localization';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { type GameState, gameState, stateChanged } from '../state';
+import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
 import { rawStyles } from './Hud.styles';
+
+function dismissStaleEntitlement(): void {
+  gameState.entitlementHealth = 'ok';
+  notifyStateChanged();
+}
 
 export interface HudActions {
   onRetry: () => void;
@@ -144,6 +149,14 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
             >
               <Text style={styles.zoneBannerTitle}>{t(s.zoneBanner.nameKey)}</Text>
               <Text style={styles.zoneBannerSub}>{t(s.zoneBanner.subtitleKey)}</Text>
+            </View>
+          ) : null}
+          {s.entitlementHealth === 'stale' ? (
+            <View style={styles.staleBanner} pointerEvents="box-none">
+              <Text style={styles.staleBannerText}>{t('iap.entitlement_check_failed.notice')}</Text>
+              <Pressable style={styles.staleBannerClose} onPress={dismissStaleEntitlement}>
+                <Text style={styles.staleBannerCloseLabel}>{'×'}</Text>
+              </Pressable>
             </View>
           ) : null}
         </>

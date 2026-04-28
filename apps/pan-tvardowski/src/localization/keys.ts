@@ -201,6 +201,14 @@ const paywall = [
   'paywall.error',
 ] as const;
 
+const iap = [
+  'iap.entitlement_check_failed.notice',
+  'iap.entitlement_check_failed.title',
+  'iap.entitlement_check_failed.body',
+  'iap.entitlement_check_failed.return_menu',
+  'iap.entitlement_check_failed.retry',
+] as const;
+
 const inventory = [
   'inventory.tab.codex',
   'inventory.tab.shards',
@@ -348,6 +356,7 @@ export const LOCALIZATION_KEYS = [
   ...upgrades,
   ...shop,
   ...paywall,
+  ...iap,
   ...inventory,
   ...dialogue,
   ...achievements,

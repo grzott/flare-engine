@@ -124,4 +124,28 @@ export const rawStyles = {
     marginTop: spacing.sm,
     letterSpacing: 1,
   },
+  staleBanner: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.ui.bodyBg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  staleBannerText: {
+    flex: 1,
+    color: colors.ui.neutralLight,
+    ...typography.caption,
+  },
+  staleBannerClose: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  staleBannerCloseLabel: {
+    color: colors.ui.tint60,
+    ...typography.label,
+  },
 };

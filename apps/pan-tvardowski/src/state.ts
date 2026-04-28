@@ -1,6 +1,7 @@
 import { Signal } from '@flare-engine/events';
 import { PLAYER_HP_MAX, START_BOMBS } from './config/gameplay';
 import type { ZoneId } from './events';
+import type { EntitlementHealth } from './iap/fallback';
 
 export type SceneName =
   | 'boot'
@@ -174,6 +175,8 @@ export interface GameState {
    * player lacks the full_game entitlement.
    */
   shopGateVisible: boolean;
+  /** Tracks whether the last entitlement verification succeeded or used stale data. */
+  entitlementHealth: EntitlementHealth;
 }
 
 export const gameState: GameState = {
@@ -206,6 +209,7 @@ export const gameState: GameState = {
   runStats: createRunStats(),
   dialogue: null,
   shopGateVisible: false,
+  entitlementHealth: 'ok',
 };
 
 export const stateChanged = new Signal<void>();
@@ -257,6 +261,7 @@ export function resetGameState(): void {
   gameState.runStats = createRunStats();
   gameState.dialogue = null;
   gameState.shopGateVisible = false;
+  gameState.entitlementHealth = 'ok';
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

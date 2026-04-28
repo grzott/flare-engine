@@ -175,6 +175,12 @@
   "paywall.loading": "Processing…",
   "paywall.error": "Purchase failed. Please try again.",
 
+  "iap.entitlement_check_failed.notice": "Couldn't verify your purchase — running on last known access.",
+  "iap.entitlement_check_failed.title": "Purchase verification failed",
+  "iap.entitlement_check_failed.body": "Your access will continue for this session. Please check your connection.",
+  "iap.entitlement_check_failed.return_menu": "Return to menu",
+  "iap.entitlement_check_failed.retry": "Retry",
+
   "inventory.tab.codex": "Codex",
   "inventory.tab.shards": "Shards",
   "inventory.tab.stats": "Stats",

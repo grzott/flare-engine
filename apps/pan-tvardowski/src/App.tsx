@@ -47,6 +47,7 @@ import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { PaywallOverlay } from './hud/PaywallOverlay';
 import { ShopOverlay } from './hud/ShopOverlay';
 import { PT_ENTITLEMENT } from './iap/catalog';
+import { createEntitlementFallback } from './iap/fallback';
 import { createPTEntitlementStore } from './iap/store';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
@@ -158,6 +159,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
       a11y,
       dialogue,
       entitlementStore,
+      entitlementFallback: createEntitlementFallback(),
     }),
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));

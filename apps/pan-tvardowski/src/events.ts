@@ -21,6 +21,7 @@ export type GameEventMap = {
   'dialogue-end': (graphId: string) => void;
   'paywall-trigger': (reason: PaywallReason) => void;
   'purchase-completed': (productId: ProductId) => void;
+  'entitlement-check-failed': (zone: ZoneId, reason: 'stale') => void;
 };
 
 /**

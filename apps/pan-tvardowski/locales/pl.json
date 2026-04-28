@@ -175,6 +175,12 @@
   "paywall.loading": "Przetwarzanie…",
   "paywall.error": "Zakup nie powiódł się. Spróbuj ponownie.",
 
+  "iap.entitlement_check_failed.notice": "Nie udało się zweryfikować zakupu — kontynuujesz na podstawie ostatniego dostępu.",
+  "iap.entitlement_check_failed.title": "Weryfikacja zakupu nie powiodła się",
+  "iap.entitlement_check_failed.body": "Twój dostęp jest aktywny na tę sesję. Sprawdź połączenie z siecią.",
+  "iap.entitlement_check_failed.return_menu": "Wróć do menu",
+  "iap.entitlement_check_failed.retry": "Spróbuj ponownie",
+
   "inventory.tab.codex": "Kodeks",
   "inventory.tab.shards": "Odłamki",
   "inventory.tab.stats": "Statystyki",

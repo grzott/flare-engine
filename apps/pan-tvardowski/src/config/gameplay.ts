@@ -284,3 +284,18 @@ export const LUCYPER_SHATTER_CYCLE = 3.2;
 
 /** Seconds before the Zone-8 boss (Lucyper Księżycowy) enters (§5 length = 6:30). */
 export const ZONE8_BOSS_T = 340;
+
+// ---- Collider scale factors (AABB vs sprite frame) --------------------------
+// These are geometry constants, not balance — they don't affect game feel
+// directly, only collision fairness. BALANCE_FROZEN_AT does not apply.
+
+/** Default AABB scale for regular enemies (width × height). */
+export const COLLIDER_SCALE_ENEMY = 0.7;
+
+/** Default AABB scale for mini-bosses. Slightly tighter than boss to reflect
+ *  their mid-weight role and give the player a bit more room to manoeuvre. */
+export const COLLIDER_SCALE_MINIBOSS = 0.85;
+
+/** Default AABB scale for bosses. Larger than enemy/miniboss — bosses are
+ *  slower so a bigger hitbox keeps combat fair at phone resolution. */
+export const COLLIDER_SCALE_BOSS = 0.9;

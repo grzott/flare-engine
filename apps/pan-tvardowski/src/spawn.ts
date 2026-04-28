@@ -16,7 +16,12 @@ import {
   type MinibossPattern,
   Ship,
 } from './components';
-import { ENEMY_SPECS } from './config/gameplay';
+import {
+  COLLIDER_SCALE_BOSS,
+  COLLIDER_SCALE_ENEMY,
+  COLLIDER_SCALE_MINIBOSS,
+  ENEMY_SPECS,
+} from './config/gameplay';
 import { Layer, Mask } from './layers';
 
 export interface AtlasHandle {
@@ -92,7 +97,15 @@ export function spawnEnemy(
     blinkT: pattern === 'licho' ? 1.8 : 0,
   });
   world.add(id, Hp, { current: spec.hp, max: spec.hp });
-  coll.add(id, AABB(f.w * 0.7, f.h * 0.7), x, y, false, Layer.enemy, Mask.enemy);
+  coll.add(
+    id,
+    AABB(f.w * COLLIDER_SCALE_ENEMY, f.h * COLLIDER_SCALE_ENEMY),
+    x,
+    y,
+    false,
+    Layer.enemy,
+    Mask.enemy,
+  );
   return id;
 }
 
@@ -102,8 +115,11 @@ export function spawnBoss(
   x: number,
   y: number,
   hpMax: number,
+  /** Per-entity AABB scale override. Defaults to COLLIDER_SCALE_BOSS (0.9). */
+  colliderScale?: number,
 ): number {
   const { world, coll, atlas } = ctx;
+  const scale = colliderScale ?? COLLIDER_SCALE_BOSS;
   const id = world.spawn();
   const f = frame(atlas.sheet, pattern);
   world.add(id, Position, { x, y });
@@ -133,7 +149,7 @@ export function spawnBoss(
     shatterT: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
-  coll.add(id, AABB(f.w * 0.8, f.h * 0.8), x, y, false, Layer.enemy, Mask.enemy);
+  coll.add(id, AABB(f.w * scale, f.h * scale), x, y, false, Layer.enemy, Mask.enemy);
   return id;
 }
 
@@ -170,7 +186,15 @@ export function spawnMiniboss(
     spikeIndex: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
-  coll.add(id, AABB(f.w * 0.75, f.h * 0.75), x, y, false, Layer.enemy, Mask.enemy);
+  coll.add(
+    id,
+    AABB(f.w * COLLIDER_SCALE_MINIBOSS, f.h * COLLIDER_SCALE_MINIBOSS),
+    x,
+    y,
+    false,
+    Layer.enemy,
+    Mask.enemy,
+  );
   return id;
 }
 

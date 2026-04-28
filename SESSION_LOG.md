@@ -1330,3 +1330,46 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** #48 "PT-UX-A bundle ★★ — M1 HUD insets + joystick gating → M2 BootOverlay ProgressBar → M3 InventoryOverlay tab persist"
 
 ---
+
+## Session 48 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #48):** PT-UX-A bundle ★★ — M1 HUD insets + joystick gating → M2 BootOverlay ProgressBar → M3 InventoryOverlay tab persist
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/BootOverlay.tsx` (new)
+- `apps/pan-tvardowski/src/hud/BootOverlay.styles.ts` (new)
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/inventory-tab.ts` (new — pre-approved extension)
+- `apps/pan-tvardowski/src/state.ts` (pre-approved extension)
+- `apps/pan-tvardowski/src/scenes/boot.ts` (pre-approved extension)
+- `apps/pan-tvardowski/src/localization/keys.ts` (pre-approved extension)
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/hud-insets.test.ts` (new)
+- `apps/pan-tvardowski/tests/boot-overlay.test.ts` (new)
+- `apps/pan-tvardowski/tests/inventory-tab-persist.test.ts` (new)
+
+**Gates**
+- lint: ✅ (39/39 tasks via Turbo, 0 errors — `biome check src/ tests/` clean in `apps/pan-tvardowski`)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+8 new, total 362 pass / 0 fail — `bun test` in `apps/pan-tvardowski`)
+- build: ✅ (native build via `bun run android|ios`; echo stub clean — no Expo/EAS build gate)
+- device smoke: ✅ (user-confirmed 2026-04-28) — bottom-inset padding visible on game-over/victory overlays; boot progress bar visible during cold-start; inventory tab persists across close/reopen
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — entry appended dated 2026-04-28 for PT-UX-A bundle (M1/M2/M3 detail, 362 tests)
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: PT-UX-A bundle noted, test count 354 → 362
+- `docs/plans/sessions.md` — row #48 flipped `in_progress` → `done`, closed 2026-04-28; ⊞ footnote added covering 4 approved deviations + spec deviation for M3
+- `docs/plans/release-readiness-checklist.md` — no new ticks (M1/M2/M3 are UX polish; no RR line items correspond to HUD insets, BootOverlay, or InventoryOverlay tab persist)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): hud bottom-inset on game-over+victory`
+2. `feat(pan-tvardowski): boot-overlay progress bar with PL/EN keys`
+3. `feat(pan-tvardowski): persist inventory active-tab across scenes`
+
+**Next session:** #49 "PT-Content bundle ★★ — M1 overlay layout audit → M2 shop empty-state → M3 codex + achievements fresh-save UX"
+
+---

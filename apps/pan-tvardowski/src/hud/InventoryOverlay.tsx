@@ -5,13 +5,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { CODEX_ENTRIES } from '../codex';
 import type { SaveStore } from '../save/store';
-import { type GameState, gameState, stateChanged } from '../state';
+import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
 import { rawStyles } from './InventoryOverlay.styles';
 import { ACHIEVEMENTS } from './achievements-list';
+import type { InventoryTab } from './inventory-tab';
 
 const styles = StyleSheet.create(rawStyles);
-
-export type InventoryTab = 'codex' | 'shards' | 'stats' | 'achievements';
 
 export interface InventoryOverlayActions {
   goMenu(): void;
@@ -29,12 +28,12 @@ function cloneState(): GameState {
     settings: { ...gameState.settings, controls: { ...gameState.settings.controls } },
     runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
     zoneBanner: { ...gameState.zoneBanner },
+    bootProgress: { ...gameState.bootProgress },
   };
 }
 
 export function InventoryOverlay(props: InventoryOverlayProps): React.ReactElement | null {
   const [s, setS] = useState<GameState>(() => cloneState());
-  const [activeTab, setActiveTab] = useState<InventoryTab>('codex');
 
   useEffect(() => {
     const off = stateChanged.add(() => setS(cloneState()));
@@ -47,7 +46,14 @@ export function InventoryOverlay(props: InventoryOverlayProps): React.ReactEleme
     <View style={styles.root}>
       <ThemeProvider theme={darkTheme}>
         <FocusProvider>
-          <InventoryView {...props} activeTab={activeTab} onTabChange={setActiveTab} />
+          <InventoryView
+            {...props}
+            activeTab={s.inventoryActiveTab}
+            onTabChange={(tab: InventoryTab) => {
+              gameState.inventoryActiveTab = tab;
+              notifyStateChanged();
+            }}
+          />
         </FocusProvider>
       </ThemeProvider>
     </View>

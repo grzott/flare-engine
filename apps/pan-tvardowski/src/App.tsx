@@ -1,41 +1,22 @@
-import { createA11yBridge } from '@flare-engine/a11y';
 import { DevtoolsHUD, DevtoolsProvider } from '@flare-engine/devtools';
 import type {
   GameContextValue,
   VirtualButtonState,
   VirtualJoystickState,
 } from '@flare-engine/engine';
-import {
-  AppLifecycle,
-  GameView,
-  VirtualButton,
-  VirtualJoystick,
-  fadeTransition,
-} from '@flare-engine/engine';
-import {
-  ErrorBoundary,
-  composeTransports,
-  createConsoleTransport,
-  createSentryTransport,
-} from '@flare-engine/errors';
-import type { CrashPayload, CrashTransport } from '@flare-engine/errors';
-import type { EntitlementStore } from '@flare-engine/iap';
-import type { LocalizationManager } from '@flare-engine/localization';
-import type { ShareManager } from '@flare-engine/share';
-import { Skia } from '@shopify/react-native-skia';
+import { AppLifecycle, GameView, VirtualButton, VirtualJoystick } from '@flare-engine/engine';
+import type { CrashPayload } from '@flare-engine/errors';
+import { ErrorBoundary } from '@flare-engine/errors';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { AppState, Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SPRITES_MANIFEST, loadSpriteAtlas } from './assets';
-import type { AudioHandles } from './audio/init';
-import { disposeAudio, getAudio, initAudio } from './audio/init';
+import { disposeAudio, getAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
 import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
-import { createDialogueController } from './dialogue';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { AchievementsOverlay } from './hud/AchievementsOverlay';
@@ -47,23 +28,10 @@ import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { PaywallOverlay } from './hud/PaywallOverlay';
 import { ShopOverlay } from './hud/ShopOverlay';
 import { PT_ENTITLEMENT } from './iap/catalog';
-import { createEntitlementFallback } from './iap/fallback';
-import { createPTEntitlementStore } from './iap/store';
-import { createLocalization } from './localization/index';
-import { createSaveStore } from './save/store';
-import { createAchievementsScene } from './scenes/achievements';
-import { createBootScene } from './scenes/boot';
-import { createCodexShardsScene } from './scenes/codex-shards';
-import { createCreditsScene } from './scenes/credits';
-import { createGameOverScene, createVictoryScene } from './scenes/end';
-import { createInventoryScene } from './scenes/inventory';
-import { createMenuScene } from './scenes/menu';
-import type { PlayRenderHooks } from './scenes/play';
-import { createPlayScene } from './scenes/play';
-import { createSaveSelectScene } from './scenes/save-select';
-import { createSettingsScene } from './scenes/settings';
-import { createShopScene } from './scenes/shop';
-import { createShareManager, shareHighScore } from './share/manager';
+import { markBootMilestone, markBootStart } from './perf/cold-start';
+import { useAppProviders } from './providers';
+import { applyVolumes, buildSceneRegistry } from './scene-registry';
+import { shareHighScore } from './share/manager';
 import {
   bombButtonState,
   gameState,
@@ -74,97 +42,37 @@ import {
 } from './state';
 import { mountTier2Wiring } from './tier2/wiring';
 
+markBootStart();
+
 const GATED_ZONES = new Set<string>(['z4', 'z5', 'z6', 'z7', 'z8']);
 
 function isGatedZone(zone: ZoneId): boolean {
   return GATED_ZONES.has(zone);
 }
 
-interface AudioRef {
-  current: AudioHandles | null;
-}
-
 type RuntimeDisposer = () => void;
 
 interface BootstrapDeps {
   ctx: GameContextValue;
-  localization: LocalizationManager;
-  renderHooks: PlayRenderHooks;
-  audioRef: AudioRef;
-  dialogue: ReturnType<typeof createDialogueController>;
-  saveStore: ReturnType<typeof createSaveStore>;
-  entitlementStore: EntitlementStore;
-}
-
-function applyVolumes(audio: AudioHandles | null): void {
-  if (!audio) return;
-  const master = audio.channels.get('master');
-  const music = audio.channels.get('music');
-  const sfx = audio.channels.get('sfx');
-  if (master) master.volume = gameState.settings.masterVolume;
-  if (music) music.volume = gameState.settings.musicVolume;
-  if (sfx) sfx.volume = gameState.settings.sfxVolume;
+  localization: ReturnType<typeof useAppProviders>['localization'];
+  renderHooks: ReturnType<typeof useAppProviders>['renderHooks'];
+  audioRef: ReturnType<typeof useAppProviders>['audioRef'];
+  dialogue: ReturnType<typeof useAppProviders>['dialogueController'];
+  saveStore: ReturnType<typeof useAppProviders>['saveStore'];
+  entitlementStore: ReturnType<typeof useAppProviders>['entitlementStore'];
 }
 
 function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   const { ctx, localization, renderHooks, audioRef, dialogue, saveStore, entitlementStore } = deps;
-  const atlas = loadSpriteAtlas(Skia, SPRITES_MANIFEST);
-  // PostFx: pass `null` Skia module — visible SkSL compositing requires a
-  // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
-  const skiaPostFx = null;
 
-  const a11y = createA11yBridge({
-    initial: { reducedMotion: gameState.settings.reducedMotion },
+  buildSceneRegistry(ctx, {
+    localization,
+    renderHooks,
+    audioRef,
+    dialogue,
+    saveStore,
+    entitlementStore,
   });
-  a11y.manager.onChange.add((s) => {
-    gameState.settings.reducedMotion = s.reducedMotion;
-  });
-
-  ctx.scenes.register(
-    'boot',
-    createBootScene(
-      ctx,
-      async () => {
-        await saveStore.load();
-        localization.setLocale(gameState.settings.locale);
-        for (const key of saveStore.entitlements()) {
-          entitlementStore.grant(key);
-        }
-      },
-      async () => {
-        const handles = await initAudio(ctx);
-        applyVolumes(handles);
-        return handles;
-      },
-      audioRef,
-    ),
-  );
-  ctx.scenes.register('menu', createMenuScene(ctx));
-  ctx.scenes.register('save-select', createSaveSelectScene(ctx));
-  ctx.scenes.register('settings', createSettingsScene(ctx));
-  ctx.scenes.register('credits', createCreditsScene(ctx));
-  ctx.scenes.register('inventory', createInventoryScene(ctx));
-  ctx.scenes.register('codex-shards', createCodexShardsScene(ctx));
-  ctx.scenes.register('achievements', createAchievementsScene(ctx));
-  ctx.scenes.register('shop', createShopScene(ctx));
-  ctx.scenes.register(
-    'play',
-    createPlayScene({
-      ctx,
-      atlas,
-      save: saveStore,
-      audio: audioRef,
-      skia: skiaPostFx,
-      renderHooks,
-      a11y,
-      dialogue,
-      entitlementStore,
-      entitlementFallback: createEntitlementFallback(),
-    }),
-  );
-  ctx.scenes.register('game-over', createGameOverScene(ctx));
-  ctx.scenes.register('victory', createVictoryScene(ctx));
-  ctx.scenes.setTransition(fadeTransition(0.3));
 
   const offUpdate = ctx.loop.onUpdate.add((dt) => {
     ctx.scenes.update(dt);
@@ -224,30 +132,19 @@ export function App(): React.ReactElement {
 
 function AppRoot(): React.ReactElement {
   const insets = useSafeAreaInsets();
-  const localization = useMemo(() => createLocalization(), []);
-  const audioRef = useMemo<AudioRef>(() => ({ current: null }), []);
-  const dialogueController = useMemo(() => createDialogueController(), []);
-  const saveStore = useMemo(() => createSaveStore(), []);
-  const entitlementStore = useMemo(() => createPTEntitlementStore(), []);
+  const providers = useAppProviders();
+  const {
+    localization,
+    audioRef,
+    dialogueController,
+    saveStore,
+    entitlementStore,
+    renderHooks,
+    shareManager,
+    crashTransport,
+  } = providers;
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
-  const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
-  const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
-  // Crash transport: console (always, dev visibility) + Sentry (gated by
-  // crashOptIn). Sentry binding is optional — `@sentry/react-native` is loaded
-  // lazily and falls back to noop when missing or when DSN env var is unset.
-  const crashTransport = useMemo(() => {
-    const sentryBase = createSentryTransport({
-      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? undefined,
-    });
-    const sentryGated: CrashTransport = {
-      report(payload) {
-        if (!saveStore.privacy().crashOptIn) return;
-        return sentryBase.report(payload);
-      },
-    };
-    return composeTransports(createConsoleTransport(), sentryGated);
-  }, [saveStore]);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   // Re-render trigger for controls-side changes so joystick / bomb swap
@@ -258,6 +155,7 @@ function AppRoot(): React.ReactElement {
   // booting when the component remounts (OS relaunch, hot reload, Android
   // config-change while singleTask is set).
   useEffect(() => {
+    markBootMilestone('providers-mounted');
     return () => {
       disposerRef.current?.();
       disposerRef.current = null;
@@ -439,6 +337,7 @@ function AppRoot(): React.ReactElement {
             disposerRef.current?.();
             ctxRef.current = ready;
             setCtx(ready);
+            markBootMilestone('first-frame');
             disposerRef.current = bootstrap({
               ctx: ready,
               localization,

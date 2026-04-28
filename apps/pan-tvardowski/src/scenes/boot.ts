@@ -1,5 +1,6 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import type { AudioHandles } from '../audio/init';
+import { markBootMilestone } from '../perf/cold-start';
 import { gameState, notifyStateChanged } from '../state';
 import { shellDefaults } from './scene-shell';
 
@@ -26,8 +27,10 @@ export function createBootScene(
       notifyStateChanged();
       void (async () => {
         await loadSave();
+        markBootMilestone('save-loaded');
         if (initAudio && audioRef) {
           audioRef.current = await initAudio();
+          markBootMilestone('audio-ready');
         }
         void ctx.scenes.go('menu');
       })();

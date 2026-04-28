@@ -10,7 +10,7 @@ import { ErrorBoundary } from '@flare-engine/errors';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { disposeAudio, getAudio } from './audio/init';
@@ -39,10 +39,26 @@ import {
   notifyStateChanged,
   resetBombButtonFrame,
   resetGameState,
+  stateChanged,
 } from './state';
 import { mountTier2Wiring } from './tier2/wiring';
 
 markBootStart();
+
+// Suppress the expo-keep-awake auto-activation on Android so the screen
+// obeys the OS setting during menus and cutscenes. Wrapped in try/catch
+// because the module may be absent in test / web environments.
+if (Platform.OS === 'android') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { deactivateKeepAwake } = require('expo-keep-awake') as {
+      deactivateKeepAwake: () => void;
+    };
+    deactivateKeepAwake();
+  } catch {
+    // no-op — module absent
+  }
+}
 
 const GATED_ZONES = new Set<string>(['z4', 'z5', 'z6', 'z7', 'z8']);
 
@@ -146,6 +162,7 @@ function AppRoot(): React.ReactElement {
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
+  const [currentScene, setCurrentScene] = useState(() => gameState.currentScene);
   const [paywallVisible, setPaywallVisible] = useState(false);
   // Re-render trigger for controls-side changes so joystick / bomb swap
   // position as soon as the settings toggle is flipped.
@@ -162,6 +179,11 @@ function AppRoot(): React.ReactElement {
       ctxRef.current = null;
     };
   }, [disposerRef, ctxRef]);
+
+  useEffect(() => {
+    const off = stateChanged.add(() => setCurrentScene(gameState.currentScene));
+    return () => off();
+  }, []);
 
   useEffect(() => {
     const offTrigger = gameEvents.on('paywall-trigger', () => setPaywallVisible(true));
@@ -260,6 +282,23 @@ function AppRoot(): React.ReactElement {
           void ctxRef.current?.scenes.go('play');
         })();
       },
+      startSlotAtZone: (index, zoneId) => {
+        void (async () => {
+          const existing = saveStore.getSlot(index);
+          if (existing === null) await saveStore.createSlot(index);
+          else await saveStore.selectSlot(index);
+          if (isGatedZone(zoneId) && !entitlementStore.isEntitled(PT_ENTITLEMENT.FULL_GAME)) {
+            gameEvents.emit('paywall-trigger', 'zone-locked-click');
+            gameState.shopGateVisible = true;
+            notifyStateChanged();
+            void ctxRef.current?.scenes.go('shop');
+            return;
+          }
+          gameState.shopGateVisible = false;
+          gameState.currentZone = zoneId;
+          void ctxRef.current?.scenes.go('play');
+        })();
+      },
       persistSettings: () => {
         setControlsTick((n) => n + 1);
         applyVolumes(getAudio());
@@ -349,8 +388,12 @@ function AppRoot(): React.ReactElement {
             });
           }}
         >
-          <VirtualJoystick onStateChange={onJoystick} style={joystickStyle} />
-          <VirtualButton onStateChange={onBomb} style={bombStyle} />
+          {currentScene === 'play' && (
+            <>
+              <VirtualJoystick onStateChange={onJoystick} style={joystickStyle} />
+              <VirtualButton onStateChange={onBomb} style={bombStyle} />
+            </>
+          )}
         </GameView>
         <Hud localization={localization} actions={actions} insets={insets} />
         <MenuOverlay

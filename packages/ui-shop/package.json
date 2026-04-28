@@ -15,7 +15,6 @@
     "url": "git+https://github.com/grzott/flare-engine.git",
     "directory": "packages/ui-shop"
   },
-  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

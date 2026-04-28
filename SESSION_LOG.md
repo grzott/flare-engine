@@ -1196,3 +1196,30 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** no next session queued. Run `/plan-sessions` for Phase 12 (Launch) prep — store accounts, signing, final smoke on device, store-page copy.
 
 ---
+
+## Session 30 — 2026-04-28 (scope: [engine])
+
+**Goal (from sessions.md row #30):** PT-Bugfix-1: fix ui-shop + iap-revenuecat exports — module field points at dist/index.mjs but tsup emits dist/index.js
+
+**Touched files**
+- `packages/ui-shop/package.json`
+- `packages/iap-revenuecat/package.json`
+
+**Gates**
+- lint: ✅ (39/39 packages, 0 errors)
+- typecheck: ✅ (71/71 tasks, 0 errors)
+- test: ✅ (no new tests; packaging-only fix — existing 326 PT + engine tests all pass)
+- build: ✅ (38/38 packages, FULL TURBO)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — no change required; no module count, test count, or phase state changed (packaging metadata fix only)
+- `docs/plans/build-plan.md` — no change required; no phase advance
+
+**Root cause:** Both `packages/ui-shop/package.json` and `packages/iap-revenuecat/package.json` had `"type": "module"` set, which forced tsup's `outExtension` to emit `.js` (ESM) + `.cjs` (CJS) instead of the Flare-standard `.mjs` (ESM) + `.js` (CJS) layout expected by the `main`/`module`/`exports` fields. Removing `"type": "module"` restores the default CJS-first convention.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `fix(packaging): drop "type":"module" from ui-shop + iap-revenuecat`
+
+**Next session:** #31 "PT-Bugfix-1: suppress ExpoKeepAwake rejection on Android launch via expo-keep-awake plugin config or early deactivate"
+
+---

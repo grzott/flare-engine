@@ -88,6 +88,7 @@ let colorFilterBlendCalls: Array<{ color: Float32Array; mode: number }> = [];
 let colorFilterMatrixCalls: Array<readonly number[]> = [];
 let currentMockCanvas: MockCanvas | null = null;
 let finishCalls = 0;
+let beginRecordingBoundsArgs: Array<{ x: number; y: number; width: number; height: number }> = [];
 
 function createMockCanvas(): MockCanvas {
   return { drawAtlasCalls: [], clearCalls: [] };
@@ -145,7 +146,15 @@ function makeMockSkia(): SkiaModuleLike {
     PictureRecorder: () => {
       recorderCount++;
       const recorder = {
-        beginRecording(): unknown {
+        beginRecording(bounds?: MockRect): unknown {
+          if (bounds !== undefined) {
+            beginRecordingBoundsArgs.push({
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.width,
+              height: bounds.height,
+            });
+          }
           const canvas: MockCanvas & {
             save(): number;
             restore(): void;
@@ -304,14 +313,16 @@ beforeEach(() => {
   colorFilterBlendCalls = [];
   colorFilterMatrixCalls = [];
   currentMockCanvas = null;
+  beginRecordingBoundsArgs = [];
 });
 
 describe('createSkiaFrameRenderer', () => {
-  it('allocates a single Paint and PictureRecorder up front', () => {
+  it('allocates a single Paint, PictureRecorder, and bounds rect up front', () => {
     createSkiaFrameRenderer(makeMockSkia());
     expect(paintCount).toBe(1);
     expect(recorderCount).toBe(1);
-    expect(xywhCount).toBe(0);
+    // One XYWHRect pre-allocated for the recording bounds, reused each frame.
+    expect(xywhCount).toBe(1);
     expect(rsxformCount).toBe(0);
   });
 
@@ -329,7 +340,7 @@ describe('createSkiaFrameRenderer', () => {
 
   it('fills srcRect and RSXform from SpriteDrawCommand fields', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [
       cmd({
         srcX: 10,
@@ -359,7 +370,7 @@ describe('createSkiaFrameRenderer', () => {
   it('invokes drawAtlas once per batch with pooled arrays', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
     const img = mockImage();
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(img, [cmd({ dstX: 0 }), cmd({ dstX: 10 }), cmd({ dstX: 20 })]);
     const calls = currentMockCanvas?.drawAtlasCalls;
     expect(calls).toHaveLength(1);
@@ -369,11 +380,12 @@ describe('createSkiaFrameRenderer', () => {
 
   it('pool grows once then is stable on repeated same-size calls', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({}), cmd({})]);
     const xywhAfterFirst = xywhCount;
     const rsxformAfterFirst = rsxformCount;
-    expect(xywhAfterFirst).toBe(3);
+    // 1 pre-allocated bounds rect + 3 pool entries
+    expect(xywhAfterFirst).toBe(4);
     expect(rsxformAfterFirst).toBe(3);
 
     // Second call with same size — pool is reused, no new allocations.
@@ -384,17 +396,19 @@ describe('createSkiaFrameRenderer', () => {
 
   it('pool grows to max-seen when a later call is larger', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({})]);
-    expect(xywhCount).toBe(1);
+    // 1 pre-allocated bounds rect + 1 pool entry
+    expect(xywhCount).toBe(2);
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({}), cmd({})]);
-    expect(xywhCount).toBe(3);
+    // 1 pre-allocated bounds rect + 3 pool entries
+    expect(xywhCount).toBe(4);
     expect(rsxformCount).toBe(3);
   });
 
   it('endFrame returns the finished picture and clears state', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const picture = bridge.endFrame();
     expect(picture).toBeDefined();
     expect(finishCalls).toBe(1);
@@ -404,7 +418,7 @@ describe('createSkiaFrameRenderer', () => {
 
   it('canvas adapter clears with unpacked ARGB components', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     // 0xFF204060 → a=1.0, r=32/255, g=64/255, b=96/255
     bridge.canvas.clear(0xff204060);
     const clearCall = currentMockCanvas?.clearCalls[0];
@@ -424,12 +438,33 @@ describe('createSkiaFrameRenderer', () => {
     expect(() => bridge.canvas.rotate(0.5, 0, 0)).not.toThrow();
     expect(() => bridge.canvas.clear(0xff000000)).not.toThrow();
   });
+
+  it('beginFrame passes non-empty bounds rect to beginRecording when viewport > 0', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    expect(beginRecordingBoundsArgs).toHaveLength(1);
+    expect(beginRecordingBoundsArgs[0]).toEqual({ x: 0, y: 0, width: 800, height: 600 });
+    expect(currentMockCanvas).not.toBeNull();
+  });
+
+  it('beginFrame skips recording when viewport width or height is 0', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(0, 600);
+    expect(beginRecordingBoundsArgs).toHaveLength(0);
+    expect(currentMockCanvas).toBeNull();
+    expect(bridge.endFrame()).toBeNull();
+
+    bridge.beginFrame(800, 0);
+    expect(beginRecordingBoundsArgs).toHaveLength(0);
+    expect(currentMockCanvas).toBeNull();
+    expect(bridge.endFrame()).toBeNull();
+  });
 });
 
 describe('createSkiaFrameRenderer — sprite effects', () => {
   it('batches with no effect use the default shared paint', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({})]);
     const call = currentMockCanvas?.drawAtlasCalls[0];
     expect(call?.paint.id).toBe(1);
@@ -439,7 +474,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
 
   it('tint effect assigns a MakeBlend color filter with amount-scaled alpha', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const effect: TintEffect = {
       type: 'tint',
       color: { r: 1, g: 0.5, b: 0.25, a: 1 },
@@ -461,7 +496,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
 
   it('flash effect scales alpha by flashIntensity (1 at start, 0.5 halfway)', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const halfway: FlashEffect = {
       type: 'flash',
       color: { r: 1, g: 1, b: 1, a: 1 },
@@ -476,7 +511,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
 
   it('grayscale effect assigns a MakeMatrix color filter interpolated by amount', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const full: GrayscaleEffect = { type: 'grayscale', amount: 1 };
     bridge.drawAtlas(mockImage(), [cmd({ effect: full })]);
     expect(colorFilterMatrixCalls).toHaveLength(1);
@@ -492,7 +527,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
 
   it('grayscale effect at amount=0 produces identity rgb rows', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const none: GrayscaleEffect = { type: 'grayscale', amount: 0 };
     bridge.drawAtlas(mockImage(), [cmd({ effect: none })]);
     const matrix = colorFilterMatrixCalls[0]!;
@@ -503,7 +538,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
 
   it('outline effect issues 9 drawAtlas passes (8 offsets + main) with SrcIn filter', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const effect: OutlineEffect = {
       type: 'outline',
       color: { r: 0, g: 1, b: 0, a: 1 },
@@ -543,7 +578,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
 
   it('custom shader effect calls makeShader with uniforms in declaration order', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const shader = makeMockRuntimeEffect([
       { name: 'u_time', size: 1 },
       { name: 'u_resolution', size: 2 },
@@ -566,7 +601,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
     expect(paintCount).toBe(1);
 
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     const tintFx: TintEffect = {
       type: 'tint',
       color: { r: 1, g: 0, b: 0, a: 1 },
@@ -593,7 +628,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     };
 
     // Frame 1 — warm up the pools.
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({ effect: tintFx }), cmd({ effect: tintFx })]);
     bridge.endFrame();
     const paintsAfterWarmup = paintCount;
@@ -601,7 +636,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     const rsxformAfterWarmup = rsxformCount;
 
     // Frame 2 — same shape, expect no new paint, rect, or xform allocations.
-    bridge.beginFrame();
+    bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({ effect: tintFx }), cmd({ effect: tintFx })]);
     bridge.endFrame();
     expect(paintCount).toBe(paintsAfterWarmup);

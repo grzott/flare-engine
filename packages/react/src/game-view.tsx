@@ -98,7 +98,7 @@ export function GameView({ config, onReady, style, children }: GameViewProps): R
     });
 
     const unsubscribePre = ctx.loop.onPreRender.add(() => {
-      bridge.beginFrame();
+      bridge.beginFrame(ctx.camera.viewportWidth, ctx.camera.viewportHeight);
       ctx.renderer.begin(clearColor);
       ctx.renderer.applyCamera(
         ctx.camera.effectiveX,

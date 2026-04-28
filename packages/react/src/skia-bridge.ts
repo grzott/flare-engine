@@ -38,7 +38,10 @@ export type SkiaModuleLike = Pick<
  * Frame renderer that bridges a `SpriteBatch` to a Skia `<Picture>`.
  *
  * Each frame:
- *   1. Call `beginFrame()` — opens a fresh picture recording.
+ *   1. Call `beginFrame(viewportWidth, viewportHeight)` — opens a fresh
+ *      picture recording bounded to the viewport. If either dimension is 0
+ *      (layout not yet resolved) the call is a no-op and `endFrame` returns
+ *      null for that frame.
  *   2. Call `drawAtlas(image, commands)` one or more times (typically via
  *      `batch.flush(bridge.drawAtlas, renderer)`).
  *   3. Call `endFrame()` — returns the recorded `SkPicture` to hand to a
@@ -51,7 +54,7 @@ export type SkiaModuleLike = Pick<
  */
 export interface SkiaFrameRenderer {
   readonly canvas: CanvasLike;
-  beginFrame(): void;
+  beginFrame(viewportWidth: number, viewportHeight: number): void;
   /**
    * drawAtlas callback compatible with `SpriteBatch.flush`. Accepts
    * `SkImageLike` (the narrow `@flare-engine/assets` type used by the batch) and
@@ -103,6 +106,10 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
 
   // Reused across frames via beginRecording / finishRecording cycles.
   const recorder: SkPictureRecorder = Skia.PictureRecorder();
+
+  // Pre-allocated bounds rect — mutated in place each frame so beginFrame
+  // adds zero heap allocation on the hot path.
+  const recordingBounds: SkHostRect = Skia.XYWHRect(0, 0, 0, 0);
 
   // Pools grow only — match createRenderSystem's entries policy
   // (packages/render/src/render-system.ts). SkHostRect / SkRSXform expose
@@ -259,8 +266,10 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   return {
     canvas,
 
-    beginFrame(): void {
-      current = recorder.beginRecording();
+    beginFrame(viewportWidth: number, viewportHeight: number): void {
+      if (viewportWidth === 0 || viewportHeight === 0) return;
+      recordingBounds.setXYWH(0, 0, viewportWidth, viewportHeight);
+      current = recorder.beginRecording(recordingBounds);
     },
 
     drawAtlas(image, commands): void {

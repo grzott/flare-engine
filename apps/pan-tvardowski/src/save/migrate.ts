@@ -1,3 +1,4 @@
+import { defineMigrationChain, runMigrations } from '@flare-engine/storage';
 import type { ZoneId } from '../events';
 import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
 import { defaultControls, defaultSettings } from '../state';
@@ -141,63 +142,83 @@ function makeDefaultSaveFile(): SaveFile {
 // Migration step chain — one function per version boundary.
 // ---------------------------------------------------------------------------
 
-function stepV1toV2(o: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...o,
-    version: 2,
-    introSeen: typeof o.introSeen === 'boolean' ? o.introSeen : false,
-  };
-}
-
-function stepV2toV3(o: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...o,
-    version: 3,
-    codexUnlocked: Array.isArray(o.codexUnlocked) ? o.codexUnlocked : [],
-  };
-}
-
-function stepV3toV4(o: Record<string, unknown>): Record<string, unknown> {
-  return { ...o, version: 4 };
-}
-
-function stepV4toV5(o: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...o,
-    version: 5,
-    entitlements: Array.isArray(o.entitlements) ? o.entitlements : [],
-  };
-}
-
-function stepV5toV6(o: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...o,
-    version: 6,
-    unlockedAchievements: Array.isArray(o.unlockedAchievements) ? o.unlockedAchievements : [],
-  };
-}
-
-function stepV6toV7(o: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...o,
-    version: 7,
-    privacy:
-      o.privacy !== null && typeof o.privacy === 'object' && !Array.isArray(o.privacy)
-        ? o.privacy
-        : { analyticsOptIn: false, crashOptIn: false },
-  };
-}
+const MIGRATIONS = defineMigrationChain([
+  {
+    from: 1,
+    to: 2,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      return {
+        ...o,
+        version: 2,
+        introSeen: typeof o.introSeen === 'boolean' ? o.introSeen : false,
+      };
+    },
+  },
+  {
+    from: 2,
+    to: 3,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      return {
+        ...o,
+        version: 3,
+        codexUnlocked: Array.isArray(o.codexUnlocked) ? o.codexUnlocked : [],
+      };
+    },
+  },
+  {
+    from: 3,
+    to: 4,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      return { ...o, version: 4 };
+    },
+  },
+  {
+    from: 4,
+    to: 5,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      return {
+        ...o,
+        version: 5,
+        entitlements: Array.isArray(o.entitlements) ? o.entitlements : [],
+      };
+    },
+  },
+  {
+    from: 5,
+    to: 6,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      return {
+        ...o,
+        version: 6,
+        unlockedAchievements: Array.isArray(o.unlockedAchievements) ? o.unlockedAchievements : [],
+      };
+    },
+  },
+  {
+    from: 6,
+    to: 7,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      return {
+        ...o,
+        version: 7,
+        privacy:
+          o.privacy !== null && typeof o.privacy === 'object' && !Array.isArray(o.privacy)
+            ? o.privacy
+            : { analyticsOptIn: false, crashOptIn: false },
+      };
+    },
+  },
+]);
 
 function applySteps(o: Record<string, unknown>): Record<string, unknown> {
   const v = typeof o.version === 'number' ? Math.floor(o.version) : 1;
-  let cur = o;
-  if (v < 2) cur = stepV1toV2(cur);
-  if (v < 3) cur = stepV2toV3(cur);
-  if (v < 4) cur = stepV3toV4(cur);
-  if (v < 5) cur = stepV4toV5(cur);
-  if (v < 6) cur = stepV5toV6(cur);
-  if (v < 7) cur = stepV6toV7(cur);
-  return cur;
+  return runMigrations(o, v, CURRENT_VERSION, MIGRATIONS) as Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

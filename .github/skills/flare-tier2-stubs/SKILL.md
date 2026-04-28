@@ -36,4 +36,46 @@ import {
 - Don't add concrete SDKs here — those live in separate 0.2.0 adapter packages (`@flare-engine/analytics-posthog`, etc.).
 - The interface contract is the source of truth — adapters must conform, not extend.
 
+## Lazy-SDK adapter recipe
+
+Adapter packages depend on native SDKs (`react-native-purchases`, `posthog-react-native`, etc.) as **optional peer dependencies**. CI and unit-test environments don't install them. To stop module-load from crashing in those environments, wrap the adapter behind:
+
+1. **Env-var gate.** Read API keys at startup; if absent → return the package's `Noop*Provider` directly. No SDK touched.
+2. **Lazy import on first call.** Defer `await import('@flare-engine/<adapter>')` to the first interface method call. Cache the resolved provider after first load.
+3. **Interface proxy.** Implement the typed provider interface yourself; each method awaits `lazyLoad()` then delegates.
+
+```ts
+import { type IAPProvider, NoopIAPProvider } from '@flare-engine/iap';
+
+export function createGameIapProvider(): IAPProvider {
+  const apiKeyIos = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS ?? '';
+  const apiKeyAndroid = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID ?? '';
+  if (!apiKeyIos && !apiKeyAndroid) return NoopIAPProvider;
+
+  let resolved: IAPProvider | null = null;
+  const lazyLoad = async (): Promise<IAPProvider> => {
+    if (resolved) return resolved;
+    const { createRevenueCatProvider } = await import('@flare-engine/iap-revenuecat');
+    resolved = createRevenueCatProvider({ apiKeyIos, apiKeyAndroid });
+    return resolved;
+  };
+
+  return {
+    async getProducts(ids) { return (await lazyLoad()).getProducts(ids); },
+    async purchase(id) { return (await lazyLoad()).purchase(id); },
+    async restore() { return (await lazyLoad()).restore(); },
+    onTransaction(cb) {
+      let unsub: (() => void) | null = null;
+      let stopped = false;
+      lazyLoad().then((p) => { if (!stopped) unsub = p.onTransaction(cb); }).catch(() => {});
+      return () => { stopped = true; unsub?.(); };
+    },
+  };
+}
+```
+
+Reference implementation: [apps/pan-tvardowski/src/iap/provider.ts](../../../apps/pan-tvardowski/src/iap/provider.ts) (RevenueCat).
+
+The same shape applies to leaderboards / achievements / analytics — read env vars, return `Noop*Provider` if absent, otherwise return a proxy that lazy-loads the adapter on first call.
+
 Adapters table: [docs/plans/build-plan.md § Tier-2](../../../docs/plans/build-plan.md).

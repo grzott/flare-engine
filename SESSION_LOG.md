@@ -945,3 +945,101 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** #27 "M10.2 replace stale a11y/manager.ts + fx/postfx.ts with engine createA11yBridge + createPostFxController"
 
 ---
+
+## Session 27 — 2026-04-28 (scope: [mixed])
+
+**Goal (from sessions.md row #27):** M10 engine promotion: 6 lifts (a11y/postfx/iap-gate/migrator/shapes-decision/lazy-sdk).
+
+Single session bundling 6 milestones (M10.2–M10.7) of the post-PT-pre-alpha audit. M10.1 was shipped earlier in session #26. Each milestone gated + committed independently.
+
+### M10.2 — game adapt: stale a11y/manager.ts + fx/postfx.ts → engine versions
+
+`packages/a11y/src/bridge.ts` (`createA11yBridge`) and `packages/postfx/src/controller.ts` (`createPostFxController`) shipped at 11.14 (2026-04-24) but the game still had stale local copies.
+
+- `apps/pan-tvardowski/src/a11y/manager.ts` (deleted — superseded by `createA11yBridge`); `src/a11y/` directory removed (became empty)
+- `apps/pan-tvardowski/src/fx/postfx.ts` — rewritten as thin Pan-specific factory delegating to `createPostFxController` (kept because the effect spec is game-tuned)
+- `apps/pan-tvardowski/src/App.tsx` — imports rewired to `@flare-engine/a11y`; `onChange` gameState mirror inlined (was previously inside the deleted local manager)
+- `apps/pan-tvardowski/src/scenes/play.ts` — `A11yBridge` + `PostFxController` types imported from engine packages
+- `apps/pan-tvardowski/tests/a11y-integration.test.ts` — import switched to `@flare-engine/a11y`; gameState mirror wired explicitly
+
+Signature mismatches bridged: engine `createA11yBridge` takes `{ initial }` options (call sites adapted); `attachCamera` / `attachPostfx` now return an unsubscribe function (return values discarded). Engine `createPostFxController` takes structured `options` instead of positional `skia` (effects + flash extracted from old inline body).
+
+### M10.3 — `canAccessContent()` content gate → `@flare-engine/iap`
+
+Lifted the 13-LOC `canStartZone` from `apps/pan-tvardowski/src/iap/zone-gate.ts` and generalized it.
+
+- `packages/iap/src/gate.ts` (new — `canAccessContent(spec, entitlements)` + `ContentSpec { requiresEntitlement?: string }`)
+- `packages/iap/src/index.ts` — re-exports `canAccessContent` + `ContentSpec`
+- `packages/iap/tests/gate.test.ts` (new — 3 tests: no requirement → true, entitled → true, not entitled → false)
+- `apps/pan-tvardowski/src/iap/zone-gate.ts` (deleted)
+- `apps/pan-tvardowski/src/scenes/play.ts` — import rewired to `@flare-engine/iap`, call site `canStartZone` → `canAccessContent`
+
+`@flare-engine/iap` test count: 17 → 20 (+3).
+
+### M10.4 — `defineMigrationChain()` helper + recipe doc → `@flare-engine/storage`
+
+Wraps the existing `runMigrations` API for ergonomic linear v→v+1 chains.
+
+- `packages/storage/src/migration-chain.ts` (new — `defineMigrationChain(steps)` + `MigrationStep`; validates contiguous chain, throws on gap)
+- `packages/storage/src/index.ts` — re-exports `defineMigrationChain` + `MigrationStep`
+- `packages/storage/tests/migration-chain.test.ts` (new — 6 tests: empty chain, single step, multi-step round-trip, contiguous validation, two error-path cases)
+- `docs/recipes/save-migrations.md` (new — ~140 lines, 3 sections: Pattern / Avoid circular deps / Round-trip tests, references PT's `apps/pan-tvardowski/src/save/migrate.ts` as canonical example)
+- `apps/pan-tvardowski/src/save/migrate.ts` — refactored to consume `defineMigrationChain`; replaced 6 standalone step functions + hand-rolled `applySteps` cascade with one `MIGRATIONS` constant + 3-line `applySteps` delegating to `runMigrations`. Net: −42 / +62 lines (Biome formatting expanded inline lambdas)
+
+`@flare-engine/storage` test count: 44 → 50 (+6). All 7 PT save-migrator fixture round-trips still green.
+
+### M10.5 — shape-atlas decision (docs only)
+
+`apps/pan-tvardowski/src/shapes.ts` (79 LOC of pure `ShapeSpec` type definitions) reviewed for promotion to `@flare-engine/render`/`assets`. Per the 11.14 second-consumer rule, decision: **stay in game** until a second game wants the same shape vocabulary. `@flare-engine/assets/createProceduralAtlas` already JSDoc-points at the PT shape-atlas as the canonical example. Recorded in `docs/plans/build-plan.md` M10 addendum.
+
+### M10.6 — lazy-SDK adapter recipe (docs only)
+
+Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `apps/pan-tvardowski/src/iap/provider.ts`) so 0.2.0 tier-2 adapters can ship without wedging CI / unit tests / dev builds that lack native SDK keys.
+
+- `.github/skills/flare-tier2-stubs/SKILL.md` — added "Lazy-SDK adapter recipe" section with full code example
+- `packages/iap-revenuecat/README.md` — pointer to recipe
+- `packages/achievements/README.md` (new — usage + recipe pointer)
+- `packages/leaderboards/README.md` (new — usage + recipe pointer)
+- `packages/analytics/README.md` (new — usage + recipe pointer)
+
+### M10.7 — close + doc-sync
+
+- `docs/design/api-specs.md` — entries added: `MigrationStep` + `defineMigrationChain` (`@flare-engine/storage` table); `createSentryTransport` + `composeTransports` (`@flare-engine/errors` table); `ContentSpec` + `canAccessContent` (`@flare-engine/iap` table)
+- `docs/plans/build-plan.md` — M10 addendum block recording all 6 promotions, shape-atlas decision, lazy-SDK recipe, test count summary
+- `docs/references/builder-reference.md` — Session #27 row consolidates M10.2–M10.6 (replaced the M10.4-only row added mid-session)
+- `docs/plans/sessions.md` — row #27 flipped `in_progress → done`, closed 2026-04-28
+- `SESSION_LOG.md` — this block
+
+**Touched files (full session)**
+- packages: `iap/{gate.ts,index.ts,tests/gate.test.ts}`, `storage/{src/migration-chain.ts,src/index.ts,tests/migration-chain.test.ts}`
+- game: `apps/pan-tvardowski/src/{App.tsx,scenes/play.ts,save/migrate.ts,fx/postfx.ts}` (modified); `apps/pan-tvardowski/src/{a11y/manager.ts,iap/zone-gate.ts}` (deleted); `apps/pan-tvardowski/tests/a11y-integration.test.ts` (modified)
+- docs (engine): `docs/recipes/save-migrations.md` (new), `docs/design/api-specs.md`, `docs/plans/build-plan.md`, `docs/references/builder-reference.md`, `docs/plans/sessions.md`, `SESSION_LOG.md`
+- docs (tier-2): `.github/skills/flare-tier2-stubs/SKILL.md`, `packages/iap-revenuecat/README.md`, `packages/{achievements,leaderboards,analytics}/README.md` (new)
+
+**Gates**
+- lint: ✅ (Biome auto-fix applied per-milestone, including `--fix --unsafe` for `useLiteralKeys` warnings in test files)
+- typecheck: ✅ (71/71 tasks)
+- test: ✅ (`@flare-engine/iap` 17→20; `@flare-engine/storage` 44→50; net +9 engine tests; PT 254 pass, 0 fail)
+- build: ✅ (38/38 tasks, FULL TURBO across multiple milestones)
+- device smoke: N/A — refactors + docs only; functional smoke covered by existing test suites
+
+**Docs synced**
+- `docs/design/api-specs.md` — 4 new entries (storage migration-chain × 2, errors transports × 2, iap content-gate × 2)
+- `docs/plans/build-plan.md` — M10 engine-promotion addendum block under stage 11.14
+- `docs/references/builder-reference.md` — Session #27 row consolidating all 6 milestones
+- `docs/plans/release-readiness-checklist.md` — no new ticks (M10 is engine refactor / cleanup, not a release gate)
+- `docs/plans/pan-tvardowski-build-plan.md` — no §17 tick (game-side changes are refactors consuming new engine exports, not new game milestones)
+
+**Commits** (subjects only — full blocks emitted in chat per milestone)
+1. `refactor(pan-tvardowski): use engine a11y bridge + postfx controller` (M10.2)
+2. `feat(iap): add canAccessContent content gate` (M10.3 engine)
+3. `refactor(pan-tvardowski): use engine canAccessContent gate` (M10.3 game)
+4. `feat(storage): add defineMigrationChain helper + recipe` (M10.4 engine)
+5. `refactor(pan-tvardowski): use defineMigrationChain in migrate` (M10.4 game)
+6. `docs(build-plan): record M10 promotion addendum + shapes decision` (M10.5)
+7. `docs(tier2): document lazy-SDK adapter recipe across stubs` (M10.6)
+8. `docs(engine): close M10 #27 — api-specs + builder-ref + sessions + log` (M10.7)
+
+**Next session:** no next session queued. Run `/plan-sessions` for Phase 12 (Launch) prep, the next game project, or follow-up on the deferred shape-atlas promotion when a second consumer materializes.
+
+---

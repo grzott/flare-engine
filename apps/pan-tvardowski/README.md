@@ -11,7 +11,7 @@ A vertical-scrolling shoot-em-up inspired by the Polish legend of **Pan Twardows
 
 ## Status
 
-📐 **M0 complete (pre-production).** Directory layout, shape-atlas spec, zone palette, localization scaffold (EN + PL, 143 keys). M1 scaffolds the Expo app + Zone 1.
+🟢 **M0–M9.6 + Bugfix-A + Bugfix-B bundles complete (2026-04-28).** All 8 zones playable end-to-end with main menu, save slots, settings, credits, codex, achievements, IAP shop + RevenueCat adapter, dialogue portraits, deep-links, screenshot capture, and Sentry-gated crash reporting. **354 tests green** (PT app), **288 localization keys** in PL+EN parity, BALANCE_FROZEN_AT = 2026-04-28. Remaining work for ship: store accounts, signing keys, store-page assets, EUIPO trademark filing, device smoke on iOS — see [docs/plans/release-readiness-checklist.md](../../docs/plans/release-readiness-checklist.md).
 
 ## Concept
 

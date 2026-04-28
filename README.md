@@ -13,9 +13,9 @@
 
 **Pre-release — 0.1.0 coming October 2026.**
 
-- 34 packages implemented and tested (~1100+ tests, 0 failures)
+- 36 packages implemented and tested (~1,549 tests across engine + reference game, 0 failures)
 - [`apps/pan-tvardowski`](apps/pan-tvardowski) — the canonical end-to-end reference + integration smoke test. Polish-folklore shmup, 8 zones playable, PL+EN; free zones 1–3 replace the retired `apps/demo` as the reference game. Design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md)
-- Phase 11 (OSS launch prep) is in progress — remaining work: landing-page MP4 + store-page links, Docusaurus site, device FPS capture, API snapshot lock, governance files, EUIPO trademark filing, RC publish
+- Phase 11 (OSS launch prep) is in progress — remaining work: landing-page MP4 + store-page links, Docusaurus site, API snapshot lock, governance files, EUIPO trademark filing, RC publish
 - `@flare-engine` npm scope reserved 2026-04-17; packages flip `"private": false` at RC cut
 - Full roadmap: [docs/plans/build-plan.md](docs/plans/build-plan.md)
 
@@ -23,14 +23,14 @@
 
 ## Architecture
 
-34 packages, strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
+36 packages, strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
 
 ```
 ┌───────────┬────────────────┬──────────────────────────────────────────────────────┐
 │  Layer    │  Tier          │  Packages                                            │
 ├───────────┼────────────────┼──────────────────────────────────────────────────────┤
 │  4        │  Integration   │  react  ·  engine                                    │
-│  3.5      │  UI            │  ui  ·  postfx                                       │
+│  3.5      │  UI            │  ui  ·  postfx  ·  ui-shop                           │
 │  3        │  Features      │  scene  ·  animation  ·  particles  ·  tilemap       │
 │           │                │  debug  ·  pathfinding  ·  dialogue                  │
 │  2.5      │  Persistence   │  storage  ·  errors  ·  testing  ·  a11y             │
@@ -41,6 +41,7 @@
 ├───────────┼────────────────┼──────────────────────────────────────────────────────┤
 │  ─        │  Tooling       │  cli  ·  devtools  ·  create-flare-app               │
 │  ─        │  Tier-2 stubs  │  leaderboards  ·  achievements  ·  iap  ·  analytics │
+│  ─        │  Adapters      │  iap-revenuecat                                      │
 └───────────┴────────────────┴──────────────────────────────────────────────────────┘
 ```
 
@@ -84,8 +85,10 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 | `create-flare-app`           | —     | shipping                 | `npm create flare-app@latest` — blank / topdown / shmup templates              |
 | `@flare-engine/leaderboards` | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
 | `@flare-engine/achievements` | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
-| `@flare-engine/iap`          | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
+| `@flare-engine/iap`          | —     | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
 | `@flare-engine/analytics`    | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
+| `@flare-engine/iap-revenuecat` | —   | shipping                 | Concrete RevenueCat `IAPProvider` adapter (lazy `react-native-purchases`)      |
+| `@flare-engine/ui-shop`      | 3.5   | shipping                 | `ShopPanel` + `PaywallModal` + `RestorePurchasesButton` consuming `IAPContext` |
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).
 

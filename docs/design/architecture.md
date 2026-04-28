@@ -1,6 +1,6 @@
 # Flare Engine — Architecture Reference
 
-> Last updated: 2026-04-20
+> Last updated: 2026-04-28
 
 ---
 
@@ -8,7 +8,7 @@
 
 Flare is a modular, TypeScript-first 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
 
-The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) adds Layers 2.5 and 3.5 plus tooling and Tier-2 stubs, bringing the shipping surface to 34 packages.
+The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages.
 
 ---
 
@@ -234,7 +234,7 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 | Aspect        | Choice                                | Alternative considered  | Why chosen                                                   |
 | ------------- | ------------------------------------- | ----------------------- | ------------------------------------------------------------ |
 | Runtime + PM  | **Bun**                               | Node + pnpm             | Faster install/test, built-in test runner, TypeScript-native |
-| Monorepo      | **Turborepo**                         | Nx, Bun workspaces only | Simple, fast, works with Bun; 34 packages need orchestration |
+| Monorepo      | **Turborepo**                         | Nx, Bun workspaces only | Simple, fast, works with Bun; 36 packages need orchestration |
 | Lint + Format | **Biome**                             | ESLint + Prettier       | Single Rust binary, ~100× faster, lint + format in one tool  |
 | Commits       | **Conventional Commits** (commitlint) | No enforcement          | Clean changelogs, semantic-versioning automation             |
 | Versioning    | **Changesets** (SemVer)               | semantic-release        | Manual control over coordinated multi-package releases       |

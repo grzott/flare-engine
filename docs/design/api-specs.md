@@ -1,6 +1,8 @@
 # Flare Engine — Module API Specifications
 
 > Living document. Update alongside code changes — divergence is a spec bug.
+>
+> Last refreshed against `packages/*/src/index.ts`: **2026-04-28**.
 
 ---
 
@@ -177,6 +179,45 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 | `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles, then calls `flush(this.batch)`. |
 | `extractColliders(data)` | → `TileCollider[]`. Extracts solid tiles → collision shapes for physics.                             |
 
+### `@flare-engine/pathfinding` (< 8KB gzip)
+
+Grid pathfinding (A\*), Jump-Point Search optimization for uniform-cost grids, and a navmesh fallback for non-grid maps. No external deps beyond `@flare-engine/math`.
+
+| API | Description |
+| --- | --- |
+| `Grid` / `GridConfig` / `createGrid(config)` | Walkability + cost grid. `inBounds(grid, x, y)`, `isWalkable(grid, x, y)`, `getCost(grid, x, y)`, `setWalkable(grid, x, y, v)`, `setCost(grid, x, y, n)`. |
+| `findPath(grid, start, goal, opts?)` | A\* over `Grid`. Returns `PathResult { found, cells, cost }`. `PathOptions` selects `manhattanDistance` / `octileDistance` / `chebyshevDistance` / `euclideanDistance` heuristics + diagonal toggle. |
+| `findPathJPS(grid, start, goal, opts?)` | Jump-Point Search variant — typically 5–10× faster than A\* on uniform open grids; falls back to A\*-equivalent moves when costs vary. `JpsOptions`. |
+| `NavMesh` / `NavMeshPolygon` / `Portal` / `createNavMesh(polygons, portals)` | Convex-polygon navmesh built from explicit polygon + portal lists. `findPolygonAt(mesh, x, y)`, `findNavMeshPath(mesh, fromXY, toXY) → NavMeshPathResult`. Used for non-grid bosses, large open zones. |
+
+**Implementation notes:**
+
+- Pure-data API: grids and navmeshes are plain objects, no classes. Heuristics are exported as named functions for tree-shake.
+- Path output is a flat `cells: number[]` packed `[x0, y0, x1, y1, ...]` for zero-alloc consumption by ECS systems.
+- Not used by `apps/pan-tvardowski` (shmup) — verified by integration tests in `packages/pathfinding/tests/`.
+
+---
+
+### `@flare-engine/dialogue` (< 5KB gzip)
+
+Branching dialogue graphs with conditions, actions, variable interpolation, and a typewriter text-reveal helper. No rendering — pair with `@flare-engine/ui` (`DialoguePanel`) on the view side.
+
+| API | Description |
+| --- | --- |
+| `DialogueGraph` / `DialogueNode` (union) | A graph is a `Map<NodeId, DialogueNode>` plus a `start: NodeId`. Node kinds: `LineNode` (speaker + text), `ChoiceNode` (player picks an `ChoiceOption`), `BranchNode` (predicate-driven `BranchArm[]`), `ActionNode` (fires a side effect via `ActionHandler`), `EndNode`. |
+| `createDialogueGraph(start, nodes)` / `getNode(graph, id)` | Builders + lookup. |
+| `DialogueRunner` / `createDialogueRunner(graph, opts)` | Stateful runner. Options: `{ onLine, onChoice, onEnd, conditions: ConditionResolver, actions: ActionHandler, variables: VariableBag }`. Runner emits `DialogueLineEvent` / `DialogueChoiceEvent` to the host. `DialogueRunnerState` is the serializable position. |
+| `interpolate(text, variables)` | Interpolates `{var}` tokens against a `VariableBag` (`Record<string, string \| number \| boolean>`). |
+| `createTextReveal(text, opts?)` / `updateTextReveal(state, dt)` / `completeTextReveal(state)` / `resetTextReveal(state)` | Typewriter state machine — `TextRevealState` exposes `visible: string`, `done: boolean`. `TextRevealOptions` covers `cps` (chars/sec), `instantOnSkip`. |
+
+**Implementation notes:**
+
+- Single hard dep: `@flare-engine/events` (`Signal`).
+- `ConditionResolver` and `ActionHandler` are caller-supplied — the package owns no game state.
+- Used by `apps/pan-tvardowski` for the inter-zone dialogue card stack and boss banter.
+
+---
+
 ### `@flare-engine/debug` (< 3KB gzip, tree-shaken in prod)
 
 - Collision bounds, entity origins, velocity vectors overlay
@@ -205,7 +246,9 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 
 `createGame(config) → GameInstance` — pure factory. Constructs `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`, `AudioManager`, `AssetManager`, `SceneManager`, `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare-engine/react`.
 
-`src/index.ts` also re-exports all 14 lower `@flare-engine/*` packages as a convenience umbrella. This is the one place tree-shaking is deliberately sacrificed for DX — every other package follows the named-export, no-barrel rule.
+`src/index.ts` also re-exports all 15 lower `@flare-engine/*` packages (`math`, `events`, `core`, `ecs`, `render`, `input`, `physics`, `audio`, `assets`, `scene`, `animation`, `particles`, `tilemap`, `debug`, `react`) as a convenience umbrella. This is the one place tree-shaking is deliberately sacrificed for DX — every other package follows the named-export, no-barrel rule.
+
+Tier-2 wiring API: `createTier2Wiring(options)` glues optional `AchievementsProvider` / `LeaderboardsProvider` / `AnalyticsProvider` instances to a Tier2 event source via declarative `Tier2Rule[]` rules — `AchievementRule`, `AnalyticsRule`, `LeaderboardRule`. Used by games to record events without each scene knowing which providers are active.
 
 ---
 
@@ -570,11 +613,15 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 | `Product` / `Transaction` / `PurchaseResult` | Payload types. `PurchaseResult`: `{ status: 'purchased'\|'cancelled'\|'failed', transaction?, error? }`. |
 | `ContentSpec` | `{ requiresEntitlement?: string }`. Minimal shape for paywalled content (zones, levels, cosmetics, DLC). |
 | `canAccessContent(spec, entitlements)` | Pure boolean gate. Returns `true` when `spec.requiresEntitlement` is absent or `entitlements.isEntitled(spec.requiresEntitlement)` resolves true. |
+| `ProductCatalog` / `CatalogEntry` / `EntitlementKey` | Catalog binding: each `CatalogEntry` is `{ productId, entitlements: EntitlementKey[] }`. The catalog is a `Map<ProductId, CatalogEntry>` returned from `createProductCatalog(entries)`. |
+| `createProductCatalog(entries)` / `getCatalogEntry(catalog, id)` / `getGrantsForProduct(catalog, id)` | Pure helpers. `getGrantsForProduct` returns the entitlement-key list a successful purchase would grant. |
+| `EntitlementStore` / `createEntitlementStore(opts?)` | Reactive set of granted `EntitlementKey`s with `grant(key)`, `grantProduct(catalog, productId)`, `revoke(key)`, `isEntitled(key)`, `list()`, and an `onChange: Signal<EntitlementKey[]>`. `EntitlementStoreOptions` accepts an `initial` snapshot for hydration from save. |
 
 **Implementation notes:**
 
 - No runtime deps beyond `@flare-engine/events`. React peer dep only.
 - Receipt validation is adapter-local — the interface does not expose receipt bytes at 0.1.0. May extend in 0.2.0.
+- The package ships **more than the bare interface**: catalog binding (`ProductCatalog` + helpers), entitlement reactivity (`EntitlementStore`), and content gating (`ContentSpec` + `canAccessContent`) are all part of the 0.1.0 surface so games can wire paywalls without writing the same plumbing per app.
 
 ---
 

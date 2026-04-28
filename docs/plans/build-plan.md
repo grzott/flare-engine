@@ -297,6 +297,8 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 
 **Test counts after M10:** `@flare-engine/errors` 14→21; `@flare-engine/iap` 17→20; `@flare-engine/storage` 44→50. PT 254 tests pass (count unchanged — refactors preserve coverage).
 
+**2026-04-28 — PT-Polish + PT-Bugfix bundles (sessions #29 / #46 / #47).** Game-side hardening + 5 engine fixes harvested mid-bundle. Engine-side surface unchanged for #29 (theme tokens, entitlement-lost fallback, analytics event freeze, cold-start instrumentation, argbTo dedup); #46 added 2 engine fixes (`VirtualJoystick` / `VirtualButton` input-event gating in `@flare-engine/react`, skia-bridge viewport bounds), #47 added collider-scale constants in PT only. PT test count: 254 → 326 (#29) → 336 (#46) → 354 (#47). Engine test count after #46: `@flare-engine/react` 42 → 45. Detail in [`pan-tvardowski-build-plan.md` §17](pan-tvardowski-build-plan.md) + `SESSION_LOG.md` #29 / #46 / #47.
+
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 
 1. All shipping packages green: `bun run typecheck && bun run lint && bun run test && bun run build`.

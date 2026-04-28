@@ -6,7 +6,7 @@ API contract: [docs/design/api-specs.md](docs/design/api-specs.md).
 
 ## Agent map (auto-delegation)
 
-Claude Code sub-agents live in [.claude/agents/](.claude/agents/). Seven single-responsibility agents:
+Claude Code sub-agents live in [.claude/agents/](.claude/agents/). Eight single-responsibility agents:
 
 - `engine-planner` — cuts 10–20 session slices from `docs/plans/build-plan.md` → `docs/plans/sessions.md`
 - `game-planner` — same, for `apps/<game>/` work, writes to the same unified sessions file

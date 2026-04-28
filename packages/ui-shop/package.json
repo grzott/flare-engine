@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/ui-shop",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "description": "Reusable ShopPanel, PaywallModal, and RestorePurchasesButton consuming IAPContext + EntitlementStore",
   "keywords": ["flare-engine", "ui", "shop", "iap", "paywall", "react-native"],

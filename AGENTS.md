@@ -4,7 +4,7 @@
 
 ## Architecture
 
-34 packages (`@flare-engine/*` + `create-flare-app`) across layered tiers. Dependencies flow **downward only**.
+36 packages (`@flare-engine/*` + `create-flare-app`) across layered tiers. Dependencies flow **downward only**.
 
 ```
 Layer 0   Foundation         math · events
@@ -14,10 +14,11 @@ Layer 2.5 Persistence        storage · errors · testing · localization ·
                              deep-links · share · a11y
 Layer 3   Features           scene · animation · particles · tilemap · debug ·
                              pathfinding · dialogue
-Layer 3.5 UI                 ui · postfx
+Layer 3.5 UI                 ui · postfx · ui-shop
 Layer 4   Integration        react · engine
 Tooling                      cli · devtools · create-flare-app
 Tier-2 stubs                 leaderboards · achievements · iap · analytics
+Adapters                     iap-revenuecat
 ```
 
 Each package is independently publishable. No circular deps. Full diagram in [docs/design/architecture.md](docs/design/architecture.md); documentation index in [docs/README.md](docs/README.md).

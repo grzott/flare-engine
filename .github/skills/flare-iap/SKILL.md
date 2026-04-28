@@ -1,11 +1,11 @@
 ---
 name: flare-iap
-description: Deep knowledge of the @flare-engine/iap package — typed in-app-purchase provider interface, purchase/restore/listProducts, NoopProvider, IAPContext, useIAP. Use when wiring an IAP provider (RevenueCat / StoreKit / Play Billing) to a Flare game. Concrete adapters ship in 0.2.0.
+description: Deep knowledge of the @flare-engine/iap package — typed in-app-purchase provider interface, purchase/restore/listProducts, NoopProvider, IAPContext, useIAP, ProductCatalog, EntitlementStore, ContentSpec/canAccessContent. Use when wiring an IAP provider (RevenueCat / StoreKit / Play Billing) to a Flare game. RevenueCat adapter ships in @flare-engine/iap-revenuecat at 0.1.0; StoreKit / Play Billing native adapters land in 0.2.0.
 ---
 
 # `@flare-engine/iap`
 
-Tier-2 stub. Interface-only at 0.1.0.
+Provider interface + `ProductCatalog` + `EntitlementStore` + content gates. The 0.1.0 surface is more than the bare interface — only the *concrete native* adapters (StoreKit, Play Billing) are deferred. RevenueCat already ships at 0.1.0 via [`@flare-engine/iap-revenuecat`](../flare-iap-revenuecat/SKILL.md).
 
 ```ts
 import {

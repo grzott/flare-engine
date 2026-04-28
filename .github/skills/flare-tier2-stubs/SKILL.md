@@ -1,18 +1,18 @@
 ---
 name: flare-tier2-stubs
-description: Knowledge of the Tier-2 interface-only stubs — @flare-engine/leaderboards, @flare-engine/achievements, @flare-engine/iap, @flare-engine/analytics. Each ships a typed interface + NoopProvider + React context. Use when integrating a third-party provider (Game Center / Play Games / RevenueCat / PostHog / etc.) or when documenting the interface contract before 0.2.0 adapters land.
+description: Knowledge of the Tier-2 platform-integration packages — @flare-engine/leaderboards, @flare-engine/achievements, @flare-engine/iap, @flare-engine/analytics. Each ships a typed interface + NoopProvider + React context. Leaderboards / achievements / analytics are interface-only at 0.1.0 (concrete adapters land at 0.2.0). IAP additionally ships ProductCatalog + EntitlementStore + content gates, plus a concrete RevenueCat adapter in @flare-engine/iap-revenuecat at 0.1.0. Use when integrating a third-party provider (Game Center / Play Games / RevenueCat / PostHog / etc.) or when documenting the interface contract before 0.2.0 adapters land.
 ---
 
 # Tier-2 Stubs
 
-Four packages ship interface-only at 0.1.0. Concrete adapters land as 0.2.0.
+Four packages ship at 0.1.0. Three are interface-only; IAP ships interface + catalog + entitlements + content gates, plus a concrete RevenueCat adapter (`@flare-engine/iap-revenuecat`) — the rest of the native adapters (StoreKit / Play Billing / Game Center / Play Games / PostHog / Amplitude) land at 0.2.0.
 
-| Package                      | Purpose                                        |
-| ---------------------------- | ---------------------------------------------- |
-| `@flare-engine/leaderboards` | Typed leaderboard submission + fetch interface |
-| `@flare-engine/achievements` | Unlock / progress / listing interface          |
-| `@flare-engine/iap`          | Purchase / restore / product-listing interface |
-| `@flare-engine/analytics`    | Track / screen / identify interface            |
+| Package                      | Status at 0.1.0                                          |
+| ---------------------------- | -------------------------------------------------------- |
+| `@flare-engine/leaderboards` | Typed leaderboard submission + fetch interface (stub)    |
+| `@flare-engine/achievements` | Unlock / progress / listing interface (stub)             |
+| `@flare-engine/iap`          | Interface + `ProductCatalog` + `EntitlementStore` + gates (concrete RevenueCat adapter ships in [`@flare-engine/iap-revenuecat`](../flare-iap-revenuecat/SKILL.md)) |
+| `@flare-engine/analytics`    | Track / screen / identify interface (stub)               |
 
 ## Shape (identical across all four)
 

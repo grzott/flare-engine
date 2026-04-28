@@ -7,5 +7,7 @@ export { s } from './schema.js';
 export type { Infer, ParseResult, Schema } from './schema.js';
 export { runMigrations } from './migrations.js';
 export type { Migration } from './migrations.js';
+export { defineMigrationChain } from './migration-chain.js';
+export type { MigrationStep } from './migration-chain.js';
 export { createStorage } from './storage.js';
 export type { Storage, StorageOptions } from './storage.js';

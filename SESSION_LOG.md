@@ -905,3 +905,43 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** no next session — Pan Tvardowski 0.1.0 feature-complete. Run `/plan-sessions` for Phase 12 (Launch) or next game.
 
 ---
+
+## Session 26 — 2026-04-28 (scope: [mixed])
+
+**Goal (from sessions.md row #26):** M10.1 Sentry crash transport + composeTransports() in @flare-engine/errors
+
+**Touched files**
+- `packages/errors/src/transports/sentry.ts` (new — `createSentryTransport`: lazy async import, DSN-gated, degrades to noop on missing peer dep or import failure)
+- `packages/errors/src/transports/sentry-types.d.ts` (new — ambient type stubs for optional `@sentry/react-native` peer)
+- `packages/errors/src/compose.ts` (new — `composeTransports` fan-out helper; swallows per-child throws, logs to console.error)
+- `packages/errors/src/index.ts` — re-exports `createSentryTransport` + `composeTransports`
+- `packages/errors/package.json` — `@sentry/react-native` added as optional peerDependency
+- `packages/errors/tsup.config.ts` — entry extended to include `src/transports/sentry.ts` for separate chunk
+- `packages/errors/tests/sentry-transport.test.ts` (new — 4 tests: noop on missing DSN, noop when disabled, import-failure degrades to noop, mocked SDK payload mapping)
+- `packages/errors/tests/compose-transports.test.ts` (new — 3 tests: fan-out ordering, throwing child does not block rest, empty array produces noop)
+- `apps/pan-tvardowski/src/App.tsx` — replaced inline Sentry binding with `createSentryTransport` + `composeTransports` from `@flare-engine/errors`; `crashOptIn` gate preserved via `composeTransports`
+- `apps/pan-tvardowski/src/errors/transport.ts` (deleted — superseded by engine transport)
+- `apps/pan-tvardowski/tests/crash-transport.test.ts` — rewritten: 7 tests covering opt-in gate wrapper (3) + `composeTransports` integration (4)
+- `docs/references/builder-reference.md` — Session #26 row added
+- `docs/plans/sessions.md` — row #26 flipped `pending → done`, closed 2026-04-28
+
+**Gates**
+- lint: ✅ (39/39 packages; `@flare-engine/errors` + `@flare-engine-apps/pan-tvardowski` both cache-miss and clean; no fixes applied)
+- typecheck: ✅ (71/71 tasks successful; `@flare-engine/errors` build + `@flare-engine-apps/pan-tvardowski` typecheck both cache-miss and exited 0)
+- test: ✅ (`@flare-engine/errors`: 14 → 21 (+7), 0 fail; `@flare-engine-apps/pan-tvardowski`: 254 pass, 0 fail; 75/75 tasks successful)
+- build: ✅ (38/38 tasks successful, FULL TURBO)
+- device smoke: N/A — engine + game-wiring only; no new rendered scene. App.tsx wiring change smoke-testable via existing crash-transport test suite.
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #26 row added: `createSentryTransport` + `composeTransports`, 7 new tests (21 total in `@flare-engine/errors`), build green.
+- `docs/plans/build-plan.md` — no phase state change this session (M10.1 is a single-session engine enhancement, not a phase boundary).
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new tick; game-side change is a refactor consuming the new engine export, not a new milestone deliverable.
+- `docs/plans/release-readiness-checklist.md` — no new ticks; crash transport was ticked at M9.6 close (session #22).
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(errors): add Sentry transport + composeTransports`
+2. `refactor(pan-tvardowski): use engine Sentry transport`
+
+**Next session:** #27 "M10.2 replace stale a11y/manager.ts + fx/postfx.ts with engine createA11yBridge + createPostFxController"
+
+---

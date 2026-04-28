@@ -62,4 +62,16 @@ export const rawStyles = {
     marginTop: spacing.lg,
     letterSpacing: 1,
   },
+  zoneSelectItem: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ui.divider,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  zoneSelectBack: {
+    marginTop: spacing.lg,
+  },
 };

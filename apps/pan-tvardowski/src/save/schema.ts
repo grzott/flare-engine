@@ -1,10 +1,9 @@
 import type { ZoneId } from '../events';
-import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
-import { defaultControls, defaultSettings } from '../state';
+import type { Settings } from '../state';
+import { defaultSettings } from '../state';
+import { fromUnknown } from './migrate';
 
 export const SAVE_VERSION = 7;
-
-const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
 export interface ZoneClearStats {
   readonly deaths: number;
@@ -69,109 +68,6 @@ export function defaultSaveFile(): SaveFile {
   };
 }
 
-function isNum(v: unknown): v is number {
-  return typeof v === 'number' && Number.isFinite(v);
-}
-function isBool(v: unknown): v is boolean {
-  return typeof v === 'boolean';
-}
-function isZone(v: unknown): v is ZoneId {
-  return typeof v === 'string' && (ZONE_IDS as readonly string[]).includes(v);
-}
-
-function parseZoneStats(v: unknown): Partial<Record<ZoneId, ZoneClearStats>> {
-  if (v === null || typeof v !== 'object' || Array.isArray(v)) return {};
-  const o = v as Record<string, unknown>;
-  const result: Partial<Record<ZoneId, ZoneClearStats>> = {};
-  for (const id of ZONE_IDS) {
-    const entry = o[id];
-    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) continue;
-    const e = entry as Record<string, unknown>;
-    if (!isNum(e.deaths) || !isBool(e.noHit)) continue;
-    const bestTimeMs = e.bestTimeMs === null ? null : isNum(e.bestTimeMs) ? e.bestTimeMs : null;
-    result[id] = { deaths: e.deaths, bestTimeMs, noHit: e.noHit };
-  }
-  return result;
-}
-
-function parseSlot(v: unknown): SlotData | null {
-  if (v === null || typeof v !== 'object') return null;
-  const o = v as Record<string, unknown>;
-  if (
-    !isNum(o.index) ||
-    !isNum(o.runs) ||
-    !isNum(o.bestScore) ||
-    !isNum(o.lastScore) ||
-    !isBool(o.bossDefeated) ||
-    !isNum(o.savedAt)
-  ) {
-    return null;
-  }
-  // v1/v2 → v3: `zoneReached` absent → default 'z1'.
-  const zoneReached: ZoneId = isZone(o.zoneReached) ? o.zoneReached : 'z1';
-  // v5 → v6: `zoneStats` absent → empty (no per-zone history recorded yet).
-  const zoneStats: Partial<Record<ZoneId, ZoneClearStats>> = parseZoneStats(o.zoneStats);
-  return {
-    index: o.index,
-    runs: o.runs,
-    bestScore: o.bestScore,
-    lastScore: o.lastScore,
-    bossDefeated: o.bossDefeated,
-    savedAt: o.savedAt,
-    zoneReached,
-    zoneStats,
-  };
-}
-
-function parseControls(v: unknown): ControlsSettings {
-  if (v === null || typeof v !== 'object') return defaultControls();
-  const o = v as Record<string, unknown>;
-  const joystickSide: JoystickSide = o.joystickSide === 'right' ? 'right' : 'left';
-  const fireButtonSide: FireButtonSide = o.fireButtonSide === 'left' ? 'left' : 'right';
-  return { joystickSide, fireButtonSide };
-}
-
-function clamp01(n: number): number {
-  if (!Number.isFinite(n)) return 1;
-  if (n < 0) return 0;
-  if (n > 1) return 1;
-  return n;
-}
-
-function parseSettings(v: unknown): Settings {
-  if (v === null || typeof v !== 'object') return defaultSettings();
-  const o = v as Record<string, unknown>;
-  const shake = isBool(o.screenShake) ? o.screenShake : true;
-  const reducedMotion = isBool(o.reducedMotion) ? o.reducedMotion : false;
-  const rawLocale = typeof o.locale === 'string' ? o.locale : 'en';
-  const locale: Settings['locale'] = rawLocale === 'pl' ? 'pl' : 'en';
-  // v2 → v3: volumes + controls absent → defaults.
-  const masterVolume = isNum(o.masterVolume) ? clamp01(o.masterVolume) : 1;
-  const musicVolume = isNum(o.musicVolume) ? clamp01(o.musicVolume) : 1;
-  const sfxVolume = isNum(o.sfxVolume) ? clamp01(o.sfxVolume) : 1;
-  const controls = parseControls(o.controls);
-  return {
-    screenShake: shake,
-    reducedMotion,
-    locale,
-    masterVolume,
-    musicVolume,
-    sfxVolume,
-    controls,
-  };
-}
-
-function parsePrivacy(v: unknown): PrivacySettings {
-  if (v === null || typeof v !== 'object' || Array.isArray(v)) {
-    return { analyticsOptIn: false, crashOptIn: false };
-  }
-  const o = v as Record<string, unknown>;
-  return {
-    analyticsOptIn: isBool(o.analyticsOptIn) ? o.analyticsOptIn : false,
-    crashOptIn: isBool(o.crashOptIn) ? o.crashOptIn : false,
-  };
-}
-
 export function parseSaveFile(raw: string | null): SaveFile {
   if (!raw) return defaultSaveFile();
   let data: unknown;
@@ -180,41 +76,7 @@ export function parseSaveFile(raw: string | null): SaveFile {
   } catch {
     return defaultSaveFile();
   }
-  if (data === null || typeof data !== 'object') return defaultSaveFile();
-  const o = data as Record<string, unknown>;
-  const slotsArr = Array.isArray(o.slots) ? o.slots : [null, null, null];
-  const slots: (SlotData | null)[] = [0, 1, 2].map((i) => parseSlot(slotsArr[i]));
-  const activeSlot = isNum(o.activeSlot)
-    ? Math.max(0, Math.min(2, Math.floor(o.activeSlot)))
-    : null;
-  // v1 → v2 migration: if `introSeen` is absent, replay the prologue once
-  // (acts as a re-introduction after update).
-  const introSeen = isBool(o.introSeen) ? o.introSeen : false;
-  // v3 → v4 migration: `codexUnlocked` absent → empty (all locked).
-  const codexUnlocked: string[] = Array.isArray(o.codexUnlocked)
-    ? (o.codexUnlocked as unknown[]).filter((v): v is string => typeof v === 'string')
-    : [];
-  // v4 → v5 migration: `entitlements` absent → empty (no IAP owned).
-  const entitlements: string[] = Array.isArray(o.entitlements)
-    ? (o.entitlements as unknown[]).filter((v): v is string => typeof v === 'string')
-    : [];
-  // v5 → v6 migration: `unlockedAchievements` absent → empty.
-  const unlockedAchievements: string[] = Array.isArray(o.unlockedAchievements)
-    ? (o.unlockedAchievements as unknown[]).filter((v): v is string => typeof v === 'string')
-    : [];
-  // v6 → v7 migration: `privacy` absent → both opt-ins default to false.
-  const privacy: PrivacySettings = parsePrivacy(o.privacy);
-  return {
-    version: SAVE_VERSION,
-    settings: parseSettings(o.settings),
-    slots,
-    activeSlot,
-    introSeen,
-    codexUnlocked,
-    entitlements,
-    unlockedAchievements,
-    privacy,
-  };
+  return fromUnknown(data);
 }
 
 export function createSlot(index: number): SlotData {
@@ -248,6 +110,7 @@ export function mergeRun(
 }
 
 function maxZone(a: ZoneId, b: ZoneId): ZoneId {
+  const ZONE_IDS: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
   return ZONE_IDS.indexOf(b) > ZONE_IDS.indexOf(a) ? b : a;
 }
 

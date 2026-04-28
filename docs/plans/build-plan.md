@@ -284,6 +284,19 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
 
 **2026-04-27 — Session #24 shipped: `@flare-engine/ui-shop`.** New package — `ShopPanel`, `PaywallModal`, `RestorePurchasesButton` smart components consuming `IAPContext` + `EntitlementStore` + `ProductCatalog`. Consumes `@flare-engine/ui` Panel/Button/Label/Modal for rendering. 9 tests green; build + typecheck + biome lint green.
 
+**2026-04-28 — M10 engine-promotion addendum (sessions #26 / #27).** Post-PT-pre-alpha audit harvested 6 reusable patterns the game produced that 11.14 missed:
+
+- `@flare-engine/errors` — `createSentryTransport({ dsn, environment, release, sampleRate, enabled })` (lazy `@sentry/react-native` peer dep, optional) + `composeTransports(...transports)` fan-out helper that swallows per-sink failures (+7 tests).
+- `@flare-engine/iap` — `canAccessContent(spec, entitlements)` content-gate helper. `ContentSpec.requiresEntitlement?: string`. Powers paywalled-zone / DLC patterns (+3 tests).
+- `@flare-engine/storage` — `defineMigrationChain(steps)` convenience wrapper over `runMigrations()`. Validates contiguous `from→to` chain. Companion recipe at [docs/recipes/save-migrations.md](../recipes/save-migrations.md) referencing PT's `apps/pan-tvardowski/src/save/migrate.ts` v1→v7 chain as the canonical example (+6 tests).
+- `apps/pan-tvardowski` adapt: replaced stale local `a11y/manager.ts` and `fx/postfx.ts` (which predated 11.14's `createA11yBridge` / `createPostFxController` shipping) with engine versions; deleted local `iap/zone-gate.ts`; refactored `save/migrate.ts` to use `defineMigrationChain`; consumed `createSentryTransport` + `composeTransports` for Sentry wiring.
+
+**Shape-atlas types — decision: stay in game.** PT's `apps/pan-tvardowski/src/shapes.ts` (79 LOC, pure type definitions for `ShapeSpec`: circle / rect / triangle / ngon / star / ring / polyline / gradient-rect) was reviewed for promotion to `@flare-engine/render` or `@flare-engine/assets`. Per the 11.14 second-consumer rule (extract only after a second game wants the same shape vocabulary), the types remain game-local. `@flare-engine/assets/createProceduralAtlas` already JSDoc-points at the PT shape-atlas as the canonical example. Re-evaluate when game #2 lands.
+
+**Lazy-SDK adapter recipe.** Tier-2 stub packages (`@flare-engine/iap-revenuecat`, `@flare-engine/achievements`, `@flare-engine/leaderboards`, `@flare-engine/analytics`) now document the env-var-gated `await import()` + Noop-fallback pattern PT used for RevenueCat, so test/CI runs stay green without native SDKs installed. Documented in each package's README and in [.github/skills/flare-tier2-stubs/SKILL.md](../../.github/skills/flare-tier2-stubs/SKILL.md).
+
+**Test counts after M10:** `@flare-engine/errors` 14→21; `@flare-engine/iap` 17→20; `@flare-engine/storage` 44→50. PT 254 tests pass (count unchanged — refactors preserve coverage).
+
 #### Phase 11 — cross-stage verification (run before entering Phase 12)
 
 1. All shipping packages green: `bun run typecheck && bun run lint && bun run test && bun run build`.

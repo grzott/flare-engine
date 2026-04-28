@@ -57,4 +57,4 @@ For each finding, assess:
 
 ## Output
 
-Produce a structured report following the researcher agent's report format. End with a prioritized "Action Items" list that the @architect or @builder can act on.
+Produce a structured report following the researcher agent's report format. End with a prioritized "Action Items" list that the @architect or @engine-builder can act on.

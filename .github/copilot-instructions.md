@@ -8,19 +8,23 @@ API contract source of truth: [docs/design/api-specs.md](../docs/design/api-spec
 
 Execute work as short, gated sessions — plan 10–20, execute one at a time, close with gates + commits. Unified session plan: [docs/plans/sessions.md](../docs/plans/sessions.md). Append-only log of closed sessions: [SESSION_LOG.md](../SESSION_LOG.md). Canonical close format: [instructions/session-close.instructions.md](instructions/session-close.instructions.md).
 
-Copilot users can follow this same workflow via the `@architect`, `@builder`, `@game-builder`, `@researcher` agents below. Claude Code users have the parallel wiring in [.claude/agents/](../.claude/agents/) and slash commands (`/plan-sessions`, `/session-start`, `/session-close`) — see [CLAUDE.md](../CLAUDE.md).
+Copilot users can follow this same workflow via the eight agents below. Claude Code users have the parallel wiring in [.claude/agents/](../.claude/agents/) and slash commands (`/plan-sessions`, `/session-start`, `/session-close`) — see [CLAUDE.md](../CLAUDE.md).
 
 ## Agents
 
-- `@builder` — implements engine packages (`packages/**`), writes tests, builds the engine
-- `@game-builder` — implements game apps (`apps/<game>/**`), wires engine packages into gameplay, produces commit messages (never commits). Reusable for any Flare game
+- `@engine-builder` — implements engine packages (`packages/**`), writes tests, builds the engine
+- `@game-builder` — implements game apps (`apps/<game>/**`), wires engine packages into gameplay. Reusable for any Flare game
+- `@engine-planner` — cuts 10–20 session slices from `docs/plans/build-plan.md` → `docs/plans/sessions.md` (engine scope)
+- `@game-planner` — same for `apps/<game>/` work, writes to the unified sessions file (game scope)
+- `@engine-researcher` — surveys libraries, techniques, benchmarks for engine packages
+- `@game-researcher` — surveys assets, folklore, marketplaces, name validation for game apps
+- `@verifier` — runs gates, reads diff, blocks `/session-close` on drift, emits paste-ready commit blocks
 - `@architect` — audits and designs the AI development environment
-- `@researcher` — surveys libraries, techniques, assets, and competitor engines
 
 ## Prompts
 
-- `/build-next` — engine builder: next phase from `docs/plans/build-plan.md`
-- `/build-next-milestone` — game builder: next milestone from `docs/plans/<game>-build-plan.md`
+- `/build-next` — engine-builder: next phase from `docs/plans/build-plan.md`
+- `/build-next-milestone` — game-builder: next milestone from `docs/plans/<game>-build-plan.md`
 - `/continue-game` — resume in-flight game work
 
 ## Scoped instructions

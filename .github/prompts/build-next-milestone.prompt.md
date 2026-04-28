@@ -33,7 +33,7 @@ List:
 2. Tests you will add and what they assert.
 3. Engine-coverage checkboxes you will tick at the end.
 4. New npm dependencies, if any (must be flagged; justify each).
-5. Any suspected engine gap you might hit. If a gap is likely, stop here and ask the user whether to delegate to `@builder` before proceeding.
+5. Any suspected engine gap you might hit. If a gap is likely, stop here and ask the user whether to delegate to `@engine-builder` before proceeding.
 
 **STOP. Present the plan. Wait for user approval. Do not touch files yet.**
 

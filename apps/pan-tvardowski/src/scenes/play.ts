@@ -532,6 +532,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 }
                 return;
               }
+              void save.commitRun(gameState.score, false, next);
               gameState.currentZone = next;
               notifyStateChanged();
               startZone(next, false);
@@ -663,7 +664,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.gameOver = true;
             notifyStateChanged();
             if (gameState.settings.screenShake) ctx.camera.shake(16, 0.7);
-            void save.commitRun(gameState.score, false);
+            void save.commitRun(gameState.score, false, s?.zone.id);
             if (s) {
               void save.recordZoneOutcome(s.zone.id, {
                 cleared: false,

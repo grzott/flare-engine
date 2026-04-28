@@ -1043,3 +1043,39 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** no next session queued. Run `/plan-sessions` for Phase 12 (Launch) prep, the next game project, or follow-up on the deferred shape-atlas promotion when a second consumer materializes.
 
 ---
+
+## Session 28 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #28):** PT-Polish-1: theme module foundation — semantic visual tokens (colors/typography/spacing/shapes)
+
+**Touched files**
+- `apps/pan-tvardowski/src/theme/colors.ts` (new)
+- `apps/pan-tvardowski/src/theme/typography.ts` (new)
+- `apps/pan-tvardowski/src/theme/shapes.ts` (new)
+- `apps/pan-tvardowski/src/theme/spacing.ts` (new)
+- `apps/pan-tvardowski/src/theme/index.ts` (new)
+- `apps/pan-tvardowski/tests/theme.test.ts` (new)
+
+**Session note.** This session bypassed the normal `/session-start` flow (planned via Plan mode, dispatched directly to game-builder). No `in_progress` row existed prior to close; row #28 was added directly in `done` state. No call-site refactors in this session — that is PT-Polish-2.
+
+**Gates**
+- lint: ✅ (39/39 packages; `@flare-engine-apps/pan-tvardowski` cache-miss, 164 files checked, no fixes applied)
+- typecheck: ✅ (71/71 tasks; `@flare-engine-apps/pan-tvardowski` typecheck cache-miss, `tsc --noEmit` exited 0)
+- test: ✅ (+5 new, total 264 pass / 0 fail, 5817 expect() calls, 59 files)
+- build: ✅ (38/38 tasks successful; pan-tvardowski native build via `eas build` as expected)
+- device smoke: N/A — theme tokens are pure data (no rendered scene or UI change); no on-device surface to exercise. Device smoke gate moves to PT-Polish-2 when call sites are refactored.
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #28 added directly in `done` state (retroactive, bypassed `/session-start`); opened + closed 2026-04-28
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row test count updated: 256 → 264 (5 new theme tests; +3 from session #26 crash-transport rewrite not previously reflected)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new engine-coverage tick; theme tokens consume no new engine package
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — no entry; this is internal style/polish work, not a milestone completion or partial
+- `docs/plans/release-readiness-checklist.md` — no new ticks; theme scaffolding is not a launch-gate item
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add theme module (colors/typography/spacing/shapes)`
+2. `docs(pan-tvardowski): PT-Polish-1 session close — builder-ref test count + sessions row`
+
+**Next session:** PT-Polish-2 "refactor call sites to consume theme tokens" — not yet in sessions.md; add via `/plan-sessions`.
+
+---

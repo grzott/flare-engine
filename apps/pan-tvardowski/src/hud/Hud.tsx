@@ -57,6 +57,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
   );
 
   const topInset = insets?.top ?? 0;
+  const bottomInset = insets?.bottom ?? 0;
   const horizontalInsetLeft = insets?.left ?? 0;
   const horizontalInsetRight = insets?.right ?? 0;
   const topLeftStyle = useMemo(
@@ -84,6 +85,11 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       },
     ],
     [topInset, horizontalInsetLeft, horizontalInsetRight],
+  );
+
+  const centerOverlayStyle = useMemo(
+    () => [styles.centerOverlay, { paddingBottom: bottomInset }],
+    [bottomInset],
   );
 
   const inPlay = s.currentScene === 'play';
@@ -163,7 +169,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       ) : null}
 
       {isGameOver ? (
-        <Pressable style={styles.centerOverlay} onPress={actions.onRetry}>
+        <Pressable style={centerOverlayStyle} onPress={actions.onRetry}>
           <Text style={styles.bannerTitle}>{t('menu.game_over.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_retry')}</Text>
@@ -179,7 +185,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       ) : null}
 
       {isVictory ? (
-        <Pressable style={styles.centerOverlay} onPress={actions.onContinue}>
+        <Pressable style={centerOverlayStyle} onPress={actions.onContinue}>
           <Text style={styles.bannerTitle}>{t('menu.victory.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_continue')}</Text>

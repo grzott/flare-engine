@@ -20,6 +20,7 @@ import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { AchievementsOverlay } from './hud/AchievementsOverlay';
+import { BootOverlay } from './hud/BootOverlay';
 import { CodexOverlay } from './hud/CodexOverlay';
 import { DialogueOverlay } from './hud/DialogueOverlay';
 import { Hud } from './hud/Hud';
@@ -408,6 +409,7 @@ function AppRoot(): React.ReactElement {
           )}
         </GameView>
         <Hud localization={localization} actions={actions} insets={insets} />
+        <BootOverlay localization={localization} />
         <MenuOverlay
           localization={localization}
           save={saveStore}

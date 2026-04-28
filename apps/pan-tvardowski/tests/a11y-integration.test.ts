@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { motionScale } from '@flare-engine/a11y';
-import { createA11yBridge } from '../src/a11y/manager';
+import { createA11yBridge, motionScale } from '@flare-engine/a11y';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 import { gameState } from '../src/state';
 
@@ -26,7 +25,13 @@ describe('a11y bridge', () => {
 
   test('attaching camera + postfx applies motion scale on manager change', () => {
     gameState.settings.reducedMotion = false;
-    const bridge = createA11yBridge();
+    const bridge = createA11yBridge({
+      initial: { reducedMotion: gameState.settings.reducedMotion },
+    });
+    // Mirror onChange back into gameState (same wiring as App.tsx bootstrap).
+    bridge.manager.onChange.add((s) => {
+      gameState.settings.reducedMotion = s.reducedMotion;
+    });
     const cam = makeFakeCamera();
     const pfx = createPanTvardowskiPostFx(null);
     bridge.attachCamera(cam as unknown as Parameters<typeof bridge.attachCamera>[0]);

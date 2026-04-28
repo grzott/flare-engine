@@ -1,3 +1,4 @@
+import { createA11yBridge } from '@flare-engine/a11y';
 import { DevtoolsHUD, DevtoolsProvider } from '@flare-engine/devtools';
 import type {
   GameContextValue,
@@ -28,7 +29,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState, Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { createA11yBridge } from './a11y/manager';
 import { SPRITES_MANIFEST, loadSpriteAtlas } from './assets';
 import type { AudioHandles } from './audio/init';
 import { disposeAudio, getAudio, initAudio } from './audio/init';
@@ -112,7 +112,12 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
   // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
   const skiaPostFx = null;
 
-  const a11y = createA11yBridge();
+  const a11y = createA11yBridge({
+    initial: { reducedMotion: gameState.settings.reducedMotion },
+  });
+  a11y.manager.onChange.add((s) => {
+    gameState.settings.reducedMotion = s.reducedMotion;
+  });
 
   ctx.scenes.register(
     'boot',

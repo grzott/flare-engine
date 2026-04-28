@@ -1,9 +1,10 @@
+import type { A11yBridge } from '@flare-engine/a11y';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
-import type { A11yBridge } from '../a11y/manager';
+import type { PostFxController } from '@flare-engine/postfx';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
@@ -25,7 +26,7 @@ import {
 } from '../dialogue';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
-import { type PostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
+import { createPanTvardowskiPostFx } from '../fx/postfx';
 import {
   type ZoneBannerState,
   createZoneBannerState,

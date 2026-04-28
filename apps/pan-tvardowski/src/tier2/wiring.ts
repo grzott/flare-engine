@@ -1,4 +1,5 @@
 import { gameEvents } from '../events';
+import { ANALYTICS_EVENTS } from './analytics-events';
 import { getTier2Providers } from './providers';
 
 /**
@@ -19,13 +20,13 @@ export function mountTier2Wiring(): () => void {
 
   unsubs.push(
     gameEvents.on('zone-start', (zone) => {
-      void analytics.track('zone_start', { zone });
+      void analytics.track(ANALYTICS_EVENTS.zone_start, { zone });
     }),
   );
 
   unsubs.push(
     gameEvents.on('zone-complete', (zone, score) => {
-      void analytics.track('zone_complete', { zone, score });
+      void analytics.track(ANALYTICS_EVENTS.zone_complete, { zone, score });
       void leaderboards.submitScore(`zone_${zone}_high_score`, score);
       if (zone === 'z1') void achievements.unlock('first_shard');
       if (zone === 'z8') void achievements.unlock('all_shards');
@@ -34,13 +35,13 @@ export function mountTier2Wiring(): () => void {
 
   unsubs.push(
     gameEvents.on('miniboss-defeated', (zone) => {
-      void analytics.track('miniboss_defeated', { zone });
+      void analytics.track(ANALYTICS_EVENTS.miniboss_defeated, { zone });
     }),
   );
 
   unsubs.push(
     gameEvents.on('boss-phase-change', (zone, phase) => {
-      void analytics.track('boss_phase_change', { zone, phase });
+      void analytics.track(ANALYTICS_EVENTS.boss_phase_change, { zone, phase });
     }),
   );
 

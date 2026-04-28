@@ -20,6 +20,7 @@ import { formatLastPlayed, slotPreview } from '../save/preview';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
 import type { FireButtonSide, JoystickSide } from '../state';
+import { rawStyles } from './MenuOverlay.styles';
 import { PrivacyOverlay } from './PrivacyOverlay';
 import { CREDITS_SECTIONS } from './credits-sections';
 
@@ -411,64 +412,6 @@ function CreditsView({ localization: l, actions }: MenuOverlayProps): React.Reac
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 6, 16, 0.92)',
-    justifyContent: 'center',
-  },
-  panelContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  panel: { alignSelf: 'stretch', maxWidth: 420, width: '100%' },
-  slotRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  lockedBadge: {
-    marginLeft: 8,
-    color: '#a05c2a',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 6,
-  },
-  rowLabel: { flex: 1 },
-  rowControls: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowValue: { minWidth: 48, textAlign: 'center' },
-  creditsRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  creditsTitle: { marginBottom: 12 },
-  creditsScroll: { alignSelf: 'stretch', maxHeight: '70%' },
-  creditsContent: { paddingHorizontal: 12, paddingVertical: 16, alignItems: 'center' },
-  creditsSection: { marginBottom: 20, alignItems: 'center' },
-  creditsSectionTitle: {
-    color: '#f3d6a4',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  creditsLine: {
-    color: '#d7cbb8',
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  creditsSkip: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 12,
-    marginTop: 12,
-    letterSpacing: 1,
-  },
-});
+export { rawStyles } from './MenuOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);

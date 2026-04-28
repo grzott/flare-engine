@@ -11,8 +11,13 @@ import {
   VirtualJoystick,
   fadeTransition,
 } from '@flare-engine/engine';
-import { ErrorBoundary, createConsoleTransport } from '@flare-engine/errors';
-import type { CrashPayload } from '@flare-engine/errors';
+import {
+  ErrorBoundary,
+  composeTransports,
+  createConsoleTransport,
+  createSentryTransport,
+} from '@flare-engine/errors';
+import type { CrashPayload, CrashTransport } from '@flare-engine/errors';
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
 import type { ShareManager } from '@flare-engine/share';
@@ -31,7 +36,6 @@ import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
 import { type GameSnapshot, createGameSnapshot } from './devtools/snapshot';
 import { createDialogueController } from './dialogue';
-import { composeTransports, createSentryCrashTransport, tryLoadSentry } from './errors/transport';
 import { gameEvents } from './events';
 import type { ZoneId } from './events';
 import { AchievementsOverlay } from './hud/AchievementsOverlay';
@@ -225,18 +229,18 @@ function AppRoot(): React.ReactElement {
   // Crash transport: console (always, dev visibility) + Sentry (gated by
   // crashOptIn). Sentry binding is optional — `@sentry/react-native` is loaded
   // lazily and falls back to noop when missing or when DSN env var is unset.
-  const crashTransport = useMemo(
-    () =>
-      composeTransports(
-        createConsoleTransport(),
-        createSentryCrashTransport({
-          optIn: () => saveStore.privacy().crashOptIn,
-          sentry: tryLoadSentry(),
-          dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? null,
-        }),
-      ),
-    [saveStore],
-  );
+  const crashTransport = useMemo(() => {
+    const sentryBase = createSentryTransport({
+      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? undefined,
+    });
+    const sentryGated: CrashTransport = {
+      report(payload) {
+        if (!saveStore.privacy().crashOptIn) return;
+        return sentryBase.report(payload);
+      },
+    };
+    return composeTransports(createConsoleTransport(), sentryGated);
+  }, [saveStore]);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   // Re-render trigger for controls-side changes so joystick / bomb swap

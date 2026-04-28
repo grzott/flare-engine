@@ -1,145 +1,109 @@
 import { describe, expect, test } from 'bun:test';
-import { createConsoleTransport, createCrashPayload } from '@flare-engine/errors';
 import {
-  type SentryLike,
   composeTransports,
-  createSentryCrashTransport,
-} from '../src/errors/transport';
+  createConsoleTransport,
+  createCrashPayload,
+} from '@flare-engine/errors';
+import type { CrashPayload, CrashTransport } from '@flare-engine/errors';
 
-function makeFakeSentry(): SentryLike & {
-  calls: Array<{ err: unknown; extra: Record<string, unknown> | undefined }>;
-} {
-  const calls: Array<{ err: unknown; extra: Record<string, unknown> | undefined }> = [];
+function makeRecorder(): CrashTransport & { calls: CrashPayload[] } {
+  const calls: CrashPayload[] = [];
   return {
     calls,
-    captureException(err, hint) {
-      calls.push({ err, extra: hint?.extra });
+    report(payload) {
+      calls.push(payload);
     },
   };
 }
 
-describe('createSentryCrashTransport — M9.6 session #17', () => {
-  test('drops payload when optIn returns false (even with sentry + dsn present)', () => {
-    const sentry = makeFakeSentry();
-    const transport = createSentryCrashTransport({
-      optIn: () => false,
-      sentry,
-      dsn: 'https://fake@sentry.io/1',
-    });
-    transport.report(createCrashPayload(new Error('boom'), { scene: 'play' }));
-    expect(sentry.calls).toHaveLength(0);
+function makeOptInGate(optIn: () => boolean, inner: CrashTransport): CrashTransport {
+  return {
+    report(payload) {
+      if (!optIn()) return;
+      return inner.report(payload);
+    },
+  };
+}
+
+describe('opt-in gate wrapper — M10.1', () => {
+  test('blocks report when optIn returns false', () => {
+    const recorder = makeRecorder();
+    const gated = makeOptInGate(() => false, recorder);
+    gated.report(createCrashPayload(new Error('boom')));
+    expect(recorder.calls).toHaveLength(0);
   });
 
-  test('forwards to sentry when optIn returns true and DSN + sink are present', () => {
-    const sentry = makeFakeSentry();
-    const transport = createSentryCrashTransport({
-      optIn: () => true,
-      sentry,
-      dsn: 'https://fake@sentry.io/1',
-    });
+  test('forwards report when optIn returns true', () => {
+    const recorder = makeRecorder();
+    const gated = makeOptInGate(() => true, recorder);
     const payload = createCrashPayload(new TypeError('null deref'), { zone: 'z3' });
-    transport.report(payload);
-    expect(sentry.calls).toHaveLength(1);
-    const call = sentry.calls[0];
-    if (!call) throw new Error('expected one captured call');
-    expect(call.err).toBeInstanceOf(Error);
-    expect((call.err as Error).name).toBe('TypeError');
-    expect((call.err as Error).message).toBe('null deref');
-    expect(call.extra).toMatchObject({ zone: 'z3', capturedAt: payload.timestamp });
+    gated.report(payload);
+    expect(recorder.calls).toHaveLength(1);
+    expect(recorder.calls[0]).toBe(payload);
   });
 
-  test('drops silently when optIn=true but DSN is null (Sentry not configured)', () => {
-    const sentry = makeFakeSentry();
-    const transport = createSentryCrashTransport({
-      optIn: () => true,
-      sentry,
-      dsn: null,
-    });
-    expect(() => transport.report(createCrashPayload(new Error('no dsn')))).not.toThrow();
-    expect(sentry.calls).toHaveLength(0);
-  });
-
-  test('drops silently when optIn=true but sentry sink is null (module not installed)', () => {
-    const transport = createSentryCrashTransport({
-      optIn: () => true,
-      sentry: null,
-      dsn: 'https://fake@sentry.io/1',
-    });
-    expect(() => transport.report(createCrashPayload(new Error('no sentry')))).not.toThrow();
-  });
-
-  test('preserves stack when payload carries one', () => {
-    const sentry = makeFakeSentry();
-    const transport = createSentryCrashTransport({
-      optIn: () => true,
-      sentry,
-      dsn: 'https://fake@sentry.io/1',
-    });
-    const payload = createCrashPayload(new Error('with stack'));
-    transport.report(payload);
-    const call = sentry.calls[0];
-    if (!call) throw new Error('expected one captured call');
-    expect(payload.stack).not.toBeNull();
-    expect((call.err as Error).stack).toBe(payload.stack as string);
+  test('re-evaluates optIn on each call (dynamic toggle)', () => {
+    const recorder = makeRecorder();
+    let allowed = false;
+    const gated = makeOptInGate(() => allowed, recorder);
+    gated.report(createCrashPayload(new Error('first — blocked')));
+    expect(recorder.calls).toHaveLength(0);
+    allowed = true;
+    gated.report(createCrashPayload(new Error('second — allowed')));
+    expect(recorder.calls).toHaveLength(1);
   });
 });
 
-describe('composeTransports — M9.6 session #17', () => {
-  test('fans out to every transport in order', () => {
+describe('composeTransports (engine) — M10.1', () => {
+  test('fans out to every transport in order', async () => {
     const calls: string[] = [];
-    const a = {
+    const a: CrashTransport = {
       report: () => {
         calls.push('a');
       },
     };
-    const b = {
+    const b: CrashTransport = {
       report: () => {
         calls.push('b');
       },
     };
-    const c = {
+    const c: CrashTransport = {
       report: () => {
         calls.push('c');
       },
     };
-    composeTransports(a, b, c).report(createCrashPayload(new Error('x')));
+    await composeTransports(a, b, c).report(createCrashPayload(new Error('x')));
     expect(calls).toEqual(['a', 'b', 'c']);
   });
 
-  test('one throwing transport does not block the rest', () => {
+  test('one throwing transport does not block the rest', async () => {
     const calls: string[] = [];
-    const ok = {
+    const ok: CrashTransport = {
       report: () => {
         calls.push('ok');
       },
     };
-    const bad = {
+    const bad: CrashTransport = {
       report: () => {
         throw new Error('transport boom');
       },
     };
-    const after = {
+    const after: CrashTransport = {
       report: () => {
         calls.push('after');
       },
     };
-    expect(() =>
+    await expect(
       composeTransports(ok, bad, after).report(createCrashPayload(new Error('x'))),
-    ).not.toThrow();
+    ).resolves.toBeUndefined();
     expect(calls).toEqual(['ok', 'after']);
   });
 
-  test('composes the gated Sentry transport with the console transport', () => {
-    const sentry = makeFakeSentry();
-    const transport = composeTransports(
-      createConsoleTransport(),
-      createSentryCrashTransport({
-        optIn: () => true,
-        sentry,
-        dsn: 'https://fake@sentry.io/1',
-      }),
-    );
-    transport.report(createCrashPayload(new Error('composed')));
-    expect(sentry.calls).toHaveLength(1);
+  test('composes console transport with gated recorder', async () => {
+    const recorder = makeRecorder();
+    const gated = makeOptInGate(() => true, recorder);
+    const composed = composeTransports(createConsoleTransport(), gated);
+    await composed.report(createCrashPayload(new Error('composed')));
+    expect(recorder.calls).toHaveLength(1);
   });
 });

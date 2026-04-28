@@ -3,6 +3,7 @@
     "name": "Pan Tvardowski",
     "slug": "pan-tvardowski",
     "version": "0.0.1",
+    "scheme": "pantvardowski",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -22,7 +23,14 @@
     },
     "android": {
       "package": "dev.flare.pantvardowski",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [{ "scheme": "pantvardowski" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "extra": {
       "eas": {

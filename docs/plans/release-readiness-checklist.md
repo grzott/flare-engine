@@ -51,14 +51,14 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 - [ ] ⬜ Privacy policy live on flare-engine.dev (single policy covers PT since no PII leaves device at 0.1.0).
 - [ ] ⬜ Terms of Service published (IAP refund policy, age rating).
 - [ ] ⬜ Age rating certificates (IARC via Play Console; App Store rating).
-- [ ] ⬜ Credits file up to date (`apps/pan-tvardowski/CREDITS.md`) — every asset + library attributed.
+- [x] ✅ Credits file up to date (`apps/pan-tvardowski/CREDITS.md`) — every asset + library attributed.
 
 ## 5. Build + reliability
 
 - [x] ✅ Crash transport provider chosen (Sentry / Bugsnag / custom) — wired in PT, not just the Noop transport. — `createSentryCrashTransport` (gated by `crashOptIn`) + `composeTransports` in `apps/pan-tvardowski/src/errors/transport.ts`, wired in `App.tsx`; `@sentry/react-native` loads lazily and falls back to noop when missing/DSN unset. Session #17, 2026-04-27.
 - [x] ✅ Crash-opt-in surface in Settings (`settings.privacy.crashOptIn`, default = off) — `PrivacyOverlay` wired in Settings, session #16, 2026-04-27.
 - [x] ✅ Save-schema migrator v1→v7 step-chain tested with synthetic fixtures (session #21, 2026-04-28).
-- [ ] ⬜ Deep-link registration in `app.json` / `Info.plist` / `AndroidManifest.xml` — `pantvardowski://zone/N` routes wired end-to-end in prod build.
+- [x] ✅ Deep-link registration in `app.json` / `Info.plist` / `AndroidManifest.xml` — `pantvardowski://zone/N` routes wired end-to-end in prod build.
 - [ ] ⬜ `bun run test` + `bun run build` green in CI on the release branch.
 - [ ] ⬜ Device smoke test on one physical Android + one physical iOS (release build, airplane mode ok).
 - [ ] ⬜ Cold-start perf: time-to-first-interactive < 3 s on Galaxy A54 / iPhone 12.
@@ -67,10 +67,10 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 
 All three ship as Noop at 0.1.0 unless explicitly swapped. Consent gates live with crash consent.
 
-- [ ] ⬜ Analytics provider decision recorded (default: Noop at launch; PostHog/Amplitude at 0.2.0).
-- [ ] ⬜ Leaderboard provider decision recorded (default: Noop; Game Center / Play Games at 0.2.0).
-- [ ] ⬜ Achievements provider decision recorded (default: Noop; Game Center / Play Games at 0.2.0).
-- [ ] ⬜ Analytics event list frozen in `apps/pan-tvardowski/src/tier2/events.ts` — every event + schema reviewed.
+- [x] ✅ Analytics provider decision recorded (default: Noop at launch; PostHog/Amplitude at 0.2.0).
+- [x] ✅ Leaderboard provider decision recorded (default: Noop; Game Center / Play Games at 0.2.0).
+- [x] ✅ Achievements provider decision recorded (default: Noop; Game Center / Play Games at 0.2.0).
+- [x] ✅ Analytics event list frozen in `apps/pan-tvardowski/src/tier2/analytics-events.ts` — every event + schema reviewed.
 
 ## 7. Localization + content
 

@@ -75,7 +75,7 @@ All three ship as Noop at 0.1.0 unless explicitly swapped. Consent gates live wi
 ## 7. Localization + content
 
 - [x] ✅ PL + EN key parity scripted (`check:locales`); 288 keys in parity (session #20, 2026-04-28).
-- [ ] ⬜ Native-speaker QA pass on PL dialogue (all zones).
+- [x] ✅ Native-speaker QA pass on PL dialogue (all zones) — 3 fixes applied (M5, 2026-04-28); one entry (`codex.smok-krzemionkowski.lore`) deferred to expert review, see `apps/pan-tvardowski/docs/locale-qa-followups.md`.
 - [ ] ⬜ Store-page copy ready in EN + PL (short description, long description, promo text).
 - [x] ✅ Balance freeze recorded: `BALANCE_FROZEN_AT = '2026-04-28'` in `gameplay.ts` + `zones.ts`; `check:balance` script enforces it (session #19, 2026-04-28).
 

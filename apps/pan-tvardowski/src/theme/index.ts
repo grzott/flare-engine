@@ -1,4 +1,5 @@
 export { colors } from './colors';
-export { typography } from './typography';
-export { spacing } from './spacing';
+export { overlayBase } from './overlays';
 export { shapes } from './shapes';
+export { spacing } from './spacing';
+export { typography } from './typography';

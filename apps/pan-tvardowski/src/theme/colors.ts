@@ -14,6 +14,9 @@ const ui = {
   tint60: 'rgba(255, 255, 255, 0.6)',
   onPrimary: '#1a0e0a',
   tint55: 'rgba(255,255,255,0.55)',
+  backdropModal: 'rgba(10, 6, 16, 0.88)',
+  divider: 'rgba(255,255,255,0.06)',
+  dividerStrong: 'rgba(255,255,255,0.12)',
 } as const;
 
 export const colors = { zone: ZONE_PALETTES, ui } as const;

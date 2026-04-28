@@ -1281,3 +1281,52 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** #47 "PT-Bugfix-B bundle ★★ — M1 collider scale audit → M2 Smok silhouette → M3 logical gameplay bounds"
 
 ---
+
+## Session 47 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #47):** PT-Bugfix-B bundle ★★ — M1 collider scale audit → M2 Smok silhouette → M3 logical gameplay bounds
+
+**Touched files**
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/src/config/gameplay.ts`
+- `apps/pan-tvardowski/src/scene-registry.ts` ⊞
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/tests/collider-scale.test.ts` (new)
+- `apps/pan-tvardowski/tests/boss-visual-audit.test.ts` (new)
+- `apps/pan-tvardowski/tests/safe-area-bounds.test.ts` (new)
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+⊞ `scene-registry.ts` added to touched paths mid-session: mechanically required to forward `PlaySceneDeps.bottomInset` from `App.tsx` → `buildSceneRegistry` → `createPlayScene`. Approved; logged in sessions.md footnote ⊞. `src/shape-catalogue.ts` was declared but not modified — M2 was test-only (painter-order already correct). +18 tests shipped vs +9 planned (+5/+7/+6 split). See footnote ⊞ in sessions.md.
+
+**Milestones shipped**
+- M1 (collider scale audit): `COLLIDER_SCALE_ENEMY=0.7`, `COLLIDER_SCALE_MINIBOSS=0.85`, `COLLIDER_SCALE_BOSS=0.9` extracted into `src/config/gameplay.ts`; `spawnBoss` gains optional `colliderScale` override param; `spawnEnemy`/`spawnMiniboss` adopt constants. +5 tests in `collider-scale.test.ts`.
+- M2 (Smok silhouette): draw-order audit confirmed `shapes-draw.ts` painter's algorithm (forward iteration); `smok-krzemionkowski[0]=COPPER ngon` already renders behind `[1]=HELLFIRE triangle` — no swap needed. +7 tests in `boss-visual-audit.test.ts` encoding painter-order invariant + distinct-silhouette contract for all 8 bosses.
+- M3 (safe-area bounds): `PlaySceneDeps.bottomInset?` subtracts inset from viewport height in `refreshBounds` (player clamp, spawn Y, cull — canvas stays full-bleed); `SceneRegistryDeps.bottomInset?` + `buildSceneRegistry` forward value; `AppRoot` reads `insets.bottom` from `useSafeAreaInsets()` and passes to `bootstrap`. +6 tests in `safe-area-bounds.test.ts`.
+
+**Gates**
+- lint: ✅ (39/39 tasks via Turbo, 0 errors — `biome check src/ tests/` clean in `apps/pan-tvardowski`)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+18 new, total 354 pass / 0 fail — `bun test` in `apps/pan-tvardowski`)
+- build: ✅ (native build via `bun run android|ios`; echo stub clean)
+- device smoke: ✅ (user-attested, M1 chassis Galaxy A54 per implementer, 2026-04-28)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — entry appended at line 575 dated 2026-04-28 for PT-Bugfix-B bundle (M1/M2/M3 detail)
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated to 354 tests green, Bugfix-B bundle complete
+- `docs/plans/sessions.md` — row #47 already `done`, closed 2026-04-28; footnote symbol ⊞ added to row; ⊞ footnote written covering the three approved drift items
+- `docs/plans/release-readiness-checklist.md` — no new ticks (bugfix bundle; collider/visual/bounds are correctness fixes, not new RR line items)
+
+**Follow-ups (not lost)**
+- M3's `bottomInset` plumbing in PT (`App.tsx` → `scene-registry.ts` → `createPlayScene`) is a band-aid. Engine-level lift planned as a future `[mixed]` session: `@flare-engine/react` `GameView` gains a `safeArea` config prop + `useSafeArea()` hook; PT deletes its manual plumbing. Android cleanup (`edgeToEdgeEnabled` removal from `app.json`, `expo-system-ui` install) bundled in the same session. Row will be queued by `/plan-sessions`.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): collider scale constants + boss override param`
+2. `test(pan-tvardowski): boss-visual-audit + collider-scale invariants`
+3. `feat(pan-tvardowski): safe-area bottomInset in play scene bounds`
+
+**Next session:** #48 "PT-UX-A bundle ★★ — M1 HUD insets + joystick gating → M2 BootOverlay ProgressBar → M3 InventoryOverlay tab persist"
+
+---

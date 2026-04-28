@@ -76,10 +76,20 @@ interface BootstrapDeps {
   dialogue: ReturnType<typeof useAppProviders>['dialogueController'];
   saveStore: ReturnType<typeof useAppProviders>['saveStore'];
   entitlementStore: ReturnType<typeof useAppProviders>['entitlementStore'];
+  bottomInset: number;
 }
 
 function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
-  const { ctx, localization, renderHooks, audioRef, dialogue, saveStore, entitlementStore } = deps;
+  const {
+    ctx,
+    localization,
+    renderHooks,
+    audioRef,
+    dialogue,
+    saveStore,
+    entitlementStore,
+    bottomInset,
+  } = deps;
 
   buildSceneRegistry(ctx, {
     localization,
@@ -88,6 +98,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
     dialogue,
     saveStore,
     entitlementStore,
+    bottomInset,
   });
 
   const offUpdate = ctx.loop.onUpdate.add((dt) => {
@@ -385,6 +396,7 @@ function AppRoot(): React.ReactElement {
               dialogue: dialogueController,
               saveStore,
               entitlementStore,
+              bottomInset: insets.bottom,
             });
           }}
         >

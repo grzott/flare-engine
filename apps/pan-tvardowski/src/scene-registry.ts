@@ -33,6 +33,8 @@ export interface SceneRegistryDeps {
   dialogue: ReturnType<typeof createDialogueController>;
   saveStore: ReturnType<typeof createSaveStore>;
   entitlementStore: EntitlementStore;
+  /** Safe-area bottom inset forwarded into createPlayScene. */
+  bottomInset?: number;
 }
 
 export function applyVolumes(audio: AudioHandles | null): void {
@@ -46,7 +48,15 @@ export function applyVolumes(audio: AudioHandles | null): void {
 }
 
 export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDeps): void {
-  const { localization, renderHooks, audioRef, dialogue, saveStore, entitlementStore } = deps;
+  const {
+    localization,
+    renderHooks,
+    audioRef,
+    dialogue,
+    saveStore,
+    entitlementStore,
+    bottomInset,
+  } = deps;
   const atlas = loadSpriteAtlas(Skia, SPRITES_MANIFEST);
   // PostFx: pass `null` Skia module — visible SkSL compositing requires a
   // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
@@ -99,6 +109,7 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
       dialogue,
       entitlementStore,
       entitlementFallback: createEntitlementFallback(),
+      bottomInset,
     }),
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));

@@ -57,7 +57,7 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 
 - [x] ✅ Crash transport provider chosen (Sentry / Bugsnag / custom) — wired in PT, not just the Noop transport. — `createSentryCrashTransport` (gated by `crashOptIn`) + `composeTransports` in `apps/pan-tvardowski/src/errors/transport.ts`, wired in `App.tsx`; `@sentry/react-native` loads lazily and falls back to noop when missing/DSN unset. Session #17, 2026-04-27.
 - [x] ✅ Crash-opt-in surface in Settings (`settings.privacy.crashOptIn`, default = off) — `PrivacyOverlay` wired in Settings, session #16, 2026-04-27.
-- [ ] ⬜ Save-schema migrator v1 → v2 pathway tested with synthetic old save.
+- [x] ✅ Save-schema migrator v1→v7 step-chain tested with synthetic fixtures (session #21, 2026-04-28).
 - [ ] ⬜ Deep-link registration in `app.json` / `Info.plist` / `AndroidManifest.xml` — `pantvardowski://zone/N` routes wired end-to-end in prod build.
 - [ ] ⬜ `bun run test` + `bun run build` green in CI on the release branch.
 - [ ] ⬜ Device smoke test on one physical Android + one physical iOS (release build, airplane mode ok).
@@ -74,14 +74,14 @@ All three ship as Noop at 0.1.0 unless explicitly swapped. Consent gates live wi
 
 ## 7. Localization + content
 
-- [ ] ⬜ PL + EN key parity audit (every EN key has a PL value and vice-versa) — scripted check.
+- [x] ✅ PL + EN key parity scripted (`check:locales`); 288 keys in parity (session #20, 2026-04-28).
 - [ ] ⬜ Native-speaker QA pass on PL dialogue (all zones).
 - [ ] ⬜ Store-page copy ready in EN + PL (short description, long description, promo text).
-- [ ] ⬜ Balance freeze recorded in [pan-tvardowski-build-plan.md](./pan-tvardowski-build-plan.md) changelog (HP / fire rates / upgrade costs locked).
+- [x] ✅ Balance freeze recorded: `BALANCE_FROZEN_AT = '2026-04-28'` in `gameplay.ts` + `zones.ts`; `check:balance` script enforces it (session #19, 2026-04-28).
 
 ## 8. Store assets
 
-- [ ] ⬜ Screenshot capture scene wired (`@flare-engine/share` `createScreenshotScene`, extracted at Phase 11.14).
+- [x] ✅ Screenshot capture scene wired via `@flare-engine/share` `createScreenshotScene`; `createPTScreenshotScene` factory + `createCaptureScene` orchestration scene shipped (session #18, 2026-04-28). Manual App.tsx scene-registration trigger remains a post-launch follow-up.
 - [ ] ⬜ Google Play: 8 screenshots (1080 × 1920) per language.
 - [ ] ⬜ Google Play: feature graphic (1024 × 500).
 - [ ] ⬜ Google Play: 30 s trailer (from in-game capture).

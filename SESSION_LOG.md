@@ -875,3 +875,33 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 **Next session:** #22 "M9.6 close: tick §17 M9.6 + release-checklist §2/§4/§5/§7/§8 + mirror sync"
 
 ---
+
+## Session 22 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #22):** M9.6 close: tick §17 M9.6 + release-checklist §2/§4/§5/§7/§8 + mirror sync
+
+**Touched files**
+- `docs/plans/pan-tvardowski-build-plan.md` — §17 M9.6 engine-coverage boxes ticked; two changelog entries appended (session #21 partial-close + session #22 M9.6-complete)
+- `docs/plans/release-readiness-checklist.md` — §5 save-migrator, §7 locale parity, §7 balance freeze, §8 screenshot scene all flipped ⬜ → ✅ with session refs
+- `docs/references/builder-reference.md` — mirror row updated: M0–M9.6 done (feature-complete 2026-04-28), 256 tests green
+- `docs/plans/sessions.md` — row #22 flipped `in_progress → done`, closed 2026-04-28
+- `SESSION_LOG.md` — this block appended
+
+**Gates**
+- lint: ✅ (39/39 packages, all cache hits, no fixes applied)
+- typecheck: ✅ (`tsc --noEmit` exited 0, no errors)
+- test: ✅ (+0 new this session — docs-only, total 256 pass / 0 fail, 5742 expect() calls, 58 files)
+- build: ✅ (stub echo exits 0 — native build via `bun run android|ios`)
+- device smoke: N/A — docs-only session, no behavioral change to smoke-test
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: `M0–M9.5 done, M9.6 pending … 210 tests` → `M0–M9.6 done (feature-complete 2026-04-28) … 256 tests`
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — M9.6 cell: `✅ @flare-engine/share` screenshot scene (session #18) + `✅ @flare-engine/storage` migrator v1→v7 step-chain (session #21) ticked; `**2026-04-28** — **M9.6 partial (session #21).**` + `**2026-04-28** — **M9.6 complete.**` changelog entries appended
+- `docs/plans/release-readiness-checklist.md` — §5 "Save-schema migrator v1→v7 step-chain tested" (session #21) ✅; §7 "PL + EN key parity scripted" (session #20) ✅; §7 "Balance freeze recorded" (session #19) ✅; §8 "Screenshot capture scene wired" (session #18) ✅
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): close M9.6 — coverage + release ticks + mirror`
+
+**Next session:** no next session — Pan Tvardowski 0.1.0 feature-complete. Run `/plan-sessions` for Phase 12 (Launch) or next game.
+
+---

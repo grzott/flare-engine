@@ -2,6 +2,7 @@ import type { A11yBridge } from '@flare-engine/a11y';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
+import { canAccessContent } from '@flare-engine/iap';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxController } from '@flare-engine/postfx';
@@ -33,7 +34,6 @@ import {
   showZoneBanner,
   updateZoneBanner,
 } from '../hud/zone-banner';
-import { canStartZone } from '../iap/zone-gate';
 import { burstExplosion } from '../particles';
 import type { SaveStore } from '../save/store';
 import {
@@ -512,7 +512,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               const nextConfig = ZONES[next];
               if (
                 deps.entitlementStore !== undefined &&
-                !canStartZone(nextConfig, deps.entitlementStore)
+                !canAccessContent(nextConfig, deps.entitlementStore)
               ) {
                 gameEvents.emit('zone-gated', next, nextConfig.requiresEntitlement ?? '');
                 if (s.zone.id === 'z3') {

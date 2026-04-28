@@ -1079,3 +1079,120 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** PT-Polish-2 "refactor call sites to consume theme tokens" — not yet in sessions.md; add via `/plan-sessions`.
 
 ---
+
+## Session 29 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #29):** PT-Polish-2..9 bundled ★ — theme migration, overlay StyleSheet factory, entitlement fallback, release wiring, locale QA, perf + App.tsx split, code consolidation, RR final sync
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/PrivacyOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/PrivacyOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.styles.ts`
+- `apps/pan-tvardowski/src/theme/colors.ts`
+- `apps/pan-tvardowski/src/theme/index.ts`
+- `apps/pan-tvardowski/src/theme/overlays.ts`
+- `apps/pan-tvardowski/src/iap/fallback.ts`
+- `apps/pan-tvardowski/src/events.ts`
+- `apps/pan-tvardowski/src/state.ts`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/scenes/boot.ts`
+- `apps/pan-tvardowski/src/providers.ts`
+- `apps/pan-tvardowski/src/scene-registry.ts`
+- `apps/pan-tvardowski/src/scene-keys.ts`
+- `apps/pan-tvardowski/src/perf/cold-start.ts`
+- `apps/pan-tvardowski/src/tier2/analytics-events.ts`
+- `apps/pan-tvardowski/src/tier2/wiring.ts`
+- `apps/pan-tvardowski/src/shapes-draw.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/localization/keys.ts`
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/app.json`
+- `apps/pan-tvardowski/CREDITS.md`
+- `apps/pan-tvardowski/docs/perf-baseline.md`
+- `apps/pan-tvardowski/docs/locale-qa-followups.md`
+- `apps/pan-tvardowski/tests/theme-hud.test.ts`
+- `apps/pan-tvardowski/tests/theme-overlays.test.ts`
+- `apps/pan-tvardowski/tests/entitlement-fallback.test.ts`
+- `apps/pan-tvardowski/tests/analytics-events.test.ts`
+- `apps/pan-tvardowski/tests/deep-link-config.test.ts`
+- `apps/pan-tvardowski/tests/credits.test.ts`
+- `apps/pan-tvardowski/tests/pl-dialogue-qa.test.ts`
+- `apps/pan-tvardowski/tests/cold-start.test.ts`
+- `apps/pan-tvardowski/tests/app-split.test.ts`
+- `apps/pan-tvardowski/tests/shapes-draw.test.ts`
+- `apps/pan-tvardowski/tests/migrate-helpers.test.ts`
+- `docs/plans/release-readiness-checklist.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/plans/sessions.md`
+- `docs/references/builder-reference.md`
+
+**Milestone breakdown (8 total)**
+- M1: theme tokens consumed in `Hud.tsx` + `MenuOverlay.tsx`; 2 new tokens (`colors.ui.onPrimary`, `colors.ui.tint55`); +6 structural tests
+- M2: theme tokens in 6 remaining overlays + shared `theme/overlays.ts` StyleSheet factory (root/panelContainer/panelLg/panelMd partials); 3 new tokens (backdropModal/divider/dividerStrong); +11 tests
+- M3: entitlement-lost fallback (`createEntitlementFallback` / `shouldAllowStaleAccess` / `gameState.entitlementHealth`); 5 PL+EN locale keys under `iap.entitlement_check_failed.*`; +8 tests
+- M4: analytics event names frozen in `tier2/analytics-events.ts` (+3 tests); `pantvardowski://` deep-link + Android intentFilters in `app.json` (+3 tests); `CREDITS.md` expanded (+3 tests)
+- M5: PL dialogue QA — 4 string fixes; `docs/locale-qa-followups.md` records 1 deferred expert-review entry; +5 sanity tests
+- M6: cold-start instrumentation (`src/perf/cold-start.ts`, 5 boot milestones); `docs/perf-baseline.md`; App.tsx split into `providers.ts` + `scene-registry.ts` + `scene-keys.ts`; +8 tests
+- M7: `argbTo` exported from `shapes-draw.ts`, 8 call sites in `shape-atlas.ts` deduped; migrate-helpers + shapes-draw coverage sweep; +11 tests
+- M8: RR checklist §3 entitlement-lost ticked; mirror row in `builder-reference.md` synced to 326 tests; build-plan Change log entry written
+
+**Gates**
+- lint: ✅ (biome check — 190 files, no fixes applied)
+- typecheck: ✅ (tsc --noEmit, silent exit)
+- test: ✅ (+62 new, total 326 pass / 0 fail, 5962 expect() calls, 70 files)
+- build: ✅ (native build via eas build; `bun run build` echoes expected message — no JS bundler step)
+- device smoke: deferred — M1/M2/M5 flagged for device verification; cold-start TTI profiling (M6) deferred to physical Galaxy A54 release build
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — "PT-Polish-2..9 bundle complete (session #29)" entry appended at line 573, dated 2026-04-28; covers all 8 milestones + deferred items
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated to "M0–M9.6 done + PT-Polish-2..9 complete (2026-04-28), 326 tests green"
+- `docs/plans/release-readiness-checklist.md` — §3 entitlement-lost item ticked (`[x] ✅ Entitlement-lost fallback`)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — not modified (polish bundle is post-feature-complete; §17 engine-coverage boxes were all ticked during M9.x sessions)
+- `docs/plans/sessions.md` — row #29 flipped `in_progress` → `done`, closed 2026-04-28
+
+**Commits** (subjects only — full blocks emitted above in chat; ~17 total across M1–M8)
+1. `feat(pan-tvardowski): M1 consume theme tokens in Hud + MenuOverlay`
+2. `test(pan-tvardowski): M1 theme-hud structural assertions +6`
+3. `feat(pan-tvardowski): M2 add overlays base + 3 color tokens`
+4. `feat(pan-tvardowski): M2 consume theme tokens in 6 overlay files`
+5. `test(pan-tvardowski): M2 theme-overlays structural assertions +11`
+6. `feat(pan-tvardowski): M3 entitlement-lost fallback + PL/EN keys`
+7. `test(pan-tvardowski): M3 entitlement-fallback +8 tests`
+8. `feat(pan-tvardowski): M4-A freeze analytics event names`
+9. `feat(pan-tvardowski): M4-B register pantvardowski:// deep-link`
+10. `docs(pan-tvardowski): M4-C expand CREDITS with packages + runtime libs`
+11. `feat(pan-tvardowski): M5 PL dialogue QA — 4 fixes + sanity tests`
+12. `feat(pan-tvardowski): M6-A cold-start instrumentation +5 tests`
+13. `docs(pan-tvardowski): M6-B add perf-baseline`
+14. `refactor(pan-tvardowski): M6-C App.tsx into providers+scene-registry`
+15. `refactor(pan-tvardowski): M7-A export argbTo; dedup argb in shape-atlas`
+16. `test(pan-tvardowski): M7-B coverage sweep — migrate helpers +7`
+17. `docs(pan-tvardowski): PT-Polish-2..9 bundle RR sync + changelog`
+
+**Deferred items (post-launch)**
+- §5 device-measured TTI < 3 s on Galaxy A54 (cold-start instrumentation in place, awaits release build)
+- §5 CI green on release branch
+- §5 device smoke (physical Android + iOS)
+- §7 store-page copy EN+PL (short desc, long desc, promo text)
+- §8 store assets (screenshots, feature graphic, trailer, app icon)
+- §2 store accounts (Google Play + Apple Developer), signing, Console setup
+- §4 privacy policy live URL, ToS, age rating, EUIPO mark
+
+**Next session:** no next session queued. Run `/plan-sessions` for Phase 12 (Launch) prep — store accounts, signing, final smoke on device, store-page copy.
+
+---

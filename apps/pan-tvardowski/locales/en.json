@@ -312,5 +312,9 @@
   "codex.mefistofeles.phase3_stats": "Phase III — HP 700 · mirror-twin · copy of player's last weapon",
   "codex.lucyper-ksiezycowy.phase1_stats": "Phase I — HP 800 · cosmic-rain curtain · gravity pull",
   "codex.lucyper-ksiezycowy.phase2_stats": "Phase II — HP 800 · eclipse spotlight · void tendrils",
-  "codex.lucyper-ksiezycowy.phase3_stats": "Phase III — HP 800 · shattered-mirror cycle · all prior bosses echo"
+  "codex.lucyper-ksiezycowy.phase3_stats": "Phase III — HP 800 · shattered-mirror cycle · all prior bosses echo",
+
+  "boot.loading": "Loading…",
+  "boot.loading.save": "Loading save…",
+  "boot.loading.audio": "Preparing audio…"
 }

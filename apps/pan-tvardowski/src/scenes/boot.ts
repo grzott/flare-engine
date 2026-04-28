@@ -28,10 +28,14 @@ export function createBootScene(
       void (async () => {
         await loadSave();
         markBootMilestone('save-loaded');
+        gameState.bootProgress = { value: 0.5, labelKey: 'boot.loading.save' };
+        notifyStateChanged();
         if (initAudio && audioRef) {
           audioRef.current = await initAudio();
           markBootMilestone('audio-ready');
         }
+        gameState.bootProgress = { value: 1, labelKey: 'boot.loading.audio' };
+        notifyStateChanged();
         void ctx.scenes.go('menu');
       })();
     },

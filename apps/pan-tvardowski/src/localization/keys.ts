@@ -348,7 +348,10 @@ const achievements = [
   'achievements.rome_condition.desc',
 ] as const;
 
+const boot = ['boot.loading', 'boot.loading.save', 'boot.loading.audio'] as const;
+
 export const LOCALIZATION_KEYS = [
+  ...boot,
   ...menu,
   ...hud,
   ...zones,

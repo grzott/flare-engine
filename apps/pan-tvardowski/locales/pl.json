@@ -312,5 +312,9 @@
   "codex.mefistofeles.phase3_stats": "Faza III — HP 700 · lustrzany sobowtór · kopia ostatniej broni gracza",
   "codex.lucyper-ksiezycowy.phase1_stats": "Faza I — HP 800 · kurtyna kosmicznego deszczu · przyciąganie grawitacyjne",
   "codex.lucyper-ksiezycowy.phase2_stats": "Faza II — HP 800 · reflektor zaćmienia · macki pustki",
-  "codex.lucyper-ksiezycowy.phase3_stats": "Faza III — HP 800 · cykl rozbitego zwierciadła · echa wszystkich poprzednich bossów"
+  "codex.lucyper-ksiezycowy.phase3_stats": "Faza III — HP 800 · cykl rozbitego zwierciadła · echa wszystkich poprzednich bossów",
+
+  "boot.loading": "Ładowanie…",
+  "boot.loading.save": "Wczytywanie zapisu…",
+  "boot.loading.audio": "Przygotowywanie dźwięku…"
 }

@@ -1,6 +1,7 @@
 import { Signal } from '@flare-engine/events';
 import { PLAYER_HP_MAX, START_BOMBS } from './config/gameplay';
 import type { ZoneId } from './events';
+import type { InventoryTab } from './hud/inventory-tab';
 import type { EntitlementHealth } from './iap/fallback';
 
 export type SceneName =
@@ -141,6 +142,11 @@ export interface DialogueHudState {
   portraitKey?: string;
 }
 
+export interface BootProgress {
+  value: number;
+  labelKey: string;
+}
+
 export interface GameState {
   score: number;
   playerHp: number;
@@ -177,6 +183,10 @@ export interface GameState {
   shopGateVisible: boolean;
   /** Tracks whether the last entitlement verification succeeded or used stale data. */
   entitlementHealth: EntitlementHealth;
+  /** Boot loading progress; consumed by BootOverlay. */
+  bootProgress: BootProgress;
+  /** Persists the active tab across InventoryOverlay open/close cycles. */
+  inventoryActiveTab: InventoryTab;
 }
 
 export const gameState: GameState = {
@@ -210,6 +220,8 @@ export const gameState: GameState = {
   dialogue: null,
   shopGateVisible: false,
   entitlementHealth: 'ok',
+  bootProgress: { value: 0, labelKey: 'boot.loading' },
+  inventoryActiveTab: 'codex',
 };
 
 export const stateChanged = new Signal<void>();
@@ -262,6 +274,8 @@ export function resetGameState(): void {
   gameState.dialogue = null;
   gameState.shopGateVisible = false;
   gameState.entitlementHealth = 'ok';
+  gameState.bootProgress = { value: 0, labelKey: 'boot.loading' };
+  gameState.inventoryActiveTab = 'codex';
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

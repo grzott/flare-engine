@@ -41,7 +41,7 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 - [ ] ⬜ App Store Connect: matching product IDs + metadata + screenshots.
 - [x] ✅ IAP provider adapter chosen — **RevenueCat** via `@flare-engine/iap-revenuecat` (engine session #23, 2026-04-27); env-var gated (`EXPO_PUBLIC_REVENUECAT_API_KEY_IOS/_ANDROID`) with `NoopIAPProvider` fallback for CI/dev.
 - [x] ✅ Restore Purchases UI wired (M9.3 / session #10) — `<RestorePurchasesButton>` from `@flare-engine/ui-shop` in Settings; `'purchase-completed'` event auto-dismisses paywall after restore.
-- [ ] ⬜ Entitlement-lost fallback: if user owned zones 4–8 and entitlement lapses (edge case), app gracefully returns them to free-mode without data loss.
+- [x] ✅ Entitlement-lost fallback: if user owned zones 4–8 and entitlement lapses (edge case), app gracefully returns them to free-mode without data loss.
 
 ## 4. Legal
 

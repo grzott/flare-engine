@@ -840,3 +840,38 @@ Builder note: the original game-builder agent stopped mid-task before wiring `<P
 4. `docs(pan-tvardowski): M9.6 session #20 changelog`
 
 **Next session:** #21 "M9.6 save-migrator with synthetic fixture round-trip (full v→current chain)" — pending, deferred to next batch per the original plan
+
+---
+
+## Session 21 — 2026-04-28 (scope: [game])
+
+**Goal (from sessions.md row #21):** M9.6 save-migrator with synthetic fixture round-trip (full v→current chain)
+
+**Touched files**
+- `apps/pan-tvardowski/src/save/migrate.ts` (new, 257 LOC) — step-chain v1→v7 + structural parsers + `fromUnknown` entry point; helpers + `ZoneId` array relocated here from schema.ts to break a circular dependency
+- `apps/pan-tvardowski/src/save/schema.ts` (modified, 142 LOC) — `parseSaveFile` delegates to `fromUnknown`; helpers moved to migrate.ts; `maxZone` inlines its zone list locally; public API unchanged
+- `apps/pan-tvardowski/tests/save-migrator.test.ts` (new, 119 LOC) — 5 tests covering synthetic fixture round-trips v1→v7
+
+**Documented deviation:** Helpers (`parseSlot`, `parseSettings`, `parsePrivacy`, `parseZoneStats`, `isNum`, `isBool`, `isZone`, `clamp01`, `parseControls`) and the `ZoneId` array moved to `migrate.ts` (not re-exported from `schema.ts`) to avoid a circular dependency that the original plan would have created. Public API of `schema.ts` is unchanged.
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` clean across 161 files, cache miss = fresh check)
+- typecheck: ✅ (`tsc --noEmit` exited 0, no errors)
+- test: ✅ (+5 new, total 256 pass / 0 fail, 5742 expect() calls, 58 files)
+- build: ✅ (stub echo exits 0 — native build via `bun run android|ios`)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run android` (or `ios`), load a save slot, verify no crash on version-upgrade path
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #21 flipped `in_progress → done`, closed 2026-04-28, test count corrected to `(+5)`
+- `docs/plans/pan-tvardowski-build-plan.md` — no update; mid-M9.6 batch; §17 ticks deferred to session #22
+- `docs/plans/release-readiness-checklist.md` — no tick; deferred to session #22
+- `docs/references/builder-reference.md` — no update; mirror row update deferred to session #22
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add save migrate.ts step-chain v1→v7`
+2. `refactor(pan-tvardowski): wire parseSaveFile through migrate`
+3. `test(pan-tvardowski): save-migrator fixture round-trips v1–v7`
+
+**Next session:** #22 "M9.6 close: tick §17 M9.6 + release-checklist §2/§4/§5/§7/§8 + mirror sync"
+
+---

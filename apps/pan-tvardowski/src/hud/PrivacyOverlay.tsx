@@ -5,6 +5,9 @@ import { useMemo, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import type { PrivacySettings } from '../save/schema';
 import type { SaveStore } from '../save/store';
+import { rawStyles } from './PrivacyOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);
 
 export interface PrivacyOverlayProps {
   localization: LocalizationManager;
@@ -74,25 +77,3 @@ export function PrivacyOverlay({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(10, 6, 16, 0.88)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  panel: { alignSelf: 'stretch', maxWidth: 420, width: '100%' },
-  title: { marginBottom: 16 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 6,
-  },
-  rowLabel: { flex: 1, marginRight: 8 },
-  dataHeading: { marginTop: 16, marginBottom: 4 },
-  dataNote: { marginBottom: 8 },
-  closeRow: { marginTop: 12 },
-});

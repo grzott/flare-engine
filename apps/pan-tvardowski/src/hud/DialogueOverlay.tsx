@@ -6,6 +6,9 @@ import { StyleSheet, View } from 'react-native';
 import { PORTRAITS_MANIFEST, resolvePortraitViaManifest } from '../assets';
 import type { DialogueController } from '../dialogue';
 import { type DialogueHudState, gameState, stateChanged } from '../state';
+import { rawStyles } from './DialogueOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);
 
 export interface DialogueOverlayProps {
   localization: LocalizationManager;
@@ -62,32 +65,3 @@ export function DialogueOverlay({
     </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-    padding: 24,
-  },
-  panel: {
-    borderWidth: 2,
-    borderColor: '#d6a54e',
-  },
-  portraitSlot: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  portraitBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 4,
-    opacity: 0.9,
-  },
-});

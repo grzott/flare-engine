@@ -8,6 +8,9 @@ import { findBossExtra } from '../codex/boss-entries';
 import type { SaveStore } from '../save/store';
 import { filterCodexEntries } from '../scenes/codex-shards';
 import { type GameState, gameState, stateChanged } from '../state';
+import { rawStyles } from './CodexOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);
 
 export interface CodexOverlayActions {
   goMenu(): void;
@@ -118,32 +121,3 @@ function CodexView({ localization: l, save, actions }: CodexOverlayProps): React
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 6, 16, 0.92)',
-    justifyContent: 'center',
-  },
-  panelContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  panel: { alignSelf: 'stretch', maxWidth: 440, width: '100%', maxHeight: '90%' },
-  title: { marginBottom: 8 },
-  shardHeader: { marginBottom: 2 },
-  subheader: { marginBottom: 12 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 8 },
-  entryRow: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  entryLocked: { opacity: 0.5 },
-  phaseBlock: { marginTop: 4, gap: 2 },
-  phaseLine: { opacity: 0.75 },
-  backRow: { marginTop: 12 },
-});

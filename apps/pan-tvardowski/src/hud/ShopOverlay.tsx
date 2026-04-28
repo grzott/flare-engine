@@ -8,6 +8,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PT_CATALOG, SKU_FULL_GAME, SKU_SUPPORTER_PACK } from '../iap/catalog';
 import { type GameState, gameState, stateChanged } from '../state';
+import { rawStyles } from './ShopOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);
 
 export interface ShopOverlayActions {
   goMenu(): void;
@@ -90,18 +93,3 @@ export function ShopOverlay({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 6, 16, 0.92)',
-    justifyContent: 'center',
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  backRow: { marginTop: 8 },
-});

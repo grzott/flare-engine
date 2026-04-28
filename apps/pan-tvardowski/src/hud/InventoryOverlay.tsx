@@ -6,7 +6,10 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { CODEX_ENTRIES } from '../codex';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
+import { rawStyles } from './InventoryOverlay.styles';
 import { ACHIEVEMENTS } from './achievements-list';
+
+const styles = StyleSheet.create(rawStyles);
 
 export type InventoryTab = 'codex' | 'shards' | 'stats' | 'achievements';
 
@@ -182,54 +185,3 @@ function AchievementsTab({ t }: { t: Translator }): React.ReactElement {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 6, 16, 0.92)',
-    justifyContent: 'center',
-  },
-  panelContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  panel: { alignSelf: 'stretch', maxWidth: 440, width: '100%', maxHeight: '90%' },
-  tabs: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.12)',
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#f3d6a4',
-  },
-  tabContent: { flex: 1 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 8 },
-  codexRow: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  achRow: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  centeredContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  statRow: { marginBottom: 8 },
-  backRow: { marginTop: 12 },
-});

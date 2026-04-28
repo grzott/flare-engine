@@ -6,6 +6,9 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import type { SaveStore } from '../save/store';
 import { ACHIEVEMENT_ENTRIES, filterAchievements } from '../scenes/achievements';
 import { type GameState, gameState, stateChanged } from '../state';
+import { rawStyles } from './AchievementsOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);
 
 export interface AchievementsOverlayActions {
   goMenu(): void;
@@ -112,30 +115,3 @@ function AchievementsView({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 6, 16, 0.92)',
-    justifyContent: 'center',
-  },
-  panelContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  panel: { alignSelf: 'stretch', maxWidth: 440, width: '100%', maxHeight: '90%' },
-  title: { marginBottom: 8 },
-  subheader: { marginBottom: 12 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 8 },
-  sectionHeader: { marginTop: 4, marginBottom: 6, opacity: 0.7 },
-  entryRow: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  entryLocked: { opacity: 0.5 },
-  backRow: { marginTop: 12 },
-});

@@ -1223,3 +1223,61 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** #31 "PT-Bugfix-1: suppress ExpoKeepAwake rejection on Android launch via expo-keep-awake plugin config or early deactivate"
 
 ---
+
+## Session 46 — 2026-04-28 (scope: [mixed])
+
+**Goal (from sessions.md row #46):** PT-Bugfix-A bundle ★★ — M1 Android keep-awake fix → M2 zone-progress save → M3 zone-select submenu
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts`
+- `apps/pan-tvardowski/src/localization/keys.ts`
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/zone-progression-save.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-select.test.ts` (new)
+- `apps/pan-tvardowski/tests/controls-visibility.test.ts` (new)
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/src/game-view.tsx`
+- `packages/react/tests/skia-bridge.test.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+- `bun.lock`
+
+**Scope expansion note:** Row opened as `[game]`; device-smoke surfaced two root causes. M4 (controls gating — already game scope) and M5 (skia-bridge viewport bounds — engine scope) were approved by user for in-session fixing. Scope flipped `[game]` → `[mixed]` at close.
+
+**Milestones shipped**
+- M1: `App.tsx` Android-guarded `deactivateKeepAwake()` shim; `app.json` plugin entry reverted (`expo-keep-awake` has no config plugin)
+- M2: `src/scenes/play.ts` `commitRun` passes `nextZone` as `zoneReached` on boss-defeat and `currentZone` on game-over; +4 tests
+- M3: `MenuOverlay.tsx` zone-picker submenu + `.styles.ts`; `App.tsx` `startSlotAtZone` action; 4 locale keys × EN/PL; +3 tests
+- M4 (device-smoke addition): `App.tsx` `<VirtualJoystick>` + `<VirtualButton>` gated on `currentScene === 'play'`; +3 tests
+- M5 (engine, device-smoke addition): `packages/react/src/skia-bridge.ts` `beginFrame(w, h)` passes bounds rect to `beginRecording`, skips when viewport=0; `game-view.tsx` updated; +2 tests
+
+**Gates**
+- lint: ✅ (39/39 packages, 0 errors — FULL TURBO from cache)
+- typecheck: ✅ (`@flare-engine/react` tsc --noEmit clean; `apps/pan-tvardowski` tsc --noEmit clean)
+- test: ✅ (+10 new — pan-tvardowski: 336 pass / 0 fail; @flare-engine/react: 45 pass / 0 fail)
+- build: ✅ (38/38 packages, FULL TURBO)
+- device smoke: ✅ (user-confirmed 2026-04-28) — canvas centred, controls hidden in menu/codex/shop and visible in play, keep-awake suppressed on Android, zone-progression persists on boss defeat + game-over, zone-select submenu appears on slots with zoneReached > z1
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — two entries appended at line 573–574 dated 2026-04-28: M1–M3 bundle entry + M4/M5 follow-up entry
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated to 336 tests, PT-Bugfix-A bundle; `@flare-engine/react` M5 engine fix documented inline in mirror row
+- `docs/plans/sessions.md` — row #46 flipped `in_progress` → `done`, scope `[game]` → `[mixed]`, closed 2026-04-28; rows #31–45 `blocked ✦` (planner pre-diff folded into this session's first commit); ⊕ scope-expansion footnote added
+- `docs/plans/release-readiness-checklist.md` — no new ticks (bugfix bundle; no new RR items satisfied)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `chore(plans): supersede rows #31–45 into bundles #46–50`
+2. `fix(react): pass bounds rect to skia-bridge beginRecording`
+3. `fix(pan-tvardowski): suppress ExpoKeepAwake on Android via runtime shim`
+4. `fix(pan-tvardowski): persist zoneReached on boss defeat + game-over`
+5. `feat(pan-tvardowski): zone-select submenu in save-select view`
+6. `fix(pan-tvardowski): hide VirtualJoystick + VirtualButton outside play scene`
+7. `docs(pan-tvardowski): close #46 PT-Bugfix-A bundle — sessions + log + mirror`
+
+**Next session:** #47 "PT-Bugfix-B bundle ★★ — M1 collider scale audit → M2 Smok silhouette → M3 logical gameplay bounds"
+
+---

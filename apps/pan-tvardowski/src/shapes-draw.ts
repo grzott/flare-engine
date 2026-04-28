@@ -22,7 +22,7 @@ type Skia = typeof SkiaModule;
 /** Reusable float array for Skia color conversion. */
 const COLOR = new Float32Array(4);
 
-function argbTo(out: Float32Array, argb: number): void {
+export function argbTo(out: Float32Array, argb: number): void {
   out[0] = ((argb >>> 16) & 0xff) / 255;
   out[1] = ((argb >>> 8) & 0xff) / 255;
   out[2] = (argb & 0xff) / 255;

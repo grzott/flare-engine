@@ -16,18 +16,11 @@ import { type SpriteFrame, type SpriteSheet, createSpriteSheet } from '@flare-en
 import type { SkImage, Skia as SkiaModule } from '@shopify/react-native-skia';
 import { SHAPE_CATALOGUE } from './shape-catalogue';
 import type { ShapeSpec } from './shapes';
-import { drawShape, shapeBoundsRadius } from './shapes-draw';
+import { argbTo, drawShape, shapeBoundsRadius } from './shapes-draw';
 
 type Skia = typeof SkiaModule;
 
-const FILL = new Float32Array(4);
-function argb(argbInt: number): Float32Array {
-  FILL[0] = ((argbInt >>> 16) & 0xff) / 255;
-  FILL[1] = ((argbInt >>> 8) & 0xff) / 255;
-  FILL[2] = (argbInt & 0xff) / 255;
-  FILL[3] = ((argbInt >>> 24) & 0xff) / 255;
-  return FILL;
-}
+const ATLAS_COLOR = new Float32Array(4);
 
 export interface ShapeAtlas {
   readonly image: SkImage;
@@ -82,7 +75,8 @@ function buildFrames(): FrameBuild[] {
     h: 14,
     draw: (Skia, canvas) => {
       const paint = Skia.Paint();
-      paint.setColor(argb(0xffffeecc));
+      argbTo(ATLAS_COLOR, 0xffffeecc);
+      paint.setColor(ATLAS_COLOR);
       canvas.drawRect(Skia.XYWHRect(0, 0, 6, 14), paint);
     },
   });
@@ -92,7 +86,8 @@ function buildFrames(): FrameBuild[] {
     h: 10,
     draw: (Skia, canvas) => {
       const paint = Skia.Paint();
-      paint.setColor(argb(0xffff5522));
+      argbTo(ATLAS_COLOR, 0xffff5522);
+      paint.setColor(ATLAS_COLOR);
       canvas.drawRect(Skia.XYWHRect(0, 0, 6, 10), paint);
     },
   });
@@ -102,7 +97,8 @@ function buildFrames(): FrameBuild[] {
     h: 4,
     draw: (Skia, canvas) => {
       const paint = Skia.Paint();
-      paint.setColor(argb(0xfff3c262));
+      argbTo(ATLAS_COLOR, 0xfff3c262);
+      paint.setColor(ATLAS_COLOR);
       canvas.drawCircle(2, 2, 2, paint);
     },
   });
@@ -112,7 +108,8 @@ function buildFrames(): FrameBuild[] {
     h: 6,
     draw: (Skia, canvas) => {
       const paint = Skia.Paint();
-      paint.setColor(argb(0x99888888));
+      argbTo(ATLAS_COLOR, 0x99888888);
+      paint.setColor(ATLAS_COLOR);
       canvas.drawCircle(3, 3, 3, paint);
     },
   });
@@ -124,10 +121,12 @@ function buildFrames(): FrameBuild[] {
     h: 32,
     draw: (Skia, canvas) => {
       const base = Skia.Paint();
-      base.setColor(argb(0xff2f5f7a));
+      argbTo(ATLAS_COLOR, 0xff2f5f7a);
+      base.setColor(ATLAS_COLOR);
       canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), base);
       const ripple = Skia.Paint();
-      ripple.setColor(argb(0x66d9e4e7));
+      argbTo(ATLAS_COLOR, 0x66d9e4e7);
+      ripple.setColor(ATLAS_COLOR);
       canvas.drawRect(Skia.XYWHRect(4, 8, 24, 2), ripple);
       canvas.drawRect(Skia.XYWHRect(8, 20, 20, 2), ripple);
     },
@@ -138,7 +137,8 @@ function buildFrames(): FrameBuild[] {
     h: 32,
     draw: (Skia, canvas) => {
       const paint = Skia.Paint();
-      paint.setColor(argb(0x44e4f0ff));
+      argbTo(ATLAS_COLOR, 0x44e4f0ff);
+      paint.setColor(ATLAS_COLOR);
       canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), paint);
     },
   });

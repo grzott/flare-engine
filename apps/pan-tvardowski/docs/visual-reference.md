@@ -56,31 +56,33 @@ Color-blind tokens land at session #74.
 
 ## §2 — Typography
 
+Updated 2026-04-29 (session #68): all three font families loaded via `@expo-google-fonts/*` + `useFonts` in `App.tsx`; type scale rewritten with 11 first-class keys + 6 deprecated aliases in `src/theme/typography.ts`. `mono.hud` corrected to 13 px (was listed as 18 px in earlier draft).
+
 ### Font families
 
 | Family | Role | Size range | Status |
 |---|---|---|---|
-| EB Garamond (serif) | Titles, zone banners, boss names | 56–132 px | not loaded — session #68 |
-| Source Sans 3 (sans-serif) | Dialogue, codex, UI labels | 14–22 px | not loaded — session #68 |
-| JetBrains Mono (monospace) | HUD numerics, debug overlay | 11–18 px | not loaded — session #68 |
+| EB Garamond (serif) | Titles, zone banners, boss names | 56–132 px | loaded — session #68 |
+| Source Sans 3 (sans-serif) | Dialogue, codex, UI labels | 14–22 px | loaded — session #68 |
+| JetBrains Mono (monospace) | HUD numerics, debug overlay | 11–13 px | loaded — session #68 |
 
-All three families must be bundled in `assets/fonts/` and wired via `expo-font` in `App.tsx`.
+All three families are loaded via `@expo-google-fonts/*` packages and wired via `useFonts` in `App.tsx`.
 
 ### Type-scale
 
 | Role | Deck name | Deck size | Code today | Code file:line | Status |
 |---|---|---|---|---|---|
-| Display XL | `display-xl` | 132 px | absent | — | session #68 |
-| Display L | `display-l` | 80 px | absent | — | session #68 |
-| Display M | `display-m` | 56 px | absent | — | session #68 |
+| Display XL | `display-xl` | 132 px | `displayXl fontSize:132` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
+| Display L | `display-l` | 72 px | `displayL fontSize:72` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
+| Display M | `display-m` | 56 px | `displayM fontSize:56` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
 | Heading 1 | `h1` | 28 px | `h1 fontSize:28` | [`src/theme/typography.ts:1`](../src/theme/typography.ts#L1) | matches |
 | Heading 2 | `h2` | 26 px | `h2 fontSize:26` | [`src/theme/typography.ts:2`](../src/theme/typography.ts#L2) | matches |
 | Heading 3 | `h3` | 20 px | `h3 fontSize:20` | [`src/theme/typography.ts:3`](../src/theme/typography.ts#L3) | matches |
 | Body | `body` | 14 px | `body fontSize:14` | [`src/theme/typography.ts:5`](../src/theme/typography.ts#L5) | matches |
 | Label | `label` | 14 px | `label fontSize:14` | [`src/theme/typography.ts:4`](../src/theme/typography.ts#L4) | matches |
 | Caption | `caption` | 12 px | `caption fontSize:12` | [`src/theme/typography.ts:6`](../src/theme/typography.ts#L6) | matches |
-| Mono HUD | `mono-hud` | 18 px | absent | — | session #68 |
-| Mono debug | `mono-debug` | 11 px | absent | — | session #68 |
+| Mono HUD | `mono-hud` | 13 px | `monoHud fontSize:13` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
+| Mono debug | `mono-debug` | 11 px | `monoDebug fontSize:11` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
 
 ### PL diacritics
 
@@ -471,7 +473,7 @@ Items requiring code changes. Code-today links use live line numbers as of 2026-
 | Ink-black bg | `#0E1A12` | `rgba(10,6,16,0.92)` | [`src/theme/colors.ts:12`](../src/theme/colors.ts#L12) | high | #67 | open |
 | 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | absent | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | open |
 | Zone ARGB palettes | per-zone deck tokens | ARGB ints (all diverge) | [`src/palette.ts:18`](../src/palette.ts#L18) | high | #72 | open |
-| Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | system stack (no fontFamily) | [`src/theme/typography.ts:1`](../src/theme/typography.ts#L1) | high | #68 | open |
+| Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/theme/typography.ts`](../src/theme/typography.ts) | high | #68 | done |
 | Icon system | 30 stamps (MaterialCommunityIcons) | Skia shapes only | — | — | — | intentional |
 | Particles | 5-tier up to 256p | basic 10-burst | [`src/particles.ts:16`](../src/particles.ts#L16) | high | #70 | open |
 | PostFX Skia | bloom+vignette always-on | `skiaPostFx = null` | [`src/scene-registry.ts:63`](../src/scene-registry.ts#L63) | high | #69 | open |

@@ -9,8 +9,10 @@ export const rawStyles = {
     bottom: 0,
   },
   topLeft: { position: 'absolute' as const, top: spacing.hudCornerY, left: spacing.hudCornerX },
-  score: { color: colors.ui.primary, ...typography.h3 },
+  score: { color: colors.ui.primary, ...typography.bodyL },
+  // kept on body for layout fit — compact HP/bomb status lines
   hp: { color: '#fff', ...typography.body, marginTop: spacing.sm },
+  // kept on body for layout fit — compact HP/bomb status lines
   bombs: { color: '#fff', ...typography.body, marginTop: spacing.xs },
   bossBar: {
     position: 'absolute' as const,
@@ -41,7 +43,7 @@ export const rawStyles = {
   },
   minibossName: {
     color: colors.ui.secondary,
-    ...typography.caption,
+    ...typography.smallcap,
     marginBottom: 3,
   },
   minibossBarBg: {
@@ -61,13 +63,13 @@ export const rawStyles = {
   },
   zoneBannerTitle: {
     color: colors.ui.primary,
-    ...typography.h2,
+    ...typography.displayM,
     textAlign: 'center' as const,
     paddingHorizontal: spacing.xxxl,
   },
   zoneBannerSub: {
     color: '#fff',
-    ...typography.body,
+    ...typography.bodyM,
     marginTop: spacing.lg,
     letterSpacing: 1,
   },
@@ -83,12 +85,12 @@ export const rawStyles = {
   },
   bannerTitle: {
     color: colors.ui.primary,
-    ...typography.h1,
+    ...typography.displayL,
     textAlign: 'center' as const,
     paddingHorizontal: spacing.xxxl,
   },
   bannerSub: { color: '#fff', fontSize: 18, marginTop: spacing.lg },
-  tapHint: { color: colors.ui.tint60, ...typography.body, marginTop: spacing.xxxl },
+  tapHint: { color: colors.ui.tint60, ...typography.bodyM, marginTop: spacing.xxxl },
   shareBtn: {
     marginTop: spacing.xxl,
     paddingHorizontal: spacing.buttonPaddingH,
@@ -120,7 +122,7 @@ export const rawStyles = {
   },
   shieldActive: {
     color: colors.ui.verdigris,
-    ...typography.caption,
+    ...typography.smallcap,
     marginTop: spacing.sm,
     letterSpacing: 1,
   },
@@ -138,7 +140,7 @@ export const rawStyles = {
   staleBannerText: {
     flex: 1,
     color: colors.ui.neutralLight,
-    ...typography.caption,
+    ...typography.smallcap,
   },
   staleBannerClose: {
     paddingHorizontal: spacing.md,

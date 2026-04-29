@@ -14,13 +14,13 @@ export const rawStyles = {
   },
   label: {
     color: colors.ui.primary,
-    ...typography.h3,
+    ...typography.bodyL,
     marginBottom: spacing.lg,
     textAlign: 'center' as const,
   },
   subLabel: {
     color: colors.ui.tint60,
-    ...typography.body,
+    ...typography.bodyM,
     marginBottom: spacing.xxl,
     textAlign: 'center' as const,
   },

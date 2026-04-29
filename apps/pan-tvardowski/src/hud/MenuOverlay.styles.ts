@@ -53,7 +53,7 @@ export const rawStyles = {
   },
   creditsLine: {
     color: colors.ui.neutralMid,
-    ...typography.xs,
+    ...typography.monoDebug,
     lineHeight: 18,
     textAlign: 'center' as const,
   },

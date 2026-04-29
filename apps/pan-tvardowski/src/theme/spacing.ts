@@ -15,6 +15,7 @@ export const spacing = {
   panelBorderRadius: 6,
   bossBarHeight: 8,
   minibossBarHeight: 6,
+  weaponMeterHeight: 6,
   buttonPaddingH: 20,
   buttonPaddingV: 10,
 } as const;

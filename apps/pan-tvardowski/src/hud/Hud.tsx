@@ -1,4 +1,5 @@
 import type { LocalizationManager } from '@flare-engine/localization';
+import { LinearGradient } from 'expo-linear-gradient';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -35,6 +36,9 @@ function cloneState(): GameState {
   };
 }
 
+/** Pre-built segment descriptors — avoids per-frame allocation in the weapon meter. */
+const WEAPON_SEGMENTS = [0, 1, 2, 3, 4] as const;
+
 export interface HudProps {
   localization: LocalizationManager;
   actions: HudActions;
@@ -47,7 +51,16 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
   const [s, setS] = useState<GameState>(() => cloneState());
 
   useEffect(() => {
-    const off = stateChanged.add(() => setS(cloneState()));
+    const off = stateChanged.add(() => {
+      const next = cloneState();
+      setS(next);
+      if (next.redFlash) {
+        setTimeout(() => {
+          gameState.redFlash = false;
+          notifyStateChanged();
+        }, 16);
+      }
+    });
     return () => off();
   }, []);
 
@@ -102,9 +115,29 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
         <>
           <View style={topLeftStyle}>
             <Text style={styles.score}>{t('hud.score', { score: s.score })}</Text>
-            <Text style={styles.hp}>
-              {t('hud.hp', { hp: Math.max(0, s.playerHp), max: s.playerHpMax })}
-            </Text>
+            {s.comboCount > 1 ? <Text style={styles.combo}>{`×${s.comboCount}`}</Text> : null}
+            <View style={styles.hpBarBg}>
+              <LinearGradient
+                colors={['#2a0810', '#D4213D']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[
+                  styles.hpBarFill,
+                  { width: `${Math.max(0, Math.min(1, s.playerHp / s.playerHpMax)) * 100}%` },
+                ]}
+              />
+            </View>
+            <View style={styles.weaponMeterRow}>
+              {WEAPON_SEGMENTS.map((i) => {
+                const filledCount = Math.round(s.weaponCooldownPct * 5);
+                return (
+                  <View
+                    key={i}
+                    style={i < filledCount ? styles.weaponSegmentFilled : styles.weaponSegment}
+                  />
+                );
+              })}
+            </View>
             <Text style={styles.bombs}>{t('hud.bombs_remaining', { n: s.bombCharges })}</Text>
           </View>
           {s.bossActive && s.bossHpMax > 0 ? (
@@ -199,6 +232,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
           </View>
         </Pressable>
       ) : null}
+      {s.redFlash ? <View style={styles.redFlashOverlay} /> : null}
     </View>
   );
 }

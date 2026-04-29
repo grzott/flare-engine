@@ -32,6 +32,8 @@ export const rawStyles = {
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: spacing.sm,
     overflow: 'hidden' as const,
+    borderWidth: 1,
+    borderColor: colors.ui.gold,
   },
   bossBarFill: { height: '100%' as const, backgroundColor: colors.ui.hazard },
   minibossBar: {
@@ -149,5 +151,49 @@ export const rawStyles = {
   staleBannerCloseLabel: {
     color: colors.ui.tint60,
     ...typography.label,
+  },
+  combo: {
+    color: colors.ui.crimson,
+    ...typography.monoHud,
+    marginTop: spacing.xs,
+  },
+  weaponMeterRow: {
+    flexDirection: 'row' as const,
+    gap: 2,
+    marginTop: spacing.xs,
+  },
+  weaponSegment: {
+    width: 16,
+    height: spacing.weaponMeterHeight,
+    backgroundColor: colors.ui.tint55,
+    borderRadius: 1,
+  },
+  weaponSegmentFilled: {
+    width: 16,
+    height: spacing.weaponMeterHeight,
+    backgroundColor: colors.ui.crimson,
+    borderRadius: 1,
+  },
+  hpBarBg: {
+    width: '100%' as const,
+    height: 10,
+    backgroundColor: colors.ui.crimsonDeep,
+    borderRadius: 2,
+    overflow: 'hidden' as const,
+    marginTop: spacing.sm,
+  },
+  hpBarFill: {
+    height: '100%' as const,
+    borderRadius: 2,
+  },
+  redFlashOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(212, 33, 61, 0.5)',
+    pointerEvents: 'none' as const,
+    zIndex: 999,
   },
 };

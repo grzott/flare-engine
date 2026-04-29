@@ -187,6 +187,21 @@ export interface GameState {
   bootProgress: BootProgress;
   /** Persists the active tab across InventoryOverlay open/close cycles. */
   inventoryActiveTab: InventoryTab;
+  /**
+   * Running kill-streak counter for combo display.
+   * @stub Will be wired by future session; HUD renders only when comboCount > 1.
+   */
+  comboCount: number;
+  /**
+   * Weapon special-move charge as a 0..1 fraction (1.0 = full).
+   * @stub Will be wired by future session; HUD renders the 5-segment meter at all times.
+   */
+  weaponCooldownPct: number;
+  /**
+   * One-frame red-flash overlay triggered by reduce-motion shake swap.
+   * @stub Set by applyShake when reducedMotion=true or screenShake=false.
+   */
+  redFlash: boolean;
 }
 
 export const gameState: GameState = {
@@ -222,6 +237,9 @@ export const gameState: GameState = {
   entitlementHealth: 'ok',
   bootProgress: { value: 0, labelKey: 'boot.loading' },
   inventoryActiveTab: 'codex',
+  comboCount: 0,
+  weaponCooldownPct: 1.0,
+  redFlash: false,
 };
 
 export const stateChanged = new Signal<void>();
@@ -276,6 +294,9 @@ export function resetGameState(): void {
   gameState.entitlementHealth = 'ok';
   gameState.bootProgress = { value: 0, labelKey: 'boot.loading' };
   gameState.inventoryActiveTab = 'codex';
+  gameState.comboCount = 0;
+  gameState.weaponCooldownPct = 1.0;
+  gameState.redFlash = false;
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

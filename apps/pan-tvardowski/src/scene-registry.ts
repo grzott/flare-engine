@@ -3,6 +3,7 @@ import type { GameContextValue } from '@flare-engine/engine';
 import { fadeTransition } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
+import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import { Skia } from '@shopify/react-native-skia';
 import { SPRITES_MANIFEST, loadSpriteAtlas } from './assets';
 import type { AudioHandles } from './audio/init';
@@ -58,9 +59,12 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
     bottomInset,
   } = deps;
   const atlas = loadSpriteAtlas(Skia, SPRITES_MANIFEST);
-  // PostFx: pass `null` Skia module — visible SkSL compositing requires a
-  // GameView SkCanvas bridge that the current CanvasLike hook doesn't expose.
-  const skiaPostFx = null;
+  // PostFx chain runs against Skia. Visible compositing requires the GameView
+  // SkCanvas bridge to land in a future engine session; until then the chain
+  // still tracks intensities for triggerHitFlash() etc.
+  // Cast: SkiaPostFxModuleLike.makeShader signature differs from the real Skia
+  // type at the type level only; the runtime object satisfies the contract.
+  const skiaPostFx = Skia as unknown as SkiaPostFxModuleLike;
 
   const a11y = createA11yBridge({
     initial: { reducedMotion: gameState.settings.reducedMotion },

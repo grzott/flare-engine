@@ -261,18 +261,26 @@ Drop chromatic-aberration if avg fps < 55 over 3 consecutive seconds. See §12.
 
 ## §6 — Explosion tiers
 
+Updated 2026-04-29 (session #70): 5-tier preset system live in [`src/fx/explosions.ts`](../src/fx/explosions.ts). `burstExplosion` in [`src/particles.ts`](../src/particles.ts) is now a thin Tier-II wrapper.
+
 ### 5-tier table
 
-| Tier | Name | Particles | Life | Shake | PostFX | +Draws | Use |
-|---|---|---|---|---|---|---|---|
-| I | Chip | 8 spark | 120 ms | — | — | +0 | bullet hit |
-| II | Pop | 24 spark+ash | 280 ms | 2 px·80 ms | bloom-pulse | +12 | grunt death |
-| III | Burst | 64 spark+smoke | 520 ms | 5 px·180 ms | bloom+chrom-ab | +38 | elite/mini-boss |
-| IV | Detonation | 128 spark+shrapnel | 900 ms | 10 px·320 ms | bloom+chrom+flash | +86 | boss phase-break |
-| V | Cataclysm | 256+debris | 1600 ms+slow-mo | 14 px·900 ms | flash→grayscale→bloom | +220 | boss final, once/zone |
+| Tier | Name | Particles | Life | Shake | PostFX | +Draws | Use | Status |
+|---|---|---|---|---|---|---|---|---|
+| I | Chip | 8 spark | 120 ms | — | — | +0 | bullet hit | live — #70 |
+| II | Pop | 24 spark+smoke | 280 ms | 2 px·80 ms | flash | +12 | grunt death | live — #70 |
+| III | Burst | 64 spark+smoke | 520 ms | 5 px·180 ms | flash | +38 | elite/mini-boss | live — #70 |
+| IV | Detonation | 128 spark+smoke | 900 ms | 10 px·320 ms | flash | +86 | boss phase-break | live — #70 |
+| V | Cataclysm | 256 spark+debris | 1600 ms | 14 px·900 ms | flash | +220 | boss final, once/zone | live — #70 |
 
-Current particle implementation (basic 10-burst only): [`src/particles.ts:16`](../src/particles.ts#L16).
-5-tier system lands at session #70.
+Public API: [`src/fx/explosions.ts`](../src/fx/explosions.ts) — `triggerExplosion`, `resetCataclysmGate`, `EXPLOSION_PRESETS`.
+Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'cataclysm'`.
+
+### Engine gaps deferred from #70
+
+- **`state.timeScale` slow-mo** — Tier V deck specifies a slow-motion envelope on cataclysm (no engine `timeScale` API available).
+- **Sequenced postfx chain** — deck specifies `flash→grayscale→bloom` cascade per tier; current engine `triggerHitFlash()` fires a single grayscale decay; per-trigger decay overrides deferred.
+- **Perlin-noise shake** — deck specifies Perlin noise for Quake-class shake (Tier IV + V); current `camera.shake()` is sinusoidal only.
 
 ### Concurrent caps
 
@@ -426,7 +434,9 @@ reduce-motion flag now lives in `gameState.settings.reducedMotion` mirrored from
 4. **Boss intro** → cross-fade only (no translate).
 5. **Screen shake** → 1-frame red flash instead (no camera movement).
 
-Implementation at session #74. The `createA11yBridge` call is at
+Rule 5 (shake → 1-frame red flash) implemented at session #71 via `applyShake` helper in
+[`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts).
+Rules 1–4 deferred to session #74. The `createA11yBridge` call is at
 [`src/scene-registry.ts:65`](../src/scene-registry.ts#L65).
 
 ### Color-blind tokens
@@ -490,7 +500,7 @@ Items requiring code changes. Code-today links use live line numbers as of 2026-
 | Zone ARGB palettes | per-zone deck tokens | ARGB ints (all diverge) | [`src/palette.ts:18`](../src/palette.ts#L18) | high | #72 | open |
 | Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/theme/typography.ts`](../src/theme/typography.ts) | high | #68 | done |
 | Icon system | 30 stamps (MaterialCommunityIcons) | Skia shapes only | — | — | — | intentional |
-| Particles | 5-tier up to 256p | basic 10-burst | [`src/particles.ts:16`](../src/particles.ts#L16) | high | #70 | open |
+| Particles | 5-tier up to 256p | 5-tier system live | [`src/fx/explosions.ts`](../src/fx/explosions.ts) | high | #70 | done |
 | PostFX Skia | bloom+vignette always-on | `skiaPostFx = null` | [`src/scene-registry.ts:63`](../src/scene-registry.ts#L63) | high | #69 | open |
 | Boss per-phase palette | per-phase color in BOSS_SPECS | not wired in any boss FSM | `src/systems/boss/*.ts` | high | #73 | open |
 | Reduce-motion + cb tokens | 5-rule policy + cb.player/hazard/safe | partial; cb tokens absent | [`src/theme/colors.ts`](../src/theme/colors.ts) | low | #74 | open |

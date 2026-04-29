@@ -6,6 +6,7 @@ import { canAccessContent } from '@flare-engine/iap';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxController } from '@flare-engine/postfx';
+import { applyShake } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
@@ -27,6 +28,7 @@ import {
 } from '../dialogue';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
+import { resetCataclysmGate, triggerExplosion } from '../fx/explosions';
 import { createPanTvardowskiPostFx } from '../fx/postfx';
 import {
   type ZoneBannerState,
@@ -270,6 +272,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     }
 
     function startZone(zoneId: ZoneId, fullReset: boolean): void {
+      resetCataclysmGate(zoneId);
       if (s) {
         clearWorld(s);
       }
@@ -420,7 +423,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           playerY: py,
           bounds: s.bounds,
           onPhaseChange: () => {
-            if (gameState.settings.screenShake) ctx.camera.shake(4, 0.18);
+            applyShake(ctx.camera, 4, 0.18);
           },
           onFormChange: (form) => {
             if (!s) return;
@@ -443,13 +446,23 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             s.minibossId = -1;
             s.minibossDefeated = true;
             gameState.runStats.kills.miniboss += 1;
-            if (gameState.settings.screenShake) ctx.camera.shake(10, 0.45);
+            applyShake(ctx.camera, 10, 0.45);
             gameState.minibossActive = false;
             gameEvents.emit('miniboss-defeated', s.zone.id);
             notifyStateChanged();
           },
           onExplosion: (x: number, y: number) => {
-            burstExplosion(ctx.world, atlas, x, y, 12, ((s?.elapsed ?? 0) * 1000) | 1);
+            triggerExplosion(
+              ctx.world,
+              atlas,
+              ctx.camera,
+              postfx,
+              gameState.settings.screenShake,
+              x,
+              y,
+              'burst',
+              s?.zone.id ?? '',
+            );
             playSfx(audioRef?.current, 'explode');
           },
         });
@@ -460,8 +473,18 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           playerY: py,
           bounds: s.bounds,
           onPhaseChange: (phase) => {
-            if (gameState.settings.screenShake) ctx.camera.shake(8, 0.3);
-            postfx.triggerHitFlash();
+            const bossPos = s ? ctx.world.get(s.bossId, Position) : null;
+            triggerExplosion(
+              ctx.world,
+              atlas,
+              ctx.camera,
+              postfx,
+              gameState.settings.screenShake,
+              bossPos?.x ?? 180,
+              bossPos?.y ?? 100,
+              'detonation',
+              s?.zone.id ?? '',
+            );
             if (s) gameEvents.emit('boss-phase-change', s.zone.id, phase);
           },
           onSpawnShieldMinion: (x, y) => {
@@ -508,12 +531,18 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             if (!s) return;
             s.bossId = -1;
             gameState.runStats.kills.boss += 1;
-            if (gameState.settings.screenShake) ctx.camera.shake(14, 0.6);
-            // Engine gap: PostFxController.triggerHitFlash() lacks per-trigger
-            // decay override; deck specifies 1200 ms boss-defeat duration but
-            // the fixed 4.2-decay (~238 ms) is used until a future engine
-            // polish session adds per-trigger decay.
-            postfx.triggerHitFlash();
+            const bossPos = ctx.world.get(s.bossId, Position);
+            triggerExplosion(
+              ctx.world,
+              atlas,
+              ctx.camera,
+              postfx,
+              gameState.settings.screenShake,
+              bossPos?.x ?? 180,
+              bossPos?.y ?? 100,
+              'cataclysm',
+              s.zone.id,
+            );
             gameState.bossActive = false;
             gameState.bossGazeActive = false;
             gameEvents.emit('zone-complete', s.zone.id, gameState.score);
@@ -679,7 +708,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           onPlayerDown: () => {
             gameState.gameOver = true;
             notifyStateChanged();
-            if (gameState.settings.screenShake) ctx.camera.shake(16, 0.7);
+            applyShake(ctx.camera, 16, 0.7);
             void save.commitRun(gameState.score, false, s?.zone.id);
             if (s) {
               void save.recordZoneOutcome(s.zone.id, {
@@ -695,7 +724,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
 
         if (s.pendingShake) {
           s.pendingShake = false;
-          if (gameState.settings.screenShake) ctx.camera.shake(6, 0.2);
+          applyShake(ctx.camera, 6, 0.2);
         }
 
         // Publish boss status to HUD state.

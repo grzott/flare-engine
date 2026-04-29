@@ -214,29 +214,44 @@ Flicker: two strokes alternate at ~8 Hz.
 
 ### Player-hit grayscale-flash
 
-Duration: 80 ms. Envelope: white frame 20% opacity → transparent 100%.
-Implemented via `createGrayscaleFlash('grayscale-flash', { intensity: 0 })` with auto-decay.
-Current wiring at [`src/fx/postfx.ts:18`](../src/fx/postfx.ts#L18). Flash triggered on `player-hit` event.
+Duration: 80 ms deck spec. Envelope: white frame 20% opacity → transparent 100%.
+Implemented via `createGrayscaleFlash('grayscale-flash', { intensity: 0 })` with auto-decay (4.2/s ≈ 238 ms).
+Current wiring at [`src/fx/postfx.ts:18`](../src/fx/postfx.ts#L18). Flash triggered on `player-hit` (existing), bomb detonation, and boss defeat (session #69).
 
-PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). Currently initialized but bound as `skiaPostFx = null` in
-[`src/scene-registry.ts:63`](../src/scene-registry.ts#L63) — visible pixel application deferred to session #69.
+Engine gap: `triggerHitFlash()` lacks per-trigger decay override — deck specifies 80 ms player-hit / 200 ms bomb / 1200 ms boss-defeat; all use the fixed 4.2-decay until a future engine polish session adds per-trigger decay.
+
+PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` re-enabled as `Skia` in
+[`src/scene-registry.ts`](../src/scene-registry.ts) (session #69). Chain tracks intensities live; visible pixel
+compositing requires the GameView SkCanvas bridge (future engine session).
 
 ### Always-on chain
 
-| Effect | Params | Purpose |
-|---|---|---|
-| `vignette` | intensity 0.35, radius 0.82 | Darkness canvas framing |
-| `bloom` | threshold 0.72, intensity 0.5 | Luminosity lift on bright shapes |
+| Effect | Params | Purpose | Status |
+|---|---|---|---|
+| `vignette` | intensity 0.35, radius 0.82 | Darkness canvas framing | live — session #69 |
+| `bloom` | threshold 0.72, intensity 0.5 | Luminosity lift on bright shapes | live — session #69 |
 
 Both in [`src/fx/postfx.ts:15–19`](../src/fx/postfx.ts#L15).
 
 ### Situational effects
 
-| Effect | Trigger | Session |
+| Effect | Trigger | Status |
 |---|---|---|
-| Chromatic-aberration | Boss phase-break, elite death | #69 |
-| CRT scanlines | Z8 Księżyc only (Lucyper) | #69 |
-| Grayscale-flash | Player hit, bomb detonation | #69 |
+| Chromatic-aberration | Boss phase-break, elite death | pending #70+ |
+| CRT scanlines | Z8 Księżyc only (Lucyper) | pending #70+ |
+| Grayscale-flash | Player hit, bomb detonation, boss defeat | live — session #69 |
+
+### Glow recipes
+
+| Kind | Color | Alpha | Technique | Status |
+|---|---|---|---|---|
+| Friendly rim | `safe #6FA66B` | 0.25 (0x40) | oversized stroked ring at `r+4`, width 3 | live — session #69 |
+| Hazard edge | `hazardOrange #E84B2A` | 0.6 (0x99) | double-stroke at `r+1`/`r+2`, width 0.5 | live — session #69 |
+
+Glow helpers: [`src/shapes-draw.ts`](../src/shapes-draw.ts) — `friendlyGlowArgb()`, `hazardGlowArgb()`, `applyFriendlyGlow()`, `applyHazardGlow()`.
+Glow field: [`src/shapes.ts`](../src/shapes.ts) — `BaseSpec.glow?: 'friendly' | 'hazard'`.
+11 entities tagged friendly: `kogut-zloty` (player), `iskry`/`piorun`/`sol-swiecona`/`znak-pentagramu` (weapon pickups), `czarna-ksiega`/`siedmiomilowe-buty`/`amulet-wegrowski`/`koguci-pioro`/`srebrna-tarcza`/`kamien-filozoficzny` (upgrade pickups).
+Flicker animation (enemy bullets): pending future session.
 
 ### Degradation rule
 

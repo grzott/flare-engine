@@ -509,6 +509,11 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             s.bossId = -1;
             gameState.runStats.kills.boss += 1;
             if (gameState.settings.screenShake) ctx.camera.shake(14, 0.6);
+            // Engine gap: PostFxController.triggerHitFlash() lacks per-trigger
+            // decay override; deck specifies 1200 ms boss-defeat duration but
+            // the fixed 4.2-decay (~238 ms) is used until a future engine
+            // polish session adds per-trigger decay.
+            postfx.triggerHitFlash();
             gameState.bossActive = false;
             gameState.bossGazeActive = false;
             gameEvents.emit('zone-complete', s.zone.id, gameState.score);
@@ -628,6 +633,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           flash: s.flash,
           onFired: () => {
             playSfx(audioRef?.current, 'bomb');
+            // Engine gap: deck specifies 200 ms bomb-detonation flash; fixed
+            // 4.2-decay (~238 ms) used until per-trigger decay is in engine.
+            postfx.triggerHitFlash();
           },
         });
         resetBombButtonFrame();

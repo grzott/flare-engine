@@ -16,6 +16,14 @@ export interface BaseSpec {
   readonly oy?: number;
   /** Local rotation in radians, composed with the entity rotation. */
   readonly rot?: number;
+  /**
+   * Optional glow tag. When present on a shape spec, `drawShape` emits the
+   * corresponding glow ring behind the body geometry.
+   *
+   *   'friendly' — safe-green rim  (player ship, weapon/upgrade pickups)
+   *   'hazard'   — orange double-stroke (danger cues, enemy bullets)
+   */
+  readonly glow?: 'friendly' | 'hazard';
 }
 
 export interface CircleSpec extends BaseSpec {

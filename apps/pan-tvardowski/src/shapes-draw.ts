@@ -19,6 +19,56 @@ import type {
 
 type Skia = typeof SkiaModule;
 
+// ---- Glow recipes -----------------------------------------------------------
+// Colors sourced from colors.ui.safe (#6FA66B) and colors.ui.hazardOrange
+// (#E84B2A) — both canonical deck tokens.
+
+/** ARGB for safe #6FA66B at α ≈ 0.25 (0x40 / 255). */
+export function friendlyGlowArgb(): number {
+  // 0x40 = 64 = Math.round(0.25 * 255)
+  return (0x40 << 24) | 0x6fa66b;
+}
+
+/** ARGB for hazardOrange #E84B2A at α ≈ 0.6 (0x99 / 255). */
+export function hazardGlowArgb(): number {
+  // 0x99 = 153 = Math.round(0.6 * 255)
+  return (0x99 << 24) | 0xe84b2a;
+}
+
+/**
+ * Draw a single oversized stroked ring at outer radius `r + 4`.
+ * Reuses the existing `paint` ref — no allocation.
+ */
+export function applyFriendlyGlow(
+  _Skia: Skia,
+  canvas: SkCanvas,
+  paint: SkPaint,
+  cx: number,
+  cy: number,
+  r: number,
+): void {
+  applyStroke(paint, friendlyGlowArgb(), 3);
+  canvas.drawCircle(cx, cy, r + 4, paint);
+}
+
+/**
+ * Draw a thin double-stroke hazard halo (0.5 px inner + 0.5 px outer offset).
+ * Reuses the existing `paint` ref — no allocation.
+ */
+export function applyHazardGlow(
+  _Skia: Skia,
+  canvas: SkCanvas,
+  paint: SkPaint,
+  cx: number,
+  cy: number,
+  r: number,
+): void {
+  const argb = hazardGlowArgb();
+  applyStroke(paint, argb, 0.5);
+  canvas.drawCircle(cx, cy, r + 1, paint);
+  canvas.drawCircle(cx, cy, r + 2, paint);
+}
+
 /** Reusable float array for Skia color conversion. */
 const COLOR = new Float32Array(4);
 
@@ -45,6 +95,9 @@ function applyStroke(paint: SkPaint, argb: number, width: number): void {
 /**
  * Draw `spec` at world-space (x, y) with rotation `rot` (radians). `paint`
  * is mutated for each call; caller should discard state assumptions after.
+ *
+ * When `spec.glow` is set, the appropriate glow ring is emitted BEFORE the
+ * shape body so glow renders behind geometry.
  */
 export function drawShape(
   Skia: Skia,
@@ -58,6 +111,16 @@ export function drawShape(
   const cx = x + (spec.ox ?? 0);
   const cy = y + (spec.oy ?? 0);
   const r = rot + (spec.rot ?? 0);
+
+  // Glow pass — fires before the shape body so the ring stays behind geometry.
+  if (spec.glow !== undefined) {
+    const gr = glowRadius(spec);
+    if (spec.glow === 'friendly') {
+      applyFriendlyGlow(Skia, canvas, paint, cx, cy, gr);
+    } else {
+      applyHazardGlow(Skia, canvas, paint, cx, cy, gr);
+    }
+  }
 
   switch (spec.kind) {
     case 'circle': {
@@ -94,6 +157,33 @@ export function drawShape(
     case 'gradient-rect':
       drawGradientRect(Skia, canvas, paint, spec, cx, cy, r);
       return;
+  }
+}
+
+/** Approximate bounding radius for a single spec — used to size the glow ring. */
+function glowRadius(spec: ShapeSpec): number {
+  switch (spec.kind) {
+    case 'circle':
+    case 'ring':
+    case 'ngon':
+      return spec.r;
+    case 'triangle':
+      return spec.size;
+    case 'star':
+      return spec.rOuter;
+    case 'rect':
+    case 'gradient-rect':
+      return Math.max(spec.w, spec.h) * 0.6;
+    case 'polyline': {
+      let max = 0;
+      for (let i = 0; i < spec.points.length; i += 2) {
+        const px = spec.points[i] ?? 0;
+        const py = spec.points[i + 1] ?? 0;
+        const m = Math.hypot(px, py);
+        if (m > max) max = m;
+      }
+      return max + (spec.strokeWidth ?? 1);
+    }
   }
 }
 

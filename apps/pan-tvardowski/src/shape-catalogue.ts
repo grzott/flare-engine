@@ -214,7 +214,7 @@ const bosses = {
 
 const ships = {
   'kogut-zloty': [
-    { kind: 'triangle', size: 24, fill: GOLD },
+    { kind: 'triangle', size: 24, fill: GOLD, glow: 'friendly' },
     { kind: 'circle', r: 3, fill: HELLFIRE, ox: 0, oy: -10 },
   ],
   alembik: [{ kind: 'ngon', n: 5, r: 18, fill: MIRROR, stroke: COPPER, strokeWidth: 2 }],
@@ -228,7 +228,7 @@ const ships = {
 
 const weaponPickups = {
   iskry: [
-    { kind: 'circle', r: 3, fill: ORANGE, ox: -4, oy: 0 },
+    { kind: 'circle', r: 3, fill: ORANGE, ox: -4, oy: 0, glow: 'friendly' },
     { kind: 'circle', r: 3, fill: ORANGE, ox: 4, oy: 0 },
     { kind: 'circle', r: 3, fill: ORANGE, ox: 0, oy: 4 },
   ],
@@ -238,22 +238,27 @@ const weaponPickups = {
       points: [-6, -8, 2, -2, -2, 2, 6, 8],
       stroke: EYE_YELLOW,
       strokeWidth: 2.5,
+      glow: 'friendly',
     },
   ],
-  'sol-swiecona': [{ kind: 'ring', r: 9, stroke: MIRROR, strokeWidth: 2 }],
-  'znak-pentagramu': [{ kind: 'star', points: 5, rOuter: 10, rInner: 4, fill: PURPLE }],
+  'sol-swiecona': [{ kind: 'ring', r: 9, stroke: MIRROR, strokeWidth: 2, glow: 'friendly' }],
+  'znak-pentagramu': [
+    { kind: 'star', points: 5, rOuter: 10, rInner: 4, fill: PURPLE, glow: 'friendly' },
+  ],
 } as const satisfies Record<string, readonly ShapeSpec[]>;
 
 // ---- Upgrade pickups (6) ----------------------------------------------------
 
 const upgradePickups = {
-  'czarna-ksiega': [{ kind: 'rect', w: 14, h: 18, fill: BLACK, stroke: GOLD, strokeWidth: 1.5 }],
+  'czarna-ksiega': [
+    { kind: 'rect', w: 14, h: 18, fill: BLACK, stroke: GOLD, strokeWidth: 1.5, glow: 'friendly' },
+  ],
   'siedmiomilowe-buty': [
-    { kind: 'rect', w: 10, h: 14, fill: BROWN },
+    { kind: 'rect', w: 10, h: 14, fill: BROWN, glow: 'friendly' },
     { kind: 'rect', w: 14, h: 4, fill: BROWN, ox: 2, oy: 6 },
   ],
   'amulet-wegrowski': [
-    { kind: 'ring', r: 9, stroke: GOLD, strokeWidth: 2 },
+    { kind: 'ring', r: 9, stroke: GOLD, strokeWidth: 2, glow: 'friendly' },
     { kind: 'circle', r: 3, fill: HELLFIRE },
   ],
   'koguci-pioro': [
@@ -262,6 +267,7 @@ const upgradePickups = {
       points: [0, -10, 3, 0, 0, 10, -3, 0, 0, -10],
       stroke: GOLD,
       strokeWidth: 2,
+      glow: 'friendly',
     },
   ],
   'srebrna-tarcza': [
@@ -272,10 +278,19 @@ const upgradePickups = {
       fill: MIRROR,
       stroke: BLACK,
       strokeWidth: 1.5,
+      glow: 'friendly',
     },
   ],
   'kamien-filozoficzny': [
-    { kind: 'ngon', n: 8, r: 9, fill: PURPLE, stroke: GOLD, strokeWidth: 1.5 },
+    {
+      kind: 'ngon',
+      n: 8,
+      r: 9,
+      fill: PURPLE,
+      stroke: GOLD,
+      strokeWidth: 1.5,
+      glow: 'friendly',
+    },
   ],
 } as const satisfies Record<string, readonly ShapeSpec[]>;
 

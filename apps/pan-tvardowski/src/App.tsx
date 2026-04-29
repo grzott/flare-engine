@@ -1,3 +1,13 @@
+import { EBGaramond_500Medium, EBGaramond_500Medium_Italic } from '@expo-google-fonts/eb-garamond';
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+} from '@expo-google-fonts/jetbrains-mono';
+import {
+  SourceSans3_400Regular,
+  SourceSans3_600SemiBold,
+  SourceSans3_700Bold,
+} from '@expo-google-fonts/source-sans-3';
 import { DevtoolsHUD, DevtoolsProvider } from '@flare-engine/devtools';
 import type {
   GameContextValue,
@@ -6,7 +16,8 @@ import type {
 } from '@flare-engine/engine';
 import { AppLifecycle, GameView, VirtualButton, VirtualJoystick } from '@flare-engine/engine';
 import type { CrashPayload } from '@flare-engine/errors';
-import { ErrorBoundary } from '@flare-engine/errors';
+import { ErrorBoundary, createCrashPayload } from '@flare-engine/errors';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -171,6 +182,20 @@ function AppRoot(): React.ReactElement {
     shareManager,
     crashTransport,
   } = providers;
+  const [, fontError] = useFonts({
+    EBGaramond_500Medium,
+    EBGaramond_500Medium_Italic,
+    SourceSans3_400Regular,
+    SourceSans3_600SemiBold,
+    SourceSans3_700Bold,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+  });
+
+  if (fontError) {
+    void crashTransport.report(createCrashPayload(fontError, { source: 'expo-font' }));
+  }
+
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
   const [ctx, setCtx] = useState<GameContextValue | null>(null);

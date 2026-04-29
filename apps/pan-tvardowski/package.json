@@ -54,7 +54,10 @@
     "react-native-mmkv": "^3.2.0",
     "react-native-reanimated": "4.3.0",
     "react-native-safe-area-context": "5.6.0",
-    "react-native-worklets": "0.8.1"
+    "react-native-worklets": "0.8.1",
+    "@expo-google-fonts/eb-garamond": "^0.2.2",
+    "@expo-google-fonts/source-sans-3": "^0.2.2",
+    "@expo-google-fonts/jetbrains-mono": "^0.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",

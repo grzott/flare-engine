@@ -75,6 +75,14 @@ describe('typography', () => {
       ).toBe(true);
     }
   });
+
+  test('every variant has a non-empty fontFamily string', () => {
+    for (const [key, value] of Object.entries(typography)) {
+      const v = value as { fontFamily?: string };
+      expect(typeof v.fontFamily, `typography.${key}.fontFamily`).toBe('string');
+      expect((v.fontFamily ?? '').length, `typography.${key}.fontFamily`).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe('spacing', () => {

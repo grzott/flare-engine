@@ -16,8 +16,8 @@ describe('Hud rawStyles — theme token assertions', () => {
     expect(hudStyles.minibossBarFill.backgroundColor).toBe(colors.ui.secondary);
   });
 
-  it('shieldActive.color === colors.ui.tertiary', () => {
-    expect(hudStyles.shieldActive.color).toBe(colors.ui.tertiary);
+  it('shieldActive.color === colors.ui.verdigris', () => {
+    expect(hudStyles.shieldActive.color).toBe(colors.ui.verdigris);
   });
 
   it('centerOverlay.backgroundColor === colors.ui.overlay', () => {

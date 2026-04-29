@@ -119,7 +119,7 @@ export const rawStyles = {
     letterSpacing: 1,
   },
   shieldActive: {
-    color: colors.ui.tertiary,
+    color: colors.ui.verdigris,
     ...typography.caption,
     marginTop: spacing.sm,
     letterSpacing: 1,

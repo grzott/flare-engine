@@ -11,7 +11,7 @@ import type { ShapeSpec } from './shapes';
 // that renaming a palette channel can't silently re-color an entity.
 const BLACK = 0xff111111;
 const ORANGE = 0xffff9944;
-const RED = 0xffc0392b;
+const RED = 0xffe84b2a;
 const DARK_RED = 0xff7a1a1a;
 const PURPLE = 0xff8844ff;
 const BLUE_GREEN = 0xff3aa08c;
@@ -20,7 +20,7 @@ const PALE = 0xffe6dcc8;
 const YELLOW_WHITE = 0xfff7f3a6;
 const TEAL = 0xff3ac4b4;
 const BROWN = 0xff6b4423;
-const GOLD = 0xfff3c262;
+const GOLD = 0xffc9a24a;
 const MIRROR = 0xffc8cdd4;
 const COPPER = 0xffb5651d;
 const HELLFIRE = 0xffff2b2b;

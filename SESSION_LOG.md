@@ -1622,3 +1622,56 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #74 "PT-Visual-A11y ★★ — M1 populate color-blind tokens (cb.player #FF8C42, cb.hazard #FFD23F, cb.safe #4FC3F7) + opt-in toggle in settings overlay → M2 extend reduce-motion to parallax-static + sigil-dim 70% + no shake → M3 locale-parity check for PL diacritics in new font"
 
 ---
+
+## Session 74 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #74):** PT-Visual-A11y ★★ — M1 populate color-blind tokens (cb.player #FF8C42, cb.hazard #FFD23F, cb.safe #4FC3F7) + opt-in toggle in settings overlay → M2 extend reduce-motion to parallax-static + sigil-dim 70% + no shake → M3 locale-parity check for PL diacritics in new font
+
+**Touched files**
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/src/a11y/reduced-motion.ts`
+- `apps/pan-tvardowski/src/fx/ambience.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/localization/keys.ts`
+- `apps/pan-tvardowski/src/save/migrate.ts`
+- `apps/pan-tvardowski/src/save/schema.ts`
+- `apps/pan-tvardowski/src/state.ts`
+- `apps/pan-tvardowski/src/theme/colors.ts`
+- `apps/pan-tvardowski/tests/save-migrator.test.ts` (cascading v8 update)
+- `apps/pan-tvardowski/tests/theme.test.ts` (cascading v8 update)
+- `apps/pan-tvardowski/tests/zone-ambience.test.ts` (cascading v8 update)
+- `apps/pan-tvardowski/tests/zone-stats.test.ts` (cascading v8 update)
+- `apps/pan-tvardowski/tests/cb-palette.test.ts` (new)
+- `apps/pan-tvardowski/tests/diacritics-render.test.ts` (new)
+- `apps/pan-tvardowski/tests/reduced-motion-extended.test.ts` (new)
+- `docs/plans/sessions.md`
+
+**Drift from declared paths (all pre-approved at /session-start)**
+- `hud/PrivacyOverlay.tsx` listed but not touched — color-blind toggle placed in `SettingsView` inside `MenuOverlay.tsx` (privacy overlay is GDPR-only; accessibility prefs co-located with reducedMotion)
+- `scenes/settings.ts` listed but not touched — 5-line stub; real UI is in MenuOverlay
+- Added beyond declared paths: `hud/MenuOverlay.tsx`, `save/{schema.ts,migrate.ts}`, `state.ts`, `localization/keys.ts`, `fx/ambience.ts`
+- Cascading test updates required by v7→v8 schema bump and `ui.cb` nested shape: `tests/{save-migrator,theme,zone-stats,zone-ambience}.test.ts`
+
+**Gates**
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (+14 new, total 466)
+- build: ✅ (echoes native build message, exit 0)
+- device smoke: deferred to session #59 (PT-DeviceSmoke) per standing user directive (consistent with sessions #50, #72, #73)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Visual-A11y complete (session #74)` entry appended; per-milestone summary of M1 cb-tokens + v8 schema, M2 parallax-static + sigilOpacity, M3 PL diacritics test; drift notes included
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ PT-Visual-A11y (session #74) complete (2026-04-30)`, test count bumped 451 → 466
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (visual-bundle sessions tracked in Change log; §17 does not subdivide the Visual bundle rows)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (no A11y-specific checklist items exist for color-blind tokens or parallax-static reduce-motion)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): M1 color-blind tokens + colorBlindMode toggle + v8 save`
+2. `feat(pan-tvardowski): M2 parallax-static + sigilOpacity helpers`
+3. `test(pan-tvardowski): cb-palette + reduced-motion-extended + diacritics`
+4. `docs(pan-tvardowski): close session #74 PT-Visual-A11y`
+
+**Next session:** #75 "PT-Visual-Budget ★★ — M1 per-scene frame-budget guards (≤920 draws / 480 particles / 3 postfx worst-case) → M2 fps watchdog: drop chromatic-ab if avg fps <55 over 3s → M3 bench + record perf-baseline.md numbers post-rebrand"
+
+---

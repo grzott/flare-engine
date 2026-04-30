@@ -1981,3 +1981,44 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #82 "PT-Overlay-Polish ★★ — M1 inventory overlay: 4-tab grid with deck token spacing + parchment bg per folio XI → M2 codex overlay: 14-enemy + 8-boss grid with locked silhouettes per folio XI → M3 dialogue overlay: speaker portrait 44x44 + panel parchment bg per folio XI"
 
 ---
+
+## Session 82 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #82):** PT-Overlay-Polish ★★ — M1 inventory overlay: 4-tab grid with deck token spacing + parchment bg per folio XI → M2 codex overlay: 14-enemy + 8-boss grid with locked silhouettes per folio XI → M3 dialogue overlay: speaker portrait 44x44 + panel parchment bg per folio XI
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.tsx` (pre-approved drift: one-line `entryUnlocked` style application; mechanically required by M2)
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.styles.ts`
+- `apps/pan-tvardowski/tests/theme-overlays.test.ts` (pre-approved drift: fixture update forced by M1 tabActive retone `neutralLight→crimson`)
+- `apps/pan-tvardowski/tests/inventory-folio.test.ts` (new)
+- `apps/pan-tvardowski/tests/codex-folio.test.ts` (new)
+- `apps/pan-tvardowski/tests/dialogue-folio.test.ts` (new)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied; pan-tvardowski 245 files checked)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+6 new, total 555)
+- build: skipped (not in row #82 gate list)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended `+ PT-Overlay-Polish (session #82) complete`, test count bumped 549 → 555
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Overlay-Polish complete (session #82)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only, per sessions #76–#81 convention)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): inventory overlay folio XI alignment`
+2. `feat(pan-tvardowski): codex overlay folio XI alignment + entryUnlocked style`
+3. `feat(pan-tvardowski): dialogue overlay folio XI alignment`
+4. `test(pan-tvardowski): inventory + codex + dialogue folio tests +6`
+5. `docs(pan-tvardowski): session #82 done + mirror-row 555 tests`
+
+**Next session:** #83 "PT-Overlay-Polish-2 ★★ — M1 shop overlay: product cards with gold border + price labels per folio XI → M2 paywall overlay: full-bleed CTA with crimson gradient bg per folio XI → M3 codex-shards + achievements overlays folio-aligned layout"
+
+---

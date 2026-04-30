@@ -53,3 +53,30 @@ for (let i = 1; i < trace.length; i++) {
 // first-frame → save-loaded: 48.7 ms
 // save-loaded → audio-ready: 210.9 ms
 ```
+
+## Post-rebrand worst-case (session #75)
+
+### Design targets (frame-budget guards)
+
+| Budget dimension | Limit | Source |
+|---|---|---|
+| Draw calls (`posQuery.count`) | 920 | `BUDGET_LIMITS.draws` in `src/fx/budget.ts` |
+| Particle entities (`lifetimeQuery.count`) | 480 | `BUDGET_LIMITS.particles` in `src/fx/budget.ts` |
+| Active post-fx passes | 3 | `BUDGET_LIMITS.postfx` in `src/fx/budget.ts` |
+
+The limits are enforced at runtime via `recordBudget()` (console.warn on breach). The chromatic-aberration effect is registered in the chain with `enabled: false` so it does not consume an active-postfx slot at rest.
+
+### FPS watchdog threshold rationale
+
+The watchdog fires when the 180-frame rolling average drops below **55 fps**. Rationale:
+
+- 60 fps is the stable target on mid-tier devices (Galaxy A54).
+- A sustained 55 fps average indicates genuine GPU pressure, not a transient spike.
+- The only action on first trigger is disabling the chromatic-aberration pass (the cheapest effect to drop and the only one disabled by default). Vignette, bloom, and grayscale-flash are not dropped automatically.
+- The drop is sticky for the scene lifetime; `resetFpsRing()` clears the watchdog flag on each zone enter so the effect can re-enable if conditions improve across zones.
+
+### Real-device measurements
+
+| Device | Cold-start TTI | Sustained fps | Notes |
+|---|---|---|---|
+| Galaxy A54 / iPhone 12 | — | — | Pending real-device measurement (session #59) |

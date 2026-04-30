@@ -132,7 +132,7 @@ Folio references: [folio-06-skia-language.png](../../../docs/references/pan-tvar
 
 Hue families: enemies span the rainbow per species (folio XIIIb), mini-bosses crimson family (folio XIIIb+), bosses violet family (folio XIIIf), player ships brand-tagged (Kogut = gold, Twardoń = green, Bazyl = blue per folio XIIIc).
 
-Live `src/shape-catalogue.ts` does not yet implement this rule. Migration scheduled as a dedicated milestone (see §15).
+Live `src/shape-catalogue.ts` fully implements this rule across all 29 ships. Migration completed across sessions #76–#78. Pickups (`weaponPickups`, `upgradePickups`) intentionally remain `ShapeSpec[]` — they are items, not ships, and are not subject to this rule.
 
 ### 6 Skia primitives (folio VI)
 
@@ -154,54 +154,54 @@ Collision radii: [`src/theme/shapes.ts:3–11`](../src/theme/shapes.ts#L3)
 
 All shapes defined in [`src/shape-catalogue.ts`](../src/shape-catalogue.ts).
 
-#### Enemies (14) — lines 29–114
+#### Enemies (14) — ShipSpec: hull + 1–2 rect weapons + square engine (sessions #76–#78)
 
-| Entity | Kind | Key color constant | Line |
-|---|---|---|---|
-| `skrzat` | triangle + 2 circle eyes | ORANGE | [32](../src/shape-catalogue.ts#L32) |
-| `latawiec` | triangle + polyline tail | RED | [37](../src/shape-catalogue.ts#L37) |
-| `czart` | ngon-5 + 2 horn triangles | BLACK | [46](../src/shape-catalogue.ts#L46) |
-| `bies` | ngon-6 + circle eye | DARK_RED | [51](../src/shape-catalogue.ts#L51) |
-| `licho` | star-5 | PURPLE | [55](../src/shape-catalogue.ts#L55) |
-| `strzyga` | triangle + 2 wing rects | PALE | [56](../src/shape-catalogue.ts#L56) |
-| `topielec` | circle + 2 polyline legs | BLUE_GREEN | [61](../src/shape-catalogue.ts#L61) |
-| `mamuna` | ngon-8 + 3 circle spots | GREEN | [76](../src/shape-catalogue.ts#L76) |
-| `nocnica` | circle | BLACK | [82](../src/shape-catalogue.ts#L82) |
-| `poludnica` | triangle + rect | YELLOW_WHITE | [83](../src/shape-catalogue.ts#L83) |
-| `wapierz` | ngon-8 stroked | DARK_RED | [87](../src/shape-catalogue.ts#L87) |
-| `hound` | circle + 2 ear triangles + 2 eyes | BLACK | [97](../src/shape-catalogue.ts#L97) |
-| `dziwozona` | ngon-5 + 2 side triangles | TEAL | [104](../src/shape-catalogue.ts#L104) |
-| `moon-wraith` | triangle + ring + circle | `0xff2b2d5a` | [109](../src/shape-catalogue.ts#L109) |
+| Entity | Hull kind | Weapons | Hull key color | Line |
+|---|---|---|---|---|
+| `skrzat` | triangle size=14 | 1 rect | ORANGE | [45](../src/shape-catalogue.ts#L45) |
+| `latawiec` | triangle size=20 | 2 rects | RED | [51](../src/shape-catalogue.ts#L51) |
+| `czart` | ngon n=5 r=14 | 2 rects | BLACK | [60](../src/shape-catalogue.ts#L60) |
+| `bies` | ngon n=6 r=14 | 2 rects | DARK_RED | [69](../src/shape-catalogue.ts#L69) |
+| `licho` | star points=5 rOuter=16 rInner=7 | 1 rect | PURPLE | [78](../src/shape-catalogue.ts#L78) |
+| `strzyga` | triangle size=16 | 2 rects | PALE | [83](../src/shape-catalogue.ts#L83) |
+| `topielec` | circle r=14 | 2 rects | BLUE_GREEN | [93](../src/shape-catalogue.ts#L93) |
+| `mamuna` | ngon n=8 r=14 | 2 rects | GREEN | [102](../src/shape-catalogue.ts#L102) |
+| `nocnica` | circle r=10 | 1 rect | BLACK | [111](../src/shape-catalogue.ts#L111) |
+| `poludnica` | triangle size=18 | 2 rects | YELLOW_WHITE | [117](../src/shape-catalogue.ts#L117) |
+| `wapierz` | ngon n=8 r=18 stroked | 2 rects | DARK_RED | [126](../src/shape-catalogue.ts#L126) |
+| `hound` | circle r=11 | 2 rects | BLACK | [135](../src/shape-catalogue.ts#L135) |
+| `dziwozona` | ngon n=5 r=16 | 2 rects | TEAL | [144](../src/shape-catalogue.ts#L144) |
+| `moon-wraith` | triangle size=14 | 1 rect | `0xff2b2d5a` | [153](../src/shape-catalogue.ts#L153) |
 
-#### Mini-bosses (4) — lines 118–144
+#### Mini-bosses (4) — ShipSpec: hull + 2–3 rect weapons + square engine (crimson family, sessions #76–#78)
 
-| Entity | Kind | Key color | Line |
-|---|---|---|---|
-| `rokita` | ngon-4 + polyline roots | GREEN + BROWN | [119](../src/shape-catalogue.ts#L119) |
-| `leszy` | ngon-6 stroked | BROWN + GREEN | [128](../src/shape-catalogue.ts#L128) |
-| `nocny-lowca` | star-4 + 4 tip triangles | BLACK + PALE | [129](../src/shape-catalogue.ts#L129) |
-| `madej` | rect + 5 spike triangles | HELLFIRE + BLACK | [136](../src/shape-catalogue.ts#L136) |
+| Entity | Hull kind | Weapons | Hull key color | Line |
+|---|---|---|---|---|
+| `rokita` | ngon n=6 r=30 | 2 rects | CRIMSON | [165](../src/shape-catalogue.ts#L165) |
+| `leszy` | ngon n=4 r=32 stroked | 3 rects | CRIMSON_DARK | [173](../src/shape-catalogue.ts#L173) |
+| `nocny-lowca` | ngon n=5 r=30 | 3 rects | CRIMSON_RUST | [183](../src/shape-catalogue.ts#L183) |
+| `madej` | triangle size=34 stroked | 2 rects | CRIMSON_RUST | [193](../src/shape-catalogue.ts#L193) |
 
-#### Bosses (8) — lines 148–211
+#### Bosses (8) — ShipSpec: hull + 2–4 rect weapons + square engine (violet family, sessions #76–#78)
 
-| Entity | Kind | Key color | Line |
-|---|---|---|---|
-| `smok-krzemionkowski` | ngon-6 + triangle flame | COPPER + HELLFIRE | [149](../src/shape-catalogue.ts#L149) |
-| `borowy-krol` | ngon-5 stroked + star-5 | GREEN + BROWN | [153](../src/shape-catalogue.ts#L153) |
-| `wodnik-wislanny` | gradient-rect + circle | `0xff2f5f7a` + BLUE_GREEN | [165](../src/shape-catalogue.ts#L165) |
-| `boruta` | ngon-8 stroked + 2 triangles | BLACK + HELLFIRE | [176](../src/shape-catalogue.ts#L176) |
-| `baba-jaga` | ngon-3 + rect broom | PURPLE + BROWN | [188](../src/shape-catalogue.ts#L188) |
-| `bazyliszek-warszawski` | ngon-6 + circle eye | `0xff9d3dff` + EYE_YELLOW | [192](../src/shape-catalogue.ts#L192) |
-| `mefistofeles` | star-6 + circle | HELLFIRE + BLACK | [196](../src/shape-catalogue.ts#L196) |
-| `lucyper-ksiezycowy` | gradient-rect + star-8 | `0xff2b2d5a`→`0xffd6002e` + MIRROR | [200](../src/shape-catalogue.ts#L200) |
+| Entity | Hull kind | Weapons | Hull key color | Line |
+|---|---|---|---|---|
+| `smok-krzemionkowski` | ngon n=6 r=48 | 2 rects | VIOLET_DARK | [213](../src/shape-catalogue.ts#L213) |
+| `borowy-krol` | ngon n=5 r=52 | 3 rects | VIOLET_DEEP | [221](../src/shape-catalogue.ts#L221) |
+| `wodnik-wislanny` | circle r=44 stroked | 2 rects | VIOLET_MID | [231](../src/shape-catalogue.ts#L231) |
+| `boruta` | ngon n=8 r=50 stroked | 4 rects | `0xff4a1270` | [240](../src/shape-catalogue.ts#L240) |
+| `baba-jaga` | ngon n=3 r=48 | 2 rects | `0xff6a28a8` | [252](../src/shape-catalogue.ts#L252) |
+| `bazyliszek-warszawski` | ngon n=6 r=52 | 4 rects | `0xff9d3dff` | [262](../src/shape-catalogue.ts#L262) |
+| `mefistofeles` | star points=6 rOuter=50 rInner=20 | 3 rects | `0xff2a0840` | [274](../src/shape-catalogue.ts#L274) |
+| `lucyper-ksiezycowy` | star points=8 rOuter=54 rInner=22 | 4 rects | `0xff7020b8` | [285](../src/shape-catalogue.ts#L285) |
 
-#### Ships (3) — lines 215–225
+#### Ships / players (3) — ShipSpec: hull + 2 rect weapons + square engine (brand-tagged, sessions #76–#78)
 
-| Entity | Kind | Key color | Line |
-|---|---|---|---|
-| `kogut-zloty` | triangle + circle engine | GOLD + HELLFIRE | [216](../src/shape-catalogue.ts#L216) |
-| `alembik` | ngon-5 stroked | MIRROR + COPPER | [220](../src/shape-catalogue.ts#L220) |
-| `zwierciadlo` | ngon-4 stroked + ring | MIRROR + BLACK | [221](../src/shape-catalogue.ts#L221) |
+| Entity | Hull kind | Weapons | Hull key color | Line |
+|---|---|---|---|---|
+| `kogut-zloty` | triangle size=28 | 2 rects | GOLD | [303](../src/shape-catalogue.ts#L303) |
+| `alembik` | ngon n=6 r=22 stroked | 2 rects | BOG_GREEN | [312](../src/shape-catalogue.ts#L312) |
+| `zwierciadlo` | ngon n=4 r=24 stroked | 2 rects | DEEP_BLUE | [322](../src/shape-catalogue.ts#L322) |
 
 #### Weapon pickups (4) — lines 229–245
 
@@ -591,7 +591,7 @@ Punch-list of folio-vs-code gaps, severity-ordered. Each row maps to an existing
 
 | # | Gap | Folio | Code locus | Severity | Session | Status |
 |---|---|---|---|---|---|---|
-| 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | new milestone (2–3 sessions) | open |
+| 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
 | 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | open |
 | 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + new HUD-layout session | open |
 | 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/palette.ts`](../src/palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | open |

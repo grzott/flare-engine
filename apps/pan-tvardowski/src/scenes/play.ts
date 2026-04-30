@@ -1,8 +1,10 @@
 import type { A11yBridge } from '@flare-engine/a11y';
+import { type Tween, resetTween, tween, updateTween } from '@flare-engine/animation';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
 import { canAccessContent } from '@flare-engine/iap';
+import { easeInCubic, easeOutBack, easeOutExpo } from '@flare-engine/math';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxController } from '@flare-engine/postfx';
@@ -160,6 +162,12 @@ interface PlayState {
   autoSaveAccum: number;
   /** Parallax-particle ambience state for the current zone. Null while not in play. */
   ambience: AmbienceState | null;
+  /** Folio XIV M2: boss-bar fade-in tween (easeOutExpo 600 ms). */
+  bossBarTween: Tween;
+  /** Folio XIV M2: game-over overlay fade-in tween (easeInCubic 1200 ms). */
+  gameOverTween: Tween;
+  /** Folio XIV M1 item 5: combo-pulse tween (easeOutBack 120 ms). */
+  comboPulseTween: Tween;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -212,6 +220,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         disposed: false,
         autoSaveAccum: 0,
         ambience: null,
+        bossBarTween: { ...tween(0, 1, 0.6, easeOutExpo), done: true },
+        gameOverTween: { ...tween(0, 1, 1.2, easeInCubic), done: true },
+        comboPulseTween: { ...tween(1, 1.18, 0.12, easeOutBack), done: true },
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -684,6 +695,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           gameState.bossActive = true;
           gameState.bossHpMax = s.zone.bossHp;
           gameState.bossHp = s.zone.bossHp;
+          if (gameState.settings.reducedMotion) {
+            gameState.bossBarOpacity = 1;
+          } else {
+            gameState.bossBarOpacity = 0;
+            resetTween(s.bossBarTween);
+          }
           notifyStateChanged();
         }
 
@@ -723,6 +740,18 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.runStats.kills[pattern] += 1;
             gameState.comboCount += 1;
             gameState.comboHit = true;
+            if (s) {
+              if (gameState.settings.reducedMotion) {
+                gameState.comboPulseScale = 1;
+              } else {
+                gameState.comboPulseScale = 1;
+                resetTween(s.comboPulseTween);
+                s.comboPulseTween.onComplete = () => {
+                  gameState.comboPulseScale = 1;
+                  notifyStateChanged();
+                };
+              }
+            }
             burstExplosion(ctx.world, atlas, x, y, 8, (x * 31 + y * 17) | 0 || 1);
             playSfx(audioRef?.current, 'explode');
             // Dziwożona splits on death — spawn DZIWOZONA_SKRZAT_SPAWN Skrzats.
@@ -745,6 +774,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.comboCount = 0;
             gameState.comboHit = false;
             gameState.gameOver = true;
+            if (gameState.settings.reducedMotion) {
+              gameState.gameOverOpacity = 1;
+            } else {
+              gameState.gameOverOpacity = 0;
+              if (s) resetTween(s.gameOverTween);
+            }
             notifyStateChanged();
             applyShake(ctx.camera, 16, 0.7);
             void save.commitRun(gameState.score, false, s?.zone.id);
@@ -776,6 +811,29 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         if (s.pendingShake) {
           s.pendingShake = false;
           applyShake(ctx.camera, 6, 0.2);
+        }
+
+        // Advance HUD opacity/scale tweens and publish changes.
+        if (!s.bossBarTween.done) {
+          const nextOpacity = updateTween(s.bossBarTween, dt);
+          if (Math.abs(gameState.bossBarOpacity - nextOpacity) > 0.01) {
+            gameState.bossBarOpacity = nextOpacity;
+            notifyStateChanged();
+          }
+        }
+        if (!s.gameOverTween.done) {
+          const nextGameOver = updateTween(s.gameOverTween, dt);
+          if (Math.abs(gameState.gameOverOpacity - nextGameOver) > 0.01) {
+            gameState.gameOverOpacity = nextGameOver;
+            notifyStateChanged();
+          }
+        }
+        if (!s.comboPulseTween.done) {
+          const nextScale = updateTween(s.comboPulseTween, dt);
+          if (Math.abs(gameState.comboPulseScale - nextScale) > 0.01) {
+            gameState.comboPulseScale = nextScale;
+            notifyStateChanged();
+          }
         }
 
         // Publish boss status to HUD state.

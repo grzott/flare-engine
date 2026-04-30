@@ -92,9 +92,10 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
         top: 32 + topInset,
         left: 16 + horizontalInsetLeft,
         right: 16 + horizontalInsetRight,
+        opacity: s.bossBarOpacity,
       },
     ],
-    [topInset, horizontalInsetLeft, horizontalInsetRight],
+    [topInset, horizontalInsetLeft, horizontalInsetRight, s.bossBarOpacity],
   );
   const minibossBarStyle = useMemo(
     () => [
@@ -111,6 +112,10 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
   const centerOverlayStyle = useMemo(
     () => [styles.centerOverlay, { paddingBottom: bottomInset }],
     [bottomInset],
+  );
+  const gameOverOverlayStyle = useMemo(
+    () => [styles.centerOverlay, { paddingBottom: bottomInset, opacity: s.gameOverOpacity }],
+    [bottomInset, s.gameOverOpacity],
   );
 
   const bossBarBgStyle = useMemo(
@@ -134,7 +139,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
                   s.comboHit
                     ? s.settings.reducedMotion
                       ? styles.comboPulseReduced
-                      : styles.comboPulse
+                      : [styles.combo, { transform: [{ scale: s.comboPulseScale }] }]
                     : styles.combo
                 }
               >{`×${s.comboCount}`}</Text>
@@ -236,7 +241,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       ) : null}
 
       {isGameOver ? (
-        <Pressable style={centerOverlayStyle} onPress={actions.onRetry}>
+        <Pressable style={gameOverOverlayStyle} onPress={actions.onRetry}>
           <Text style={styles.bannerTitle}>{t('menu.game_over.title')}</Text>
           <Text style={styles.bannerSub}>{t('hud.score', { score: s.score })}</Text>
           <Text style={styles.tapHint}>{t('menu.tap_retry')}</Text>

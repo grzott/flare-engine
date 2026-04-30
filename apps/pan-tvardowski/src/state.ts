@@ -213,6 +213,22 @@ export interface GameState {
    * @stub Set by applyShake when reducedMotion=true or screenShake=false.
    */
   redFlash: boolean;
+  /**
+   * Scale factor for the combo-pulse animation (easeOutBack 120 ms).
+   * 1.0 = normal size; > 1.0 = overshoot. HUD reads this for the combo label style.
+   * Reduced-motion: held at 1.0 (no scale animation).
+   */
+  comboPulseScale: number;
+  /**
+   * Boss health-bar fade-in opacity (easeOutExpo 600 ms, 0 → 1 on boss spawn).
+   * Reduced-motion: snaps to 1 immediately.
+   */
+  bossBarOpacity: number;
+  /**
+   * Game-over overlay fade-in opacity (easeInCubic 1200 ms, 0 → 1 on player down).
+   * Reduced-motion: snaps to 1 immediately.
+   */
+  gameOverOpacity: number;
 }
 
 export const gameState: GameState = {
@@ -253,6 +269,9 @@ export const gameState: GameState = {
   weaponCooldownPct: 1.0,
   weaponLevel: 0,
   redFlash: false,
+  comboPulseScale: 1,
+  bossBarOpacity: 0,
+  gameOverOpacity: 0,
 };
 
 export const stateChanged = new Signal<void>();
@@ -312,6 +331,9 @@ export function resetGameState(): void {
   gameState.weaponCooldownPct = 1.0;
   gameState.weaponLevel = 0;
   gameState.redFlash = false;
+  gameState.comboPulseScale = 1;
+  gameState.bossBarOpacity = 0;
+  gameState.gameOverOpacity = 0;
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

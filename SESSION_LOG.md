@@ -1722,3 +1722,55 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #76 — no next row; run `/plan-sessions` to cut the next slice.
 
 ---
+
+## Session 76 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #76):** PT-Ship-Anatomy-1 ★★ — M1 define ShipSpec type (hull + weapons[] + engine) in shapes.ts → M2 rewrite 14 enemies in shape-catalogue.ts as 3-element ships per folio XIIIb → M3 add hull/weapon/engine draw pass in shapes-draw.ts
+
+**Bundle summary**
+- M1: `ShipSpec` type added to `src/shapes.ts` — `{ kind: 'ship'; hull: NgonSpec; weapons: readonly RectSpec[]; engine: SquareSpec; glow?: GlowKind }`; `SquareSpec` leaf type added; `ShapeSpec` union extended with both. Implements folio XIIIa 3-element rule (hull + N rect weapons + 1 square engine).
+- M2: all 14 enemies in `src/shape-catalogue.ts` rewritten as `ShipSpec` entries; `enemies` field typed as `Record<string, ShipSpec>`; `(12)` comment corrected to `(14)`; `src/shape-atlas.ts` call-site updated (⊞ drift — forced by type change).
+- M3: `case 'ship'` branch added to `drawShape` / `glowRadius` / `shapeBoundsRadius` in `src/shapes-draw.ts`; private `drawSquare` + `drawShip` helpers implement engine→hull→weapons draw order.
+
+**Touched files**
+- `apps/pan-tvardowski/src/shapes.ts`
+- `apps/pan-tvardowski/src/shape-catalogue.ts`
+- `apps/pan-tvardowski/src/shapes-draw.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts` (⊞ drift — call-site fix forced by enemies type change)
+- `apps/pan-tvardowski/tests/shape-catalogue.test.ts`
+- `apps/pan-tvardowski/tests/glow-recipes.test.ts`
+- `apps/pan-tvardowski/tests/ship-anatomy.test.ts` (new)
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+- `SESSION_LOG.md`
+
+**Drift from declared paths (all approved)**
+- `src/shape-atlas.ts` — call-site fix forced by `enemies` type change from loose object to `Record<string, ShipSpec>`; no alternative path
+- T5 silhouette uniqueness key broadened to include shape params (`n`/`r`) — `bies` vs `wapierz` differ in `n`; spec clarification, not scope expansion
+- `weapons: ReadonlyArray<RectSpec>` → `readonly RectSpec[]` per Biome `useConsistentArrayType` lint rule; semantically identical
+
+**Gates**
+- lint: ✅ (39/39 packages, 229 PT files, no fixes applied)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+8 net new tests, 483→484 total; 7 new in ship-anatomy.test.ts + test-file updates in shape-catalogue + glow-recipes)
+- build: ✅ (stub echo, exit 0)
+- device smoke: deferred (per session #50 footnote convention)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Ship-Anatomy-1 complete (session #76)` entry appended; per-milestone M1/M2/M3 summary + drift notes included
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ PT-Ship-Anatomy-1 (session #76) complete (2026-04-30)`, test count bumped 476 → 484
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (visual-bundle sessions tracked in Change log only)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): ShipSpec type — hull + weapons[] + engine`
+2. `feat(pan-tvardowski): rewrite 14 enemies as 3-element ShipSpec`
+3. `feat(pan-tvardowski): ship draw pass engine→hull→weapons in shapes-draw`
+4. `docs(pan-tvardowski): change-log + mirror-row sync for session #76`
+
+**Next session:** #77 "PT-Ship-Anatomy-2 ★★ — M1 rewrite 4 mini-bosses as 3-element ships per folio XIIIb+ (crimson hue family) → M2 rewrite 8 bosses per folio XIIIf (violet hue family, 2-4 weapons) → M3 rewrite 3 player ships per folio XIIIc (Kogut gold, Twardon green, Bazyl blue)"
+
+---
+
+---

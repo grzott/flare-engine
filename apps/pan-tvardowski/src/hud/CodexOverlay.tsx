@@ -94,7 +94,7 @@ function CodexView({ localization: l, save, actions }: CodexOverlayProps): React
               {unlockedEntries.map((entry) => {
                 const bossExtra = entry.category === 'boss' ? findBossExtra(entry.id) : undefined;
                 return (
-                  <View key={entry.id} style={styles.entryRow}>
+                  <View key={entry.id} style={[styles.entryRow, styles.entryUnlocked]}>
                     <Label variant="sm" tone="accent">
                       {t(entry.nameKey)}
                     </Label>

@@ -1773,4 +1773,47 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 
 ---
 
+## Session 77 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #77):** PT-Ship-Anatomy-2 ★★ — M1 rewrite 4 mini-bosses as 3-element ships per folio XIIIb+ (crimson hue family) → M2 rewrite 8 bosses per folio XIIIf (violet hue family, 2-4 weapons) → M3 rewrite 3 player ships per folio XIIIc (Kogut gold, Twardon green, Bazyl blue)
+
+**Touched files**
+- `apps/pan-tvardowski/src/shape-catalogue.ts`
+- `apps/pan-tvardowski/tests/miniboss-ships.test.ts` (new)
+- `apps/pan-tvardowski/tests/boss-ships.test.ts` (new)
+- `apps/pan-tvardowski/tests/player-ships.test.ts` (new)
+- `apps/pan-tvardowski/tests/boss-visual-audit.test.ts` (updated — companion rewrite)
+- `apps/pan-tvardowski/tests/glow-recipes.test.ts` (updated — companion rewrite)
+- `apps/pan-tvardowski/tests/shape-catalogue.test.ts` (updated — companion rewrite)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md` (change-log entry — builder must add before docs commit)
+- `docs/references/builder-reference.md` (mirror row update — builder must add before docs commit)
+
+**Drift from declared paths (all accepted)**
+- `tests/player-ships.test.ts` shipped 6 tests (2 describes × 3 each) vs declared 3; net test delta +12 vs planned +9; broader coverage, no functional drift
+- 8 bosses use 3 named violet constants (`VIOLET`, `VIOLET_DARK`, `VIOLET_MID`) + 2 inline ARGB literals (5 distinct shades); `boss-ships.test.ts` validates via channel comparison rather than named-constant equality — accommodates the 5-shade palette without locking each boss to a single constant
+- `tests/boss-visual-audit.test.ts` rewritten — net 6 tests (count unchanged), assertions migrated from array indexing to `ShipSpec` field access; mechanical, type-forced by the ShipSpec type change in session #76
+- `tests/glow-recipes.test.ts` (+2 assertions) and `tests/shape-catalogue.test.ts` (1 test split into 2) updated — also mechanical, type-forced
+- Unused `COPPER` constant removed from `shape-catalogue.ts` — dead-code cleanup, zero functional change
+
+**Gates**
+- lint: ✅ (39/39 packages, 232 PT files, no fixes applied)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+12 net new tests, 484→496 total; 3 new in miniboss-ships + 3 new in boss-ships + 6 new in player-ships; companion test rewrites net-neutral)
+- build: ✅ (stub echo, exit 0)
+- device smoke: deferred (per session #50 footnote convention; will be recorded in session #59 PT-DeviceSmoke)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Ship-Anatomy-2 complete (session #77)` entry required; builder must append before running the docs commit block
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row requires update: append `+ PT-Ship-Anatomy-2 (session #77) complete`, bump test count 484 → 496; builder must edit before running the docs commit block
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (visual-bundle sessions tracked in Change log only)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): rewrite mini-bosses + bosses + players as ShipSpec`
+2. `test(pan-tvardowski): ship-anatomy coverage for miniboss/boss/player`
+3. `docs(pan-tvardowski): change-log + mirror-row sync for session #77`
+
+**Next session:** #78 "PT-Ship-Anatomy-3 ★★ — M1 weapon-pickup + upgrade-pickup shape migration (4 + 6 entities) per folio XIIIc → M2 verify all 29 ships distinct at phone scale (visual-audit test) → M3 update visual-reference.md section 3 + section 15 gap #1 to done"
+
 ---

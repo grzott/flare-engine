@@ -1456,4 +1456,41 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 
 ---
 
+## Session 50 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #50):** PT-Final bundle ★★ — M1 credits PL/EN → M2 auto-persist on zone-enter + idle → M3 device-smoke gate (Galaxy A54 + iPhone)
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/credits-sections.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/localization/keys.ts` (⊕ mechanical: 27 `credits.*` keys, type-safe key system)
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/credits-locale.test.ts` (new file)
+- `apps/pan-tvardowski/tests/auto-persist.test.ts` (new file)
+- `apps/pan-tvardowski/docs/device-smoke.md` (new file)
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (`biome check src/ tests/` — 215 files, 0 errors)
+- typecheck: ✅ (`tsc --noEmit` clean)
+- test: ✅ (+6 new, total 434 pass / 0 fail — `bun test` in `apps/pan-tvardowski`, 90 files)
+- build: ✅ (native build echo stub clean)
+- check:locales: ✅ (334 keys, en + pl in parity)
+- device smoke: deferred by user — to be confirmed in session #59 (PT-DeviceSmoke); run `bun --cwd apps/pan-tvardowski run android` (Galaxy A54) or `bun --cwd apps/pan-tvardowski run ios` (iPhone)
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #50 flipped `in_progress` → `done ⊞`, closed 2026-04-30; ⊞ drift footnote appended (keys.ts mechanical drift, store.ts not touched, +6 vs +5 tests, device-smoke deferred)
+- `docs/plans/pan-tvardowski-build-plan.md` — OUTSTANDING: no `2026-04-30` change-log entry was appended by the builder; must be added before or alongside session commits
+- `docs/references/builder-reference.md` — OUTSTANDING: mirror row still reads "428 tests / session #49"; must be updated to "434 tests / session #50 complete / 334 locale keys" before or alongside session commits
+- `docs/plans/release-readiness-checklist.md` — no new ticks; auto-persist and credits localization have no corresponding RR line items
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): localize credits sections to PL+EN`
+2. `feat(pan-tvardowski): auto-persist save on zone enter + 30s idle`
+3. `docs(pan-tvardowski): add device-smoke checklist for A54+iPhone`
+
+**Next session:** #51 "Engine: GameView safeArea prop + useSafeArea hook; PT: delete manual bottomInset plumbing"
+
 ---

@@ -202,12 +202,7 @@ describe('GameView safe-area integration', () => {
     expect(values[0]).toEqual(explicit);
   });
 
-  it('T5: falls back to zero insets when react-native-safe-area-context is unavailable', () => {
-    // The fallback is exercised when tryGetSafeAreaInsets catches — we verify it via
-    // the module's exported ZERO_INSETS shape. When RN-SAC mock throws, the caught
-    // branch returns { top:0, right:0, bottom:0, left:0 }.
-    // Here we directly verify the GameView with an explicit zero-equivalent prop
-    // matches the expected fallback shape.
+  it('T5: explicit zero-insets prop is honored as the resolved safe area', () => {
     const fallback: SafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
     gameViewModule.GameView({ safeArea: fallback });
     const values = findSafeAreaValues();

@@ -3,6 +3,7 @@ import type { World } from '@flare-engine/ecs';
 import { Position, Velocity } from '@flare-engine/ecs';
 import { Sprite, tint } from '@flare-engine/render';
 import type { AnySpriteEffect } from '@flare-engine/render';
+import { getParallaxVelocity } from '../a11y/reduced-motion';
 import { Lifetime } from '../components';
 import type { ZonePalette } from '../palette';
 import type { AtlasHandle } from '../spawn';
@@ -72,7 +73,9 @@ export function createAmbienceState(world: World, atlas: AtlasHandle): AmbienceS
  * Tick ambience particles. Call once per frame from play.ts onUpdate.
  *
  * spawnRate = ambienceParticles / 8 (per plan §M2).
- * Under reducedMotion or bossActive, spawn rate is 0.
+ * Under bossActive, spawn rate is 0.
+ * Under reducedMotion, particles spawn at their normal rate but with zero
+ * velocity (spawn-static) so the scene has ambient depth without motion.
  */
 export function tickAmbience(
   state: AmbienceState,
@@ -82,7 +85,7 @@ export function tickAmbience(
   reducedMotion: boolean,
   bossActive: boolean,
 ): void {
-  if (reducedMotion || bossActive) return;
+  if (bossActive) return;
 
   const spawnRate = zonePalette.ambienceParticles / 8;
   const interval = 1 / spawnRate;
@@ -116,10 +119,14 @@ export function tickAmbience(
   state.ring[slot] = id;
 
   // Alternate between slow and fast parallax layers via LCG parity.
+  // Under reducedMotion, getParallaxVelocity returns 0 — particle is
+  // static (spawn-static behaviour).
   const r = lcgNext(state);
   const isFast = r < 0.5;
-  const vy = isFast ? VEL_FAST : VEL_SLOW;
-  const vx = (lcgNext(state) - 0.5) * 4;
+  const baseVy = isFast ? VEL_FAST : VEL_SLOW;
+  const baseVx = (lcgNext(state) - 0.5) * 4;
+  const vy = getParallaxVelocity(baseVy, reducedMotion);
+  const vx = getParallaxVelocity(baseVx, reducedMotion);
 
   const x = lcgNext(state) * bounds.width;
   const y = -10 - lcgNext(state) * 40;

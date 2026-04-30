@@ -1937,3 +1937,47 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #81 "PT-Frontmatter-2 ★★ — M1 settings screen: grouped toggles + sliders per folio X ASCII mockup → M2 credits screen: scroll with EB Garamond headings + source-sans body per folio X → M3 add PL+EN keys for any new settings/credits labels"
 
 ---
+
+## Session 81 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #81):** PT-Frontmatter-2 ★★ — M1 settings screen: grouped toggles + sliders per folio X ASCII mockup → M2 credits screen: scroll with EB Garamond headings + source-sans body per folio X → M3 add PL+EN keys for any new settings/credits labels
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts` (pre-approved drift #1: sibling .styles.ts companion of declared MenuOverlay.tsx; standard pattern)
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/src/localization/keys.ts` (pre-approved drift #2: type-safe key system requires sync with locale JSON; same pattern as #48, #49, #50, #80)
+- `apps/pan-tvardowski/tests/settings-screen.test.ts` (new)
+- `apps/pan-tvardowski/tests/credits-screen.test.ts` (new)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Drift notes**
+- `scenes/settings.ts` not modified — UI lives in `SettingsView` inside `MenuOverlay.tsx`; scene shell unchanged. Same pattern as #80's `scenes/{boot,menu,save-select}.ts` drift.
+- `hud/PrivacyOverlay.tsx` not modified — folio-X plan elevated analytics+crash toggles into `SettingsView` while keeping the modal as the "Data details" target; no internal change needed.
+- Test count: row declared `+4`, actual shipped `+5` (3 in settings-screen + 2 in credits-screen); both test files are within declared wildcard; not a blocker.
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied; pan-tvardowski cache-miss fresh pass)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+5 new, total 549)
+- build: skipped (not in row #81 gate list)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended `+ PT-Frontmatter-2 (session #81) complete`, test count bumped 544 → 549
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Frontmatter-2 complete (session #81)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only, per sessions #76–#80 convention)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): settings groups + credits typography per folio X`
+2. `feat(pan-tvardowski): add settings.group.* locale keys EN+PL`
+3. `test(pan-tvardowski): settings groups + credits style tests +5`
+4. `docs(pan-tvardowski): session #81 done + mirror-row 549 tests`
+
+**Next session:** #82 "PT-Overlay-Polish ★★ — M1 inventory overlay: 4-tab grid with deck token spacing + parchment bg per folio XI → M2 codex overlay: 14-enemy + 8-boss grid with locked silhouettes per folio XI → M3 dialogue overlay: speaker portrait 44x44 + panel parchment bg per folio XI"
+
+---

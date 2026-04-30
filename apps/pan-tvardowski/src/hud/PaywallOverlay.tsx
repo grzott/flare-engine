@@ -4,7 +4,11 @@ import { PaywallModal } from '@flare-engine/ui-shop';
 import type { PaywallStrings } from '@flare-engine/ui-shop';
 import type React from 'react';
 import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { ENTITLEMENT_FULL_GAME, SKU_FULL_GAME } from '../iap/catalog';
+import { rawStyles } from './PaywallOverlay.styles';
+
+const styles = StyleSheet.create(rawStyles);
 
 const PAYWALL_STRINGS: PaywallStrings = {
   headingKey: 'paywall.heading',
@@ -31,14 +35,16 @@ export function PaywallOverlay({
   const t = useMemo(() => (key: string) => localization.t(key), [localization]);
 
   return (
-    <PaywallModal
-      visible={visible}
-      productId={SKU_FULL_GAME}
-      entitlementKey={ENTITLEMENT_FULL_GAME}
-      entitlementStore={entitlementStore}
-      strings={PAYWALL_STRINGS}
-      localize={t}
-      onDismiss={onDismiss}
-    />
+    <View style={styles.wrapper}>
+      <PaywallModal
+        visible={visible}
+        productId={SKU_FULL_GAME}
+        entitlementKey={ENTITLEMENT_FULL_GAME}
+        entitlementStore={entitlementStore}
+        strings={PAYWALL_STRINGS}
+        localize={t}
+        onDismiss={onDismiss}
+      />
+    </View>
   );
 }

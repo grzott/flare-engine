@@ -2,10 +2,15 @@ import { describe, expect, test } from 'bun:test';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 
 describe('postfx chain', () => {
-  test('registers vignette + bloom + grayscale-flash in order', () => {
+  test('registers vignette + bloom + grayscale-flash (chromatic-aberration added disabled)', () => {
     const fx = createPanTvardowskiPostFx(null);
     const ids = fx.chain.all().map((e) => e.id);
-    expect(ids).toEqual(['vignette', 'bloom', 'grayscale-flash']);
+    expect(ids).toContain('vignette');
+    expect(ids).toContain('bloom');
+    expect(ids).toContain('grayscale-flash');
+    expect(ids).toContain('chromatic-aberration');
+    // chromatic-aberration is disabled at rest
+    expect(fx.chain.get('chromatic-aberration')?.enabled).toBe(false);
   });
 
   test('triggerHitFlash spikes grayscale-flash intensity to 1', () => {

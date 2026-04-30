@@ -307,6 +307,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       gameState.minibossActive = false;
       gameState.minibossHp = 0;
       gameState.minibossHpMax = 0;
+      gameState.comboCount = 0;
+      gameState.comboHit = false;
       gameState.gameOver = false;
       gameState.victory = false;
       gameState.currentScene = 'play';
@@ -432,6 +434,15 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           },
           speedMul: gameState.bossGazeActive ? BAZYLISZEK_GAZE_SPEED_MUL : 1,
         });
+        // Publish player weapon cooldown fraction to HUD state. Zero-alloc —
+        // iterates the pre-created shipQuery, stops on player entity.
+        for (const sid of s.shipQuery) {
+          const ship = ctx.world.get(sid, Ship);
+          if (ship && ship.fireRate > 0) {
+            gameState.weaponCooldownPct = 1 - ship.cooldown / ship.fireRate;
+          }
+          break;
+        }
         updateEnemyAI(ctx.world, dt, {
           spawnCtx: s.spawnCtx,
           query: s.enemyQuery,
@@ -710,6 +721,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             gameState.score += score;
             gameState.runStats.score = gameState.score;
             gameState.runStats.kills[pattern] += 1;
+            gameState.comboCount += 1;
+            gameState.comboHit = true;
             burstExplosion(ctx.world, atlas, x, y, 8, (x * 31 + y * 17) | 0 || 1);
             playSfx(audioRef?.current, 'explode');
             // Dziwożona splits on death — spawn DZIWOZONA_SKRZAT_SPAWN Skrzats.
@@ -729,6 +742,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             notifyStateChanged();
           },
           onPlayerDown: () => {
+            gameState.comboCount = 0;
+            gameState.comboHit = false;
             gameState.gameOver = true;
             notifyStateChanged();
             applyShake(ctx.camera, 16, 0.7);

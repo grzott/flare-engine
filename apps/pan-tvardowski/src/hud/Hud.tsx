@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getUiPrimaryHex } from '../palette';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
 import { rawStyles } from './Hud.styles';
+import { zoneRomanNumeral } from './zone-banner';
 
 function dismissStaleEntitlement(): void {
   gameState.entitlementHealth = 'ok';
@@ -58,6 +59,12 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       if (next.redFlash) {
         setTimeout(() => {
           gameState.redFlash = false;
+          notifyStateChanged();
+        }, 16);
+      }
+      if (next.comboHit) {
+        setTimeout(() => {
+          gameState.comboHit = false;
           notifyStateChanged();
         }, 16);
       }
@@ -121,7 +128,17 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
         <>
           <View style={topLeftStyle}>
             <Text style={styles.score}>{t('hud.score', { score: s.score })}</Text>
-            {s.comboCount > 1 ? <Text style={styles.combo}>{`×${s.comboCount}`}</Text> : null}
+            {s.comboCount > 1 ? (
+              <Text
+                style={
+                  s.comboHit
+                    ? s.settings.reducedMotion
+                      ? styles.comboPulseReduced
+                      : styles.comboPulse
+                    : styles.combo
+                }
+              >{`×${s.comboCount}`}</Text>
+            ) : null}
             <View style={styles.hpBarBg}>
               <LinearGradient
                 colors={['#2a0810', '#D4213D']}
@@ -135,13 +152,22 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
             </View>
             <View style={styles.weaponMeterRow}>
               {WEAPON_SEGMENTS.map((i) => {
-                const filledCount = Math.round(s.weaponCooldownPct * 5);
-                return (
-                  <View
-                    key={i}
-                    style={i < filledCount ? styles.weaponSegmentFilled : styles.weaponSegment}
-                  />
-                );
+                if (i < s.weaponLevel) {
+                  return <View key={i} style={styles.weaponSegmentFilled} />;
+                }
+                if (i === s.weaponLevel) {
+                  return (
+                    <View key={i} style={styles.weaponSegmentCooldown}>
+                      <View
+                        style={[
+                          styles.weaponSegmentCooldownFill,
+                          { width: `${s.weaponCooldownPct * 100}%` },
+                        ]}
+                      />
+                    </View>
+                  );
+                }
+                return <View key={i} style={styles.weaponSegment} />;
               })}
             </View>
             <Text style={styles.bombs}>{t('hud.bombs_remaining', { n: s.bombCharges })}</Text>
@@ -192,6 +218,8 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
               style={[styles.zoneBanner, { opacity: s.zoneBanner.opacity }]}
               pointerEvents="none"
             >
+              <Text style={styles.zoneBannerNumeral}>{zoneRomanNumeral(s.currentZone)}</Text>
+              <View style={styles.zoneBannerRule} />
               <Text style={styles.zoneBannerTitle}>{t(s.zoneBanner.nameKey)}</Text>
               <Text style={styles.zoneBannerSub}>{t(s.zoneBanner.subtitleKey)}</Text>
             </View>

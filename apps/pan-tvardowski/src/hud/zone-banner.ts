@@ -1,5 +1,22 @@
 import { type Tween, tween, updateTween } from '@flare-engine/animation';
 import { easeOutCubic } from '@flare-engine/math';
+import type { ZoneId } from '../events';
+
+const ZONE_NUMERALS: Record<ZoneId, string> = {
+  z1: 'I',
+  z2: 'II',
+  z3: 'III',
+  z4: 'IV',
+  z5: 'V',
+  z6: 'VI',
+  z7: 'VII',
+  z8: 'VIII',
+};
+
+/** Maps a ZoneId to its Roman numeral string (I–VIII). */
+export function zoneRomanNumeral(zoneId: ZoneId): string {
+  return ZONE_NUMERALS[zoneId];
+}
 
 /**
  * Zone-intro banner state. A brief fade-in (0.5 s) + hold (1.5 s) + fade-out

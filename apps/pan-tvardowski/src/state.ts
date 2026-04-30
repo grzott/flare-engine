@@ -191,14 +191,23 @@ export interface GameState {
   inventoryActiveTab: InventoryTab;
   /**
    * Running kill-streak counter for combo display.
-   * @stub Will be wired by future session; HUD renders only when comboCount > 1.
+   * HUD renders only when comboCount > 1.
    */
   comboCount: number;
+  /**
+   * One-frame flag: set true on enemy kill to trigger the combo pulse animation.
+   * Cleared by the HUD via setTimeout 16 ms (mirrors redFlash pattern).
+   */
+  comboHit: boolean;
   /**
    * Weapon special-move charge as a 0..1 fraction (1.0 = full).
    * @stub Will be wired by future session; HUD renders the 5-segment meter at all times.
    */
   weaponCooldownPct: number;
+  /**
+   * Current weapon upgrade level (0–5). Determines how many segments are fully lit.
+   */
+  weaponLevel: number;
   /**
    * One-frame red-flash overlay triggered by reduce-motion shake swap.
    * @stub Set by applyShake when reducedMotion=true or screenShake=false.
@@ -240,7 +249,9 @@ export const gameState: GameState = {
   bootProgress: { value: 0, labelKey: 'boot.loading' },
   inventoryActiveTab: 'codex',
   comboCount: 0,
+  comboHit: false,
   weaponCooldownPct: 1.0,
+  weaponLevel: 0,
   redFlash: false,
 };
 
@@ -297,7 +308,9 @@ export function resetGameState(): void {
   gameState.bootProgress = { value: 0, labelKey: 'boot.loading' };
   gameState.inventoryActiveTab = 'codex';
   gameState.comboCount = 0;
+  gameState.comboHit = false;
   gameState.weaponCooldownPct = 1.0;
+  gameState.weaponLevel = 0;
   gameState.redFlash = false;
   joystickState.dx = 0;
   joystickState.dy = 0;

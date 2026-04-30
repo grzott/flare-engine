@@ -1,4 +1,4 @@
-import { colors, spacing, typography } from '../theme';
+import { colors, fontFamily, spacing, typography } from '../theme';
 
 export const rawStyles = {
   root: {
@@ -157,6 +157,18 @@ export const rawStyles = {
     ...typography.monoHud,
     marginTop: spacing.xs,
   },
+  comboPulse: {
+    color: colors.ui.crimson,
+    ...typography.monoHud,
+    marginTop: spacing.xs,
+    transform: [{ scale: 1.18 }],
+  },
+  comboPulseReduced: {
+    color: colors.ui.crimson,
+    ...typography.monoHud,
+    marginTop: spacing.xs,
+    opacity: 0.6,
+  },
   weaponMeterRow: {
     flexDirection: 'row' as const,
     gap: 2,
@@ -173,6 +185,17 @@ export const rawStyles = {
     height: spacing.weaponMeterHeight,
     backgroundColor: colors.ui.crimson,
     borderRadius: 1,
+  },
+  weaponSegmentCooldown: {
+    width: 16,
+    height: spacing.weaponMeterHeight,
+    backgroundColor: colors.ui.tint55,
+    borderRadius: 1,
+    overflow: 'hidden' as const,
+  },
+  weaponSegmentCooldownFill: {
+    height: '100%' as const,
+    backgroundColor: colors.ui.crimson,
   },
   hpBarBg: {
     width: '100%' as const,
@@ -195,5 +218,19 @@ export const rawStyles = {
     backgroundColor: 'rgba(212, 33, 61, 0.5)',
     pointerEvents: 'none' as const,
     zIndex: 999,
+  },
+  zoneBannerNumeral: {
+    fontFamily: fontFamily.serifItalic,
+    fontSize: typography.displayM.fontSize,
+    fontWeight: typography.displayM.fontWeight,
+    color: colors.ui.gold,
+    textAlign: 'center' as const,
+    fontStyle: 'italic' as const,
+  },
+  zoneBannerRule: {
+    height: 1,
+    backgroundColor: colors.ui.gold,
+    width: '60%' as const,
+    marginVertical: spacing.sm,
   },
 };

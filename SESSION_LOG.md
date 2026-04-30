@@ -1892,3 +1892,48 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #80 "PT-Frontmatter ★★ — M1 boot screen: ink-black bg + centered sigil + ProgressBar + version label per folio X → M2 menu screen: title EB Garamond display.xl + 4-button stack per folio X → M3 save-select: 3-slot grid with zone preview + stats per folio X"
 
 ---
+
+## Session 80 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #80):** PT-Frontmatter ★★ — M1 boot screen: ink-black bg + centered sigil + ProgressBar + version label per folio X → M2 menu screen: title EB Garamond display.xl + 4-button stack per folio X → M3 save-select: 3-slot grid with zone preview + stats per folio X
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/BootOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/BootOverlay.styles.ts` (pre-approved drift #2: styles companion of declared .tsx)
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts` (pre-approved drift #2: styles companion of declared .tsx)
+- `apps/pan-tvardowski/src/App.tsx` (pre-approved drift #1: single-line appVersion prop thread)
+- `apps/pan-tvardowski/src/localization/keys.ts` (pre-approved drift #3: type-safe key system requires sync)
+- `apps/pan-tvardowski/locales/en.json` (pre-approved drift #3: 3 new locale keys)
+- `apps/pan-tvardowski/locales/pl.json` (pre-approved drift #3: 3 new locale keys)
+- `apps/pan-tvardowski/tests/boot-screen.test.ts` (new)
+- `apps/pan-tvardowski/tests/menu-screen.test.ts` (new)
+- `apps/pan-tvardowski/tests/save-select-screen.test.ts` (new)
+- `docs/plans/sessions.md`
+
+**Drift notes**
+- `scenes/{boot,menu,save-select}.ts` not modified — session was presentation-only; scene logic was already correct. No functional regression.
+- `boot.version` locale stores the complete `v0.1.0` string (not a "v" prefix); `appVersion` prop gates render. Cleanest interpretation given `EN: v0.1.0` value.
+- `SaveSelectView` dropped nested `Panel` per folio X "no nested Panel" spec — flat `Pressable` + `divider` border rows.
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+6 new, total 544)
+- build: skipped (not in gate list for row #80)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ PT-Frontmatter (session #80) complete`, test count bumped 538 → 544
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Frontmatter complete (session #80)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only per prior sessions #76–#79 convention)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): frontmatter boot/menu/save-select folio X`
+2. `test(pan-tvardowski): boot/menu/save-select folio X +6 tests`
+3. `docs(pan-tvardowski): session #80 done + mirror-row 544 tests`
+
+**Next session:** #81 "PT-Frontmatter-2 ★★ — M1 settings screen: grouped toggles + sliders per folio X ASCII mockup → M2 credits screen: scroll with EB Garamond headings + source-sans body per folio X → M3 add PL+EN keys for any new settings/credits labels"
+
+---

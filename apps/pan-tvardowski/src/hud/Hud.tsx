@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { getUiPrimaryHex } from '../palette';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
 import { rawStyles } from './Hud.styles';
 
@@ -105,6 +106,11 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
     [bottomInset],
   );
 
+  const bossBarBgStyle = useMemo(
+    () => [styles.bossBarBg, { borderColor: getUiPrimaryHex(s.currentZone) }],
+    [s.currentZone],
+  );
+
   const inPlay = s.currentScene === 'play';
   const isGameOver = s.currentScene === 'game-over';
   const isVictory = s.currentScene === 'victory';
@@ -147,7 +153,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
                   name: t(s.bossNameKey),
                 })}
               </Text>
-              <View style={styles.bossBarBg}>
+              <View style={bossBarBgStyle}>
                 <View
                   style={[
                     styles.bossBarFill,

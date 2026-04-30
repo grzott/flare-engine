@@ -3,12 +3,12 @@ import { colors, overlayBase, spacing } from '../theme';
 export const rawStyles = {
   root: overlayBase.root,
   panelContainer: overlayBase.panelContainer,
-  panel: overlayBase.panelLg,
+  panel: { ...overlayBase.panelLg, backgroundColor: colors.ui.parchment },
   tabs: {
     flexDirection: 'row' as const,
     marginBottom: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.ui.dividerStrong,
+    borderBottomColor: colors.ui.gold,
   },
   tab: {
     flex: 1,
@@ -17,7 +17,7 @@ export const rawStyles = {
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: colors.ui.neutralLight,
+    borderBottomColor: colors.ui.crimson,
   },
   tabContent: { flex: 1 },
   scroll: { flex: 1 },

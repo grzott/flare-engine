@@ -74,4 +74,67 @@ export const rawStyles = {
   zoneSelectBack: {
     marginTop: spacing.lg,
   },
+  menuTitle: {
+    color: colors.ui.gold,
+    ...typography.displayXl,
+    textAlign: 'center' as const,
+    marginBottom: spacing.md,
+  },
+  menuSubtitle: {
+    color: colors.ui.tint60,
+    ...typography.lede,
+    textAlign: 'center' as const,
+    marginBottom: spacing.xxxl,
+  },
+  menuSigil: {
+    position: 'absolute' as const,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: colors.ui.crimson,
+    opacity: 0.35,
+    alignSelf: 'center' as const,
+  },
+  menuButtonStack: {
+    width: '100%' as const,
+    maxWidth: 320,
+    alignSelf: 'center' as const,
+    gap: spacing.lg,
+  },
+  menuVersionLabel: {
+    position: 'absolute' as const,
+    bottom: spacing.xxxl,
+    alignSelf: 'center' as const,
+    color: colors.ui.tint55,
+    ...typography.smallcap,
+  },
+  slotZonePreview: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ui.divider,
+  },
+  slotZoneNumeral: {
+    color: colors.ui.gold,
+    ...typography.displayM,
+    marginBottom: spacing.sm,
+  },
+  slotZoneName: {
+    color: colors.ui.gold,
+    ...typography.lede,
+    fontStyle: 'italic' as const,
+    marginBottom: spacing.sm,
+  },
+  slotStats: {
+    color: colors.ui.tint60,
+    ...typography.bodyS,
+    marginBottom: spacing.xs,
+  },
+  slotEmpty: {
+    color: colors.ui.tint55,
+    ...typography.lede,
+    fontStyle: 'italic' as const,
+    textAlign: 'center' as const,
+    paddingVertical: spacing.lg,
+  },
 };

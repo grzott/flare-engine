@@ -31,9 +31,11 @@ const menu = [
   'menu.settings.back',
   'menu.save_select.title',
   'menu.save_select.empty',
+  'menu.save_select.new_game',
   'menu.save_select.zone',
   'menu.save_select.best_score',
   'menu.save_select.last_played',
+  'menu.save_select.runs',
   'menu.save_select.back',
   'menu.credits.title',
   'menu.credits.skip',
@@ -386,7 +388,7 @@ const credits = [
   'credits.thanks.line1',
 ] as const;
 
-const boot = ['boot.loading', 'boot.loading.save', 'boot.loading.audio'] as const;
+const boot = ['boot.loading', 'boot.loading.save', 'boot.loading.audio', 'boot.version'] as const;
 
 export const LOCALIZATION_KEYS = [
   ...boot,

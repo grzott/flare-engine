@@ -26,9 +26,11 @@
   "menu.settings.back": "Back",
   "menu.save_select.title": "Choose a save slot",
   "menu.save_select.empty": "New Game",
+  "menu.save_select.new_game": "New Game",
   "menu.save_select.zone": "Zone {zone}",
   "menu.save_select.best_score": "Best: {score}",
   "menu.save_select.last_played": "Last played: {when}",
+  "menu.save_select.runs": "Runs: {count}",
   "menu.save_select.back": "Back",
   "menu.credits.title": "Credits",
   "menu.credits.skip": "Tap to return",
@@ -352,5 +354,6 @@
 
   "boot.loading": "Loading…",
   "boot.loading.save": "Loading save…",
-  "boot.loading.audio": "Preparing audio…"
+  "boot.loading.audio": "Preparing audio…",
+  "boot.version": "v0.1.0"
 }

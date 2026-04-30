@@ -1,14 +1,6 @@
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
-import {
-  Button,
-  FocusProvider,
-  Label,
-  MainMenuKit,
-  Panel,
-  ThemeProvider,
-  darkTheme,
-} from '@flare-engine/ui';
+import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
 import { RestorePurchasesButton } from '@flare-engine/ui-shop';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -94,29 +86,23 @@ export function MenuOverlay(props: MenuOverlayProps): React.ReactElement | null 
 
 function MenuView({ localization: l, actions, appVersion }: MenuOverlayProps): React.ReactElement {
   const t = useMemo(() => (k: string, p?: Record<string, string | number>) => l.t(k, p), [l]);
-  const items = [
-    { id: 'play', label: t('menu.play'), onPress: actions.goSaveSelect },
-    { id: 'shop', label: t('menu.shop'), onPress: actions.goShop },
-    { id: 'inventory', label: t('menu.inventory'), onPress: actions.goInventory },
-    { id: 'codex', label: t('menu.codex'), onPress: actions.goCodex },
-    { id: 'achievements', label: t('menu.achievements'), onPress: actions.goAchievements },
-    { id: 'settings', label: t('menu.settings'), onPress: actions.goSettings },
-    { id: 'credits', label: t('menu.credits'), onPress: actions.goCredits },
-  ];
-  const footer = (
-    <Label variant="xs" tone="muted">
-      {`v${appVersion} · ${l.locale}`}
-    </Label>
-  );
   return (
-    <MainMenuKit
-      title={t('menu.title')}
-      subtitle={t('menu.subtitle')}
-      items={items}
-      footer={footer}
-    />
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={styles.menuSigil} pointerEvents="none" />
+      <Text style={styles.menuTitle}>{t('menu.title')}</Text>
+      <Text style={styles.menuSubtitle}>{t('menu.subtitle')}</Text>
+      <View style={styles.menuButtonStack}>
+        <Button label={t('menu.play')} variant="primary" onPress={actions.goSaveSelect} />
+        <Button label={t('menu.settings')} variant="secondary" onPress={actions.goSettings} />
+        <Button label={t('menu.credits')} variant="ghost" onPress={actions.goCredits} />
+        <Button label={t('menu.shop')} variant="ghost" onPress={actions.goShop} />
+      </View>
+      <Text style={styles.menuVersionLabel}>{`v${appVersion} · ${l.locale}`}</Text>
+    </View>
   );
 }
+
+const ROMAN = ['I', 'II', 'III'] as const;
 
 function SaveSelectView({
   localization: l,
@@ -177,75 +163,69 @@ function SaveSelectView({
 
   return (
     <View style={styles.panelContainer}>
-      <Panel padding="lg" radius="lg" style={styles.panel}>
-        <Label variant="xl" tone="accent" style={{ marginBottom: 12 }}>
-          {t('menu.save_select.title')}
-        </Label>
-        {previews.map((p) => {
-          const zoneNum = p.zoneReached.slice(1);
-          const when = formatLastPlayed(p.lastPlayed, l.locale === 'pl' ? 'pl' : 'en');
-          const zoneConfig = ZONES[p.zoneReached];
-          const isLocked =
-            !isFullGameOwned &&
-            zoneConfig !== undefined &&
-            zoneConfig.requiresEntitlement !== undefined;
-          const canChooseZone = p.status !== 'empty' && p.zoneReached !== 'z1';
-          return (
-            <Panel
-              key={p.index}
-              variant="elevated"
-              padding="md"
-              radius="md"
-              style={{ marginBottom: 8 }}
-            >
-              <Pressable
-                onPress={() => {
-                  if (isLocked) {
-                    gameEvents.emit('paywall-trigger', 'zone-locked-click');
-                    return;
-                  }
-                  if (canChooseZone) {
-                    setSelectedSlotForZoneSelect(p.index);
-                    return;
-                  }
-                  actions.startSlot(p.index as 0 | 1 | 2);
-                }}
-                accessibilityRole="button"
-              >
-                {p.status === 'empty' ? (
-                  <Label variant="md" tone="muted">
-                    {`#${p.index + 1} — ${t('menu.save_select.empty')}`}
-                  </Label>
-                ) : (
-                  <View>
-                    <View style={styles.slotRow}>
-                      <Label variant="md">
-                        {`#${p.index + 1} — ${t('menu.save_select.zone', { zone: zoneNum })}`}
-                      </Label>
-                      {isLocked ? (
-                        <Label variant="sm" tone="muted" style={styles.lockedBadge}>
-                          {t('menu.zone.locked')}
-                        </Label>
-                      ) : null}
-                    </View>
-                    <Label variant="sm" tone="muted">
-                      {t('menu.save_select.best_score', { score: p.bestScore })}
+      <Label variant="xl" tone="accent" style={{ marginBottom: 12 }}>
+        {t('menu.save_select.title')}
+      </Label>
+      {previews.map((p) => {
+        const zoneNum = p.zoneReached.slice(1);
+        const when = formatLastPlayed(p.lastPlayed, l.locale === 'pl' ? 'pl' : 'en');
+        const zoneConfig = ZONES[p.zoneReached];
+        const isLocked =
+          !isFullGameOwned &&
+          zoneConfig !== undefined &&
+          zoneConfig.requiresEntitlement !== undefined;
+        const canChooseZone = p.status !== 'empty' && p.zoneReached !== 'z1';
+        const numeral = ROMAN[p.index] ?? String(p.index + 1);
+        return (
+          <Pressable
+            key={p.index}
+            style={styles.slotZonePreview}
+            onPress={() => {
+              if (isLocked) {
+                gameEvents.emit('paywall-trigger', 'zone-locked-click');
+                return;
+              }
+              if (canChooseZone) {
+                setSelectedSlotForZoneSelect(p.index);
+                return;
+              }
+              actions.startSlot(p.index as 0 | 1 | 2);
+            }}
+            accessibilityRole="button"
+          >
+            {p.status === 'empty' ? (
+              <Text style={styles.slotEmpty}>{t('menu.save_select.new_game')}</Text>
+            ) : (
+              <View>
+                <Text style={styles.slotZoneNumeral}>{numeral}</Text>
+                <View style={styles.slotRow}>
+                  <Text style={styles.slotZoneName}>
+                    {t('menu.save_select.zone', { zone: zoneNum })}
+                  </Text>
+                  {isLocked ? (
+                    <Label variant="sm" tone="muted" style={styles.lockedBadge}>
+                      {t('menu.zone.locked')}
                     </Label>
-                    {when.length > 0 ? (
-                      <Label variant="xs" tone="muted">
-                        {t('menu.save_select.last_played', { when })}
-                      </Label>
-                    ) : null}
-                  </View>
-                )}
-              </Pressable>
-            </Panel>
-          );
-        })}
-        <View style={{ marginTop: 12 }}>
-          <Button label={t('menu.save_select.back')} variant="ghost" onPress={actions.goMenu} />
-        </View>
-      </Panel>
+                  ) : null}
+                </View>
+                <Text style={styles.slotStats}>
+                  {t('menu.save_select.best_score', { score: p.bestScore })}
+                  {'  '}
+                  {t('menu.save_select.runs', { count: p.runs ?? 0 })}
+                </Text>
+                {when.length > 0 ? (
+                  <Text style={styles.slotStats}>
+                    {t('menu.save_select.last_played', { when })}
+                  </Text>
+                ) : null}
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+      <View style={{ marginTop: 12, alignSelf: 'flex-start' as const }}>
+        <Button label={t('menu.save_select.back')} variant="ghost" onPress={actions.goMenu} />
+      </View>
     </View>
   );
 }

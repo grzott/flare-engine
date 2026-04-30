@@ -436,7 +436,7 @@ function AppRoot(): React.ReactElement {
           )}
         </GameView>
         <Hud localization={localization} actions={actions} insets={insets} />
-        <BootOverlay localization={localization} />
+        <BootOverlay localization={localization} appVersion="0.1.0" />
         <MenuOverlay
           localization={localization}
           save={saveStore}

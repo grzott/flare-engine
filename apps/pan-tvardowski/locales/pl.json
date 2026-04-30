@@ -26,9 +26,11 @@
   "menu.settings.back": "Wróć",
   "menu.save_select.title": "Wybierz slot zapisu",
   "menu.save_select.empty": "Nowa gra",
+  "menu.save_select.new_game": "Nowa Gra",
   "menu.save_select.zone": "Kraina {zone}",
   "menu.save_select.best_score": "Najlepszy: {score}",
   "menu.save_select.last_played": "Ostatnio: {when}",
+  "menu.save_select.runs": "Liczba rozgrywek: {count}",
   "menu.save_select.back": "Wróć",
   "menu.credits.title": "Twórcy",
   "menu.credits.skip": "Stuknij, aby wrócić",
@@ -352,5 +354,6 @@
 
   "boot.loading": "Ładowanie…",
   "boot.loading.save": "Wczytywanie zapisu…",
-  "boot.loading.audio": "Przygotowywanie dźwięku…"
+  "boot.loading.audio": "Przygotowywanie dźwięku…",
+  "boot.version": "v0.1.0"
 }

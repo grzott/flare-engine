@@ -1817,3 +1817,78 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #78 "PT-Ship-Anatomy-3 ★★ — M1 weapon-pickup + upgrade-pickup shape migration (4 + 6 entities) per folio XIIIc → M2 verify all 29 ships distinct at phone scale (visual-audit test) → M3 update visual-reference.md section 3 + section 15 gap #1 to done"
 
 ---
+
+## Session 78 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #78):** PT-Ship-Anatomy-3 ★★ — M1 weapon-pickup + upgrade-pickup shape migration (4 + 6 entities) per folio XIIIc → M2 verify all 29 ships distinct at phone scale (visual-audit test) → M3 update visual-reference.md section 3 + section 15 gap #1 to done
+
+**Touched files**
+- `apps/pan-tvardowski/tests/pickup-ships.test.ts` (new)
+- `apps/pan-tvardowski/tests/ship-silhouette-audit.test.ts` (new)
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/plans/sessions.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 packages, 234 PT files, no fixes applied)
+- typecheck: ✅ (71/71 tasks successful, zero errors)
+- test: ✅ (+11 net new, 496→507 total; 6 new in pickup-ships.test.ts + 5 new in ship-silhouette-audit.test.ts; 507 pass / 0 fail)
+- build: skipped (not in gate list for row #78 per sessions.md)
+- device smoke: deferred (session #59 PT-DeviceSmoke per session #50 footnote convention)
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` §15 gap #1 — status flipped from `open` to `done` (ship-anatomy 3-element rule fully implemented across all 29 ships, sessions #76–#78)
+- `apps/pan-tvardowski/docs/visual-reference.md` §3 — paragraph added: "Live `src/shape-catalogue.ts` fully implements this rule across all 29 ships. Migration completed across sessions #76–#78. Pickups intentionally remain `ShapeSpec[]`."
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ PT-Ship-Anatomy-3 (session #78) complete`, test count bumped 496 → 507
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (visual-bundle sessions #76–#90 tracked in Change log only; no individual M-tick expected per build-plan §17 structure)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `test(pan-tvardowski): pickup folio-conformance 6 tests (session #78 M1)`
+2. `test(pan-tvardowski): 29-ship silhouette-uniqueness audit 5 tests (session #78 M2)`
+3. `docs(pan-tvardowski): visual-reference §3/§15 ship-anatomy migration done (#78 M3)`
+4. `docs(pan-tvardowski): sessions row #78 done + mirror-row 507 tests`
+
+**Next session:** #79 "PT-HUD-Complete ★★ — M1 combo readout (mono.hud crimson, pulses on hit, hidden until comboCount>1 threshold) → M2 weapon meter live wiring (5-segment crimson, weapon-level + cooldown from gameState) → M3 zone banner Roman numeral + EB Garamond italic + gold rule"
+
+---
+
+## Session 79 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #79):** PT-HUD-Complete ★★ — M1 combo readout (mono.hud crimson, pulses on hit, hidden until comboCount>1 threshold) → M2 weapon meter live wiring (5-segment crimson, weapon-level + cooldown from gameState) → M3 zone banner Roman numeral + EB Garamond italic + gold rule
+
+**Touched files**
+- `apps/pan-tvardowski/src/state.ts` (comboHit + weaponLevel fields added)
+- `apps/pan-tvardowski/src/scenes/play.ts` (combo tracking + weaponCooldownPct publish)
+- `apps/pan-tvardowski/src/hud/Hud.tsx` (combo pulse + weapon-meter refactor + zone banner Roman numeral)
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts` (comboPulse / comboPulseReduced / weaponSegmentCooldown / weaponSegmentCooldownFill / zoneBannerNumeral / zoneBannerRule styles)
+- `apps/pan-tvardowski/src/hud/zone-banner.ts` (new — zoneRomanNumeral() pure fn)
+- `apps/pan-tvardowski/tests/combo-readout.test.ts` (new — 7 tests)
+- `apps/pan-tvardowski/tests/weapon-meter.test.ts` (new — 9 tests)
+- `apps/pan-tvardowski/tests/zone-banner.test.ts` (new — 14 tests)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md` (change-log entry)
+- `docs/references/builder-reference.md` (mirror row — 507 → 538 tests)
+
+**Gates**
+- lint: ✅ (39/39 packages, 237 PT files, no fixes applied)
+- typecheck: ✅ (zero errors)
+- test: ✅ (507 → 538 total; +7 combo-readout + 9 weapon-meter + 14 zone-banner = +30 net; 538 pass / 0 fail)
+- build: skipped (not in gate list for row #79 per sessions.md)
+- device smoke: deferred (session #59 PT-DeviceSmoke per session #50 footnote convention)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ PT-HUD-Complete (session #79) complete (2026-04-30)`, test count bumped 507 → 538
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-HUD-Complete complete (session #79)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): combo + weapon-level + cooldown live state (#79 M1+M2)`
+2. `feat(pan-tvardowski): HUD pulse + weapon-meter refactor + Roman zone banner (#79)`
+3. `test(pan-tvardowski): HUD combo + weapon-meter + zone-banner (#79)`
+4. `docs(pan-tvardowski): sessions row #79 done + mirror-row 538 tests`
+
+**Next session:** #80 "PT-Frontmatter ★★ — M1 boot screen: ink-black bg + centered sigil + ProgressBar + version label per folio X → M2 menu screen: title EB Garamond display.xl + 4-button stack per folio X → M3 save-select: 3-slot grid with zone preview + stats per folio X"
+
+---

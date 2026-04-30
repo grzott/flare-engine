@@ -458,11 +458,11 @@ function CreditsView({ localization: l, actions }: MenuOverlayProps): React.Reac
         pointerEvents="none"
       >
         {CREDITS_SECTIONS.map((section) => (
-          <View key={section.title} style={styles.creditsSection}>
-            <Text style={styles.creditsSectionTitle}>{section.title}</Text>
-            {section.lines.map((line) => (
-              <Text key={line} style={styles.creditsLine}>
-                {line}
+          <View key={section.titleKey} style={styles.creditsSection}>
+            <Text style={styles.creditsSectionTitle}>{t(section.titleKey)}</Text>
+            {section.lineKeys.map((lineKey) => (
+              <Text key={lineKey} style={styles.creditsLine}>
+                {t(lineKey)}
               </Text>
             ))}
           </View>

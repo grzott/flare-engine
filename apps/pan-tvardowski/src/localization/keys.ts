@@ -355,6 +355,36 @@ const achievements = [
   'achievements.rome_condition.desc',
 ] as const;
 
+const credits = [
+  'credits.legend.title',
+  'credits.legend.line1',
+  'credits.legend.line2',
+  'credits.legend.line3',
+  'credits.legend.line4',
+  'credits.legend.line5',
+  'credits.bestiary.title',
+  'credits.bestiary.line1',
+  'credits.bestiary.line2',
+  'credits.bestiary.line3',
+  'credits.bestiary.line4',
+  'credits.bestiary.line5',
+  'credits.bestiary.line6',
+  'credits.artifacts.title',
+  'credits.artifacts.line1',
+  'credits.artifacts.line2',
+  'credits.artifacts.line3',
+  'credits.artifacts.line4',
+  'credits.engine.title',
+  'credits.engine.line1',
+  'credits.engine.line2',
+  'credits.engine.line3',
+  'credits.license.title',
+  'credits.license.line1',
+  'credits.license.line2',
+  'credits.thanks.title',
+  'credits.thanks.line1',
+] as const;
+
 const boot = ['boot.loading', 'boot.loading.save', 'boot.loading.audio'] as const;
 
 export const LOCALIZATION_KEYS = [
@@ -375,6 +405,7 @@ export const LOCALIZATION_KEYS = [
   ...dialogue,
   ...achievements,
   ...codex,
+  ...credits,
 ] as const;
 
 export type LocalizationKey = (typeof LOCALIZATION_KEYS)[number];

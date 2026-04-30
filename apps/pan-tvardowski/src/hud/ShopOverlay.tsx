@@ -20,13 +20,6 @@ const placeholderStyles = StyleSheet.create({
     textAlign: 'center' as const,
     marginBottom: spacing.lg,
   },
-  card: {
-    borderWidth: 1,
-    borderColor: colors.ui.divider,
-    borderRadius: spacing.panelBorderRadius,
-    padding: spacing.panelPadding,
-    marginBottom: spacing.md,
-  },
   cardTitle: {
     color: colors.ui.primary,
     ...typography.label,
@@ -36,10 +29,6 @@ const placeholderStyles = StyleSheet.create({
     color: colors.ui.neutralLight,
     ...typography.body,
     marginBottom: spacing.sm,
-  },
-  cardPrice: {
-    color: colors.ui.tint60,
-    ...typography.smallcap,
   },
 });
 
@@ -96,14 +85,14 @@ interface PlaceholderCardProps {
 
 function PlaceholderCard({ title, description, price }: PlaceholderCardProps): React.ReactElement {
   return (
-    <View style={placeholderStyles.card}>
+    <View style={styles.productCard}>
       <Label variant="sm" tone="accent" style={placeholderStyles.cardTitle}>
         {title}
       </Label>
       <Label variant="xs" tone="muted" style={placeholderStyles.cardDesc}>
         {description}
       </Label>
-      <Label variant="xs" tone="muted" style={placeholderStyles.cardPrice}>
+      <Label variant="xs" tone="muted" style={styles.productCardPrice}>
         {price}
       </Label>
     </View>
@@ -157,15 +146,7 @@ export function ShopOverlay({
         <FocusProvider>
           <View style={styles.content}>
             {isNoopProvider ? (
-              <Panel
-                padding="lg"
-                radius="lg"
-                style={{
-                  alignSelf: 'stretch' as const,
-                  maxWidth: spacing.panelLgWidth,
-                  width: '100%' as const,
-                }}
-              >
+              <Panel padding="lg" radius="lg" style={styles.panel}>
                 <Label variant="xl" tone="accent" style={{ marginBottom: spacing.lg }}>
                   {t('shop.heading')}
                 </Label>

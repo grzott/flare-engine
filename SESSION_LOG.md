@@ -1494,3 +1494,47 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** #51 "Engine: GameView safeArea prop + useSafeArea hook; PT: delete manual bottomInset plumbing"
 
 ---
+
+## Session 51 — 2026-04-30 (scope: [mixed])
+
+**Goal (from sessions.md row #51):** Engine: GameView safeArea prop + useSafeArea hook; PT: delete manual bottomInset plumbing
+
+**Touched files**
+- `packages/react/src/safe-area.ts` (new file)
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/index.ts`
+- `packages/react/tests/safe-area.test.ts` (new file)
+- `packages/react/package.json`
+- `packages/react/tsup.config.ts` (⊕ RN-SAC external; mechanically required peer-dep wiring)
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/scene-registry.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `docs/design/api-specs.md` (⊕ always implicit for new public engine API surface)
+- `docs/references/builder-reference.md` (⊕ mandatory per status-sync; includes PT mirror row test-count fix from session #50)
+- `docs/plans/pan-tvardowski-build-plan.md` (⊕ mandatory per status-sync; adds missing session #50 + session #51 changelog entries)
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (39/39 tasks via Turbo — `biome check src/` clean in `@flare-engine/react`; `biome check src/ tests/` clean in `apps/pan-tvardowski`, 215 files)
+- typecheck: ✅ (71/71 tasks via Turbo — zero errors)
+- test: ✅ (+5 new in `@flare-engine/react` (45→50), 0 net new in PT; total 50 pass in react / 434 pass in PT / 0 fail across all packages)
+- build: ✅ (38/38 tasks via Turbo — all packages build; PT has no standalone build script — native-only, expected)
+- device smoke: deferred to session #59 (PT-DeviceSmoke) per explicit user direction (same deferral as session #50)
+
+**Docs synced**
+- `docs/design/api-specs.md` — `@flare-engine/react` table updated: `<GameView safeArea?>` prop, `useSafeArea()`, `SafeArea` type, `SafeAreaContext` added
+- `docs/references/builder-reference.md` — Session #28 engine row added (50 tests, safe-area surface); PT mirror row updated: "428 tests" → "434 tests", session #50 + #51 bundles noted
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — two entries appended: "PT-Final bundle complete (session #50), 434 tests" and "session #51 getBottomInset refactor, 434 tests"
+- `docs/plans/build-plan.md` — no phase-state change; `@flare-engine/react` peer-dep addition is intra-package, no phase promotion
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked; session #51 is a refactor (engine lift + plumbing cleanup), not a PT milestone close
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(react): add SafeArea type, SafeAreaContext, useSafeArea hook`
+2. `feat(react): add safeArea prop to GameView with RN-SAC fallback`
+3. `test(react): cover useSafeArea and GameView safeArea prop`
+4. `refactor(pan-tvardowski): thread getBottomInset callback through chain`
+5. `docs: sync api-specs and builder-reference for safeArea surface`
+
+**Next session:** #52 "PT-Store-1: Google Play Console app + internal testing track + Android keystore via EAS credentials"
+
+---

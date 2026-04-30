@@ -30,8 +30,8 @@ describe('overlay rawStyles — theme token assertions', () => {
     expect(inventoryStyles.root).toBe(overlayBase.root);
   });
 
-  it('InventoryOverlay tabActive borderColor === colors.ui.neutralLight', () => {
-    expect(inventoryStyles.tabActive.borderBottomColor).toBe(colors.ui.neutralLight);
+  it('InventoryOverlay tabActive borderColor === colors.ui.crimson', () => {
+    expect(inventoryStyles.tabActive.borderBottomColor).toBe(colors.ui.crimson);
   });
 
   it('CodexOverlay root references overlayBase.root', () => {

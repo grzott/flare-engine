@@ -22,9 +22,22 @@ const TEAL = 0xff3ac4b4;
 const BROWN = 0xff6b4423;
 const GOLD = 0xffc9a24a;
 const MIRROR = 0xffc8cdd4;
-const COPPER = 0xffb5651d;
 const HELLFIRE = 0xffff2b2b;
 const EYE_YELLOW = 0xffffdd55;
+
+// Mini-boss hue family — crimson (folio XIIIb+)
+const CRIMSON = 0xffd4213d;
+const CRIMSON_DARK = 0xff7a1322;
+const CRIMSON_RUST = 0xff8b3a1f;
+
+// Boss hue family — violet (folio XIIIf)
+const VIOLET_DARK = 0xff3a0f5c;
+const VIOLET_DEEP = 0xff5c1a8a;
+const VIOLET_MID = 0xff8844cc;
+
+// Player ship hue family — brand-tagged (folio XIIIc)
+const BOG_GREEN = 0xff1a2e1f;
+const DEEP_BLUE = 0xff1a2e4a;
 
 // ---- Enemies (14) -----------------------------------------------------------
 
@@ -146,115 +159,178 @@ const enemies = {
 } as const satisfies Record<string, ShipSpec>;
 
 // ---- Mini-bosses (4) --------------------------------------------------------
+// Crimson hue family, 2–3 rect weapons each (folio XIIIb+).
 
 const minibosses = {
-  rokita: [
-    { kind: 'ngon', n: 4, r: 30, fill: GREEN },
-    {
-      kind: 'polyline',
-      points: [-40, 0, -20, -10, 0, 0, 20, -10, 40, 0],
-      stroke: BROWN,
-      strokeWidth: 3,
-    },
-  ],
-  leszy: [{ kind: 'ngon', n: 6, r: 36, fill: BROWN, stroke: GREEN, strokeWidth: 2 }],
-  'nocny-lowca': [
-    { kind: 'star', points: 4, rOuter: 40, rInner: 12, fill: BLACK },
-    { kind: 'triangle', size: 8, fill: PALE, ox: -24, oy: 0 },
-    { kind: 'triangle', size: 8, fill: PALE, ox: 24, oy: 0 },
-    { kind: 'triangle', size: 8, fill: PALE, ox: 0, oy: -24 },
-    { kind: 'triangle', size: 8, fill: PALE, ox: 0, oy: 24 },
-  ],
-  madej: [
-    { kind: 'rect', w: 80, h: 16, fill: HELLFIRE },
-    { kind: 'triangle', size: 10, fill: BLACK, ox: -32, oy: -10 },
-    { kind: 'triangle', size: 10, fill: BLACK, ox: -16, oy: -10 },
-    { kind: 'triangle', size: 10, fill: BLACK, ox: 0, oy: -10 },
-    { kind: 'triangle', size: 10, fill: BLACK, ox: 16, oy: -10 },
-    { kind: 'triangle', size: 10, fill: BLACK, ox: 32, oy: -10 },
-  ],
-} as const satisfies Record<string, readonly ShapeSpec[]>;
+  rokita: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 6, r: 30, fill: CRIMSON },
+    weapons: [
+      { kind: 'rect', w: 8, h: 14, fill: CRIMSON_DARK, ox: -18, oy: 0 },
+      { kind: 'rect', w: 8, h: 14, fill: CRIMSON_DARK, ox: 18, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: CRIMSON_DARK },
+  },
+  leszy: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 4, r: 32, fill: CRIMSON_DARK, stroke: CRIMSON, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 6, h: 16, fill: CRIMSON, ox: -20, oy: -4 },
+      { kind: 'rect', w: 6, h: 16, fill: CRIMSON, ox: 0, oy: -20 },
+      { kind: 'rect', w: 6, h: 16, fill: CRIMSON, ox: 20, oy: -4 },
+    ],
+    engine: { kind: 'square', size: 20, fill: CRIMSON_DARK },
+  },
+  'nocny-lowca': {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 5, r: 30, fill: CRIMSON_RUST },
+    weapons: [
+      { kind: 'rect', w: 10, h: 6, fill: CRIMSON, ox: -22, oy: 8 },
+      { kind: 'rect', w: 10, h: 6, fill: CRIMSON, ox: 22, oy: 8 },
+      { kind: 'rect', w: 10, h: 6, fill: CRIMSON, ox: 0, oy: -22 },
+    ],
+    engine: { kind: 'square', size: 20, fill: CRIMSON_RUST },
+  },
+  madej: {
+    kind: 'ship',
+    hull: { kind: 'triangle', size: 34, fill: CRIMSON_RUST, stroke: CRIMSON_DARK, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 12, h: 6, fill: CRIMSON_DARK, ox: -20, oy: 10 },
+      { kind: 'rect', w: 12, h: 6, fill: CRIMSON_DARK, ox: 20, oy: 10 },
+    ],
+    engine: { kind: 'square', size: 20, fill: CRIMSON_DARK },
+  },
+} as const satisfies Record<string, ShipSpec>;
 
 // ---- Bosses (8) -------------------------------------------------------------
+// Violet hue family, 2–4 rect weapons each (folio XIIIf).
 
 const bosses = {
-  'smok-krzemionkowski': [
-    { kind: 'ngon', n: 6, r: 48, fill: COPPER },
-    { kind: 'triangle', size: 20, fill: HELLFIRE, ox: 0, oy: 32 },
-  ],
-  'borowy-krol': [
-    { kind: 'ngon', n: 5, r: 52, fill: GREEN, stroke: BROWN, strokeWidth: 3 },
-    {
-      kind: 'star',
-      points: 5,
-      rOuter: 18,
-      rInner: 7,
-      fill: GOLD,
-      ox: 0,
-      oy: -20,
-    },
-  ],
-  'wodnik-wislanny': [
-    {
-      kind: 'gradient-rect',
-      w: 96,
-      h: 80,
-      colorA: 0xff2f5f7a,
-      colorB: BLUE_GREEN,
-      axis: 1,
-    },
-    { kind: 'circle', r: 32, fill: BLUE_GREEN },
-  ],
-  boruta: [
-    {
-      kind: 'ngon',
-      n: 8,
-      r: 56,
-      fill: BLACK,
-      stroke: HELLFIRE,
-      strokeWidth: 2,
-    },
-    { kind: 'triangle', size: 12, fill: HELLFIRE, ox: -36, oy: -36 },
-    { kind: 'triangle', size: 12, fill: HELLFIRE, ox: 36, oy: -36 },
-  ],
-  'baba-jaga': [
-    { kind: 'ngon', n: 3, r: 48, fill: PURPLE },
-    { kind: 'rect', w: 60, h: 4, fill: BROWN, ox: 0, oy: 30 },
-  ],
-  'bazyliszek-warszawski': [
-    { kind: 'ngon', n: 6, r: 52, fill: 0xff9d3dff },
-    { kind: 'circle', r: 10, fill: EYE_YELLOW },
-  ],
-  mefistofeles: [
-    { kind: 'star', points: 6, rOuter: 56, rInner: 20, fill: HELLFIRE },
-    { kind: 'circle', r: 12, fill: BLACK },
-  ],
-  'lucyper-ksiezycowy': [
-    {
-      kind: 'gradient-rect',
-      w: 160,
-      h: 120,
-      colorA: 0xff2b2d5a,
-      colorB: 0xffd6002e,
-      axis: 1,
-    },
-    { kind: 'star', points: 8, rOuter: 60, rInner: 24, fill: MIRROR },
-  ],
-} as const satisfies Record<string, readonly ShapeSpec[]>;
+  // Each hull uses a distinct violet-family shade so silhouettes are
+  // visually unique at phone scale. Named constants cover the primary triad;
+  // intermediates are inline ARGB literals within the violet hue range.
+  'smok-krzemionkowski': {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 6, r: 48, fill: VIOLET_DARK },
+    weapons: [
+      { kind: 'rect', w: 10, h: 20, fill: VIOLET_MID, ox: -32, oy: 0 },
+      { kind: 'rect', w: 10, h: 20, fill: VIOLET_MID, ox: 32, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_DARK },
+  },
+  'borowy-krol': {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 5, r: 52, fill: VIOLET_DEEP },
+    weapons: [
+      { kind: 'rect', w: 8, h: 18, fill: VIOLET_MID, ox: -36, oy: -8 },
+      { kind: 'rect', w: 8, h: 18, fill: VIOLET_MID, ox: 0, oy: -36 },
+      { kind: 'rect', w: 8, h: 18, fill: VIOLET_MID, ox: 36, oy: -8 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_DEEP },
+  },
+  'wodnik-wislanny': {
+    kind: 'ship',
+    hull: { kind: 'circle', r: 44, fill: VIOLET_MID, stroke: VIOLET_DARK, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 10, h: 22, fill: VIOLET_DARK, ox: -30, oy: 10 },
+      { kind: 'rect', w: 10, h: 22, fill: VIOLET_DARK, ox: 30, oy: 10 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_MID },
+  },
+  boruta: {
+    kind: 'ship',
+    // 0xff4a1270 — violet between VIOLET_DARK and VIOLET_DEEP
+    hull: { kind: 'ngon', n: 8, r: 50, fill: 0xff4a1270, stroke: VIOLET_MID, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: -38, oy: -16 },
+      { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: -12, oy: -36 },
+      { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: 12, oy: -36 },
+      { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: 38, oy: -16 },
+    ],
+    engine: { kind: 'square', size: 20, fill: 0xff4a1270 },
+  },
+  'baba-jaga': {
+    kind: 'ship',
+    // 0xff6a28a8 — lighter violet, brighter than VIOLET_MID
+    hull: { kind: 'ngon', n: 3, r: 48, fill: 0xff6a28a8 },
+    weapons: [
+      { kind: 'rect', w: 8, h: 20, fill: VIOLET_DARK, ox: -28, oy: 12 },
+      { kind: 'rect', w: 8, h: 20, fill: VIOLET_DARK, ox: 28, oy: 12 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_DARK },
+  },
+  'bazyliszek-warszawski': {
+    kind: 'ship',
+    // 0xff9d3dff — brighter violet-purple (retained from previous catalogue)
+    hull: { kind: 'ngon', n: 6, r: 52, fill: 0xff9d3dff },
+    weapons: [
+      { kind: 'rect', w: 10, h: 18, fill: VIOLET_MID, ox: -40, oy: 0 },
+      { kind: 'rect', w: 10, h: 12, fill: VIOLET_MID, ox: -20, oy: -28 },
+      { kind: 'rect', w: 10, h: 12, fill: VIOLET_MID, ox: 20, oy: -28 },
+      { kind: 'rect', w: 10, h: 18, fill: VIOLET_MID, ox: 40, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_DEEP },
+  },
+  mefistofeles: {
+    kind: 'ship',
+    // 0xff2a0840 — near-black violet, darkest of the 8
+    hull: { kind: 'star', points: 6, rOuter: 50, rInner: 20, fill: 0xff2a0840 },
+    weapons: [
+      { kind: 'rect', w: 8, h: 22, fill: VIOLET_MID, ox: -30, oy: -18 },
+      { kind: 'rect', w: 8, h: 22, fill: VIOLET_MID, ox: 30, oy: -18 },
+      { kind: 'rect', w: 8, h: 22, fill: VIOLET_MID, ox: 0, oy: -38 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_DARK },
+  },
+  'lucyper-ksiezycowy': {
+    kind: 'ship',
+    // 0xff7020b8 — vivid mid-violet, brightest hull in the boss set
+    hull: { kind: 'star', points: 8, rOuter: 54, rInner: 22, fill: 0xff7020b8 },
+    weapons: [
+      { kind: 'rect', w: 8, h: 20, fill: VIOLET_MID, ox: -44, oy: -16 },
+      { kind: 'rect', w: 8, h: 20, fill: VIOLET_MID, ox: -14, oy: -44 },
+      { kind: 'rect', w: 8, h: 20, fill: VIOLET_MID, ox: 14, oy: -44 },
+      { kind: 'rect', w: 8, h: 20, fill: VIOLET_MID, ox: 44, oy: -16 },
+    ],
+    engine: { kind: 'square', size: 20, fill: VIOLET_DEEP },
+  },
+} as const satisfies Record<string, ShipSpec>;
 
 // ---- Ships (3) --------------------------------------------------------------
+// Brand-tagged hue families, 2 rect weapons each, glow:'friendly' (folio XIIIc).
 
 const ships = {
-  'kogut-zloty': [
-    { kind: 'triangle', size: 24, fill: GOLD, glow: 'friendly' },
-    { kind: 'circle', r: 3, fill: HELLFIRE, ox: 0, oy: -10 },
-  ],
-  alembik: [{ kind: 'ngon', n: 5, r: 18, fill: MIRROR, stroke: COPPER, strokeWidth: 2 }],
-  zwierciadlo: [
-    { kind: 'ngon', n: 4, r: 20, fill: MIRROR, stroke: BLACK, strokeWidth: 2 },
-    { kind: 'ring', r: 22, stroke: MIRROR, strokeWidth: 1.5 },
-  ],
-} as const satisfies Record<string, readonly ShapeSpec[]>;
+  'kogut-zloty': {
+    kind: 'ship',
+    glow: 'friendly',
+    hull: { kind: 'triangle', size: 28, fill: GOLD },
+    weapons: [
+      { kind: 'rect', w: 6, h: 12, fill: GOLD, ox: -14, oy: 8 },
+      { kind: 'rect', w: 6, h: 12, fill: GOLD, ox: 14, oy: 8 },
+    ],
+    engine: { kind: 'square', size: 20, fill: GOLD },
+  },
+  alembik: {
+    kind: 'ship',
+    glow: 'friendly',
+    hull: { kind: 'ngon', n: 6, r: 22, fill: BOG_GREEN, stroke: GREEN, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 6, h: 14, fill: GREEN, ox: -16, oy: 6 },
+      { kind: 'rect', w: 6, h: 14, fill: GREEN, ox: 16, oy: 6 },
+    ],
+    engine: { kind: 'square', size: 20, fill: BOG_GREEN },
+  },
+  zwierciadlo: {
+    kind: 'ship',
+    glow: 'friendly',
+    hull: { kind: 'ngon', n: 4, r: 24, fill: DEEP_BLUE, stroke: MIRROR, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 6, h: 14, fill: MIRROR, ox: -16, oy: 6 },
+      { kind: 'rect', w: 6, h: 14, fill: MIRROR, ox: 16, oy: 6 },
+    ],
+    engine: { kind: 'square', size: 20, fill: DEEP_BLUE },
+  },
+} as const satisfies Record<string, ShipSpec>;
 
 // ---- Weapon pickups (4) -----------------------------------------------------
 

@@ -9,11 +9,23 @@ import type { PhaseScript } from './types';
 const aim: Direction2D = { x: 0, y: 0 };
 
 // Smok Krzemionkowski (Zone 1).
+// Phase palette: P1=terracotta 0xffb05a3c, P2=rust 0xff8b3a1f (§10 visual-reference).
 export const smokScript: PhaseScript = {
   sweepSpeed1: 80,
   sweepSpeed2: 140,
   fire1Cooldown: 0.5,
   fire2Cooldown: 1.1,
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xffb05a3c);
+  },
+  onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xff8b3a1f);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+chrom');
+    }
+  },
   fire1(c) {
     const pos = c.world.get(c.id, Position);
     const b = c.world.get(c.id, Boss);

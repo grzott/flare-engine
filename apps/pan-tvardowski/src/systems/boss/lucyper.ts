@@ -148,13 +148,28 @@ export const lucyperScript: PhaseScript = {
         break;
     }
   },
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xffc8cdd4);
+  },
   onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xff1a1f2a);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+    }
     c.deps.onEclipseChange?.(true);
   },
   onPhase2Exit(c) {
     c.deps.onEclipseChange?.(false);
   },
   onPhase3Enter(c) {
+    // Crimson-mirror finale (M3): crimson palette + phase break + bloom+flash+CRT.
+    c.deps.onPaletteShift?.('phase3', 0xffd4213d);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+flash+CRT');
+    }
     const b = c.world.get(c.id, Boss);
     if (!b) return;
     b.shatterIdx = 0;

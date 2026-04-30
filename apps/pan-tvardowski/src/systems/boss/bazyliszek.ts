@@ -91,10 +91,26 @@ export const bazyliszekScript: PhaseScript = {
     }
   },
   onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xffc7b89a);
     c.deps.onGazeChange?.(true);
   },
   onPhase1Exit(c) {
     c.deps.onGazeChange?.(false);
+  },
+  onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xff1a1410);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+vignette');
+    }
+  },
+  onPhase3Enter(c) {
+    c.deps.onPaletteShift?.('phase3', 0xffd4213d);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+    }
   },
   phase3Movement: bazyliszekTeleport,
 };

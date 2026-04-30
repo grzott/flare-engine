@@ -55,11 +55,15 @@ function tickWodnikShield(dt: number, c: BossCtx): void {
 // Wodnik Wiślany (Zone 3).
 // Phase 1: three staggered vertical water-spout columns.
 // Phase 2: lighter aimed spout + bubble-shield.
+// Phase palette: P1=verdigris 0xff4a7a6a, P2=grey-green 0xff2a4a4a (§10 visual-reference).
 export const wodnikScript: PhaseScript = {
   sweepSpeed1: 70,
   sweepSpeed2: 95,
   fire1Cooldown: 0.45,
   fire2Cooldown: 0.9,
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xff4a7a6a);
+  },
   fire1(c) {
     const pos = c.world.get(c.id, Position);
     const b = c.world.get(c.id, Boss);
@@ -98,7 +102,15 @@ export const wodnikScript: PhaseScript = {
       Layer.enemy,
     );
   },
-  onPhase2Enter: raiseWodnikShield,
+  onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xff2a4a4a);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+chrom');
+    }
+    raiseWodnikShield(c);
+  },
   onPhase2Update: tickWodnikShield,
   onPhase2Exit(c) {
     const b = c.world.get(c.id, Boss);

@@ -85,7 +85,16 @@ export const mefistofelesScript: PhaseScript = {
       );
     }
   },
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xffc9a24a);
+  },
   onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xffb05a3c);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+chrom');
+    }
     const b = c.world.get(c.id, Boss);
     if (b) b.firepitCooldown = MEFISTOFELES_FIREPIT_SEC * 0.3;
   },
@@ -100,9 +109,12 @@ export const mefistofelesScript: PhaseScript = {
     }
   },
   onPhase3Enter(c) {
+    c.deps.onPaletteShift?.('phase3', 0xffd4213d);
     const b = c.world.get(c.id, Boss);
     const pos = c.world.get(c.id, Position);
-    if (!b || !pos || !c.deps.onSpawnMirrorTwin) return;
+    if (!b || !pos) return;
+    c.deps.onPhaseBreak?.(pos.x, pos.y);
+    if (!c.deps.onSpawnMirrorTwin) return;
     // Twin starts mirrored above the player position (its per-tick system
     // drives its actual placement, this is just a harmless initial spawn).
     b.twinId = c.deps.onSpawnMirrorTwin(c.deps.playerX, c.deps.playerY);

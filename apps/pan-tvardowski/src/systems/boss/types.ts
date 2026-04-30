@@ -1,5 +1,6 @@
 import type { Query, World } from '@flare-engine/engine';
 import type { BossPattern, BossPhase } from '../../components';
+import type { BossPostFxKind } from '../../fx/boss-postfx';
 import type { SpawnCtx } from '../../spawn';
 
 export interface BossDeps {
@@ -31,6 +32,12 @@ export interface BossDeps {
   onDespawnMirrorTwin?: (id: number) => void;
   /** Lucyper phase 2: toggle eclipse mode (dim + spotlight postfx on HUD). */
   onEclipseChange?: (active: boolean) => void;
+  /** Called on every phase-enter; accent is an ARGB integer for background/boss tint. */
+  onPaletteShift?: (phase: BossPhase, accent: number) => void;
+  /** Called at phase-break position (x, y) to spawn a detonation-tier particle burst. */
+  onPhaseBreak?: (x: number, y: number) => void;
+  /** Called at phase-break to chain a named postfx sequence on the HUD. */
+  onPhasePostFx?: (chain: BossPostFxKind) => void;
 }
 
 export interface BossStatus {

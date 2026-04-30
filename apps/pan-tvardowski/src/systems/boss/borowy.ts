@@ -8,11 +8,23 @@ import type { PhaseScript } from './types';
 const aim: Direction2D = { x: 0, y: 0 };
 
 // Borowy Król (Zone 2).
+// Phase palette: P1=moss 0xff243a29, P2=verdigris 0xff4a7a6a (§10 visual-reference).
 export const borowyScript: PhaseScript = {
   sweepSpeed1: 60,
   sweepSpeed2: 110,
   fire1Cooldown: 0.7,
   fire2Cooldown: 0.55,
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xff243a29);
+  },
+  onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xff4a7a6a);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+vignette');
+    }
+  },
   // Phase 1: rolling boulders — 2 arcing shots that fall heavy.
   fire1(c) {
     const pos = c.world.get(c.id, Position);

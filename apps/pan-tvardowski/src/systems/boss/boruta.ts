@@ -26,11 +26,15 @@ function spawnBorutaSummons(c: BossCtx): void {
 // Phase 1: whip-chains — 4 bullets rotating around the boss centre.
 // Phase 2: mud geysers — aimed 3-way + single heavy central drop.
 //          Summons (3× Bies) are spawned once on phase-2 entry.
+// Phase palette: P1=hazard 0xffe84b2a, P2=crimson 0xffd4213d (§10 visual-reference).
 export const borutaScript: PhaseScript = {
   sweepSpeed1: 55,
   sweepSpeed2: 90,
   fire1Cooldown: 0.22,
   fire2Cooldown: 0.7,
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xffe84b2a);
+  },
   fire1(c) {
     const pos = c.world.get(c.id, Position);
     const b = c.world.get(c.id, Boss);
@@ -72,5 +76,13 @@ export const borutaScript: PhaseScript = {
       Layer.enemy,
     );
   },
-  onPhase2Enter: spawnBorutaSummons,
+  onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xffd4213d);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+flash');
+    }
+    spawnBorutaSummons(c);
+  },
 };

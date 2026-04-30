@@ -12,6 +12,8 @@ const aim: Direction2D = { x: 0, y: 0 };
 // Phase 1: cauldron bombs — 3 arcing heavy shots with slight aim spread.
 // Phase 2: mortar flight — aimed rush, single heavy + flank pair ±10°.
 // Phase 3: broom-laser 360° sweep — 12-ray radial pinwheel spun by b.t.
+// Phase palette: P1=crimson-deep 0xff7a1322, P2=crimson 0xffd4213d,
+//   P3=white-out 0xffffffff (§10 visual-reference, M3).
 export const babaJagaScript: PhaseScript = {
   threePhase: true,
   sweepSpeed1: 50,
@@ -83,6 +85,25 @@ export const babaJagaScript: PhaseScript = {
         Math.sin(a) * BULLET_SPEED.boss * 0.95,
         Layer.enemy,
       );
+    }
+  },
+  onPhase1Enter(c) {
+    c.deps.onPaletteShift?.('phase1', 0xff7a1322);
+  },
+  onPhase2Enter(c) {
+    c.deps.onPaletteShift?.('phase2', 0xffd4213d);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
+      c.deps.onPhasePostFx?.('bloom+chrom+flash');
+    }
+  },
+  onPhase3Enter(c) {
+    // White-out finale (M3): full-screen white palette + detonation burst.
+    c.deps.onPaletteShift?.('phase3', 0xffffffff);
+    const pos = c.world.get(c.id, Position);
+    if (pos) {
+      c.deps.onPhaseBreak?.(pos.x, pos.y);
     }
   },
 };

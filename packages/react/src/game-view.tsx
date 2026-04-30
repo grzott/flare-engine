@@ -13,7 +13,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { GameContext, type GameContextValue } from './game-context.js';
+import { type SafeArea, SafeAreaContext } from './safe-area.js';
 import { createSkiaFrameRenderer } from './skia-bridge.js';
+
+const ZERO_INSETS: SafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
+
+type InsetsFn = () => SafeArea;
+
+function tryGetSafeAreaInsets(): SafeArea {
+  try {
+    const mod = require('react-native-safe-area-context') as { useSafeAreaInsets: InsetsFn };
+    return mod.useSafeAreaInsets();
+  } catch {
+    return ZERO_INSETS;
+  }
+}
 
 /** Render hook invoked during the frame — receives the game context and
  *  the active Skia canvas for direct draw calls. Hooks run between
@@ -49,6 +63,9 @@ export interface GameViewProps {
   style?: ViewStyle;
   /** Optional overlay children (e.g. VirtualJoystick, VirtualButton). */
   children?: React.ReactNode;
+  /** Explicit safe-area insets. If omitted, resolved from react-native-safe-area-context
+   *  when installed, otherwise falls back to zero insets. */
+  safeArea?: SafeArea;
 }
 
 /**
@@ -58,7 +75,14 @@ export interface GameViewProps {
  * Overlay controls (VirtualJoystick, VirtualButton) should be placed
  * as children; they render on top of the Skia canvas.
  */
-export function GameView({ config, onReady, style, children }: GameViewProps): React.ReactElement {
+export function GameView({
+  config,
+  onReady,
+  style,
+  children,
+  safeArea,
+}: GameViewProps): React.ReactElement {
+  const resolvedSafeArea: SafeArea = safeArea ?? tryGetSafeAreaInsets();
   const canvasRef = useCanvasRef();
   const [picture, setPicture] = useState<SkPicture | null>(null);
 
@@ -143,26 +167,28 @@ export function GameView({ config, onReady, style, children }: GameViewProps): R
   };
 
   return (
-    <GameContext.Provider value={ctx}>
-      <View
-        style={[styles.container, style]}
-        onLayout={handleLayout}
-        onStartShouldSetResponder={returnTrue}
-        onResponderGrant={onGrant}
-        onResponderMove={onMove}
-        onResponderRelease={onRelease}
-        onResponderTerminate={onRelease}
-      >
-        <Canvas
-          ref={canvasRef as React.Ref<CanvasRef>}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
+    <SafeAreaContext.Provider value={resolvedSafeArea}>
+      <GameContext.Provider value={ctx}>
+        <View
+          style={[styles.container, style]}
+          onLayout={handleLayout}
+          onStartShouldSetResponder={returnTrue}
+          onResponderGrant={onGrant}
+          onResponderMove={onMove}
+          onResponderRelease={onRelease}
+          onResponderTerminate={onRelease}
         >
-          {picture !== null ? <Picture picture={picture} /> : null}
-        </Canvas>
-        {children}
-      </View>
-    </GameContext.Provider>
+          <Canvas
+            ref={canvasRef as React.Ref<CanvasRef>}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          >
+            {picture !== null ? <Picture picture={picture} /> : null}
+          </Canvas>
+          {children}
+        </View>
+      </GameContext.Provider>
+    </SafeAreaContext.Provider>
   );
 }
 

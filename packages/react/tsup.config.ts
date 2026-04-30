@@ -12,5 +12,6 @@ export default defineConfig({
     'react-native',
     '@shopify/react-native-skia',
     'react-native-gesture-handler',
+    'react-native-safe-area-context',
   ],
 });

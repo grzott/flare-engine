@@ -75,6 +75,23 @@ export interface GradientRectSpec extends BaseSpec {
   readonly axis: 0 | 1;
 }
 
+/** Used exclusively as `ShipSpec.engine`. Not part of the flat `ShapeSpec` union. */
+export interface SquareSpec extends BaseSpec {
+  readonly kind: 'square';
+  readonly size: number;
+}
+
+/**
+ * Composite ship spec per folio XIIIa 3-element rule:
+ * hull + N rect weapons (1–2 for enemies) + 1 square engine (20×20 px).
+ */
+export interface ShipSpec extends BaseSpec {
+  readonly kind: 'ship';
+  readonly hull: ShapeSpec;
+  readonly weapons: readonly RectSpec[];
+  readonly engine: SquareSpec;
+}
+
 export type ShapeSpec =
   | CircleSpec
   | RectSpec
@@ -83,4 +100,5 @@ export type ShapeSpec =
   | StarSpec
   | RingSpec
   | PolylineSpec
-  | GradientRectSpec;
+  | GradientRectSpec
+  | ShipSpec;

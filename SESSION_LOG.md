@@ -1675,3 +1675,50 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #75 "PT-Visual-Budget ★★ — M1 per-scene frame-budget guards (≤920 draws / 480 particles / 3 postfx worst-case) → M2 fps watchdog: drop chromatic-ab if avg fps <55 over 3s → M3 bench + record perf-baseline.md numbers post-rebrand"
 
 ---
+
+## Session 75 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #75):** PT-Visual-Budget ★★ — M1 per-scene frame-budget guards (≤920 draws / 480 particles / 3 postfx worst-case) → M2 fps watchdog: drop chromatic-ab if avg fps <55 over 3s → M3 bench + record perf-baseline.md numbers post-rebrand
+
+**Touched files**
+- `apps/pan-tvardowski/docs/perf-baseline.md`
+- `apps/pan-tvardowski/src/fx/budget.ts` (new)
+- `apps/pan-tvardowski/src/fx/postfx.ts` (pre-approved drift — 4th effect slot required by M2 chromatic-ab watchdog)
+- `apps/pan-tvardowski/src/perf/cold-start.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/fps-watchdog.test.ts` (new)
+- `apps/pan-tvardowski/tests/frame-budget.test.ts` (new)
+- `apps/pan-tvardowski/tests/postfx.test.ts` (undeclared but mechanically forced — exact-order assertion updated for 4th effect)
+- `docs/plans/sessions.md`
+
+**Drift from declared paths**
+- `src/fx/postfx.ts` — pre-approved at plan time as part of M2 (chromatic-aberration stub requires 4th effect slot in the chain)
+- `tests/postfx.test.ts` — undeclared but mechanically forced by adding the 4th effect; exact-order assertion required update; pre-recorded per user directive
+
+**Gates**
+- lint: ✅ (39/39 packages, 228 PT files, no fixes applied)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+10 new, total 476)
+- build: ✅ (echoes native build message, exit 0)
+- device smoke: deferred to session #59 (PT-DeviceSmoke) — pre-approved per session #50 footnote ⊞ and M3 plan-time approval; device-smoke command: `bun --cwd apps/pan-tvardowski run android` / `bun --cwd apps/pan-tvardowski run ios`
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Visual-Budget complete (session #75)` entry appended; per-milestone summary of M1 frame-budget guards, M2 fps watchdog + chromatic-ab drop, M3 perf-baseline placeholders; drift notes + device-smoke deferral note included
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ PT-Visual-Budget (session #75) complete (2026-04-30)`, test count bumped 466 → 476
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (visual-bundle sessions tracked in Change log; §17 does not subdivide the Visual bundle rows)
+- `docs/plans/release-readiness-checklist.md` — no new ticks; §5 "Cold-start perf < 3s" item not ticked because M3 numbers are placeholders pending session #59 real-device measurement
+
+**Close notes**
+- M3 `perf-baseline.md` numbers carry `Pending real-device measurement (session #59)` annotation — pre-approved at plan time; numbers will be confirmed in session #60 (PT-Perf)
+- Device-smoke deferred to session #59 (PT-DeviceSmoke) per session #50 footnote ⊞ and M3 plan-time approval
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): M1 frame-budget guards`
+2. `feat(pan-tvardowski): M2 fps watchdog + chromatic-ab stub`
+3. `feat(pan-tvardowski): M3 perf-baseline post-rebrand section`
+4. `test(pan-tvardowski): frame-budget + fps-watchdog`
+5. `docs(pan-tvardowski): close session #75 PT-Visual-Budget`
+
+**Next session:** #76 — no next row; run `/plan-sessions` to cut the next slice.
+
+---

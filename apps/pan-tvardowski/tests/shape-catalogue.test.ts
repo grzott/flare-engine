@@ -29,15 +29,25 @@ describe('shape catalogue', () => {
     }
   });
 
-  test('every non-enemy entity has at least one shape with a valid primitive kind', () => {
-    const nonEnemyCategories = [
+  test('every non-enemy ShipSpec entity has kind=ship', () => {
+    const shipSpecCategories = [
       SHAPE_CATALOGUE.minibosses,
       SHAPE_CATALOGUE.bosses,
       SHAPE_CATALOGUE.ships,
+    ] as const;
+    for (const category of shipSpecCategories) {
+      for (const [name, spec] of Object.entries(category)) {
+        expect((spec as ShipSpec).kind, name).toBe('ship');
+      }
+    }
+  });
+
+  test('every pickup entity has at least one shape with a valid primitive kind', () => {
+    const pickupCategories = [
       SHAPE_CATALOGUE.weaponPickups,
       SHAPE_CATALOGUE.upgradePickups,
     ] as const;
-    for (const category of nonEnemyCategories) {
+    for (const category of pickupCategories) {
       for (const [name, shapes] of Object.entries(category)) {
         const arr = shapes as readonly { kind: string }[];
         expect(arr.length, name).toBeGreaterThan(0);

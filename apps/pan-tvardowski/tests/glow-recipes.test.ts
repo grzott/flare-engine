@@ -25,11 +25,10 @@ describe('glow recipes', () => {
     expect(spec3.glow).toBeUndefined();
   });
 
-  test('player ship kogut-zloty has glow: friendly on first shape', () => {
+  test('player ship kogut-zloty has glow: friendly at ShipSpec level', () => {
     const ship = SHAPE_CATALOGUE.ships['kogut-zloty'];
-    // Cast to ShapeSpec (which extends BaseSpec carrying glow) to access the
-    // optional glow field — as const narrows away absent optional fields.
-    expect((ship[0] as ShapeSpec).glow).toBe('friendly');
+    // ships are now ShipSpec — glow lives on the ShipSpec (BaseSpec) directly.
+    expect(ship.glow).toBe('friendly');
   });
 
   test('all 4 weapon pickups have glow: friendly on first shape', () => {
@@ -52,10 +51,9 @@ describe('glow recipes', () => {
   });
 
   test('bosses have no glow tag', () => {
-    for (const [id, shapes] of Object.entries(SHAPE_CATALOGUE.bosses)) {
-      for (const s of shapes) {
-        expect((s as ShapeSpec).glow, `${id} should not have glow`).toBeUndefined();
-      }
+    for (const [id, spec] of Object.entries(SHAPE_CATALOGUE.bosses)) {
+      // bosses are now ShipSpec — cast to BaseSpec to reach the optional glow field.
+      expect((spec as BaseSpec).glow, `${id} should not have glow`).toBeUndefined();
     }
   });
 });

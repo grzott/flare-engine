@@ -38,6 +38,10 @@ This repo serves both Claude Code and GitHub Copilot. `.github/` is the Copilot 
 
 Single-source-of-truth map: instructions in [.github/instructions/](.github/instructions/) are the one copy — both tools reference them. Agents in `.claude/agents/` and `.github/agents/` have minor frontmatter differences (model IDs, tool names) but carry identical body rules by reference.
 
+## Pan Tvardowski — visual source of truth
+
+Presentation-layer reference for `apps/pan-tvardowski/` is the 21 PNG folios at [docs/references/pan-tvardowski/folios/](docs/references/pan-tvardowski/folios/). Read the relevant folio before touching `src/hud/`, `src/shape-catalogue.ts`, `src/theme/`, `src/palette.ts`, or boss FSMs. Textual cross-index lives at [apps/pan-tvardowski/docs/visual-reference.md](apps/pan-tvardowski/docs/visual-reference.md). Folio XIIIa (ship-anatomy 3-element rule: `hull + N rect weapons + 1 square engine`) governs every ship in the codex; folio III lists the 5 brand principles that override taste.
+
 ## Boundary rules (reinforced from agents)
 
 - `engine-builder` — never edits `apps/**`, `docs/design/**`, `docs/plans/build-plan.md` (read-only reference)

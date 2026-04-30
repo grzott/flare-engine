@@ -1,18 +1,45 @@
-# Pan Tvardowski — Canonical Visual Reference
+# Pan Tvardowski — Visual Reference (textual cross-index)
 
-This file is the **single source of truth** for all visual specifications in Pan Tvardowski.
-Every value (hex, px, ms, particle count) that appears in code must agree with this document.
-The HTML deck at `docs/references/pan-tvardowski/Pan Tvardowski - Visual Reference.html`
-is preserved as a visual companion — mood boards, rendered previews, concept art — **not a spec**.
-Do not propagate values from the deck into code without cross-checking here first.
+## §0 — Source of truth
+
+The 21 PNG folios at [`docs/references/pan-tvardowski/folios/`](../../../docs/references/pan-tvardowski/folios/) are the canonical visual source of truth for Pan Tvardowski. **If a value in this doc conflicts with a folio, the folio wins** unless this doc documents a deliberate deviation with a rationale.
+
+This document is a textual cross-index: each section maps a folio to live code symbols and tracks open migrations.
+
+| Folio | Section | Topic |
+|---|---|---|
+| [I](../../../docs/references/pan-tvardowski/folios/folio-01-cover.png) | — | Brand voice |
+| [II](../../../docs/references/pan-tvardowski/folios/folio-02-index.png) | — | Deck chapter map |
+| [III](../../../docs/references/pan-tvardowski/folios/folio-03-brand-principles.png) | §0.1 | The 5 brand principles |
+| [IV](../../../docs/references/pan-tvardowski/folios/folio-04-palette.png) | §1 | Twelve-pigment palette |
+| [V](../../../docs/references/pan-tvardowski/folios/folio-05-typography.png) | §2 | Typography |
+| [VI](../../../docs/references/pan-tvardowski/folios/folio-06-skia-language.png) + [XIIIa](../../../docs/references/pan-tvardowski/folios/folio-13a-ship-anatomy.png) | §3 | Skia language + ship anatomy |
+| [VIb](../../../docs/references/pan-tvardowski/folios/folio-06b-explosions.png) | §6 | Explosion tiers |
+| [IX](../../../docs/references/pan-tvardowski/folios/folio-09-hud-play-frame.png) | §7 | HUD anatomy |
+| [XII](../../../docs/references/pan-tvardowski/folios/folio-12-zones.png) / [XIIB](../../../docs/references/pan-tvardowski/folios/folio-12b-zone-specs.png) | §9 | Zone specs |
+| [XIII](../../../docs/references/pan-tvardowski/folios/folio-13-boss-visual-beats.png) / [XIIIf](../../../docs/references/pan-tvardowski/folios/folio-13f-boss-ships.png) | §10 | Boss specs |
+| [XIV](../../../docs/references/pan-tvardowski/folios/folio-14-motion-accessibility.png) | §11 | Motion + accessibility |
+| [XV](../../../docs/references/pan-tvardowski/folios/folio-15-frame-budget.png) | §12 | Frame budget |
+
+### §0.1 — The 5 brand principles (folio III)
+
+These override taste. When in doubt, fall back to them.
+
+1. **Darkness is the canvas.** Backgrounds default to ink-black `#0E1A12`. Light is reserved for the player ship, gold UI, and crimson sigils.
+2. **Crimson is ink, not paint.** Player trail, sigil, brand mark, final-hit flash. Never decoration; if it's red and not flashing, it's wrong.
+3. **Recolor before redraw.** Icons repeat across entities — frame shape + tint differentiates. The grimoire is supposed to feel hand-stamped.
+4. **Diacritics are sacred.** `ąćęłńóśźż` must render at every size and weight. If a font breaks them, the font does not ship.
+5. **60 fps is the gospel.** ≤ 1k draws · ≤ 512 particles · ≤ 3 postfx stages. Beauty inside the budget.
 
 ---
 
 ## §1 — Palette
 
-### 12-pigment system (deck Chapter 01)
+Folio reference: [folio-04-palette.png](../../../docs/references/pan-tvardowski/folios/folio-04-palette.png).
 
-| Token | Deck hex | Code today | Code symbol | File:line | Migration |
+### 12-pigment system
+
+| Token | Folio IV hex | Code today | Code symbol | File:line | Migration |
 |---|---|---|---|---|---|
 | `gold` | `#C9A24A` | `#F3C262` | `colors.ui.primary` | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4) | **critical — #67** |
 | `crimson` | `#D4213D` | `#C0392B` | `colors.ui.hazard` | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5) | **critical — #67** |
@@ -93,7 +120,21 @@ The following characters must render correctly at all sizes and font weights:
 
 ## §3 — Shape vocabulary
 
-### 6 Skia primitives (deck Chapter 02)
+Folio references: [folio-06-skia-language.png](../../../docs/references/pan-tvardowski/folios/folio-06-skia-language.png), [folio-13a-ship-anatomy.png](../../../docs/references/pan-tvardowski/folios/folio-13a-ship-anatomy.png).
+
+### §3.0 — Ship-anatomy 3-element rule (folio XIIIa) — most consequential constraint
+
+**Every ship in the codex** — player, enemy, mini-boss, boss (29 total) — is constructed from exactly three primitive parts:
+
+- 1× **hull** — variable shape carrying species identity (triangle, ellipse, step, drop, pie, moon, star, xor, or, pointed_oval, delay, dataStorage, offPageConnector, merge_or_storage)
+- N× **weapon rectangles** mounted on hull silhouette: enemy 1–2, mini-boss 2–3, boss 2–4, player 2 (count by tier)
+- 1× **engine square** (20×20 px) at hull rear; drives the crimson-flame trail particle
+
+Hue families: enemies span the rainbow per species (folio XIIIb), mini-bosses crimson family (folio XIIIb+), bosses violet family (folio XIIIf), player ships brand-tagged (Kogut = gold, Twardoń = green, Bazyl = blue per folio XIIIc).
+
+Live `src/shape-catalogue.ts` does not yet implement this rule. Migration scheduled as a dedicated milestone (see §15).
+
+### 6 Skia primitives (folio VI)
 
 | Primitive | Deck use | Size/spec | Stroke |
 |---|---|---|---|
@@ -304,18 +345,32 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 
 ## §7 — HUD anatomy
 
+Folio reference: [folio-09-hud-play-frame.png](../../../docs/references/pan-tvardowski/folios/folio-09-hud-play-frame.png) — single most important presentation-layer folio.
+
 HUD component: [`src/hud/Hud.tsx`](../src/hud/Hud.tsx).
 Styles: [`src/hud/Hud.styles.ts`](../src/hud/Hud.styles.ts).
 Spacing tokens: [`src/theme/spacing.ts`](../src/theme/spacing.ts).
 
-| Element | Position | Color | Font role | Notes |
+### Folio IX target layout (mobile portrait 9:16)
+
+| Slot | Position | Token | Type | Notes |
 |---|---|---|---|---|
-| Score | top-left `hudCornerX=16 hudCornerY=32` | `colors.ui.primary` | h3 20 px | [`Hud.styles.ts:12`](../src/hud/Hud.styles.ts#L12) |
-| HP text | below score, `marginTop sm=4` | `#fff` | body 14 px | [`Hud.styles.ts:13`](../src/hud/Hud.styles.ts#L13) |
-| Bombs | below HP, `marginTop xs=2` | `#fff` | body 14 px | [`Hud.styles.ts:14`](../src/hud/Hud.styles.ts#L14) |
-| Boss bar | top-center, `h=bossBarHeight=8` | `colors.ui.hazard` fill | label 14 px | [`Hud.styles.ts:15–34`](../src/hud/Hud.styles.ts#L15) |
-| Miniboss bar | below boss bar at `top=56`, `h=minibossBarHeight=6`, `w=70%` | `colors.ui.secondary` fill | caption 12 px | [`Hud.styles.ts:35–54`](../src/hud/Hud.styles.ts#L35) |
-| Zone banner | `top 38%`, centered | `colors.ui.primary` title | h2 26 px | [`Hud.styles.ts:55–73`](../src/hud/Hud.styles.ts#L55) |
+| Score | top-left | `mono.hud` parchment | 3-digit groups, e.g. `012 480` | folio IX |
+| Combo | below score | `mono.hud` crimson | `×N` pulses on hit | folio IX |
+| Zone banner | top-center | `display.m` italic + gold rule | Roman numeral + zone name (e.g. `— I — Dachy Krakowa`) | folio IX |
+| Bombs | top-right | `stamp.bomb` crimson | filled / outline pip dots | folio IX |
+| HP bar | bottom (above boss bar) | `HUDBar` crimson gradient | `#2a0810 → #D4213D` left-to-right; flickers ≤2 segments | folio IX |
+| Weapon meter | bottom-right (above boss bar) | 5-segment crimson | weapon-level + cooldown indicator (e.g. `PIORUN · L2`) | folio IX |
+| Boss bar | bottom | `display.m` + bar | gold border `#C9A24A`; only when boss alive (e.g. `Smok Krzemionkowski — faza II`) | folio IX |
+
+### Live code state (current divergences)
+
+The live HUD diverges from folio IX on layout and content. Tracked in §15.
+
+- Boss bar is rendered **at top** in current code (`Hud.styles.ts:15–34`); folio IX places it at bottom.
+- HP is rendered as **plain text** (`HP 03/05`); folio IX requires a horizontal gradient bar.
+- **Combo readout, weapon meter, zone banner with Roman numeral** — not implemented.
+- HP gradient anchor `#2a0810` is intentional and distinct from brand `crimson-deep #7A1322` — see §13.
 
 ### HP-bar gradient spec (session #71)
 
@@ -507,29 +562,11 @@ Items requiring code changes. Code-today links use live line numbers as of 2026-
 
 ---
 
-## §13 — Deck errors & deliberate deviations
+## §13 — Intentional deviations
 
-Three confirmed errors in the HTML deck. **Code is correct where it diverges from the deck.**
+### HP-bar gradient anchor
 
-### Ship art orientation
-
-`docs/references/pan-tvardowski/uploads/player1.jpg`, `player2.jpg`, `player3.jpg` depict ships
-pointing down or sideways. This is a composition error in the reference images.
-The live `kogut-zloty` shape (`triangle` pointing up, GOLD fill) at
-[`src/shape-catalogue.ts:216`](../src/shape-catalogue.ts#L216) is correct.
-Do not "fix" the code to match the photographs.
-
-### DrawIO rotations
-
-`docs/references/pan-tvardowski/uploads/ships-design.drawio` lists mini-boss rotation values
-`-90°`, `-180°`, `112°`. These imply sideways hulls and are incorrect drafting angles.
-All live shapes in `shape-catalogue.ts` are correctly oriented (pointing up or neutral).
-Treat the DrawIO file as a scratch reference only.
-
-### HP-bar hex
-
-Deck Folio IX uses `#2a0810` in an HP-bar context, while the named token `--crimson-deep`
-is `#7A1322`. These are not the same value and serve different roles:
+Folio IX uses `#2a0810` as the HP-bar gradient empty-anchor, while the brand token `crimson-deep` is `#7A1322`. These are not the same value and serve different roles:
 
 - `#2a0810` — HP-bar gradient empty-anchor (darkest stop when bar is depleted).
 - `#7A1322` — brand `crimson-deep` for text, borders, UI chrome.
@@ -545,3 +582,25 @@ Both values are correct and intentional. Do not unify them.
 | Z8 silver-UI override: does "inverts to silver-on-black" mean the gold UI token is swapped at scene-context level, or is there a parallel palette object? | #72 | Affects ZONE_PALETTES shape — need to confirm before implementation |
 | Per-phase palette wiring: `PhaseScript` carries no color fields; does wiring land in the FSM or as a separate palette-shift system? | #73 | Impacts boss FSM interface in `src/systems/boss/types.ts` |
 | Font loading order: does EB Garamond need to load before first frame, or is a FOUT acceptable for the boot sigil? | #68 | Affects `App.tsx` render gate logic |
+
+---
+
+## §15 — Open work against folios
+
+Punch-list of folio-vs-code gaps, severity-ordered. Each row maps to an existing or new session row in [`docs/plans/sessions.md`](../../../docs/plans/sessions.md). Items marked as scheduled are already in the build plan; the ship-anatomy migration is a new milestone introduced by the folio adoption.
+
+| # | Gap | Folio | Code locus | Severity | Session | Status |
+|---|---|---|---|---|---|---|
+| 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | new milestone (2–3 sessions) | open |
+| 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | open |
+| 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + new HUD-layout session | open |
+| 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/palette.ts`](../src/palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | open |
+| 5 | Per-phase boss palette shift not wired (`PhaseScript` carries no color fields) | XIII | `src/systems/boss/*.ts` | high | #73 | open |
+| 6 | Reduced-motion rules 1–4 not implemented (rule 5 only) | XIV | [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | open |
+| 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/theme/colors.ts`](../src/theme/colors.ts) | low | #74 | open |
+| 8 | Zone parallax stacks not yet audited against folio specs | XIIB | parallax wiring in `src/scenes/play.ts` | medium | needs audit | open |
+| 9 | Frame-budget per-scene caps not enforced by FPS watchdog | XV | [`src/perf/cold-start.ts`](../src/perf/cold-start.ts) + new watchdog | medium | #75 | open |
+
+### Verification
+
+After each session that closes a row above, capture a device-build screenshot of the affected scene and place it next to the corresponding folio in `docs/references/pan-tvardowski/folios/diff/<folio>-current.png`. The visual-diff is the verification: builder + verifier confirm the live render matches the folio before flipping the row to `done`.

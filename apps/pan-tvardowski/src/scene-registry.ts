@@ -34,8 +34,9 @@ export interface SceneRegistryDeps {
   dialogue: ReturnType<typeof createDialogueController>;
   saveStore: ReturnType<typeof createSaveStore>;
   entitlementStore: EntitlementStore;
-  /** Safe-area bottom inset forwarded into createPlayScene. */
-  bottomInset?: number;
+  /** Returns the current safe-area bottom inset in logical pixels. Forwarded
+   *  into createPlayScene so orientation changes are reflected per-frame. */
+  getBottomInset?: () => number;
 }
 
 export function applyVolumes(audio: AudioHandles | null): void {
@@ -56,7 +57,7 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
     dialogue,
     saveStore,
     entitlementStore,
-    bottomInset,
+    getBottomInset,
   } = deps;
   const atlas = loadSpriteAtlas(Skia, SPRITES_MANIFEST);
   // PostFx chain runs against Skia. Visible compositing requires the GameView
@@ -113,7 +114,7 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
       dialogue,
       entitlementStore,
       entitlementFallback: createEntitlementFallback(),
-      bottomInset,
+      getBottomInset,
     }),
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));

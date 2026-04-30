@@ -110,10 +110,12 @@ export interface PlaySceneDeps {
   entitlementStore?: EntitlementStore;
   /** Fallback handler — allows stale-access when entitlement check fails. */
   entitlementFallback?: EntitlementFallbackHandler;
-  /** Safe-area bottom inset in logical pixels. Subtracted from the play-area
-   *  height used for player clamp, spawn position, and entity cull. The canvas
-   *  stays full-bleed — only gameplay logic uses the reduced height. */
-  bottomInset?: number;
+  /** Returns the current safe-area bottom inset in logical pixels. Called on
+   *  every refreshBounds so orientation changes are reflected automatically.
+   *  Subtracted from the play-area height used for player clamp, spawn position,
+   *  and entity cull. The canvas stays full-bleed — only gameplay logic is
+   *  reduced. Defaults to () => 0 when absent. */
+  getBottomInset?: () => number;
 }
 
 interface PlayState {
@@ -156,7 +158,7 @@ interface PlayState {
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
   const { ctx, atlas, save } = deps;
-  const bottomInset = deps.bottomInset ?? 0;
+  const getBottomInset = deps.getBottomInset ?? (() => 0);
   const audioRef = deps.audio;
   const postfx: PostFxController = createPanTvardowskiPostFx(deps.skia ?? null);
   // Attach the a11y bridge once — reduced-motion then drives camera.motionScale
@@ -241,7 +243,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       // Subtract the safe-area bottom inset so gameplay logic (player clamp,
       // spawn Y, entity cull) never uses the occluded region. The canvas and
       // camera remain full-bleed — only the logical play-area is reduced.
-      state.bounds.height = (hasViewport ? vh : 640) - bottomInset;
+      state.bounds.height = (hasViewport ? vh : 640) - getBottomInset();
       // Keep the camera centered on the current viewport so the world isn't
       // offset when the real device layout arrives after the scene mounts.
       ctx.camera.x = state.bounds.width / 2;

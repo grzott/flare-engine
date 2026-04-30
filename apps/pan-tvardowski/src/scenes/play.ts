@@ -28,6 +28,8 @@ import {
 } from '../dialogue';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
+import type { AmbienceState } from '../fx/ambience';
+import { createAmbienceState, tickAmbience } from '../fx/ambience';
 import { resetCataclysmGate, triggerExplosion } from '../fx/explosions';
 import { createPanTvardowskiPostFx } from '../fx/postfx';
 import {
@@ -37,6 +39,7 @@ import {
   updateZoneBanner,
 } from '../hud/zone-banner';
 import type { EntitlementFallbackHandler } from '../iap/fallback';
+import { ZONE_PALETTES } from '../palette';
 import { burstExplosion } from '../particles';
 import type { SaveStore } from '../save/store';
 import {
@@ -154,6 +157,8 @@ interface PlayState {
   disposed: boolean;
   /** Accumulated seconds since last auto-save. Resets on each persist call. */
   autoSaveAccum: number;
+  /** Parallax-particle ambience state for the current zone. Null while not in play. */
+  ambience: AmbienceState | null;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -205,6 +210,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
         autoSaveAccum: 0,
+        ambience: null,
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -232,6 +238,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       for (const id of ids) destroyEntity(ctx.world, state.coll, id);
       state.coll = new CollisionWorld();
       state.spawnCtx.coll = state.coll;
+      state.ambience = null;
     }
 
     function refreshBounds(state: PlayState): void {
@@ -284,6 +291,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       clearBossFsms();
       clearMinibossFsms();
       s = initState(zoneId);
+      s.ambience = createAmbienceState(ctx.world, atlas);
 
       if (fullReset) {
         gameState.playerHp = PLAYER_HP_MAX;
@@ -734,6 +742,19 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             void ctx.scenes.go('game-over');
           },
         });
+
+        if (s.ambience) {
+          const zp =
+            ZONE_PALETTES[Number.parseInt(s.zone.id.slice(1), 10) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8];
+          tickAmbience(
+            s.ambience,
+            dt,
+            zp,
+            s.bounds,
+            gameState.settings.reducedMotion,
+            gameState.bossActive,
+          );
+        }
 
         if (s.pendingShake) {
           s.pendingShake = false;

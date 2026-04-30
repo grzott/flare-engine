@@ -2022,3 +2022,44 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #83 "PT-Overlay-Polish-2 ★★ — M1 shop overlay: product cards with gold border + price labels per folio XI → M2 paywall overlay: full-bleed CTA with crimson gradient bg per folio XI → M3 codex-shards + achievements overlays folio-aligned layout"
 
 ---
+
+## Session 83 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #83):** PT-Overlay-Polish-2 ★★ — M1 shop overlay: product cards with gold border + price labels per folio XI → M2 paywall overlay: full-bleed CTA with crimson gradient bg per folio XI → M3 codex-shards + achievements overlays folio-aligned layout
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/ShopOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/tests/shop-folio.test.ts` (new)
+- `apps/pan-tvardowski/src/hud/PaywallOverlay.styles.ts` (new)
+- `apps/pan-tvardowski/src/hud/PaywallOverlay.tsx`
+- `apps/pan-tvardowski/tests/paywall-folio.test.ts` (new)
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.tsx`
+- `apps/pan-tvardowski/tests/achievements-folio.test.ts` (new)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied; pan-tvardowski 249 files checked)
+- typecheck: ✅ (zero errors)
+- test: ✅ (+6 new, total 561)
+- build: ✅ (echo stub exits cleanly)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended `+ PT-Overlay-Polish-2 (session #83) complete`, test count bumped 555 → 561
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Overlay-Polish-2 complete (session #83)` entry appended at line 598
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only, per sessions #76–#82 convention)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): shop overlay folio XI alignment`
+2. `feat(pan-tvardowski): paywall overlay folio XI alignment`
+3. `feat(pan-tvardowski): achievements overlay folio XI alignment`
+4. `docs(pan-tvardowski): session #83 done + mirror-row 561 tests`
+
+**Next session:** #84 "PT-Parallax-Audit ★★ — M1 audit 8 zone parallax stacks against folio XIIB specs (layer count + scroll rate) → M2 correct any divergent parallax configs in zones.ts → M3 add ambient particle tuning per folio XIIB (density + drift)"
+
+---

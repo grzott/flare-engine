@@ -5,7 +5,7 @@ import { defaultControls, defaultSettings } from '../state';
 import type { PrivacySettings, SaveFile, SlotData, ZoneClearStats } from './schema';
 
 /** Must equal SAVE_VERSION in schema.ts. */
-const CURRENT_VERSION = 7;
+const CURRENT_VERSION = 8;
 
 // ---------------------------------------------------------------------------
 // Primitive guards
@@ -91,6 +91,7 @@ export function parseSettings(v: unknown): Settings {
   const o = v as Record<string, unknown>;
   const shake = isBool(o.screenShake) ? o.screenShake : true;
   const reducedMotion = isBool(o.reducedMotion) ? o.reducedMotion : false;
+  const colorBlindMode = isBool(o.colorBlindMode) ? o.colorBlindMode : false;
   const rawLocale = typeof o.locale === 'string' ? o.locale : 'en';
   const locale: Settings['locale'] = rawLocale === 'pl' ? 'pl' : 'en';
   const masterVolume = isNum(o.masterVolume) ? clamp01(o.masterVolume) : 1;
@@ -100,6 +101,7 @@ export function parseSettings(v: unknown): Settings {
   return {
     screenShake: shake,
     reducedMotion,
+    colorBlindMode,
     locale,
     masterVolume,
     musicVolume,
@@ -212,6 +214,18 @@ const MIGRATIONS = defineMigrationChain([
             ? o.privacy
             : { analyticsOptIn: false, crashOptIn: false },
       };
+    },
+  },
+  {
+    from: 7,
+    to: 8,
+    migrate: (data: unknown): unknown => {
+      const o = data as Record<string, unknown>;
+      const settings =
+        o.settings !== null && typeof o.settings === 'object' && !Array.isArray(o.settings)
+          ? { colorBlindMode: false, ...(o.settings as Record<string, unknown>) }
+          : o.settings;
+      return { ...o, version: 8, settings };
     },
   },
 ]);

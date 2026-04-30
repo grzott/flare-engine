@@ -13,6 +13,7 @@
   "menu.settings.title": "Settings",
   "menu.settings.language": "Language",
   "menu.settings.reduced_motion": "Reduced motion",
+  "menu.settings.color_blind_mode": "Color-blind mode",
   "menu.settings.sfx_volume": "SFX volume",
   "menu.settings.music_volume": "Music volume",
   "menu.settings.audio.master": "Master volume",

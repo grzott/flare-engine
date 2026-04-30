@@ -3,7 +3,7 @@ import type { Settings } from '../state';
 import { defaultSettings } from '../state';
 import { fromUnknown } from './migrate';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export interface ZoneClearStats {
   readonly deaths: number;

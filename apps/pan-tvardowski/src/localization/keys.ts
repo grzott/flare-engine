@@ -18,6 +18,7 @@ const menu = [
   'menu.settings.title',
   'menu.settings.language',
   'menu.settings.reduced_motion',
+  'menu.settings.color_blind_mode',
   'menu.settings.sfx_volume',
   'menu.settings.music_volume',
   'menu.settings.audio.master',

@@ -285,6 +285,10 @@ function SettingsView({
     gameState.settings.reducedMotion = !gameState.settings.reducedMotion;
     stateChanged.emit();
   };
+  const toggleColorBlindMode = (): void => {
+    gameState.settings.colorBlindMode = !gameState.settings.colorBlindMode;
+    stateChanged.emit();
+  };
   const setJoystickSide = (side: JoystickSide): void => {
     gameState.settings.controls.joystickSide = side;
     stateChanged.emit();
@@ -350,6 +354,19 @@ function SettingsView({
               label={settings.reducedMotion ? 'ON' : 'OFF'}
               variant={settings.reducedMotion ? 'primary' : 'secondary'}
               onPress={toggleReducedMotion}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <Label variant="sm" style={styles.rowLabel}>
+            {t('menu.settings.color_blind_mode')}
+          </Label>
+          <View style={styles.rowControls}>
+            <Button
+              label={settings.colorBlindMode ? 'ON' : 'OFF'}
+              variant={settings.colorBlindMode ? 'primary' : 'secondary'}
+              onPress={toggleColorBlindMode}
             />
           </View>
         </View>

@@ -33,6 +33,11 @@ const ui = {
   rust: '#8B3A1F',
   terracotta: '#B05A3C',
   void: '#050A07',
+  cb: {
+    player: '#FF8C42',
+    hazard: '#FFD23F',
+    safe: '#4FC3F7',
+  },
 } as const;
 
 export const colors = { zone: ZONE_PALETTES, ui } as const;

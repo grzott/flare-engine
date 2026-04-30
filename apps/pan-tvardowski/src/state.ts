@@ -104,6 +104,7 @@ export function createRunStats(): RunStats {
 export interface Settings {
   screenShake: boolean;
   reducedMotion: boolean;
+  colorBlindMode: boolean;
   locale: 'en' | 'pl';
   masterVolume: number;
   musicVolume: number;
@@ -114,6 +115,7 @@ export function defaultSettings(): Settings {
   return {
     screenShake: true,
     reducedMotion: false,
+    colorBlindMode: false,
     locale: 'en',
     masterVolume: 1,
     musicVolume: 1,

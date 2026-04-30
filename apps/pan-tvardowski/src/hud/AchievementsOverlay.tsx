@@ -76,36 +76,49 @@ function AchievementsView({
         </Label>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-          {unlockedEntries.length > 0 ? (
-            <Label variant="xs" tone="muted" style={styles.sectionHeader}>
-              {t('achievements.unlocked_section')}
-            </Label>
-          ) : null}
-          {unlockedEntries.map((entry) => (
-            <View key={entry.id} style={styles.entryRow}>
+          {unlockedCount === 0 ? (
+            <View style={styles.entryRow}>
               <Label variant="sm" tone="accent">
-                {t(entry.nameKey)}
+                {t('achievements.fresh_save.heading')}
               </Label>
               <Label variant="xs" tone="muted">
-                {t(entry.descKey)}
+                {t('achievements.fresh_save.body', { n: 0 })}
               </Label>
             </View>
-          ))}
-          {lockedEntries.length > 0 ? (
-            <Label variant="xs" tone="muted" style={styles.sectionHeader}>
-              {t('achievements.locked_section')}
-            </Label>
-          ) : null}
-          {lockedEntries.map((entry) => (
-            <View key={entry.id} style={[styles.entryRow, styles.entryLocked]}>
-              <Label variant="sm" tone="muted">
-                {'???'}
-              </Label>
-              <Label variant="xs" tone="muted">
-                {entry.hint === 'always' ? t(entry.descKey) : t('achievements.locked_hint')}
-              </Label>
-            </View>
-          ))}
+          ) : (
+            <>
+              {unlockedEntries.length > 0 ? (
+                <Label variant="xs" tone="muted" style={styles.sectionHeader}>
+                  {t('achievements.unlocked_section')}
+                </Label>
+              ) : null}
+              {unlockedEntries.map((entry) => (
+                <View key={entry.id} style={styles.entryRow}>
+                  <Label variant="sm" tone="accent">
+                    {t(entry.nameKey)}
+                  </Label>
+                  <Label variant="xs" tone="muted">
+                    {t(entry.descKey)}
+                  </Label>
+                </View>
+              ))}
+              {lockedEntries.length > 0 ? (
+                <Label variant="xs" tone="muted" style={styles.sectionHeader}>
+                  {t('achievements.locked_section')}
+                </Label>
+              ) : null}
+              {lockedEntries.map((entry) => (
+                <View key={entry.id} style={[styles.entryRow, styles.entryLocked]}>
+                  <Label variant="sm" tone="muted">
+                    {'???'}
+                  </Label>
+                  <Label variant="xs" tone="muted">
+                    {entry.hint === 'always' ? t(entry.descKey) : t('achievements.locked_hint')}
+                  </Label>
+                </View>
+              ))}
+            </>
+          )}
         </ScrollView>
 
         <View style={styles.backRow}>

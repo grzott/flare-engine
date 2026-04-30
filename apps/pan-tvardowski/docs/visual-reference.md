@@ -37,29 +37,29 @@ These override taste. When in doubt, fall back to them.
 
 Folio reference: [folio-04-palette.png](../../../docs/references/pan-tvardowski/folios/folio-04-palette.png).
 
-### 12-pigment system
+### 12-pigment system — done at session #67
 
-| Token | Folio IV hex | Code today | Code symbol | File:line | Migration |
-|---|---|---|---|---|---|
-| `gold` | `#C9A24A` | `#F3C262` | `colors.ui.primary` | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4) | **critical — #67** |
-| `crimson` | `#D4213D` | `#C0392B` | `colors.ui.hazard` | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5) | **critical — #67** |
-| `ink-black` | `#0E1A12` | `rgba(10,6,16,0.92)` | `colors.ui.bodyBg` | [`src/theme/colors.ts:12`](../src/theme/colors.ts#L12) | **high — #67** |
-| `parchment` | `#E8DCC4` | absent | — | — | **critical — #67** |
-| `bog-green` | `#1A2E1F` | absent | — | — | **critical — #67** |
-| `moss` | `#243A29` | absent | — | — | **critical — #67** |
-| `verdigris` | `#4A7A6A` | absent | — | — | **critical — #67** |
-| `bone` | `#C7B89A` | absent | — | — | **critical — #67** |
-| `rust` | `#8B3A1F` | absent | — | — | **critical — #67** |
-| `terracotta` | `#B05A3C` | absent | — | — | **critical — #67** |
-| `void` | `#050A07` | absent | — | — | **critical — #67** |
-| `parchment-2` | `#D9C9A8` | absent | — | — | **critical — #67** |
-| `parchment-dim` | `#A8997A` | absent | — | — | **critical — #67** |
-| `gold-deep` | `#8E6F2C` | absent | — | — | **critical — #67** |
-| `crimson-deep` | `#7A1322` | absent | — | — | **critical — #67** |
-| `hazard` | `#E84B2A` | absent | — | — | **critical — #67** |
-| `safe` | `#6FA66B` | absent | — | — | **critical — #67** |
+| Token | Folio IV hex | Code symbol | File:line | Status |
+|---|---|---|---|---|
+| `gold` | `#C9A24A` | `colors.ui.gold` / `colors.ui.primary` | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4), `:19` | done — #67 |
+| `crimson` | `#D4213D` | `colors.ui.crimson` / `colors.ui.secondary` | [`src/theme/colors.ts:6`](../src/theme/colors.ts#L6), `:21` | done — #67 |
+| `hazard` | `#E84B2A` | `colors.ui.hazard` / `colors.ui.hazardOrange` | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5), `:23` | done — #67 |
+| `ink-black` | `#0E1A12` | `colors.ui.inkBlack` / `colors.ui.bodyBg` | [`src/theme/colors.ts:11`](../src/theme/colors.ts#L11), `:25` | done — #67 |
+| `parchment` | `#E8DCC4` | `colors.ui.parchment` / `colors.ui.neutralLight` | [`src/theme/colors.ts:7`](../src/theme/colors.ts#L7), `:28` | done — #67 |
+| `bog-green` | `#1A2E1F` | `colors.ui.bogGreen` | [`src/theme/colors.ts:26`](../src/theme/colors.ts#L26) | done — #67 |
+| `moss` | `#243A29` | `colors.ui.moss` | [`src/theme/colors.ts:27`](../src/theme/colors.ts#L27) | done — #67 |
+| `verdigris` | `#4A7A6A` | `colors.ui.verdigris` | [`src/theme/colors.ts:31`](../src/theme/colors.ts#L31) | done — #67 |
+| `bone` | `#C7B89A` | `colors.ui.bone` | [`src/theme/colors.ts:32`](../src/theme/colors.ts#L32) | done — #67 |
+| `rust` | `#8B3A1F` | `colors.ui.rust` | [`src/theme/colors.ts:33`](../src/theme/colors.ts#L33) | done — #67 |
+| `terracotta` | `#B05A3C` | `colors.ui.terracotta` | [`src/theme/colors.ts:34`](../src/theme/colors.ts#L34) | done — #67 |
+| `void` | `#050A07` | `colors.ui.void` | [`src/theme/colors.ts:35`](../src/theme/colors.ts#L35) | done — #67 |
+| `parchment-2` | `#D9C9A8` | `colors.ui.parchment2` / `colors.ui.neutralMid` | [`src/theme/colors.ts:8`](../src/theme/colors.ts#L8), `:29` | done — #67 |
+| `parchment-dim` | `#A8997A` | `colors.ui.parchmentDim` | [`src/theme/colors.ts:30`](../src/theme/colors.ts#L30) | done — #67 |
+| `gold-deep` | `#8E6F2C` | `colors.ui.goldDeep` | [`src/theme/colors.ts:20`](../src/theme/colors.ts#L20) | done — #67 |
+| `crimson-deep` | `#7A1322` | `colors.ui.crimsonDeep` | [`src/theme/colors.ts:22`](../src/theme/colors.ts#L22) | done — #67 |
+| `safe` | `#6FA66B` | `colors.ui.safe` | [`src/theme/colors.ts:24`](../src/theme/colors.ts#L24) | done — #67 |
 
-All tokens land in [`src/theme/colors.ts`](../src/theme/colors.ts) at session #67.
+All tokens in [`src/theme/colors.ts`](../src/theme/colors.ts) — done at session #67.
 
 ### HP-bar anchor disambiguation
 
@@ -257,37 +257,37 @@ Flicker: two strokes alternate at ~8 Hz.
 
 Duration: 80 ms deck spec. Envelope: white frame 20% opacity → transparent 100%.
 Implemented via `createGrayscaleFlash('grayscale-flash', { intensity: 0 })` with auto-decay (4.2/s ≈ 238 ms).
-Current wiring at [`src/fx/postfx.ts:18`](../src/fx/postfx.ts#L18). Flash triggered on `player-hit` (existing), bomb detonation, and boss defeat (session #69).
+Current wiring at [`src/fx/postfx.ts:21`](../src/fx/postfx.ts#L21). Flash triggered on `player-hit` (existing), bomb detonation, and boss defeat — done at session #69.
 
-Engine gap: `triggerHitFlash()` lacks per-trigger decay override — deck specifies 80 ms player-hit / 200 ms bomb / 1200 ms boss-defeat; all use the fixed 4.2-decay until a future engine polish session adds per-trigger decay.
+Engine gap (documented at #85): `triggerHitFlash()` lacks per-trigger decay override — deck specifies 80 ms player-hit / 200 ms bomb / 1200 ms boss-defeat; all use the fixed 4.2-decay until a future engine polish session adds per-trigger decay.
 
-PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` re-enabled as `Skia` in
-[`src/scene-registry.ts`](../src/scene-registry.ts) (session #69). Chain tracks intensities live; visible pixel
+PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` wired as `Skia` in
+[`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) (session #69). Chain tracks intensities live; visible pixel
 compositing requires the GameView SkCanvas bridge (future engine session).
 
 ### Always-on chain
 
 | Effect | Params | Purpose | Status |
 |---|---|---|---|
-| `vignette` | intensity 0.35, radius 0.82 | Darkness canvas framing | live — session #69 |
-| `bloom` | threshold 0.72, intensity 0.5 | Luminosity lift on bright shapes | live — session #69 |
+| `vignette` | intensity 0.35, radius 0.82 | Darkness canvas framing | done — session #69 |
+| `bloom` | threshold 0.72, intensity 0.5 | Luminosity lift on bright shapes | done — session #69 |
 
-Both in [`src/fx/postfx.ts:15–19`](../src/fx/postfx.ts#L15).
+Both in [`src/fx/postfx.ts:19–20`](../src/fx/postfx.ts#L19).
 
 ### Situational effects
 
 | Effect | Trigger | Status |
 |---|---|---|
-| Chromatic-aberration | Boss phase-break, elite death | pending #70+ |
-| CRT scanlines | Z8 Księżyc only (Lucyper) | pending #70+ |
-| Grayscale-flash | Player hit, bomb detonation, boss defeat | live — session #69 |
+| Chromatic-aberration | Boss phase-break, elite death | done — session #70 |
+| CRT scanlines | Z8 Księżyc only (Lucyper) | done — session #70 |
+| Grayscale-flash | Player hit, bomb detonation, boss defeat | done — session #69 |
 
 ### Glow recipes
 
 | Kind | Color | Alpha | Technique | Status |
 |---|---|---|---|---|
-| Friendly rim | `safe #6FA66B` | 0.25 (0x40) | oversized stroked ring at `r+4`, width 3 | live — session #69 |
-| Hazard edge | `hazardOrange #E84B2A` | 0.6 (0x99) | double-stroke at `r+1`/`r+2`, width 0.5 | live — session #69 |
+| Friendly rim | `safe #6FA66B` | 0.25 (0x40) | oversized stroked ring at `r+4`, width 3 | done — session #69 |
+| Hazard edge | `hazardOrange #E84B2A` | 0.6 (0x99) | double-stroke at `r+1`/`r+2`, width 0.5 | done — session #69 |
 
 Glow helpers: [`src/shapes-draw.ts`](../src/shapes-draw.ts) — `friendlyGlowArgb()`, `hazardGlowArgb()`, `applyFriendlyGlow()`, `applyHazardGlow()`.
 Glow field: [`src/shapes.ts`](../src/shapes.ts) — `BaseSpec.glow?: 'friendly' | 'hazard'`.
@@ -323,7 +323,7 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 - **Sequenced postfx chain** — deck specifies `flash→grayscale→bloom` cascade per tier; current engine `triggerHitFlash()` fires a single grayscale decay; per-trigger decay overrides deferred.
 - **Perlin-noise shake** — deck specifies Perlin noise for Quake-class shake (Tier IV + V); current `camera.shake()` is sinusoidal only.
 
-### Concurrent caps
+### Concurrent caps — done at session #70
 
 | Tier | Cap |
 |---|---|
@@ -351,39 +351,35 @@ HUD component: [`src/hud/Hud.tsx`](../src/hud/Hud.tsx).
 Styles: [`src/hud/Hud.styles.ts`](../src/hud/Hud.styles.ts).
 Spacing tokens: [`src/theme/spacing.ts`](../src/theme/spacing.ts).
 
-### Folio IX target layout (mobile portrait 9:16)
+### Folio IX target layout (mobile portrait 9:16) — done at sessions #71, #79
 
 | Slot | Position | Token | Type | Notes |
 |---|---|---|---|---|
-| Score | top-left | `mono.hud` parchment | 3-digit groups, e.g. `012 480` | folio IX |
-| Combo | below score | `mono.hud` crimson | `×N` pulses on hit | folio IX |
-| Zone banner | top-center | `display.m` italic + gold rule | Roman numeral + zone name (e.g. `— I — Dachy Krakowa`) | folio IX |
-| Bombs | top-right | `stamp.bomb` crimson | filled / outline pip dots | folio IX |
-| HP bar | bottom (above boss bar) | `HUDBar` crimson gradient | `#2a0810 → #D4213D` left-to-right; flickers ≤2 segments | folio IX |
-| Weapon meter | bottom-right (above boss bar) | 5-segment crimson | weapon-level + cooldown indicator (e.g. `PIORUN · L2`) | folio IX |
-| Boss bar | bottom | `display.m` + bar | gold border `#C9A24A`; only when boss alive (e.g. `Smok Krzemionkowski — faza II`) | folio IX |
+| Score | top-left | `mono.hud` parchment | 3-digit groups, e.g. `012 480` | done — #71 |
+| Combo | below score | `mono.hud` crimson | `×N` pulses on hit, scale from `comboPulseScale` | done — #71; scale-driven — #85 |
+| Zone banner | top-center | `display.m` italic + gold rule | Roman numeral + zone name (e.g. `— I — Dachy Krakowa`) | done — #71 |
+| Bombs | top-right | `stamp.bomb` crimson | filled / outline pip dots | done — #71 |
+| HP bar | bottom (above boss bar) | `HUDBar` crimson gradient | `#2a0810 → #D4213D` left-to-right | done — #71 |
+| Weapon meter | bottom-right (above boss bar) | 5-segment crimson | weapon-level + cooldown indicator | done — #71 |
+| Boss bar | top (positioned via safe-area inset) | `display.m` + bar | gold border `#C9A24A`; `opacity: bossBarOpacity` (easeOutExpo 600 ms) | done — #71; opacity-tween — #85 |
 
-### Live code state (current divergences)
+### Live code state
 
-The live HUD diverges from folio IX on layout and content. Tracked in §15.
+HUD aligns with folio IX. HP gradient anchor `#2a0810` is intentional and distinct from brand `crimson-deep #7A1322` — see §13.
 
-- Boss bar is rendered **at top** in current code (`Hud.styles.ts:15–34`); folio IX places it at bottom.
-- HP is rendered as **plain text** (`HP 03/05`); folio IX requires a horizontal gradient bar.
-- **Combo readout, weapon meter, zone banner with Roman numeral** — not implemented.
-- HP gradient anchor `#2a0810` is intentional and distinct from brand `crimson-deep #7A1322` — see §13.
+### HP-bar gradient spec
 
-### HP-bar gradient spec (session #71)
-
-The HP bar fill should be a horizontal gradient: `#2a0810` (depleted/left) → `#D4213D` (full/right).
+HP bar fill horizontal gradient: `#2a0810` (depleted/left) → `#D4213D` (full/right). Done at session #71.
 `#2a0810` is the gradient anchor only — see §1 disambiguation note.
 
-### Weapon meter spec (session #71)
+### Weapon meter spec
 
-5-segment vertical strip, crimson fill `#D4213D`, right side of screen.
+5-segment strip, crimson fill `#D4213D`. Done at session #71.
 
-### Boss bar spec (session #71)
+### Boss bar spec
 
-Gold border `#C9A24A` around the boss bar background. Fill color stays `hazard #E84B2A`.
+Gold border `#C9A24A` around the boss bar background. Fill color `hazard #E84B2A`. Done at session #71.
+Fade-in opacity (`bossBarOpacity`) driven by `easeOutExpo` 600 ms tween in `src/scenes/play.ts`. Done at session #85.
 
 ---
 
@@ -393,19 +389,19 @@ Scene registry: [`src/scene-registry.ts`](../src/scene-registry.ts).
 
 | Scene | Type | Registry key | Status | Line |
 |---|---|---|---|---|
-| Boot | frontmatter | `boot` | done | [72](../src/scene-registry.ts#L72) |
-| Menu | frontmatter | `menu` | done | [91](../src/scene-registry.ts#L91) |
-| Save-select | frontmatter | `save-select` | done | [92](../src/scene-registry.ts#L92) |
-| Settings | frontmatter | `settings` | done | [93](../src/scene-registry.ts#L93) |
-| Credits | frontmatter | `credits` | done | [94](../src/scene-registry.ts#L94) |
-| Play | gameplay | `play` | done | [99](../src/scene-registry.ts#L99) |
-| Inventory | overlay | `inventory` | done | [95](../src/scene-registry.ts#L95) |
-| Codex-shards | overlay | `codex-shards` | done | [96](../src/scene-registry.ts#L96) |
-| Achievements | overlay | `achievements` | done | [97](../src/scene-registry.ts#L97) |
-| Shop | overlay | `shop` | done | [98](../src/scene-registry.ts#L98) |
-| Game-over | end | `game-over` | done | [115](../src/scene-registry.ts#L115) |
-| Victory | end | `victory` | done | [116](../src/scene-registry.ts#L116) |
-| Capture | util | — | not yet registered | — |
+| Boot | frontmatter | `boot` | done | [78](../src/scene-registry.ts#L78) |
+| Menu | frontmatter | `menu` | done | [96](../src/scene-registry.ts#L96) |
+| Save-select | frontmatter | `save-select` | done | [97](../src/scene-registry.ts#L97) |
+| Settings | frontmatter | `settings` | done | [98](../src/scene-registry.ts#L98) |
+| Credits | frontmatter | `credits` | done | [99](../src/scene-registry.ts#L99) |
+| Play | gameplay | `play` | done | [105](../src/scene-registry.ts#L105) |
+| Inventory | overlay | `inventory` | done | [100](../src/scene-registry.ts#L100) |
+| Codex-shards | overlay | `codex-shards` | done | [101](../src/scene-registry.ts#L101) |
+| Achievements | overlay | `achievements` | done | [102](../src/scene-registry.ts#L102) |
+| Shop | overlay | `shop` | done | [103](../src/scene-registry.ts#L103) |
+| Game-over | end | `game-over` | done | [120](../src/scene-registry.ts#L120) |
+| Victory | end | `victory` | done | [121](../src/scene-registry.ts#L121) |
+| Capture | util | `capture` | done — #78 | not registered in scene-registry (runs as a standalone harness) |
 
 Chrome layers not in SCENE_KEYS: `privacy`, `pause`, `dialogue` (rendered as overlay components).
 
@@ -427,8 +423,7 @@ ARGB palette integers: [`src/palette.ts:18`](../src/palette.ts#L18).
 | Z7 | Karczma "Rzym" | rust `#8B3A1F` | gold `#C9A24A` | crimson-deep `#7A1322` | parchment `#E8DCC4` | `0xff6b4423` | smoke 16p | Mefistofeles | madej |
 | Z8 | Księżyc | bone `#C7B89A` | parchment `#E8DCC4` | ink `#1A1F2A` | crimson `#D4213D` | `0xffc8cdd4` | float 64p | Lucyper Księżycowy | — |
 
-Zone ARGB palettes diverge from deck — all 8 will be replaced at session #72.
-Z8 silver-UI exception: entire UI chrome inverts to silver-on-black for Z8. Deferred to #72.
+Zone ARGB palettes aligned with deck tokens at session #72. Z8 silver-UI implemented at #72.
 
 ---
 
@@ -454,47 +449,45 @@ Boss FSMs: `src/systems/boss/{smok,borowy,wodnik,boruta,baba-jaga,bazyliszek,mef
 - 3-phase bosses: phase2 at 2/3 HP (`THREE_PHASE_P2_RATIO`), phase3 at 1/3 HP (`PHASE3_HP_RATIO`).
   Constants at [`src/config/gameplay.ts:200–203`](../src/config/gameplay.ts#L200).
 
-### Per-phase palette shift
+### Per-phase palette shift — done at session #73
 
-Each phase entry should trigger a palette shift: boss shape recolored to the phase's accent color,
-background lighting shifts to phase color. Wiring deferred to session #73. No boss FSM currently
-implements per-phase color.
+Each phase entry triggers a palette shift via `onPaletteShift` callback in boss FSMs: boss shape recolored to the phase's accent color, background lighting shifts to phase color. Wired in all 8 boss FSMs at session #73.
 
 ---
 
 ## §11 — Motion & accessibility
 
-### Easing assignments
+### Easing assignments — done at session #85
 
-| Element | Easing | Duration |
-|---|---|---|
-| Menu enter | cubicOut | 320 ms |
-| Overlay open | expoOut | 240 ms |
-| Overlay close | expoIn | 180 ms |
-| Sigil pulse | sineInOut | 2400 ms loop |
-| Combo pulse | backOut(1.4) | 120 ms |
-| Boss intro | expoOut | 600 ms |
-| Player-hit flash | linear | 80 ms |
-| Game-over | cubicIn | 1200 ms |
-| Zone banner | quartOut | 800 ms |
+| Element | Easing | Duration | Status |
+|---|---|---|---|
+| Menu enter | cubicOut | 320 ms | engine gap: `fadeTransition` linear-only; cubicOut cannot be applied until transition API exposes easing param |
+| Overlay open | expoOut | 240 ms | engine gap: no overlay open/close API with easing |
+| Overlay close | expoIn | 180 ms | engine gap: no overlay open/close API with easing |
+| Sigil pulse | sineInOut | 2400 ms loop | engine gap: no per-trigger sigil-pulse driver |
+| Combo pulse | backOut(1.4) | 120 ms | done — #85; scale via `comboPulseScale` in state + play-scene tween |
+| Boss intro | expoOut | 600 ms | done — #85; `bossBarOpacity` tween in play-scene |
+| Player-hit flash | linear | 80 ms | engine gap: `triggerHitFlash` fixed decay; no per-trigger override |
+| Game-over | cubicIn | 1200 ms | done — #85; `gameOverOpacity` tween in play-scene |
+| Zone banner | quartOut | 800 ms | done — #85; `createZoneBannerState` in `src/hud/zone-banner.ts` |
 
-### Reduce-motion policy (5 rules)
+Engine gaps surfaced at #85:
+- `fadeTransition` is linear-only — no easing function parameter in the engine transition API.
+- No overlay open/close API — overlays are rendered as React components; no scene-level enter/exit easing hooks.
+- No sigil-pulse driver — no built-in periodic animation driver; would require a timer system in the engine.
+- No per-trigger flash decay — `triggerHitFlash()` uses a fixed 4.2/s decay for all triggers.
 
-When `reducedMotion = true` (from `@flare-engine/a11y` — manager deleted from game at M27 lift;
-reduce-motion flag now lives in `gameState.settings.reducedMotion` mirrored from the bridge):
+### Reduce-motion policy (5 rules) — done at sessions #74, #84, #85
 
-1. **Parallax** → static (no layer offset update).
-2. **Sigil pulse** → dim 70%, no animation.
-3. **Combo pulse** → color shift only (no scale animation).
-4. **Boss intro** → cross-fade only (no translate).
-5. **Screen shake** → 1-frame red flash instead (no camera movement).
+When `reducedMotion = true` (flag lives in `gameState.settings.reducedMotion` mirrored from `@flare-engine/a11y` bridge at [`src/scene-registry.ts:70`](../src/scene-registry.ts#L70)):
 
-Rule 5 (shake → 1-frame red flash) implemented at session #71 via `applyShake` helper in
-[`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts).
-Rules 1–4 deferred to session #74. The `createA11yBridge` call is at
-[`src/scene-registry.ts:65`](../src/scene-registry.ts#L65).
+1. **Parallax** → static (no layer offset update) — done at #74; `getParallaxVelocity` in [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts).
+2. **Sigil pulse** → dim 70%, no animation — done at #74; `sigilOpacity` in [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts).
+3. **Combo pulse** → color shift only (no scale animation) — done at #85; `comboPulseScale` held at 1 when `reducedMotion=true` in play-scene `onEnemyKilled`.
+4. **Boss intro** → snap to final value immediately (no tween) — done at #85; `bossBarOpacity = 1` snap in play-scene boss-spawn branch.
+5. **Screen shake** → 1-frame red flash instead — done at #71; `applyShake` in [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts).
 
-### Color-blind tokens
+### Color-blind tokens — done at session #74
 
 | Token | Hex | Replaces |
 |---|---|---|
@@ -502,7 +495,7 @@ Rules 1–4 deferred to session #74. The `createA11yBridge` call is at
 | `cb.hazard` | `#FFD23F` | enemy bullet + hazard fill |
 | `cb.safe` | `#4FC3F7` | pickups + safe-zone markers |
 
-Tokens land in [`src/theme/colors.ts`](../src/theme/colors.ts) at session #74.
+Tokens in [`src/theme/colors.ts`](../src/theme/colors.ts) — done at session #74.
 
 ### Contrast floor
 
@@ -513,7 +506,7 @@ All UI text must satisfy this minimum.
 
 ## §12 — Frame budget
 
-Per-scene worst-case caps. Degradation triggers at session #75.
+Per-scene worst-case caps. Degradation triggers implemented at session #75.
 
 | Scene | Draws | Sprites | Particles | PostFX |
 |---|---|---|---|---|
@@ -537,8 +530,8 @@ Worst-case: Boss Z5 — 920 draws / 480 particles / 3 postfx. Headroom ≥8% on 
 ### Degradation policy
 
 Drop chromatic-aberration if average fps < 55 sustained over 3 seconds.
-FPS watchdog: session #75. Perf baseline instrumentation:
-[`src/perf/cold-start.ts:16`](../src/perf/cold-start.ts#L16).
+FPS watchdog: done at session #75. Perf baseline instrumentation:
+[`src/perf/cold-start.ts:22`](../src/perf/cold-start.ts#L22) (`markBootStart`).
 
 ---
 
@@ -548,17 +541,17 @@ Items requiring code changes. Code-today links use live line numbers as of 2026-
 
 | Topic | Deck spec | Code today | File:line | Severity | Target session | Status |
 |---|---|---|---|---|---|---|
-| Gold token | `#C9A24A` | `#F3C262` | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4) | critical | #67 | open |
-| Hazard token | `#E84B2A` | `#C0392B` | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5) | critical | #67 | open |
-| Ink-black bg | `#0E1A12` | `rgba(10,6,16,0.92)` | [`src/theme/colors.ts:12`](../src/theme/colors.ts#L12) | high | #67 | open |
-| 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | absent | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | open |
-| Zone ARGB palettes | per-zone deck tokens | ARGB ints (all diverge) | [`src/palette.ts:18`](../src/palette.ts#L18) | high | #72 | open |
+| Gold token | `#C9A24A` | `#C9A24A` (matches) | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4) | critical | #67 | done |
+| Hazard token | `#E84B2A` | `#E84B2A` (matches) | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5) | critical | #67 | done |
+| Ink-black bg | `#0E1A12` | `rgba(14,26,18,0.92)` | [`src/theme/colors.ts:11`](../src/theme/colors.ts#L11) | high | #67 | done |
+| 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | all present | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | done |
+| Zone ARGB palettes | per-zone deck tokens | aligned at #72 | [`src/palette.ts:52`](../src/palette.ts#L52) | high | #72 | done |
 | Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/theme/typography.ts`](../src/theme/typography.ts) | high | #68 | done |
 | Icon system | 30 stamps (MaterialCommunityIcons) | Skia shapes only | — | — | — | intentional |
 | Particles | 5-tier up to 256p | 5-tier system live | [`src/fx/explosions.ts`](../src/fx/explosions.ts) | high | #70 | done |
-| PostFX Skia | bloom+vignette always-on | `skiaPostFx = null` | [`src/scene-registry.ts:63`](../src/scene-registry.ts#L63) | high | #69 | open |
-| Boss per-phase palette | per-phase color in BOSS_SPECS | not wired in any boss FSM | `src/systems/boss/*.ts` | high | #73 | open |
-| Reduce-motion + cb tokens | 5-rule policy + cb.player/hazard/safe | partial; cb tokens absent | [`src/theme/colors.ts`](../src/theme/colors.ts) | low | #74 | open |
+| PostFX Skia | bloom+vignette always-on | `skiaPostFx` wired as Skia | [`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) | high | #69 | done |
+| Boss per-phase palette | per-phase color in BOSS_SPECS | wired in all boss FSMs | `src/systems/boss/*.ts` | high | #73 | done |
+| Reduce-motion + cb tokens | 5-rule policy + cb.player/hazard/safe | all rules done, cb tokens present | [`src/theme/colors.ts`](../src/theme/colors.ts), [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
 
 ---
 
@@ -587,19 +580,23 @@ Both values are correct and intentional. Do not unify them.
 
 ## §15 — Open work against folios
 
-Punch-list of folio-vs-code gaps, severity-ordered. Each row maps to an existing or new session row in [`docs/plans/sessions.md`](../../../docs/plans/sessions.md). Items marked as scheduled are already in the build plan; the ship-anatomy migration is a new milestone introduced by the folio adoption.
+Punch-list of folio-vs-code gaps. Each row maps to a session row in [`docs/plans/sessions.md`](../../../docs/plans/sessions.md).
 
 | # | Gap | Folio | Code locus | Severity | Session | Status |
 |---|---|---|---|---|---|---|
 | 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
-| 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | open |
-| 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + new HUD-layout session | open |
-| 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/palette.ts`](../src/palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | open |
-| 5 | Per-phase boss palette shift not wired (`PhaseScript` carries no color fields) | XIII | `src/systems/boss/*.ts` | high | #73 | open |
-| 6 | Reduced-motion rules 1–4 not implemented (rule 5 only) | XIV | [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | open |
-| 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/theme/colors.ts`](../src/theme/colors.ts) | low | #74 | open |
-| 8 | Zone parallax stacks not yet audited against folio specs | XIIB | parallax wiring in `src/scenes/play.ts` | medium | needs audit | open |
-| 9 | Frame-budget per-scene caps not enforced by FPS watchdog | XV | [`src/perf/cold-start.ts`](../src/perf/cold-start.ts) + new watchdog | medium | #75 | open |
+| 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | done |
+| 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + #79 | done |
+| 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/palette.ts`](../src/palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | done |
+| 5 | Per-phase boss palette shift not wired (`PhaseScript` carries no color fields) | XIII | `src/systems/boss/*.ts` | high | #73 | done |
+| 6 | Reduced-motion rules 1–4 not implemented (rule 5 only) | XIV | [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
+| 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/theme/colors.ts`](../src/theme/colors.ts) | low | #74 | done |
+| 8 | Zone parallax stacks not yet audited against folio specs | XIIB | [`src/fx/ambience.ts`](../src/fx/ambience.ts), play-scene | medium | #84 | done |
+| 9 | Frame-budget per-scene caps not enforced by FPS watchdog | XV | [`src/perf/cold-start.ts`](../src/perf/cold-start.ts) + [`src/fx/budget.ts`](../src/fx/budget.ts) | medium | #75 | done |
+| 10 | Ship-anatomy 29-ship codex migration | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
+| 11 | Overlay folio XI alignment (inventory, codex, dialogue, shop, paywall, achievements) | XI | overlay scenes in `src/scenes/` | high | sessions #82–#83 | done |
+| 12 | Frontmatter folio X alignment (boot, menu, save-select, settings, credits) | X | frontmatter scenes in `src/scenes/` | high | sessions #80–#81 | done |
+| 13 | Easing assignments 9 items (4 engine gaps documented in §11) | XIV | [`src/scenes/play.ts`](../src/scenes/play.ts), [`src/hud/zone-banner.ts`](../src/hud/zone-banner.ts) | medium | #85 | done |
 
 ### Verification
 

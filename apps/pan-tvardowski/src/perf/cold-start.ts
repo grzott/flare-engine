@@ -10,8 +10,14 @@ export interface BootEntry {
   readonly t: number;
 }
 
+export interface PerfSample {
+  readonly label: string;
+  readonly value: number;
+}
+
 let startT: number | null = null;
 const entries: BootEntry[] = [];
+const _perfSamples: PerfSample[] = [];
 
 export function markBootStart(): void {
   startT = nowMs();
@@ -31,4 +37,16 @@ export function getBootTrace(): readonly BootEntry[] {
 export function resetBootTrace(): void {
   startT = null;
   entries.length = 0;
+}
+
+export function markPerfSample(label: string, value: number): void {
+  _perfSamples.push({ label, value });
+}
+
+export function getPerfSamples(): readonly PerfSample[] {
+  return _perfSamples;
+}
+
+export function resetPerfSamples(): void {
+  _perfSamples.length = 0;
 }

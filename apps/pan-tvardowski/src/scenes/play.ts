@@ -30,6 +30,7 @@ import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
 import type { AmbienceState } from '../fx/ambience';
 import { createAmbienceState, tickAmbience } from '../fx/ambience';
+import { checkFpsWatchdog, recordBudget, recordFrameTime, resetFpsRing } from '../fx/budget';
 import { resetCataclysmGate, triggerExplosion } from '../fx/explosions';
 import { createPanTvardowskiPostFx } from '../fx/postfx';
 import {
@@ -372,6 +373,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       },
 
       onEnter() {
+        resetFpsRing();
         startZone(gameState.currentZone, true);
       },
 
@@ -783,6 +785,20 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         gameState.minibossActive = mbStatus.alive;
         gameState.minibossHp = mbStatus.hp;
         gameState.minibossHpMax = mbStatus.hpMax;
+
+        // Frame-budget snapshot — zero-alloc active-postfx count via for loop.
+        let activePostfx = 0;
+        const allEffects = postfx.chain.all();
+        for (let i = 0; i < allEffects.length; i++) {
+          if (allEffects[i]?.enabled) activePostfx += 1;
+        }
+        recordBudget({
+          draws: s.posQuery.count,
+          particles: s.lifetimeQuery.count,
+          postfx: activePostfx,
+        });
+        recordFrameTime(dt);
+        checkFpsWatchdog(postfx);
       },
 
       onExit() {

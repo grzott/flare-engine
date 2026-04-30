@@ -1578,3 +1578,47 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #73 "PT-Visual-Bosses ★★ — M1 per-boss phase palette transitions (8 bosses × 2–3 phases) in systems/boss/<boss>.ts → M2 per-boss particle preset + postfx chain on phase-break → M3 Z5 Baba Jaga 3-phase white-out + Z8 Lucyper crimson-mirror finale"
 
 ---
+
+## Session 73 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #73):** PT-Visual-Bosses ★★ — M1 per-boss phase palette transitions (8 bosses × 2–3 phases) in systems/boss/<boss>.ts → M2 per-boss particle preset + postfx chain on phase-break → M3 Z5 Baba Jaga 3-phase white-out + Z8 Lucyper crimson-mirror finale
+
+**Touched files**
+- `apps/pan-tvardowski/src/systems/boss/types.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/smok.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/borowy.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/wodnik.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/baba-jaga.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/bazyliszek.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/mefistofeles.ts` (M)
+- `apps/pan-tvardowski/src/systems/boss/lucyper.ts` (M)
+- `apps/pan-tvardowski/src/fx/boss-postfx.ts` (new — pre-approved deviation: defines `BossPostFxKind` union + `BOSS_POSTFX_CHAINS`; required by M2 `onPhasePostFx` callback type; game-layer only)
+- `apps/pan-tvardowski/tests/boss-phase-palette.test.ts` (new)
+- `apps/pan-tvardowski/tests/boss-postfx.test.ts` (new — pre-approved deviation: M2 postfx-chain wiring tests split into own file to keep M1/M3 test file focused)
+- `apps/pan-tvardowski/tests/boss-final-hit.test.ts` (new)
+- `docs/plans/sessions.md` (status flip in_progress → done)
+
+**Gates**
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (+7 new, total 451)
+- build: ✅
+- device smoke: deferred to session #59 (PT-DeviceSmoke) per standing user directive; consistent with session #50 footnote pattern
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Visual-Bosses complete (session #73)` entry appended; per-milestone summary + drift notes included
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: `+ PT-Visual-Bosses (session #73) complete (2026-04-30)`, test count bumped 444 → 451
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (visual-bundle sessions tracked in Change log; §17 does not subdivide the Visual bundle rows)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (no checklist items for PT-Visual-Bosses)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add per-boss phase palette transition callbacks`
+2. `feat(pan-tvardowski): add boss postfx chain registry and phase-break wiring`
+3. `feat(pan-tvardowski): baba-jaga white-out ramp and lucyper crimson-mirror finale`
+4. `test(pan-tvardowski): boss phase palette, postfx chain, and final-hit tests`
+5. `docs(pan-tvardowski): log PT-Visual-Bosses session #73`
+
+**Next session:** #74 "PT-Visual-A11y ★★ — M1 populate color-blind tokens (cb.player #FF8C42, cb.hazard #FFD23F, cb.safe #4FC3F7) + opt-in toggle in settings overlay → M2 extend reduce-motion to parallax-static + sigil-dim 70% + no shake → M3 locale-parity check for PL diacritics in new font"
+
+---

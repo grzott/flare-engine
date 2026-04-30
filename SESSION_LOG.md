@@ -2063,3 +2063,114 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #84 "PT-Parallax-Audit ★★ — M1 audit 8 zone parallax stacks against folio XIIB specs (layer count + scroll rate) → M2 correct any divergent parallax configs in zones.ts → M3 add ambient particle tuning per folio XIIB (density + drift)"
 
 ---
+
+## Session 84 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #84):** PT-Parallax-Audit ★★ — M1 audit 8 zone parallax stacks against folio XIIB specs (layer count + scroll rate) → M2 correct any divergent parallax configs in zones.ts → M3 add ambient particle tuning per folio XIIB (density + drift)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/ambience.ts`
+- `apps/pan-tvardowski/tests/parallax-audit.test.ts` (new)
+- `apps/pan-tvardowski/tests/ambient-density.test.ts` (new)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied)
+- typecheck: ✅ (zero errors, 71/71 tasks)
+- test: ✅ (+4 new, total 571) — batched with sessions #85 and #86; 571 reflects all three
+- build: skipped (echo stub only; not in row #84 gate list)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended `+ PT-Parallax-Audit (session #84)`, test count bumped 561 → 571
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Parallax-Audit complete (session #84)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only, per sessions #76–#83 convention)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): correct parallax velocity ratio + drift spread per folio XIIB`
+2. `test(pan-tvardowski): parallax-audit + ambient-density tests +4`
+3. `docs(pan-tvardowski): sessions #84-#86 done + mirror-row 571 tests`
+
+**Batched with:** sessions #85 and #86 (user-approved single-pass batched session, 2026-04-30)
+
+**Next session:** #85 "PT-Easing ★★ — M1 wire 9 easing assignments from folio XIV (menu cubicOut 320ms, overlay expoOut 240ms, etc.) → M2 boss-intro expoOut 600ms + game-over cubicIn 1200ms transitions → M3 zone-banner quartOut 800ms enter animation"
+
+---
+
+## Session 85 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #85):** PT-Easing ★★ — M1 wire 9 easing assignments from folio XIV (menu cubicOut 320ms, overlay expoOut 240ms, etc.) → M2 boss-intro expoOut 600ms + game-over cubicIn 1200ms transitions → M3 zone-banner quartOut 800ms enter animation
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/zone-banner.ts`
+- `apps/pan-tvardowski/src/scene-registry.ts`
+- `apps/pan-tvardowski/src/state.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/tests/easing-assignments.test.ts` (new)
+- `apps/pan-tvardowski/tests/boss-intro-transition.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-banner-anim.test.ts` (new)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied)
+- typecheck: ✅ (zero errors, 71/71 tasks)
+- test: ✅ (+6 new, total 571) — batched with sessions #84 and #86; 571 reflects all three
+- build: skipped (echo stub only; not in row #85 gate list)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended `+ PT-Easing (session #85)`, test count reflects 571
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Easing complete (session #85)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (presentation-layer visual bundle; tracked in Change log only)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation layer, not release polishing)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): zone-banner quartOut 800ms + combo pulse backOut 120ms`
+2. `feat(pan-tvardowski): boss-intro expoOut 600ms + game-over cubicIn 1200ms`
+3. `test(pan-tvardowski): easing + boss-intro + zone-banner-anim tests +6`
+
+**Batched with:** sessions #84 and #86 (user-approved single-pass batched session, 2026-04-30)
+
+**Next session:** #86 "PT-Visual-DocSync ★★ — M1 update visual-reference.md sections 5-12 to reflect sessions #66-#75 closures (flip open to done) → M2 update section 15 punch-list with new ship-anatomy + overlay + frontmatter rows → M3 verify all file:line cross-links still valid"
+
+---
+
+## Session 86 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #86):** PT-Visual-DocSync ★★ — M1 update visual-reference.md sections 5-12 to reflect sessions #66-#75 closures (flip open to done) → M2 update section 15 punch-list with new ship-anatomy + overlay + frontmatter rows → M3 verify all file:line cross-links still valid
+
+**Touched files**
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 packages, no fixes applied)
+- typecheck: ✅ (zero errors, 71/71 tasks)
+- test: ✅ (doc-only session; 571 total, 0 new, 0 fail)
+- build: skipped (not in row #86 gate list)
+- device smoke: deferred to session #59 PT-DeviceSmoke per established convention (session #50 footnote)
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §§5–12 flipped open→done; §15 punch-list rows updated; ~14 stale file:line cross-links corrected; engine gaps for deferred easing items documented in §11
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended `+ PT-Visual-DocSync (session #86)`, test count 571
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — `2026-04-30 — PT-Visual-DocSync complete (session #86)` entry appended
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked (doc-only session)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (doc-only session)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): visual-reference §5-§12 done + §15 punch-list + link audit`
+2. `docs(pan-tvardowski): sessions #84-#86 done + mirror-row 571 tests`
+
+**Batched with:** sessions #84 and #85 (user-approved single-pass batched session, 2026-04-30)
+
+**Next session:** #87 "PT-Visual-Close ★★ — M1 full folio-vs-code visual audit (21 folios, screenshot each scene) → M2 fix any remaining pixel-level divergences surfaced by audit → M3 tick visual-reference.md section 15 all rows done + mirror-row sync"
+
+---

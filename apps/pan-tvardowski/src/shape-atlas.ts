@@ -15,7 +15,7 @@
 import { type SpriteFrame, type SpriteSheet, createSpriteSheet } from '@flare-engine/assets';
 import type { SkImage, Skia as SkiaModule } from '@shopify/react-native-skia';
 import { SHAPE_CATALOGUE } from './shape-catalogue';
-import type { ShapeSpec } from './shapes';
+import type { ShapeSpec, ShipSpec } from './shapes';
 import { argbTo, drawShape, shapeBoundsRadius } from './shapes-draw';
 
 type Skia = typeof SkiaModule;
@@ -57,7 +57,6 @@ function buildFrames(): FrameBuild[] {
 
   for (const category of [
     SHAPE_CATALOGUE.ships,
-    SHAPE_CATALOGUE.enemies,
     SHAPE_CATALOGUE.minibosses,
     SHAPE_CATALOGUE.bosses,
     SHAPE_CATALOGUE.weaponPickups,
@@ -66,6 +65,12 @@ function buildFrames(): FrameBuild[] {
     for (const [id, specs] of Object.entries(category)) {
       addShapeEntity(id, specs as readonly ShapeSpec[]);
     }
+  }
+
+  // Enemies are ShipSpec composites — wrap each in a single-element array so
+  // the existing drawShape dispatcher handles them via `case 'ship'`.
+  for (const [id, spec] of Object.entries(SHAPE_CATALOGUE.enemies)) {
+    addShapeEntity(id, [spec as ShipSpec]);
   }
 
   // Runtime-only frames — bullets + particles as flat colored rects/dots.

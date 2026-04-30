@@ -45,10 +45,9 @@ describe('glow recipes', () => {
   });
 
   test('enemies have no glow tag', () => {
-    for (const [id, shapes] of Object.entries(SHAPE_CATALOGUE.enemies)) {
-      for (const s of shapes) {
-        expect((s as ShapeSpec).glow, `${id} should not have glow`).toBeUndefined();
-      }
+    for (const [id, spec] of Object.entries(SHAPE_CATALOGUE.enemies)) {
+      // enemies are now ShipSpec — glow lives on BaseSpec at the top level
+      expect((spec as ShapeSpec).glow, `${id} should not have glow`).toBeUndefined();
     }
   });
 

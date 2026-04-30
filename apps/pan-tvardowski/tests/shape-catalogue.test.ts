@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
+import type { ShipSpec } from '../src/shapes';
 
-const VALID_KINDS = new Set([
+const VALID_PRIMITIVE_KINDS = new Set([
   'circle',
   'rect',
   'triangle',
@@ -22,12 +23,26 @@ describe('shape catalogue', () => {
     expect(Object.keys(SHAPE_CATALOGUE.upgradePickups)).toHaveLength(6);
   });
 
-  test('every entity has at least one shape with a valid kind', () => {
-    for (const category of Object.values(SHAPE_CATALOGUE)) {
+  test('every enemy is a ShipSpec with kind=ship', () => {
+    for (const [name, spec] of Object.entries(SHAPE_CATALOGUE.enemies)) {
+      expect((spec as ShipSpec).kind, name).toBe('ship');
+    }
+  });
+
+  test('every non-enemy entity has at least one shape with a valid primitive kind', () => {
+    const nonEnemyCategories = [
+      SHAPE_CATALOGUE.minibosses,
+      SHAPE_CATALOGUE.bosses,
+      SHAPE_CATALOGUE.ships,
+      SHAPE_CATALOGUE.weaponPickups,
+      SHAPE_CATALOGUE.upgradePickups,
+    ] as const;
+    for (const category of nonEnemyCategories) {
       for (const [name, shapes] of Object.entries(category)) {
-        expect(shapes.length, name).toBeGreaterThan(0);
-        for (const s of shapes) {
-          expect(VALID_KINDS.has(s.kind), `${name} has kind=${s.kind}`).toBe(true);
+        const arr = shapes as readonly { kind: string }[];
+        expect(arr.length, name).toBeGreaterThan(0);
+        for (const s of arr) {
+          expect(VALID_PRIMITIVE_KINDS.has(s.kind), `${name} has kind=${s.kind}`).toBe(true);
         }
       }
     }

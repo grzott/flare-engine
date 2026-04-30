@@ -5,7 +5,7 @@
  * This is data-only; the runtime renderer lands in M1.
  */
 
-import type { ShapeSpec } from './shapes';
+import type { ShapeSpec, ShipSpec } from './shapes';
 
 // Zone palette colors inlined as ARGB ints — catalogue is self-contained so
 // that renaming a palette channel can't silently re-color an entity.
@@ -26,92 +26,124 @@ const COPPER = 0xffb5651d;
 const HELLFIRE = 0xffff2b2b;
 const EYE_YELLOW = 0xffffdd55;
 
-// ---- Enemies (12) -----------------------------------------------------------
+// ---- Enemies (14) -----------------------------------------------------------
 
 const enemies = {
-  skrzat: [
-    { kind: 'triangle', size: 14, fill: ORANGE },
-    { kind: 'circle', r: 1.5, fill: BLACK, ox: -3, oy: 2 },
-    { kind: 'circle', r: 1.5, fill: BLACK, ox: 3, oy: 2 },
-  ],
-  latawiec: [
-    { kind: 'triangle', size: 20, fill: RED },
-    {
-      kind: 'polyline',
-      points: [0, 8, -4, 14, 0, 11, 4, 14],
-      stroke: RED,
-      strokeWidth: 1.5,
-    },
-  ],
-  czart: [
-    { kind: 'ngon', n: 5, r: 14, fill: BLACK },
-    { kind: 'triangle', size: 6, fill: BLACK, ox: -8, oy: -10 },
-    { kind: 'triangle', size: 6, fill: BLACK, ox: 8, oy: -10 },
-  ],
-  bies: [
-    { kind: 'ngon', n: 6, r: 14, fill: DARK_RED },
-    { kind: 'circle', r: 2.5, fill: EYE_YELLOW },
-  ],
-  licho: [{ kind: 'star', points: 5, rOuter: 16, rInner: 7, fill: PURPLE }],
-  strzyga: [
-    { kind: 'triangle', size: 16, fill: PALE },
-    { kind: 'rect', w: 14, h: 3, fill: PALE, ox: -10, oy: 0, rot: -0.4 },
-    { kind: 'rect', w: 14, h: 3, fill: PALE, ox: 10, oy: 0, rot: 0.4 },
-  ],
-  topielec: [
-    { kind: 'circle', r: 14, fill: BLUE_GREEN },
-    {
-      kind: 'polyline',
-      points: [-6, 10, -8, 18, -4, 14, -2, 20],
-      stroke: GREEN,
-      strokeWidth: 2,
-    },
-    {
-      kind: 'polyline',
-      points: [6, 10, 8, 18, 4, 14, 2, 20],
-      stroke: GREEN,
-      strokeWidth: 2,
-    },
-  ],
-  mamuna: [
-    { kind: 'ngon', n: 8, r: 14, fill: GREEN },
-    { kind: 'circle', r: 2, fill: PALE, ox: 0, oy: -3 },
-    { kind: 'circle', r: 2, fill: PALE, ox: 0, oy: 0 },
-    { kind: 'circle', r: 2, fill: PALE, ox: 0, oy: 3 },
-  ],
-  nocnica: [{ kind: 'circle', r: 10, fill: BLACK }],
-  poludnica: [
-    { kind: 'triangle', size: 18, fill: YELLOW_WHITE },
-    { kind: 'rect', w: 28, h: 2, fill: MIRROR, ox: 14, oy: 4, rot: 0.3 },
-  ],
-  wapierz: [
-    {
-      kind: 'ngon',
-      n: 8,
-      r: 18,
-      fill: DARK_RED,
-      stroke: BLACK,
-      strokeWidth: 2,
-    },
-  ],
-  hound: [
-    { kind: 'circle', r: 11, fill: BLACK },
-    { kind: 'triangle', size: 5, fill: BLACK, ox: -6, oy: -9 },
-    { kind: 'triangle', size: 5, fill: BLACK, ox: 6, oy: -9 },
-    { kind: 'circle', r: 2, fill: DARK_RED, ox: -4, oy: -1 },
-    { kind: 'circle', r: 2, fill: DARK_RED, ox: 4, oy: -1 },
-  ],
-  dziwozona: [
-    { kind: 'ngon', n: 5, r: 16, fill: TEAL },
-    { kind: 'triangle', size: 6, fill: TEAL, ox: -18, oy: 0 },
-    { kind: 'triangle', size: 6, fill: TEAL, ox: 18, oy: 0 },
-  ],
-  'moon-wraith': [
-    { kind: 'triangle', size: 14, fill: 0xff2b2d5a },
-    { kind: 'ring', r: 10, stroke: MIRROR, strokeWidth: 1.5 },
-    { kind: 'circle', r: 2, fill: MIRROR, ox: 0, oy: -2 },
-  ],
-} as const satisfies Record<string, readonly ShapeSpec[]>;
+  skrzat: {
+    kind: 'ship',
+    hull: { kind: 'triangle', size: 14, fill: ORANGE },
+    weapons: [{ kind: 'rect', w: 6, h: 4, fill: ORANGE, ox: 0, oy: 6 }],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  latawiec: {
+    kind: 'ship',
+    hull: { kind: 'triangle', size: 20, fill: RED },
+    weapons: [
+      { kind: 'rect', w: 5, h: 8, fill: RED, ox: -8, oy: 4 },
+      { kind: 'rect', w: 5, h: 8, fill: RED, ox: 8, oy: 4 },
+    ],
+    engine: { kind: 'square', size: 20, fill: DARK_RED },
+  },
+  czart: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 5, r: 14, fill: BLACK },
+    weapons: [
+      { kind: 'rect', w: 4, h: 10, fill: BLACK, ox: -10, oy: -6 },
+      { kind: 'rect', w: 4, h: 10, fill: BLACK, ox: 10, oy: -6 },
+    ],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  bies: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 6, r: 14, fill: DARK_RED },
+    weapons: [
+      { kind: 'rect', w: 5, h: 10, fill: DARK_RED, ox: -10, oy: 0 },
+      { kind: 'rect', w: 5, h: 10, fill: DARK_RED, ox: 10, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  licho: {
+    kind: 'ship',
+    hull: { kind: 'star', points: 5, rOuter: 16, rInner: 7, fill: PURPLE },
+    weapons: [{ kind: 'rect', w: 4, h: 12, fill: PURPLE, ox: 0, oy: 8 }],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  strzyga: {
+    kind: 'ship',
+    hull: { kind: 'triangle', size: 16, fill: PALE },
+    weapons: [
+      { kind: 'rect', w: 14, h: 3, fill: PALE, ox: -10, oy: 0 },
+      { kind: 'rect', w: 14, h: 3, fill: PALE, ox: 10, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: PALE },
+  },
+  topielec: {
+    kind: 'ship',
+    hull: { kind: 'circle', r: 14, fill: BLUE_GREEN },
+    weapons: [
+      { kind: 'rect', w: 4, h: 12, fill: GREEN, ox: -8, oy: 8 },
+      { kind: 'rect', w: 4, h: 12, fill: GREEN, ox: 8, oy: 8 },
+    ],
+    engine: { kind: 'square', size: 20, fill: BLUE_GREEN },
+  },
+  mamuna: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 8, r: 14, fill: GREEN },
+    weapons: [
+      { kind: 'rect', w: 5, h: 8, fill: GREEN, ox: -10, oy: 2 },
+      { kind: 'rect', w: 5, h: 8, fill: GREEN, ox: 10, oy: 2 },
+    ],
+    engine: { kind: 'square', size: 20, fill: GREEN },
+  },
+  nocnica: {
+    kind: 'ship',
+    hull: { kind: 'circle', r: 10, fill: BLACK },
+    weapons: [{ kind: 'rect', w: 6, h: 8, fill: BLACK, ox: 0, oy: 6 }],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  poludnica: {
+    kind: 'ship',
+    hull: { kind: 'triangle', size: 18, fill: YELLOW_WHITE },
+    weapons: [
+      { kind: 'rect', w: 28, h: 2, fill: MIRROR, ox: -14, oy: 4 },
+      { kind: 'rect', w: 28, h: 2, fill: MIRROR, ox: 14, oy: 4 },
+    ],
+    engine: { kind: 'square', size: 20, fill: YELLOW_WHITE },
+  },
+  wapierz: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 8, r: 18, fill: DARK_RED, stroke: BLACK, strokeWidth: 2 },
+    weapons: [
+      { kind: 'rect', w: 6, h: 12, fill: DARK_RED, ox: -12, oy: 0 },
+      { kind: 'rect', w: 6, h: 12, fill: DARK_RED, ox: 12, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  hound: {
+    kind: 'ship',
+    hull: { kind: 'circle', r: 11, fill: BLACK },
+    weapons: [
+      { kind: 'rect', w: 4, h: 8, fill: DARK_RED, ox: -6, oy: 0 },
+      { kind: 'rect', w: 4, h: 8, fill: DARK_RED, ox: 6, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: BLACK },
+  },
+  dziwozona: {
+    kind: 'ship',
+    hull: { kind: 'ngon', n: 5, r: 16, fill: TEAL },
+    weapons: [
+      { kind: 'rect', w: 8, h: 4, fill: TEAL, ox: -16, oy: 0 },
+      { kind: 'rect', w: 8, h: 4, fill: TEAL, ox: 16, oy: 0 },
+    ],
+    engine: { kind: 'square', size: 20, fill: TEAL },
+  },
+  'moon-wraith': {
+    kind: 'ship',
+    hull: { kind: 'triangle', size: 14, fill: 0xff2b2d5a },
+    weapons: [{ kind: 'rect', w: 8, h: 3, fill: MIRROR, ox: 0, oy: 6 }],
+    engine: { kind: 'square', size: 20, fill: 0xff2b2d5a },
+  },
+} as const satisfies Record<string, ShipSpec>;
 
 // ---- Mini-bosses (4) --------------------------------------------------------
 

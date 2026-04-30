@@ -150,6 +150,8 @@ interface PlayState {
   /** Set in onExit — deferred / signal-driven callbacks bail out when true
    *  so a zone-transition or scene.go() mid-frame can't touch a stale world. */
   disposed: boolean;
+  /** Accumulated seconds since last auto-save. Resets on each persist call. */
+  autoSaveAccum: number;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -200,6 +202,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         tilemapBg: null,
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
+        autoSaveAccum: 0,
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -334,6 +337,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       } else if (dlg && zoneId === 'z8') {
         dlg.play(createZone8IntroGraph());
       }
+
+      void save.persist();
     }
 
     if (deps.renderHooks) {
@@ -378,6 +383,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         refreshBounds(s);
         s.elapsed += dt;
         gameState.runStats.durationSec += dt;
+
+        s.autoSaveAccum += dt;
+        if (s.autoSaveAccum >= 30 && !gameState.gameOver && !gameState.victory && !s.disposed) {
+          s.autoSaveAccum = 0;
+          void save.persist();
+        }
 
         if (s.tilemapBg) s.tilemapBg.update(dt, s.bounds.height);
         postfx.update(dt);

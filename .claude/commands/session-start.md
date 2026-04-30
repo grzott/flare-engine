@@ -9,7 +9,14 @@ Begin a session from [docs/plans/sessions.md](../../docs/plans/sessions.md).
 
 ## Step 0 — Pick session
 
-If the user passed `#N`, target that row. Else pick the lowest-numbered `pending` row. If none → report "no pending sessions — run /plan-sessions" and stop.
+If the user passed `#N`, target that row. Else, among `pending` rows, apply the presentation-before-polishing tiering below; pick the lowest-numbered pending row in the highest-priority tier that has a pending row. If none → report "no pending sessions — run /plan-sessions" and stop.
+
+Tiers (highest priority first):
+1. Presentation layer — goal starts with `PT-Visual-`.
+2. Release polishing — goal starts with one of `PT-Store-`, `PT-Legal-`, `PT-CI`, `PT-DeviceSmoke`, `PT-Perf`, `PT-Content-1`, `PT-Assets-`, `PT-Ship`.
+3. Default — any other pending row.
+
+Rationale: presentation layer must ship before release polishing so the game is visually complete before launch tasks (store listings, screenshots, legal, CI gates) consume cycles. Tiering replaces a manual reorder that the append-only sessions table forbids.
 
 If the target row is `in_progress` (left over from a previous abandoned attempt), ask the user whether to resume or reset. Do not auto-resume.
 

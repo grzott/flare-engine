@@ -11,7 +11,18 @@ LOG="SESSION_LOG.md"
 {
   echo "=== Flare session banner ==="
   if [ -f "$SESSIONS" ]; then
-    NEXT=$(grep -E '^\| *[0-9]+ *\| *(pending|in_progress) *\|' "$SESSIONS" | head -n 1 || true)
+    NEXT=$(awk -F'|' '
+      /^\| *[0-9]+ *\| *(pending|in_progress) *\|/ {
+        id=$2+0; goal=$5
+        tier=3
+        if (goal ~ /PT-Visual-/) tier=1
+        else if (goal ~ /PT-Store-|PT-Legal-|PT-CI|PT-DeviceSmoke|PT-Perf|PT-Content-1|PT-Assets-|PT-Ship/) tier=2
+        if (best_tier=="" || tier<best_tier || (tier==best_tier && id<best_id)) {
+          best_tier=tier; best_id=id; best_line=$0
+        }
+      }
+      END { if (best_line!="") print best_line }
+    ' "$SESSIONS" || true)
     if [ -n "$NEXT" ]; then
       echo "Next session: $NEXT"
     else

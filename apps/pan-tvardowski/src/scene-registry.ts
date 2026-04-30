@@ -119,5 +119,7 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
-  ctx.scenes.setTransition(fadeTransition(0.3));
+  // Folio XIV item 1: menu enter 320 ms. Engine gap: fadeTransition is linear-only;
+  // cubicOut easing cannot be applied until the transition API exposes an easing param.
+  ctx.scenes.setTransition(fadeTransition(0.32));
 }

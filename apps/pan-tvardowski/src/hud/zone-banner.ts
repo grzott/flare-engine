@@ -1,5 +1,5 @@
 import { type Tween, tween, updateTween } from '@flare-engine/animation';
-import { easeOutCubic } from '@flare-engine/math';
+import { easeOutQuart } from '@flare-engine/math';
 import type { ZoneId } from '../events';
 
 const ZONE_NUMERALS: Record<ZoneId, string> = {
@@ -39,8 +39,9 @@ export function createZoneBannerState(): ZoneBannerState {
     opacity: 0,
     elapsed: 0,
     duration: 0,
-    fadeIn: tween(0, 1, 0.45, easeOutCubic),
-    fadeOut: tween(1, 0, 0.45, easeOutCubic),
+    // Folio XIV item 9: zone banner enter quartOut 800 ms.
+    fadeIn: tween(0, 1, 0.8, easeOutQuart),
+    fadeOut: tween(1, 0, 0.45, easeOutQuart),
     phase: 'done',
     holdSec: 1.4,
   };

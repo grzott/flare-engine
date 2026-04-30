@@ -11,10 +11,12 @@ import type { AtlasHandle } from '../spawn';
 const PARTICLE_Z = 19;
 const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
 
-/** Slow parallax layer Y-velocity (px/s). */
-const VEL_SLOW = 8;
+/** Slow parallax layer Y-velocity (px/s). Folio XIIB: 0.5× ratio against VEL_FAST. */
+export const VEL_SLOW = 10;
 /** Fast parallax layer Y-velocity (px/s). */
-const VEL_FAST = 20;
+export const VEL_FAST = 20;
+/** Drift spread (px/s). Folio XIIB: ±8 px/s = ±1 tile. */
+export const AMBIENCE_DRIFT_SPREAD = 16;
 /** Particle lifetime in seconds. */
 const PARTICLE_LIFE = 4;
 
@@ -124,7 +126,7 @@ export function tickAmbience(
   const r = lcgNext(state);
   const isFast = r < 0.5;
   const baseVy = isFast ? VEL_FAST : VEL_SLOW;
-  const baseVx = (lcgNext(state) - 0.5) * 4;
+  const baseVx = (lcgNext(state) - 0.5) * AMBIENCE_DRIFT_SPREAD;
   const vy = getParallaxVelocity(baseVy, reducedMotion);
   const vx = getParallaxVelocity(baseVx, reducedMotion);
 

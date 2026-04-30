@@ -13,6 +13,8 @@ import type {
   PolylineSpec,
   RectSpec,
   ShapeSpec,
+  ShipSpec,
+  SquareSpec,
   StarSpec,
   TriangleSpec,
 } from './shapes';
@@ -157,6 +159,9 @@ export function drawShape(
     case 'gradient-rect':
       drawGradientRect(Skia, canvas, paint, spec, cx, cy, r);
       return;
+    case 'ship':
+      drawShip(Skia, canvas, paint, spec, cx, cy, r);
+      return;
   }
 }
 
@@ -184,6 +189,8 @@ function glowRadius(spec: ShapeSpec): number {
       }
       return max + (spec.strokeWidth ?? 1);
     }
+    case 'ship':
+      return glowRadius(spec.hull);
   }
 }
 
@@ -395,9 +402,70 @@ export function shapeBoundsRadius(specs: readonly ShapeSpec[]): number {
         r += s.strokeWidth ?? 1;
         break;
       }
+      case 'ship':
+        // Use hull bounds; weapons are mounted on the hull silhouette so hull
+        // radius is the dominant constraint for atlas tile sizing.
+        r = shapeBoundsRadius([s.hull]);
+        break;
     }
     const reach = Math.hypot(ox, oy) + r + 2;
     if (reach > max) max = reach;
   }
   return Math.max(4, max);
+}
+
+/**
+ * Draw a square by reusing the rect pipeline with `w === h === spec.size`.
+ * No allocation — delegates directly to `drawRect`.
+ */
+function drawSquare(
+  Skia: Skia,
+  canvas: SkCanvas,
+  paint: SkPaint,
+  spec: SquareSpec,
+  cx: number,
+  cy: number,
+  rot: number,
+): void {
+  const rectSpec: RectSpec = {
+    kind: 'rect',
+    w: spec.size,
+    h: spec.size,
+    fill: spec.fill,
+    stroke: spec.stroke,
+    strokeWidth: spec.strokeWidth,
+    ox: spec.ox,
+    oy: spec.oy,
+    rot: spec.rot,
+  };
+  drawRect(Skia, canvas, paint, rectSpec, cx, cy, rot);
+}
+
+/**
+ * Draw a ShipSpec by painting engine → hull → weapons (engine deepest,
+ * weapons foremost — painter's algorithm).
+ *
+ * Zero allocation in the weapons loop: iterates the pre-frozen ReadonlyArray
+ * via a classic indexed for-loop.
+ */
+function drawShip(
+  Skia: Skia,
+  canvas: SkCanvas,
+  paint: SkPaint,
+  spec: ShipSpec,
+  cx: number,
+  cy: number,
+  rot: number,
+): void {
+  // Engine — deepest layer.
+  drawSquare(Skia, canvas, paint, spec.engine, cx, cy, rot);
+  // Hull — middle layer.
+  drawShape(Skia, canvas, paint, spec.hull, cx, cy, rot);
+  // Weapons — foremost layer.
+  for (let i = 0; i < spec.weapons.length; i++) {
+    const w = spec.weapons[i];
+    if (w !== undefined) {
+      drawShape(Skia, canvas, paint, w, cx, cy, rot);
+    }
+  }
 }

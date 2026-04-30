@@ -93,7 +93,7 @@ function AchievementsView({
                 </Label>
               ) : null}
               {unlockedEntries.map((entry) => (
-                <View key={entry.id} style={styles.entryRow}>
+                <View key={entry.id} style={[styles.entryRow, styles.entryUnlocked]}>
                   <Label variant="sm" tone="accent">
                     {t(entry.nameKey)}
                   </Label>

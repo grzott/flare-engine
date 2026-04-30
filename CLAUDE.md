@@ -22,7 +22,7 @@ Claude Code sub-agents live in [.claude/agents/](.claude/agents/). Eight single-
 Execute work as short, gated sessions. The unified session plan lives in [docs/plans/sessions.md](docs/plans/sessions.md).
 
 1. `/plan-sessions` — planner proposes the next 10–20 session slice. You approve before it writes.
-2. `/session-start` — builder verifies state, picks next pending session, presents implementation plan, waits for approval.
+2. `/session-start` — builder verifies state, picks next pending session (presentation-layer rows preferred over release-polishing rows; see [.claude/commands/session-start.md](.claude/commands/session-start.md) Step 0), presents implementation plan, waits for approval.
 3. Implement (builder).
 4. `/session-close` — verifier runs lint → typecheck → test → build, syncs docs, appends to [SESSION_LOG.md](SESSION_LOG.md), emits paste-ready commit bash blocks. You run the commits.
 

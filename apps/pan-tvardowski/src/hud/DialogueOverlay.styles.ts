@@ -14,10 +14,11 @@ export const rawStyles = {
   panel: {
     borderWidth: 2,
     borderColor: colors.ui.border,
+    backgroundColor: colors.ui.parchment,
   },
   portraitSlot: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -26,5 +27,7 @@ export const rawStyles = {
     height: 44,
     borderRadius: 4,
     opacity: 0.9,
+    borderWidth: 1,
+    borderColor: colors.ui.gold,
   },
 };

@@ -13,6 +13,7 @@ import { formatLastPlayed, slotPreview } from '../save/preview';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
 import type { FireButtonSide, JoystickSide } from '../state';
+import { spacing } from '../theme';
 import { rawStyles } from './MenuOverlay.styles';
 import { PrivacyOverlay } from './PrivacyOverlay';
 import { CREDITS_SECTIONS } from './credits-sections';
@@ -245,6 +246,7 @@ function SettingsView({
 }: SettingsViewProps): React.ReactElement {
   const t = useMemo(() => (k: string, p?: Record<string, string | number>) => l.t(k, p), [l]);
   const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [privacy, setPrivacyState] = useState(() => save.privacy());
 
   const setLocale = (loc: 'en' | 'pl'): void => {
     gameState.settings.locale = loc;
@@ -277,6 +279,11 @@ function SettingsView({
     gameState.settings.controls.fireButtonSide = side;
     stateChanged.emit();
   };
+  const togglePrivacyField = (field: 'analyticsOptIn' | 'crashOptIn'): void => {
+    const next = { ...privacy, [field]: !privacy[field] };
+    setPrivacyState(next);
+    void save.setPrivacy(next);
+  };
 
   const volumeRow = (
     labelKey: string,
@@ -302,93 +309,138 @@ function SettingsView({
         <Label variant="xl" tone="accent" style={{ marginBottom: 12 }}>
           {t('menu.settings.title')}
         </Label>
+        <ScrollView>
+          {/* Audio group */}
+          <Text style={styles.settingsGroupHeading}>{t('settings.group.audio')}</Text>
+          {volumeRow('menu.settings.audio.master', 'masterVolume')}
+          {volumeRow('menu.settings.audio.music', 'musicVolume')}
+          {volumeRow('menu.settings.audio.sfx', 'sfxVolume')}
 
-        <View style={styles.row}>
-          <Label variant="sm" style={styles.rowLabel}>
-            {t('menu.settings.language')}
-          </Label>
-          <View style={styles.rowControls}>
+          {/* Accessibility group */}
+          <Text style={styles.settingsGroupHeading}>{t('settings.group.accessibility')}</Text>
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('menu.settings.reduced_motion')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label={settings.reducedMotion ? 'ON' : 'OFF'}
+                variant={settings.reducedMotion ? 'primary' : 'secondary'}
+                onPress={toggleReducedMotion}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('menu.settings.color_blind_mode')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label={settings.colorBlindMode ? 'ON' : 'OFF'}
+                variant={settings.colorBlindMode ? 'primary' : 'secondary'}
+                onPress={toggleColorBlindMode}
+              />
+            </View>
+          </View>
+
+          {/* Gameplay group */}
+          <Text style={styles.settingsGroupHeading}>{t('settings.group.gameplay')}</Text>
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('menu.settings.controls.joystick_side')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label={t('menu.settings.controls.left')}
+                variant={settings.controls.joystickSide === 'left' ? 'primary' : 'secondary'}
+                onPress={() => setJoystickSide('left')}
+              />
+              <Button
+                label={t('menu.settings.controls.right')}
+                variant={settings.controls.joystickSide === 'right' ? 'primary' : 'secondary'}
+                onPress={() => setJoystickSide('right')}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('menu.settings.controls.fire_side')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label={t('menu.settings.controls.left')}
+                variant={settings.controls.fireButtonSide === 'left' ? 'primary' : 'secondary'}
+                onPress={() => setFireSide('left')}
+              />
+              <Button
+                label={t('menu.settings.controls.right')}
+                variant={settings.controls.fireButtonSide === 'right' ? 'primary' : 'secondary'}
+                onPress={() => setFireSide('right')}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('menu.settings.language')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label="EN"
+                variant={settings.locale === 'en' ? 'primary' : 'secondary'}
+                onPress={() => setLocale('en')}
+              />
+              <Button
+                label="PL"
+                variant={settings.locale === 'pl' ? 'primary' : 'secondary'}
+                onPress={() => setLocale('pl')}
+              />
+            </View>
+          </View>
+
+          {/* Telemetry group */}
+          <Text style={styles.settingsGroupHeading}>{t('settings.group.telemetry')}</Text>
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('settings.privacy.analytics_label')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label={
+                  privacy.analyticsOptIn ? t('settings.privacy.on') : t('settings.privacy.off')
+                }
+                variant={privacy.analyticsOptIn ? 'primary' : 'secondary'}
+                onPress={() => togglePrivacyField('analyticsOptIn')}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <Label variant="sm" style={styles.rowLabel}>
+              {t('settings.privacy.crash_label')}
+            </Label>
+            <View style={styles.rowControls}>
+              <Button
+                label={privacy.crashOptIn ? t('settings.privacy.on') : t('settings.privacy.off')}
+                variant={privacy.crashOptIn ? 'primary' : 'secondary'}
+                onPress={() => togglePrivacyField('crashOptIn')}
+              />
+            </View>
+          </View>
+
+          <View style={{ marginTop: spacing.lg }}>
             <Button
-              label="EN"
-              variant={settings.locale === 'en' ? 'primary' : 'secondary'}
-              onPress={() => setLocale('en')}
-            />
-            <Button
-              label="PL"
-              variant={settings.locale === 'pl' ? 'primary' : 'secondary'}
-              onPress={() => setLocale('pl')}
+              label={t('settings.privacy.title')}
+              variant="secondary"
+              onPress={() => setPrivacyVisible(true)}
             />
           </View>
-        </View>
-
-        {volumeRow('menu.settings.audio.master', 'masterVolume')}
-        {volumeRow('menu.settings.audio.music', 'musicVolume')}
-        {volumeRow('menu.settings.audio.sfx', 'sfxVolume')}
-
-        <View style={styles.row}>
-          <Label variant="sm" style={styles.rowLabel}>
-            {t('menu.settings.reduced_motion')}
-          </Label>
-          <View style={styles.rowControls}>
-            <Button
-              label={settings.reducedMotion ? 'ON' : 'OFF'}
-              variant={settings.reducedMotion ? 'primary' : 'secondary'}
-              onPress={toggleReducedMotion}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <Label variant="sm" style={styles.rowLabel}>
-            {t('menu.settings.color_blind_mode')}
-          </Label>
-          <View style={styles.rowControls}>
-            <Button
-              label={settings.colorBlindMode ? 'ON' : 'OFF'}
-              variant={settings.colorBlindMode ? 'primary' : 'secondary'}
-              onPress={toggleColorBlindMode}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <Label variant="sm" style={styles.rowLabel}>
-            {t('menu.settings.controls.joystick_side')}
-          </Label>
-          <View style={styles.rowControls}>
-            <Button
-              label={t('menu.settings.controls.left')}
-              variant={settings.controls.joystickSide === 'left' ? 'primary' : 'secondary'}
-              onPress={() => setJoystickSide('left')}
-            />
-            <Button
-              label={t('menu.settings.controls.right')}
-              variant={settings.controls.joystickSide === 'right' ? 'primary' : 'secondary'}
-              onPress={() => setJoystickSide('right')}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <Label variant="sm" style={styles.rowLabel}>
-            {t('menu.settings.controls.fire_side')}
-          </Label>
-          <View style={styles.rowControls}>
-            <Button
-              label={t('menu.settings.controls.left')}
-              variant={settings.controls.fireButtonSide === 'left' ? 'primary' : 'secondary'}
-              onPress={() => setFireSide('left')}
-            />
-            <Button
-              label={t('menu.settings.controls.right')}
-              variant={settings.controls.fireButtonSide === 'right' ? 'primary' : 'secondary'}
-              onPress={() => setFireSide('right')}
-            />
-          </View>
-        </View>
+        </ScrollView>
 
         {entitlementStore !== undefined ? (
-          <View style={{ marginTop: 12 }}>
+          <View style={{ marginTop: spacing.lg }}>
             <RestorePurchasesButton
               entitlementStore={entitlementStore}
               strings={{
@@ -413,14 +465,7 @@ function SettingsView({
             />
           </View>
         ) : null}
-        <View style={{ marginTop: 12 }}>
-          <Button
-            label={t('settings.privacy.title')}
-            variant="secondary"
-            onPress={() => setPrivacyVisible(true)}
-          />
-        </View>
-        <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: spacing.lg }}>
           <Button
             label={t('menu.settings.back')}
             variant="ghost"

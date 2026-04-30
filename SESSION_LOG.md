@@ -1373,3 +1373,87 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** #49 "PT-Content bundle ★★ — M1 overlay layout audit → M2 shop empty-state → M3 codex + achievements fresh-save UX"
 
 ---
+
+## Session 67 — 2026-04-29 (scope: [game])
+
+**Goal (from sessions.md row #67):** PT-Visual-Palette ★★ — M1 replace 12 tokens in theme/colors.ts to deck hexes (gold #C9A24A, crimson #D4213D, ink-black #0E1A12, parchment #E8DCC4, …) → M2 sweep colors.ui.* call sites; recolor HUD + overlays + menus → M3 regenerate ZONE_PALETTES with deck zone hexes
+
+**Touched files**
+- `apps/pan-tvardowski/src/theme/colors.ts`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/shape-catalogue.ts` (⊕ approved scope expansion — global GOLD/RED ARGB constants migrated to deck values)
+- `apps/pan-tvardowski/src/palette.ts`
+- `apps/pan-tvardowski/tests/theme.test.ts`
+- `apps/pan-tvardowski/tests/theme-hud.test.ts` (⊕ expansion — tertiary→verdigris assertion)
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (39/39 tasks via Turbo, 0 errors — `biome check src/ tests/` clean in `apps/pan-tvardowski`)
+- typecheck: ✅ (`tsc --noEmit` exit 0)
+- test: ✅ (+5 new, total 367 pass / 0 fail — `bun test` in `apps/pan-tvardowski`)
+- build: N/A (no Expo/EAS build script; native build via `bun run android|ios` — echo stub clean)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run android` (Galaxy A54) or `bun --cwd apps/pan-tvardowski run ios` (iPhone)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — entry appended dated 2026-04-29: "PT-Visual-Palette complete (session #67). 12 ui tokens + 17 raw pigments rebranded to deck hexes; Hud.styles.ts miniboss-bar swapped tertiary→verdigris; shape-catalogue.ts GOLD/RED ARGB constants migrated; ZONE_PALETTES regenerated for all 8 zones. 367 tests green."
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: PT-Visual-Palette noted, test count 362 → 367
+- `docs/plans/sessions.md` — row #67 already `done` closed 2026-04-29 (builder-written); ⊕ footnote inserted covering shape-catalogue.ts scope expansion (GOLD/RED ARGB constants + theme-hud.test.ts tertiary→verdigris assertion)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (visual rebrand has no corresponding RR line item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): rebrand ui tokens to deck palette`
+2. `feat(pan-tvardowski): sweep hud + shape-catalogue to deck tokens`
+3. `feat(pan-tvardowski): regenerate ZONE_PALETTES with deck hexes`
+
+**Next session:** #68 "PT-Visual-Type ★★ — M1 bundle EB Garamond + Source Sans 3 + JetBrains Mono → M2 rewrite theme/typography.ts → M3 sweep overlay *.styles.ts"
+
+---
+
+## Session 49 — 2026-04-29 (scope: [game])
+
+**Goal (from sessions.md row #49):** PT-Content bundle ★★ — M1 overlay layout audit → M2 shop empty-state → M3 codex + achievements fresh-save UX
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.tsx`
+- `apps/pan-tvardowski/src/App.tsx` (⊕ pre-approved: `isNoopProvider` prop)
+- `apps/pan-tvardowski/src/localization/keys.ts`
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/hud-layout.test.ts`
+- `apps/pan-tvardowski/tests/shop-placeholder.test.ts` (new file)
+- `apps/pan-tvardowski/tests/empty-state-ux.test.ts` (new file)
+- `apps/pan-tvardowski/tests/shop-entitlements.test.ts` (⊕ count-guard 19→22, mechanically required)
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: ✅ (39/39 tasks via Turbo, 0 errors — `biome check src/ tests/` clean in `apps/pan-tvardowski`)
+- typecheck: ✅ (`tsc --noEmit` clean in `apps/pan-tvardowski`)
+- test: ✅ (+7 new, total 428 pass / 0 fail — `bun test` in `apps/pan-tvardowski`)
+- build: ✅ (native build via `bun run android|ios`; echo stub clean)
+- device smoke: pending user confirmation — run `bun --cwd apps/pan-tvardowski run android` (Galaxy A54) or `bun --cwd apps/pan-tvardowski run ios` (iPhone)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — entry appended dated 2026-04-29: "PT-Content bundle complete (session #49). M1/M2/M3 detail, 428 tests, locale parity 307 keys."
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: PT-Content bundle noted, test count 421 → 428
+- `docs/plans/sessions.md` — row #49 flipped `in_progress` → `done ⊞`, closed 2026-04-29; ⊞ footnote added covering 3 approved deviations
+- `docs/plans/release-readiness-checklist.md` — no new ticks (content/polish overlays have no corresponding RR line items)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `refactor(pan-tvardowski): tokenize minibossBar styles`
+2. `feat(pan-tvardowski): shop placeholder cards on noop iap`
+3. `feat(pan-tvardowski): fresh-save banners for codex + achievements`
+4. `docs(pan-tvardowski): close session #49 PT-Content bundle`
+
+**Next session:** #50 "PT-Final bundle ★★ — M1 credits PL/EN → M2 auto-persist on zone-enter + idle → M3 device-smoke gate (Galaxy A54 + iPhone)"
+
+---
+
+---

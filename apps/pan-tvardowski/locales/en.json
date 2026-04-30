@@ -61,6 +61,10 @@
   "settings.privacy.data_heading": "Data we collect",
   "settings.privacy.data_note": "If enabled, anonymous gameplay events or crash logs are sent to improve the game. No personal data is ever collected.",
   "settings.privacy.close": "Close",
+  "settings.group.audio": "Audio",
+  "settings.group.accessibility": "Accessibility",
+  "settings.group.gameplay": "Gameplay",
+  "settings.group.telemetry": "Telemetry",
 
   "hud.score": "Score: {score}",
   "hud.hp": "HP: {hp}/{max}",

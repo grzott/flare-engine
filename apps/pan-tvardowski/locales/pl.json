@@ -61,6 +61,10 @@
   "settings.privacy.data_heading": "Zbierane dane",
   "settings.privacy.data_note": "Jeśli włączone, anonimowe zdarzenia lub logi awarii są wysyłane w celu ulepszenia gry. Żadne dane osobowe nie są zbierane.",
   "settings.privacy.close": "Zamknij",
+  "settings.group.audio": "Dźwięk",
+  "settings.group.accessibility": "Dostępność",
+  "settings.group.gameplay": "Rozgrywka",
+  "settings.group.telemetry": "Telemetria",
 
   "hud.score": "Wynik: {score}",
   "hud.hp": "HP: {hp}/{max}",

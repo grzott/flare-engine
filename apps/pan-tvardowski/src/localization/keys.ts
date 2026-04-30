@@ -66,6 +66,10 @@ const menu = [
   'settings.privacy.data_heading',
   'settings.privacy.data_note',
   'settings.privacy.close',
+  'settings.group.audio',
+  'settings.group.accessibility',
+  'settings.group.gameplay',
+  'settings.group.telemetry',
 ] as const;
 
 const hud = [

@@ -17,6 +17,7 @@ import type {
 import { AppLifecycle, GameView, VirtualButton, VirtualJoystick } from '@flare-engine/engine';
 import type { CrashPayload } from '@flare-engine/errors';
 import { ErrorBoundary, createCrashPayload } from '@flare-engine/errors';
+import { NoopIAPProvider } from '@flare-engine/iap';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
@@ -53,6 +54,7 @@ import {
   resetGameState,
   stateChanged,
 } from './state';
+import { getTier2Providers } from './tier2/providers';
 import { mountTier2Wiring } from './tier2/wiring';
 
 markBootStart();
@@ -463,6 +465,7 @@ function AppRoot(): React.ReactElement {
           localization={localization}
           entitlementStore={entitlementStore}
           actions={{ goMenu: menuActions.goMenu, goSaveSelect: menuActions.goSaveSelect }}
+          isNoopProvider={getTier2Providers().iap === NoopIAPProvider}
         />
         <PaywallOverlay
           localization={localization}

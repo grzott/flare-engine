@@ -163,10 +163,13 @@
   "shop.full_game.description": "Odblokowuje wszystkie 8 krain i pełną kampanię.",
   "shop.full_game.cta": "Odblokuj — 12,99 zł",
   "shop.full_game.owned": "Posiadane",
+  "shop.full_game.placeholder_price": "12,99 zł",
   "shop.supporter_pack.title": "Pakiet wspierającego",
   "shop.supporter_pack.description": "Pokaż wsparcie odznaką w napisach końcowych.",
   "shop.supporter_pack.cta": "Wesprzyj — 3,99 zł",
   "shop.supporter_pack.owned": "Posiadane",
+  "shop.supporter_pack.placeholder_price": "3,99 zł",
+  "shop.noop_notice": "Ceny niedostępne w tej kompilacji.",
   "shop.restore": "Przywróć zakupy",
   "shop.back": "Wróć",
   "shop.gate.title": "Wymagana pełna gra",
@@ -197,6 +200,8 @@
   "inventory.back": "Wróć",
 
   "codex.title": "Kodeks",
+  "codex.fresh_save.heading": "Kodeks pusty",
+  "codex.fresh_save.body": "{n, plural, =0 {Pokonaj wrogów, by dodać wpisy.} one {Odblokowano # wpis.} few {Odblokowano # wpisy.} many {Odblokowano # wpisów.} other {Odblokowano # wpisów.}}",
 
   "dialogue.opening.king.1": "Twardowski. Zwierciadło pęknięte. Siedem odłamków rozrzuconych po Koronie, siedmiu pomiotów piekielnych strzeże ich. Dosiądź Koguta. Odzyskaj je, nim Diabeł wypomni ci kontrakt.",
   "dialogue.opening.twardowski.1": "Jeden warunek, Miłościwy Panie. Rzym mnie nie tyka.",
@@ -216,6 +221,8 @@
   "dialogue.speaker.boruta": "Boruta",
 
   "achievements.title": "Osiągnięcia",
+  "achievements.fresh_save.heading": "Brak osiągnięć",
+  "achievements.fresh_save.body": "{n, plural, =0 {Graj, by odblokować pierwsze osiągnięcie.} one {Odblokowano # osiągnięcie.} few {Odblokowano # osiągnięcia.} many {Odblokowano # osiągnięć.} other {Odblokowano # osiągnięć.}}",
   "achievements.locked_hint": "Graj dalej, aby odblokować.",
   "achievements.unlocked_section": "Odblokowane",
   "achievements.locked_section": "Zablokowane",

@@ -1,6 +1,6 @@
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
-import { Button, FocusProvider, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
 import { ShopPanel } from '@flare-engine/ui-shop';
 import type { ShopItemCopy, ShopPanelStrings } from '@flare-engine/ui-shop';
 import type React from 'react';
@@ -8,9 +8,40 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PT_CATALOG, SKU_FULL_GAME, SKU_SUPPORTER_PACK } from '../iap/catalog';
 import { type GameState, gameState, stateChanged } from '../state';
+import { colors, spacing, typography } from '../theme';
 import { rawStyles } from './ShopOverlay.styles';
 
 const styles = StyleSheet.create(rawStyles);
+
+const placeholderStyles = StyleSheet.create({
+  notice: {
+    color: colors.ui.tint60,
+    ...typography.smallcap,
+    textAlign: 'center' as const,
+    marginBottom: spacing.lg,
+  },
+  card: {
+    borderWidth: 1,
+    borderColor: colors.ui.divider,
+    borderRadius: spacing.panelBorderRadius,
+    padding: spacing.panelPadding,
+    marginBottom: spacing.md,
+  },
+  cardTitle: {
+    color: colors.ui.primary,
+    ...typography.label,
+    marginBottom: spacing.xs,
+  },
+  cardDesc: {
+    color: colors.ui.neutralLight,
+    ...typography.body,
+    marginBottom: spacing.sm,
+  },
+  cardPrice: {
+    color: colors.ui.tint60,
+    ...typography.smallcap,
+  },
+});
 
 export interface ShopOverlayActions {
   goMenu(): void;
@@ -21,6 +52,7 @@ export interface ShopOverlayProps {
   localization: LocalizationManager;
   entitlementStore: EntitlementStore;
   actions: ShopOverlayActions;
+  isNoopProvider?: boolean;
 }
 
 function cloneState(): GameState {
@@ -56,10 +88,57 @@ const SHOP_STRINGS: ShopPanelStrings = {
   availableSectionKey: 'shop.available_section',
 };
 
+interface PlaceholderCardProps {
+  title: string;
+  description: string;
+  price: string;
+}
+
+function PlaceholderCard({ title, description, price }: PlaceholderCardProps): React.ReactElement {
+  return (
+    <View style={placeholderStyles.card}>
+      <Label variant="sm" tone="accent" style={placeholderStyles.cardTitle}>
+        {title}
+      </Label>
+      <Label variant="xs" tone="muted" style={placeholderStyles.cardDesc}>
+        {description}
+      </Label>
+      <Label variant="xs" tone="muted" style={placeholderStyles.cardPrice}>
+        {price}
+      </Label>
+    </View>
+  );
+}
+
+interface PlaceholderShopCardsProps {
+  t: (key: string) => string;
+}
+
+function PlaceholderShopCards({ t }: PlaceholderShopCardsProps): React.ReactElement {
+  return (
+    <View>
+      <Label variant="xs" tone="muted" style={placeholderStyles.notice}>
+        {t('shop.noop_notice')}
+      </Label>
+      <PlaceholderCard
+        title={t('shop.full_game.title')}
+        description={t('shop.full_game.description')}
+        price={t('shop.full_game.placeholder_price')}
+      />
+      <PlaceholderCard
+        title={t('shop.supporter_pack.title')}
+        description={t('shop.supporter_pack.description')}
+        price={t('shop.supporter_pack.placeholder_price')}
+      />
+    </View>
+  );
+}
+
 export function ShopOverlay({
   localization,
   entitlementStore,
   actions,
+  isNoopProvider = false,
 }: ShopOverlayProps): React.ReactElement | null {
   const [s, setS] = useState<GameState>(() => cloneState());
 
@@ -77,13 +156,30 @@ export function ShopOverlay({
       <ThemeProvider theme={darkTheme}>
         <FocusProvider>
           <View style={styles.content}>
-            <ShopPanel
-              catalog={PT_CATALOG}
-              entitlementStore={entitlementStore}
-              copy={SHOP_COPY}
-              strings={SHOP_STRINGS}
-              localize={t}
-            />
+            {isNoopProvider ? (
+              <Panel
+                padding="lg"
+                radius="lg"
+                style={{
+                  alignSelf: 'stretch' as const,
+                  maxWidth: spacing.panelLgWidth,
+                  width: '100%' as const,
+                }}
+              >
+                <Label variant="xl" tone="accent" style={{ marginBottom: spacing.lg }}>
+                  {t('shop.heading')}
+                </Label>
+                <PlaceholderShopCards t={t} />
+              </Panel>
+            ) : (
+              <ShopPanel
+                catalog={PT_CATALOG}
+                entitlementStore={entitlementStore}
+                copy={SHOP_COPY}
+                strings={SHOP_STRINGS}
+                localize={t}
+              />
+            )}
             <View style={styles.backRow}>
               <Button label={t('shop.back')} variant="ghost" onPress={actions.goMenu} />
             </View>

@@ -163,10 +163,13 @@
   "shop.full_game.description": "Unlocks all 8 zones and the complete campaign.",
   "shop.full_game.cta": "Unlock — $2.99",
   "shop.full_game.owned": "Owned",
+  "shop.full_game.placeholder_price": "$2.99",
   "shop.supporter_pack.title": "Supporter Pack",
   "shop.supporter_pack.description": "Show your support with a badge in the credits.",
   "shop.supporter_pack.cta": "Support — $0.99",
   "shop.supporter_pack.owned": "Owned",
+  "shop.supporter_pack.placeholder_price": "$0.99",
+  "shop.noop_notice": "Prices unavailable in this build.",
   "shop.restore": "Restore purchases",
   "shop.back": "Back",
   "shop.gate.title": "Full Game Required",
@@ -197,6 +200,8 @@
   "inventory.back": "Back",
 
   "codex.title": "Codex",
+  "codex.fresh_save.heading": "Codex empty",
+  "codex.fresh_save.body": "{n, plural, =0 {Defeat enemies to add entries.} one {# entry unlocked.} other {# entries unlocked.}}",
 
   "dialogue.opening.king.1": "Twardowski. The Mirror is broken. Seven shards scatter the realm, seven lieutenants of Hell hold them. Ride your rooster. Bring them back before the Devil claims his bond.",
   "dialogue.opening.twardowski.1": "One condition, Majesty. Rome does not touch me.",
@@ -216,6 +221,8 @@
   "dialogue.speaker.boruta": "Boruta",
 
   "achievements.title": "Achievements",
+  "achievements.fresh_save.heading": "No achievements yet",
+  "achievements.fresh_save.body": "{n, plural, =0 {Play to unlock your first achievement.} one {# achievement unlocked.} other {# achievements unlocked.}}",
   "achievements.locked_hint": "Keep playing to unlock.",
   "achievements.unlocked_section": "Unlocked",
   "achievements.locked_section": "Locked",

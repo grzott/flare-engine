@@ -186,10 +186,13 @@ const shop = [
   'shop.full_game.description',
   'shop.full_game.cta',
   'shop.full_game.owned',
+  'shop.full_game.placeholder_price',
   'shop.supporter_pack.title',
   'shop.supporter_pack.description',
   'shop.supporter_pack.cta',
   'shop.supporter_pack.owned',
+  'shop.supporter_pack.placeholder_price',
+  'shop.noop_notice',
   'shop.restore',
   'shop.back',
   'shop.gate.title',
@@ -247,6 +250,8 @@ const dialogue = [
 
 const codex = [
   'codex.title',
+  'codex.fresh_save.heading',
+  'codex.fresh_save.body',
   'codex.skrzat.lore',
   'codex.skrzat.stats',
   'codex.latawiec.lore',
@@ -319,6 +324,8 @@ const codex = [
 
 const achievements = [
   'achievements.title',
+  'achievements.fresh_save.heading',
+  'achievements.fresh_save.body',
   'achievements.locked_hint',
   'achievements.unlocked_section',
   'achievements.locked_section',

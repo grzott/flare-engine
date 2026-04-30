@@ -25,4 +25,13 @@ describe('HUD layout', () => {
   test('combo style uses crimson color', () => {
     expect(rawStyles.combo.color).toBe(colors.ui.crimson);
   });
+
+  test('minibossBar top is hudCornerY + xxl token', () => {
+    expect(rawStyles.minibossBar.top).toBe(spacing.hudCornerY + spacing.xxl);
+  });
+
+  test('minibossBar left/right use hudCornerX token', () => {
+    expect(rawStyles.minibossBar.left).toBe(spacing.hudCornerX);
+    expect(rawStyles.minibossBar.right).toBe(spacing.hudCornerX);
+  });
 });

@@ -1538,3 +1538,43 @@ Documented PT's env-var-gated `await import()` + Noop-fallback pattern (from `ap
 **Next session:** #52 "PT-Store-1: Google Play Console app + internal testing track + Android keystore via EAS credentials"
 
 ---
+
+## Session 72 — 2026-04-30 (scope: [game])
+
+**Goal (from sessions.md row #72):** PT-Visual-Zones ★★ — M1 wire 8 zone palettes per deck (Z1 Dachy ember-32p, Z2 Puszcza pollen-80p, Z3 Wisła spray-48p, Z4 Błota ember-96p, Z5 Łysa ash-128p, Z6 Katakumby dust-24p, Z7 Karczma smoke-16p, Z8 Księżyc float-64p) → M2 parallax-particle ambience per zone via tier-system → M3 Z8 silver-UI exception (override gold token in Z8 scene context)
+
+**Touched files**
+- `apps/pan-tvardowski/src/palette.ts` (M)
+- `apps/pan-tvardowski/src/fx/ambience.ts` (NEW — pre-approved drift)
+- `apps/pan-tvardowski/src/scenes/play.ts` (M)
+- `apps/pan-tvardowski/src/hud/Hud.tsx` (M — pre-approved drift)
+- `apps/pan-tvardowski/tests/zone-ambience.test.ts` (NEW)
+- `apps/pan-tvardowski/tests/z8-silver-ui.test.ts` (NEW)
+- `docs/plans/sessions.md` (M)
+- `docs/plans/pan-tvardowski-build-plan.md` (M)
+- `docs/references/builder-reference.md` (M)
+
+Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-frozen, ambience routed through `palette.ts` per pre-approval at plan time. `src/fx/ambience.ts` + `src/hud/Hud.tsx` are pre-approved drift beyond original declared paths.
+
+**Gates**
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (+10 new in `apps/pan-tvardowski`, 444 total)
+- build: ✅
+- device smoke: deferred (standing preference — no dedicated PT-DeviceSmoke session scheduled yet)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: test count bumped 434 → 444, `+ PT-Visual-Zones (session #72) complete (2026-04-30)` appended
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — entry appended at line 587: `2026-04-30 — PT-Visual-Zones complete (session #72)` with full milestone summary + drift notes
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone boxes ticked in this session (zone visual layer is tracked in the Change log; §17 milestone granularity does not subdivide the Visual bundle)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (device smoke deferred)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): wire 8-zone deck palette + ambience kinds`
+2. `feat(pan-tvardowski): add parallax-particle ambience emitter`
+3. `feat(pan-tvardowski): apply Z8 silver UI override to boss bar`
+4. `docs(pan-tvardowski): log PT-Visual-Zones session #72`
+
+**Next session:** #73 "PT-Visual-Bosses ★★ — M1 per-boss phase palette transitions (8 bosses × 2–3 phases) in systems/boss/<boss>.ts → M2 per-boss particle preset + postfx chain on phase-break → M3 Z5 Baba Jaga 3-phase white-out + Z8 Lucyper crimson-mirror finale"
+
+---

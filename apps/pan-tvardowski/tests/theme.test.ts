@@ -22,10 +22,10 @@ describe('colors', () => {
     expect(colors.zone).toBe(ZONE_PALETTES);
   });
 
-  test('every ui token is a non-empty string', () => {
+  test('every ui token is a non-empty string (cb sub-object skipped)', () => {
     for (const [key, value] of Object.entries(colors.ui)) {
-      expect(typeof value, `colors.ui.${key}`).toBe('string');
-      expect((value as string).length, `colors.ui.${key}`).toBeGreaterThan(0);
+      if (typeof value !== 'string') continue;
+      expect(value.length, `colors.ui.${key}`).toBeGreaterThan(0);
     }
   });
 

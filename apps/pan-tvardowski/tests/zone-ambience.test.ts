@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createSpriteSheet } from '@flare-engine/assets';
-import { Position } from '@flare-engine/ecs';
+import { Position, Velocity } from '@flare-engine/ecs';
 import { createTestWorld } from '@flare-engine/testing';
 import { Lifetime } from '../src/components';
 import { createAmbienceState, tickAmbience } from '../src/fx/ambience';
@@ -73,22 +73,26 @@ describe('zone-ambience', () => {
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test('tickAmbience with reducedMotion=true spawns 0 entities', () => {
+  test('tickAmbience with reducedMotion=true spawns particles with zero velocity', () => {
     const { world } = createTestWorld();
     const atlas = makeAtlas();
     const state = createAmbienceState(world, atlas);
     const palette = ZONE_PALETTES[1];
 
-    for (let i = 0; i < 10; i++) {
-      tickAmbience(state, 1.0, palette, BOUNDS, true, false);
-    }
+    // dt large enough to guarantee at least one spawn (interval = 0.25 s).
+    tickAmbience(state, 1.0, palette, BOUNDS, true, false);
 
     const posQuery = world.query(Position);
     let count = 0;
     for (const id of posQuery) {
-      if (world.get(id, Lifetime)) count++;
+      if (!world.get(id, Lifetime)) continue;
+      count++;
+      const vel = world.get(id, Velocity);
+      expect(vel).not.toBeNull();
+      expect(vel!.x).toBe(0);
+      expect(vel!.y).toBe(0);
     }
-    expect(count).toBe(0);
+    expect(count).toBeGreaterThanOrEqual(1);
   });
 
   test('tickAmbience with bossActive=true spawns 0 entities', () => {

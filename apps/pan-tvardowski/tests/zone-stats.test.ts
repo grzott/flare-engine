@@ -36,7 +36,7 @@ describe('zone-stats / v5→current migration', () => {
     });
 
     const parsed = parseSaveFile(v5Raw);
-    expect(parsed.version).toBe(7);
+    expect(parsed.version).toBe(8);
     expect(parsed.unlockedAchievements).toEqual([]);
     const slot = parsed.slots[0];
     expect(slot).not.toBeNull();
@@ -45,7 +45,7 @@ describe('zone-stats / v5→current migration', () => {
     // Round-trip: serialise then re-parse — shape must be identical.
     const reRaw = JSON.stringify(parsed);
     const reParsed = parseSaveFile(reRaw);
-    expect(reParsed.version).toBe(7);
+    expect(reParsed.version).toBe(8);
     expect(reParsed.unlockedAchievements).toEqual([]);
     expect(reParsed.slots[0]!.zoneStats).toEqual({});
   });

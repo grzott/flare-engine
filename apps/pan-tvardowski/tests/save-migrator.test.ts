@@ -3,14 +3,14 @@ import { fromUnknown } from '../src/save/migrate';
 
 describe('save-migrator / fromUnknown', () => {
   // T1 — v1 blob: no version field, no introSeen
-  test('v1 blob → introSeen false, version 7, analyticsOptIn false', () => {
+  test('v1 blob → introSeen false, version 8, analyticsOptIn false', () => {
     const blob = {
       settings: {},
       slots: [null, null, null],
       activeSlot: null,
     };
     const result = fromUnknown(blob);
-    expect(result.version).toBe(7);
+    expect(result.version).toBe(8);
     expect(result.introSeen).toBe(false);
     expect(result.privacy.analyticsOptIn).toBe(false);
     expect(result.privacy.crashOptIn).toBe(false);
@@ -29,7 +29,7 @@ describe('save-migrator / fromUnknown', () => {
     expect(result.introSeen).toBe(true);
     expect(result.codexUnlocked).toEqual([]);
     expect(result.entitlements).toEqual([]);
-    expect(result.version).toBe(7);
+    expect(result.version).toBe(8);
   });
 
   // T4 — v5 blob: entitlements present, slot missing zoneStats
@@ -61,7 +61,7 @@ describe('save-migrator / fromUnknown', () => {
     const slot = result.slots[0];
     expect(slot).not.toBeNull();
     expect(slot!.zoneStats).toEqual({});
-    expect(result.version).toBe(7);
+    expect(result.version).toBe(8);
   });
 
   // T5 — v6 blob: unlockedAchievements present, no privacy
@@ -79,11 +79,11 @@ describe('save-migrator / fromUnknown', () => {
     const result = fromUnknown(blob);
     expect(result.privacy).toEqual({ analyticsOptIn: false, crashOptIn: false });
     expect(result.unlockedAchievements).toEqual(['ach-first-run']);
-    expect(result.version).toBe(7);
+    expect(result.version).toBe(8);
   });
 
-  // T6 — v7 blob: fully current — round-trips without mutation
-  test('v7 blob round-trips as identity migration', () => {
+  // T6 — v7 blob: migrates to v8, colorBlindMode defaults to false
+  test('v7 blob migrates to v8, colorBlindMode defaults false', () => {
     const blob = {
       version: 7,
       introSeen: true,
@@ -104,7 +104,7 @@ describe('save-migrator / fromUnknown', () => {
       activeSlot: null,
     };
     const result = fromUnknown(blob);
-    expect(result.version).toBe(7);
+    expect(result.version).toBe(8);
     expect(result.introSeen).toBe(true);
     expect(result.codexUnlocked).toEqual(['entry-leszy', 'entry-baba-jaga']);
     expect(result.entitlements).toEqual(['premium']);
@@ -112,8 +112,36 @@ describe('save-migrator / fromUnknown', () => {
     expect(result.privacy).toEqual({ analyticsOptIn: true, crashOptIn: false });
     expect(result.settings.screenShake).toBe(false);
     expect(result.settings.reducedMotion).toBe(true);
+    expect(result.settings.colorBlindMode).toBe(false);
     expect(result.settings.locale).toBe('pl');
     expect(result.settings.masterVolume).toBeCloseTo(0.8);
     expect(result.settings.controls.joystickSide).toBe('right');
+  });
+
+  // T7 — v8 blob: fully current — round-trips including colorBlindMode
+  test('v8 blob with colorBlindMode=true round-trips', () => {
+    const blob = {
+      version: 8,
+      introSeen: true,
+      codexUnlocked: [],
+      entitlements: [],
+      unlockedAchievements: [],
+      privacy: { analyticsOptIn: false, crashOptIn: false },
+      settings: {
+        screenShake: true,
+        reducedMotion: false,
+        colorBlindMode: true,
+        locale: 'en',
+        masterVolume: 1,
+        musicVolume: 1,
+        sfxVolume: 1,
+        controls: { joystickSide: 'left', fireButtonSide: 'right' },
+      },
+      slots: [null, null, null],
+      activeSlot: null,
+    };
+    const result = fromUnknown(blob);
+    expect(result.version).toBe(8);
+    expect(result.settings.colorBlindMode).toBe(true);
   });
 });

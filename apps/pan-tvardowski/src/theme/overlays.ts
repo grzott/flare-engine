@@ -11,6 +11,10 @@ export const overlayBase = {
     backgroundColor: colors.ui.bodyBg,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
+    // Android: lift above the Skia <Canvas> SurfaceView so full-screen
+    // RN overlays paint above it.
+    elevation: 4,
+    zIndex: 4,
   },
   panelContainer: {
     flex: 1,

@@ -11,6 +11,9 @@ export const rawStyles = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     padding: spacing.xxxl,
+    // Android: lift above the Skia <Canvas> SurfaceView.
+    elevation: 4,
+    zIndex: 4,
   },
   sigil: {
     width: 120,

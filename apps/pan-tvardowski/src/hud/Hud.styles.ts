@@ -7,6 +7,9 @@ export const rawStyles = {
     left: 0,
     right: 0,
     bottom: 0,
+    // Android: lift above the Skia <Canvas> SurfaceView.
+    elevation: 4,
+    zIndex: 4,
   },
   topLeft: { position: 'absolute' as const, top: spacing.hudCornerY, left: spacing.hudCornerX },
   score: { color: colors.ui.primary, ...typography.bodyL },

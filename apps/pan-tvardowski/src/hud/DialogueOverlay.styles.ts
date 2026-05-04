@@ -10,6 +10,9 @@ export const rawStyles = {
     backgroundColor: colors.ui.overlay,
     justifyContent: 'flex-end' as const,
     padding: 24,
+    // Android: lift above the Skia <Canvas> SurfaceView.
+    elevation: 4,
+    zIndex: 4,
   },
   panel: {
     borderWidth: 2,

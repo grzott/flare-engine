@@ -9,6 +9,10 @@ export const rawStyles = {
     bottom: 0,
     backgroundColor: colors.ui.bodyBg,
     justifyContent: 'center' as const,
+    // Android: lift above the Skia <Canvas> SurfaceView. Without elevation,
+    // full-screen overlays can be clipped by Skia's compositing layer.
+    elevation: 4,
+    zIndex: 4,
   },
   panelContainer: {
     flex: 1,

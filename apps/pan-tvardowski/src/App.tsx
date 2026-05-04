@@ -406,6 +406,11 @@ function AppRoot(): React.ReactElement {
         <GameView
           config={{
             clearColor: 0xff1a0e0a,
+            // Android: promote the Skia canvas to SurfaceView so full-screen RN
+            // overlays (HUDs, menus, dialogue) layer above it without needing
+            // per-overlay elevation. Game canvas is fully opaque (clearColor
+            // alpha = FF), so SurfaceView is safe.
+            opaque: true,
             onRenderBackground: (ctx, canvas) => renderHooks.background?.(ctx, canvas),
             onRenderPostFx: (ctx, canvas) => renderHooks.postfx?.(ctx, canvas),
           }}

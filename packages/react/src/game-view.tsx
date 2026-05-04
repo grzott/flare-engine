@@ -39,6 +39,21 @@ export interface GameConfig {
   /** Called after the sprite batch has been flushed, before `renderer.end()`.
    *  Intended for post-processing / full-screen effects (postfx). */
   onRenderPostFx?: RenderHook;
+  /**
+   * Promote the underlying Skia surface from a TextureView (default) to a
+   * SurfaceView on Android. With `opaque: true`, SurfaceView paints in a
+   * separate compositing layer below the regular RN view tree, which lets
+   * full-screen RN overlays (HUDs, menus) render on top without needing
+   * elevation/zIndex tricks.
+   *
+   * Without this, RN-Skia's TextureView can clip overlapping full-screen
+   * RN siblings on certain Android devices/Fabric configurations.
+   *
+   * Implies the canvas content is opaque — the clearColor's alpha must be
+   * fully opaque (0xFF). Defaults to `false` to preserve the current
+   * iOS-equivalent behavior.
+   */
+  opaque?: boolean;
 }
 
 /** Props for the <GameView> component. */
@@ -172,6 +187,7 @@ export function GameView({
             ref={canvasRef as React.Ref<CanvasRef>}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
+            opaque={config?.opaque ?? false}
           >
             {picture !== null ? <Picture picture={picture} /> : null}
           </Canvas>

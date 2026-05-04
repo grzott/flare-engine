@@ -55,22 +55,24 @@ function buildFrames(): FrameBuild[] {
     });
   };
 
+  // ShipSpec records — each value is a single composite spec; wrap in a
+  // single-element array so drawShape dispatches via `case 'ship'`.
   for (const category of [
+    SHAPE_CATALOGUE.enemies,
     SHAPE_CATALOGUE.ships,
     SHAPE_CATALOGUE.minibosses,
     SHAPE_CATALOGUE.bosses,
-    SHAPE_CATALOGUE.weaponPickups,
-    SHAPE_CATALOGUE.upgradePickups,
   ]) {
-    for (const [id, specs] of Object.entries(category)) {
-      addShapeEntity(id, specs as readonly ShapeSpec[]);
+    for (const [id, spec] of Object.entries(category)) {
+      addShapeEntity(id, [spec as ShipSpec]);
     }
   }
 
-  // Enemies are ShipSpec composites — wrap each in a single-element array so
-  // the existing drawShape dispatcher handles them via `case 'ship'`.
-  for (const [id, spec] of Object.entries(SHAPE_CATALOGUE.enemies)) {
-    addShapeEntity(id, [spec as ShipSpec]);
+  // ShapeSpec[] records — each value is already an array of primitives.
+  for (const category of [SHAPE_CATALOGUE.weaponPickups, SHAPE_CATALOGUE.upgradePickups]) {
+    for (const [id, specs] of Object.entries(category)) {
+      addShapeEntity(id, specs as readonly ShapeSpec[]);
+    }
   }
 
   // Runtime-only frames — bullets + particles as flat colored rects/dots.

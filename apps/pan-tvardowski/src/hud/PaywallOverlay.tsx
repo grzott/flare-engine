@@ -34,6 +34,8 @@ export function PaywallOverlay({
 }: PaywallOverlayProps): React.ReactNode {
   const t = useMemo(() => (key: string) => localization.t(key), [localization]);
 
+  if (!visible) return null;
+
   return (
     <View style={styles.wrapper}>
       <PaywallModal

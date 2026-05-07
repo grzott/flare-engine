@@ -336,6 +336,7 @@ const ships = {
 } as const satisfies Record<string, ShipSpec>;
 
 // ---- Weapon pickups (4) -----------------------------------------------------
+// Superseded by visual-spec/pickups.ts (full removal in #102).
 
 const weaponPickups = {
   iskry: [
@@ -359,6 +360,7 @@ const weaponPickups = {
 } as const satisfies Record<string, readonly ShapeSpec[]>;
 
 // ---- Weapon projectiles (4) -------------------------------------------------
+// Superseded by visual-spec/pickups.ts (full removal in #102).
 // Silhouettes per folio XIIID. Each entry is what a single bullet looks like
 // in-flight; the caller renders at the bullet's world position.
 
@@ -384,6 +386,7 @@ const weaponProjectiles = {
 } as const satisfies Record<string, readonly ShapeSpec[]>;
 
 // ---- Upgrade pickups (6) ----------------------------------------------------
+// Superseded by visual-spec/pickups.ts (full removal in #102).
 
 const upgradePickups = {
   'czarna-ksiega': [

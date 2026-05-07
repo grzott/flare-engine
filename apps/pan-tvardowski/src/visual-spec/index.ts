@@ -13,6 +13,9 @@ export type { ZoneVisualSpec } from './types';
 export * from './types';
 export { HULL_PRESETS } from './hull-presets';
 export { SHIP_DEFS } from './ships';
+export { BULLET_DEFS } from './bullets';
+export { WEAPON_DEFS } from './weapons';
+export { PICKUP_DEFS } from './pickups';
 
 export const ZONE_VISUAL_SPECS: Readonly<Record<ZoneId, ZoneVisualSpec>> = Object.freeze({
   1: zone1,

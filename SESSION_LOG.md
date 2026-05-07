@@ -2389,4 +2389,44 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 
 ---
 
+## Session 95 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #95):** PT-Weapon-Specs: M1 align 8 weapon projectile silhouettes to folio XIIID -> M2 weapon unlock progression per folio XIIID -> M3 add PL+EN keys for missing weapon-name labels
+
+**Touched files**
+- `apps/pan-tvardowski/src/shape-catalogue.ts`
+- `apps/pan-tvardowski/src/config/gameplay.ts`
+- `apps/pan-tvardowski/src/localization/keys.ts` (M3 expansion — pre-approved at /session-start)
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/weapon-specs.test.ts` (new)
+- `apps/pan-tvardowski/tests/weapon-unlock.test.ts` (new)
+- `docs/plans/sessions.md`
+
+**Drift (pre-approved)**
+- `src/localization/keys.ts` — beyond declared touched paths; M3 expanded to add 12 per-tier locale keys (4 weapons × 3 tiers) + type-safe key array; explicitly approved at /session-start.
+- Test count: +6 actual vs +4 declared (`weapon-specs.test.ts` +4, `weapon-unlock.test.ts` +2); pre-approved.
+
+**Gates**
+- lint: ✅ (40/40 packages, zero fixes applied; pan-tvardowski cache miss — fresh clean pass)
+- typecheck: ✅ (`tsc --noEmit` zero errors)
+- test: ✅ (+6 new, total 613 pass / 0 fail)
+- build: n/a (Expo native build — `bun run build` script is echo stub)
+- device smoke: deferred to session #107 (PT-DeviceSmoke) per row #50 footnote pattern
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `2026-05-07 — PT-Weapon-Specs complete (session #95)`
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended PT-Weapon-Specs (session #95); test count 607 → 613
+- `apps/pan-tvardowski/docs/visual-reference.md` §16 — XIIId row updated from `n/a` to `✓ (M1+M2 aligned; M3 locale keys done)`; audit summary n/a count corrected 5 → 4
+- `docs/plans/release-readiness-checklist.md` — no new ticks (weapon-spec balance verification deferred to device smoke)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): weapon projectile silhouettes per folio XIIID`
+2. `feat(pt): weapon unlock progression + per-tier locale labels`
+3. `docs(pt): tick session #95 + mirror-row sync`
+
+**Next session:** #97 "VS-S3 hull presets: author 10 hull-preset compositions with weapon-hook anchors in visual-spec/hull-presets.ts + migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts"
+
+---
+
 ---

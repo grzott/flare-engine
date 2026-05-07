@@ -250,6 +250,7 @@ describe('boundary lint — no hardcoded imports outside src/assets/', () => {
     path.join(SRC, 'audio', 'sfx.ts'),
     path.join(SRC, 'dialogue', 'portrait-manifest.ts'),
     path.join(SRC, 'config', 'zones.ts'),
+    path.join(SRC, 'visual-spec', 'types.ts'),
     path.join(SRC, 'index.ts'),
   ]);
 

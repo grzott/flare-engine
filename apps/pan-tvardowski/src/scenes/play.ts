@@ -7,7 +7,6 @@ import { canAccessContent } from '@flare-engine/iap';
 import { easeInCubic, easeOutBack, easeOutExpo } from '@flare-engine/math';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
-import type { PostFxController } from '@flare-engine/postfx';
 import { applyShake } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
@@ -34,7 +33,7 @@ import type { AmbienceState } from '../fx/ambience';
 import { createAmbienceState, tickAmbience } from '../fx/ambience';
 import { checkFpsWatchdog, recordBudget, recordFrameTime, resetFpsRing } from '../fx/budget';
 import { resetCataclysmGate, triggerExplosion } from '../fx/explosions';
-import { createPanTvardowskiPostFx } from '../fx/postfx';
+import { type PanPostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
 import {
   type ZoneBannerState,
   createZoneBannerState,
@@ -174,7 +173,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
   const { ctx, atlas, save } = deps;
   const getBottomInset = deps.getBottomInset ?? (() => 0);
   const audioRef = deps.audio;
-  const postfx: PostFxController = createPanTvardowskiPostFx(deps.skia ?? null);
+  const postfx: PanPostFxController = createPanTvardowskiPostFx(deps.skia ?? null);
   // Attach the a11y bridge once — reduced-motion then drives camera.motionScale
   // and postfx.setMotionScale automatically through the manager's onChange.
   if (deps.a11y) {
@@ -345,6 +344,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         });
       }
 
+      postfx.setCrtEnabled(zoneId === 'z8');
       setZoneMusic(audioRef?.current?.music ?? null, s.zone.music);
       gameEvents.emit('zone-start', zoneId);
 
@@ -492,6 +492,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             s.minibossDefeated = true;
             gameState.runStats.kills.miniboss += 1;
             applyShake(ctx.camera, 10, 0.45);
+            postfx.triggerChromaticAb(200);
             gameState.minibossActive = false;
             gameEvents.emit('miniboss-defeated', s.zone.id);
             notifyStateChanged();
@@ -530,6 +531,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               'detonation',
               s?.zone.id ?? '',
             );
+            postfx.triggerChromaticAb(200);
             if (s) gameEvents.emit('boss-phase-change', s.zone.id, phase);
           },
           onSpawnShieldMinion: (x, y) => {
@@ -588,6 +590,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               'cataclysm',
               s.zone.id,
             );
+            postfx.triggerHitFlash(0.833);
             gameState.bossActive = false;
             gameState.bossGazeActive = false;
             gameEvents.emit('zone-complete', s.zone.id, gameState.score);
@@ -713,9 +716,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           flash: s.flash,
           onFired: () => {
             playSfx(audioRef?.current, 'bomb');
-            // Engine gap: deck specifies 200 ms bomb-detonation flash; fixed
-            // 4.2-decay (~238 ms) used until per-trigger decay is in engine.
-            postfx.triggerHitFlash();
+            postfx.triggerHitFlash(5);
           },
         });
         resetBombButtonFrame();

@@ -4,6 +4,7 @@ import {
   type SkiaPostFxModuleLike,
   createBloom,
   createChromaticAberration,
+  createCrt,
   createGrayscaleFlash,
   createPostFxController,
   createVignette,
@@ -11,19 +12,93 @@ import {
 
 export type { PostFxController };
 
-export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): PostFxController {
-  const chromaticAb = createChromaticAberration('chromatic-aberration', { amount: 0 });
+export interface PanPostFxController extends PostFxController {
+  triggerChromaticAb(decayMs: number): void;
+  triggerHitFlash(decayRate?: number): void;
+  setCrtEnabled(enabled: boolean): void;
+}
+
+export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): PanPostFxController {
+  const chromaticAb = createChromaticAberration('chromatic-aberration', { amount: 0.012 });
   chromaticAb.enabled = false;
-  return createPostFxController({
+
+  const crtEffect = createCrt('crt', { scanlineIntensity: 0.25, curvature: 0.12 });
+  crtEffect.enabled = false;
+
+  const base = createPostFxController({
     effects: [
       createVignette('vignette', { intensity: 0.35, radius: 0.82 }),
       createBloom('bloom', { threshold: 0.72, intensity: 0.5 }),
       createGrayscaleFlash('grayscale-flash', { intensity: 0 }),
       chromaticAb,
+      crtEffect,
     ],
     skia,
-    flash: { id: 'grayscale-flash', decay: 4.2 },
   });
+
+  let chromAbTimerMs = 0;
+  let flashIntensity = 0;
+  let flashDecayRate = 12.5;
+
+  const ctrl: PanPostFxController = {
+    get chain() {
+      return base.chain;
+    },
+    get runtime() {
+      return base.runtime;
+    },
+    triggerHitFlash(decayRate?: number): void {
+      flashIntensity = 1;
+      flashDecayRate = decayRate ?? 12.5;
+      base.chain.setUniforms('grayscale-flash', { kind: 'grayscale-flash', intensity: 1 });
+    },
+    triggerChromaticAb(decayMs: number): void {
+      chromAbTimerMs = decayMs;
+      const ab = base.chain.get('chromatic-aberration');
+      if (ab) {
+        ab.enabled = true;
+        base.chain.setUniforms('chromatic-aberration', {
+          kind: 'chromatic-aberration',
+          amount: 0.012,
+        });
+      }
+    },
+    setCrtEnabled(enabled: boolean): void {
+      const crt = base.chain.get('crt');
+      if (crt) crt.enabled = enabled;
+    },
+    update(dt: number): void {
+      if (flashIntensity > 0) {
+        flashIntensity = Math.max(0, flashIntensity - flashDecayRate * dt);
+        base.chain.setUniforms('grayscale-flash', {
+          kind: 'grayscale-flash',
+          intensity: flashIntensity,
+        });
+      }
+      if (chromAbTimerMs > 0) {
+        chromAbTimerMs -= dt * 1000;
+        if (chromAbTimerMs <= 0) {
+          chromAbTimerMs = 0;
+          const ab = base.chain.get('chromatic-aberration');
+          if (ab) {
+            ab.enabled = false;
+            base.chain.setUniforms('chromatic-aberration', {
+              kind: 'chromatic-aberration',
+              amount: 0,
+            });
+          }
+        }
+      }
+    },
+    buildPass(width: number, height: number): readonly CompiledPass[] {
+      return base.buildPass(width, height);
+    },
+    setMotionScale(k: number): void {
+      base.setMotionScale(k);
+    },
+  };
+
+  return ctrl;
 }
 
 export type { CompiledPass };

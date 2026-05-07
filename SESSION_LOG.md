@@ -2578,3 +2578,48 @@ Note: `visual-spec/types.ts` declared in `touched paths` but NOT modified — lo
 **Next session:** #98 "VS-S4 bullets + weapons + pickups: define BulletSpec variants + WeaponSpec entries + migrate 10 pickups to visual-spec/"
 
 ---
+
+## Session 98 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #98):** VS-S4 bullets + weapons + pickups: define BulletSpec variants + WeaponSpec entries + migrate 10 pickups to visual-spec/
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/bullets.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/weapons.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/pickups.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/index.ts` (barrel update)
+- `apps/pan-tvardowski/src/shape-catalogue.ts` (comment-only deprecation note)
+- `apps/pan-tvardowski/tests/bullet-specs.test.ts` (new)
+- `apps/pan-tvardowski/tests/weapon-specs-vs.test.ts` (new)
+- `apps/pan-tvardowski/tests/pickup-specs.test.ts` (new)
+- `docs/plans/pan-tvardowski-build-plan.md` (doc-sync)
+- `docs/references/builder-reference.md` (doc-sync)
+- `docs/plans/sessions.md` (row flip)
+
+Note: `apps/pan-tvardowski/src/config/gameplay.ts` declared in touched paths (row #104 ⊞ footnote pattern) but NOT modified — pristine.
+
+**Gates**
+- typecheck: ✅ (zero errors)
+- lint: ✅ (zero errors)
+- test: ✅ (+6 new, total 627 pass / 0 fail)
+- build: N/A (script is stub echo — native build via `bun run android|ios`)
+- device smoke: N/A — no new scene or UI; data/spec layer only
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `2026-05-07 — VS-S4 bullets + weapons + pickups complete (session #98)`
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: `VS-S4 bullets+weapons+pickups (session #98) complete (last closed: 2026-05-07), 627 tests green`
+- `docs/plans/release-readiness-checklist.md` — no new ticks (spec-layer session, no user-facing feature landed)
+
+**Deviation surfaced:** `WEAPON_DEFS` id assertion in `weapon-specs-vs.test.ts` required `as string` mapping for `toContain` — builder-surfaced test-only workaround; no runtime impact.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): add visual-spec bullet and weapon defs`
+2. `feat(pt): migrate 10 pickups to visual-spec PickupDef`
+3. `test(pt): bullet-specs, weapon-specs-vs, pickup-specs +6`
+4. `docs(pt): VS-S4 close — change-log + mirror sync`
+
+Note: planned commit count was 3; per-session doc-sync option adds a fourth doc commit (+1 deviation, same pattern as #97).
+
+**Next session:** #99 "VS-S5 zones extension: extend zone-1..8.ts with entityIds + parallax layer compositions + miniboss visual recipes"
+
+---

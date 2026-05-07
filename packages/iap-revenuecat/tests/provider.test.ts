@@ -50,6 +50,10 @@ mock.module('react-native-purchases', () => ({
 
 mock.module('react-native', () => ({
   Platform: { OS: 'android' },
+  View: 'View',
+  Text: 'Text',
+  Pressable: 'Pressable',
+  StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
 }));
 
 import { createRevenueCatProvider } from '../src/provider.js';

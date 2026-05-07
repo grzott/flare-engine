@@ -2673,3 +2673,57 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #100 "VS-S6 overlays + screens + HUD + theme + animations: extract theme tokens to visual-spec/theme.ts + author hud.ts + overlays.ts + screens.ts + animations.ts from existing TSX"
 
 ---
+
+## Session 100 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #100):** VS-S6 overlays + screens + HUD + theme + animations: extract theme tokens to visual-spec/theme.ts + author hud.ts + overlays.ts + screens.ts + animations.ts from existing TSX
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/theme.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/animations.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/hud.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/overlays.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/screens.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/index.ts` (modified — barrel additions)
+- `apps/pan-tvardowski/tests/vs-theme.test.ts` (new)
+- `apps/pan-tvardowski/tests/vs-hud.test.ts` (new)
+- `apps/pan-tvardowski/tests/vs-overlays.test.ts` (new)
+- `apps/pan-tvardowski/tests/vs-screens.test.ts` (new)
+- `apps/pan-tvardowski/tests/vs-animations.test.ts` (new)
+- `docs/plans/pan-tvardowski-build-plan.md` (doc-sync)
+- `docs/references/builder-reference.md` (doc-sync)
+- `docs/plans/sessions.md` (row flip)
+
+**Gates**
+- typecheck: ✅ (zero errors)
+- lint: ✅ (zero errors — 292 files checked)
+- test: ✅ (+64 new, total 697 pass / 0 fail)
+- build: N/A (script is stub echo — native build via `bun run android|ios`)
+- device smoke: N/A — spec-data-only session; visual-spec not yet wired to runtime (#101 VS-S7 is the rewire)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `2026-05-07 — VS-S6 overlays + screens + HUD + theme + animations complete (session #100)` with full deviation notes
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ VS-S6 theme+animations+hud+overlays+screens spec (session #100)`, bumped test count `633 → 697`, stamped `last closed: 2026-05-07`
+- `docs/plans/release-readiness-checklist.md` — no new ticks (spec-layer session, no user-facing feature landed)
+
+**Deviation surfaced (10 items — see sessions.md row #100 ⊞ footnote)**
+1. Test overshoot: plan `+10`, actual `+64` (17+13+15+12+7); gap/risk audit pre-approved full concrete-value coverage.
+2. `spiral-collapse` AnimationDef: placeholder (no live particle system); flagged for S7/S8 replacement.
+3. `OVERLAY_SPECS.boot` + `OVERLAY_SPECS.menu`: schema overlap with `ScreenId`; full-screen placeholders with `notes` field; deferred to S7/S8.
+4. `OVERLAY_SPECS.pause`: no `PauseOverlay.tsx` in source; `panel: 'md'` placeholder.
+5. HUD game-over/victory/stale-entitlement-banner slots deferred to S7/S8; S6 covers 8 in-play slots only.
+6. Deprecated typography aliases (`h1`/`h2`/`h3`/`body`/`caption`/`xs`) omitted from `THEME_SPEC.typography`; will be deleted in S8.
+7. `HUD_TWEENS` supplementary export outside `AnimationDef` schema (no `easing` field in schema).
+8. Boundary discipline: all 5 spec files import only from `./types`; no `theme/`/`hud/`/`scenes/` imports.
+9. `miniboss-bar` slot `dy: 56` (literal) vs `52` (derived); 4px discrepancy noted in `notes`.
+10. `zone-banner` slot: `Inset` schema cannot express `top: '38%'`; uses `anchor: 'mid-center'` with `notes`.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): VS-S6 theme + animations spec`
+2. `feat(pt): VS-S6 hud + overlays + screens spec`
+3. `test(pt): VS-S6 invariants (+64)`
+4. `docs(pt): VS-S6 close — change-log + mirror sync`
+
+**Next session:** #101 "VS-S7 runtime rewire: point config/zones.ts + scene-registry.ts + Hud.tsx + all overlays + all styles to read from visual-spec/; theme/ paths become re-export shims"
+
+---

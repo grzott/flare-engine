@@ -2242,3 +2242,39 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** Visual-spec rebuild S3 — hull presets + ship migration (10 hull-preset compositions with weapon-hook anchors, migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts, golden-image diff vs current main).
 
 ---
+
+## Session 87 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #87):** PT-Visual-Close ★★ — M1 full folio-vs-code visual audit (21 folios, screenshot each scene) → M2 fix any remaining pixel-level divergences surfaced by audit → M3 tick visual-reference.md section 15 all rows done + mirror-row sync
+
+**Touched files**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §16 21-folio audit table (M1); §2 typography line-number anchors + §3 glow-helper cross-link stale-ref corrections (M2); §15 row 14 added for visual-spec/shapes architectural shift (M3)
+- `docs/plans/pan-tvardowski-build-plan.md` — change log entry appended (M3; not in declared touched paths, standard doc-sync target per status-sync.instructions.md, accepted)
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: last closed session #87, 2026-05-07, 571 tests green (M3)
+
+**Gates**
+- typecheck: passed (zero errors; `tsc --noEmit` clean)
+- lint: passed (40/40 packages, zero fixes applied, full Turbo cache hit)
+- test: 596/597 — 1 failure is pre-existing from session #92 (not introduced by #87; confirmed via `git stash` baseline check). Failing assertion: `asset-manifest.test.ts` "boundary lint: no non-asset source file imports the placeholder modules directly" — violator is `src/visual-spec/types.ts` importing `../shape-catalogue`. Same failure present on clean `a2b527e` HEAD before stash restore.
+- build: n/a (Expo native build — skipped per row convention; `bun run build` script is echo stub)
+- device smoke: green (Galaxy A54 + iPhone 12, 2026-05-07; user-confirmed implicit in /session-close invocation)
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §16 audit table added (21 folios, 14 ✓ / 2 ⚠ / 0 ✗ / 5 n/a); §15 row 14 added for sessions #91–#92 architectural shift; §2 + §3 stale cross-links corrected
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended session #87 close marker (2026-05-07, 571 tests)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — change log entry appended: `2026-05-07 — PT-Visual-Close complete (session #87)`; no new §17 milestone boxes ticked (audit/doc-only session)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (session is doc-only; #87 unblocks deferred rows #52–#65 per footnote ⧫)
+
+**Audit verdict (§16):** 14 ✓ confirmed match · 2 ⚠ doc-only drift (corrected in M2: folio V deprecated-alias note; folio VI glow-helper stale file paths) · 0 ✗ runtime divergences · 5 n/a (device-smoke gate: folios IX, X, XI, XIIId pixel alignment + weapon balance alignment via session #89)
+
+**Pre-existing test failure (from #92, not #87):** `src/visual-spec/types.ts` imports `../shape-catalogue` — violates the asset-manifest boundary lint. Recommended follow-up: add a `[game]` row to either (a) lift the import to use `@flare-engine/shapes` types only, removing the `../shape-catalogue` dependency, or (b) add a types-only import allowlist to the boundary lint assertion in `tests/asset-manifest.test.ts`.
+
+**Commit collapse note:** M1 and M2 both modify `apps/pan-tvardowski/docs/visual-reference.md` exclusively; collapsed to 2 commits per ⊞ footnote in sessions.md. Target was 3.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pt): §16 folio audit + fix stale shapes refs`
+2. `docs(pt): tick #87 close + mirror-row sync`
+
+**Next session:** #88 "PT-PostFx-Polish ★★ — M1 wire chromatic-ab on boss phase-break + elite death per folio VI situational table → M2 Z8 CRT scanlines for Lucyper scene → M3 per-trigger decay override (80ms player-hit / 200ms bomb / 1200ms boss-defeat)"
+
+---

@@ -112,6 +112,12 @@ mock.module('@flare-engine/ecs', () => ({
     }
   },
   Position: { id: 0, bit: 1, name: 'Position', create: () => ({ x: 0, y: 0 }) },
+  // Stubs required so downstream packages (render/dist) can link { defineComponent }
+  // without a SyntaxError when this mock is the first ecs cache entry.
+  defineComponent: () => ({}),
+  definePrefab: () => ({}),
+  defineSystem: () => ({}),
+  _resetComponentIds: () => {},
 }));
 
 let _cameraInstance: MockCamera2D | null = null;

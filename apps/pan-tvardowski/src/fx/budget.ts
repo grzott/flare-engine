@@ -4,17 +4,22 @@ export interface BudgetSnapshot {
   draws: number;
   particles: number;
   postfx: number;
+  subShapeDraws: number;
 }
 
 export const BUDGET_LIMITS = {
   draws: 920,
   particles: 480,
   postfx: 3,
+  // 40 concurrent ship entities × 6 sub-shapes max (hull + 4 weapons + engine).
+  // Derived from catalogue worst-case (Boruta/Lucyper: 6 sub-shapes each).
+  // Revisit if a future zone adds a 7th-sub-shape boss.
+  subShapeDraws: 240,
 } as const;
 
 const BUDGET_DEBUG = true;
 
-const _lastSnapshot: BudgetSnapshot = { draws: 0, particles: 0, postfx: 0 };
+const _lastSnapshot: BudgetSnapshot = { draws: 0, particles: 0, postfx: 0, subShapeDraws: 0 };
 
 const FPS_RING_SIZE = 180;
 const _fpsRing = new Float32Array(FPS_RING_SIZE);
@@ -26,6 +31,7 @@ export function recordBudget(s: BudgetSnapshot): void {
   _lastSnapshot.draws = s.draws;
   _lastSnapshot.particles = s.particles;
   _lastSnapshot.postfx = s.postfx;
+  _lastSnapshot.subShapeDraws = s.subShapeDraws;
 
   if (BUDGET_DEBUG) {
     if (s.draws > BUDGET_LIMITS.draws) {
@@ -36,6 +42,11 @@ export function recordBudget(s: BudgetSnapshot): void {
     }
     if (s.postfx > BUDGET_LIMITS.postfx) {
       console.warn(`[budget] postfx over limit: ${s.postfx} > ${BUDGET_LIMITS.postfx}`);
+    }
+    if (s.subShapeDraws > BUDGET_LIMITS.subShapeDraws) {
+      console.warn(
+        `[budget] subShapeDraws over limit: ${s.subShapeDraws} > ${BUDGET_LIMITS.subShapeDraws}`,
+      );
     }
   }
 }
@@ -67,12 +78,34 @@ export function resetFpsRing(): void {
   _fpsRing.fill(0);
 }
 
+/** Accumulates sub-shape logical draw count for the current frame. */
+let _subShapeAccum = 0;
+
+/**
+ * Add `count` sub-shape logical draws to the current frame's accumulator.
+ * Called once per ship entity each frame from play.ts. Zero-alloc.
+ */
+export function recordSubShapeDraws(count: number): void {
+  _subShapeAccum += count;
+}
+
+/**
+ * Read and reset the sub-shape accumulator. Call once per frame in the
+ * budget block to drain the value into `BudgetSnapshot.subShapeDraws`.
+ */
+export function consumeSubShapeDrawCount(): number {
+  const v = _subShapeAccum;
+  _subShapeAccum = 0;
+  return v;
+}
+
 export function checkFpsWatchdog(postfx: PostFxController): boolean {
   if (_fpsFilled < FPS_RING_SIZE) return false;
   if (_watchdogDropped) return false;
   if (getAvgFps() < 55) {
     _watchdogDropped = true;
     postfx.chain.setEnabled('chromatic-aberration', false);
+    postfx.chain.setEnabled('crt', false);
     return true;
   }
   return false;

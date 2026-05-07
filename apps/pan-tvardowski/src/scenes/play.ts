@@ -7,6 +7,7 @@ import { canAccessContent } from '@flare-engine/iap';
 import { easeInCubic, easeOutBack, easeOutExpo } from '@flare-engine/math';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
+import { Sprite } from '@flare-engine/render';
 import { applyShake } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
@@ -31,7 +32,14 @@ import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
 import type { AmbienceState } from '../fx/ambience';
 import { createAmbienceState, tickAmbience } from '../fx/ambience';
-import { checkFpsWatchdog, recordBudget, recordFrameTime, resetFpsRing } from '../fx/budget';
+import {
+  checkFpsWatchdog,
+  consumeSubShapeDrawCount,
+  recordBudget,
+  recordFrameTime,
+  recordSubShapeDraws,
+  resetFpsRing,
+} from '../fx/budget';
 import { resetCataclysmGate, triggerExplosion } from '../fx/explosions';
 import { type PanPostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
 import {
@@ -85,6 +93,44 @@ import {
 } from '../systems/spawner';
 import { countTopielecMinions } from '../systems/wodnik';
 import { shellDefaults } from './scene-shell';
+
+// Pre-computed sub-shape counts per atlas frame: hull(1) + weapons.length + engine(1).
+// Derived from SHAPE_CATALOGUE entries. Update if new ship entries are added.
+const SHIP_SUB_SHAPES: Record<string, number> = {
+  // enemies
+  skrzat: 3,
+  latawiec: 4,
+  czart: 4,
+  bies: 4,
+  licho: 3,
+  strzyga: 4,
+  topielec: 4,
+  mamuna: 4,
+  nocnica: 3,
+  poludnica: 4,
+  wapierz: 4,
+  hound: 4,
+  dziwozona: 4,
+  'moon-wraith': 3,
+  // minibosses
+  rokita: 4,
+  leszy: 5,
+  'nocny-lowca': 5,
+  madej: 4,
+  // bosses
+  'smok-krzemionkowski': 4,
+  'borowy-krol': 5,
+  'wodnik-wislanny': 4,
+  boruta: 6,
+  'baba-jaga': 4,
+  'bazyliszek-warszawski': 6,
+  mefistofeles: 5,
+  'lucyper-ksiezycowy': 6,
+  // player ships
+  'kogut-zloty': 4,
+  alembik: 4,
+  zwierciadlo: 4,
+};
 
 export interface AudioRef {
   current: AudioHandles | null;
@@ -866,10 +912,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         for (let i = 0; i < allEffects.length; i++) {
           if (allEffects[i]?.enabled) activePostfx += 1;
         }
+        // Sub-shape logical draw count: sum hull+weapons+engine per live ship entity.
+        for (const sid of s.shipQuery) {
+          const sp = ctx.world.get(sid, Sprite);
+          if (sp) recordSubShapeDraws(SHIP_SUB_SHAPES[sp.frame.name] ?? 3);
+        }
         recordBudget({
           draws: s.posQuery.count,
           particles: s.lifetimeQuery.count,
           postfx: activePostfx,
+          subShapeDraws: consumeSubShapeDrawCount(),
         });
         recordFrameTime(dt);
         checkFpsWatchdog(postfx);

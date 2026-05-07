@@ -2278,3 +2278,33 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #88 "PT-PostFx-Polish ★★ — M1 wire chromatic-ab on boss phase-break + elite death per folio VI situational table → M2 Z8 CRT scanlines for Lucyper scene → M3 per-trigger decay override (80ms player-hit / 200ms bomb / 1200ms boss-defeat)"
 
 ---
+
+## Session 93 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #93):** PT-Lint-Fix: resolve asset-manifest boundary lint failure from #92 (types-only import allowlist for visual-spec/types.ts)
+
+**Touched files**
+- `docs/plans/sessions.md` — row #93 flipped in_progress → done, close date stamped
+- `docs/plans/pan-tvardowski-build-plan.md` — change log entry appended for session #93
+- `docs/references/builder-reference.md` — mirror row updated: PT-Lint-Fix (session #93), 597 tests green
+
+**Unusual close pattern:** Implementation was already on HEAD at session-close time as commit `1c706d4 test(pt): allow visual-spec/types.ts type-only EntityId import`, emitted by the #92 verifier as a side-fix. The SESSION_LOG #92 block recorded the test count from before `1c706d4` landed (596/597), which is why the planner scheduled #93. No source or test files were modified in this session — doc-sync only.
+
+**Gates**
+- lint: passed (40/40 packages, zero fixes applied, full Turbo cache hit)
+- typecheck: passed (zero errors; `tsc --noEmit` clean)
+- test: 597/597 pass (0 new tests; fix was already on HEAD via `1c706d4`)
+- build: n/a (Expo native build — skipped per row convention; `bun run build` script is echo stub)
+- device smoke: n/a (doc-sync-only close; no behavioral change)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended PT-Lint-Fix (session #93) close marker; test count corrected 571 → 597
+- `docs/plans/pan-tvardowski-build-plan.md` §17 Change log — entry appended: `2026-05-07 — PT-Lint-Fix doc-sync only (session #93)`; no §17 milestone boxes ticked (janitorial close)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (janitorial fix; no new functionality)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pt): tick session #93 done; lint fix already on HEAD`
+
+**Next session:** #97 "VS-S3 hull presets: author 10 hull-preset compositions with weapon-hook anchors in visual-spec/hull-presets.ts + migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts" — now unblocked (#92 + #93 both done)
+
+---

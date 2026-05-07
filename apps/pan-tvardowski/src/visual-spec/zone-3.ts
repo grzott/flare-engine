@@ -13,10 +13,28 @@ export const zone3: ZoneVisualSpec = {
     ground: '#2A4A4A', // grey-green
     accent: '#8E6F2C', // gold-deep
     hazard: '#C7B89A', // bone
-    parallax: [], // TODO(author) — see folio XII
+    parallax: [
+      { id: 'z3-sky', speed: 0, content: 'tilemap' },
+      { id: 'z3-mist', speed: 0.15, content: 'tilemap' },
+      { id: 'z3-riverbank', speed: 0.5, content: 'tilemap' },
+    ],
     ambience: { kind: 'spray', count: 48 },
   },
-  entityIds: [], // TODO(session-5) — list every entity that appears in Z3
+  entityIds: [
+    'topielec',
+    'strzyga',
+    'wodnik-wislanny',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'wodnik-wislanny',
     hpTotal: 1200,

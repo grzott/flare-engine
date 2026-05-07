@@ -3,7 +3,7 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
-import type { ZoneVisualSpec } from './types';
+import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone4: ZoneVisualSpec = {
   id: 4,
@@ -13,10 +13,29 @@ export const zone4: ZoneVisualSpec = {
     ground: '#5A6A2A', // olive
     accent: '#8E6F2C', // gold-deep
     hazard: '#E84B2A', // hazard
-    parallax: [], // TODO(author) — see folio XII
+    parallax: [
+      { id: 'z4-sky', speed: 0, content: 'tilemap' },
+      { id: 'z4-marsh', speed: 0.2, content: 'tilemap' },
+      { id: 'z4-reeds', speed: 0.5, content: 'tilemap' },
+    ],
     ambience: { kind: 'ember', count: 96 },
   },
-  entityIds: [], // TODO(session-5) — list every entity that appears in Z4
+  entityIds: [
+    'mamuna',
+    'licho',
+    'leszy',
+    'boruta',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'boruta',
     hpTotal: 1400,
@@ -39,5 +58,19 @@ export const zone4: ZoneVisualSpec = {
     particles: { kind: 'ember', count: 128 },
     postfx: ['bloom', 'flash'],
   },
-  // Miniboss: leszy (HP 200). Visual recipe not in §10 — see GAPS.
+  miniboss: {
+    id: 'leszy',
+    hpTotal: 200,
+    phases: [
+      {
+        phase: 1,
+        accent: '#D4213D',
+        bullet: '#D4213D',
+        motif: 'crimson thorn-volley',
+        breakTier: 'burst',
+      },
+    ],
+    particles: { kind: 'ember', count: 48 },
+    postfx: ['bloom'],
+  } satisfies BossVisualSpec,
 };

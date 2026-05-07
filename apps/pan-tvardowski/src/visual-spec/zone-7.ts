@@ -3,7 +3,7 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
-import type { ZoneVisualSpec } from './types';
+import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone7: ZoneVisualSpec = {
   id: 7,
@@ -13,10 +13,39 @@ export const zone7: ZoneVisualSpec = {
     ground: '#C9A24A', // gold
     accent: '#7A1322', // crimson-deep
     hazard: '#E8DCC4', // parchment
-    parallax: [], // TODO(author) — see folio XII
+    parallax: [
+      { id: 'z7-sky', speed: 0, content: 'tilemap' },
+      { id: 'z7-rafters', speed: 0.2, content: 'tilemap' },
+      { id: 'z7-tavern-floor', speed: 0.5, content: 'tilemap' },
+    ],
     ambience: { kind: 'smoke', count: 16 },
   },
-  entityIds: [], // TODO(session-5) — list every entity that appears in Z7
+  entityIds: [
+    'skrzat',
+    'latawiec',
+    'czart',
+    'bies',
+    'licho',
+    'strzyga',
+    'topielec',
+    'mamuna',
+    'nocnica',
+    'poludnica',
+    'wapierz',
+    'dziwozona',
+    'madej',
+    'mefistofeles',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'mefistofeles',
     hpTotal: 2100,
@@ -46,5 +75,19 @@ export const zone7: ZoneVisualSpec = {
     particles: { kind: 'smoke', count: 64 },
     postfx: ['bloom', 'chrom'],
   },
-  // Miniboss: madej (HP 300). Visual recipe not in §10 — see GAPS.
+  miniboss: {
+    id: 'madej',
+    hpTotal: 300,
+    phases: [
+      {
+        phase: 1,
+        accent: '#D4213D',
+        bullet: '#8B3A1F',
+        motif: 'crimson blaze-sweep',
+        breakTier: 'burst',
+      },
+    ],
+    particles: { kind: 'smoke', count: 48 },
+    postfx: ['bloom'],
+  } satisfies BossVisualSpec,
 };

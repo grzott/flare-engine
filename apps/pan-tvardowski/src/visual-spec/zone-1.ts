@@ -22,13 +22,27 @@ export const zone1: ZoneVisualSpec = {
     accent: '#0E1A12', // ink-black
     hazard: '#C9A24A', // gold
     parallax: [
-      // TODO(author): describe each parallax layer as inline ShapeSpec[]
-      // or 'tilemap'. Folio XII shows 3 stacked layers for Z1 (sky / spires /
-      // rooftops). Until filled, the play scene falls back to flat sky+ground.
+      { id: 'z1-sky', speed: 0, content: 'tilemap' },
+      { id: 'z1-spires', speed: 0.2, content: 'tilemap' },
+      { id: 'z1-rooftops', speed: 0.5, content: 'tilemap' },
     ],
     ambience: { kind: 'ember', count: 32 },
   },
-  entityIds: [], // TODO(session-5) — list every entity (enemy/miniboss/boss/pickup) that appears in Z1
+  entityIds: [
+    'skrzat',
+    'latawiec',
+    'smok-krzemionkowski',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'smok-krzemionkowski',
     hpTotal: 800,

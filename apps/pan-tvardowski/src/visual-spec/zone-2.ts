@@ -3,7 +3,7 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
-import type { ZoneVisualSpec } from './types';
+import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone2: ZoneVisualSpec = {
   id: 2,
@@ -13,10 +13,29 @@ export const zone2: ZoneVisualSpec = {
     ground: '#1A2E1F', // bog-green
     accent: '#4A7A6A', // verdigris
     hazard: '#C7B89A', // bone
-    parallax: [], // TODO(author) — see folio XII
+    parallax: [
+      { id: 'z2-sky', speed: 0, content: 'tilemap' },
+      { id: 'z2-canopy', speed: 0.2, content: 'tilemap' },
+      { id: 'z2-undergrowth', speed: 0.5, content: 'tilemap' },
+    ],
     ambience: { kind: 'pollen', count: 80 },
   },
-  entityIds: [], // TODO(session-5) — list every entity that appears in Z2
+  entityIds: [
+    'czart',
+    'bies',
+    'rokita',
+    'borowy-krol',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'borowy-krol',
     hpTotal: 1000,
@@ -39,5 +58,19 @@ export const zone2: ZoneVisualSpec = {
     particles: { kind: 'pollen', count: 96 },
     postfx: ['bloom', 'vignette'],
   },
-  // Miniboss: rokita (HP 150). Visual recipe not in §10 — see GAPS.
+  miniboss: {
+    id: 'rokita',
+    hpTotal: 150,
+    phases: [
+      {
+        phase: 1,
+        accent: '#D4213D',
+        bullet: '#D4213D',
+        motif: 'crimson charge-burst',
+        breakTier: 'burst',
+      },
+    ],
+    particles: { kind: 'pollen', count: 48 },
+    postfx: ['bloom'],
+  } satisfies BossVisualSpec,
 };

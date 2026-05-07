@@ -15,10 +15,28 @@ export const zone8: ZoneVisualSpec = {
     ground: '#E8DCC4', // parchment
     accent: '#1A1F2A', // ink (Z8-specific variant)
     hazard: '#D4213D', // crimson
-    parallax: [], // TODO(author) — see folio XII
+    parallax: [
+      { id: 'z8-sky', speed: 0, content: 'tilemap' },
+      { id: 'z8-craters', speed: 0.2, content: 'tilemap' },
+      { id: 'z8-surface', speed: 0.5, content: 'tilemap' },
+    ],
     ambience: { kind: 'float', count: 64 },
   },
-  entityIds: [], // TODO(session-5) — list every entity that appears in Z8
+  entityIds: [
+    'moon-wraith',
+    'nocnica',
+    'lucyper-ksiezycowy',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'lucyper-ksiezycowy',
     hpTotal: 2400,

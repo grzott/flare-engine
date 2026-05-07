@@ -16,10 +16,28 @@ export const zone5: ZoneVisualSpec = {
     ground: '#D4213D', // crimson
     accent: '#0E1A12', // ink-black (corrected per §9 footnote)
     hazard: '#C9A24A', // gold
-    parallax: [], // TODO(author) — see folio XII
+    parallax: [
+      { id: 'z5-sky', speed: 0, content: 'tilemap' },
+      { id: 'z5-summit', speed: 0.2, content: 'tilemap' },
+      { id: 'z5-boulders', speed: 0.5, content: 'tilemap' },
+    ],
     ambience: { kind: 'ash', count: 128 },
   },
-  entityIds: [], // TODO(session-5) — list every entity that appears in Z5
+  entityIds: [
+    'nocnica',
+    'dziwozona',
+    'baba-jaga',
+    'iskry',
+    'piorun',
+    'sol-swiecona',
+    'znak-pentagramu',
+    'czarna-ksiega',
+    'siedmiomilowe-buty',
+    'amulet-wegrowski',
+    'koguci-pioro',
+    'srebrna-tarcza',
+    'kamien-filozoficzny',
+  ],
   boss: {
     id: 'baba-jaga',
     hpTotal: 1500,

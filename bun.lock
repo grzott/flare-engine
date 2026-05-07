@@ -67,6 +67,7 @@
         "@flare-engine/physics": "workspace:*",
         "@flare-engine/postfx": "workspace:*",
         "@flare-engine/render": "workspace:*",
+        "@flare-engine/shapes": "workspace:*",
         "@flare-engine/share": "workspace:*",
         "@flare-engine/storage": "workspace:*",
         "@flare-engine/testing": "workspace:*",
@@ -419,6 +420,13 @@
         "@flare-engine/events": "workspace:*",
         "@flare-engine/math": "workspace:*",
         "@flare-engine/render": "workspace:*",
+      },
+    },
+    "packages/shapes": {
+      "name": "@flare-engine/shapes",
+      "version": "0.0.0",
+      "peerDependencies": {
+        "@shopify/react-native-skia": ">=1.0.0",
       },
     },
     "packages/share": {
@@ -943,6 +951,8 @@
     "@flare-engine/render": ["@flare-engine/render@workspace:packages/render"],
 
     "@flare-engine/scene": ["@flare-engine/scene@workspace:packages/scene"],
+
+    "@flare-engine/shapes": ["@flare-engine/shapes@workspace:packages/shapes"],
 
     "@flare-engine/share": ["@flare-engine/share@workspace:packages/share"],
 

@@ -2507,3 +2507,35 @@ Note: `apps/pan-tvardowski/app.json` was **not** modified — intentional per pl
 **Next session:** #106 "PT-Store-2: App Store Connect app + TestFlight + iOS managed signing via EAS"
 
 ---
+
+## Session 106 — 2026-05-07 (scope: [game] ⊞)
+
+**Goal (from sessions.md row #106):** PT-Store-2: App Store Connect app + TestFlight + iOS managed signing via EAS
+
+**Touched files**
+- `apps/pan-tvardowski/eas.json`
+- `apps/pan-tvardowski/app.json`
+- `apps/pan-tvardowski/docs/keystore.md` ⊞ approved drift — mirrors #105 pattern; pre-approved at `/session-start`
+
+**Gates**
+- typecheck: ✅ (zero errors — `tsc --noEmit` clean)
+- lint: ✅ (270 files checked, zero errors — Biome)
+- test: ✅ (613 pass, 0 fail — 7843 expect() calls across 133 files)
+- build (iOS archive): deferred — requires Mac + Apple Developer account; procedure documented in `keystore.md §TestFlight internal-tester flow`
+- device-smoke: deferred to session #107 (PT-DeviceSmoke) — requires physical iOS device; blocked on #102 + #106
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/keystore.md` — corrected misattributed footer (was "Deferred — session #107 (PT-Store-2)"); added 5 new iOS sections: Apple Developer enrollment, App Store Connect listing 9-step walkthrough, iOS managed signing via EAS Credentials, ASC API key setup, TestFlight internal-tester flow (+120 lines)
+- `apps/pan-tvardowski/eas.json` — `submit.production.ios.{appleId,ascAppId,appleTeamId}` flipped from `"TODO"` literals to `$APPLE_ID`/`$ASC_APP_ID`/`$APPLE_TEAM_ID` env-var refs; `"language": "en-US"` added
+- `apps/pan-tvardowski/app.json` — `expo.ios.config.usesNonExemptEncryption: false` added (export-compliance fast-track)
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended for session #106
+- `docs/references/builder-reference.md` — PT mirror row updated: last session pointer updated to `PT-Store-2 (session #106, 2026-05-07)`
+- `docs/plans/release-readiness-checklist.md` — §2 "App Store Connect: app created, TestFlight opened" flipped ⬜→🟡 (procedure documented; external action pending); §2 "iOS signing" flipped ⬜→🟡 (EAS credentials procedure documented; external action pending)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `chore(pan-tvardowski): ios submit env-vars + export-compliance key`
+2. `docs(pan-tvardowski): add ios ASC + TestFlight + signing guide`
+
+**Next session:** #107 "PT-DeviceSmoke: full device-smoke pass (Galaxy A54 + iPhone 12 release build, airplane mode) + update perf-baseline.md + cold-start TTI"
+
+---

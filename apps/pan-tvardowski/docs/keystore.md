@@ -201,15 +201,133 @@ smoke-testing the internal build.
 **Promotion path:** Internal → Closed testing (beta) → Open testing → Production.
 Do not skip straight to Production for the first release.
 
-## Deferred gate — session #107
+## Apple Developer enrollment
 
-The following submission steps are tracked in session #107 (PT-Store-2) and are
-**not** part of the current milestone:
+To submit any iOS app, you must be enrolled in the Apple Developer Program
+($99/yr, individual or organisation) at <https://developer.apple.com/enroll/>.
+iOS apps cannot be submitted without active enrollment.
 
-- App Store Connect listing + TestFlight upload (iOS).
-- IARC age-rating questionnaire (required before any public track).
-- Store-page copy (short + long descriptions, promo text) in EN + PL.
-- Feature graphic (1024 × 500) and screenshot set.
-- Production-track promotion after internal smoke test passes.
-- RevenueCat Google Play entitlement linking (maps Play product IDs to RevenueCat
+Once enrolled, the **Team ID** — a 10-character alphanumeric string — is visible
+at developer.apple.com → Membership. The **Apple ID** is the email address used
+to enroll. Organisation enrollment requires a D-U-N-S number and can take ~2
+weeks for Apple to verify; individual enrollment is faster but lists the
+developer's legal name publicly on the App Store.
+
+## App Store Connect listing — create the app record
+
+Before an iOS build can be submitted, an app record must exist in App Store
+Connect. These are external-action steps performed in a browser.
+
+**External action — 9 steps:**
+
+1. Sign in at <https://appstoreconnect.apple.com> with the enrolled Apple ID.
+2. Click **My Apps** → **+** → **New App**.
+3. Set **Platforms** to iOS. (tvOS, macOS, and visionOS are not in scope at
+   0.1.0.)
+4. Set **Name** to `Pan Tvardowski` (EN). The PL name (`Pan Twardowski`) is
+   added as a localisation under the App Information page.
+5. Set **Primary Language** to English (U.S.).
+6. Set **Bundle ID** to `dev.flare.pantvardowski` (must match
+   `app.json` `expo.ios.bundleIdentifier`). Register the bundle ID at
+   developer.apple.com → Certificates, Identifiers & Profiles → Identifiers
+   first if it is not already in the dropdown.
+7. Set **SKU** to `pan-tvardowski` (developer-facing, never visible to users).
+8. Set **User Access** to **Full Access** unless restricting per-user.
+9. Click **Create**. Record the **Apple ID** (numeric, shown in the App Store
+   Connect URL as `/apps/<number>/`) — this becomes `ascAppId` in `eas.json`.
+
+## iOS managed signing via EAS Credentials
+
+After `eas init` writes a real `projectId`, run:
+
+```bash
+eas credentials --platform ios
+```
+
+Choose **Set up a new build credential** → **Let EAS handle the process**. EAS
+auto-provisions:
+
+- Distribution Certificate (.p12)
+- Provisioning Profile
+- APNs key (push notifications — unused at 0.1.0 but provisioned anyway)
+
+All three are stored in Expo's encrypted vault and tied to `projectId` +
+`bundleIdentifier`. Verify with:
+
+```bash
+eas credentials --platform ios --non-interactive
+```
+
+The output should list the certificate fingerprint and profile UUID.
+
+Unlike Android, iOS distribution certificates are revocable and reissuable from
+the Apple Developer portal — losing the EAS-managed cert is not catastrophic.
+The cert is auto-revoked-and-reissued on demand.
+
+### App Store Connect API key for `eas submit`
+
+`eas submit --platform ios` requires an **App Store Connect API key** (not the
+Apple ID password) to upload IPAs on your behalf.
+
+In ASC: **Users and Access** → **Integrations** → **App Store Connect API** →
+**Generate API Key**. Set the role to **App Manager** (minimum).
+
+Download the `.p8` private-key file immediately after creation — it is a
+one-time download and can never be re-issued. Store it in 1Password or a
+hardware-backed vault. Note the **Issuer ID** (UUID) and **Key ID**
+(10-character).
+
+Three environment variables are required at submit time:
+
+- `APPLE_ID` — the developer Apple ID email.
+- `ASC_APP_ID` — the numeric app ID from step 9 above.
+- `APPLE_TEAM_ID` — the 10-character Team ID from the Membership page.
+
+`eas.json` (updated session #106) reads all three from the environment. In CI,
+inject them as repository secrets: `APPLE_ID`, `ASC_APP_ID`, `APPLE_TEAM_ID`.
+
+## TestFlight internal-tester flow
+
+After a production iOS build is uploaded via `eas submit --platform ios
+--profile production`, the IPA appears in **TestFlight → iOS Builds**. Apple
+runs the binary through static analysis; allow 10–20 min for the build to reach
+**Ready to Submit** status.
+
+Once ready, the build can be added to:
+
+- **Internal Testing** group — up to 100 testers (App Store Connect users
+  only); no external review needed; live within 5 min of adding the build.
+- **External Testing** group — up to 10 000 testers; requires Apple's Beta App
+  Review (~24 h first time, faster on subsequent submissions).
+
+For 0.1.0 internal smoke testing, Internal Testing is sufficient. External
+TestFlight is gated until #65 PT-Ship.
+
+Run sequence:
+
+```bash
+eas build --platform ios --profile production
+eas submit --platform ios --profile production
+```
+
+**Promotion path:** Internal TestFlight → External TestFlight (Beta App Review)
+→ App Store production (App Review). Do not skip straight to production for the
+first release.
+
+## Deferred to later sessions
+
+The following items are not part of session #105 or #106 and are tracked in
+their own rows:
+
+- **#54 PT-Store-3** — Google Play product IDs (`pan_tvardowski.full_game`,
+  `pan_tvardowski.supporter_pack`) + matching App Store Connect product IDs.
+- **#57 PT-Legal-3** — IARC age-rating questionnaire (required before any
+  public track on Play; App Store rating likewise).
+- **#61 PT-Content-1** — store-page copy (short + long descriptions, promo
+  text) in EN + PL.
+- **#62-#64 PT-Assets-1..3** — app icon, Play feature graphic (1024 × 500),
+  Play screenshots (8 × 1080×1920), App Store screenshots (10 per device class)
+  + 30-s preview.
+- **#65 PT-Ship** — production-track promotion after internal smoke-test passes;
+  RevenueCat entitlement linking (maps Play + ASC product IDs to RevenueCat
   entitlements).

@@ -23,10 +23,10 @@ All slots must be manifest-driven so non-engineer collaborators can swap files w
 - [ ] ⬜ Google Play developer account (one-time $25).
 - [ ] ⬜ Apple Developer Program ($99/yr).
 - [x] 🟡 Google Play Console: app created, internal testing track opened — procedural steps documented in `apps/pan-tvardowski/docs/keystore.md §Play Console` (session #105); external actions not yet executed.
-- [ ] ⬜ App Store Connect: app created, TestFlight opened.
+- [x] 🟡 App Store Connect: app created, TestFlight opened — 9-step listing procedure + TestFlight internal-tester flow documented in `apps/pan-tvardowski/docs/keystore.md §App Store Connect listing` (session #106); external actions not yet executed.
 - [x] ✅ EAS build profile: `production` + `preview` in `apps/pan-tvardowski/eas.json` (session #15, 2026-04-27).
 - [x] 🟡 Android signing: upload keystore generated, stored in EAS credentials (never committed) — `eas credentials` procedure documented in `apps/pan-tvardowski/docs/keystore.md §Android keystore via EAS credentials` (session #105); external action not yet executed.
-- [ ] ⬜ iOS signing: distribution cert + provisioning profile via EAS.
+- [x] 🟡 iOS signing: distribution cert + provisioning profile via EAS — `eas credentials --platform ios` procedure documented in `apps/pan-tvardowski/docs/keystore.md §iOS managed signing via EAS Credentials` (session #106); external action not yet executed.
 - [x] ✅ Version bump policy documented in `apps/pan-tvardowski/docs/keystore.md` (semver in `app.json`, EAS `autoIncrement` for `versionCode`/`buildNumber`) — session #15, 2026-04-27.
 
 ## 3. IAP products (all three future Flare games covered)

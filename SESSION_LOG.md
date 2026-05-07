@@ -2539,3 +2539,42 @@ Note: `apps/pan-tvardowski/app.json` was **not** modified — intentional per pl
 **Next session:** #107 "PT-DeviceSmoke: full device-smoke pass (Galaxy A54 + iPhone 12 release build, airplane mode) + update perf-baseline.md + cold-start TTI"
 
 ---
+
+## Session 97 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #97):** VS-S3 hull presets: author 10 hull-preset compositions with weapon-hook anchors in visual-spec/hull-presets.ts + migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/hull-presets.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/ships.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/shape-catalogue.ts`
+- `apps/pan-tvardowski/tests/hull-presets.test.ts` (new)
+- `apps/pan-tvardowski/tests/ships-migration.test.ts` (new)
+- `docs/plans/pan-tvardowski-build-plan.md` (doc-sync)
+- `docs/references/builder-reference.md` (doc-sync)
+- `docs/plans/sessions.md` (row flip)
+
+Note: `visual-spec/types.ts` declared in `touched paths` but NOT modified — locked canary `b056ac8e…` unchanged, correct.
+
+**Gates**
+- typecheck: ✅ (`tsc --noEmit` exit 0)
+- lint: ✅ (`biome check src/ tests/` — 274 files clean, exit 0)
+- test: ✅ (+8 new, total 621 pass / 0 fail, 8033 expect() calls, 135 files)
+- build: N/A (script is stub echo — native build via `bun run android|ios`)
+- device smoke: N/A — no new scene or UI; data/spec layer only
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `2026-05-07 — PT-HullPresets complete (session #97)`
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: `PT-HullPresets (session #97) complete (last closed: 2026-05-07), 621 tests green`
+- `docs/plans/release-readiness-checklist.md` — no new ticks (spec-layer session, no user-facing feature landed)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): add 10 visual-spec hull presets`
+2. `feat(pt): migrate 29 ships to visual-spec ShipDef`
+3. `chore(pt): re-export hull-presets+ships; shape-catalogue migration comment`
+4. `docs(pt): tick session #97 mirror + changelog`
+
+**Next session:** #98 "VS-S4 bullets + weapons + pickups: define BulletSpec variants + WeaponSpec entries + migrate 10 pickups to visual-spec/"
+
+---

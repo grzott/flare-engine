@@ -2174,3 +2174,71 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #87 "PT-Visual-Close ★★ — M1 full folio-vs-code visual audit (21 folios, screenshot each scene) → M2 fix any remaining pixel-level divergences surfaced by audit → M3 tick visual-reference.md section 15 all rows done + mirror-row sync"
 
 ---
+
+## Session 91 — 2026-05-07 (scope: [game]) ※ retroactive
+
+**Goal (from sessions.md row #91):** Visual-spec rebuild S1 — lock typed schema (HullPreset + ShipDef + BulletDef + WeaponDef + PickupDef + AnimationDef + extended ZoneVisualSpec/HudSpec/OverlaySpec/ScreenSpec/ThemeSpec) + invariant suite (14 tests, hex regex + boss-zone alignment + ambience cross-check + schema canary)
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts` (new, ~370 lines)
+- `apps/pan-tvardowski/src/visual-spec/index.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts` … `zone-8.ts` (new, 8 files)
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` (new, 14 tests / 115 expect calls)
+
+**Gates**
+- lint: passed (Biome auto-formatted comment alignment in zones during /session-close run)
+- typecheck: passed (zero errors)
+- test: 14/14 passed (Hex regex + zone registry integrity + boss EntityId resolution + boss/zone alignment vs config/zones.ts + ambience cross-check vs palette.ts + phase structure invariants + schema canary)
+- build: not in row #91 gate list (schema-only, no runtime)
+- device smoke: n/a (no runtime change)
+
+**Docs synced**
+- `docs/plans/sessions.md` row #91 status: pending → done (retroactive); footnote `※` added explaining personal-plan origin
+- No build-plan or release-checklist tick — work is presentation-layer infra not in §17 milestone tree
+- Schema canary frozen at SHA-256 `8255d5f0…` (initial), bumped to `b056ac8e…` in session #92 after Biome reformat + import path migration
+
+**Commits** (subjects only — full blocks emitted at /session-close)
+1. `feat(visual-spec): typed schema for ships, bullets, zones, theme`
+2. `test(pan-tvardowski): visual-spec invariants + schema canary`
+
+**Next session:** #92 "Visual-spec rebuild S2 — new @flare-engine/shapes engine package; migrate apps/pan-tvardowski; canary bump"
+
+---
+
+## Session 92 — 2026-05-07 (scope: [mixed]) ※ retroactive
+
+**Goal (from sessions.md row #92):** Visual-spec rebuild S2 — new @flare-engine/shapes engine package (12 atomic primitives + 3 new: arc/annulus/trapezoid + path SVG escape hatch); migrate apps/pan-tvardowski (6 src + 11 test imports); delete apps/pan-tvardowski/src/{shapes,shapes-draw}.ts; canary bumped on visual-spec/types.ts import path change
+
+**Touched files**
+- `packages/shapes/` (new package — package.json, tsconfig.json, tsup.config.ts, LICENSE, README.md, src/{types,draw,bounds,index}.ts, tests/{bounds,draw}.test.ts)
+- `apps/pan-tvardowski/package.json` (added `@flare-engine/shapes: workspace:*`)
+- `apps/pan-tvardowski/src/{shape-atlas,shape-catalogue,index}.ts` (imports → @flare-engine/shapes)
+- `apps/pan-tvardowski/src/{assets/portraits-loader,dialogue/portrait-manifest,visual-spec/types}.ts` (imports)
+- `apps/pan-tvardowski/tests/{boss-ships,boss-visual-audit,glow-recipes,miniboss-ships,pickup-ships,player-ships,shape-atlas,shape-catalogue,shapes-draw,ship-anatomy,ship-silhouette-audit,visual-spec}.test.ts` (imports + canary bump)
+- `apps/pan-tvardowski/src/{shapes,shapes-draw}.ts` **deleted**
+- `bun.lock`
+
+**Gates**
+- lint: passed (Biome auto-fix applied 22 import-sort + format edits; manual fix on 3 unsafe template-literal warnings)
+- typecheck: passed (zero errors across packages/shapes + apps/pan-tvardowski)
+- test: packages/shapes 48/48 pass (98.57% line coverage); apps/pan-tvardowski 596/597 (1 pre-existing crash-transport failure unrelated to this work, present before session)
+- build: passed (packages/shapes builds clean — 12.89 KB CJS / 11.61 KB ESM / 7.31 KB d.ts)
+- device smoke: deferred to runtime verification at next pan-tvardowski device build (no behavioral change expected — same draw output)
+
+**Docs synced**
+- `docs/plans/sessions.md` row #92 status: pending → done (retroactive); ※ footnote covers both #91 and #92
+- `packages/shapes/README.md` shipped with copy-paste examples; usable by external developers (dogfooded against the public API surface)
+- Schema canary bumped from `8255d5f0…` (S1) → `0b4fba5e…` (S2 import migration) → `b056ac8e…` (S2 + Biome reformat). Each bump deliberate, justified inline in `tests/visual-spec.test.ts` comment.
+
+**Commits** (subjects only — full blocks emitted at /session-close)
+1. `feat(shapes): create @flare-engine/shapes engine package`
+2. `refactor(pan-tvardowski): migrate shapes to @flare-engine/shapes`
+
+**Notes**
+- 13 ShapeSpec kinds total (9 existing + 3 new + 1 SVG escape hatch). Adding a future named primitive: 4 files in packages/shapes/. Adding a non-perf-critical shape: zero engine change — use `path` with SVG `d="..."` string parsed by `Skia.Path.MakeFromSVGString`.
+- Public README documents external use without Pan Tvardowski context (the "anyone in RN ecosystem can prototype" goal from the rebuild plan).
+- `apps/pan-tvardowski/src/visual-spec/types.ts` import migrated `../shapes` → `@flare-engine/shapes`. Same `ShapeSpec` type, new module location — refactor only, no public-surface schema change.
+
+**Next session:** Visual-spec rebuild S3 — hull presets + ship migration (10 hull-preset compositions with weapon-hook anchors, migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts, golden-image diff vs current main).
+
+---

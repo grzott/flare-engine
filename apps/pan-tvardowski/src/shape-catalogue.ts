@@ -355,6 +355,31 @@ const weaponPickups = {
   ],
 } as const satisfies Record<string, readonly ShapeSpec[]>;
 
+// ---- Weapon projectiles (4) -------------------------------------------------
+// Silhouettes per folio XIIID. Each entry is what a single bullet looks like
+// in-flight; the caller renders at the bullet's world position.
+
+const weaponProjectiles = {
+  // Iskry: a small filled circle — tight bullet cluster visual
+  iskry: [{ kind: 'circle', r: 3, fill: ORANGE, glow: 'hazard' }],
+  // Piorun: zigzag polyline — lightning arc look
+  piorun: [
+    {
+      kind: 'polyline',
+      points: [-4, -6, 2, -1, -2, 1, 4, 6],
+      stroke: EYE_YELLOW,
+      strokeWidth: 2,
+      glow: 'hazard',
+    },
+  ],
+  // Sól Święcona: stroked ring — holy pulse expanding outward
+  'sol-swiecona': [{ kind: 'ring', r: 7, stroke: MIRROR, strokeWidth: 2, glow: 'hazard' }],
+  // Znak Pentagramu: small filled star — homing sigil
+  'znak-pentagramu': [
+    { kind: 'star', points: 5, rOuter: 6, rInner: 2.5, fill: PURPLE, glow: 'hazard' },
+  ],
+} as const satisfies Record<string, readonly ShapeSpec[]>;
+
 // ---- Upgrade pickups (6) ----------------------------------------------------
 
 const upgradePickups = {
@@ -408,6 +433,7 @@ export const SHAPE_CATALOGUE = Object.freeze({
   bosses,
   ships,
   weaponPickups,
+  weaponProjectiles,
   upgradePickups,
 });
 

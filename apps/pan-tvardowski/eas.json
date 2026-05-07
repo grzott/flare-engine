@@ -37,9 +37,10 @@
         "track": "internal"
       },
       "ios": {
-        "appleId": "TODO",
-        "ascAppId": "TODO",
-        "appleTeamId": "TODO"
+        "appleId": "$APPLE_ID",
+        "ascAppId": "$ASC_APP_ID",
+        "appleTeamId": "$APPLE_TEAM_ID",
+        "language": "en-US"
       }
     }
   }

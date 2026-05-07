@@ -16,6 +16,9 @@
     "ios": {
       "bundleIdentifier": "dev.flare.pantvardowski",
       "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "UIStatusBarHidden": true,
         "UIViewControllerBasedStatusBarAppearance": false

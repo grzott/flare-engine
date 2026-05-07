@@ -16,6 +16,12 @@ export { SHIP_DEFS } from './ships';
 export { BULLET_DEFS } from './bullets';
 export { WEAPON_DEFS } from './weapons';
 export { PICKUP_DEFS } from './pickups';
+export { THEME_SPEC } from './theme';
+export { ANIMATION_DEFS, HUD_TWEENS } from './animations';
+export type { HudTweenSpec } from './animations';
+export { HUD_SPEC } from './hud';
+export { OVERLAY_SPECS } from './overlays';
+export { SCREEN_SPECS } from './screens';
 
 export const ZONE_VISUAL_SPECS: Readonly<Record<ZoneId, ZoneVisualSpec>> = Object.freeze({
   1: zone1,

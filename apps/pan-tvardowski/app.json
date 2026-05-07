@@ -23,7 +23,6 @@
     },
     "android": {
       "package": "dev.flare.pantvardowski",
-      "edgeToEdgeEnabled": true,
       "intentFilters": [
         {
           "action": "VIEW",

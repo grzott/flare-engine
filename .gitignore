@@ -21,3 +21,6 @@ apps/*/android/
 apps/*/ios/
 apps/*/.expo/
 
+# JetBrains IDE local config
+.idea/
+

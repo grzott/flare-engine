@@ -2623,3 +2623,53 @@ Note: planned commit count was 3; per-session doc-sync option adds a fourth doc 
 **Next session:** #99 "VS-S5 zones extension: extend zone-1..8.ts with entityIds + parallax layer compositions + miniboss visual recipes"
 
 ---
+
+## Session 99 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #99):** VS-S5 zones extension: extend zone-1..8.ts with entityIds + parallax layer compositions + miniboss visual recipes
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-2.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-3.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-4.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-5.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-6.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-7.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-8.ts`
+- `apps/pan-tvardowski/tests/zone-specs-extended.test.ts` (new)
+- `apps/pan-tvardowski/tests/entity-resolution.test.ts` (new)
+- `docs/plans/pan-tvardowski-build-plan.md` (doc-sync)
+- `docs/references/builder-reference.md` (doc-sync)
+- `docs/plans/sessions.md` (row flip)
+
+Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths but NOT modified — barrel already exports `ZONE_VISUAL_SPECS` correctly; pristine. `apps/pan-tvardowski/src/visual-spec/types.ts` untouched — no schema change; canary `b056ac8e…` unchanged.
+
+**Gates**
+- typecheck: ✅ (zero errors)
+- lint: ✅ (zero errors — 282 files checked)
+- test: ✅ (+6 new, total 633 pass / 0 fail)
+- build: N/A (script is stub echo — native build via `bun run android|ios`)
+- device smoke: deferred to session #107 PT-DeviceSmoke (visual-spec data not yet wired to runtime; #101 is the rewire session)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended at line 610: `2026-05-07 — VS-S5 zones extension complete (session #99)` with full drift notes
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended `+ VS-S5 zones extension (session #99)`, bumped test count `627 → 633`, stamped `last closed: 2026-05-07`
+- `docs/plans/release-readiness-checklist.md` — no new ticks (spec-layer session, no user-facing feature landed)
+
+**Drift notes**
+1. `ZoneId` aliasing: `ZONE_VISUAL_SPECS` keyed by numeric `1–8` vs `ZONES` config keyed by string `'z1'–'z8'`; tests use per-file type aliases to disambiguate.
+2. `hound` orphan: catalogued entity excluded from all zone `entityIds` arrays (no spawner reference in any zone config).
+3. `visual-spec/index.ts` pristine — barrel already exports `ZONE_VISUAL_SPECS` from S4; no change needed.
+4. `visual-spec/types.ts` untouched — no schema change required; canary `b056ac8e…` unchanged.
+5. Test baseline drift: planner expectation 597 → actual pre-session baseline 627 → post-session 633; +6 delta matches the declared plan.
+6. Commit collapse: 3 declared commits → 2 implementation commits (8 zone files cannot be split across two sequential commits; same precedent as row #87 ⊞). Three commits total including the doc commit.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): VS-S5 zone visual specs (entityIds + parallax + minibosses)`
+2. `test(pt): zone-specs-extended + entity-resolution (+6)`
+3. `docs(pt): VS-S5 close — change-log + mirror sync`
+
+**Next session:** #100 "VS-S6 overlays + screens + HUD + theme + animations: extract theme tokens to visual-spec/theme.ts + author hud.ts + overlays.ts + screens.ts + animations.ts from existing TSX"
+
+---

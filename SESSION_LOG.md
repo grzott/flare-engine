@@ -2473,3 +2473,37 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #105 "PT-Store-1: Google Play Console app + internal testing track + Android keystore via EAS credentials"
 
 ---
+
+## Session 105 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #105):** PT-Store-1: Google Play Console app + internal testing track + Android keystore via EAS credentials
+
+**Touched files**
+- `apps/pan-tvardowski/docs/keystore.md`
+- `apps/pan-tvardowski/eas.json`
+- `docs/plans/release-readiness-checklist.md`
+- `docs/references/builder-reference.md`
+
+Note: `apps/pan-tvardowski/app.json` was **not** modified — intentional per plan. The `extra.eas.projectId` and `updates.url` TODO placeholders are filled by the user after running `eas init`. This is documented in `keystore.md §EAS project init`.
+
+**Gates**
+- lint: ✅ (40/40 turbo tasks, all cached, zero errors)
+- typecheck: ✅ (73/73 turbo tasks, all cached, zero errors)
+- test: ✅ (2117 pass, 1 pre-existing fail in `packages/render/tests/render-system.test.ts:202` — last touched at commit `465f76b` session #104, not introduced by this session; 16636 expect() calls across 277 files)
+- build: deferred — `apps/pan-tvardowski` build script is a stub echo (`echo 'native build via bun run android|ios'`); production APK/AAB gate deferred to session #107 (PT-DeviceSmoke) pending user-executed Play Console listing + `eas init` + `eas credentials` external steps
+- device smoke: deferred to session #107 — requires external Play Console listing, `eas init`, `eas credentials`, and service-account JSON setup that a builder agent cannot perform; deferred-gate note is documented in `keystore.md §Deferred gate — session #107`
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/keystore.md` — 6 new sections added: Play Console walkthrough (10-step external action), EAS project init, Android keystore via EAS credentials, service-account JSON for `eas submit`, internal-track submission sequence, deferred-gate note for session #107
+- `apps/pan-tvardowski/eas.json` — `submit.production.android.serviceAccountKeyPath` updated from hardcoded path to env-var token `"$GOOGLE_SERVICE_ACCOUNT_KEY"`
+- `docs/references/builder-reference.md` — mirror row updated to include PT-Store-1 (session #105) in the `apps/pan-tvardowski` status cell; last closed stamped 2026-05-07, 613 tests green
+- `docs/plans/release-readiness-checklist.md` — §2 "Google Play Console: app created, internal testing track opened" set to 🟡 in-progress (session #105); §2 "Android signing: upload keystore generated, stored in EAS credentials" set to 🟡 in-progress (session #105)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no change; PT-Store-1 is a post-M9.6 store-pipeline session with no corresponding §17 milestone row
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): add Play Console + EAS credentials setup guide`
+2. `chore(pan-tvardowski): swap serviceAccountKeyPath to env-var token`
+
+**Next session:** #106 "PT-Store-2: App Store Connect app + TestFlight + iOS managed signing via EAS"
+
+---

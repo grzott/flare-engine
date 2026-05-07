@@ -22,10 +22,10 @@ All slots must be manifest-driven so non-engineer collaborators can swap files w
 
 - [ ] ⬜ Google Play developer account (one-time $25).
 - [ ] ⬜ Apple Developer Program ($99/yr).
-- [ ] ⬜ Google Play Console: app created, internal testing track opened.
+- [x] 🟡 Google Play Console: app created, internal testing track opened — procedural steps documented in `apps/pan-tvardowski/docs/keystore.md §Play Console` (session #105); external actions not yet executed.
 - [ ] ⬜ App Store Connect: app created, TestFlight opened.
 - [x] ✅ EAS build profile: `production` + `preview` in `apps/pan-tvardowski/eas.json` (session #15, 2026-04-27).
-- [ ] ⬜ Android signing: upload keystore generated, stored in EAS credentials (never committed).
+- [x] 🟡 Android signing: upload keystore generated, stored in EAS credentials (never committed) — `eas credentials` procedure documented in `apps/pan-tvardowski/docs/keystore.md §Android keystore via EAS credentials` (session #105); external action not yet executed.
 - [ ] ⬜ iOS signing: distribution cert + provisioning profile via EAS.
 - [x] ✅ Version bump policy documented in `apps/pan-tvardowski/docs/keystore.md` (semver in `app.json`, EAS `autoIncrement` for `versionCode`/`buildNumber`) — session #15, 2026-04-27.
 

@@ -3,6 +3,9 @@
  * ships, pickups) to its composed `ShapeSpec[]`. Source: build plan §§6–12.
  *
  * This is data-only; the runtime renderer lands in M1.
+ *
+ * Migration: hull+weapon+engine composition per ship is superseded by the
+ * typed ShipDef records in `visual-spec/ships.ts` (session #97).
  */
 
 import type { ShapeSpec, ShipSpec } from '@flare-engine/shapes';

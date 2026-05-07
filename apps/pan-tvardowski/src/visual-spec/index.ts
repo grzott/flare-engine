@@ -11,6 +11,8 @@ import { zone8 } from './zone-8';
 
 export type { ZoneVisualSpec } from './types';
 export * from './types';
+export { HULL_PRESETS } from './hull-presets';
+export { SHIP_DEFS } from './ships';
 
 export const ZONE_VISUAL_SPECS: Readonly<Record<ZoneId, ZoneVisualSpec>> = Object.freeze({
   1: zone1,

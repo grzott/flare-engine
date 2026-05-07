@@ -21,6 +21,7 @@ import { CREDITS_SECTIONS } from './credits-sections';
 const ZONE_ORDER: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
 function zonesUpTo(zoneReached: ZoneId): readonly ZoneId[] {
+  if (__DEV__) return ZONE_ORDER;
   const idx = ZONE_ORDER.indexOf(zoneReached);
   return idx < 0 ? ['z1'] : ZONE_ORDER.slice(0, idx + 1);
 }
@@ -175,7 +176,7 @@ function SaveSelectView({
           !isFullGameOwned &&
           zoneConfig !== undefined &&
           zoneConfig.requiresEntitlement !== undefined;
-        const canChooseZone = p.status !== 'empty' && p.zoneReached !== 'z1';
+        const canChooseZone = __DEV__ || (p.status !== 'empty' && p.zoneReached !== 'z1');
         const numeral = ROMAN[p.index] ?? String(p.index + 1);
         return (
           <Pressable

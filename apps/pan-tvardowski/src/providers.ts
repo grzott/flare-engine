@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import { Share } from 'react-native';
 import type { AudioHandles } from './audio/init';
 import { createDialogueController } from './dialogue';
+import { ENTITLEMENT_FULL_GAME } from './iap/catalog';
 import { createPTEntitlementStore } from './iap/store';
 import { createLocalization } from './localization/index';
 import { createSaveStore } from './save/store';
@@ -37,7 +38,11 @@ export function useAppProviders(): AppProviders {
   const audioRef = useMemo<AudioRef>(() => ({ current: null }), []);
   const dialogueController = useMemo(() => createDialogueController(), []);
   const saveStore = useMemo(() => createSaveStore(), []);
-  const entitlementStore = useMemo(() => createPTEntitlementStore(), []);
+  const entitlementStore = useMemo(() => {
+    const store = createPTEntitlementStore();
+    if (__DEV__) store.grant(ENTITLEMENT_FULL_GAME);
+    return store;
+  }, []);
   const renderHooks = useMemo<PlayRenderHooks>(() => ({ background: null, postfx: null }), []);
   const shareManager = useMemo<ShareManager>(() => createShareManager(Share), []);
   const crashTransport = useMemo<CrashTransport>(() => {

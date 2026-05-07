@@ -1,6 +1,17 @@
-import { describe, expect, test } from 'bun:test';
-import { World, _resetComponentIds, defineComponent } from '@flare-engine/ecs';
-import { serializeScene, snapshotsEqual } from '../src/scene-snapshot.js';
+import { describe, expect, mock, test } from 'bun:test';
+
+// Restore real @flare-engine/ecs before loading scene-snapshot.ts.
+// The react/game-view.test.ts mock strips World to a class with no spawn().
+const _realEcs = await import('../../ecs/src/index.ts');
+mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
+
+const { serializeScene, snapshotsEqual } = await import('../src/scene-snapshot.js');
+// Do NOT destructure from `await import('@flare-engine/ecs')` — Bun's ESM
+// live-binding cache keeps the export shape of the originally-cached mock
+// (only { World, Position }) and silently drops exports absent from it.
+const World = _realEcs.World;
+const _resetComponentIds = _realEcs._resetComponentIds;
+const defineComponent = _realEcs.defineComponent;
 
 describe('serializeScene', () => {
   test('entities are sorted by id and include only present components', () => {

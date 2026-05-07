@@ -1,5 +1,18 @@
-import { describe, expect, test } from 'bun:test';
-import { createMockInputManager } from '../src/mock-input.js';
+import { describe, expect, mock, test } from 'bun:test';
+
+// When running from the repo root, test files from @flare-engine/react and
+// @flare-engine/ui mock @flare-engine/input with stripped stub classes.  Once
+// that module is cached in the shared Bun worker, mock-input.ts (which extends
+// the real InputManager) would inherit the stub instead.
+//
+// Fix: load the real implementation via a src-path import (different cache key),
+// then re-register it under the package name before importing mock-input.ts.
+// The factory must return a plain object — Bun's mock.module does not replace
+// an existing cache entry when the factory returns a module namespace object.
+const _realInput = await import('../../input/src/index.ts');
+mock.module('@flare-engine/input', () => ({ ..._realInput }));
+
+const { createMockInputManager } = await import('../src/mock-input.js');
 
 describe('MockInputManager', () => {
   test('press updates pointer and touches', () => {

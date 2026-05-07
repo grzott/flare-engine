@@ -1,6 +1,22 @@
-import { describe, expect, test } from 'bun:test';
-import { defineComponent } from '@flare-engine/ecs';
-import { createTestWorld } from '../src/test-world.js';
+import { describe, expect, mock, test } from 'bun:test';
+
+// Restore real @flare-engine/core and @flare-engine/ecs before importing
+// test-world.ts.  Other test files (react/game-view.test.ts etc.) mock both
+// packages with stripped stubs.  The plain-object spread is required because
+// Bun's mock.module won't replace a cached entry when the factory returns a
+// module namespace object.
+//
+// NOTE: use _realEcs.defineComponent directly — do NOT re-import
+// @flare-engine/ecs after mock.module(), because Bun's ESM live-binding cache
+// keeps the export shape of the previously-cached mock (only { World, Position })
+// and silently drops any new exports returned by the factory.
+const _realCore = await import('../../core/src/index.ts');
+mock.module('@flare-engine/core', () => ({ ..._realCore }));
+const _realEcs = await import('../../ecs/src/index.ts');
+mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
+
+const { createTestWorld } = await import('../src/test-world.js');
+const defineComponent = _realEcs.defineComponent;
 
 describe('createTestWorld', () => {
   test('returns a wired World + GameLoop + FakeClock', () => {

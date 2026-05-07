@@ -1,7 +1,25 @@
-import { describe, expect, test } from 'bun:test';
-import { Camera2D } from '@flare-engine/render';
+import { describe, expect, mock, test } from 'bun:test';
 import type { TileLayer, TilemapData, TilesetRef } from '../src/tilemap-data.js';
-import { TilemapRenderer } from '../src/tilemap-renderer.js';
+
+// Restore real @flare-engine/ecs FIRST — render/dist/index.mjs has a static
+// `import { defineComponent } from "@flare-engine/ecs"`.  If the ecs cache
+// holds the stripped mock { World, Position } (set by game-view.test.ts),
+// Bun throws SyntaxError when any code path loads @flare-engine/render dist.
+const _realEcs = await import('../../ecs/src/index.ts');
+mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
+
+// Restore real @flare-engine/render before loading TilemapRenderer.
+// game-view.test.ts and virtual-controls.test.ts mock @flare-engine/render
+// with stub Camera2D classes that lack getBoundsInto / setViewport.
+const _realRender = await import('../../render/src/index.ts');
+mock.module('@flare-engine/render', () => ({ ..._realRender }));
+const { Camera2D } = await import('@flare-engine/render');
+
+// Dynamically import TilemapRenderer AFTER mocks are restored — tilemap-renderer.ts
+// imports SpriteBatch from '@flare-engine/render' (package name → dist), which
+// in turn imports { defineComponent } from '@flare-engine/ecs'.  Loading it
+// statically would trigger that chain before mock.module() runs.
+const { TilemapRenderer } = await import('../src/tilemap-renderer.js');
 
 function mockImage() {
   return {

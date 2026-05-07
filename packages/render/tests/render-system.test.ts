@@ -1,13 +1,24 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
-import { Position as EcsPosition, World as EcsWorld } from '@flare-engine/ecs';
 import type { ComponentDef, Query, World } from '@flare-engine/ecs';
-import { Sprite as RenderSprite, createRenderSystem } from '../src/render-system.js';
 import type { PositionData, SpriteData } from '../src/render-system.js';
 import { Renderer } from '../src/renderer.js';
 import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 import { tint } from '../src/sprite-effects.js';
+
+// Restore real @flare-engine/ecs BEFORE importing render-system.js.
+// render-system.ts has a static `import { defineComponent } from '@flare-engine/ecs'`;
+// if the ecs mock cache only has { World, Position } (set by game-view.test.ts),
+// Bun throws SyntaxError: Export named 'defineComponent' not found.
+// The factory must return a plain object (spread) — not a module namespace object.
+const _realEcs = await import('../../ecs/src/index.ts');
+mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
+const { Position: EcsPosition, World: EcsWorld } = await import('@flare-engine/ecs');
+
+// Dynamically import render-system AFTER the ecs mock is restored so the
+// static `import { defineComponent }` inside render-system.ts resolves correctly.
+const { Sprite: RenderSprite, createRenderSystem } = await import('../src/render-system.js');
 
 function mockImage(): SkImageLike {
   return { width: () => 64, height: () => 64 };

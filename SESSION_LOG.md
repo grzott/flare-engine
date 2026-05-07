@@ -2429,4 +2429,47 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 
 ---
 
+## Session 104 — 2026-05-07 (scope: [mixed] ⊕)
+
+**Goal (from sessions.md row #104):** PT-CI: release branch CI green gate -- bun test + bun build on GitHub Actions; fix 30 engine-package RN-mock test failures so the gate is strict
+
+**Touched files**
+- `packages/iap-revenuecat/tests/integration.test.ts`
+- `packages/iap-revenuecat/tests/provider.test.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/virtual-controls.test.ts`
+- `packages/render/tests/render-system.test.ts`
+- `packages/testing/tests/mock-input.test.ts`
+- `packages/testing/tests/scene-snapshot.test.ts`
+- `packages/testing/tests/test-world.test.ts`
+- `packages/tilemap/tests/tilemap-renderer.test.ts`
+- `docs/plans/sessions.md` (row #104 close + ⊠ tiering-fallthrough footnote + row #103/#107/#108 dep re-shapes)
+- `packages/shapes/LICENSE` (line-ending normalisation only — CRLF→LF artefact, zero content change)
+
+**Declared-but-pristine paths (no-op, see ⊞ footnote in sessions.md)**
+- `.github/workflows/release.yml` — already contained strict `bun run test`; RN-mock failures were what made it appear non-strict; file unchanged
+- `apps/pan-tvardowski/package.json` — same; unchanged
+
+**Gates**
+- lint: ✅ (40/40 turbo tasks, 35 cached, zero errors)
+- typecheck: ✅ (73/73 turbo tasks, 62 cached, zero errors)
+- test: ✅ (77/77 turbo tasks; render 97/97, testing 23/23, tilemap 37/37, react 50/50, iap-revenuecat 8/8, pan-tvardowski 613/613; zero failures; gate is now strict — was previously non-strict because 30 RN-mock failures were silently tolerated before this session)
+- build: ✅ (39/39 turbo tasks)
+- device smoke: n/a — engine-test-only changes; no UI or runtime surface modified
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #104 flipped `in_progress` → `done`, close date stamped 2026-05-07, ⊞ marker added; ⊞ footnote appended explaining declared-but-pristine paths; ⊠ tiering-fallthrough footnote already present from session start
+- `docs/plans/pan-tvardowski-build-plan.md` — no change; no §17 engine-coverage box unlocked by this session (CI-fix only, no public API or milestone deliverable); Change-log deferred to session #108 (PT-DocSync-Final)
+- `docs/references/builder-reference.md` — no change; no engine package API surface or test module count changed; mirror-row update deferred to session #108
+- `docs/plans/release-readiness-checklist.md` — no new ticks; CI gate strictness is a prerequisite for #105/#106 store submissions, not itself a checklist item
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `test(react): widen shared RN/ecs/core mocks in game-view, safe-area, virtual-controls`
+2. `test(engine): restore real ecs/core before SUT import in render/testing/tilemap`
+3. `test(iap-revenuecat): widen react-native mock to cover View/Text/Pressable`
+4. `docs(pt): tick #104 PT-CI close + sessions.md tiering-fallthrough footnote`
+
+**Next session:** #105 "PT-Store-1: Google Play Console app + internal testing track + Android keystore via EAS credentials"
+
 ---

@@ -150,12 +150,24 @@ const bosses = [
 const weapons = [
   'weapons.iskry.name',
   'weapons.iskry.desc',
+  'weapons.iskry.tier1',
+  'weapons.iskry.tier2',
+  'weapons.iskry.tier3',
   'weapons.piorun.name',
   'weapons.piorun.desc',
+  'weapons.piorun.tier1',
+  'weapons.piorun.tier2',
+  'weapons.piorun.tier3',
   'weapons.sol-swiecona.name',
   'weapons.sol-swiecona.desc',
+  'weapons.sol-swiecona.tier1',
+  'weapons.sol-swiecona.tier2',
+  'weapons.sol-swiecona.tier3',
   'weapons.znak-pentagramu.name',
   'weapons.znak-pentagramu.desc',
+  'weapons.znak-pentagramu.tier1',
+  'weapons.znak-pentagramu.tier2',
+  'weapons.znak-pentagramu.tier3',
 ] as const;
 
 const ships = [

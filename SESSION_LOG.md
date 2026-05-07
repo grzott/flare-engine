@@ -2347,3 +2347,46 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #95 "PT-Weapon-Specs: M1 align 8 weapon projectile silhouettes to folio XIIID -> M2 weapon unlock progression per folio XIIID -> M3 add PL+EN keys for missing weapon-name labels"
 
 ---
+
+## Session 96 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #96):** PT-Visual-Budget-2: M1 re-bench frame budget post ship-anatomy rewrite -> M2 fps watchdog re-run on Galaxy A54 -> M3 update perf-baseline.md final numbers
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/budget.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/frame-budget.test.ts`
+- `apps/pan-tvardowski/tests/fps-watchdog.test.ts`
+- `apps/pan-tvardowski/docs/perf-baseline.md`
+- `docs/plans/sessions.md`
+
+**Drift (pre-approved)**
+- `apps/pan-tvardowski/src/scenes/play.ts` — beyond declared paths; `SHIP_SUB_SHAPES` lookup + `recordSubShapeDraws` wiring requires per-frame ship iteration in `play.ts`; no alternative path.
+- `apps/pan-tvardowski/tests/fps-watchdog.test.ts` — beyond declared paths; M2 watchdog expansion to drop CRT mechanically requires updating watchdog specs.
+- `apps/pan-tvardowski/src/perf/cold-start.ts` — declared but not touched; design-limit update in `perf-baseline.md` was sufficient, no instrumentation change needed.
+- `apps/pan-tvardowski/src/shapes-draw.ts` — declared but absent (deleted at session #92); counter wired into `budget.ts` + `play.ts` directly.
+- Test count: +5 actual vs +4 planned (extra test on `BUDGET_LIMITS.subShapeDraws` derivation invariant).
+
+**Gates**
+- lint: passed (40/40 packages, zero fixes applied, full Turbo cache hit)
+- typecheck: passed (zero errors; `tsc --noEmit` clean)
+- test: 607/607 pass (+4 new in frame-budget.test.ts, +1 additional subShapeDraws derivation test; +5 total across both test files vs +4 planned)
+- build: n/a (Expo native build — `bun run build` script is echo stub)
+- device smoke: deferred to session #107 (PT-DeviceSmoke) per row #50 footnote pattern (explicit user direction)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `2026-05-07 — PT-Visual-Budget-2 complete (session #96)`
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: appended PT-Visual-Budget-2 (session #96); test count 603 → 607
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no engine-coverage rows for this session; M1/M2/M3 are presentation-layer performance bookkeeping, not §17 milestone deliverables
+- `docs/plans/release-readiness-checklist.md` — no new ticks (TTI / device-smoke deferred to session #107)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): subShapeDraws budget + crt watchdog drop`
+2. `test(pt): subShape budget + dual-effect watchdog specs`
+3. `docs(pt): perf-baseline 2026-05-07 + session #96 close`
+
+**Next session:** #97 "VS-S3 hull presets: author 10 hull-preset compositions with weapon-hook anchors in visual-spec/hull-presets.ts + migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts"
+
+---
+
+---

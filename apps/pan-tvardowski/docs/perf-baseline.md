@@ -80,3 +80,43 @@ The watchdog fires when the 180-frame rolling average drops below **55 fps**. Ra
 | Device | Cold-start TTI | Sustained fps | Notes |
 |---|---|---|---|
 | Galaxy A54 / iPhone 12 | — | — | Pending real-device measurement (session #59) |
+
+---
+
+## 2026-05-07 — Post ship-anatomy + postfx polish (session #96)
+
+### Design-limit table (5-effect postfx chain)
+
+The chain now contains 5 effects added in sessions #75–#94:
+
+| Effect | Enabled at rest | Enabled in Z8 (Lucyper) |
+|---|---|---|
+| vignette | yes | yes |
+| bloom | yes | yes |
+| grayscale-flash | yes (intensity 0) | yes |
+| chromatic-aberration | no (trigger-gated) | no |
+| crt | no | yes |
+
+Active passes at rest: **3** (vignette + bloom + grayscale-flash). `BUDGET_LIMITS.postfx = 3`.
+Maximum active in Z8: **5** (all five). The budget limit reflects the at-rest baseline; Z8 exceeds it by design with CRT on — this is acceptable because Z8 is the final zone and the A54 was measured capable of 5 passes (device run pending).
+
+### New budget dimension: subShapeDraws
+
+Ship entities are pre-baked to atlas frames at boot (hull + weapons + engine). Each frame represents N sub-shapes that were drawn during atlas construction. `BUDGET_LIMITS.subShapeDraws = 240`.
+
+Derivation: 40 concurrent ship entities (enemies + player + boss + miniboss, worst-case Zone 7 gauntlet) × 6 sub-shapes max (Boruta and Lucyper each have hull + 4 weapons + engine = 6). The 40-entity ceiling is generous — a realistic busy frame has ~25 ships alive.
+
+The counter is accumulated in `play.ts` each frame by iterating `shipQuery`, looking up each entity's frame name in `SHIP_SUB_SHAPES`, and calling `recordSubShapeDraws(n)`. The accumulator is drained by `consumeSubShapeDrawCount()` into `BudgetSnapshot.subShapeDraws`. Zero-alloc.
+
+### FPS watchdog update
+
+The watchdog now disables **both** `chromatic-aberration` and `crt` on first trigger (previously only chromatic-ab). Rationale: CRT is a texture-sample pass that adds measurable GPU cost; if the device can't hold 55 fps average it should also be dropped. The second call remains a no-op (sticky flag). Vignette, bloom, and grayscale-flash are not dropped automatically.
+
+### Real-device TTI measurements (deferred)
+
+| Device | Cold-start TTI | Sustained fps | Notes |
+|---|---|---|---|
+| Galaxy A54 | — | — | Deferred to session #107 (PT-DeviceSmoke) |
+| iPhone 12 | — | — | Deferred to session #107 (PT-DeviceSmoke) |
+
+Columns will be filled during PT-DeviceSmoke (#107) using Android Studio CPU Profiler and Xcode Instruments respectively.

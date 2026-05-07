@@ -63,20 +63,31 @@ describe('fps watchdog', () => {
     expect(mock._enabledCalls.length).toBe(0);
   });
 
-  test('checkFpsWatchdog drops chromatic-aberration once when fps < 55', () => {
+  test('first trigger disables chromatic-aberration and crt', () => {
     const mock = makeMockPostFx();
     for (let i = 0; i < 180; i++) recordFrameTime(1 / 30);
     const dropped = checkFpsWatchdog(mock);
     expect(dropped).toBe(true);
-    expect(mock._enabledCalls).toEqual([['chromatic-aberration', false]]);
+    expect(mock._enabledCalls).toContainEqual(['chromatic-aberration', false]);
+    expect(mock._enabledCalls).toContainEqual(['crt', false]);
+    expect(mock._enabledCalls.length).toBe(2);
   });
 
-  test('watchdog drop is sticky — second call does not re-drop', () => {
+  test('watchdog drop is sticky — second call is no-op', () => {
     const mock = makeMockPostFx();
     for (let i = 0; i < 180; i++) recordFrameTime(1 / 30);
     checkFpsWatchdog(mock);
     const secondDrop = checkFpsWatchdog(mock);
     expect(secondDrop).toBe(false);
-    expect(mock._enabledCalls.length).toBe(1);
+    // Only the two disables from the first trigger; no additional calls.
+    expect(mock._enabledCalls.length).toBe(2);
+  });
+
+  test('above-threshold path leaves effects untouched', () => {
+    const mock = makeMockPostFx();
+    for (let i = 0; i < 180; i++) recordFrameTime(1 / 60);
+    checkFpsWatchdog(mock);
+    checkFpsWatchdog(mock);
+    expect(mock._enabledCalls.length).toBe(0);
   });
 });

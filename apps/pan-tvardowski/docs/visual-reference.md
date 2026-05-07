@@ -259,7 +259,7 @@ Duration: 80 ms deck spec. Envelope: white frame 20% opacity → transparent 100
 Implemented via `createGrayscaleFlash('grayscale-flash', { intensity: 0 })` with auto-decay (4.2/s ≈ 238 ms).
 Current wiring at [`src/fx/postfx.ts:21`](../src/fx/postfx.ts#L21). Flash triggered on `player-hit` (existing), bomb detonation, and boss defeat — done at session #69.
 
-Engine gap (documented at #85): `triggerHitFlash()` lacks per-trigger decay override — deck specifies 80 ms player-hit / 200 ms bomb / 1200 ms boss-defeat; all use the fixed 4.2-decay until a future engine polish session adds per-trigger decay.
+Per-trigger decay override wired at session #94: `triggerHitFlash(decayRate?)` accepts an explicit decay rate — 12.5/s (80 ms) player-hit, 5/s (200 ms) bomb, 0.833/s (1200 ms) boss-defeat. All three call sites in `play.ts` pass the correct rate.
 
 PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` wired as `Skia` in
 [`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) (session #69). Chain tracks intensities live; visible pixel
@@ -467,7 +467,7 @@ Each phase entry triggers a palette shift via `onPaletteShift` callback in boss 
 | Sigil pulse | sineInOut | 2400 ms loop | engine gap: no per-trigger sigil-pulse driver |
 | Combo pulse | backOut(1.4) | 120 ms | done — #85; scale via `comboPulseScale` in state + play-scene tween |
 | Boss intro | expoOut | 600 ms | done — #85; `bossBarOpacity` tween in play-scene |
-| Player-hit flash | linear | 80 ms | engine gap: `triggerHitFlash` fixed decay; no per-trigger override |
+| Player-hit flash | linear | 80 ms | done — #94; per-trigger decay rates (12.5/5/0.833 /s) wired in `play.ts` |
 | Game-over | cubicIn | 1200 ms | done — #85; `gameOverOpacity` tween in play-scene |
 | Zone banner | quartOut | 800 ms | done — #85; `createZoneBannerState` in `src/hud/zone-banner.ts` |
 
@@ -475,7 +475,7 @@ Engine gaps surfaced at #85:
 - `fadeTransition` is linear-only — no easing function parameter in the engine transition API.
 - No overlay open/close API — overlays are rendered as React components; no scene-level enter/exit easing hooks.
 - No sigil-pulse driver — no built-in periodic animation driver; would require a timer system in the engine.
-- No per-trigger flash decay — `triggerHitFlash()` uses a fixed 4.2/s decay for all triggers.
+- Per-trigger flash decay — resolved at session #94; `triggerHitFlash(decayRate?)` accepts per-call rate (12.5/5/0.833 /s for 80/200/1200 ms).
 
 ### Reduce-motion policy (5 rules) — done at sessions #74, #84, #85
 

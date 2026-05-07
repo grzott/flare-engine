@@ -2308,3 +2308,42 @@ Declared path `apps/pan-tvardowski/src/config/zones.ts` not touched — balance-
 **Next session:** #97 "VS-S3 hull presets: author 10 hull-preset compositions with weapon-hook anchors in visual-spec/hull-presets.ts + migrate 29 ships from shape-catalogue.ts to visual-spec/ships.ts" — now unblocked (#92 + #93 both done)
 
 ---
+
+## Session 94 — 2026-05-07 (scope: [game])
+
+**Goal (from sessions.md row #94):** PT-PostFx-Polish: M1 chromatic-ab on boss phase-break + elite death per folio VI -> M2 Z8 CRT scanlines for Lucyper -> M3 per-trigger decay override (80ms/200ms/1200ms)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/chrom-ab-trigger.test.ts` (new)
+- `apps/pan-tvardowski/tests/crt-z8.test.ts` (new)
+- `apps/pan-tvardowski/tests/decay-override.test.ts` (new)
+- `docs/plans/sessions.md` — row #94 flipped in_progress → done, close date stamped
+- `apps/pan-tvardowski/docs/visual-reference.md` — gap notes resolved (lines 262, 470, 478)
+- `docs/references/builder-reference.md` — mirror row updated: PT-PostFx-Polish (session #94), 603 tests green
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended for session #94
+
+**Deviation logged:** `systems/boss/*.ts` intentionally not touched — boss FSMs already emit the events; triggers live in `play.ts` callbacks per plan-time rationale. `postfx.ts` rewrote M1+M2+M3 surface in a single pass (sequencing shortcut); observable API shape matches plan exactly.
+
+**Gates**
+- lint: passed (40/40 packages, zero fixes applied, full Turbo cache hit)
+- typecheck: passed (zero errors; `tsc --noEmit` clean)
+- test: 603/603 pass (+6 new: chrom-ab-trigger x2, crt-z8 x2, decay-override x2)
+- build: n/a (Expo native build — `bun run build` script is echo stub)
+- device smoke: deferred — awaiting user confirmation
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §3 player-hit flash gap note at line 262 flipped to "done — session #94"; §11 easing table `Player-hit flash` row flipped from engine-gap to "done — #94"; §11 engine-gaps bullet for per-trigger flash decay resolved to done
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: appended PT-PostFx-Polish (session #94); test count 597 → 603
+- `docs/plans/pan-tvardowski-build-plan.md` §17 Change log — entry appended: `2026-05-07 — PT-PostFx-Polish complete (session #94)`
+- `docs/plans/release-readiness-checklist.md` — no new ticks (no postfx-specific checkboxes present)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pt): postfx polish — chrom-ab + Z8 CRT + per-trigger decay`
+2. `test(pt): chrom-ab trigger, CRT Z8, flash decay-override specs`
+3. `docs(pt): tick session #94 done + mirror-row sync`
+
+**Next session:** #95 "PT-Weapon-Specs: M1 align 8 weapon projectile silhouettes to folio XIIID -> M2 weapon unlock progression per folio XIIID -> M3 add PL+EN keys for missing weapon-name labels"
+
+---

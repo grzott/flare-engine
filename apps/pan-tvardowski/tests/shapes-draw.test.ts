@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { argbTo, shapeBoundsRadius } from '../src/shapes-draw';
+import { argbTo, shapeBoundsRadius } from '@flare-engine/shapes';
 
 describe('argbTo', () => {
   it('converts opaque red 0xffff0000 to RGBA [1, 0, 0, 1]', () => {

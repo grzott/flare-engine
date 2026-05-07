@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import type { ShapeSpec } from '@flare-engine/shapes';
 import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
-import type { ShapeSpec } from '../src/shapes';
 
 const { weaponPickups, upgradePickups } = SHAPE_CATALOGUE;
 

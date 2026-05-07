@@ -1,5 +1,5 @@
+import type { ShapeSpec } from '@flare-engine/shapes';
 import { resolvePortraitShape } from '../dialogue/portrait-manifest';
-import type { ShapeSpec } from '../shapes';
 import type { PortraitsManifest } from './manifest-types';
 
 /**

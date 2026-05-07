@@ -11,9 +11,9 @@
  */
 
 import { describe, expect, test } from 'bun:test';
+import type { ShapeSpec, ShipSpec } from '@flare-engine/shapes';
+import { shapeBoundsRadius } from '@flare-engine/shapes';
 import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
-import type { ShapeSpec, ShipSpec } from '../src/shapes';
-import { shapeBoundsRadius } from '../src/shapes-draw';
 
 describe('buildShapeAtlas iteration', () => {
   test('every ShipSpec category yields a finite radius after wrap', () => {

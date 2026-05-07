@@ -13,10 +13,10 @@
  */
 
 import { type SpriteFrame, type SpriteSheet, createSpriteSheet } from '@flare-engine/assets';
+import { argbTo, drawShape, shapeBoundsRadius } from '@flare-engine/shapes';
+import type { ShapeSpec, ShipSpec } from '@flare-engine/shapes';
 import type { SkImage, Skia as SkiaModule } from '@shopify/react-native-skia';
 import { SHAPE_CATALOGUE } from './shape-catalogue';
-import type { ShapeSpec, ShipSpec } from './shapes';
-import { argbTo, drawShape, shapeBoundsRadius } from './shapes-draw';
 
 type Skia = typeof SkiaModule;
 

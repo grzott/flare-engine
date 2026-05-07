@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import type { BaseSpec, ShapeSpec } from '@flare-engine/shapes';
+import { friendlyGlowArgb, hazardGlowArgb } from '@flare-engine/shapes';
 import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
-import type { BaseSpec, ShapeSpec } from '../src/shapes';
-import { friendlyGlowArgb, hazardGlowArgb } from '../src/shapes-draw';
 
 describe('glow recipes', () => {
   test('friendlyGlowArgb returns safe color at α ≈ 0.25', () => {

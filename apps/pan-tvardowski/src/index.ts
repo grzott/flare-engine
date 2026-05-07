@@ -9,7 +9,7 @@ export type {
   RingSpec,
   PolylineSpec,
   GradientRectSpec,
-} from './shapes';
+} from '@flare-engine/shapes';
 export { SHAPE_CATALOGUE, type EntityId } from './shape-catalogue';
 export {
   createLocalization,

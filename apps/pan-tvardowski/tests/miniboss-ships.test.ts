@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import type { ShipSpec } from '@flare-engine/shapes';
 import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
-import type { ShipSpec } from '../src/shapes';
 
 /**
  * Mini-boss ship anatomy — session #77 M1.

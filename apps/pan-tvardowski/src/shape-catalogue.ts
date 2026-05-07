@@ -5,7 +5,7 @@
  * This is data-only; the runtime renderer lands in M1.
  */
 
-import type { ShapeSpec, ShipSpec } from './shapes';
+import type { ShapeSpec, ShipSpec } from '@flare-engine/shapes';
 
 // Zone palette colors inlined as ARGB ints — catalogue is self-contained so
 // that renaming a palette channel can't silently re-color an entity.

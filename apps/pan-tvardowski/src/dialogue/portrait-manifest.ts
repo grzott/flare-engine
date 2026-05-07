@@ -7,7 +7,7 @@
  * of locale. Colors match the entity's game representation where applicable.
  */
 
-import type { ShapeSpec } from '../shapes';
+import type { ShapeSpec } from '@flare-engine/shapes';
 
 export type PortraitKey =
   | 'portrait.king'

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { ZONE_PALETTES } from '../src/palette';
-import { shapes } from '../src/theme';
 import { colors } from '../src/theme/colors';
 import { spacing } from '../src/theme/spacing';
 import { typography } from '../src/theme/typography';
+import { shapes } from '../src/visual-spec/shapes';
 
 describe('theme exports', () => {
   test('all four exports are defined', () => {

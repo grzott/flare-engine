@@ -1,3 +1,1 @@
-export { overlayBase } from './overlays';
-export { shapes } from './shapes';
-export { fontFamily } from './typography';
+export { shapes } from '../visual-spec/shapes';

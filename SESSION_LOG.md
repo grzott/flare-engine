@@ -3017,3 +3017,58 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #122 "Postfx-ColorGradingLUT: new EffectKind color-grading-lut depending on #118 multi-texture runtime"
 
 ---
+
+## Session 110 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #110):** VS-S8b overlayBase + fontFamily absorption: inline overlayBase layout constants into each .styles.ts consumer (5 files); move fontFamily into visual-spec/theme.ts; delete theme/overlays.ts + theme/typography.ts + theme/shapes.ts (zero consumers)
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/PrivacyOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts` ‡
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/theme/index.ts`
+- `apps/pan-tvardowski/src/theme/overlays.ts` (emptied/deleted)
+- `apps/pan-tvardowski/src/theme/shapes.ts` (deleted)
+- `apps/pan-tvardowski/src/theme/typography.ts` (re-export shim — deletion deferred)
+- `apps/pan-tvardowski/tests/overlay-layering.test.ts` ‡
+- `apps/pan-tvardowski/tests/theme-overlays.test.ts` ‡
+- `apps/pan-tvardowski/tests/theme.test.ts` ‡
+- `apps/pan-tvardowski/tests/typography.test.ts` ‡
+- `apps/pan-tvardowski/tests/zone-banner.test.ts` ‡
+- `docs/plans/sessions.md`
+- `packages/render/src/shaders.ts` † (engine hotfix — documented out-of-scope)
+
+‡ Drift: files outside the declared `touched paths`, accepted per builder-reported justifications:
+- `Hud.styles.ts` — collateral consumer of `overlayBase`; inlined same constants.
+- `tests/zone-banner.test.ts` — undeclared `fontFamily` consumer from theme barrel; repointed to `../src/visual-spec/theme`.
+- `tests/theme-overlays.test.ts` + `tests/overlay-layering.test.ts` — identity assertions (`=== overlayBase`) no longer expressible after inline; rewritten as value-equality assertions.
+- `tests/theme.test.ts` + `tests/typography.test.ts` — collateral test-sync for deleted/modified theme files.
+
+† `packages/render/src/shaders.ts` is a documented out-of-scope engine hotfix (SkSL `h` literal suffix dropped; committed separately as `fix(render)`). Does not block close.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — Biome via Turbo)
+- typecheck: ✅ (tsc --noEmit, 0 errors)
+- test: ✅ (+0 new; 710 pass, 0 fail, 146 files; 713 → 710 net: 3 identity assertions removed from overlay tests)
+- build: ✅ (echo stub — native build via bun run android|ios)
+- device smoke: deferred to session #107 (no new scene/rendering change in this session)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8b Change log entry appended (line 615); no §17 milestone tick (refactor, not a milestone)
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row updated: VS-S8b (session #110) appended, test count 713 → 710, last-closed date 2026-05-09
+- `docs/plans/release-readiness-checklist.md` — no new ticks (VS-S8b is a refactor, not a release item)
+- `docs/plans/sessions.md` — row #110 flipped `in_progress` → `done ⊞`, closed 2026-05-09; row #110h (engine hotfix) added as `done [engine]`
+
+**Commits** (subjects only — full blocks emitted above in chat)
+0. `fix(render): drop SkSL h literal suffix in water shader` (engine hotfix, separate commit)
+1. `refactor(pan-tvardowski): inline overlayBase into 5 overlay styles`
+2. `refactor(pan-tvardowski): move fontFamily to visual-spec/theme`
+3. `refactor(pan-tvardowski): delete theme/shapes.ts, update theme barrel`
+
+**Next session:** #111 "VS-S8c deprecated typography purge: delete 6 deprecated aliases (h1/h2/h3/body/caption/xs) from theme/typography.ts; grep-fix any remaining consumers to use spec-equivalent tokens"
+
+---

@@ -9,6 +9,8 @@ import {
   type SpriteColor,
   type SpriteDrawCommand,
   type TintEffect,
+  WATER_SKSL,
+  type WaterEffect,
   flashIntensity,
 } from '@flare-engine/render';
 import type {
@@ -32,7 +34,9 @@ import type {
 export type SkiaModuleLike = Pick<
   typeof Skia,
   'XYWHRect' | 'RSXform' | 'Paint' | 'PictureRecorder' | 'ColorFilter'
->;
+> & {
+  RuntimeEffect?: { Make(sksl: string): SkRuntimeEffect | null };
+};
 
 /**
  * Frame renderer that bridges a `SpriteBatch` to a Skia `<Picture>`.
@@ -54,7 +58,7 @@ export type SkiaModuleLike = Pick<
  */
 export interface SkiaFrameRenderer {
   readonly canvas: CanvasLike;
-  beginFrame(viewportWidth: number, viewportHeight: number): void;
+  beginFrame(viewportWidth: number, viewportHeight: number, time?: number): void;
   /**
    * drawAtlas callback compatible with `SpriteBatch.flush`. Accepts
    * `SkImageLike` (the narrow `@flare-engine/assets` type used by the batch) and
@@ -103,6 +107,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   let grayscalePaint: SkPaint | null = null;
   let outlinePaint: SkPaint | null = null;
   let customPaint: SkPaint | null = null;
+  let waterPaint: SkPaint | null = null;
+  let waterRuntimeEffect: SkRuntimeEffect | null = null;
 
   // Reused across frames via beginRecording / finishRecording cycles.
   const recorder: SkPictureRecorder = Skia.PictureRecorder();
@@ -137,6 +143,13 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   // current shader's `getUniformFloatCount()`.
   const customUniforms: number[] = [];
 
+  // Pre-allocated 11-float uniform buffer for the water effect.
+  // Declaration order: [resW, resH, color.r, color.g, color.b,
+  //                     foamColor.r, foamColor.g, foamColor.b,
+  //                     waveSpeed, waveAmplitude, time]
+  const waterUniforms: number[] = new Array(11).fill(0);
+
+  let currentFrameTime = 0;
   let current: SkCanvas | null = null;
 
   const canvas: CanvasLike = {
@@ -224,6 +237,29 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     return customPaint;
   }
 
+  function applyWater(effect: WaterEffect, time: number): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (waterRuntimeEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(WATER_SKSL);
+      if (compiled === null) return defaultPaint;
+      waterRuntimeEffect = compiled;
+    }
+    if (waterPaint === null) waterPaint = Skia.Paint();
+    waterUniforms[0] = 0; // resW — caller fills via drawAtlas; width is not available here,
+    waterUniforms[1] = 0; // resH   so resolution slots are zeroed; SkSL can guard divide-by-zero
+    waterUniforms[2] = effect.color.r;
+    waterUniforms[3] = effect.color.g;
+    waterUniforms[4] = effect.color.b;
+    waterUniforms[5] = effect.foamColor.r;
+    waterUniforms[6] = effect.foamColor.g;
+    waterUniforms[7] = effect.foamColor.b;
+    waterUniforms[8] = effect.waveSpeed;
+    waterUniforms[9] = effect.waveAmplitude;
+    waterUniforms[10] = time;
+    waterPaint.setShader(waterRuntimeEffect.makeShader(waterUniforms));
+    return waterPaint;
+  }
+
   function drawOutlined(
     canvas: SkCanvas,
     image: SkImage,
@@ -255,6 +291,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
         return applyGrayscale(effect);
       case 'custom':
         return applyCustom(effect);
+      case 'water':
+        return applyWater(effect, currentFrameTime);
       case 'outline':
         // Outline is drawn via a multi-pass path; this branch is only reached
         // if a caller bypasses `drawOutlined`. Return the outline paint so
@@ -266,8 +304,9 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   return {
     canvas,
 
-    beginFrame(viewportWidth: number, viewportHeight: number): void {
+    beginFrame(viewportWidth: number, viewportHeight: number, time = 0): void {
       if (viewportWidth === 0 || viewportHeight === 0) return;
+      currentFrameTime = time;
       recordingBounds.setXYWH(0, 0, viewportWidth, viewportHeight);
       current = recorder.beginRecording(recordingBounds);
     },

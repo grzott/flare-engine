@@ -2869,3 +2869,36 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #118 "Postfx-Runtime-MultiTexture: extend postfx runtime to support a per-effect optional child texture (SkImage) as a uniform shader input"
 
 ---
+
+## Session 118 — 2026-05-08 (scope: [engine])
+
+**Goal (from sessions.md row #118):** Postfx-Runtime-MultiTexture: extend postfx runtime to support a per-effect optional child texture (SkImage) as a `uniform shader` input — required prerequisite for LUT, shadow-attenuation, normal-map driven postfx; CompiledPass gains `children: SkImage[]`; buildPass plumbs them; existing 5 effects keep `children: []` (no behavior change); unit tests cover child plumbing without GPU
+
+**Touched files**
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/index.ts`
+- `packages/postfx/tests/runtime-children.test.ts`
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md`
+
+**Scope note:** session row listed `chain.ts` and `effect.ts` in touched paths; those files were not edited. Children belong on the renderer-facing `CompiledPass` (runtime.ts), not on the serializable `EffectUniforms` data (effect.ts). User approved this design refinement before implementation. Convention A decision confirmed via explicit user question: `children` holds extra children only, excluding the implicit `src` scene texture which the renderer binds as `children[0]` at draw time.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — Biome via Turbo, full turbo 153 ms)
+- typecheck: ✅ (73/73 tasks, 0 errors — tsc --noEmit; full turbo 191 ms)
+- test: ✅ (+6 new, total 48 in postfx — 48 pass, 0 fail across 6 files; runtime-children.test.ts 6/6 pass; full suite 77 tasks green)
+- build: ✅ (39/39 FULL TURBO; postfx ESM 11.77 KB, CJS 13.37 KB, DTS 12.35 KB)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — postfx extraction row updated: test count 42 → 48, "`SkImageLike` + `CompiledPass.children` (Convention A) added 2026-05-08 (48 tests)" appended
+- `docs/design/api-specs.md` — `CompiledPass` shape updated with `children` field, `SkImageLike` structural stub added, Convention A note added under implementation notes
+- `docs/plans/build-plan.md` — no change; Phase 11 remains in-progress; additive polish within existing phase, no phase-state transition
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(postfx): add SkImageLike stub and CompiledPass.children Convention A`
+2. `test(postfx): 6 tests for CompiledPass.children Convention A sentinel`
+3. `docs(postfx): CompiledPass.children, SkImageLike, Convention A; ref 48 tests`
+
+**Next session:** #119 "Render-WaterEffect: new typed WaterEffect kind in AnySpriteEffect union"
+
+---

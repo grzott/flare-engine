@@ -391,7 +391,8 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 | `createVignette` / `createGrayscaleFlash` / `createChromaticAberration` / `createCrt` / `createBloom` / `createGodRays` | Factory helpers returning an `Effect` (id, enabled, typed uniforms). Sensible defaults per effect. `createGodRays` defaults: `lightX=0.5`, `lightY=0.1`, `color=[1,0.95,0.8]`, `intensity=0.6`, `decay=0.96`, `density=0.5`, `weight=0.4`, `samples=48`. |
 | `EffectChain`                                                                  | Ordered pipeline: `add` / `insert` / `remove` / `move` / `get` / `setEnabled` / `setUniforms` (kind-checked) / `clear` / `enabled()` iterator. Duplicate ids throw.    |
 | `createPostFxRuntime(skia)`                                                    | Compiles shaders against a Skia-like module: `compile(kind)` (cached), `packUniforms(effect, w, h)` (per-kind Float32Array), `buildPass(chain, w, h) → CompiledPass[]`. |
-| `CompiledPass`                                                                 | `{ id, kind, shader, uniforms }` — what the renderer consumes per-effect per-frame.                                                                                    |
+| `CompiledPass`                                                                 | `{ id, kind, shader, uniforms, children }` — what the renderer consumes per-effect per-frame. See Convention A below.             |
+| `SkImageLike`                                                                  | Structural stub for a Skia image handle (`{ readonly _skImageBrand?: never }`). No Skia import required; renderers assign real `SkImage` values to `children`.          |
 | `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` / `GOD_RAYS_SKSL` | Raw shader sources, exported for advanced consumers.                                                                                |
 
 **Implementation notes:**
@@ -401,6 +402,9 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 - Uniform layouts are per-kind Float32Arrays (see `packUniforms`); resolution is passed via `(width, height)` for shaders that need it.
 - Actual pixel composition is the renderer's job — this package owns effect state, uniform packing, and shader caching.
 - `GOD_RAYS_SKSL` is a single-pass volumetric light scattering shader (GPU Gems 3, Ch. 13). SkSL requires loop counts to be compile-time constants, so the shader declares `const int MAX_SAMPLES = 64` and uses an `if (float(i) >= u_samples) break` guard inside the loop — this keeps the shader compilable while allowing runtime-configurable sample counts (1–64, clamped at pack time).
+
+**Convention A — `CompiledPass.children`:**
+`children` holds *extra* sampler children only, excluding the implicit `src` scene texture. The renderer binds `src` itself as `children[0]` at draw time. For all built-in effects (which declare only `src`) `children` is always the frozen `EMPTY_CHILDREN` sentinel — a single allocation shared across every pass, keeping `buildPass` zero-alloc on the hot path.
 
 
 ---

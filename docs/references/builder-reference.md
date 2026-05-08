@@ -38,7 +38,7 @@ Strict genre-agnostic filter: extractions must work for any 2D / 2.5D mobile gam
 
 | Extraction                                           | Target package                                | Status                                                  |
 | ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
-| `createPostFxController`                             | `@flare-engine/postfx`                        | ✅ shipped 2026-04-24 (37 tests); god-rays added 2026-05-08 (42 tests) |
+| `createPostFxController`                             | `@flare-engine/postfx`                        | ✅ shipped 2026-04-24 (37 tests); god-rays added 2026-05-08 (42 tests); `SkImageLike` + `CompiledPass.children` (Convention A) added 2026-05-08 (48 tests) |
 | `createA11yBridge`                                   | `@flare-engine/a11y`                          | ✅ shipped 2026-04-24 (17 tests)                        |
 | `createTier2Wiring`                                  | `@flare-engine/engine`                        | ✅ shipped 2026-04-24 (19 tests)                        |
 | `MainMenuKit`                                        | `@flare-engine/ui`                            | ✅ shipped 2026-04-24 (40 tests total)                  |

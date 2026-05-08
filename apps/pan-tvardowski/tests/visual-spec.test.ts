@@ -206,7 +206,9 @@ describe('visual-spec — schema canary', () => {
   // imports ShapeSpec from '@flare-engine/shapes' (was '../shapes'); Biome
   // also reformatted whitespace. Same type, new location — refactor only,
   // no public-surface schema change.
-  const SCHEMA_CANARY = 'b056ac8e4c2b026052303b79bf521f73c6159858061d8f61e439f8dab2b74207';
+  // Bumped at Session 121 (Z3-Refactor): added 'water-shader' | 'fog-shader' variants
+  // to ParallaxLayer.content union — additive per schema stability protocol.
+  const SCHEMA_CANARY = '6b622556419d8cfddc1acdc5f63a9476554ba0f1f48daa148212be021325b213';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

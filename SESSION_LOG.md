@@ -2979,3 +2979,41 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #121 "PT-Z3-Refactor: delete tilemap-bg.ts; spawn WaterEffect + FogEffect background entities for Z3"
 
 ---
+
+## Session 121 — 2026-05-08 (scope: [game])
+
+**Goal (from sessions.md row #121):** PT-Z3-Refactor: delete tilemap-bg.ts (283-entity tile system); spawn 2 background entities for Z3 — fullscreen-stretched 32×32 atlas frame + WaterEffect (z=−100), same + FogEffect (z=−90); shader output replaces atlas sampling per skia-bridge applyCustom semantics; verify 60fps locked on target device; update visual-spec/zone-3.ts if needed
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/tilemap-bg.ts` (deleted — declared)
+- `apps/pan-tvardowski/src/bg/zone3-bg.ts` (NEW — replacement spawn module)
+- `apps/pan-tvardowski/src/scenes/play.ts` (declared)
+- `apps/pan-tvardowski/src/visual-spec/zone-3.ts` (declared)
+- `apps/pan-tvardowski/tests/tilemap-bg.test.ts` (deleted — declared replacement)
+- `apps/pan-tvardowski/tests/zone-3-bg.test.ts` (NEW — declared replacement)
+- `apps/pan-tvardowski/src/visual-spec/types.ts` ‡
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` ‡
+- `docs/plans/sessions.md` (row flip to in_progress → done)
+
+‡ Path drift: `src/visual-spec/types.ts` extends `ParallaxLayer.content` union with `'water-shader' | 'fog-shader'` — required for `zone-3.ts` to typecheck (the new parallax layer discriminants are only valid once the union includes them). `tests/visual-spec.test.ts` canary hash bumped to reflect the union change. Both changes are tightly coupled to the declared work; no independent new behavior. Same class of drive-by as session #19 `§` and session #20 `°` footnotes.
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 293 files, 0 errors)
+- typecheck: ✅ (tsc --noEmit — 0 errors)
+- test: ✅ (+1 new test file with 4 tests replacing deleted tilemap-bg suite; 713 pass, 0 fail, 8577 expect() calls)
+- build: ✅ (echo stub — native build via bun run android|ios)
+- device smoke: pending user confirmation (Galaxy A54 + iPhone 12, 60fps lock on Z3)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row updated: PT-Z3-Refactor (session #121) appended, test count 712 → 713
+- `docs/plans/pan-tvardowski-build-plan.md` Change log — dated `2026-05-08` PT-Z3-Refactor entry appended; no §17 milestone tick change (M3 tilemap ✅ preserved — tilemap package still exercised by other zones' parallax plumbing)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (PT-Z3-Refactor is a rendering optimization, not a release-gate item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): replace 283-entity tilemap-bg with 2-entity z3 shader bg`
+2. `test(pan-tvardowski): zone-3-bg replaces tilemap-bg test`
+3. `docs(pan-tvardowski): visual-spec zone-3 water+fog shader tokens`
+
+**Next session:** #122 "Postfx-ColorGradingLUT: new EffectKind color-grading-lut depending on #118 multi-texture runtime"
+
+---

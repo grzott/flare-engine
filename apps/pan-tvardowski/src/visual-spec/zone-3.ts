@@ -14,9 +14,8 @@ export const zone3: ZoneVisualSpec = {
     accent: '#8E6F2C', // gold-deep
     hazard: '#C7B89A', // bone
     parallax: [
-      { id: 'z3-sky', speed: 0, content: 'tilemap' },
-      { id: 'z3-mist', speed: 0.15, content: 'tilemap' },
-      { id: 'z3-riverbank', speed: 0.5, content: 'tilemap' },
+      { id: 'z3-water', speed: 0, content: 'water-shader' },
+      { id: 'z3-fog', speed: 0, content: 'fog-shader' },
     ],
     ambience: { kind: 'spray', count: 48 },
   },

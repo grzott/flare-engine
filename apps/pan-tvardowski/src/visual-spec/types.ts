@@ -417,8 +417,8 @@ export interface ParallaxLayer {
   readonly id: string;
   /** 0 = static (sky), 1 = locked to camera (foreground). */
   readonly speed: number;
-  /** Inline shape composition, or 'tilemap' if driven by a Tiled .tmj. */
-  readonly content: 'tilemap' | readonly ShapeSpec[];
+  /** Inline shape composition, 'tilemap' (Tiled .tmj), 'water-shader', or 'fog-shader'. */
+  readonly content: 'tilemap' | 'water-shader' | 'fog-shader' | readonly ShapeSpec[];
   readonly tint?: Hex;
   readonly opacity?: number;
 }

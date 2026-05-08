@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/DialogueOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('DialogueOverlay — folio XI alignment', () => {
   it('portraitBox dimensions are 44×44', () => {

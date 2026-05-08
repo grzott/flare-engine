@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/MenuOverlay.styles';
-import { colors, typography } from '../src/theme';
+import { colors } from '../src/theme/colors';
+import { typography } from '../src/theme/typography';
 
 describe('MenuOverlay styles — folio X menu view', () => {
   it('menuTitle fontFamily === typography.displayXl.fontFamily', () => {

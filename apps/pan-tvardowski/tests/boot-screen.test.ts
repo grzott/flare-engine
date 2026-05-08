@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/BootOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('BootOverlay styles — folio X', () => {
   it('root backgroundColor === colors.ui.void', () => {

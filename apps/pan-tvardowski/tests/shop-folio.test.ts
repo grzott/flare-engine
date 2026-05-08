@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/ShopOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('ShopOverlay — folio XI alignment', () => {
   it('productCard.borderColor === colors.ui.gold', () => {

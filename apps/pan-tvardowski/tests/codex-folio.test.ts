@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/CodexOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('CodexOverlay — folio XI alignment', () => {
   it('entryLocked.backgroundColor === colors.ui.void', () => {

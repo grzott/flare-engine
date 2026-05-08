@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/MenuOverlay.styles';
-import { typography } from '../src/theme';
+import { typography } from '../src/theme/typography';
 
 describe('credits screen styles — session #81 M2', () => {
   it('creditsSectionTitle fontFamily === typography.lede.fontFamily', () => {

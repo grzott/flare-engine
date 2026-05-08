@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { rawStyles } from '../src/hud/PaywallOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('PaywallOverlay — folio XI alignment', () => {
   it('wrapper.backgroundColor === colors.ui.crimsonDeep', () => {

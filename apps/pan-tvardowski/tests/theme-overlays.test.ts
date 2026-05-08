@@ -5,7 +5,9 @@ import { rawStyles as dialogueStyles } from '../src/hud/DialogueOverlay.styles';
 import { rawStyles as inventoryStyles } from '../src/hud/InventoryOverlay.styles';
 import { rawStyles as privacyStyles } from '../src/hud/PrivacyOverlay.styles';
 import { rawStyles as shopStyles } from '../src/hud/ShopOverlay.styles';
-import { colors, overlayBase, spacing } from '../src/theme';
+import { overlayBase } from '../src/theme';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
 
 describe('overlayBase — shared StyleSheet partials', () => {
   it('root.backgroundColor === colors.ui.bodyBg', () => {

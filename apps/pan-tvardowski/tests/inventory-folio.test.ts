@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/InventoryOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('InventoryOverlay — folio XI alignment', () => {
   it('tabs.borderBottomColor === colors.ui.gold', () => {

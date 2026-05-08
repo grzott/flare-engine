@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles as hudStyles } from '../src/hud/Hud.styles';
 import { rawStyles as menuStyles } from '../src/hud/MenuOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('Hud rawStyles — theme token assertions', () => {
   it('score.color === colors.ui.primary', () => {

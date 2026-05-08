@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { rawStyles } from '../src/hud/Hud.styles';
 import { gameState, resetGameState } from '../src/state';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('weapon meter — state', () => {
   beforeEach(() => {

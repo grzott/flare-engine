@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { colors, spacing, typography } from '../src/theme';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
+import { typography } from '../src/theme/typography';
 import { THEME_SPEC } from '../src/visual-spec/theme';
 
 describe('VS-S7 runtime rewire — spacing shim', () => {

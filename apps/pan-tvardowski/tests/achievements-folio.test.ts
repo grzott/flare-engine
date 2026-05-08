@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/AchievementsOverlay.styles';
-import { colors } from '../src/theme';
+import { colors } from '../src/theme/colors';
 
 describe('AchievementsOverlay — folio XI alignment', () => {
   it('entryUnlocked.borderLeftColor === colors.ui.gold', () => {

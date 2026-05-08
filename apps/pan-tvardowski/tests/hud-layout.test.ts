@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { rawStyles } from '../src/hud/Hud.styles';
-import { colors, spacing } from '../src/theme';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
 
 describe('HUD layout', () => {
   test('boss bar has gold border', () => {

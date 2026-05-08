@@ -2727,3 +2727,48 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #101 "VS-S7 runtime rewire: point config/zones.ts + scene-registry.ts + Hud.tsx + all overlays + all styles to read from visual-spec/; theme/ paths become re-export shims"
 
 ---
+
+## Session 101 — 2026-05-08 (scope: [game])
+
+**Goal (from sessions.md row #101):** VS-S7 runtime rewire: point config/zones.ts + scene-registry.ts + Hud.tsx + all overlays + all styles to read from visual-spec/; theme/ paths become re-export shims
+
+**Touched files**
+- `apps/pan-tvardowski/src/theme/colors.ts`
+- `apps/pan-tvardowski/src/theme/typography.ts`
+- `apps/pan-tvardowski/src/theme/spacing.ts`
+- `apps/pan-tvardowski/tests/runtime-rewire-integration.test.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (293 files, 0 errors — Biome via Turbo)
+- typecheck: ✅ (0 errors — tsc --noEmit, verified by verifier)
+- test: ✅ (+15 new, total 712 — verified by verifier; off-by-one description string fixed by verifier before close)
+- build: N/A (native-only; `bun run build` script echoes advisory, no JS artefact)
+- device smoke: deferred to session #107 PT-DeviceSmoke (standing convention established at session #50 footnote; change-log entry at pan-tvardowski-build-plan.md line 612 records deferral explicitly)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: VS-S7 runtime rewire complete, last closed 2026-05-08, 712 tests green
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `**2026-05-08** — **VS-S7 complete.**` (theme shim details, gate results, device-smoke deferral)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (VS-S7 is a refactor/rewire, no milestone feature gate)
+
+**Drift footnote (⊞)**
+1. Scope reduction — 3 declared paths NOT modified: `config/zones.ts` (gameplay-only, no visual fields), `scene-registry.ts` (no theme imports), `hud/Hud.tsx` (imports `getUiPrimaryHex` from `../palette` only, no theme imports). Similarly untouched: `hud/*.styles.ts`, `hud/*Overlay.tsx`, `theme/index.ts` — shim mechanism makes consumer-side rewires unnecessary.
+2. Commit count 3 vs declared 4 — 4th commit vacuous given scope reduction.
+3. Style files keep their `'../theme'` imports — shim is the mechanism; consumer-side rewire deferred to VS-S8.
+4. Derived color aliases in `theme/colors.ts` shim preserved as literals (`tint60`, `overlay`, `bodyBg`, `backdropModal`, `border`, `lockedBadge`, `neutralLight`, `neutralMid`, `divider`, `dividerStrong`, `hazardOrange`, `crimsonDeep`, `cb.*`) — not in `ColorTokenId`; deleted in VS-S8.
+5. 6 deprecated typography aliases (`h1`/`h2`/`h3`/`body`/`caption`/`xs`) preserved verbatim in `theme/typography.ts` shim — deleted in VS-S8.
+6. `typography.lede.italic: true` field stripped in shim (spec-only metadata, not valid in RN StyleSheet).
+7. Spacing shim is same-reference assignment (`export const spacing = THEME_SPEC.spacing`); test verifies with `toBe`.
+8. Schema canary `b056ac8e…` in `visual-spec/types.ts` untouched and preserved.
+9. Verifier applied one source edit: test description string `'all 20 SpacingTokenId keys present in spacing'` corrected to `'all 19 SpacingTokenId keys present in spacing'` (off-by-one comment; assertion `expected.length === 19` was already correct). Pre-approved by user at /session-close invocation.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `fix(pt): correct spacing-test description 20→19 keys`
+2. `feat(pt): VS-S7 theme shims — colors + typography + spacing`
+3. `test(pt): VS-S7 runtime rewire invariants (+15)`
+4. `docs(pt): VS-S7 close — change-log + mirror sync`
+
+**Next session:** #102 "VS-S8 cleanup + workflow lock: delete shape-catalogue.ts + palette.ts + theme/{colors,spacing,typography,overlays,shapes}.ts; update CLAUDE.md + visual-reference.md to lock visual-spec workflow"
+
+---

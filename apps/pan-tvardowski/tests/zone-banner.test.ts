@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import type { ZoneId } from '../src/events';
 import { rawStyles } from '../src/hud/Hud.styles';
 import { zoneRomanNumeral } from '../src/hud/zone-banner';
-import { fontFamily } from '../src/theme';
 import { colors } from '../src/theme/colors';
 import { spacing } from '../src/theme/spacing';
+import { fontFamily } from '../src/visual-spec/theme';
 
 describe('zoneRomanNumeral — exhaustive mapping', () => {
   const cases: [ZoneId, string][] = [

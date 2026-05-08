@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { fontFamily, typography } from '../src/theme/typography';
+import { typography } from '../src/theme/typography';
+import { fontFamily } from '../src/visual-spec/theme';
 
 describe('fontFamily', () => {
   test('exports 7 family strings', () => {

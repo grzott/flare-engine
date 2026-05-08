@@ -131,3 +131,13 @@ export const THEME_SPEC: ThemeSpec = {
     buttonPaddingV: 10,
   } satisfies Record<SpacingTokenId, number>,
 };
+
+export const fontFamily = {
+  serif: 'EBGaramond_500Medium',
+  serifItalic: 'EBGaramond_500Medium_Italic',
+  sans: 'SourceSans3_400Regular',
+  sansSemiBold: 'SourceSans3_600SemiBold',
+  sansBold: 'SourceSans3_700Bold',
+  mono: 'JetBrainsMono_400Regular',
+  monoMedium: 'JetBrainsMono_500Medium',
+} as const;

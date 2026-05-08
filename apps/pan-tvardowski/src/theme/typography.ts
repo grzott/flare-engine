@@ -1,16 +1,8 @@
-import { THEME_SPEC } from '../visual-spec/theme';
+import { THEME_SPEC, fontFamily } from '../visual-spec/theme';
+
+export { fontFamily } from '../visual-spec/theme';
 
 const spec = THEME_SPEC.typography;
-
-export const fontFamily = {
-  serif: 'EBGaramond_500Medium',
-  serifItalic: 'EBGaramond_500Medium_Italic',
-  sans: 'SourceSans3_400Regular',
-  sansSemiBold: 'SourceSans3_600SemiBold',
-  sansBold: 'SourceSans3_700Bold',
-  mono: 'JetBrainsMono_400Regular',
-  monoMedium: 'JetBrainsMono_500Medium',
-} as const;
 
 // Strip spec-only `italic` metadata field from lede before forwarding to RN StyleSheet
 const { italic: _ledeMeta, ...ledeForRn } = spec.lede;

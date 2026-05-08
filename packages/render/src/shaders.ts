@@ -63,7 +63,7 @@ half4 main(float2 coord) {
   float waveDeriv = cos(uv.x * 6.2832 * 3.0 + time * waveSpeed * 2.0) * waveAmplitude * 2.0
                   + cos(uv.x * 6.2832 * 5.0 - time * waveSpeed * 1.3 + 1.5) * waveAmplitude;
   float foam = smoothstep(waveAmplitude * 0.6, waveAmplitude * 1.5, waveDeriv);
-  half3 tinted = mix(c.rgb, half3(color.r, color.g, color.b), 0.35h);
+  half3 tinted = mix(c.rgb, half3(color.r, color.g, color.b), half(0.35));
   half3 final = mix(tinted, half3(foamColor.r, foamColor.g, foamColor.b), half(foam));
   return half4(final, c.a);
 }

@@ -11,7 +11,7 @@ import { Sprite } from '@flare-engine/render';
 import { applyShake } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
-import { type TilemapBgController, createZone3TilemapBg } from '../bg/tilemap-bg';
+import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
 import { Boss, Bullet, Enemy, Lifetime, Miniboss, MirrorTwin, Ship } from '../components';
 import {
   BAZYLISZEK_GAZE_SPEED_MUL,
@@ -196,8 +196,8 @@ interface PlayState {
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
-  /** Zone 3 only — drives the scrolling water + fog background. */
-  tilemapBg: TilemapBgController | null;
+  /** Zone 3 only — water + fog shader background entities. */
+  zone3Bg: Zone3BgController | null;
   /** Previous-frame playerHp — used to detect damage and flash postfx. */
   lastPlayerHp: number;
   /** Set in onExit — deferred / signal-driven callbacks bail out when true
@@ -260,7 +260,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
-        tilemapBg: null,
+        zone3Bg: null,
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
         autoSaveAccum: 0,
@@ -286,9 +286,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     }
 
     function clearWorld(state: PlayState): void {
-      if (state.tilemapBg) {
-        state.tilemapBg.destroy();
-        state.tilemapBg = null;
+      if (state.zone3Bg) {
+        state.zone3Bg.destroy();
+        state.zone3Bg = null;
       }
       const ids: number[] = [];
       for (const id of state.posQuery) ids.push(id);
@@ -382,7 +382,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       s.playerId = spawnPlayer(s.spawnCtx, s.bounds.width / 2, s.bounds.height - 90);
 
       if (zoneId === 'z3') {
-        s.tilemapBg = createZone3TilemapBg({
+        s.zone3Bg = createZone3Bg({
           world: ctx.world,
           atlas,
           viewportWidth: s.bounds.width,
@@ -461,7 +461,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           void save.persist();
         }
 
-        if (s.tilemapBg) s.tilemapBg.update(dt, s.bounds.height);
         postfx.update(dt);
 
         // Hit-flash on player damage: diff playerHp against last observed value.

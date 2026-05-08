@@ -2836,3 +2836,36 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #110 "VS-S8b overlayBase + fontFamily absorption: inline overlayBase, move fontFamily, delete theme/overlays.ts + theme/typography.ts + theme/shapes.ts"
 
 ---
+
+## Session 117 — 2026-05-08 (scope: [engine])
+
+**Goal (from sessions.md row #117):** Postfx-GodRays: new reusable EffectKind 'god-rays' — single-pass volumetric light scattering (GPU Gems 3 Ch. 13); screen-space light position uniform; per-frame uniforms updated via chain.setUniforms (no engine time-clock needed); SkSL + EffectKind union extension + create function + runtime SKSL_SOURCE/packUniforms/scaleIntensity cases + unit tests
+
+**Touched files**
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/index.ts`
+- `packages/postfx/tests/god-rays.test.ts`
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — Biome via Turbo; postfx cache miss, fresh run)
+- typecheck: ✅ (73/73 tasks, 0 errors — tsc --noEmit; postfx build cache miss, fresh compile)
+- test: ✅ (+5 new, total 42 in postfx — 42 pass, 0 fail across 5 files; full suite 77 tasks green)
+- build: ✅ (39/39 FULL TURBO; postfx ESM + CJS + DTS; dist/index.d.mts 11.49 KB)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — extraction table row for `@flare-engine/postfx` updated: test count 37 → 42, "god-rays added 2026-05-08 (42 tests)" appended (builder-authored, absorbed as legitimate doc-sync mirror update)
+- `docs/plans/build-plan.md` — no change; Phase 11 already marked in-progress; additive effect within existing phase, no phase-state transition
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(postfx): god-rays SkSL + effect kind + runtime dispatch`
+2. `test(postfx): god-rays uniform packing + scaleIntensity + SKSL wire`
+3. `docs(postfx): god-rays in api-specs EffectKind + factory rows`
+4. `docs(refs): postfx test count 37 → 42, god-rays mirror`
+
+**Next session:** #118 "Postfx-Runtime-MultiTexture: extend postfx runtime to support a per-effect optional child texture (SkImage) as a uniform shader input"
+
+---

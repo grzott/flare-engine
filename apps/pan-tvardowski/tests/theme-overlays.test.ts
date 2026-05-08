@@ -5,39 +5,30 @@ import { rawStyles as dialogueStyles } from '../src/hud/DialogueOverlay.styles';
 import { rawStyles as inventoryStyles } from '../src/hud/InventoryOverlay.styles';
 import { rawStyles as privacyStyles } from '../src/hud/PrivacyOverlay.styles';
 import { rawStyles as shopStyles } from '../src/hud/ShopOverlay.styles';
-import { overlayBase } from '../src/theme';
 import { colors } from '../src/theme/colors';
 import { spacing } from '../src/theme/spacing';
 
-describe('overlayBase — shared StyleSheet partials', () => {
-  it('root.backgroundColor === colors.ui.bodyBg', () => {
-    expect(overlayBase.root.backgroundColor).toBe(colors.ui.bodyBg);
+describe('overlay root tokens — inlined from overlayBase', () => {
+  it('InventoryOverlay root.backgroundColor === colors.ui.bodyBg', () => {
+    expect(inventoryStyles.root.backgroundColor).toBe(colors.ui.bodyBg);
   });
 
-  it('panelContainer.padding === spacing.xl', () => {
-    expect(overlayBase.panelContainer.padding).toBe(spacing.xl);
+  it('AchievementsOverlay panelContainer.padding === spacing.xl', () => {
+    expect(achievementsStyles.panelContainer.padding).toBe(spacing.xl);
   });
 
-  it('panelLg.maxWidth === spacing.panelLgWidth', () => {
-    expect(overlayBase.panelLg.maxWidth).toBe(spacing.panelLgWidth);
+  it('AchievementsOverlay panel.maxWidth === spacing.panelLgWidth', () => {
+    expect(achievementsStyles.panel.maxWidth).toBe(spacing.panelLgWidth);
   });
 
-  it('panelMd.maxWidth === spacing.panelMdWidth', () => {
-    expect(overlayBase.panelMd.maxWidth).toBe(spacing.panelMdWidth);
+  it('PrivacyOverlay panel.maxWidth === spacing.panelMdWidth', () => {
+    expect(privacyStyles.panel.maxWidth).toBe(spacing.panelMdWidth);
   });
 });
 
 describe('overlay rawStyles — theme token assertions', () => {
-  it('InventoryOverlay root references overlayBase.root', () => {
-    expect(inventoryStyles.root).toBe(overlayBase.root);
-  });
-
   it('InventoryOverlay tabActive borderColor === colors.ui.crimson', () => {
     expect(inventoryStyles.tabActive.borderBottomColor).toBe(colors.ui.crimson);
-  });
-
-  it('CodexOverlay root references overlayBase.root', () => {
-    expect(codexStyles.root).toBe(overlayBase.root);
   });
 
   it('CodexOverlay entryRow border === colors.ui.divider', () => {
@@ -62,10 +53,6 @@ describe('overlay rawStyles — theme token assertions', () => {
 
   it('PrivacyOverlay backdrop === colors.ui.backdropModal', () => {
     expect(privacyStyles.backdrop.backgroundColor).toBe(colors.ui.backdropModal);
-  });
-
-  it('PrivacyOverlay panel references overlayBase.panelMd', () => {
-    expect(privacyStyles.panel).toBe(overlayBase.panelMd);
   });
 
   it('ShopOverlay root.backgroundColor === colors.ui.bodyBg', () => {

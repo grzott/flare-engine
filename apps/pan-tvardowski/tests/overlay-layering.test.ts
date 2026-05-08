@@ -18,12 +18,12 @@
 import { describe, expect, test } from 'bun:test';
 import type { GameConfig } from '@flare-engine/react';
 
+import { rawStyles as achievementsRaw } from '../src/hud/AchievementsOverlay.styles';
 import { rawStyles as bootRaw } from '../src/hud/BootOverlay.styles';
 import { rawStyles as dialogueRaw } from '../src/hud/DialogueOverlay.styles';
 import { rawStyles as hudRaw } from '../src/hud/Hud.styles';
 import { rawStyles as menuRaw } from '../src/hud/MenuOverlay.styles';
 import { rawStyles as paywallRaw } from '../src/hud/PaywallOverlay.styles';
-import { overlayBase } from '../src/theme';
 
 // Pixel 7 + react-native-skia: full-screen RN overlays need elevation > 0
 // to consistently paint above the Skia Canvas. The wider smoke-test bug
@@ -49,8 +49,8 @@ function assertLifted(name: string, root: ElevatedRoot): void {
 }
 
 describe('overlay layering — full-screen overlays paint above the Skia Canvas', () => {
-  test('shared overlayBase.root is elevated', () => {
-    assertLifted('overlayBase.root', overlayBase.root as ElevatedRoot);
+  test('AchievementsOverlay root is elevated', () => {
+    assertLifted('AchievementsOverlay.root', achievementsRaw.root as ElevatedRoot);
   });
 
   test('BootOverlay root is elevated', () => {

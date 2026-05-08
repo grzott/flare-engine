@@ -1,5 +1,4 @@
 import { colors } from '../theme/colors';
-import { overlayBase } from '../theme/overlays';
 import { spacing } from '../theme/spacing';
 
 export const rawStyles = {
@@ -10,7 +9,11 @@ export const rawStyles = {
     justifyContent: 'center' as const,
     padding: spacing.xl,
   },
-  panel: overlayBase.panelMd,
+  panel: {
+    alignSelf: 'stretch' as const,
+    maxWidth: spacing.panelMdWidth,
+    width: '100%' as const,
+  },
   title: { marginBottom: spacing.xl },
   row: {
     flexDirection: 'row' as const,

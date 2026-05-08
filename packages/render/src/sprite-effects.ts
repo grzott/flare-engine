@@ -57,13 +57,23 @@ export interface CustomShaderEffect extends SpriteEffect {
   readonly uniforms: ShaderUniforms;
 }
 
+/** Water surface effect — animated UV-displaced sprite with foam crests. */
+export interface WaterEffect extends SpriteEffect {
+  readonly type: 'water';
+  readonly color: SpriteColor;
+  readonly foamColor: SpriteColor;
+  readonly waveSpeed: number;
+  readonly waveAmplitude: number;
+}
+
 /** Any concrete sprite effect. */
 export type AnySpriteEffect =
   | TintEffect
   | FlashEffect
   | GrayscaleEffect
   | OutlineEffect
-  | CustomShaderEffect;
+  | CustomShaderEffect
+  | WaterEffect;
 
 /** Create a tint effect. */
 export function tint(color: SpriteColor, amount: number): TintEffect {
@@ -90,6 +100,17 @@ export function outline(color: SpriteColor, width: number): OutlineEffect {
  *  frames to animate parameters. */
 export function custom(shader: CompiledShader, uniforms: ShaderUniforms): CustomShaderEffect {
   return { type: 'custom', shader, uniforms };
+}
+
+/** Create a water surface effect. Time is passed to the renderer each frame
+ *  via `beginFrame(w, h, time)` — the effect itself is time-invariant. */
+export function water(
+  color: SpriteColor,
+  foamColor: SpriteColor,
+  waveSpeed: number,
+  waveAmplitude: number,
+): WaterEffect {
+  return { type: 'water', color, foamColor, waveSpeed, waveAmplitude };
 }
 
 /**

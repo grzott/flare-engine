@@ -27,15 +27,19 @@ export {
   type CompiledShader,
   type ShaderUniforms,
   type CustomShaderEffect,
+  type WaterEffect,
   type AnySpriteEffect,
   tint,
   flash,
   grayscale,
   outline,
   custom,
+  water,
   updateEffect,
   flashIntensity,
 } from './sprite-effects.js';
+
+export { WATER_SKSL } from './shaders.js';
 
 export {
   type Glyph,

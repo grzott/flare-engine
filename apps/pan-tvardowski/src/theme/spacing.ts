@@ -1,21 +1,3 @@
-export const spacing = {
-  xs: 2,
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  xxl: 20,
-  xxxl: 24,
-  hudCornerX: 16,
-  hudCornerY: 32,
-  hudGap: 12,
-  panelLgWidth: 440,
-  panelMdWidth: 420,
-  panelPadding: 16,
-  panelBorderRadius: 6,
-  bossBarHeight: 8,
-  minibossBarHeight: 6,
-  weaponMeterHeight: 6,
-  buttonPaddingH: 20,
-  buttonPaddingV: 10,
-} as const;
+import { THEME_SPEC } from '../visual-spec/theme';
+
+export const spacing = THEME_SPEC.spacing;

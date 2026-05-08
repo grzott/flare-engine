@@ -1,3 +1,7 @@
+import { THEME_SPEC } from '../visual-spec/theme';
+
+const spec = THEME_SPEC.typography;
+
 export const fontFamily = {
   serif: 'EBGaramond_500Medium',
   serifItalic: 'EBGaramond_500Medium_Italic',
@@ -8,66 +12,21 @@ export const fontFamily = {
   monoMedium: 'JetBrainsMono_500Medium',
 } as const;
 
+// Strip spec-only `italic` metadata field from lede before forwarding to RN StyleSheet
+const { italic: _ledeMeta, ...ledeForRn } = spec.lede;
+
 export const typography = {
-  displayXl: {
-    fontFamily: fontFamily.serif,
-    fontSize: 132,
-    fontWeight: '500' as const,
-    lineHeight: 121,
-    letterSpacing: -2.64,
-  },
-  displayL: {
-    fontFamily: fontFamily.serif,
-    fontSize: 72,
-    fontWeight: '500' as const,
-  },
-  displayM: {
-    fontFamily: fontFamily.serif,
-    fontSize: 56,
-    fontWeight: '500' as const,
-  },
-  lede: {
-    fontFamily: fontFamily.serifItalic,
-    fontSize: 28,
-    fontWeight: '500' as const,
-  },
-  bodyL: {
-    fontFamily: fontFamily.sans,
-    fontSize: 22,
-    fontWeight: '400' as const,
-  },
-  bodyM: {
-    fontFamily: fontFamily.sans,
-    fontSize: 18,
-    fontWeight: '400' as const,
-  },
-  bodyS: {
-    fontFamily: fontFamily.sans,
-    fontSize: 15,
-    fontWeight: '400' as const,
-  },
-  label: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 14,
-    fontWeight: '700' as const,
-  },
-  monoHud: {
-    fontFamily: fontFamily.monoMedium,
-    fontSize: 13,
-    fontWeight: '500' as const,
-    letterSpacing: 0.26,
-  },
-  monoDebug: {
-    fontFamily: fontFamily.mono,
-    fontSize: 11,
-    fontWeight: '400' as const,
-  },
-  smallcap: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: 12,
-    fontWeight: '600' as const,
-    letterSpacing: 2.64,
-  },
+  displayXl: spec.displayXl,
+  displayL: spec.displayL,
+  displayM: spec.displayM,
+  lede: ledeForRn,
+  bodyL: spec.bodyL,
+  bodyM: spec.bodyM,
+  bodyS: spec.bodyS,
+  label: spec.label,
+  monoHud: spec.monoHud,
+  monoDebug: spec.monoDebug,
+  smallcap: spec.smallcap,
   // @deprecated use displayM
   h1: {
     fontFamily: fontFamily.serif,

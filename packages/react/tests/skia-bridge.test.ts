@@ -3,6 +3,7 @@ import type { SkImageLike } from '@flare-engine/assets';
 import type {
   CustomShaderEffect,
   FlashEffect,
+  FogEffect,
   GrayscaleEffect,
   OutlineEffect,
   SpriteDrawCommand,
@@ -354,6 +355,7 @@ beforeEach(() => {
   beginRecordingBoundsArgs = [];
   runtimeEffectMakeCalls = 0;
   currentMockWaterEffect = null;
+  currentMockFogEffect = null;
 });
 
 describe('createSkiaFrameRenderer', () => {
@@ -791,5 +793,117 @@ describe('createSkiaFrameRenderer — water effect', () => {
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
     const uniforms = currentMockWaterEffect?.makeShaderCalls[0];
     expect(uniforms?.[10]).toBeCloseTo(1.5);
+  });
+});
+
+interface MockFogRuntimeEffect {
+  makeShaderCalls: Array<readonly number[]>;
+  makeCount: number;
+  makeShader(uniforms: number[]): MockShader;
+}
+
+let currentMockFogEffect: MockFogRuntimeEffect | null = null;
+
+function makeMockFogRuntimeEffect(): MockFogRuntimeEffect {
+  const effect: MockFogRuntimeEffect = {
+    makeShaderCalls: [],
+    makeCount: 0,
+    makeShader(u) {
+      this.makeShaderCalls.push([...u]);
+      return { uniforms: [...u] };
+    },
+  };
+  return effect;
+}
+
+function makeMockSkiaWithFogRuntimeEffect(): SkiaModuleLike {
+  const base = makeMockSkia();
+  currentMockFogEffect = makeMockFogRuntimeEffect();
+  const fogRef = currentMockFogEffect;
+  return {
+    ...base,
+    RuntimeEffect: {
+      Make(_sksl: string): MockFogRuntimeEffect {
+        runtimeEffectMakeCalls++;
+        fogRef.makeCount++;
+        return fogRef;
+      },
+    } as unknown as NonNullable<SkiaModuleLike['RuntimeEffect']>,
+  };
+}
+
+describe('createSkiaFrameRenderer — fog effect', () => {
+  it('dispatch hit — drawAtlas with FogEffect calls makeShader on the compiled fog runtime effect', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFogRuntimeEffect());
+    bridge.beginFrame(800, 600);
+    const effect: FogEffect = {
+      type: 'fog',
+      color: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+      density: 0.5,
+      speed: 0.3,
+      scale: 2.0,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    expect(currentMockFogEffect?.makeShaderCalls).toHaveLength(1);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paint.shader).not.toBeNull();
+  });
+
+  it('lazy cache reuse — RuntimeEffect.Make called exactly once across two frames with fog', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFogRuntimeEffect());
+    const effect: FogEffect = {
+      type: 'fog',
+      color: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+      density: 0.5,
+      speed: 0.3,
+      scale: 2.0,
+    };
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    bridge.endFrame();
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    bridge.endFrame();
+    expect(runtimeEffectMakeCalls).toBe(1);
+    expect(currentMockFogEffect?.makeShaderCalls).toHaveLength(2);
+  });
+
+  it('uniform packing — 9-float array with color/density/speed/scale/time', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFogRuntimeEffect());
+    bridge.beginFrame(800, 600, 3.0);
+    const effect: FogEffect = {
+      type: 'fog',
+      color: { r: 0.2, g: 0.4, b: 0.6, a: 1 },
+      density: 0.7,
+      speed: 1.1,
+      scale: 3.5,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const uniforms = currentMockFogEffect?.makeShaderCalls[0];
+    expect(uniforms).toHaveLength(9);
+    expect(uniforms?.[0]).toBe(0);
+    expect(uniforms?.[1]).toBe(0);
+    expect(uniforms?.[2]).toBeCloseTo(0.2);
+    expect(uniforms?.[3]).toBeCloseTo(0.4);
+    expect(uniforms?.[4]).toBeCloseTo(0.6);
+    expect(uniforms?.[5]).toBeCloseTo(0.7);
+    expect(uniforms?.[6]).toBeCloseTo(1.1);
+    expect(uniforms?.[7]).toBeCloseTo(3.5);
+    expect(uniforms?.[8]).toBeCloseTo(3.0);
+  });
+
+  it('no-op on missing Skia RuntimeEffect — fog returns defaultPaint without throwing', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const effect: FogEffect = {
+      type: 'fog',
+      color: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+      density: 0.5,
+      speed: 0.3,
+      scale: 2.0,
+    };
+    expect(() => bridge.drawAtlas(mockImage(), [cmd({ effect })])).not.toThrow();
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paint.id).toBe(1);
   });
 });

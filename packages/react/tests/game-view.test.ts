@@ -204,6 +204,7 @@ mock.module('@flare-engine/render', () => ({
   Sprite: { id: 1, bit: 2, name: 'Sprite', create: () => ({}) },
   createRenderSystem: () => () => {},
   WATER_SKSL: '',
+  FOG_SKSL: '',
 }));
 
 mock.module('@flare-engine/audio', () => ({

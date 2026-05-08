@@ -3,7 +3,9 @@ import {
   type AnySpriteEffect,
   type CanvasLike,
   type CustomShaderEffect,
+  FOG_SKSL,
   type FlashEffect,
+  type FogEffect,
   type GrayscaleEffect,
   type OutlineEffect,
   type SpriteColor,
@@ -109,6 +111,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   let customPaint: SkPaint | null = null;
   let waterPaint: SkPaint | null = null;
   let waterRuntimeEffect: SkRuntimeEffect | null = null;
+  let fogPaint: SkPaint | null = null;
+  let fogRuntimeEffect: SkRuntimeEffect | null = null;
 
   // Reused across frames via beginRecording / finishRecording cycles.
   const recorder: SkPictureRecorder = Skia.PictureRecorder();
@@ -148,6 +152,11 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   //                     foamColor.r, foamColor.g, foamColor.b,
   //                     waveSpeed, waveAmplitude, time]
   const waterUniforms: number[] = new Array(11).fill(0);
+
+  // Pre-allocated 9-float uniform buffer for the fog effect.
+  // Declaration order: [resW, resH, color.r, color.g, color.b,
+  //                     density, speed, scale, time]
+  const fogUniforms: number[] = new Array(9).fill(0);
 
   let currentFrameTime = 0;
   let current: SkCanvas | null = null;
@@ -260,6 +269,27 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     return waterPaint;
   }
 
+  function applyFog(effect: FogEffect, time: number): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (fogRuntimeEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(FOG_SKSL);
+      if (compiled === null) return defaultPaint;
+      fogRuntimeEffect = compiled;
+    }
+    if (fogPaint === null) fogPaint = Skia.Paint();
+    fogUniforms[0] = 0;
+    fogUniforms[1] = 0;
+    fogUniforms[2] = effect.color.r;
+    fogUniforms[3] = effect.color.g;
+    fogUniforms[4] = effect.color.b;
+    fogUniforms[5] = effect.density;
+    fogUniforms[6] = effect.speed;
+    fogUniforms[7] = effect.scale;
+    fogUniforms[8] = time;
+    fogPaint.setShader(fogRuntimeEffect.makeShader(fogUniforms));
+    return fogPaint;
+  }
+
   function drawOutlined(
     canvas: SkCanvas,
     image: SkImage,
@@ -293,6 +323,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
         return applyCustom(effect);
       case 'water':
         return applyWater(effect, currentFrameTime);
+      case 'fog':
+        return applyFog(effect, currentFrameTime);
       case 'outline':
         // Outline is drawn via a multi-pass path; this branch is only reached
         // if a caller bypasses `drawOutlined`. Return the outline paint so

@@ -2902,3 +2902,41 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #119 "Render-WaterEffect: new typed WaterEffect kind in AnySpriteEffect union"
 
 ---
+
+## Session 119 — 2026-05-08 (scope: [engine])
+
+**Goal (from sessions.md row #119):** Render-WaterEffect: new typed `WaterEffect` kind in AnySpriteEffect union — `water({ color, foamColor, waveSpeed, waveAmplitude })` factory; SkSL constants in new packages/render/src/shaders.ts (Skia-agnostic strings, mirrors postfx pattern); skia-bridge gains applyWater dispatch + lazy SkRuntimeEffect cache + per-frame uniform packing; reusable, no game-specific assumptions
+
+**Touched files**
+- `packages/render/src/shaders.ts` (NEW — `WATER_SKSL` SkSL source export)
+- `packages/render/src/sprite-effects.ts` (`WaterEffect` type + `water()` factory added to `AnySpriteEffect` union)
+- `packages/render/src/index.ts` (`WATER_SKSL`, `WaterEffect` re-exported)
+- `packages/render/tests/water-effect.test.ts` (NEW — 3 tests: factory shape, `updateEffect` identity, exhaustive switch discrimination)
+- `packages/react/src/skia-bridge.ts` (`applyWater` dispatch, lazy `SkRuntimeEffect` cache, per-frame uniform packing, `beginFrame` optional `time` param)
+- `packages/react/tests/skia-bridge.test.ts` (+6 water-dispatch tests)
+- `packages/react/tests/game-view.test.ts` (mock-stability fix: `WATER_SKSL: ''` added to `@flare-engine/render` mock to prevent module-mock contamination)
+- `packages/react/tests/safe-area.test.ts` (same mock-stability fix)
+- `docs/design/api-specs.md` (water factory row added under `@flare-engine/render` SpriteEffects)
+
+**Drift note:** `packages/react/tests/game-view.test.ts` and `packages/react/tests/safe-area.test.ts` are outside the session's declared `touched paths`. Both are co-located test-infra updates required to prevent the new `WATER_SKSL` export from leaking between mocked imports in the test suite. Accepted — no scope drift in production code.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — Biome via Turbo)
+- typecheck: ✅ (73/73 tasks, 0 errors — tsc --noEmit direct per-package + full turbo)
+- test: ✅ (+9 new: 3 render + 6 react; render 100 pass 0 fail; react 56 pass 0 fail; PT 712 pass 0 fail; 77 turbo tasks green)
+- build: ✅ (39/39 FULL TURBO)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #119 row added: render 97 → 100 tests, react 50 → 56 tests
+- `docs/plans/build-plan.md` — no change; Phase 3 (Rendering) already ✅ DONE; additive sprite-effect enhancement within existing phase, no phase-state transition
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(render): WaterEffect type, water() factory, WATER_SKSL shader source`
+2. `feat(react): skia-bridge water dispatch, lazy cache, per-frame uniforms`
+3. `test(render): 3 tests for WaterEffect factory and type discrimination`
+4. `test(react): 6 water dispatch tests + mock stability fixes`
+5. `docs(refs): session 119 row in builder-reference and api-specs water entry`
+
+**Next session:** #120 "Render-FogEffect: new typed FogEffect kind in AnySpriteEffect union"
+
+---

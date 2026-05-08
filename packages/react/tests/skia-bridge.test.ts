@@ -7,6 +7,7 @@ import type {
   OutlineEffect,
   SpriteDrawCommand,
   TintEffect,
+  WaterEffect,
 } from '@flare-engine/render';
 import { type SkiaModuleLike, createSkiaFrameRenderer } from '../src/skia-bridge.js';
 
@@ -288,6 +289,43 @@ function makeMockRuntimeEffect(
   return effect;
 }
 
+interface MockWaterRuntimeEffect {
+  makeShaderCalls: Array<readonly number[]>;
+  makeCount: number;
+  makeShader(uniforms: number[]): MockShader;
+}
+
+let runtimeEffectMakeCalls = 0;
+let currentMockWaterEffect: MockWaterRuntimeEffect | null = null;
+
+function makeMockWaterRuntimeEffect(): MockWaterRuntimeEffect {
+  const effect: MockWaterRuntimeEffect = {
+    makeShaderCalls: [],
+    makeCount: 0,
+    makeShader(u) {
+      this.makeShaderCalls.push([...u]);
+      return { uniforms: [...u] };
+    },
+  };
+  return effect;
+}
+
+function makeMockSkiaWithRuntimeEffect(): SkiaModuleLike {
+  const base = makeMockSkia();
+  currentMockWaterEffect = makeMockWaterRuntimeEffect();
+  const waterRef = currentMockWaterEffect;
+  return {
+    ...base,
+    RuntimeEffect: {
+      Make(_sksl: string): MockWaterRuntimeEffect {
+        runtimeEffectMakeCalls++;
+        waterRef.makeCount++;
+        return waterRef;
+      },
+    } as unknown as NonNullable<SkiaModuleLike['RuntimeEffect']>,
+  };
+}
+
 function cmd(partial: Partial<SpriteDrawCommand>): SpriteDrawCommand {
   return {
     image: mockImage(),
@@ -314,6 +352,8 @@ beforeEach(() => {
   colorFilterMatrixCalls = [];
   currentMockCanvas = null;
   beginRecordingBoundsArgs = [];
+  runtimeEffectMakeCalls = 0;
+  currentMockWaterEffect = null;
 });
 
 describe('createSkiaFrameRenderer', () => {
@@ -642,5 +682,114 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     expect(paintCount).toBe(paintsAfterWarmup);
     expect(xywhCount).toBe(xywhAfterWarmup);
     expect(rsxformCount).toBe(rsxformAfterWarmup);
+  });
+});
+
+describe('createSkiaFrameRenderer — water effect', () => {
+  it('dispatch hit — drawAtlas with WaterEffect calls makeShader on the compiled water runtime effect', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithRuntimeEffect());
+    bridge.beginFrame(800, 600);
+    const effect: WaterEffect = {
+      type: 'water',
+      color: { r: 0.1, g: 0.3, b: 0.8, a: 1 },
+      foamColor: { r: 1, g: 1, b: 1, a: 1 },
+      waveSpeed: 1.5,
+      waveAmplitude: 0.02,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    expect(currentMockWaterEffect?.makeShaderCalls).toHaveLength(1);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paint.shader).not.toBeNull();
+  });
+
+  it('lazy cache reuse — RuntimeEffect.Make called exactly once across two drawAtlas calls', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithRuntimeEffect());
+    bridge.beginFrame(800, 600);
+    const effect: WaterEffect = {
+      type: 'water',
+      color: { r: 0.1, g: 0.3, b: 0.8, a: 1 },
+      foamColor: { r: 1, g: 1, b: 1, a: 1 },
+      waveSpeed: 1.5,
+      waveAmplitude: 0.02,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    expect(runtimeEffectMakeCalls).toBe(1);
+    expect(currentMockWaterEffect?.makeShaderCalls).toHaveLength(2);
+  });
+
+  it('uniform packing — makeShader called with 11-float array matching color, foamColor, waveSpeed, waveAmplitude, time', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithRuntimeEffect());
+    bridge.beginFrame(800, 600, 2.5);
+    const effect: WaterEffect = {
+      type: 'water',
+      color: { r: 0.2, g: 0.4, b: 0.6, a: 1 },
+      foamColor: { r: 0.9, g: 0.95, b: 1.0, a: 1 },
+      waveSpeed: 1.2,
+      waveAmplitude: 0.03,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const uniforms = currentMockWaterEffect?.makeShaderCalls[0];
+    expect(uniforms).toHaveLength(11);
+    // slots [2..4] = color.rgb
+    expect(uniforms?.[2]).toBeCloseTo(0.2);
+    expect(uniforms?.[3]).toBeCloseTo(0.4);
+    expect(uniforms?.[4]).toBeCloseTo(0.6);
+    // slots [5..7] = foamColor.rgb
+    expect(uniforms?.[5]).toBeCloseTo(0.9);
+    expect(uniforms?.[6]).toBeCloseTo(0.95);
+    expect(uniforms?.[7]).toBeCloseTo(1.0);
+    // slot [8] = waveSpeed
+    expect(uniforms?.[8]).toBeCloseTo(1.2);
+    // slot [9] = waveAmplitude
+    expect(uniforms?.[9]).toBeCloseTo(0.03);
+    // slot [10] = time
+    expect(uniforms?.[10]).toBeCloseTo(2.5);
+  });
+
+  it('no-op on missing Skia RuntimeEffect — water returns defaultPaint without throwing', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const effect: WaterEffect = {
+      type: 'water',
+      color: { r: 0.1, g: 0.3, b: 0.8, a: 1 },
+      foamColor: { r: 1, g: 1, b: 1, a: 1 },
+      waveSpeed: 1.5,
+      waveAmplitude: 0.02,
+    };
+    expect(() => bridge.drawAtlas(mockImage(), [cmd({ effect })])).not.toThrow();
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    // defaultPaint has id=1 (first Paint allocated)
+    expect(call?.paint.id).toBe(1);
+  });
+
+  it('default time=0 — beginFrame(w, h) without time packs 0 into time uniform slot [10]', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithRuntimeEffect());
+    bridge.beginFrame(800, 600);
+    const effect: WaterEffect = {
+      type: 'water',
+      color: { r: 0, g: 0, b: 1, a: 1 },
+      foamColor: { r: 1, g: 1, b: 1, a: 1 },
+      waveSpeed: 1.0,
+      waveAmplitude: 0.01,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const uniforms = currentMockWaterEffect?.makeShaderCalls[0];
+    expect(uniforms?.[10]).toBe(0);
+  });
+
+  it('beginFrame(w, h, 1.5) packs 1.5 into time uniform slot [10]', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithRuntimeEffect());
+    bridge.beginFrame(800, 600, 1.5);
+    const effect: WaterEffect = {
+      type: 'water',
+      color: { r: 0, g: 0, b: 1, a: 1 },
+      foamColor: { r: 1, g: 1, b: 1, a: 1 },
+      waveSpeed: 1.0,
+      waveAmplitude: 0.01,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const uniforms = currentMockWaterEffect?.makeShaderCalls[0];
+    expect(uniforms?.[10]).toBeCloseTo(1.5);
   });
 });

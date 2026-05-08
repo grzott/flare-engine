@@ -2940,3 +2940,42 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #120 "Render-FogEffect: new typed FogEffect kind in AnySpriteEffect union"
 
 ---
+
+## Session 120 — 2026-05-08 (scope: [engine])
+
+**Goal (from sessions.md row #120):** Render-FogEffect: new typed `FogEffect` kind in AnySpriteEffect union — `fog({ color, density, speed, scale })` factory; animated FBM noise SkSL; same render+react cross-package pattern as #119; SkSL constant joins shaders.ts; bridge gains applyFog dispatch + lazy compile cache
+
+**Touched files**
+- `packages/render/src/sprite-effects.ts` (`FogEffect` interface + `fog()` factory + `AnySpriteEffect` union extension)
+- `packages/render/src/shaders.ts` (`FOG_SKSL` 4-octave FBM noise SkSL constant added)
+- `packages/render/src/index.ts` (`FogEffect`, `fog`, `FOG_SKSL` re-exported)
+- `packages/render/tests/fog-effect.test.ts` (NEW — 4 tests: factory defaults, explicit overrides, time-invariant updateEffect, exhaustive switch discrimination)
+- `packages/react/src/skia-bridge.ts` (`applyFog` dispatch, lazy `SkRuntimeEffect` cache, per-frame uniform packing — 9 floats: res×2, color×3, density, speed, scale, time)
+- `packages/react/tests/skia-bridge.test.ts` (+4 fog-dispatch tests: dispatch hit, lazy cache reuse, uniform packing, no-op on missing RuntimeEffect)
+- `packages/react/tests/game-view.test.ts` (mock-stability fix: `FOG_SKSL: ''` added to `@flare-engine/render` mock)
+- `packages/react/tests/safe-area.test.ts` (same mock-stability fix)
+- `docs/design/api-specs.md` (fog factory clause appended to `@flare-engine/render` SpriteEffects row)
+- `docs/references/builder-reference.md` (Session #120 row added)
+
+**Drift note:** `packages/react/tests/game-view.test.ts` and `packages/react/tests/safe-area.test.ts` are outside the session's declared `touched paths`. Both are co-located test-infra updates required to prevent the new `FOG_SKSL` export from leaking between mocked imports in the test suite. Accepted — same class as #119 mock-stability fixes, no scope drift in production code.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — Biome via Turbo)
+- typecheck: ✅ (73/73 tasks, 0 errors — tsc --noEmit per-package + full turbo)
+- test: ✅ (+8 new: 4 render + 4 react; render 104 pass 0 fail; react 60 pass 0 fail; 77 turbo tasks green)
+- build: ✅ (39/39 FULL TURBO)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #120 row added: render 100 → 104 tests, react 56 → 60 tests
+- `docs/plans/build-plan.md` — no change; Phase 3 (Rendering) already ✅ DONE; additive sprite-effect enhancement within existing phase, no phase-state transition
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(render): FogEffect type, fog() factory, FOG_SKSL shader source`
+2. `feat(react): skia-bridge fog dispatch, lazy cache, per-frame uniforms`
+3. `test(render): 4 tests for FogEffect factory and type discrimination`
+4. `test(react): 4 fog dispatch tests + mock stability fixes`
+5. `docs(refs): session 120 row in builder-reference and api-specs fog entry`
+
+**Next session:** #121 "PT-Z3-Refactor: delete tilemap-bg.ts; spawn WaterEffect + FogEffect background entities for Z3"
+
+---

@@ -4,6 +4,7 @@ import {
   BLOOM_SKSL,
   CHROMATIC_ABERRATION_SKSL,
   CRT_SKSL,
+  GOD_RAYS_SKSL,
   GRAYSCALE_FLASH_SKSL,
   VIGNETTE_SKSL,
 } from './shaders.js';
@@ -60,6 +61,7 @@ const SKSL_SOURCE: Record<EffectKind, string> = {
   'chromatic-aberration': CHROMATIC_ABERRATION_SKSL,
   crt: CRT_SKSL,
   bloom: BLOOM_SKSL,
+  'god-rays': GOD_RAYS_SKSL,
 };
 
 /**
@@ -123,6 +125,23 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
       return new Float32Array([width, height, u.scanlineIntensity, u.curvature]);
     case 'bloom':
       return new Float32Array([width, height, u.threshold, u.intensity]);
+    case 'god-rays': {
+      const samples = Math.max(1, Math.min(64, Math.round(u.samples)));
+      return new Float32Array([
+        width,
+        height,
+        u.lightX,
+        u.lightY,
+        u.color[0],
+        u.color[1],
+        u.color[2],
+        u.intensity,
+        u.decay,
+        u.density,
+        u.weight,
+        samples,
+      ]);
+    }
   }
 }
 
@@ -151,6 +170,10 @@ function scaleIntensity(kind: EffectKind, packed: Float32Array, scale: number): 
     case 'bloom':
       // [width, height, threshold, intensity]
       packed[3] = (packed[3] ?? 0) * scale;
+      return;
+    case 'god-rays':
+      // [width, height, lightX, lightY, colorR, colorG, colorB, intensity, decay, density, weight, samples]
+      packed[7] = (packed[7] ?? 0) * scale;
       return;
   }
 }

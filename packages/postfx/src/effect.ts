@@ -6,7 +6,13 @@
  * RuntimeEffect at draw time.
  */
 
-export type EffectKind = 'vignette' | 'grayscale-flash' | 'chromatic-aberration' | 'crt' | 'bloom';
+export type EffectKind =
+  | 'vignette'
+  | 'grayscale-flash'
+  | 'chromatic-aberration'
+  | 'crt'
+  | 'bloom'
+  | 'god-rays';
 
 export interface VignetteUniforms {
   intensity: number;
@@ -31,12 +37,24 @@ export interface BloomUniforms {
   intensity: number;
 }
 
+export interface GodRaysUniforms {
+  lightX: number;
+  lightY: number;
+  color: readonly [number, number, number];
+  intensity: number;
+  decay: number;
+  density: number;
+  weight: number;
+  samples: number;
+}
+
 export type EffectUniforms =
   | ({ kind: 'vignette' } & VignetteUniforms)
   | ({ kind: 'grayscale-flash' } & GrayscaleFlashUniforms)
   | ({ kind: 'chromatic-aberration' } & ChromaticAberrationUniforms)
   | ({ kind: 'crt' } & CrtUniforms)
-  | ({ kind: 'bloom' } & BloomUniforms);
+  | ({ kind: 'bloom' } & BloomUniforms)
+  | ({ kind: 'god-rays' } & GodRaysUniforms);
 
 export interface Effect {
   id: string;
@@ -98,6 +116,24 @@ export function createBloom(id = 'bloom', uniforms: Partial<BloomUniforms> = {})
       kind: 'bloom',
       threshold: uniforms.threshold ?? 0.7,
       intensity: uniforms.intensity ?? 0.6,
+    },
+  };
+}
+
+export function createGodRays(id = 'god-rays', uniforms: Partial<GodRaysUniforms> = {}): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'god-rays',
+      lightX: uniforms.lightX ?? 0.5,
+      lightY: uniforms.lightY ?? 0.1,
+      color: uniforms.color ?? [1.0, 0.95, 0.8],
+      intensity: uniforms.intensity ?? 0.6,
+      decay: uniforms.decay ?? 0.96,
+      density: uniforms.density ?? 0.5,
+      weight: uniforms.weight ?? 0.4,
+      samples: uniforms.samples ?? 48,
     },
   };
 }

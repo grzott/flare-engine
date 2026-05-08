@@ -89,3 +89,41 @@ half4 main(float2 coord) {
   return half4(c.rgb + boost, c.a);
 }
 `;
+
+// Single-pass volumetric light scattering (GPU Gems 3, Ch. 13).
+// MAX_SAMPLES is a compile-time constant to satisfy SkSL's loop-count rules;
+// the runtime-provided u_samples float drives an early break so the actual
+// sample count is configurable without recompilation.
+export const GOD_RAYS_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float2 u_lightPos;
+uniform float3 u_color;
+uniform float u_intensity;
+uniform float u_decay;
+uniform float u_density;
+uniform float u_weight;
+uniform float u_samples;
+
+const int MAX_SAMPLES = 64;
+
+half4 main(float2 coord) {
+  float2 uv = coord / resolution;
+  float2 delta = (u_lightPos - uv) * u_density / float(MAX_SAMPLES);
+  float2 sampleUv = uv;
+  float illuminationDecay = 1.0;
+  half3 accumulated = half3(0.0);
+
+  for (int i = 0; i < MAX_SAMPLES; i++) {
+    if (float(i) >= u_samples) break;
+    sampleUv += delta;
+    half3 s = src.eval(sampleUv * resolution).rgb;
+    accumulated += s * half(illuminationDecay) * half(u_weight);
+    illuminationDecay *= u_decay;
+  }
+
+  half4 orig = src.eval(coord);
+  half3 rays = accumulated * half3(u_color) * half(u_weight) * half(u_intensity);
+  return half4(orig.rgb + rays, orig.a);
+}
+`;

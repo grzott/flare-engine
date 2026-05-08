@@ -18,6 +18,19 @@ import {
  * keeps the orchestration pure so it is fully testable without a GPU.
  */
 
+/**
+ * Structural stub for a Skia image handle. No Skia import is needed here
+ * because the renderer owns the actual image objects; this type exists only
+ * so callers can assign real `SkImage` values to `CompiledPass.children`
+ * without coupling this package to a specific Skia version.
+ */
+export interface SkImageLike {
+  readonly _skImageBrand?: never;
+}
+
+/** Shared frozen sentinel — every pass with no extra children points here. */
+const EMPTY_CHILDREN: readonly SkImageLike[] = Object.freeze([]);
+
 export interface SkiaRuntimeEffectLike {
   makeShader(uniforms: Float32Array, children: unknown[]): unknown | null;
 }
@@ -53,6 +66,16 @@ export interface CompiledPass {
   kind: EffectKind;
   shader: SkiaRuntimeEffectLike;
   uniforms: Float32Array;
+  /**
+   * Convention A — extra sampler children only (excludes src).
+   *
+   * The renderer binds the implicit scene texture as `children[0]` at draw
+   * time. This array holds any *additional* `uniform shader` slots declared
+   * beyond `src` (e.g. a noise texture, an LUT). For every built-in effect
+   * today there are no extra children, so this is always the frozen
+   * `EMPTY_CHILDREN` sentinel — enabling zero-alloc sharing across passes.
+   */
+  children: readonly SkImageLike[];
 }
 
 const SKSL_SOURCE: Record<EffectKind, string> = {
@@ -102,6 +125,7 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
           kind: effect.uniforms.kind,
           shader: compiled.effect,
           uniforms,
+          children: EMPTY_CHILDREN,
         });
       }
       return out;

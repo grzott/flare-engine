@@ -19,6 +19,7 @@ export {
 export { EffectChain } from './chain.js';
 
 export {
+  type SkImageLike,
   type SkiaRuntimeEffectLike,
   type SkiaRuntimeEffectFactory,
   type SkiaPostFxModuleLike,

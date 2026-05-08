@@ -2772,3 +2772,67 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #102 "VS-S8 cleanup + workflow lock: delete shape-catalogue.ts + palette.ts + theme/{colors,spacing,typography,overlays,shapes}.ts; update CLAUDE.md + visual-reference.md to lock visual-spec workflow"
 
 ---
+
+## Session 109 — 2026-05-08 (scope: [game])
+
+**Goal (from sessions.md row #109):** VS-S8a theme-shim flatten: repoint 10 .styles.ts + .tsx consumers from `../theme` to direct `../visual-spec/theme` imports; delete theme/index.ts barrel re-exports of colors/spacing/typography; keep theme/ dir alive for overlayBase + fontFamily until #110
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/BootOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/PaywallOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/PrivacyOverlay.styles.ts`
+- `apps/pan-tvardowski/src/theme/index.ts`
+- `apps/pan-tvardowski/tests/achievements-folio.test.ts` ⊞
+- `apps/pan-tvardowski/tests/boot-screen.test.ts` ⊞
+- `apps/pan-tvardowski/tests/codex-folio.test.ts` ⊞
+- `apps/pan-tvardowski/tests/credits-screen.test.ts` ⊞
+- `apps/pan-tvardowski/tests/dialogue-folio.test.ts` ⊞
+- `apps/pan-tvardowski/tests/hud-layout.test.ts` ⊞
+- `apps/pan-tvardowski/tests/inventory-folio.test.ts` ⊞
+- `apps/pan-tvardowski/tests/menu-screen.test.ts` ⊞
+- `apps/pan-tvardowski/tests/paywall-folio.test.ts` ⊞
+- `apps/pan-tvardowski/tests/runtime-rewire-integration.test.ts` ⊞
+- `apps/pan-tvardowski/tests/shop-folio.test.ts` ⊞
+- `apps/pan-tvardowski/tests/theme-hud.test.ts` ⊞
+- `apps/pan-tvardowski/tests/theme-overlays.test.ts` ⊞
+- `apps/pan-tvardowski/tests/theme.test.ts` ⊞
+- `apps/pan-tvardowski/tests/weapon-meter.test.ts` ⊞
+- `apps/pan-tvardowski/tests/zone-banner.test.ts` ⊞
+- `docs/plans/sessions.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (293 files, 0 errors — Biome via Turbo; pan-tvardowski cache miss, fresh run)
+- typecheck: ✅ (0 errors — tsc --noEmit)
+- test: ✅ (+0 new, total 712 — 712 pass, 0 fail, 8572 expect() calls)
+- build: ✅ (native advisory echo; no JS artefact)
+- device smoke: deferred to session #107 PT-DeviceSmoke (standing convention; this is a refactor session with no new runtime behaviour)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry appended: `**2026-05-08** — **VS-S8a complete (session #109).**` (12 hud files repointed, theme/index.ts slimmed, 17 tests repointed, gate results)
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row updated: VS-S8a session #109 appended to session list, last closed 2026-05-08, 712 tests green
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new engine-coverage ticks (VS-S8a is internal cleanup, not a milestone deliverable)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (internal cleanup, no release gate satisfied)
+
+**Drift footnote (⊞)**
+17 test files under `apps/pan-tvardowski/tests/` repointed beyond the declared 12 `src/hud/` files. Mechanical typecheck-forced fix: when `theme/index.ts` stopped re-exporting `colors`/`spacing`/`typography`, any test importing those names from `'../theme'` broke typecheck. Import paths updated only — no assertion changes. Treated as in-scope per session-close invocation. Full list recorded in sessions.md footnote.
+
+**Followup — sessions #110 + #111 sequencing bug.** #110 declares "delete `theme/typography.ts` (zero consumers)" but typography + fontFamily still have many consumers post-#109 (they just import from `'../theme/typography'` directly now). #111 then plans to delete 6 deprecated aliases from `theme/typography.ts` — which presumes the file still exists. Resolution path: either drop typography.ts from #110's delete list (only kill `overlays.ts` + `shapes.ts`) or run #111 before #110. Raise with `game-planner` before #110 starts.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `refactor(pt): VS-S8a repoint hud + tests to theme submodules`
+2. `chore(pt): VS-S8a slim theme barrel to overlayBase shapes fontFamily`
+
+**Next session:** #110 "VS-S8b overlayBase + fontFamily absorption: inline overlayBase, move fontFamily, delete theme/overlays.ts + theme/typography.ts + theme/shapes.ts"
+
+---

@@ -66,6 +66,15 @@ export interface WaterEffect extends SpriteEffect {
   readonly waveAmplitude: number;
 }
 
+/** Fog / volumetric haze effect — animated FBM noise layered over a sprite. */
+export interface FogEffect extends SpriteEffect {
+  readonly type: 'fog';
+  readonly color: SpriteColor;
+  readonly density: number;
+  readonly speed: number;
+  readonly scale: number;
+}
+
 /** Any concrete sprite effect. */
 export type AnySpriteEffect =
   | TintEffect
@@ -73,7 +82,8 @@ export type AnySpriteEffect =
   | GrayscaleEffect
   | OutlineEffect
   | CustomShaderEffect
-  | WaterEffect;
+  | WaterEffect
+  | FogEffect;
 
 /** Create a tint effect. */
 export function tint(color: SpriteColor, amount: number): TintEffect {
@@ -111,6 +121,12 @@ export function water(
   waveAmplitude: number,
 ): WaterEffect {
   return { type: 'water', color, foamColor, waveSpeed, waveAmplitude };
+}
+
+/** Create a fog / volumetric haze effect. Time is passed to the renderer each
+ *  frame via `beginFrame(w, h, time)` — the effect itself is time-invariant. */
+export function fog(color: SpriteColor, density = 0.5, speed = 0.3, scale = 2.0): FogEffect {
+  return { type: 'fog', color, density, speed, scale };
 }
 
 /**

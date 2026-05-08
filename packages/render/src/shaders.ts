@@ -1,3 +1,48 @@
+export const FOG_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float3 color;
+uniform float density;
+uniform float speed;
+uniform float scale;
+uniform float time;
+
+float hash(float2 p) {
+  return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
+}
+
+float valueNoise(float2 p) {
+  float2 i = floor(p);
+  float2 f = fract(p);
+  float2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + float2(1.0, 0.0));
+  float c = hash(i + float2(0.0, 1.0));
+  float d = hash(i + float2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(float2 p) {
+  float value = 0.0;
+  float amplitude = 0.5;
+  for (int i = 0; i < 4; i++) {
+    value += amplitude * valueNoise(p);
+    p *= 2.0;
+    amplitude *= 0.5;
+  }
+  return value;
+}
+
+half4 main(float2 coord) {
+  float2 uv = coord / max(resolution, float2(1.0));
+  float2 drift = float2(time * speed, 0.3 * time * speed);
+  float n = clamp(fbm(uv * scale + drift), 0.0, 1.0);
+  half4 srcColor = src.eval(coord);
+  half3 blended = mix(srcColor.rgb, half3(color.r, color.g, color.b), half(density * n));
+  return half4(blended, srcColor.a);
+}
+`;
+
 export const WATER_SKSL = /* sksl */ `
 uniform shader src;
 uniform float2 resolution;

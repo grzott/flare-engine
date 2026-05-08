@@ -1,4 +1,6 @@
-import { colors, fontFamily, spacing, typography } from '../theme';
+import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
+import { fontFamily, typography } from '../theme/typography';
 
 export const rawStyles = {
   root: {

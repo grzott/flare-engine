@@ -1,4 +1,4 @@
-import { colors } from '../theme';
+import { colors } from '../theme/colors';
 
 export const rawStyles = {
   wrapper: {

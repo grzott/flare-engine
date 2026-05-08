@@ -8,7 +8,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PT_CATALOG, SKU_FULL_GAME, SKU_SUPPORTER_PACK } from '../iap/catalog';
 import { type GameState, gameState, stateChanged } from '../state';
-import { colors, spacing, typography } from '../theme';
+import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 import { rawStyles } from './ShopOverlay.styles';
 
 const styles = StyleSheet.create(rawStyles);

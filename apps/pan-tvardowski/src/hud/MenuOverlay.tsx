@@ -13,7 +13,7 @@ import { formatLastPlayed, slotPreview } from '../save/preview';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
 import type { FireButtonSide, JoystickSide } from '../state';
-import { spacing } from '../theme';
+import { spacing } from '../theme/spacing';
 import { rawStyles } from './MenuOverlay.styles';
 import { PrivacyOverlay } from './PrivacyOverlay';
 import { CREDITS_SECTIONS } from './credits-sections';

@@ -1,4 +1,6 @@
-import { colors, overlayBase, spacing } from '../theme';
+import { colors } from '../theme/colors';
+import { overlayBase } from '../theme/overlays';
+import { spacing } from '../theme/spacing';
 
 export const rawStyles = {
   root: overlayBase.root,

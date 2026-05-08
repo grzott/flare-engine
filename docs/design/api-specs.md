@@ -387,12 +387,12 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 | API                                                                            | Description                                                                                                                                                            |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EffectKind`                                                                   | Union: `'vignette' \| 'grayscale-flash' \| 'chromatic-aberration' \| 'crt' \| 'bloom'`.                                                                                |
-| `createVignette` / `createGrayscaleFlash` / `createChromaticAberration` / `createCrt` / `createBloom` | Factory helpers returning an `Effect` (id, enabled, typed uniforms). Sensible defaults per effect.                                                |
+| `EffectKind`                                                                   | Union: `'vignette' \| 'grayscale-flash' \| 'chromatic-aberration' \| 'crt' \| 'bloom' \| 'god-rays'`.                                                                  |
+| `createVignette` / `createGrayscaleFlash` / `createChromaticAberration` / `createCrt` / `createBloom` / `createGodRays` | Factory helpers returning an `Effect` (id, enabled, typed uniforms). Sensible defaults per effect. `createGodRays` defaults: `lightX=0.5`, `lightY=0.1`, `color=[1,0.95,0.8]`, `intensity=0.6`, `decay=0.96`, `density=0.5`, `weight=0.4`, `samples=48`. |
 | `EffectChain`                                                                  | Ordered pipeline: `add` / `insert` / `remove` / `move` / `get` / `setEnabled` / `setUniforms` (kind-checked) / `clear` / `enabled()` iterator. Duplicate ids throw.    |
 | `createPostFxRuntime(skia)`                                                    | Compiles shaders against a Skia-like module: `compile(kind)` (cached), `packUniforms(effect, w, h)` (per-kind Float32Array), `buildPass(chain, w, h) → CompiledPass[]`. |
 | `CompiledPass`                                                                 | `{ id, kind, shader, uniforms }` — what the renderer consumes per-effect per-frame.                                                                                    |
-| `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` | Raw shader sources, exported for advanced consumers.                                                                                      |
+| `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` / `GOD_RAYS_SKSL` | Raw shader sources, exported for advanced consumers.                                                                                |
 
 **Implementation notes:**
 
@@ -400,6 +400,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 - `supported` reports whether `Skia.RuntimeEffect.Make` exists; callers fall through to a no-op pipeline when unsupported (explicit fallback path).
 - Uniform layouts are per-kind Float32Arrays (see `packUniforms`); resolution is passed via `(width, height)` for shaders that need it.
 - Actual pixel composition is the renderer's job — this package owns effect state, uniform packing, and shader caching.
+- `GOD_RAYS_SKSL` is a single-pass volumetric light scattering shader (GPU Gems 3, Ch. 13). SkSL requires loop counts to be compile-time constants, so the shader declares `const int MAX_SAMPLES = 64` and uses an `if (float(i) >= u_samples) break` guard inside the loop — this keeps the shader compilable while allowing runtime-configurable sample counts (1–64, clamped at pack time).
 
 
 ---

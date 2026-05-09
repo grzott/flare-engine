@@ -41,25 +41,25 @@ Folio reference: [folio-04-palette.png](../../../docs/references/pan-tvardowski/
 
 | Token | Folio IV hex | Code symbol | File:line | Status |
 |---|---|---|---|---|
-| `gold` | `#C9A24A` | `colors.ui.gold` / `colors.ui.primary` | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4), `:19` | done — #67 |
-| `crimson` | `#D4213D` | `colors.ui.crimson` / `colors.ui.secondary` | [`src/theme/colors.ts:6`](../src/theme/colors.ts#L6), `:21` | done — #67 |
-| `hazard` | `#E84B2A` | `colors.ui.hazard` / `colors.ui.hazardOrange` | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5), `:23` | done — #67 |
-| `ink-black` | `#0E1A12` | `colors.ui.inkBlack` / `colors.ui.bodyBg` | [`src/theme/colors.ts:11`](../src/theme/colors.ts#L11), `:25` | done — #67 |
-| `parchment` | `#E8DCC4` | `colors.ui.parchment` / `colors.ui.neutralLight` | [`src/theme/colors.ts:7`](../src/theme/colors.ts#L7), `:28` | done — #67 |
-| `bog-green` | `#1A2E1F` | `colors.ui.bogGreen` | [`src/theme/colors.ts:26`](../src/theme/colors.ts#L26) | done — #67 |
-| `moss` | `#243A29` | `colors.ui.moss` | [`src/theme/colors.ts:27`](../src/theme/colors.ts#L27) | done — #67 |
-| `verdigris` | `#4A7A6A` | `colors.ui.verdigris` | [`src/theme/colors.ts:31`](../src/theme/colors.ts#L31) | done — #67 |
-| `bone` | `#C7B89A` | `colors.ui.bone` | [`src/theme/colors.ts:32`](../src/theme/colors.ts#L32) | done — #67 |
-| `rust` | `#8B3A1F` | `colors.ui.rust` | [`src/theme/colors.ts:33`](../src/theme/colors.ts#L33) | done — #67 |
-| `terracotta` | `#B05A3C` | `colors.ui.terracotta` | [`src/theme/colors.ts:34`](../src/theme/colors.ts#L34) | done — #67 |
-| `void` | `#050A07` | `colors.ui.void` | [`src/theme/colors.ts:35`](../src/theme/colors.ts#L35) | done — #67 |
-| `parchment-2` | `#D9C9A8` | `colors.ui.parchment2` / `colors.ui.neutralMid` | [`src/theme/colors.ts:8`](../src/theme/colors.ts#L8), `:29` | done — #67 |
-| `parchment-dim` | `#A8997A` | `colors.ui.parchmentDim` | [`src/theme/colors.ts:30`](../src/theme/colors.ts#L30) | done — #67 |
-| `gold-deep` | `#8E6F2C` | `colors.ui.goldDeep` | [`src/theme/colors.ts:20`](../src/theme/colors.ts#L20) | done — #67 |
-| `crimson-deep` | `#7A1322` | `colors.ui.crimsonDeep` | [`src/theme/colors.ts:22`](../src/theme/colors.ts#L22) | done — #67 |
-| `safe` | `#6FA66B` | `colors.ui.safe` | [`src/theme/colors.ts:24`](../src/theme/colors.ts#L24) | done — #67 |
+| `gold` | `#C9A24A` | `UI_COLORS.gold` / `UI_COLORS.primary` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `crimson` | `#D4213D` | `UI_COLORS.crimson` / `UI_COLORS.secondary` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `hazard` | `#E84B2A` | `UI_COLORS.hazard` / `UI_COLORS.hazardOrange` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `ink-black` | `#0E1A12` | `UI_COLORS.inkBlack` / `UI_COLORS.bodyBg` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `parchment` | `#E8DCC4` | `UI_COLORS.parchment` / `UI_COLORS.neutralLight` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `bog-green` | `#1A2E1F` | `UI_COLORS.bogGreen` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `moss` | `#243A29` | `UI_COLORS.moss` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `verdigris` | `#4A7A6A` | `UI_COLORS.verdigris` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `bone` | `#C7B89A` | `UI_COLORS.bone` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `rust` | `#8B3A1F` | `UI_COLORS.rust` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `terracotta` | `#B05A3C` | `UI_COLORS.terracotta` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `void` | `#050A07` | `UI_COLORS.void` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `parchment-2` | `#D9C9A8` | `UI_COLORS.parchment2` / `UI_COLORS.neutralMid` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `parchment-dim` | `#A8997A` | `UI_COLORS.parchmentDim` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `gold-deep` | `#8E6F2C` | `UI_COLORS.goldDeep` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `crimson-deep` | `#7A1322` | `UI_COLORS.crimsonDeep` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
+| `safe` | `#6FA66B` | `UI_COLORS.safe` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — #67 |
 
-All tokens in [`src/theme/colors.ts`](../src/theme/colors.ts) — done at session #67.
+All tokens in [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) (`UI_COLORS`) — done at session #67; migrated to `visual-spec/` at session #114.
 
 ### HP-bar anchor disambiguation
 
@@ -83,7 +83,7 @@ Color-blind tokens land at session #74.
 
 ## §2 — Typography
 
-Updated 2026-04-29 (session #68): all three font families loaded via `@expo-google-fonts/*` + `useFonts` in `App.tsx`; type scale rewritten with 11 first-class keys + 6 deprecated aliases in `src/theme/typography.ts`. `mono.hud` corrected to 13 px (was listed as 18 px in earlier draft).
+Updated 2026-04-29 (session #68): all three font families loaded via `@expo-google-fonts/*` + `useFonts` in `App.tsx`; type scale rewritten with 11 first-class keys + 6 deprecated aliases. `mono.hud` corrected to 13 px (was listed as 18 px in earlier draft). Migrated to [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) (`TYPOGRAPHY`) at session #114; deprecated aliases deleted.
 
 ### Font families
 
@@ -99,17 +99,17 @@ All three families are loaded via `@expo-google-fonts/*` packages and wired via 
 
 | Role | Deck name | Deck size | Code today | Code file:line | Status |
 |---|---|---|---|---|---|
-| Display XL | `display-xl` | 132 px | `displayXl fontSize:132` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
-| Display L | `display-l` | 72 px | `displayL fontSize:72` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
-| Display M | `display-m` | 56 px | `displayM fontSize:56` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
-| Heading 1 | `h1` | 28 px | `h1 fontSize:28` (deprecated alias — use `displayM`) | [`src/theme/typography.ts:72`](../src/theme/typography.ts#L72) | matches |
-| Heading 2 | `h2` | 26 px | `h2 fontSize:26` (deprecated alias — use `displayM`) | [`src/theme/typography.ts:78`](../src/theme/typography.ts#L78) | matches |
-| Heading 3 | `h3` | 20 px | `h3 fontSize:20` (deprecated alias — use `bodyL`) | [`src/theme/typography.ts:83`](../src/theme/typography.ts#L83) | matches |
-| Body | `body` | 14 px | `body fontSize:14` (deprecated alias — use `bodyM`) | [`src/theme/typography.ts:90`](../src/theme/typography.ts#L90) | matches |
-| Label | `label` | 14 px | `label fontSize:14` | [`src/theme/typography.ts:49`](../src/theme/typography.ts#L49) | matches |
-| Caption | `caption` | 12 px | `caption fontSize:12` (deprecated alias — use `smallcap`) | [`src/theme/typography.ts:95`](../src/theme/typography.ts#L95) | matches |
-| Mono HUD | `mono-hud` | 13 px | `monoHud fontSize:13` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
-| Mono debug | `mono-debug` | 11 px | `monoDebug fontSize:11` | [`src/theme/typography.ts`](../src/theme/typography.ts) | done — session #68 |
+| Display XL | `display-xl` | 132 px | `TYPOGRAPHY.displayXl fontSize:132` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — session #68 |
+| Display L | `display-l` | 72 px | `TYPOGRAPHY.displayL fontSize:72` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — session #68 |
+| Display M | `display-m` | 56 px | `TYPOGRAPHY.displayM fontSize:56` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — session #68 |
+| Heading 1 | `h1` | 28 px | deprecated alias `h1` — deleted at session #114 | — | deleted — #114 |
+| Heading 2 | `h2` | 26 px | deprecated alias `h2` — deleted at session #114 | — | deleted — #114 |
+| Heading 3 | `h3` | 20 px | deprecated alias `h3` — deleted at session #114 | — | deleted — #114 |
+| Body | `body` | 14 px | deprecated alias `body` — deleted at session #114 | — | deleted — #114 |
+| Label | `label` | 14 px | `TYPOGRAPHY.label fontSize:14` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — session #68 |
+| Caption | `caption` | 12 px | deprecated alias `caption` — deleted at session #114 | — | deleted — #114 |
+| Mono HUD | `mono-hud` | 13 px | `TYPOGRAPHY.monoHud fontSize:13` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — session #68 |
+| Mono debug | `mono-debug` | 11 px | `TYPOGRAPHY.monoDebug fontSize:11` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | done — session #68 |
 
 ### PL diacritics
 
@@ -145,10 +145,10 @@ Live `src/shape-catalogue.ts` fully implements this rule across all 29 ships. Mi
 | Cross (`polyline`) | Weapon salt | — | 2 px |
 | Bolt (`polyline`) | Projectile piorun | — | 1.5 px |
 
-Stroke-width constants: [`src/theme/shapes.ts:1`](../src/theme/shapes.ts#L1)
+Stroke-width constants: [`src/visual-spec/shapes.ts:1`](../src/visual-spec/shapes.ts#L1)
 `thin=1 / medium=1.5 / thick=2 / veryThick=3`
 
-Collision radii: [`src/theme/shapes.ts:3–11`](../src/theme/shapes.ts#L3)
+Collision radii: [`src/visual-spec/shapes.ts:3`](../src/visual-spec/shapes.ts#L3)
 
 ### Game-entity shapes table (44 entities)
 
@@ -349,7 +349,7 @@ Folio reference: [folio-09-hud-play-frame.png](../../../docs/references/pan-tvar
 
 HUD component: [`src/hud/Hud.tsx`](../src/hud/Hud.tsx).
 Styles: [`src/hud/Hud.styles.ts`](../src/hud/Hud.styles.ts).
-Spacing tokens: [`src/theme/spacing.ts`](../src/theme/spacing.ts).
+Spacing tokens: [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) (`THEME_SPEC.spacing`).
 
 ### Folio IX target layout (mobile portrait 9:16) — done at sessions #71, #79
 
@@ -495,7 +495,7 @@ When `reducedMotion = true` (flag lives in `gameState.settings.reducedMotion` mi
 | `cb.hazard` | `#FFD23F` | enemy bullet + hazard fill |
 | `cb.safe` | `#4FC3F7` | pickups + safe-zone markers |
 
-Tokens in [`src/theme/colors.ts`](../src/theme/colors.ts) — done at session #74.
+Tokens in [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) (`UI_COLORS.cb`) — done at session #74; migrated to `visual-spec/` at session #114.
 
 ### Contrast floor
 
@@ -541,17 +541,17 @@ Items requiring code changes. Code-today links use live line numbers as of 2026-
 
 | Topic | Deck spec | Code today | File:line | Severity | Target session | Status |
 |---|---|---|---|---|---|---|
-| Gold token | `#C9A24A` | `#C9A24A` (matches) | [`src/theme/colors.ts:4`](../src/theme/colors.ts#L4) | critical | #67 | done |
-| Hazard token | `#E84B2A` | `#E84B2A` (matches) | [`src/theme/colors.ts:5`](../src/theme/colors.ts#L5) | critical | #67 | done |
-| Ink-black bg | `#0E1A12` | `rgba(14,26,18,0.92)` | [`src/theme/colors.ts:11`](../src/theme/colors.ts#L11) | high | #67 | done |
-| 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | all present | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | done |
+| Gold token | `#C9A24A` | `#C9A24A` (matches) | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
+| Hazard token | `#E84B2A` | `#E84B2A` (matches) | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
+| Ink-black bg | `#0E1A12` | `rgba(14,26,18,0.92)` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | high | #67 | done |
+| 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | all present | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
 | Zone ARGB palettes | per-zone deck tokens | aligned at #72 | [`src/palette.ts:52`](../src/palette.ts#L52) | high | #72 | done |
-| Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/theme/typography.ts`](../src/theme/typography.ts) | high | #68 | done |
+| Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | high | #68 | done |
 | Icon system | 30 stamps (MaterialCommunityIcons) | Skia shapes only | — | — | — | intentional |
 | Particles | 5-tier up to 256p | 5-tier system live | [`src/fx/explosions.ts`](../src/fx/explosions.ts) | high | #70 | done |
 | PostFX Skia | bloom+vignette always-on | `skiaPostFx` wired as Skia | [`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) | high | #69 | done |
 | Boss per-phase palette | per-phase color in BOSS_SPECS | wired in all boss FSMs | `src/systems/boss/*.ts` | high | #73 | done |
-| Reduce-motion + cb tokens | 5-rule policy + cb.player/hazard/safe | all rules done, cb tokens present | [`src/theme/colors.ts`](../src/theme/colors.ts), [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
+| Reduce-motion + cb tokens | 5-rule policy + cb.player/hazard/safe | all rules done, cb tokens present | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts), [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
 
 ---
 
@@ -585,12 +585,12 @@ Punch-list of folio-vs-code gaps. Each row maps to a session row in [`docs/plans
 | # | Gap | Folio | Code locus | Severity | Session | Status |
 |---|---|---|---|---|---|---|
 | 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
-| 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/theme/colors.ts`](../src/theme/colors.ts) | critical | #67 | done |
+| 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
 | 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + #79 | done |
 | 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/palette.ts`](../src/palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | done |
 | 5 | Per-phase boss palette shift not wired (`PhaseScript` carries no color fields) | XIII | `src/systems/boss/*.ts` | high | #73 | done |
 | 6 | Reduced-motion rules 1–4 not implemented (rule 5 only) | XIV | [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
-| 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/theme/colors.ts`](../src/theme/colors.ts) | low | #74 | done |
+| 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | low | #74 | done |
 | 8 | Zone parallax stacks not yet audited against folio specs | XIIB | [`src/fx/ambience.ts`](../src/fx/ambience.ts), play-scene | medium | #84 | done |
 | 9 | Frame-budget per-scene caps not enforced by FPS watchdog | XV | [`src/perf/cold-start.ts`](../src/perf/cold-start.ts) + [`src/fx/budget.ts`](../src/fx/budget.ts) | medium | #75 | done |
 | 10 | Ship-anatomy 29-ship codex migration | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
@@ -611,11 +611,11 @@ Full folio-vs-code audit: 21 PNG folios cross-referenced against §1–§15 of t
 
 | Folio | Title | Code surface | Verdict | Notes |
 |-------|-------|--------------|---------|-------|
-| I | Cover / brand voice | `src/theme/colors.ts`, brand principles in §0.1 | ✓ | Ink-black bg, EB Garamond, crimson signature mark — all match §0.1. |
+| I | Cover / brand voice | `src/visual-spec/theme.ts` (`UI_COLORS`), brand principles in §0.1 | ✓ | Ink-black bg, EB Garamond, crimson signature mark — all match §0.1. |
 | II | Index — "A book in ten parts" | Scene registry (`src/scene-registry.ts`), section map in §0 | ✓ | All 10 deck chapters have corresponding §N entries in this document. |
-| III | Brand principles (5 rules) | `src/theme/colors.ts`, `src/a11y/reduced-motion.ts`, `src/fx/budget.ts` | ✓ | Darkness-canvas (#0E1A12 bg), crimson-as-ink (trail/sigil/flash only), recolor-before-redraw (ShipSpec hull+tint), diacritics (§2 PL char set), 60 fps gospel (≤1k draws/≤512p/≤3 postfx per §12) — all codified. |
-| IV | Palette — twelve pigments | `src/theme/colors.ts` | ✓ | All 12 folio pigments present at exact deck hexes; HP-bar anchor `#2a0810` disambiguation documented in §1. Session #67 migration complete. |
-| V | Typography — three voices | `src/theme/typography.ts` | ⚠ | Font families + sizes match folio V. Six deprecated aliases (h1/h2/h3/body/caption/xs) still in file; line-number anchors in §2 corrected in M2 of this session. |
+| III | Brand principles (5 rules) | `src/visual-spec/theme.ts` (`UI_COLORS`), `src/a11y/reduced-motion.ts`, `src/fx/budget.ts` | ✓ | Darkness-canvas (#0E1A12 bg), crimson-as-ink (trail/sigil/flash only), recolor-before-redraw (ShipSpec hull+tint), diacritics (§2 PL char set), 60 fps gospel (≤1k draws/≤512p/≤3 postfx per §12) — all codified. |
+| IV | Palette — twelve pigments | `src/visual-spec/theme.ts` (`UI_COLORS`) | ✓ | All 12 folio pigments present at exact deck hexes; HP-bar anchor `#2a0810` disambiguation documented in §1. Session #67 migration complete; theme/ shim deleted at session #114. |
+| V | Typography — three voices | `src/visual-spec/theme.ts` (`TYPOGRAPHY`) | ✓ | Font families + sizes match folio V. Six deprecated aliases (h1/h2/h3/body/caption/xs) deleted at session #114. |
 | VI | Skia language — no sprites, only shapes | `src/shape-catalogue.ts`, `@flare-engine/shapes` | ⚠ | 6 primitive types confirmed. §3 glow-helper cross-links referenced deleted files `src/shapes.ts` + `src/shapes-draw.ts`; corrected in M2 to point at `@flare-engine/shapes` (session #92 migration). |
 | VIb | Explosions — 5 tiers | `src/fx/explosions.ts` | ✓ | 5-tier table (chip/pop/burst/detonation/cataclysm), particle counts, lifetimes, shake amplitudes, concurrent caps — all match folio VIb per §6. |
 | IX | HUD anatomy — play frame | `src/hud/Hud.tsx`, `src/hud/Hud.styles.ts` | n/a — device-smoke gate covers this | Slot layout, font roles, HP gradient, weapon meter, zone banner, boss bar: all wired per §7 code. Pixel alignment vs folio IX verified only on physical device (Galaxy A54 + iPhone 12). |
@@ -630,7 +630,7 @@ Full folio-vs-code audit: 21 PNG folios cross-referenced against §1–§15 of t
 | XIIIc | Weapons, artifacts, player ships | `src/shape-catalogue.ts` (weaponPickups + upgradePickups + ships sections) | ✓ | 4 weapon pickups, 6 upgrade pickups, 3 player ships (Kogut gold/Twardoń green/Bazyl blue) — all present with correct glow:friendly tags per folio XIIIc. |
 | XIIId | Weapon specs — 8 weapons, source of truth | `src/config/gameplay.ts`, `src/shape-catalogue.ts`, `src/localization/keys.ts` | ✓ (M1+M2 aligned; M3 locale keys done) | Folio XIIId silhouette alignment (M1) + unlock progression (M2) + 12 per-tier locale keys (M3) completed at session #95. Balance constants now match folio XIIID damage/cooldown/particle columns. Pixel-level projectile alignment still requires device smoke. |
 | XIIIf | Boss ships (8) | `src/shape-catalogue.ts` (bosses section, lines 208–297) | ✓ | All 8 boss ShipSpecs in violet hue family. Hull kinds match folio XIIIf (Boruta=moon/arch, Mefist=star-6, Lucyper=star-8, Baba=triangle, etc.). Weapon counts (2–4) correct. |
-| XIV | Motion + accessibility | `src/scenes/play.ts`, `src/hud/zone-banner.ts`, `src/a11y/reduced-motion.ts`, `src/theme/colors.ts` | ✓ | 5 easing assignments shipped (items 1/5/6/8/9); 4 engine gaps documented in §11 (items 2/3/4/7). 5-rule reduce-motion policy complete. Color-blind tokens (`cb.player/hazard/safe`) present. Contrast floor 14.2:1 maintained. |
+| XIV | Motion + accessibility | `src/scenes/play.ts`, `src/hud/zone-banner.ts`, `src/a11y/reduced-motion.ts`, `src/visual-spec/theme.ts` (`UI_COLORS`) | ✓ | 5 easing assignments shipped (items 1/5/6/8/9); 4 engine gaps documented in §11 (items 2/3/4/7). 5-rule reduce-motion policy complete. Color-blind tokens (`cb.player/hazard/safe`) present. Contrast floor 14.2:1 maintained. |
 | XV | Frame budget — per-scene caps | `src/fx/budget.ts`, `src/perf/cold-start.ts` | ✓ | Per-scene caps from folio XV encoded in `FRAME_BUDGET` constants; fps watchdog (< 55 fps over 3s → drop chromatic-ab); degradation policy per §12. Real-device measurement deferred to session #59 (PT-Perf). |
 
 ### Audit summary

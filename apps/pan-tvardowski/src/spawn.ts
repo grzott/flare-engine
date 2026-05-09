@@ -209,7 +209,7 @@ export function spawnBullet(
   const { world, coll, atlas } = ctx;
   const id = world.spawn();
   const isPlayer = ownerLayer === Layer.player;
-  const name = isPlayer ? 'player-bullet' : 'enemy-bullet';
+  const name = isPlayer ? 'player-bullet' : 'enemy-bullet-a';
   const mask = isPlayer ? Mask.playerBullet : Mask.enemyBullet;
   const layer = isPlayer ? Layer.playerBullet : Layer.enemyBullet;
   const f = frame(atlas.sheet, name);

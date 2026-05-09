@@ -1,5 +1,7 @@
 import type { A11yBridge } from '@flare-engine/a11y';
 import { type Tween, resetTween, tween, updateTween } from '@flare-engine/animation';
+import type { SpriteFrame } from '@flare-engine/assets';
+import { getFrame } from '@flare-engine/assets';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
@@ -49,6 +51,7 @@ import {
   updateZoneBanner,
 } from '../hud/zone-banner';
 import type { EntitlementFallbackHandler } from '../iap/fallback';
+import { Layer } from '../layers';
 import { burstExplosion } from '../particles';
 import type { SaveStore } from '../save/store';
 import {
@@ -132,6 +135,12 @@ const SHIP_SUB_SHAPES: Record<string, number> = {
   zwierciadlo: 4,
 };
 
+// Bullet flicker cadence state — module-level to survive scene re-entry.
+// Phase alternates at 8 Hz (125 ms period). Reset is intentionally not done
+// on zone start: a mid-sequence phase is imperceptible to the player.
+let bulletFlickerAccum = 0;
+let bulletFlickerPhase = 0;
+
 export interface AudioRef {
   current: AudioHandles | null;
 }
@@ -213,6 +222,9 @@ interface PlayState {
   gameOverTween: Tween;
   /** Folio XIV M1 item 5: combo-pulse tween (easeOutBack 120 ms). */
   comboPulseTween: Tween;
+  /** Session #151: pre-looked-up enemy-bullet sprite frames for zero-alloc flicker swap. */
+  bulletFrameA: SpriteFrame;
+  bulletFrameB: SpriteFrame;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -268,6 +280,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bossBarTween: { ...tween(0, 1, 0.6, easeOutExpo), done: true },
         gameOverTween: { ...tween(0, 1, 1.2, easeInCubic), done: true },
         comboPulseTween: { ...tween(1, 1.18, 0.12, easeOutBack), done: true },
+        bulletFrameA: (() => {
+          const f = getFrame(atlas.sheet, 'enemy-bullet-a');
+          if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet-a"');
+          return f;
+        })(),
+        bulletFrameB: (() => {
+          const f = getFrame(atlas.sheet, 'enemy-bullet-b');
+          if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet-b"');
+          return f;
+        })(),
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -840,6 +862,25 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             void ctx.scenes.go('game-over');
           },
         });
+
+        // Bullet flicker — 8 Hz phase alternation (§5 hazard-edge recipe).
+        // Advance accumulator unconditionally; swap enemy-bullet sprite frames.
+        bulletFlickerAccum += dt;
+        if (bulletFlickerAccum >= 0.125) {
+          bulletFlickerAccum -= 0.125;
+          bulletFlickerPhase ^= 1;
+        }
+        const targetFrame = gameState.settings.reducedMotion
+          ? s.bulletFrameA
+          : bulletFlickerPhase === 0
+            ? s.bulletFrameA
+            : s.bulletFrameB;
+        for (const bid of s.bulletQuery) {
+          const bd = ctx.world.get(bid, Bullet);
+          if (!bd || bd.ownerLayer === Layer.player) continue;
+          const sp = ctx.world.get(bid, Sprite);
+          if (sp) sp.frame = targetFrame;
+        }
 
         if (s.ambience) {
           const zp =

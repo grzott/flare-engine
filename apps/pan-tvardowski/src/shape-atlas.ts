@@ -88,7 +88,7 @@ function buildFrames(): FrameBuild[] {
     },
   });
   frames.push({
-    name: 'enemy-bullet',
+    name: 'enemy-bullet-a',
     w: 6,
     h: 10,
     draw: (Skia, canvas) => {
@@ -96,6 +96,24 @@ function buildFrames(): FrameBuild[] {
       argbTo(ATLAS_COLOR, 0xffff5522);
       paint.setColor(ATLAS_COLOR);
       canvas.drawRect(Skia.XYWHRect(0, 0, 6, 10), paint);
+    },
+  });
+  frames.push({
+    name: 'enemy-bullet-b',
+    w: 6,
+    h: 10,
+    draw: (Skia, canvas) => {
+      const paint = Skia.Paint();
+      argbTo(ATLAS_COLOR, 0xffff5522);
+      paint.setColor(ATLAS_COLOR);
+      canvas.drawRect(Skia.XYWHRect(0, 0, 6, 10), paint);
+      // Inner hazardOrange stroke at alpha 0.6 (ARGB 0x99E84B2A).
+      const stroke = Skia.Paint();
+      argbTo(ATLAS_COLOR, 0x99e84b2a);
+      stroke.setColor(ATLAS_COLOR);
+      stroke.setStyle(1); // PaintStyle.Stroke
+      stroke.setStrokeWidth(0.5);
+      canvas.drawRect(Skia.XYWHRect(0.25, 0.25, 5.5, 9.5), stroke);
     },
   });
   frames.push({

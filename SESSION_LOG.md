@@ -3209,4 +3209,68 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 **Next session:** #114 "VS-S8f delete theme/ directory: remove theme/colors.ts + theme/index.ts (last remnants); grep-validate zero orphan `from '../theme'` imports remain"
 
 ---
+
+## Session 114 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #114):** VS-S8f delete theme/ directory: remove theme/colors.ts + theme/index.ts (last remnants); grep-validate zero orphan `from '../theme'` imports remain
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/theme.ts` (UI_COLORS + TYPOGRAPHY exports added)
+- `apps/pan-tvardowski/src/theme/colors.ts` (deleted)
+- `apps/pan-tvardowski/src/theme/typography.ts` (deleted)
+- `apps/pan-tvardowski/src/theme/spacing.ts` (deleted)
+- `apps/pan-tvardowski/src/theme/index.ts` (deleted)
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/BootOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/PaywallOverlay.styles.ts`
+- `apps/pan-tvardowski/src/hud/PrivacyOverlay.styles.ts`
+- `apps/pan-tvardowski/tests/theme.test.ts` (deleted)
+- `apps/pan-tvardowski/tests/runtime-rewire-integration.test.ts`
+- `apps/pan-tvardowski/tests/` (16 additional test consumers repointed)
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+- `SESSION_LOG.md`
+
+**Deviations**
+1. Scope expanded from "delete theme/colors.ts + theme/index.ts" to "delete entire theme/ directory" — planner row goal text was wrong about state; 4 files existed, not 2; 12 src + 18 test consumers existed, not zero.
+2. `UI_COLORS` + `TYPOGRAPHY` exports added to `src/visual-spec/theme.ts` (not pre-listed) — required to absorb 14 derived alias tokens + nested `cb` sub-object absent from `THEME_SPEC.colors`.
+3. 12 src consumers repointed (10 `.styles.ts` + `MenuOverlay.tsx` + `ShopOverlay.tsx`) — not pre-listed in touched paths.
+4. 16 test consumers repointed + `tests/theme.test.ts` deleted — only `theme.test.ts` was pre-listed; repoints are mechanical typecheck-forced fixes.
+5. `apps/pan-tvardowski/docs/visual-reference.md` cross-links patched — partially absorbs scope from session #115 VS-S8g; #115 may shrink to punch-list tick only.
+6. `tests/runtime-rewire-integration.test.ts`: colors-shim + typography-shim describe-blocks deleted (became tautologies post-deletion); spacing-shim describe-block retained with tautology note.
+7. Target commits 2 → 5 (was 4 in approved split; +1 doc-sync commit added at /session-close per user direction). Test count 710 → 694 (−16 from deleted theme.test + dropped tautology blocks; approved drift).
+
+**Gates**
+- typecheck: ✅ (tsc --noEmit, silent exit)
+- lint: ✅ (biome check src/ tests/ — 292 files, 0 errors; root turbo lint 40/40 packages)
+- test: ✅ (694 pass / 0 fail / 8386 expects across 145 files)
+- build: ✅ (script is a native stub echo — `bun run android|ios` is the real device path)
+- device smoke: deferred — pure module-delete refactor, no new scenes or rendering; attested 2026-05-09 per convention from sessions #111/#112/#113
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8f Change log entry appended after VS-S8e entry; details theme/ directory delete, UI_COLORS + TYPOGRAPHY absorption, 12 src + 16 test consumers repointed, theme.test.ts deletion, tautology block drops, 694 tests green
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row updated: `+ VS-S8f theme/ directory delete (session #114)` appended; last-closed date updated to 2026-05-09; test count updated 710 → 694
+- `docs/plans/release-readiness-checklist.md` — no new ticks (VS-S8f is a refactor, not a release item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add UI_COLORS + TYPOGRAPHY to visual-spec/theme`
+2. `refactor(pan-tvardowski): repoint 12 consumers; delete theme/`
+3. `test(pan-tvardowski): repoint 16 tests; delete theme.test.ts`
+4. `docs(pan-tvardowski): repoint visual-reference.md to visual-spec`
+5. `docs(pan-tvardowski): VS-S8f change log + builder-reference mirror row`
+
+**Next session:** #115 "VS-S8g visual-reference.md update: repoint all file:line cross-links from theme/ + palette.ts + shape-catalogue.ts to visual-spec/ paths; flip §15 punch-list S8 rows to done"
+
+---
 ---

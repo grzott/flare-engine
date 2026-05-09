@@ -287,12 +287,12 @@ Both in [`src/fx/postfx.ts:19–20`](../src/fx/postfx.ts#L19).
 | Kind | Color | Alpha | Technique | Status |
 |---|---|---|---|---|
 | Friendly rim | `safe #6FA66B` | 0.25 (0x40) | oversized stroked ring at `r+4`, width 3 | done — session #69 |
-| Hazard edge | `hazardOrange #E84B2A` | 0.6 (0x99) | double-stroke at `r+1`/`r+2`, width 0.5 | done — session #69 |
+| Hazard edge | `hazardOrange #E84B2A` | 0.6 (0x99) | inner 0.5 px stroke on `enemy-bullet-b` atlas frame; 8 Hz alternation with `enemy-bullet-a` in play-scene | done — session #69 (glow helper) + #151 (bullet flicker) |
 
 Glow helpers: [`@flare-engine/shapes`](../../../packages/shapes/src/draw.ts) — `friendlyGlowArgb()`, `hazardGlowArgb()`, `applyFriendlyGlow()`, `applyHazardGlow()`. Migrated from deleted `src/shapes-draw.ts` at session #92.
 Glow field: [`@flare-engine/shapes`](../../../packages/shapes/src/types.ts) — `BaseSpec.glow?: 'friendly' | 'hazard'`. Migrated from deleted `src/shapes.ts` at session #92.
 11 entities tagged friendly: `kogut-zloty` (player), `iskry`/`piorun`/`sol-swiecona`/`znak-pentagramu` (weapon pickups), `czarna-ksiega`/`siedmiomilowe-buty`/`amulet-wegrowski`/`koguci-pioro`/`srebrna-tarcza`/`kamien-filozoficzny` (upgrade pickups).
-Flicker animation (enemy bullets): pending future session.
+Flicker animation (enemy bullets): done — session #151. Two atlas frames (`enemy-bullet-a` / `enemy-bullet-b`), 8 Hz phase swap in play-scene `onUpdate`, static frame-a under `reducedMotion`.
 
 ### Degradation rule
 
@@ -598,6 +598,7 @@ Punch-list of folio-vs-code gaps. Each row maps to a session row in [`docs/plans
 | 12 | Frontmatter folio X alignment (boot, menu, save-select, settings, credits) | X | frontmatter scenes in `src/scenes/` | high | sessions #80–#81 | done |
 | 13 | Easing assignments 9 items (4 engine gaps documented in §11) | XIV | [`src/scenes/play.ts`](../src/scenes/play.ts), [`src/hud/zone-banner.ts`](../src/hud/zone-banner.ts) | medium | #85 | done |
 | 14 | Typed visual-spec schema + `@flare-engine/shapes` engine package — architectural shift (sessions #91–#92). Introduces `src/visual-spec/` typed schema (HullPreset/ShipDef/BulletDef/WeaponDef/PickupDef/AnimationDef/ZoneVisualSpec/HudSpec/OverlaySpec/ScreenSpec/ThemeSpec), 14 schema-invariant tests, and `@flare-engine/shapes` with 12 atomic primitives (+ arc/annulus/trapezoid/path) replacing the deleted `src/shapes.ts` + `src/shapes-draw.ts`. Schema canary locked: SHA-256 `b056ac8e…` at S2 close. All §3 glow-helper and shape-type cross-links updated to point at `packages/shapes/src/`. | — (cross-cutting) | `src/visual-spec/{types,index,zone-*.ts}`, `packages/shapes/src/{types,draw,bounds,index}.ts` | architectural | sessions #91–#92 | done — 2026-05-07 |
+| 15 | Flicker animation — hazard-edge recipe §5: enemy-bullet 8 Hz frame alternation. Two atlas frames `enemy-bullet-a` (fill only) + `enemy-bullet-b` (fill + inner 0.5 px hazardOrange stroke at alpha 0.6). Phase driven by dt-accumulator in play-scene `onUpdate`; `reducedMotion` locks to frame-a. | — | [`src/shape-atlas.ts`](../src/shape-atlas.ts), [`src/spawn.ts`](../src/spawn.ts), [`src/scenes/play.ts`](../src/scenes/play.ts) | low | #151 | done — 2026-05-10 |
 
 ### Verification
 

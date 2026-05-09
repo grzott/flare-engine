@@ -3525,3 +3525,36 @@ Declared touched paths were `apps/pan-tvardowski/docs/{device-smoke.md,perf-base
 **Next session:** #108 PT-DocSync-Final — update visual-reference.md + builder-reference.md mirror row + build-plan changelog for all sessions #93–#107
 
 ---
+
+## Session 151 — 2026-05-10 (scope: [game])
+
+**Goal (from sessions.md row #151):** PT-BulletFlicker: implement 8Hz dual-stroke flicker on enemy bullets per §5 spec (hazard chromatic edge); inner stroke hazardOrange 0.5px alternates visibility at ~8Hz via frame counter mod
+
+**Touched files**
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/spawn.ts` (pre-approved drift — forced by atlas-frame rename `enemy-bullet` → `enemy-bullet-a`)
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `apps/pan-tvardowski/tests/bullet-flicker.test.ts` (new)
+
+**Gates**
+- lint: ✅ (biome 290 files, 0 errors)
+- typecheck: ✅ (0 errors)
+- test: ✅ (+3 new, total 715)
+- build: ✅ (native build — echo only, as expected)
+- device smoke: deferred per #156 in-flight; functional smoke gated until that session diagnoses the Pixel 10 boot→menu stall; cold-start TTI gate unaffected (bullet-flicker runs only during play, not during boot)
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §5 hazard-edge recipe updated with `enemy-bullet-b` frame detail + session #151 done note; §15 row #15 flipped to `done — 2026-05-10`
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry `2026-05-10 — PT-BulletFlicker complete (session #151)` appended
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row extended with `+ PT-BulletFlicker (session #151)`; test count updated 712 → 715; last-closed date unchanged (2026-05-10)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation polish; not a release gate item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): dual-stroke enemy-bullet flicker at 8Hz`
+2. `test(pan-tvardowski): bullet-flicker phase, frame-name, reduce-motion`
+3. `docs(pan-tvardowski): tick §5 + §15 bullet flicker done #151`
+
+**Next session:** #152 PT-SpiralCollapse — spiral-collapse death animation for elite enemies
+
+---

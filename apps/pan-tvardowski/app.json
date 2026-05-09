@@ -8,7 +8,6 @@
       "policy": "appVersion"
     },
     "orientation": "portrait",
-    "newArchEnabled": true,
     "userInterfaceStyle": "dark",
     "updates": {
       "url": "https://u.expo.dev/TODO"
@@ -29,15 +28,20 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "pantvardowski" }],
+          "data": [
+            {
+              "scheme": "pantvardowski"
+            }
+          ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
     "extra": {
       "eas": {
-        "projectId": "TODO"
+        "projectId": "202e2a64-a737-48c1-8d71-0e7b8b6a3395"
       }
-    }
+    },
+    "owner": "grzott"
   }
 }

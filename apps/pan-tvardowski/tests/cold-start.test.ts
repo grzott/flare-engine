@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
+  dumpBootTrace,
   getBootTrace,
   markBootMilestone,
   markBootStart,
@@ -45,5 +46,48 @@ describe('cold-start trace', () => {
   test('markBootMilestone before markBootStart is a no-op', () => {
     markBootMilestone('premature');
     expect(getBootTrace()).toHaveLength(0);
+  });
+});
+
+describe('dumpBootTrace', () => {
+  const originalLog = console.log;
+  const captured: string[] = [];
+
+  beforeEach(() => {
+    resetBootTrace();
+    captured.length = 0;
+    console.log = (msg: unknown) => {
+      captured.push(String(msg));
+    };
+  });
+
+  afterEach(() => {
+    console.log = originalLog;
+  });
+
+  test('emits one [boot-trace] line with total + per-step deltas', () => {
+    markBootStart();
+    markBootMilestone('a');
+    markBootMilestone('b');
+    dumpBootTrace();
+    expect(captured).toHaveLength(1);
+    const line = captured[0] ?? '';
+    expect(line.startsWith('[boot-trace] total=')).toBe(true);
+    expect(line).toContain('boot-start->a=');
+    expect(line).toContain('a->b=');
+    expect(line).toMatch(/total=\d+\.\dms/);
+  });
+
+  test('no-op when trace empty (no markBootStart called)', () => {
+    dumpBootTrace();
+    expect(captured).toHaveLength(0);
+  });
+
+  test('label override surfaces in the emitted line tag', () => {
+    markBootStart();
+    markBootMilestone('first-frame');
+    dumpBootTrace('cold-start-pixel7');
+    const line = captured[0] ?? '';
+    expect(line.startsWith('[cold-start-pixel7] ')).toBe(true);
   });
 });

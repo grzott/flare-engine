@@ -61,11 +61,8 @@ describe('typography type scale', () => {
 describe('deprecated aliases', () => {
   const aliases = ['h1', 'h2', 'h3', 'body', 'caption', 'xs'] as const;
   for (const key of aliases) {
-    test(`${key} is still defined`, () => {
-      const role = (typography as Record<string, AnyRole>)[key] as AnyRole;
-      expect(role).toBeDefined();
-      expect(role.fontFamily.length).toBeGreaterThan(0);
-      expect(role.fontSize).toBeGreaterThan(0);
+    test(`${key} is absent`, () => {
+      expect((typography as Record<string, unknown>)[key]).toBeUndefined();
     });
   }
 });

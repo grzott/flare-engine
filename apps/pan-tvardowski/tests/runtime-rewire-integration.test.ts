@@ -89,12 +89,10 @@ describe('VS-S7 runtime rewire — typography shim', () => {
     expect(typography.lede.fontFamily).toBe(THEME_SPEC.typography.lede.fontFamily);
   });
 
-  test('six deprecated aliases are present', () => {
+  test('six deprecated aliases are absent', () => {
     const deprecated = ['h1', 'h2', 'h3', 'body', 'caption', 'xs'] as const;
     for (const key of deprecated) {
-      const tok = typography[key] as { fontFamily: string; fontSize: number };
-      expect(typeof tok.fontFamily, `typography.${key}.fontFamily`).toBe('string');
-      expect(tok.fontSize, `typography.${key}.fontSize`).toBeGreaterThan(0);
+      expect((typography as Record<string, unknown>)[key], `typography.${key}`).toBeUndefined();
     }
   });
 });

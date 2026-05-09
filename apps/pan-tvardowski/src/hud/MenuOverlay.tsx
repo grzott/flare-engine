@@ -13,7 +13,7 @@ import { formatLastPlayed, slotPreview } from '../save/preview';
 import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
 import type { FireButtonSide, JoystickSide } from '../state';
-import { spacing } from '../theme/spacing';
+import { THEME_SPEC } from '../visual-spec/theme';
 import { rawStyles } from './MenuOverlay.styles';
 import { PrivacyOverlay } from './PrivacyOverlay';
 import { CREDITS_SECTIONS } from './credits-sections';
@@ -431,7 +431,7 @@ function SettingsView({
             </View>
           </View>
 
-          <View style={{ marginTop: spacing.lg }}>
+          <View style={{ marginTop: THEME_SPEC.spacing.lg }}>
             <Button
               label={t('settings.privacy.title')}
               variant="secondary"
@@ -441,7 +441,7 @@ function SettingsView({
         </ScrollView>
 
         {entitlementStore !== undefined ? (
-          <View style={{ marginTop: spacing.lg }}>
+          <View style={{ marginTop: THEME_SPEC.spacing.lg }}>
             <RestorePurchasesButton
               entitlementStore={entitlementStore}
               strings={{
@@ -466,7 +466,7 @@ function SettingsView({
             />
           </View>
         ) : null}
-        <View style={{ marginTop: spacing.lg }}>
+        <View style={{ marginTop: THEME_SPEC.spacing.lg }}>
           <Button
             label={t('menu.settings.back')}
             variant="ghost"

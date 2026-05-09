@@ -8,29 +8,27 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PT_CATALOG, SKU_FULL_GAME, SKU_SUPPORTER_PACK } from '../iap/catalog';
 import { type GameState, gameState, stateChanged } from '../state';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { THEME_SPEC, TYPOGRAPHY, UI_COLORS } from '../visual-spec/theme';
 import { rawStyles } from './ShopOverlay.styles';
 
 const styles = StyleSheet.create(rawStyles);
 
 const placeholderStyles = StyleSheet.create({
   notice: {
-    color: colors.ui.tint60,
-    ...typography.smallcap,
+    color: UI_COLORS.tint60,
+    ...TYPOGRAPHY.smallcap,
     textAlign: 'center' as const,
-    marginBottom: spacing.lg,
+    marginBottom: THEME_SPEC.spacing.lg,
   },
   cardTitle: {
-    color: colors.ui.primary,
-    ...typography.label,
-    marginBottom: spacing.xs,
+    color: UI_COLORS.primary,
+    ...TYPOGRAPHY.label,
+    marginBottom: THEME_SPEC.spacing.xs,
   },
   cardDesc: {
-    color: colors.ui.neutralLight,
-    ...typography.bodyM,
-    marginBottom: spacing.sm,
+    color: UI_COLORS.neutralLight,
+    ...TYPOGRAPHY.bodyM,
+    marginBottom: THEME_SPEC.spacing.sm,
   },
 });
 
@@ -149,7 +147,7 @@ export function ShopOverlay({
           <View style={styles.content}>
             {isNoopProvider ? (
               <Panel padding="lg" radius="lg" style={styles.panel}>
-                <Label variant="xl" tone="accent" style={{ marginBottom: spacing.lg }}>
+                <Label variant="xl" tone="accent" style={{ marginBottom: THEME_SPEC.spacing.lg }}>
                   {t('shop.heading')}
                 </Label>
                 <PlaceholderShopCards t={t} />

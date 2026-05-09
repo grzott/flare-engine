@@ -1,4 +1,4 @@
-import { colors } from '../theme/colors';
+import { UI_COLORS } from '../visual-spec/theme';
 
 export const rawStyles = {
   wrapper: {
@@ -7,7 +7,7 @@ export const rawStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.ui.crimsonDeep,
+    backgroundColor: UI_COLORS.crimsonDeep,
     // Android: lift above the Skia <Canvas> SurfaceView.
     elevation: 4,
     zIndex: 4,

@@ -1,6 +1,4 @@
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { THEME_SPEC, TYPOGRAPHY, UI_COLORS } from '../visual-spec/theme';
 
 export const rawStyles = {
   root: {
@@ -9,10 +7,10 @@ export const rawStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.ui.void,
+    backgroundColor: UI_COLORS.void,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    padding: spacing.xxxl,
+    padding: THEME_SPEC.spacing.xxxl,
     // Android: lift above the Skia <Canvas> SurfaceView.
     elevation: 4,
     zIndex: 4,
@@ -21,25 +19,25 @@ export const rawStyles = {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: colors.ui.crimson,
-    marginBottom: spacing.xxl,
+    backgroundColor: UI_COLORS.crimson,
+    marginBottom: THEME_SPEC.spacing.xxl,
   },
   label: {
-    color: colors.ui.gold,
-    ...typography.lede,
-    marginBottom: spacing.lg,
+    color: UI_COLORS.gold,
+    ...TYPOGRAPHY.lede,
+    marginBottom: THEME_SPEC.spacing.lg,
     textAlign: 'center' as const,
     fontStyle: 'italic' as const,
   },
   bar: {
     width: '70%' as const,
-    marginBottom: spacing.xxl,
+    marginBottom: THEME_SPEC.spacing.xxl,
   },
   versionLabel: {
     position: 'absolute' as const,
-    bottom: spacing.xxxl,
+    bottom: THEME_SPEC.spacing.xxxl,
     alignSelf: 'center' as const,
-    color: colors.ui.tint55,
-    ...typography.smallcap,
+    color: UI_COLORS.tint55,
+    ...TYPOGRAPHY.smallcap,
   },
 };

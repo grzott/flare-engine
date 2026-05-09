@@ -1,5 +1,4 @@
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+import { THEME_SPEC, UI_COLORS } from '../visual-spec/theme';
 
 export const rawStyles = {
   root: {
@@ -8,7 +7,7 @@ export const rawStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.ui.bodyBg,
+    backgroundColor: UI_COLORS.bodyBg,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     elevation: 4,
@@ -18,24 +17,24 @@ export const rawStyles = {
     flex: 1,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    padding: spacing.xl,
+    padding: THEME_SPEC.spacing.xl,
   },
-  backRow: { marginTop: spacing.md },
+  backRow: { marginTop: THEME_SPEC.spacing.md },
   panel: {
     alignSelf: 'stretch' as const,
-    maxWidth: spacing.panelLgWidth,
+    maxWidth: THEME_SPEC.spacing.panelLgWidth,
     width: '100%' as const,
     maxHeight: '90%' as const,
-    backgroundColor: colors.ui.parchment,
+    backgroundColor: UI_COLORS.parchment,
   },
   productCard: {
     borderWidth: 1,
-    borderColor: colors.ui.gold,
-    borderRadius: spacing.panelBorderRadius,
-    padding: spacing.panelPadding,
-    marginBottom: spacing.md,
+    borderColor: UI_COLORS.gold,
+    borderRadius: THEME_SPEC.spacing.panelBorderRadius,
+    padding: THEME_SPEC.spacing.panelPadding,
+    marginBottom: THEME_SPEC.spacing.md,
   },
   productCardPrice: {
-    color: colors.ui.parchmentDim,
+    color: UI_COLORS.parchmentDim,
   },
 };

@@ -1,4 +1,4 @@
-import { colors } from '../theme/colors';
+import { UI_COLORS } from '../visual-spec/theme';
 
 export const rawStyles = {
   root: {
@@ -7,7 +7,7 @@ export const rawStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.ui.overlay,
+    backgroundColor: UI_COLORS.overlay,
     justifyContent: 'flex-end' as const,
     padding: 24,
     // Android: lift above the Skia <Canvas> SurfaceView.
@@ -16,8 +16,8 @@ export const rawStyles = {
   },
   panel: {
     borderWidth: 2,
-    borderColor: colors.ui.border,
-    backgroundColor: colors.ui.parchment,
+    borderColor: UI_COLORS.border,
+    backgroundColor: UI_COLORS.parchment,
   },
   portraitSlot: {
     width: 44,
@@ -31,6 +31,6 @@ export const rawStyles = {
     borderRadius: 4,
     opacity: 0.9,
     borderWidth: 1,
-    borderColor: colors.ui.gold,
+    borderColor: UI_COLORS.gold,
   },
 };

@@ -3307,3 +3307,46 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 **Next session:** #116 "VS-S8h workflow lock + final gate: add paragraph to CLAUDE.md locking visual-spec workflow; full orphan-grep validation; final lint + typecheck + test + build gate"
 
 ---
+
+## Session 116 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #116):** VS-S8h workflow lock + final gate: add paragraph to CLAUDE.md locking visual-spec workflow ("for new visual work, author against src/visual-spec/; never produce HTML/Figma decks as build input"); full orphan-grep validation (`git grep` for deleted paths); final lint + typecheck + test + build gate
+
+**Touched files**
+- `CLAUDE.md`
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/assets/sprites.manifest.json`
+- `apps/pan-tvardowski/src/assets/sprites-loader.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Deviations**
+1. Scope extended from 2 declared files to 8: orphan-grep mandate (session goal) surfaced 4 stale deleted-path comments across `src/visual-spec/zone-1.ts` JSDoc lines 5–6, `src/visual-spec/theme.ts` line 8, `assets/sprites.manifest.json` `source` field, `src/assets/sprites-loader.ts` line 12; user pre-approved all 4 fixes before implementation.
+2. 2 additional doc-sync gap-fix files (`docs/plans/pan-tvardowski-build-plan.md` VS-S8h bullet, `docs/references/builder-reference.md` VS-S8h mirror-row suffix) caught by /session-close and fixed by builder before close.
+3. target_commits 2 → 3: extra docs commit for the gap-fixes (matching VS-S8 arc precedent from sessions #109–#115).
+4. VS-S8 arc (sessions #109–#116) fully closed at this session.
+
+**Gates**
+- typecheck: ✅ (tsc --noEmit, silent exit in apps/pan-tvardowski)
+- lint: ✅ (turbo lint 40/40 packages, 0 errors; pan-tvardowski: biome check src/ tests/ — 287 files, no fixes applied)
+- test: ✅ (694 pass / 0 fail / 8386 expect() calls across 145 files)
+- build: ✅ (script is a native stub echo — `bun run android|ios` is the real device path)
+- device smoke: N/A (docs/comment-only changes)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8h Change log entry appended (line 622); details workflow-lock paragraph, §0 mirror sentence, §17 VS-S8 arc row, 4 orphan-comment fixes, arc closure, 694/694 tests green
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row (line 33) updated: `+ VS-S8h workflow lock + orphan-grep comment fixes (session #116) complete (last closed: 2026-05-09), 694 tests green` appended
+- `apps/pan-tvardowski/docs/visual-reference.md` — §0 mirror sentence present; §17 VS-S8 arc table row added (sessions #113–#116, date 2026-05-09)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (workflow-lock + arc-closure is not a release item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): workflow lock in CLAUDE.md + visual-reference.md`
+2. `chore(pan-tvardowski): VS-S8h fix stale deleted-path comments`
+3. `docs(pan-tvardowski): VS-S8h change-log + mirror row`
+
+**Next session:** #117 "Postfx-GodRays: new reusable EffectKind 'god-rays'" — already done (row #117 is `done`)
+
+---

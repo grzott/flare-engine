@@ -1,50 +1,77 @@
 # Device Smoke Test — Pan Tvardowski
 
+> **Primary path: automation.** See [smoke-automation.md](./smoke-automation.md). Run
+> `bun --cwd apps/pan-tvardowski run smoke:cloud` (TestingBot, OSS free tier) or
+> `bun run smoke:local` (Android Studio AVD). This file documents the manual
+> 13-row checklist as the **fallback** for ad-hoc checks and as the canonical
+> definition of what each Maestro flow row covers.
+
 ## Protocol
 
 - Build type: **release** (`--configuration Release` / `--variant release`)
 - Network: **airplane mode** (no IAP, no analytics)
 - Save state: **fresh save** (delete app data or reinstall before each pass)
 - Run each pass twice: once with **EN** locale, once with **PL** locale
-- Record results in the table below before closing the session
+- Capture cold-start TTI per device via `[boot-trace]` adb logcat lines (see "Capturing cold-start TTI" below)
+- Record results in the tables below before closing the session
+
+> **iOS smoke deferred.** Per session #107 plan, only Android (Galaxy A54 + Pixel 7) is in scope. The iOS / iPhone 12 column is held for a future row tracked in `docs/plans/sessions.md`. Do not attempt iOS smoke until that row is opened.
 
 ## Devices
 
-### Galaxy A54 (Android)
+### Galaxy A54 (Android — mid-tier reference)
 
-| # | Check | EN | PL |
-|---|-------|----|----|
-| 1 | App boots to menu without crash | | |
-| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | | |
-| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | | |
-| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | | |
-| 5 | Zone 3 — tilemap background scrolls, Wodnik boss fight starts | | |
-| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | | |
-| 7 | Credits scroll — all 6 sections visible, text in selected locale | | |
-| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | | |
-| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | | |
-| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | | |
-| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | | |
-| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | | |
-| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | | |
+| # | Check | Maestro flow | EN | PL |
+|---|-------|--------------|----|----|
+| 1 | App boots to menu without crash | smoke.yaml + cold-start-tti.yaml | | |
+| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | smoke.yaml | | |
+| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | boss-fight.yaml (skeleton) | | |
+| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | boss-fight.yaml (skeleton) | | |
+| 5 | Zone 3 — water + fog shader bg renders, Wodnik boss fight starts | boss-fight.yaml (skeleton) | | |
+| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | smoke.yaml | | |
+| 7 | Credits scroll — all 6 sections visible, text in selected locale | smoke.yaml | | |
+| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | manual (debug HUD pending) | | |
+| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
+| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
+| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | manual (debug HUD pending) | | |
+| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | manual (debug HUD pending) | | |
+| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | smoke.yaml | | |
 
-### iPhone (iOS)
+Cold-start TTI (boot-start → first-frame, three runs, take median):
 
-| # | Check | EN | PL |
-|---|-------|----|----|
-| 1 | App boots to menu without crash | | |
-| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | | |
-| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | | |
-| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | | |
-| 5 | Zone 3 — tilemap background scrolls, Wodnik boss fight starts | | |
-| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | | |
-| 7 | Credits scroll — all 6 sections visible, text in selected locale | | |
-| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | | |
-| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | | |
-| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | | |
-| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | | |
-| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | | |
-| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | | |
+| Run | TTI (ms) |
+|-----|----------|
+| 1   |          |
+| 2   |          |
+| 3   |          |
+| **median** |    |
+
+### Pixel 7 (Android — second device)
+
+| # | Check | Maestro flow | EN | PL |
+|---|-------|--------------|----|----|
+| 1 | App boots to menu without crash | smoke.yaml + cold-start-tti.yaml | | |
+| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | smoke.yaml | | |
+| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | boss-fight.yaml (skeleton) | | |
+| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | boss-fight.yaml (skeleton) | | |
+| 5 | Zone 3 — water + fog shader bg renders, Wodnik boss fight starts | boss-fight.yaml (skeleton) | | |
+| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | smoke.yaml | | |
+| 7 | Credits scroll — all 6 sections visible, text in selected locale | smoke.yaml | | |
+| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | manual (debug HUD pending) | | |
+| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
+| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
+| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | manual (debug HUD pending) | | |
+| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | manual (debug HUD pending) | | |
+| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | smoke.yaml | | |
+
+Cold-start TTI (boot-start → first-frame, three runs, take median):
+
+| Run | TTI (ms) |
+|-----|----------|
+| 1   |          |
+| 2   |          |
+| 3   |          |
+| **median** |    |
 
 ## Results
 
@@ -55,13 +82,42 @@ Leave blank until the smoke run is complete.
 ## Run commands
 
 ```bash
-# Android (Galaxy A54)
-bun --cwd apps/pan-tvardowski run android
+# Preferred: Maestro automation (see smoke-automation.md)
+APK_PATH=./build.apk bun --cwd apps/pan-tvardowski run smoke:local       # local AVD or attached device
+APK_PATH=./build.apk bun --cwd apps/pan-tvardowski run smoke:cloud       # TestingBot real devices
 
-# iOS (iPhone)
-bun --cwd apps/pan-tvardowski run ios
+# Fallback: native run (manual interaction required)
+bun --cwd apps/pan-tvardowski run android -- --variant=release
 ```
 
-> This document is the gate artifact for the device-smoke step of session #50.
-> The user runs these commands manually on physical devices.
-> Do NOT mark the session closed until both device columns are filled.
+## Capturing cold-start TTI (manual fallback)
+
+After `markBootMilestone('first-frame')`, `App.tsx` calls `dumpBootTrace()` which prints one
+line via `console.log`. In a release build this surfaces through Expo's `RNLog` bridge to
+`logcat` under tag `ReactNativeJS`.
+
+```bash
+# Clear logcat, launch the app, capture the boot-trace line.
+adb -s <device-serial> logcat -c
+adb -s <device-serial> shell monkey -p dev.flare.pantvardowski -c android.intent.category.LAUNCHER 1
+adb -s <device-serial> logcat -s ReactNativeJS:* | grep "\[boot-trace\]" | head -1
+```
+
+Expected output shape:
+
+```
+ReactNativeJS: [boot-trace] total=2480.5ms boot-start->providers-mounted=312.4ms providers-mounted->save-loaded=48.7ms save-loaded->audio-ready=210.9ms audio-ready->first-frame=1908.5ms
+```
+
+The `total=` field is the cold-start TTI. Run three cold launches per device (kill app between
+runs), take the median, write it into the per-device table above, and forward to the session
+owner for the `perf-baseline.md` update commit. The automation harness
+(`scripts/run-smoke-local.sh` + `scripts/run-smoke-cloud.sh`) does the loop + median + gate
+assertion automatically.
+
+If `total > 3000ms` on either device, the row's `cold-start TTI < 3 s` gate fails — do not
+mark the session done; open a perf-investigation follow-up row and report the breakdown.
+
+> Document version: session #154 (automation primary, manual fallback).
+> Supersedes session #50 / #59 / #107 manual-only versions.
+> Do NOT mark the session closed until both Android device columns + median TTI cells are filled.

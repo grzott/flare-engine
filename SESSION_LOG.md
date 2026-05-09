@@ -3350,3 +3350,58 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 **Next session:** #117 "Postfx-GodRays: new reusable EffectKind 'god-rays'" — already done (row #117 is `done`)
 
 ---
+
+## Session 154 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #154):** PT-SmokeAutomation: author Maestro YAML flows (functional smoke + cold-start TTI) + Mobile.dev cloud runner wiring + boot-trace parser; replaces manual device-smoke as primary path; #107 consumes the automation when ready
+
+**Touched files**
+- `apps/pan-tvardowski/.maestro/smoke.yaml` (new)
+- `apps/pan-tvardowski/.maestro/cold-start-tti.yaml` (new)
+- `apps/pan-tvardowski/.maestro/boss-fight.yaml` (new)
+- `apps/pan-tvardowski/scripts/parse-boot-trace.ts` (new)
+- `apps/pan-tvardowski/scripts/tti-gate.ts` (new)
+- `apps/pan-tvardowski/scripts/run-smoke-local.sh` (new)
+- `apps/pan-tvardowski/scripts/run-smoke-cloud.sh` (new)
+- `apps/pan-tvardowski/tests/parse-boot-trace.test.ts` (new)
+- `apps/pan-tvardowski/tests/cold-start.test.ts` (extended +3 tests)
+- `apps/pan-tvardowski/src/perf/cold-start.ts` (extended — dumpBootTrace)
+- `apps/pan-tvardowski/src/App.tsx` (extended — adb logcat wire)
+- `apps/pan-tvardowski/package.json` (7 new smoke scripts)
+- `apps/pan-tvardowski/docs/smoke-automation.md` (new)
+- `apps/pan-tvardowski/docs/device-smoke.md` (repointed; package id fix)
+- `apps/pan-tvardowski/docs/perf-baseline.md` (Pixel 7 row + adb logcat recipe)
+- `docs/plans/sessions.md` (row #154 status flip + footnote)
+
+**Deviations**
+1. **Scope merge with #107 foundational work** (pre-approved): working tree contains both sessions' changes. The `dumpBootTrace` helper (`cold-start.ts`), `App.tsx` logcat wire, and initial `docs/device-smoke.md`/`docs/perf-baseline.md` edits are #107 prerequisites; folded into #154 commit set. Row #107 stays `blocked ⊟` and reopens at `/session-start` for real-device TTI numbers + release-readiness ticks.
+2. **Test count overshoot**: declared `+4`, shipped `+13` — 3 from `cold-start.test.ts` (`dumpBootTrace` helper) + 10 from `parse-boot-trace.test.ts`. Gap audit during implementation required full coverage of parser edge cases (median, summarizeDevice, multi-line logcat, label override, malformed input). Pre-flagged.
+3. **Package id correction**: `com.pantvardowski.app` (wrong) → `dev.flare.pantvardowski` (correct, from `app.json:28`) in `docs/device-smoke.md`. Pre-flagged.
+4. **Cloud-runner package name correction**: `testingbot-cli` (404 on npm) → `@testingbot/cli` (actual scoped package). Reflected in `docs/smoke-automation.md` + `scripts/run-smoke-cloud.sh`. Pre-flagged.
+5. **Maestro flow scope reduction**: `smoke.yaml` covers rows 1, 2 (partial), 6, 7, 13 of the 13-row device-smoke checklist — 5 reachable rows. Rows 9 (Codex) + 10 (Achievements) removed after discovery that `goCodex`/`goAchievements` actions exist in `MenuOverlay.tsx` but no button invokes them (UI gap, not a Maestro bug). Documented in YAML header + `docs/smoke-automation.md` for follow-up. Pre-flagged.
+6. **Two extra script files**: declared `run-smoke-local.sh` only; shipped also `run-smoke-cloud.sh` (TestingBot tier matrix harness) + `tti-gate.ts` (TTI threshold gate, refactored out of inline script). Both in-scope mechanically. Pre-flagged.
+7. **Extra package.json scripts**: declared 3 (`smoke:local`, `smoke:cloud`, `smoke:tti`); shipped 7 (added `smoke:local:tti`, `smoke:local:smoke`, `smoke:cloud:low`, `smoke:cloud:mid`, `smoke:cloud:high`). Pre-flagged.
+8. **Doc-sync gap — builder-reference + PT build-plan changelog**: `docs/references/builder-reference.md` mirror row still shows `694 tests green` / last closed session #116; `docs/plans/pan-tvardowski-build-plan.md` has no #154 Change-log entry. Both must be updated in commit 4. Surfaced at /session-close; builder must add both files to that commit.
+
+**Gates**
+- lint: ✅ (turbo lint 40/40 packages; pan-tvardowski biome check src/ tests/ — 288 files, no fixes applied)
+- typecheck: ✅ (tsc --noEmit, silent exit in apps/pan-tvardowski; turbo cache bypass confirmed)
+- test: ✅ (707 pass / 0 fail / 8420 expect() calls across 146 files; +13 new: +3 cold-start, +10 parse-boot-trace)
+- build: ✅ (turbo build 39/39 successful; PT native-stub echo is expected)
+- device smoke: gate-conditionally-green (partial) — Maestro 2.5.1 installed; APK built via gradle assembleRelease (153 MB); Pixel_9_API_35 AVD booted; `run-smoke-local.sh` invoked, APK installed, Maestro flow executed; 5/5 reachable rows passed (boot, assertVisible "Play", Play→SaveSelect→Back→Play, Settings→ReducedMotion→Back→Play, Credits→tap-50/50→Play); final pass-through with simplified 5-row YAML was not re-run after flow simplification — each component (Maestro toolchain, APK install, device launch, RN-text assertions, boot-trace logcat capture, parser, gate-script) individually validated through partial runs. Not blocking close per user direction.
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #154 flipped `in_progress ⊟` → `done ⊟`, close date `2026-05-09` stamped, touched-paths column broadened to reflect actual scope, ⊟ footnote added explaining pause/resume arc with row #107
+- `docs/plans/pan-tvardowski-build-plan.md` — **REQUIRES builder update in commit 4**: dated `2026-05-09` PT-SmokeAutomation Change-log entry must be appended
+- `docs/references/builder-reference.md` — **REQUIRES builder update in commit 4**: apps/pan-tvardowski mirror row must update test count `694` → `707`, last-closed session `#116` → `#154`, and append `+ PT-SmokeAutomation (session #154)`
+- `docs/plans/release-readiness-checklist.md` — no new ticks (device-smoke physical-device checkbox belongs to #107)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): dumpBootTrace + adb logcat capture path`
+2. `feat(pan-tvardowski): Maestro YAML flows + boot-trace parser`
+3. `feat(pan-tvardowski): smoke:local + smoke:cloud runner scripts`
+4. `docs(pan-tvardowski): smoke-automation.md + device-smoke.md repoint`
+
+**Next session:** #107 PT-DeviceSmoke `blocked ⊟` (unblock via `/session-start` after completing TestingBot cloud smoke run; depends on #116, #106, plus #154 which is now done)
+
+---

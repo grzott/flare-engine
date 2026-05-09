@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { WEAPON_PROJECTILE_SPECS } from '../src/config/gameplay';
 import type { WeaponId } from '../src/config/gameplay';
 import { LOCALIZATION_KEYS } from '../src/localization/keys';
-import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
+import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
 
 const WEAPON_IDS: WeaponId[] = ['iskry', 'piorun', 'sol-swiecona', 'znak-pentagramu'];
 

@@ -13,6 +13,7 @@ export type { ZoneVisualSpec } from './types';
 export * from './types';
 export { ZONE_PALETTES, getUiPrimary, getUiPrimaryHex } from './zones-palette';
 export type { ZonePalette, ZoneId, AmbienceKind } from './zones-palette';
+export { SHAPE_CATALOGUE } from './shapes-catalogue';
 export { HULL_PRESETS } from './hull-presets';
 export { SHIP_DEFS } from './ships';
 export { BULLET_DEFS } from './bullets';

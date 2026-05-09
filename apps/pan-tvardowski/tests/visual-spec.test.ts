@@ -16,8 +16,8 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ZONES } from '../src/config/zones';
-import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
+import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
 import type { ZoneId } from '../src/visual-spec/zones-palette';
 
 const HEX_REGEX = /^#[0-9A-F]{6}([0-9A-F]{2})?$/i;
@@ -211,7 +211,10 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 112 (VS-S8d palette absorption): reordered imports in types.ts
   // (EntityId before AmbienceKind/ZoneId) to satisfy Biome organizeImports — refactor
   // only, no public-surface schema change.
-  const SCHEMA_CANARY = '80acd1dcc43371bd857e7d355698d42160eabac02d62e0426e6868e7eb80854b';
+  // Bumped at Session 113 (VS-S8e shape-catalogue absorption): EntityId inlined as a
+  // concrete string-literal union in types.ts (moved from shape-catalogue.ts); import
+  // of EntityId from '../shape-catalogue' removed. Same type semantics — relocation only.
+  const SCHEMA_CANARY = '605899b74501a25362cbee36332ec99b3fb21bd9ec8ab8a343ce58e64a8620bb';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

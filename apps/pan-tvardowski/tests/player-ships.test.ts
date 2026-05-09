@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ShipSpec } from '@flare-engine/shapes';
-import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
+import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
 
 /**
  * Player ship anatomy — session #77 M3.

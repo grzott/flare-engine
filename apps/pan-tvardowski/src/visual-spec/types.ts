@@ -19,8 +19,48 @@
  */
 
 import type { ShapeSpec } from '@flare-engine/shapes';
-import type { EntityId } from '../shape-catalogue';
 import type { AmbienceKind, ZoneId } from './zones-palette';
+
+export type EntityId =
+  | 'skrzat'
+  | 'latawiec'
+  | 'czart'
+  | 'bies'
+  | 'licho'
+  | 'strzyga'
+  | 'topielec'
+  | 'mamuna'
+  | 'nocnica'
+  | 'poludnica'
+  | 'wapierz'
+  | 'hound'
+  | 'dziwozona'
+  | 'moon-wraith'
+  | 'rokita'
+  | 'leszy'
+  | 'nocny-lowca'
+  | 'madej'
+  | 'smok-krzemionkowski'
+  | 'borowy-krol'
+  | 'wodnik-wislanny'
+  | 'boruta'
+  | 'baba-jaga'
+  | 'bazyliszek-warszawski'
+  | 'mefistofeles'
+  | 'lucyper-ksiezycowy'
+  | 'kogut-zloty'
+  | 'alembik'
+  | 'zwierciadlo'
+  | 'iskry'
+  | 'piorun'
+  | 'sol-swiecona'
+  | 'znak-pentagramu'
+  | 'czarna-ksiega'
+  | 'siedmiomilowe-buty'
+  | 'amulet-wegrowski'
+  | 'koguci-pioro'
+  | 'srebrna-tarcza'
+  | 'kamien-filozoficzny';
 
 // ============================================================================
 // FOUNDATIONS

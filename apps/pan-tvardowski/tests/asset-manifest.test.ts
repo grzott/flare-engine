@@ -245,7 +245,7 @@ describe('boundary lint — no hardcoded imports outside src/assets/', () => {
     path.join(SRC, 'assets', 'manifest-types.ts'),
     path.join(SRC, 'assets', 'index.ts'),
     path.join(SRC, 'shape-atlas.ts'),
-    path.join(SRC, 'shape-catalogue.ts'),
+    path.join(SRC, 'visual-spec', 'shapes-catalogue.ts'),
     path.join(SRC, 'audio', 'synth.ts'),
     path.join(SRC, 'audio', 'sfx.ts'),
     path.join(SRC, 'dialogue', 'portrait-manifest.ts'),

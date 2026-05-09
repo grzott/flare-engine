@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
+import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
 
 const ZONE_NUMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
 import { HULL_PRESETS } from '../src/visual-spec/hull-presets';
+import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
 import { SHIP_DEFS } from '../src/visual-spec/ships';
 
 const ENTITY_IDS = new Set<string>([

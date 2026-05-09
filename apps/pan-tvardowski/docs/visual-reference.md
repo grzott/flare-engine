@@ -2,7 +2,7 @@
 
 ## §0 — Source of truth
 
-The 21 PNG folios at [`docs/references/pan-tvardowski/folios/`](../../../docs/references/pan-tvardowski/folios/) are the canonical visual source of truth for Pan Tvardowski. **If a value in this doc conflicts with a folio, the folio wins** unless this doc documents a deliberate deviation with a rationale.
+The 21 PNG folios at [`docs/references/pan-tvardowski/folios/`](../../../docs/references/pan-tvardowski/folios/) are the canonical visual source of truth for Pan Tvardowski. **If a value in this doc conflicts with a folio, the folio wins** unless this doc documents a deliberate deviation with a rationale. The CLAUDE.md section "Pan Tvardowski — visual source of truth" mirrors the key pointers from this §0 and must be kept in sync when paths or sessions change.
 
 This document is a textual cross-index: each section maps a folio to live code symbols and tracks open migrations.
 
@@ -641,3 +641,13 @@ Full folio-vs-code audit: 21 PNG folios cross-referenced against §1–§15 of t
 - 4 n/a (device-smoke gate: folios IX, X, XI — pixel alignment requires physical device; XIIId balance/silhouette alignment done at session #95, pixel verification deferred to device smoke)
 
 No runtime code changes were required. All divergences were documentation-level (stale file paths, stale line numbers, stale "will migrate" notes) and resolved in M2.
+
+---
+
+## §17 — Change log
+
+Tracks significant doc-only arcs (structural rewrites, path migrations, audits). Code-level changes are logged in the game build plan change log.
+
+| Arc | Sessions | Summary | Date |
+|-----|----------|---------|------|
+| VS-S8 — visual-spec migration + audit | #113–#116 | Deleted `src/theme/`, `src/shape-catalogue.ts`, `src/palette.ts`; moved all presentation-layer symbols to `src/visual-spec/`; ran M1 folio-vs-code audit (14 ✓, 0 ✗, 4 n/a); updated all cross-links in this doc, in CLAUDE.md, and in stale comments throughout `apps/pan-tvardowski/src/`. Workflow lock (CLAUDE.md + §0 mirror sentence) applied at VS-S8h. | 2026-05-09 |

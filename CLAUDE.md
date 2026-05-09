@@ -40,7 +40,9 @@ Single-source-of-truth map: instructions in [.github/instructions/](.github/inst
 
 ## Pan Tvardowski — visual source of truth
 
-Presentation-layer reference for `apps/pan-tvardowski/` is the 21 PNG folios at [docs/references/pan-tvardowski/folios/](docs/references/pan-tvardowski/folios/). Read the relevant folio before touching `src/hud/`, `src/shape-catalogue.ts`, `src/theme/`, `src/palette.ts`, or boss FSMs. Textual cross-index lives at [apps/pan-tvardowski/docs/visual-reference.md](apps/pan-tvardowski/docs/visual-reference.md). Folio XIIIa (ship-anatomy 3-element rule: `hull + N rect weapons + 1 square engine`) governs every ship in the codex; folio III lists the 5 brand principles that override taste.
+Presentation-layer reference for `apps/pan-tvardowski/` is the 21 PNG folios at [docs/references/pan-tvardowski/folios/](docs/references/pan-tvardowski/folios/). Read the relevant folio before touching `src/hud/`, `src/visual-spec/shapes-catalogue.ts`, `src/visual-spec/theme.ts`, or boss FSMs. Textual cross-index lives at [apps/pan-tvardowski/docs/visual-reference.md](apps/pan-tvardowski/docs/visual-reference.md). Folio XIIIa (ship-anatomy 3-element rule: `hull + N rect weapons + 1 square engine`) governs every ship in the codex; folio III lists the 5 brand principles that override taste.
+
+`src/shape-catalogue.ts`, `src/theme/`, and `src/palette.ts` were deleted at sessions #92 and #114. All presentation-layer symbols now live under `src/visual-spec/`. Any reference in code comments or docs pointing at the old paths is stale and should be repointed on sight.
 
 ## Boundary rules (reinforced from agents)
 

@@ -141,3 +141,60 @@ export const fontFamily = {
   mono: 'JetBrainsMono_400Regular',
   monoMedium: 'JetBrainsMono_500Medium',
 } as const;
+
+export const UI_COLORS = {
+  // ColorTokenId-backed (sourced from THEME_SPEC.colors)
+  gold: THEME_SPEC.colors.gold,
+  goldDeep: THEME_SPEC.colors.goldDeep,
+  crimson: THEME_SPEC.colors.crimson,
+  crimsonDeep: THEME_SPEC.colors.crimsonDeep,
+  hazard: THEME_SPEC.colors.hazard,
+  hazardOrange: THEME_SPEC.colors.hazardOrange,
+  inkBlack: THEME_SPEC.colors.inkBlack,
+  void: THEME_SPEC.colors.void,
+  parchment: THEME_SPEC.colors.parchment,
+  parchment2: THEME_SPEC.colors.parchment2,
+  parchmentDim: THEME_SPEC.colors.parchmentDim,
+  bogGreen: THEME_SPEC.colors.bogGreen,
+  moss: THEME_SPEC.colors.moss,
+  verdigris: THEME_SPEC.colors.verdigris,
+  bone: THEME_SPEC.colors.bone,
+  rust: THEME_SPEC.colors.rust,
+  terracotta: THEME_SPEC.colors.terracotta,
+  safe: THEME_SPEC.colors.safe,
+  // Derived aliases (not in ColorTokenId)
+  primary: THEME_SPEC.colors.gold,
+  secondary: THEME_SPEC.colors.crimson,
+  neutralLight: '#E8DCC4' as const,
+  neutralMid: '#D9C9A8' as const,
+  border: THEME_SPEC.colors.gold,
+  lockedBadge: THEME_SPEC.colors.rust,
+  bodyBg: 'rgba(14, 26, 18, 0.92)' as const,
+  overlay: 'rgba(0, 0, 0, 0.55)' as const,
+  tint60: 'rgba(255, 255, 255, 0.6)' as const,
+  tint55: 'rgba(255,255,255,0.55)' as const,
+  onPrimary: THEME_SPEC.colors.inkBlack,
+  backdropModal: 'rgba(14, 26, 18, 0.88)' as const,
+  divider: 'rgba(255,255,255,0.06)' as const,
+  dividerStrong: 'rgba(255,255,255,0.12)' as const,
+  cb: {
+    player: THEME_SPEC.colors['cb-player'],
+    hazard: THEME_SPEC.colors['cb-hazard'],
+    safe: THEME_SPEC.colors['cb-safe'],
+  },
+} as const;
+
+const { italic: _ledeItalic, ...ledeForRn } = THEME_SPEC.typography.lede;
+export const TYPOGRAPHY = {
+  displayXl: THEME_SPEC.typography.displayXl,
+  displayL: THEME_SPEC.typography.displayL,
+  displayM: THEME_SPEC.typography.displayM,
+  lede: ledeForRn,
+  bodyL: THEME_SPEC.typography.bodyL,
+  bodyM: THEME_SPEC.typography.bodyM,
+  bodyS: THEME_SPEC.typography.bodyS,
+  label: THEME_SPEC.typography.label,
+  monoHud: THEME_SPEC.typography.monoHud,
+  monoDebug: THEME_SPEC.typography.monoDebug,
+  smallcap: THEME_SPEC.typography.smallcap,
+} as const;

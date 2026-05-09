@@ -3107,3 +3107,53 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #112 "VS-S8d palette.ts absorption: move ZONE_PALETTES + ZonePalette + ZoneId + AmbienceKind + getUiPrimaryHex into visual-spec/; repoint play.ts + Hud.tsx + ambience.ts + theme/colors.ts consumers; delete palette.ts"
 
 ---
+
+## Session 112 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #112):** VS-S8d palette.ts absorption: move ZONE_PALETTES + ZonePalette + ZoneId + AmbienceKind + getUiPrimaryHex into visual-spec/; repoint play.ts + Hud.tsx + ambience.ts + theme/colors.ts consumers; delete palette.ts
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/zones-palette.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/theme/colors.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/fx/ambience.ts`
+- `apps/pan-tvardowski/src/index.ts`
+- `apps/pan-tvardowski/src/palette.ts` (deleted)
+- `apps/pan-tvardowski/tests/ambient-density.test.ts`
+- `apps/pan-tvardowski/tests/palette.test.ts`
+- `apps/pan-tvardowski/tests/reduced-motion-extended.test.ts`
+- `apps/pan-tvardowski/tests/theme.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/z8-silver-ui.test.ts`
+- `apps/pan-tvardowski/tests/zone-ambience.test.ts`
+- `apps/pan-tvardowski/tests/zone-specs-extended.test.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 292 files, no fixes applied; root turbo lint 40/40 cached)
+- typecheck: ✅ (tsc --noEmit, silent exit)
+- test: ✅ (+0 new; 710 pass, 0 fail, 8532 expect() calls — baseline held, palette exports verified via repointed tests)
+- build: ✅ (script is a native stub echo — `bun run android|ios` is the real device path; no bundleable artifact)
+- device smoke: deferred — no new scene or rendering logic; pure module-relocation refactor
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8d Change log entry appended after VS-S8c entry (~line 618); details zones-palette.ts destination, 7 src + 8 test consumers repointed, palette.ts deletion, 710 tests green
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row (row 33) updated: `+ VS-S8d palette.ts absorption (session #112)` inserted before `complete (last closed:` marker; last-closed date updated to 2026-05-09; test count confirmed 710
+- `docs/plans/release-readiness-checklist.md` — no new ticks (VS-S8d is a refactor, not a release item)
+
+Note: target_commits deviated 3→4. A docs commit was added per VS-S8 arc precedent (matching sessions #109/#110/#111). Biome auto-reordered imports in `visual-spec/types.ts` (EntityId pulled ahead of AmbienceKind/ZoneId); mechanical sort only, no schema change.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): absorb palette.ts into visual-spec/zones-palette`
+2. `refactor(pan-tvardowski): delete palette.ts`
+3. `test(pan-tvardowski): repoint palette imports to visual-spec/zones-palette`
+4. `docs(pan-tvardowski): VS-S8d change log + builder-reference mirror row`
+
+**Next session:** #113 "VS-S8e shape-catalogue.ts absorption: move SHAPE_CATALOGUE + EntityId into visual-spec/; repoint shape-atlas.ts + index.ts + visual-spec/types.ts imports; delete shape-catalogue.ts"
+
+---

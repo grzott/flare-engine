@@ -49,7 +49,6 @@ import {
   updateZoneBanner,
 } from '../hud/zone-banner';
 import type { EntitlementFallbackHandler } from '../iap/fallback';
-import { ZONE_PALETTES } from '../palette';
 import { burstExplosion } from '../particles';
 import type { SaveStore } from '../save/store';
 import {
@@ -92,6 +91,7 @@ import {
   tickSpawner,
 } from '../systems/spawner';
 import { countTopielecMinions } from '../systems/wodnik';
+import { ZONE_PALETTES } from '../visual-spec/zones-palette';
 import { shellDefaults } from './scene-shell';
 
 // Pre-computed sub-shape counts per atlas frame: hull(1) + weapons.length + engine(1).

@@ -19,8 +19,8 @@
  */
 
 import type { ShapeSpec } from '@flare-engine/shapes';
-import type { AmbienceKind, ZoneId } from '../palette';
 import type { EntityId } from '../shape-catalogue';
+import type { AmbienceKind, ZoneId } from './zones-palette';
 
 // ============================================================================
 // FOUNDATIONS

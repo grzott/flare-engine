@@ -3,8 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { getUiPrimaryHex } from '../palette';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
+import { getUiPrimaryHex } from '../visual-spec/zones-palette';
 import { rawStyles } from './Hud.styles';
 import { zoneRomanNumeral } from './zone-banner';
 

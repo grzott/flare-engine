@@ -1,4 +1,3 @@
-import type { ZoneId } from '../palette';
 import type { ZoneVisualSpec } from './types';
 import { zone1 } from './zone-1';
 import { zone2 } from './zone-2';
@@ -8,9 +7,12 @@ import { zone5 } from './zone-5';
 import { zone6 } from './zone-6';
 import { zone7 } from './zone-7';
 import { zone8 } from './zone-8';
+import type { ZoneId } from './zones-palette';
 
 export type { ZoneVisualSpec } from './types';
 export * from './types';
+export { ZONE_PALETTES, getUiPrimary, getUiPrimaryHex } from './zones-palette';
+export type { ZonePalette, ZoneId, AmbienceKind } from './zones-palette';
 export { HULL_PRESETS } from './hull-presets';
 export { SHIP_DEFS } from './ships';
 export { BULLET_DEFS } from './bullets';

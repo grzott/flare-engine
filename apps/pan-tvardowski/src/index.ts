@@ -1,4 +1,4 @@
-export { ZONE_PALETTES, type ZonePalette, type ZoneId } from './palette';
+export { ZONE_PALETTES, type ZonePalette, type ZoneId } from './visual-spec/zones-palette';
 export type {
   ShapeSpec,
   CircleSpec,

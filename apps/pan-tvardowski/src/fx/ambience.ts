@@ -5,8 +5,8 @@ import { Sprite, tint } from '@flare-engine/render';
 import type { AnySpriteEffect } from '@flare-engine/render';
 import { getParallaxVelocity } from '../a11y/reduced-motion';
 import { Lifetime } from '../components';
-import type { ZonePalette } from '../palette';
 import type { AtlasHandle } from '../spawn';
+import type { ZonePalette } from '../visual-spec/zones-palette';
 
 const PARTICLE_Z = 19;
 const CENTER_ANCHOR = { x: 0.5, y: 0.5 };

@@ -1,5 +1,5 @@
-import { ZONE_PALETTES } from '../palette';
 import { THEME_SPEC } from '../visual-spec/theme';
+import { ZONE_PALETTES } from '../visual-spec/zones-palette';
 
 const spec = THEME_SPEC.colors;
 

@@ -13,7 +13,14 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "check:locales": "bun run scripts/check-locale-parity.ts",
-    "check:balance": "bash scripts/check-balance-freeze.sh"
+    "check:balance": "bash scripts/check-balance-freeze.sh",
+    "smoke:local": "bash scripts/run-smoke-local.sh",
+    "smoke:local:tti": "bash scripts/run-smoke-local.sh tti",
+    "smoke:local:smoke": "bash scripts/run-smoke-local.sh smoke",
+    "smoke:cloud": "bash scripts/run-smoke-cloud.sh",
+    "smoke:cloud:low": "bash scripts/run-smoke-cloud.sh low",
+    "smoke:cloud:mid": "bash scripts/run-smoke-cloud.sh mid",
+    "smoke:cloud:high": "bash scripts/run-smoke-cloud.sh high"
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {

@@ -3438,3 +3438,43 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 2. `docs(pan-tvardowski): #107 pause->blocked, append #155 boot-trace fix`
 
 ---
+
+## Session 155 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #155):** PT-BootTraceFix: extract `boot.ts` from `App.tsx` with `save-loaded` + `audio-ready` milestone marks; ensure `providers-mounted` is recorded before `dumpBootTrace` (currently races Skia onReady so only `boot-start->first-frame` shows in trace); add tests asserting the 5-milestone trace shape on a synthetic boot run
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/scenes/boot.ts`
+- `apps/pan-tvardowski/tests/boot-trace-shape.test.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Deviations from declared touched paths**
+- `src/boot.ts (new)` was NOT created — `src/scenes/boot.ts` already owned the `loadSave` + `initAudio` async chain; fix was a 2-line move into the existing scene file.
+- `perf/cold-start.ts` listed but UNTOUCHED — `resetBootTrace` already existed from session #154; no changes needed.
+- `tests/cold-start.test.ts` listed but UNTOUCHED — all +5 net tests came from the new `tests/boot-trace-shape.test.ts`.
+
+**Race-resolution rationale:** the planned dual-flag `mountedRef`/`skiaReadyRef` scheme was unnecessary. The boot scene's `onEnter` async chain runs strictly after both `providers-mounted` (React mount effect) and `first-frame` (Skia `onReady`). Moving `dumpBootTrace()` to the tail of that async chain fires after all 5 milestones are appended — no coordination flags required.
+
+**Gates**
+- lint: ✅ (40 packages, turbo 40/40, pan-tvardowski: 289 files checked, 0 errors)
+- typecheck: ✅ (0 errors, silent exit)
+- test: ✅ (+5 new, total 712)
+- build: ✅ (declared gate; `bun run build` script is an echo pass for native builds)
+- device smoke: informational only (backend trace-dump fix; no gameplay change — not a blocking gate this session)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry `2026-05-09 — PT-BootTraceFix complete (session #155)` appended after the #154 entry (newest-at-bottom convention), documenting the 2-line move, deviation from planned `src/boot.ts (new)`, race-resolution rationale, and 712/712 pass.
+- `docs/references/builder-reference.md` — pan-tvardowski mirror row extended with `+ PT-BootTraceFix — dumpBootTrace moved to boot scene tail, all 5 milestones captured (session #155)` and test count updated to 712.
+- `docs/plans/release-readiness-checklist.md` — no new ticks (cold-start TTI gate deferred to session #107 real-device run).
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `fix(pan-tvardowski): move dumpBootTrace to boot scene tail — all 5 milestones`
+2. `test(pan-tvardowski): boot-trace-shape — assert 5 milestones + ordering`
+3. `docs(pan-tvardowski): session #155 done — boot-trace fix changelog + mirror sync`
+
+**Next session:** no next session row exists — run /plan-sessions.
+
+---

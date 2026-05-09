@@ -3405,3 +3405,36 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 **Next session:** #107 PT-DeviceSmoke `blocked ⊟` (unblock via `/session-start` after completing TestingBot cloud smoke run; depends on #116, #106, plus #154 which is now done)
 
 ---
+
+## Workflow Change — 2026-05-09 (out-of-band housekeeping, no session row)
+
+**Nature:** User direction changed the device-smoke gate mid-turn, required no source code changes — doc rewrites + script updates only. No sessions.md row was closed (row #107 reverted from `in_progress` back to `blocked ⊟`; row #155 spawned).
+
+**User direction (quoted):** "test gate will be only on: first local emulator device, then on bot testing bot (on free tier first to test it). (pick best android and best ios device for first real tests and bandwidths/benchmarks)"
+
+**Device decision:** Pixel 10 (Android 16) + iPhone 16 Pro (iOS 18) on TestingBot OSS free tier. Replaces the Galaxy A54 + Pixel 7 owned-hardware path. iOS un-deferred (was previously deferred indefinitely). 3-tier Android matrix (A12 / A55 / Pixel 10) retained as power-user expansion but demoted from the release gate.
+
+**Trace bug discovered — #155 spawned:** Mid-turn local smoke run revealed that `dumpBootTrace()` only emits `boot-start->first-frame` (1 of 5 documented milestones). `boot.ts` does not exist in the codebase; `providers-mounted` races Skia's `onReady`. Recording TTI numbers against this broken 1-milestone trace shape would be doc drift. Row #155 (`PT-BootTraceFix`) appended as `pending ⊟` to extract `boot.ts`, place `save-loaded` + `audio-ready` milestone marks, and assert the 5-milestone trace shape before #107 reopens.
+
+**Row #107 status:** reverted `in_progress ⊟` → `blocked ⊟`; goal + gates updated to Pixel 10 + iPhone 16 Pro; depends-on updated to include `#155`; "paused for #155 boot-trace fix" appended. Row #155 appended as `pending ⊟`. Footnote ⊟ in sessions.md extended with 2026-05-09 paragraph covering both the device-gate change and the trace-shape discovery.
+
+**Gates run this turn**
+- shell syntax (`bash -n scripts/run-smoke-cloud.sh`): clean
+- lint (`bun run lint`, turbo 40/40): ✅ 0 errors — pan-tvardowski biome check 288 files no fixes applied
+- typecheck (`tsc --noEmit` in apps/pan-tvardowski): ✅ silent exit, 0 errors
+- test / build: not re-run (no source changes — doc + script only; last green gate was session #154 at 707 pass / 0 fail)
+
+**Files modified**
+- `apps/pan-tvardowski/docs/smoke-automation.md` — device tier matrix rewritten: Pixel 10 + iPhone 16 Pro as canonical primary gate; 3-tier Android demoted to "Future expansion"
+- `apps/pan-tvardowski/docs/device-smoke.md` — Galaxy A54 + Pixel 7 tables replaced with Pixel 10 + iPhone 16 Pro; iOS smoke deferred callout removed
+- `apps/pan-tvardowski/docs/perf-baseline.md` — Targets table + Real-device measurements tables updated to Pixel 10 + iPhone 16 Pro; iOS deferred callout removed
+- `apps/pan-tvardowski/scripts/run-smoke-cloud.sh` — split into `run_android_tier` + `run_ios_tier`; default runs both; old low/mid/high cases retained as expansion
+- `apps/pan-tvardowski/package.json` — added `smoke:cloud:android` + `smoke:cloud:ios` script aliases
+- `docs/plans/release-readiness-checklist.md` — device-smoke + cold-start checkbox texts reworded for Pixel 10 + iPhone 16 Pro gate
+- `docs/plans/sessions.md` — row #107 reverted to `blocked ⊟`; row #155 appended; footnote ⊟ extended
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `chore(pan-tvardowski): TestingBot Pixel 10 + iPhone 16 Pro gate`
+2. `docs(pan-tvardowski): #107 pause->blocked, append #155 boot-trace fix`
+
+---

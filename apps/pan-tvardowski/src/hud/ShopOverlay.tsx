@@ -29,7 +29,7 @@ const placeholderStyles = StyleSheet.create({
   },
   cardDesc: {
     color: colors.ui.neutralLight,
-    ...typography.body,
+    ...typography.bodyM,
     marginBottom: spacing.sm,
   },
 });

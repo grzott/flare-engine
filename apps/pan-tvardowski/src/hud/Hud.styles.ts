@@ -16,10 +16,10 @@ export const rawStyles = {
   },
   topLeft: { position: 'absolute' as const, top: spacing.hudCornerY, left: spacing.hudCornerX },
   score: { color: colors.ui.primary, ...typography.bodyL },
-  // kept on body for layout fit — compact HP/bomb status lines
-  hp: { color: '#fff', ...typography.body, marginTop: spacing.sm },
-  // kept on body for layout fit — compact HP/bomb status lines
-  bombs: { color: '#fff', ...typography.body, marginTop: spacing.xs },
+  // kept on bodyM for layout fit — compact HP/bomb status lines
+  hp: { color: '#fff', ...typography.bodyM, marginTop: spacing.sm },
+  // kept on bodyM for layout fit — compact HP/bomb status lines
+  bombs: { color: '#fff', ...typography.bodyM, marginTop: spacing.xs },
   bossBar: {
     position: 'absolute' as const,
     top: spacing.hudCornerY,

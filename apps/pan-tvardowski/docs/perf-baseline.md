@@ -132,11 +132,11 @@ The counter is accumulated in `play.ts` each frame by iterating `shipQuery`, loo
 
 The watchdog now disables **both** `chromatic-aberration` and `crt` on first trigger (previously only chromatic-ab). Rationale: CRT is a texture-sample pass that adds measurable GPU cost; if the device can't hold 55 fps average it should also be dropped. The second call remains a no-op (sticky flag). Vignette, bloom, and grayscale-flash are not dropped automatically.
 
-### Real-device TTI measurements (session #107, 2026-05-09)
+### Real-device TTI measurements (session #107, 2026-05-10)
 
 | Device | Cold-start TTI (median of 3) | Sustained fps | Notes |
 |---|---|---|---|
-| Pixel 10 | — | — | Captured via `[boot-trace]` adb logcat — see "Cold-start TTI capture recipe" above. Pending session #107 TestingBot run. |
-| iPhone 16 Pro | — | — | Captured via TestingBot artifact (Xcode Instruments "App Launch" template). Pending session #107 TestingBot iOS run. |
+| Pixel 10 | < 3000ms (gate passed, all 3 iterations) | — | TTI gate passed via TestingBot cloud (Maestro 1.0.9, 3-launch loop). Exact median ms pending re-capture in #156 — script printed to terminal but not recorded for this doc. Per-step breakdown also pending re-capture in #156. |
+| iPhone 16 Pro | deferred — Apple Dev account pending (#137) | — | No IPA built; no TestingBot iOS run. Revisit after #137 + #155-style Apple ToS gating. |
 
-Both columns are filled during PT-DeviceSmoke (#107) using the TestingBot cloud runner (Pixel 10 + iPhone 16 Pro). Android uses `dumpBootTrace` + adb logcat; iOS uses the Xcode Instruments artifact downloaded from TestingBot.
+**Session #107 close note (2026-05-10).** TTI gate verified on Pixel 10 via TestingBot cloud (Maestro 1.0.9, 3-launch median, real device): all 3 iterations passed < 3000ms threshold. Functional smoke blocked on `assertVisible "Play"` after 60s timeout — boot→menu scene transition appears to stall on TestingBot Pixel 10 (likely audio init or save load race on the cloud device); diagnosis deferred to #156 to avoid burning cloud minutes guessing. iOS deferred entirely — no Apple Developer account (#137 pending). TestingBot infrastructure stood up this session: `.env.testingbot` auto-load via `set -a; source; set +a`, 3-launch loop with `TTI_RUN_COUNT` env, artifacts ZIP extraction via `unzip` after each iteration, `--device-locale` forcing per run, and `--download-artifacts all --artifacts-output-dir` replacing the old `--artifacts-dir` flag.

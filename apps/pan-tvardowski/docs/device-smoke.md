@@ -21,55 +21,55 @@
 
 | # | Check | Maestro flow | EN | PL |
 |---|-------|--------------|----|----|
-| 1 | App boots to menu without crash | smoke.yaml + cold-start-tti.yaml | | |
-| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | smoke.yaml | | |
-| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | boss-fight.yaml (skeleton) | | |
-| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | boss-fight.yaml (skeleton) | | |
-| 5 | Zone 3 — water + fog shader bg renders, Wodnik boss fight starts | boss-fight.yaml (skeleton) | | |
-| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | smoke.yaml | | |
-| 7 | Credits scroll — all 6 sections visible, text in selected locale | smoke.yaml | | |
-| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | manual (debug HUD pending) | | |
-| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
-| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
-| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | manual (debug HUD pending) | | |
-| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | manual (debug HUD pending) | | |
-| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | smoke.yaml | | |
+| 1 | App boots to menu without crash | smoke.yaml + cold-start-tti.yaml | **blocked** — smoke functional flow fails on `assertVisible: "Play"` on Pixel 10 via TestingBot — likely boot→menu scene transition stall; tracked in #156 PT-Smoke-Diagnose | **blocked** — same as EN |
+| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | smoke.yaml | **blocked** — smoke functional flow fails on `assertVisible: "Play"` on Pixel 10 via TestingBot — likely boot→menu scene transition stall; tracked in #156 PT-Smoke-Diagnose | **blocked** — same as EN |
+| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | boss-fight.yaml (skeleton) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) |
+| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | boss-fight.yaml (skeleton) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) |
+| 5 | Zone 3 — water + fog shader bg renders, Wodnik boss fight starts | boss-fight.yaml (skeleton) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) |
+| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | smoke.yaml | **blocked** — smoke functional flow fails on `assertVisible: "Play"` on Pixel 10 via TestingBot — likely boot→menu scene transition stall; tracked in #156 PT-Smoke-Diagnose | **blocked** — same as EN |
+| 7 | Credits scroll — all 6 sections visible, text in selected locale | smoke.yaml | **blocked** — smoke functional flow fails on `assertVisible: "Play"` on Pixel 10 via TestingBot — likely boot→menu scene transition stall; tracked in #156 PT-Smoke-Diagnose | **blocked** — same as EN |
+| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | manual (debug HUD pending) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) |
+| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | **skip** — deep-link only — no main-menu button; tracked in #156 | **skip** — deep-link only — no main-menu button; tracked in #156 |
+| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | **skip** — deep-link only — no main-menu button; tracked in #156 | **skip** — deep-link only — no main-menu button; tracked in #156 |
+| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | manual (debug HUD pending) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) |
+| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | manual (debug HUD pending) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) | **skip** — debug HUD pending (existing skeleton state, unchanged this session) |
+| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | smoke.yaml | **blocked** — smoke functional flow fails on `assertVisible: "Play"` on Pixel 10 via TestingBot — likely boot→menu scene transition stall; tracked in #156 PT-Smoke-Diagnose | **blocked** — same as EN |
 
 Cold-start TTI (boot-start → first-frame, three runs, take median):
 
 | Run | TTI (ms) |
 |-----|----------|
-| 1   |          |
-| 2   |          |
-| 3   |          |
-| **median** |    |
+| 1   | **pass** — gate < 3000ms |
+| 2   | **pass** — gate < 3000ms |
+| 3   | **pass** — gate < 3000ms |
+| **median** | **pass** — TTI gate passed (< 3000ms, all 3 iterations); exact median pending re-capture in #156 |
 
 ### iPhone 16 Pro (iOS — TestingBot canonical)
 
 | # | Check | Maestro flow | EN | PL |
 |---|-------|--------------|----|----|
-| 1 | App boots to menu without crash | smoke.yaml + cold-start-tti.yaml | | |
-| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | smoke.yaml | | |
-| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | boss-fight.yaml (skeleton) | | |
-| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | boss-fight.yaml (skeleton) | | |
-| 5 | Zone 3 — water + fog shader bg renders, Wodnik boss fight starts | boss-fight.yaml (skeleton) | | |
-| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | smoke.yaml | | |
-| 7 | Credits scroll — all 6 sections visible, text in selected locale | smoke.yaml | | |
-| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | manual (debug HUD pending) | | |
-| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
-| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | | |
-| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | manual (debug HUD pending) | | |
-| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | manual (debug HUD pending) | | |
-| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | smoke.yaml | | |
+| 1 | App boots to menu without crash | smoke.yaml + cold-start-tti.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 2 | Menu nav: Play → Save Select → Back → Settings → Back → Credits → tap-to-return | smoke.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 3 | Zone 1 — enemies spawn, player shoots, bomb fires, HUD updates | boss-fight.yaml (skeleton) | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 4 | Zone 2 — zone transition from z1, banner appears, miniboss spawns | boss-fight.yaml (skeleton) | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 5 | Zone 3 — water + fog shader bg renders, Wodnik boss fight starts | boss-fight.yaml (skeleton) | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 6 | Settings persist — change language + volumes, close app, reopen, settings retained | smoke.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 7 | Credits scroll — all 6 sections visible, text in selected locale | smoke.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 8 | IAP gate at z4 — gate screen shown (airplane mode: no purchase, tap dismiss) | manual (debug HUD pending) | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 9 | Codex overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 10 | Achievements overlay — opens, fresh-save banner shown, back returns to menu | smoke.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 11 | Bomb FX — tier-1 explosion visible, screen shake occurs | manual (debug HUD pending) | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 12 | Boss fight — boss HP bar visible, phase transition triggers detonation FX | manual (debug HUD pending) | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
+| 13 | Reduced-motion toggle — enable in settings, re-enter play, shake/postfx reduced | smoke.yaml | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating | **deferred** — Apple Developer account pending (#137); revisit after #137 + #155-style Apple ToS gating |
 
 Cold-start TTI (boot-start → first-frame, three runs, take median):
 
 | Run | TTI (ms) |
 |-----|----------|
-| 1   |          |
-| 2   |          |
-| 3   |          |
-| **median** |    |
+| 1   | **deferred** — Apple Developer account pending (#137) |
+| 2   | **deferred** — Apple Developer account pending (#137) |
+| 3   | **deferred** — Apple Developer account pending (#137) |
+| **median** | **deferred** — Apple Developer account pending (#137) |
 
 ## Results
 

@@ -3478,3 +3478,50 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 **Next session:** no next session row exists — run /plan-sessions.
 
 ---
+
+## Session 107 — 2026-05-10 (scope: [game])
+
+**Goal (from sessions.md row #107):** PT-DeviceSmoke: full device-smoke pass (Pixel 10 + iPhone 16 Pro via TestingBot) + update perf-baseline.md + cold-start TTI on both devices
+
+**Touched files**
+- `.gitignore`
+- `apps/pan-tvardowski/.env.testingbot.example` (new, untracked — not in diff; template only)
+- `apps/pan-tvardowski/.maestro/smoke.yaml`
+- `apps/pan-tvardowski/app.json`
+- `apps/pan-tvardowski/docs/device-smoke.md`
+- `apps/pan-tvardowski/docs/perf-baseline.md`
+- `apps/pan-tvardowski/docs/smoke-automation.md`
+- `apps/pan-tvardowski/metro.config.js`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/run-smoke-cloud.sh`
+- `bun.lock`
+- `docs/plans/release-readiness-checklist.md`
+- `docs/plans/sessions.md`
+- `package.json`
+
+**Scope deviation (documented + user-approved)**
+Declared touched paths were `apps/pan-tvardowski/docs/{device-smoke.md,perf-baseline.md}`. The actual diff is wider because the EAS cloud build + TestingBot pipeline had to be stood up end-to-end before the smoke could run. Full rationale in the `⊟ #107 close (2026-05-10)` paragraph at the bottom of `docs/plans/sessions.md`. No files in `packages/**` were touched (game-scope discipline maintained).
+
+**Gate results**
+- lint: ✅ (turbo 40/40, 0 errors)
+- typecheck: ✅ (0 errors, turbo 73/73 cached)
+- test: ✅ (0 new tests — infra session; 712 total, 0 fail)
+- build: ✅ (turbo 39/39 cached)
+- device smoke: partial pass — Pixel 10 cold-start TTI < 3000ms on 3 iterations (gate passed 2026-05-10); functional smoke blocked on `assertVisible "Play"` 60s timeout (boot→menu stall on TestingBot, tracked in #156); iOS deferred (no Apple Developer account, tracked in #137)
+
+**Pre-existing failure (not caused by this session)**
+`RenderSystem > works with the real @flare-engine/ecs World` at `packages/render/tests/render-system.test.ts:202` — reproduces on the unmodified branch; engine-side; no relation to session #107 infra work. The test suite showed 0 failures during this session's gate run (the failure was intermittent / environment-dependent and did not surface in this run).
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row extended with `+ PT-DeviceSmoke (session #107)` suffix; test count remains 712; last-closed date updated to 2026-05-10
+- `docs/plans/pan-tvardowski-build-plan.md` — Change log entry `2026-05-10 — PT-DeviceSmoke complete (session #107)` appended (EAS bootstrap, TTI gate pass, functional smoke blocked, iOS deferred, RR §5 Android tick)
+- `docs/plans/release-readiness-checklist.md` — §5 device-smoke bullet updated with Android TTI pass state (2026-05-10) + iOS deferred note; already modified by builder during session
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `chore(pan-tvardowski): EAS bootstrap + expo-doctor fixes + react overrides`
+2. `feat(pan-tvardowski): TestingBot cloud runner — 3-launch TTI loop + env auto-load`
+3. `docs(pan-tvardowski): #107 close — device-smoke + perf-baseline + RR tick`
+
+**Next session:** #108 PT-DocSync-Final — update visual-reference.md + builder-reference.md mirror row + build-plan changelog for all sessions #93–#107
+
+---

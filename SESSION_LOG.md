@@ -3157,3 +3157,56 @@ Note: target_commits deviated 3→4. A docs commit was added per VS-S8 arc prece
 **Next session:** #113 "VS-S8e shape-catalogue.ts absorption: move SHAPE_CATALOGUE + EntityId into visual-spec/; repoint shape-atlas.ts + index.ts + visual-spec/types.ts imports; delete shape-catalogue.ts"
 
 ---
+
+## Session 113 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #113):** VS-S8e shape-catalogue.ts absorption: move SHAPE_CATALOGUE + EntityId into visual-spec/; repoint shape-atlas.ts + index.ts + visual-spec/types.ts imports; delete shape-catalogue.ts
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/shapes-catalogue.ts` (new — absorption target)
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/index.ts`
+- `apps/pan-tvardowski/src/shape-catalogue.ts` (deleted)
+- `apps/pan-tvardowski/tests/asset-manifest.test.ts`
+- `apps/pan-tvardowski/tests/boss-ships.test.ts`
+- `apps/pan-tvardowski/tests/boss-visual-audit.test.ts`
+- `apps/pan-tvardowski/tests/entity-resolution.test.ts`
+- `apps/pan-tvardowski/tests/glow-recipes.test.ts`
+- `apps/pan-tvardowski/tests/miniboss-ships.test.ts`
+- `apps/pan-tvardowski/tests/pickup-ships.test.ts`
+- `apps/pan-tvardowski/tests/player-ships.test.ts`
+- `apps/pan-tvardowski/tests/shape-atlas.test.ts`
+- `apps/pan-tvardowski/tests/shape-catalogue.test.ts`
+- `apps/pan-tvardowski/tests/ship-anatomy.test.ts`
+- `apps/pan-tvardowski/tests/ship-silhouette-audit.test.ts`
+- `apps/pan-tvardowski/tests/ships-migration.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/weapon-specs.test.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+
+Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared touched path listed `ships.ts` — `ships.ts` was already authored in #97 and was not the correct destination). 12 additional test files beyond the 2 named in the plan required import repointing — all mechanical, forced by deletion of `shape-catalogue.ts`. `tests/visual-spec.test.ts` schema canary bumped (import relocation). `tests/asset-manifest.test.ts` ALLOWED-set updated (`shape-catalogue.ts` → `visual-spec/shapes-catalogue.ts`). All deviations are mechanical consequences of the absorption — same precedent as #112.
+
+**Gates**
+- typecheck: ✅
+- lint: ✅ (292 files, 0 errors)
+- test: ✅ (+0 new; 710 pass, 0 fail, 8532 expect() calls — baseline held, shape-catalogue exports verified via repointed tests)
+- build: ✅ (script is a native stub echo — `bun run android|ios` is the real device path)
+- device smoke: deferred — no new scene or rendering logic; pure module-relocation refactor
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8e Change log entry appended after VS-S8d entry; details shapes-catalogue.ts destination, 2 src + 12 test consumers repointed, shape-catalogue.ts deletion, 710 tests green
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row updated: `+ VS-S8e shape-catalogue.ts absorption (session #113)` appended; last-closed date updated to 2026-05-09; test count confirmed 710
+- `docs/plans/release-readiness-checklist.md` — no new ticks (VS-S8e is a refactor, not a release item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): absorb shape-catalogue into visual-spec`
+2. `refactor(pan-tvardowski): delete shape-catalogue.ts`
+3. `docs(pan-tvardowski): VS-S8e change log + builder-reference mirror row`
+
+**Next session:** #114 "VS-S8f delete theme/ directory: remove theme/colors.ts + theme/index.ts (last remnants); grep-validate zero orphan `from '../theme'` imports remain"
+
+---
+---

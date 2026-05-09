@@ -41,7 +41,7 @@ import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { PaywallOverlay } from './hud/PaywallOverlay';
 import { ShopOverlay } from './hud/ShopOverlay';
 import { PT_ENTITLEMENT } from './iap/catalog';
-import { dumpBootTrace, markBootMilestone, markBootStart } from './perf/cold-start';
+import { markBootMilestone, markBootStart } from './perf/cold-start';
 import { useAppProviders } from './providers';
 import { applyVolumes, buildSceneRegistry } from './scene-registry';
 import { shareHighScore } from './share/manager';
@@ -421,7 +421,6 @@ function AppRoot(): React.ReactElement {
             ctxRef.current = ready;
             setCtx(ready);
             markBootMilestone('first-frame');
-            dumpBootTrace();
             disposerRef.current = bootstrap({
               ctx: ready,
               localization,

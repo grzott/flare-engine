@@ -1,6 +1,6 @@
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import type { AudioHandles } from '../audio/init';
-import { markBootMilestone } from '../perf/cold-start';
+import { dumpBootTrace, markBootMilestone } from '../perf/cold-start';
 import { gameState, notifyStateChanged } from '../state';
 import { shellDefaults } from './scene-shell';
 
@@ -34,6 +34,7 @@ export function createBootScene(
           audioRef.current = await initAudio();
           markBootMilestone('audio-ready');
         }
+        dumpBootTrace();
         gameState.bootProgress = { value: 1, labelKey: 'boot.loading.audio' };
         notifyStateChanged();
         void ctx.scenes.go('menu');

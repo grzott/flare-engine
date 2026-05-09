@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/BootOverlay.styles';
-import { colors } from '../src/theme/colors';
+import { UI_COLORS } from '../src/visual-spec/theme';
 
 describe('BootOverlay styles — folio X', () => {
-  it('root backgroundColor === colors.ui.void', () => {
-    expect(rawStyles.root.backgroundColor).toBe(colors.ui.void);
+  it('root backgroundColor === UI_COLORS.void', () => {
+    expect(rawStyles.root.backgroundColor).toBe(UI_COLORS.void);
   });
 
-  it('sigil backgroundColor === colors.ui.crimson', () => {
-    expect(rawStyles.sigil.backgroundColor).toBe(colors.ui.crimson);
+  it('sigil backgroundColor === UI_COLORS.crimson', () => {
+    expect(rawStyles.sigil.backgroundColor).toBe(UI_COLORS.crimson);
   });
 });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { rawStyles } from '../src/hud/Hud.styles';
 import { gameState, resetGameState } from '../src/state';
-import { colors } from '../src/theme/colors';
+import { UI_COLORS } from '../src/visual-spec/theme';
 
 describe('weapon meter — state', () => {
   beforeEach(() => {
@@ -31,11 +31,11 @@ describe('weapon meter — state', () => {
 
 describe('weapon meter — styles', () => {
   test('weaponSegmentFilled uses crimson color', () => {
-    expect(rawStyles.weaponSegmentFilled.backgroundColor).toBe(colors.ui.crimson);
+    expect(rawStyles.weaponSegmentFilled.backgroundColor).toBe(UI_COLORS.crimson);
   });
 
   test('weaponSegment (dim) uses tint55 color', () => {
-    expect(rawStyles.weaponSegment.backgroundColor).toBe(colors.ui.tint55);
+    expect(rawStyles.weaponSegment.backgroundColor).toBe(UI_COLORS.tint55);
   });
 
   test('weaponSegmentCooldown exists and has overflow hidden', () => {
@@ -45,7 +45,7 @@ describe('weapon meter — styles', () => {
 
   test('weaponSegmentCooldownFill uses crimson color', () => {
     expect(rawStyles.weaponSegmentCooldownFill).toBeDefined();
-    expect(rawStyles.weaponSegmentCooldownFill.backgroundColor).toBe(colors.ui.crimson);
+    expect(rawStyles.weaponSegmentCooldownFill.backgroundColor).toBe(UI_COLORS.crimson);
   });
 
   test('weaponSegmentCooldown and weaponSegment have same dimensions', () => {

@@ -2,9 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { ZoneId } from '../src/events';
 import { rawStyles } from '../src/hud/Hud.styles';
 import { zoneRomanNumeral } from '../src/hud/zone-banner';
-import { colors } from '../src/theme/colors';
-import { spacing } from '../src/theme/spacing';
-import { fontFamily } from '../src/visual-spec/theme';
+import { THEME_SPEC, UI_COLORS, fontFamily } from '../src/visual-spec/theme';
 
 describe('zoneRomanNumeral — exhaustive mapping', () => {
   const cases: [ZoneId, string][] = [
@@ -31,11 +29,11 @@ describe('zone banner styles', () => {
   });
 
   test('zoneBannerNumeral color is gold', () => {
-    expect(rawStyles.zoneBannerNumeral.color).toBe(colors.ui.gold);
+    expect(rawStyles.zoneBannerNumeral.color).toBe(UI_COLORS.gold);
   });
 
   test('zoneBannerRule has gold background', () => {
-    expect(rawStyles.zoneBannerRule.backgroundColor).toBe(colors.ui.gold);
+    expect(rawStyles.zoneBannerRule.backgroundColor).toBe(UI_COLORS.gold);
   });
 
   test('zoneBannerRule height is 1', () => {
@@ -46,7 +44,7 @@ describe('zone banner styles', () => {
     expect(rawStyles.zoneBannerRule.width).toBe('60%');
   });
 
-  test('zoneBannerRule marginVertical uses spacing.sm', () => {
-    expect(rawStyles.zoneBannerRule.marginVertical).toBe(spacing.sm);
+  test('zoneBannerRule marginVertical uses THEME_SPEC.spacing.sm', () => {
+    expect(rawStyles.zoneBannerRule.marginVertical).toBe(THEME_SPEC.spacing.sm);
   });
 });

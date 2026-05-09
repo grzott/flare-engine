@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/ShopOverlay.styles';
-import { colors } from '../src/theme/colors';
+import { UI_COLORS } from '../src/visual-spec/theme';
 
 describe('ShopOverlay — folio XI alignment', () => {
-  it('productCard.borderColor === colors.ui.gold', () => {
-    expect(rawStyles.productCard.borderColor).toBe(colors.ui.gold);
+  it('productCard.borderColor === UI_COLORS.gold', () => {
+    expect(rawStyles.productCard.borderColor).toBe(UI_COLORS.gold);
   });
 
-  it('panel.backgroundColor === colors.ui.parchment', () => {
-    expect(rawStyles.panel.backgroundColor).toBe(colors.ui.parchment);
+  it('panel.backgroundColor === UI_COLORS.parchment', () => {
+    expect(rawStyles.panel.backgroundColor).toBe(UI_COLORS.parchment);
   });
 });

@@ -2,11 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { rawStyles } from '../src/hud/PaywallOverlay.styles';
-import { colors } from '../src/theme/colors';
+import { UI_COLORS } from '../src/visual-spec/theme';
 
 describe('PaywallOverlay — folio XI alignment', () => {
-  it('wrapper.backgroundColor === colors.ui.crimsonDeep', () => {
-    expect(rawStyles.wrapper.backgroundColor).toBe(colors.ui.crimsonDeep);
+  it('wrapper.backgroundColor === UI_COLORS.crimsonDeep', () => {
+    expect(rawStyles.wrapper.backgroundColor).toBe(UI_COLORS.crimsonDeep);
   });
 
   it('wrapper.position === "absolute"', () => {

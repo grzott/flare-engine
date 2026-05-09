@@ -5,57 +5,56 @@ import { rawStyles as dialogueStyles } from '../src/hud/DialogueOverlay.styles';
 import { rawStyles as inventoryStyles } from '../src/hud/InventoryOverlay.styles';
 import { rawStyles as privacyStyles } from '../src/hud/PrivacyOverlay.styles';
 import { rawStyles as shopStyles } from '../src/hud/ShopOverlay.styles';
-import { colors } from '../src/theme/colors';
-import { spacing } from '../src/theme/spacing';
+import { THEME_SPEC, UI_COLORS } from '../src/visual-spec/theme';
 
 describe('overlay root tokens — inlined from overlayBase', () => {
-  it('InventoryOverlay root.backgroundColor === colors.ui.bodyBg', () => {
-    expect(inventoryStyles.root.backgroundColor).toBe(colors.ui.bodyBg);
+  it('InventoryOverlay root.backgroundColor === UI_COLORS.bodyBg', () => {
+    expect(inventoryStyles.root.backgroundColor).toBe(UI_COLORS.bodyBg);
   });
 
-  it('AchievementsOverlay panelContainer.padding === spacing.xl', () => {
-    expect(achievementsStyles.panelContainer.padding).toBe(spacing.xl);
+  it('AchievementsOverlay panelContainer.padding === THEME_SPEC.spacing.xl', () => {
+    expect(achievementsStyles.panelContainer.padding).toBe(THEME_SPEC.spacing.xl);
   });
 
-  it('AchievementsOverlay panel.maxWidth === spacing.panelLgWidth', () => {
-    expect(achievementsStyles.panel.maxWidth).toBe(spacing.panelLgWidth);
+  it('AchievementsOverlay panel.maxWidth === THEME_SPEC.spacing.panelLgWidth', () => {
+    expect(achievementsStyles.panel.maxWidth).toBe(THEME_SPEC.spacing.panelLgWidth);
   });
 
-  it('PrivacyOverlay panel.maxWidth === spacing.panelMdWidth', () => {
-    expect(privacyStyles.panel.maxWidth).toBe(spacing.panelMdWidth);
+  it('PrivacyOverlay panel.maxWidth === THEME_SPEC.spacing.panelMdWidth', () => {
+    expect(privacyStyles.panel.maxWidth).toBe(THEME_SPEC.spacing.panelMdWidth);
   });
 });
 
 describe('overlay rawStyles — theme token assertions', () => {
-  it('InventoryOverlay tabActive borderColor === colors.ui.crimson', () => {
-    expect(inventoryStyles.tabActive.borderBottomColor).toBe(colors.ui.crimson);
+  it('InventoryOverlay tabActive borderColor === UI_COLORS.crimson', () => {
+    expect(inventoryStyles.tabActive.borderBottomColor).toBe(UI_COLORS.crimson);
   });
 
-  it('CodexOverlay entryRow border === colors.ui.divider', () => {
-    expect(codexStyles.entryRow.borderBottomColor).toBe(colors.ui.divider);
+  it('CodexOverlay entryRow border === UI_COLORS.divider', () => {
+    expect(codexStyles.entryRow.borderBottomColor).toBe(UI_COLORS.divider);
   });
 
-  it('InventoryOverlay codexRow border === colors.ui.divider', () => {
-    expect(inventoryStyles.codexRow.borderBottomColor).toBe(colors.ui.divider);
+  it('InventoryOverlay codexRow border === UI_COLORS.divider', () => {
+    expect(inventoryStyles.codexRow.borderBottomColor).toBe(UI_COLORS.divider);
   });
 
-  it('AchievementsOverlay entryRow border === colors.ui.divider', () => {
-    expect(achievementsStyles.entryRow.borderBottomColor).toBe(colors.ui.divider);
+  it('AchievementsOverlay entryRow border === UI_COLORS.divider', () => {
+    expect(achievementsStyles.entryRow.borderBottomColor).toBe(UI_COLORS.divider);
   });
 
-  it('DialogueOverlay root.backgroundColor === colors.ui.overlay', () => {
-    expect(dialogueStyles.root.backgroundColor).toBe(colors.ui.overlay);
+  it('DialogueOverlay root.backgroundColor === UI_COLORS.overlay', () => {
+    expect(dialogueStyles.root.backgroundColor).toBe(UI_COLORS.overlay);
   });
 
-  it('DialogueOverlay panel borderColor === colors.ui.border', () => {
-    expect(dialogueStyles.panel.borderColor).toBe(colors.ui.border);
+  it('DialogueOverlay panel borderColor === UI_COLORS.border', () => {
+    expect(dialogueStyles.panel.borderColor).toBe(UI_COLORS.border);
   });
 
-  it('PrivacyOverlay backdrop === colors.ui.backdropModal', () => {
-    expect(privacyStyles.backdrop.backgroundColor).toBe(colors.ui.backdropModal);
+  it('PrivacyOverlay backdrop === UI_COLORS.backdropModal', () => {
+    expect(privacyStyles.backdrop.backgroundColor).toBe(UI_COLORS.backdropModal);
   });
 
-  it('ShopOverlay root.backgroundColor === colors.ui.bodyBg', () => {
-    expect(shopStyles.root.backgroundColor).toBe(colors.ui.bodyBg);
+  it('ShopOverlay root.backgroundColor === UI_COLORS.bodyBg', () => {
+    expect(shopStyles.root.backgroundColor).toBe(UI_COLORS.bodyBg);
   });
 });

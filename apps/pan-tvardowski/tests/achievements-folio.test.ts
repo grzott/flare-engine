@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/AchievementsOverlay.styles';
-import { colors } from '../src/theme/colors';
+import { UI_COLORS } from '../src/visual-spec/theme';
 
 describe('AchievementsOverlay — folio XI alignment', () => {
-  it('entryUnlocked.borderLeftColor === colors.ui.gold', () => {
-    expect(rawStyles.entryUnlocked.borderLeftColor).toBe(colors.ui.gold);
+  it('entryUnlocked.borderLeftColor === UI_COLORS.gold', () => {
+    expect(rawStyles.entryUnlocked.borderLeftColor).toBe(UI_COLORS.gold);
   });
 
-  it('panel.backgroundColor === colors.ui.parchment', () => {
-    expect(rawStyles.panel.backgroundColor).toBe(colors.ui.parchment);
+  it('panel.backgroundColor === UI_COLORS.parchment', () => {
+    expect(rawStyles.panel.backgroundColor).toBe(UI_COLORS.parchment);
   });
 });

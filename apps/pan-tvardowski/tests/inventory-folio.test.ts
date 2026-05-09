@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { rawStyles } from '../src/hud/InventoryOverlay.styles';
-import { colors } from '../src/theme/colors';
+import { UI_COLORS } from '../src/visual-spec/theme';
 
 describe('InventoryOverlay — folio XI alignment', () => {
-  it('tabs.borderBottomColor === colors.ui.gold', () => {
-    expect(rawStyles.tabs.borderBottomColor).toBe(colors.ui.gold);
+  it('tabs.borderBottomColor === UI_COLORS.gold', () => {
+    expect(rawStyles.tabs.borderBottomColor).toBe(UI_COLORS.gold);
   });
 
-  it('tabActive.borderBottomColor === colors.ui.crimson', () => {
-    expect(rawStyles.tabActive.borderBottomColor).toBe(colors.ui.crimson);
+  it('tabActive.borderBottomColor === UI_COLORS.crimson', () => {
+    expect(rawStyles.tabActive.borderBottomColor).toBe(UI_COLORS.crimson);
   });
 });

@@ -3273,4 +3273,37 @@ Deviation: absorption landed in `src/visual-spec/shapes-catalogue.ts` (declared 
 **Next session:** #115 "VS-S8g visual-reference.md update: repoint all file:line cross-links from theme/ + palette.ts + shape-catalogue.ts to visual-spec/ paths; flip §15 punch-list S8 rows to done"
 
 ---
+
+## Session 115 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #115):** VS-S8g visual-reference.md update: repoint all file:line cross-links from theme/ + palette.ts + shape-catalogue.ts to visual-spec/ paths; flip §15 punch-list S8 rows to done
+
+**Touched files**
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Deviations**
+1. Scope extended from declared 1 file to 4 files — §17 change-log entry + builder-reference mirror row added per VS-S8 arc precedent (matching #109–#114).
+2. §15 punch-list S8 row flips not needed — all rows were already marked done from sessions #109–#114.
+3. 58 edits applied to visual-reference.md (module paths + line anchors repointed to visual-spec/).
+
+**Gates**
+- typecheck: ✅ (tsc --noEmit, silent exit in apps/pan-tvardowski)
+- lint: ✅ (turbo lint 40/40 packages, 0 errors; pan-tvardowski: biome check src/ tests/ — 287 files, no fixes applied)
+- test: N/A (doc-only session; 694/694 tests unchanged)
+- build: N/A (not in declared gates for this row)
+- device smoke: N/A (doc-only session)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8g Change log entry appended; confirms 58 cross-link edits, §15 punch-list already done, 694/694 tests unchanged
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row updated: `+ VS-S8g visual-reference.md cross-link repoint (session #115)` appended; last-closed date 2026-05-09; 694 tests confirmed
+- `docs/plans/release-readiness-checklist.md` — no new ticks (doc-only cross-link repoint is not a release item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): VS-S8g repoint visual-reference.md to visual-spec`
+
+**Next session:** #116 "VS-S8h workflow lock + final gate: add paragraph to CLAUDE.md locking visual-spec workflow; full orphan-grep validation; final lint + typecheck + test + build gate"
+
 ---

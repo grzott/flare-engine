@@ -132,7 +132,7 @@ Folio references: [folio-06-skia-language.png](../../../docs/references/pan-tvar
 
 Hue families: enemies span the rainbow per species (folio XIIIb), mini-bosses crimson family (folio XIIIb+), bosses violet family (folio XIIIf), player ships brand-tagged (Kogut = gold, Twardoń = green, Bazyl = blue per folio XIIIc).
 
-Live `src/shape-catalogue.ts` fully implements this rule across all 29 ships. Migration completed across sessions #76–#78. Pickups (`weaponPickups`, `upgradePickups`) intentionally remain `ShapeSpec[]` — they are items, not ships, and are not subject to this rule.
+Live `src/visual-spec/shapes-catalogue.ts` fully implements this rule across all 29 ships. Migration completed across sessions #76–#78. Pickups (`weaponPickups`, `upgradePickups`) intentionally remain `ShapeSpec[]` — they are items, not ships, and are not subject to this rule.
 
 ### 6 Skia primitives (folio VI)
 
@@ -152,80 +152,80 @@ Collision radii: [`src/visual-spec/shapes.ts:3`](../src/visual-spec/shapes.ts#L3
 
 ### Game-entity shapes table (44 entities)
 
-All shapes defined in [`src/shape-catalogue.ts`](../src/shape-catalogue.ts).
+All shapes defined in [`src/visual-spec/shapes-catalogue.ts`](../src/visual-spec/shapes-catalogue.ts).
 
 #### Enemies (14) — ShipSpec: hull + 1–2 rect weapons + square engine (sessions #76–#78)
 
 | Entity | Hull kind | Weapons | Hull key color | Line |
 |---|---|---|---|---|
-| `skrzat` | triangle size=14 | 1 rect | ORANGE | [45](../src/shape-catalogue.ts#L45) |
-| `latawiec` | triangle size=20 | 2 rects | RED | [51](../src/shape-catalogue.ts#L51) |
-| `czart` | ngon n=5 r=14 | 2 rects | BLACK | [60](../src/shape-catalogue.ts#L60) |
-| `bies` | ngon n=6 r=14 | 2 rects | DARK_RED | [69](../src/shape-catalogue.ts#L69) |
-| `licho` | star points=5 rOuter=16 rInner=7 | 1 rect | PURPLE | [78](../src/shape-catalogue.ts#L78) |
-| `strzyga` | triangle size=16 | 2 rects | PALE | [83](../src/shape-catalogue.ts#L83) |
-| `topielec` | circle r=14 | 2 rects | BLUE_GREEN | [93](../src/shape-catalogue.ts#L93) |
-| `mamuna` | ngon n=8 r=14 | 2 rects | GREEN | [102](../src/shape-catalogue.ts#L102) |
-| `nocnica` | circle r=10 | 1 rect | BLACK | [111](../src/shape-catalogue.ts#L111) |
-| `poludnica` | triangle size=18 | 2 rects | YELLOW_WHITE | [117](../src/shape-catalogue.ts#L117) |
-| `wapierz` | ngon n=8 r=18 stroked | 2 rects | DARK_RED | [126](../src/shape-catalogue.ts#L126) |
-| `hound` | circle r=11 | 2 rects | BLACK | [135](../src/shape-catalogue.ts#L135) |
-| `dziwozona` | ngon n=5 r=16 | 2 rects | TEAL | [144](../src/shape-catalogue.ts#L144) |
-| `moon-wraith` | triangle size=14 | 1 rect | `0xff2b2d5a` | [153](../src/shape-catalogue.ts#L153) |
+| `skrzat` | triangle size=14 | 1 rect | ORANGE | [48](../src/visual-spec/shapes-catalogue.ts#L48) |
+| `latawiec` | triangle size=20 | 2 rects | RED | [54](../src/visual-spec/shapes-catalogue.ts#L54) |
+| `czart` | ngon n=5 r=14 | 2 rects | BLACK | [63](../src/visual-spec/shapes-catalogue.ts#L63) |
+| `bies` | ngon n=6 r=14 | 2 rects | DARK_RED | [72](../src/visual-spec/shapes-catalogue.ts#L72) |
+| `licho` | star points=5 rOuter=16 rInner=7 | 1 rect | PURPLE | [81](../src/visual-spec/shapes-catalogue.ts#L81) |
+| `strzyga` | triangle size=16 | 2 rects | PALE | [87](../src/visual-spec/shapes-catalogue.ts#L87) |
+| `topielec` | circle r=14 | 2 rects | BLUE_GREEN | [96](../src/visual-spec/shapes-catalogue.ts#L96) |
+| `mamuna` | ngon n=8 r=14 | 2 rects | GREEN | [105](../src/visual-spec/shapes-catalogue.ts#L105) |
+| `nocnica` | circle r=10 | 1 rect | BLACK | [114](../src/visual-spec/shapes-catalogue.ts#L114) |
+| `poludnica` | triangle size=18 | 2 rects | YELLOW_WHITE | [120](../src/visual-spec/shapes-catalogue.ts#L120) |
+| `wapierz` | ngon n=8 r=18 stroked | 2 rects | DARK_RED | [129](../src/visual-spec/shapes-catalogue.ts#L129) |
+| `hound` | circle r=11 | 2 rects | BLACK | [138](../src/visual-spec/shapes-catalogue.ts#L138) |
+| `dziwozona` | ngon n=5 r=16 | 2 rects | TEAL | [147](../src/visual-spec/shapes-catalogue.ts#L147) |
+| `moon-wraith` | triangle size=14 | 1 rect | `0xff2b2d5a` | [156](../src/visual-spec/shapes-catalogue.ts#L156) |
 
 #### Mini-bosses (4) — ShipSpec: hull + 2–3 rect weapons + square engine (crimson family, sessions #76–#78)
 
 | Entity | Hull kind | Weapons | Hull key color | Line |
 |---|---|---|---|---|
-| `rokita` | ngon n=6 r=30 | 2 rects | CRIMSON | [165](../src/shape-catalogue.ts#L165) |
-| `leszy` | ngon n=4 r=32 stroked | 3 rects | CRIMSON_DARK | [173](../src/shape-catalogue.ts#L173) |
-| `nocny-lowca` | ngon n=5 r=30 | 3 rects | CRIMSON_RUST | [183](../src/shape-catalogue.ts#L183) |
-| `madej` | triangle size=34 stroked | 2 rects | CRIMSON_RUST | [193](../src/shape-catalogue.ts#L193) |
+| `rokita` | ngon n=6 r=30 | 2 rects | CRIMSON | [168](../src/visual-spec/shapes-catalogue.ts#L168) |
+| `leszy` | ngon n=4 r=32 stroked | 3 rects | CRIMSON_DARK | [177](../src/visual-spec/shapes-catalogue.ts#L177) |
+| `nocny-lowca` | ngon n=5 r=30 | 3 rects | CRIMSON_RUST | [187](../src/visual-spec/shapes-catalogue.ts#L187) |
+| `madej` | triangle size=34 stroked | 2 rects | CRIMSON_RUST | [197](../src/visual-spec/shapes-catalogue.ts#L197) |
 
 #### Bosses (8) — ShipSpec: hull + 2–4 rect weapons + square engine (violet family, sessions #76–#78)
 
 | Entity | Hull kind | Weapons | Hull key color | Line |
 |---|---|---|---|---|
-| `smok-krzemionkowski` | ngon n=6 r=48 | 2 rects | VIOLET_DARK | [213](../src/shape-catalogue.ts#L213) |
-| `borowy-krol` | ngon n=5 r=52 | 3 rects | VIOLET_DEEP | [221](../src/shape-catalogue.ts#L221) |
-| `wodnik-wislanny` | circle r=44 stroked | 2 rects | VIOLET_MID | [231](../src/shape-catalogue.ts#L231) |
-| `boruta` | ngon n=8 r=50 stroked | 4 rects | `0xff4a1270` | [240](../src/shape-catalogue.ts#L240) |
-| `baba-jaga` | ngon n=3 r=48 | 2 rects | `0xff6a28a8` | [252](../src/shape-catalogue.ts#L252) |
-| `bazyliszek-warszawski` | ngon n=6 r=52 | 4 rects | `0xff9d3dff` | [262](../src/shape-catalogue.ts#L262) |
-| `mefistofeles` | star points=6 rOuter=50 rInner=20 | 3 rects | `0xff2a0840` | [274](../src/shape-catalogue.ts#L274) |
-| `lucyper-ksiezycowy` | star points=8 rOuter=54 rInner=22 | 4 rects | `0xff7020b8` | [285](../src/shape-catalogue.ts#L285) |
+| `smok-krzemionkowski` | ngon n=6 r=48 | 2 rects | VIOLET_DARK | [215](../src/visual-spec/shapes-catalogue.ts#L215) |
+| `borowy-krol` | ngon n=5 r=52 | 3 rects | VIOLET_DEEP | [224](../src/visual-spec/shapes-catalogue.ts#L224) |
+| `wodnik-wislanny` | circle r=44 stroked | 2 rects | VIOLET_MID | [234](../src/visual-spec/shapes-catalogue.ts#L234) |
+| `boruta` | ngon n=8 r=50 stroked | 4 rects | `0xff4a1270` | [243](../src/visual-spec/shapes-catalogue.ts#L243) |
+| `baba-jaga` | ngon n=3 r=48 | 2 rects | `0xff6a28a8` | [255](../src/visual-spec/shapes-catalogue.ts#L255) |
+| `bazyliszek-warszawski` | ngon n=6 r=52 | 4 rects | `0xff9d3dff` | [265](../src/visual-spec/shapes-catalogue.ts#L265) |
+| `mefistofeles` | star points=6 rOuter=50 rInner=20 | 3 rects | `0xff2a0840` | [277](../src/visual-spec/shapes-catalogue.ts#L277) |
+| `lucyper-ksiezycowy` | star points=8 rOuter=54 rInner=22 | 4 rects | `0xff7020b8` | [288](../src/visual-spec/shapes-catalogue.ts#L288) |
 
 #### Ships / players (3) — ShipSpec: hull + 2 rect weapons + square engine (brand-tagged, sessions #76–#78)
 
 | Entity | Hull kind | Weapons | Hull key color | Line |
 |---|---|---|---|---|
-| `kogut-zloty` | triangle size=28 | 2 rects | GOLD | [303](../src/shape-catalogue.ts#L303) |
-| `alembik` | ngon n=6 r=22 stroked | 2 rects | BOG_GREEN | [312](../src/shape-catalogue.ts#L312) |
-| `zwierciadlo` | ngon n=4 r=24 stroked | 2 rects | DEEP_BLUE | [322](../src/shape-catalogue.ts#L322) |
+| `kogut-zloty` | triangle size=28 | 2 rects | GOLD | [306](../src/visual-spec/shapes-catalogue.ts#L306) |
+| `alembik` | ngon n=6 r=22 stroked | 2 rects | BOG_GREEN | [316](../src/visual-spec/shapes-catalogue.ts#L316) |
+| `zwierciadlo` | ngon n=4 r=24 stroked | 2 rects | DEEP_BLUE | [326](../src/visual-spec/shapes-catalogue.ts#L326) |
 
-#### Weapon pickups (4) — lines 337–356
-
-| Entity | Kind | Key color | Line |
-|---|---|---|---|
-| `iskry` | 3 circles | ORANGE | [338](../src/shape-catalogue.ts#L338) |
-| `piorun` | polyline bolt | EYE_YELLOW | [343](../src/shape-catalogue.ts#L343) |
-| `sol-swiecona` | ring | MIRROR | [352](../src/shape-catalogue.ts#L352) |
-| `znak-pentagramu` | star-5 | PURPLE | [353](../src/shape-catalogue.ts#L353) |
-
-#### Upgrade pickups (6) — lines 358–403
+#### Weapon pickups (4) — lines 341–360
 
 | Entity | Kind | Key color | Line |
 |---|---|---|---|
-| `czarna-ksiega` | rect stroked | BLACK + GOLD | [361](../src/shape-catalogue.ts#L361) |
-| `siedmiomilowe-buty` | 2 rects | BROWN | [364](../src/shape-catalogue.ts#L364) |
-| `amulet-wegrowski` | ring + circle | GOLD + HELLFIRE | [368](../src/shape-catalogue.ts#L368) |
-| `koguci-pioro` | polyline | GOLD | [372](../src/shape-catalogue.ts#L372) |
-| `srebrna-tarcza` | ngon-6 stroked | MIRROR + BLACK | [381](../src/shape-catalogue.ts#L381) |
-| `kamien-filozoficzny` | ngon-8 stroked | PURPLE + GOLD | [392](../src/shape-catalogue.ts#L392) |
+| `iskry` | 3 circles | ORANGE | [342](../src/visual-spec/shapes-catalogue.ts#L342) |
+| `piorun` | polyline bolt | EYE_YELLOW | [347](../src/visual-spec/shapes-catalogue.ts#L347) |
+| `sol-swiecona` | ring | MIRROR | [356](../src/visual-spec/shapes-catalogue.ts#L356) |
+| `znak-pentagramu` | star-5 | PURPLE | [357](../src/visual-spec/shapes-catalogue.ts#L357) |
+
+#### Upgrade pickups (6) — lines 391–434
+
+| Entity | Kind | Key color | Line |
+|---|---|---|---|
+| `czarna-ksiega` | rect stroked | BLACK + GOLD | [392](../src/visual-spec/shapes-catalogue.ts#L392) |
+| `siedmiomilowe-buty` | 2 rects | BROWN | [395](../src/visual-spec/shapes-catalogue.ts#L395) |
+| `amulet-wegrowski` | ring + circle | GOLD + HELLFIRE | [399](../src/visual-spec/shapes-catalogue.ts#L399) |
+| `koguci-pioro` | polyline | GOLD | [403](../src/visual-spec/shapes-catalogue.ts#L403) |
+| `srebrna-tarcza` | ngon-6 stroked | MIRROR + BLACK | [412](../src/visual-spec/shapes-catalogue.ts#L412) |
+| `kamien-filozoficzny` | ngon-8 stroked | PURPLE + GOLD | [423](../src/visual-spec/shapes-catalogue.ts#L423) |
 
 ### Color constant summary
 
-Inline constants at [`src/shape-catalogue.ts:12–40`](../src/shape-catalogue.ts#L12):
+Inline constants at [`src/visual-spec/shapes-catalogue.ts:15–43`](../src/visual-spec/shapes-catalogue.ts#L15):
 `BLACK=0xff111111 / ORANGE=0xffff9944 / RED=0xffe84b2a / DARK_RED=0xff7a1a1a /
 PURPLE=0xff8844ff / BLUE_GREEN=0xff3aa08c / GREEN=0xff5cae6e / PALE=0xffe6dcc8 /
 YELLOW_WHITE=0xfff7f3a6 / TEAL=0xff3ac4b4 / BROWN=0xff6b4423 / GOLD=0xffc9a24a /
@@ -410,7 +410,7 @@ Chrome layers not in SCENE_KEYS: `privacy`, `pause`, `dialogue` (rendered as ove
 ## §9 — Zone specs
 
 Zone configs: [`src/config/zones.ts:68`](../src/config/zones.ts#L68).
-ARGB palette integers: [`src/palette.ts:18`](../src/palette.ts#L18).
+ARGB palette integers: [`src/visual-spec/zones-palette.ts:52`](../src/visual-spec/zones-palette.ts#L52).
 
 | Zone | Name (PL) | Deck sky token | Deck ground token | Deck accent token | Deck hazard token | Current ARGB (primary) | Ambience | Boss | Miniboss |
 |---|---|---|---|---|---|---|---|---|---|
@@ -545,7 +545,7 @@ Items requiring code changes. Code-today links use live line numbers as of 2026-
 | Hazard token | `#E84B2A` | `#E84B2A` (matches) | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
 | Ink-black bg | `#0E1A12` | `rgba(14,26,18,0.92)` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | high | #67 | done |
 | 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | all present | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
-| Zone ARGB palettes | per-zone deck tokens | aligned at #72 | [`src/palette.ts:52`](../src/palette.ts#L52) | high | #72 | done |
+| Zone ARGB palettes | per-zone deck tokens | aligned at #72 | [`src/visual-spec/zones-palette.ts:52`](../src/visual-spec/zones-palette.ts#L52) | high | #72 | done |
 | Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | high | #68 | done |
 | Icon system | 30 stamps (MaterialCommunityIcons) | Skia shapes only | — | — | — | intentional |
 | Particles | 5-tier up to 256p | 5-tier system live | [`src/fx/explosions.ts`](../src/fx/explosions.ts) | high | #70 | done |
@@ -584,16 +584,16 @@ Punch-list of folio-vs-code gaps. Each row maps to a session row in [`docs/plans
 
 | # | Gap | Folio | Code locus | Severity | Session | Status |
 |---|---|---|---|---|---|---|
-| 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
+| 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/visual-spec/shapes-catalogue.ts`](../src/visual-spec/shapes-catalogue.ts) | critical | sessions #76–#78 | done |
 | 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
 | 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + #79 | done |
-| 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/palette.ts`](../src/palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | done |
+| 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/visual-spec/zones-palette.ts`](../src/visual-spec/zones-palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | done |
 | 5 | Per-phase boss palette shift not wired (`PhaseScript` carries no color fields) | XIII | `src/systems/boss/*.ts` | high | #73 | done |
 | 6 | Reduced-motion rules 1–4 not implemented (rule 5 only) | XIV | [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
 | 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | low | #74 | done |
 | 8 | Zone parallax stacks not yet audited against folio specs | XIIB | [`src/fx/ambience.ts`](../src/fx/ambience.ts), play-scene | medium | #84 | done |
 | 9 | Frame-budget per-scene caps not enforced by FPS watchdog | XV | [`src/perf/cold-start.ts`](../src/perf/cold-start.ts) + [`src/fx/budget.ts`](../src/fx/budget.ts) | medium | #75 | done |
-| 10 | Ship-anatomy 29-ship codex migration | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/shape-catalogue.ts`](../src/shape-catalogue.ts) | critical | sessions #76–#78 | done |
+| 10 | Ship-anatomy 29-ship codex migration | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/visual-spec/shapes-catalogue.ts`](../src/visual-spec/shapes-catalogue.ts) | critical | sessions #76–#78 | done |
 | 11 | Overlay folio XI alignment (inventory, codex, dialogue, shop, paywall, achievements) | XI | overlay scenes in `src/scenes/` | high | sessions #82–#83 | done |
 | 12 | Frontmatter folio X alignment (boot, menu, save-select, settings, credits) | X | frontmatter scenes in `src/scenes/` | high | sessions #80–#81 | done |
 | 13 | Easing assignments 9 items (4 engine gaps documented in §11) | XIV | [`src/scenes/play.ts`](../src/scenes/play.ts), [`src/hud/zone-banner.ts`](../src/hud/zone-banner.ts) | medium | #85 | done |
@@ -616,20 +616,20 @@ Full folio-vs-code audit: 21 PNG folios cross-referenced against §1–§15 of t
 | III | Brand principles (5 rules) | `src/visual-spec/theme.ts` (`UI_COLORS`), `src/a11y/reduced-motion.ts`, `src/fx/budget.ts` | ✓ | Darkness-canvas (#0E1A12 bg), crimson-as-ink (trail/sigil/flash only), recolor-before-redraw (ShipSpec hull+tint), diacritics (§2 PL char set), 60 fps gospel (≤1k draws/≤512p/≤3 postfx per §12) — all codified. |
 | IV | Palette — twelve pigments | `src/visual-spec/theme.ts` (`UI_COLORS`) | ✓ | All 12 folio pigments present at exact deck hexes; HP-bar anchor `#2a0810` disambiguation documented in §1. Session #67 migration complete; theme/ shim deleted at session #114. |
 | V | Typography — three voices | `src/visual-spec/theme.ts` (`TYPOGRAPHY`) | ✓ | Font families + sizes match folio V. Six deprecated aliases (h1/h2/h3/body/caption/xs) deleted at session #114. |
-| VI | Skia language — no sprites, only shapes | `src/shape-catalogue.ts`, `@flare-engine/shapes` | ⚠ | 6 primitive types confirmed. §3 glow-helper cross-links referenced deleted files `src/shapes.ts` + `src/shapes-draw.ts`; corrected in M2 to point at `@flare-engine/shapes` (session #92 migration). |
+| VI | Skia language — no sprites, only shapes | `src/visual-spec/shapes-catalogue.ts`, `@flare-engine/shapes` | ⚠ | 6 primitive types confirmed. §3 glow-helper cross-links referenced deleted files `src/shapes.ts` + `src/shapes-draw.ts`; corrected in M2 to point at `@flare-engine/shapes` (session #92 migration). |
 | VIb | Explosions — 5 tiers | `src/fx/explosions.ts` | ✓ | 5-tier table (chip/pop/burst/detonation/cataclysm), particle counts, lifetimes, shake amplitudes, concurrent caps — all match folio VIb per §6. |
 | IX | HUD anatomy — play frame | `src/hud/Hud.tsx`, `src/hud/Hud.styles.ts` | n/a — device-smoke gate covers this | Slot layout, font roles, HP gradient, weapon meter, zone banner, boss bar: all wired per §7 code. Pixel alignment vs folio IX verified only on physical device (Galaxy A54 + iPhone 12). |
 | X | Frontmatter screens (5 of 13) | `src/scenes/{boot,menu,save-select,settings,credits}.ts`, `src/hud/{Boot,Menu}Overlay.tsx` | n/a — device-smoke gate covers this | Scene catalogue complete per §8; folio X layout (boot sigil, menu 4-button stack, save-select flat grid, settings 4-group scroll, credits typography) all implemented at sessions #80–#81. Pixel match requires device. |
 | XI | Overlays (5 panels) | `src/hud/{Inventory,Codex,Dialogue,Shop,Achievements,Paywall}Overlay.tsx` + `*.styles.ts` | n/a — device-smoke gate covers this | Inventory tabs, codex unlocked/locked entries, dialogue portrait slot 44×44, shop product cards, achievements entries — all aligned at sessions #82–#83. Pixel match requires device. |
-| XII | Zones — 8 cards | `src/palette.ts`, `src/config/zones.ts` | ✓ | 8 zones, zone names (PL), ambience kinds and particle counts match folio XII per §9 table. |
-| XIIB | Zone specs — canonical source of truth | `src/palette.ts` (ZONE_PALETTES), `src/fx/ambience.ts` | ✓ | Per-zone palette tokens (primary/accent/hazard), ambience particle counts, parallax rates (VEL_SLOW 10 px/s, VEL_FAST 20 px/s after session #84 correction), spawn spawn rules — all match folio XIIB. |
+| XII | Zones — 8 cards | `src/visual-spec/zones-palette.ts`, `src/config/zones.ts` | ✓ | 8 zones, zone names (PL), ambience kinds and particle counts match folio XII per §9 table. |
+| XIIB | Zone specs — canonical source of truth | `src/visual-spec/zones-palette.ts` (ZONE_PALETTES), `src/fx/ambience.ts` | ✓ | Per-zone palette tokens (primary/accent/hazard), ambience particle counts, parallax rates (VEL_SLOW 10 px/s, VEL_FAST 20 px/s after session #84 correction), spawn spawn rules — all match folio XIIB. |
 | XIII | Boss visual beats — phases + postfx | `src/systems/boss/*.ts`, `src/fx/boss-postfx.ts` | ✓ | 8 bosses × phase descriptions + particle presets + postfx chains match §10 table. Per-phase palette shift wired at session #73. |
-| XIIIa | Ship anatomy — 3-element rule | `src/shape-catalogue.ts` (ShipSpec), `@flare-engine/shapes` (ShipSpec type) | ✓ | All 29 ships satisfy hull + N rect weapons + 1 square engine. Weapon counts per tier correct (enemy 1–2, mini-boss 2–3, boss 2–4, player 2). Migration complete at sessions #76–#78. |
-| XIIIb | Enemy ships (14) | `src/shape-catalogue.ts` (enemies section, lines 44–159) | ✓ | All 14 enemy ShipSpecs confirmed against folio XIIIb silhouettes. Hull kinds, weapon counts, hue families match. |
-| XIIIb+ | Mini-bosses (4) — canonical bosses | `src/shape-catalogue.ts` (minibosses section, lines 164–203) | ✓ | All 4 mini-boss ShipSpecs in crimson hue family. Folio shows Leszy (arch), Bes (bottle), Mars (stepped), Czart (drop) — code uses ngon-4/ngon-6/ngon-5/triangle hulls. Visual mapping is preserved; exact silhouette only verifiable on device. |
-| XIIIc | Weapons, artifacts, player ships | `src/shape-catalogue.ts` (weaponPickups + upgradePickups + ships sections) | ✓ | 4 weapon pickups, 6 upgrade pickups, 3 player ships (Kogut gold/Twardoń green/Bazyl blue) — all present with correct glow:friendly tags per folio XIIIc. |
-| XIIId | Weapon specs — 8 weapons, source of truth | `src/config/gameplay.ts`, `src/shape-catalogue.ts`, `src/localization/keys.ts` | ✓ (M1+M2 aligned; M3 locale keys done) | Folio XIIId silhouette alignment (M1) + unlock progression (M2) + 12 per-tier locale keys (M3) completed at session #95. Balance constants now match folio XIIID damage/cooldown/particle columns. Pixel-level projectile alignment still requires device smoke. |
-| XIIIf | Boss ships (8) | `src/shape-catalogue.ts` (bosses section, lines 208–297) | ✓ | All 8 boss ShipSpecs in violet hue family. Hull kinds match folio XIIIf (Boruta=moon/arch, Mefist=star-6, Lucyper=star-8, Baba=triangle, etc.). Weapon counts (2–4) correct. |
+| XIIIa | Ship anatomy — 3-element rule | `src/visual-spec/shapes-catalogue.ts` (ShipSpec), `@flare-engine/shapes` (ShipSpec type) | ✓ | All 29 ships satisfy hull + N rect weapons + 1 square engine. Weapon counts per tier correct (enemy 1–2, mini-boss 2–3, boss 2–4, player 2). Migration complete at sessions #76–#78. |
+| XIIIb | Enemy ships (14) | `src/visual-spec/shapes-catalogue.ts` (enemies section, lines 45–162) | ✓ | All 14 enemy ShipSpecs confirmed against folio XIIIb silhouettes. Hull kinds, weapon counts, hue families match. |
+| XIIIb+ | Mini-bosses (4) — canonical bosses | `src/visual-spec/shapes-catalogue.ts` (minibosses section, lines 164–206) | ✓ | All 4 mini-boss ShipSpecs in crimson hue family. Folio shows Leszy (arch), Bes (bottle), Mars (stepped), Czart (drop) — code uses ngon-4/ngon-6/ngon-5/triangle hulls. Visual mapping is preserved; exact silhouette only verifiable on device. |
+| XIIIc | Weapons, artifacts, player ships | `src/visual-spec/shapes-catalogue.ts` (weaponPickups + upgradePickups + ships sections) | ✓ | 4 weapon pickups, 6 upgrade pickups, 3 player ships (Kogut gold/Twardoń green/Bazyl blue) — all present with correct glow:friendly tags per folio XIIIc. |
+| XIIId | Weapon specs — 8 weapons, source of truth | `src/config/gameplay.ts`, `src/visual-spec/shapes-catalogue.ts`, `src/localization/keys.ts` | ✓ (M1+M2 aligned; M3 locale keys done) | Folio XIIId silhouette alignment (M1) + unlock progression (M2) + 12 per-tier locale keys (M3) completed at session #95. Balance constants now match folio XIIID damage/cooldown/particle columns. Pixel-level projectile alignment still requires device smoke. |
+| XIIIf | Boss ships (8) | `src/visual-spec/shapes-catalogue.ts` (bosses section, lines 208–300) | ✓ | All 8 boss ShipSpecs in violet hue family. Hull kinds match folio XIIIf (Boruta=moon/arch, Mefist=star-6, Lucyper=star-8, Baba=triangle, etc.). Weapon counts (2–4) correct. |
 | XIV | Motion + accessibility | `src/scenes/play.ts`, `src/hud/zone-banner.ts`, `src/a11y/reduced-motion.ts`, `src/visual-spec/theme.ts` (`UI_COLORS`) | ✓ | 5 easing assignments shipped (items 1/5/6/8/9); 4 engine gaps documented in §11 (items 2/3/4/7). 5-rule reduce-motion policy complete. Color-blind tokens (`cb.player/hazard/safe`) present. Contrast floor 14.2:1 maintained. |
 | XV | Frame budget — per-scene caps | `src/fx/budget.ts`, `src/perf/cold-start.ts` | ✓ | Per-scene caps from folio XV encoded in `FRAME_BUDGET` constants; fps watchdog (< 55 fps over 3s → drop chromatic-ab); degradation policy per §12. Real-device measurement deferred to session #59 (PT-Perf). |
 

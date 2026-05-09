@@ -26,11 +26,13 @@ tags:
     clearKeychain: true
     stopApp: true
 
-# Row 1 — boot to menu without crash. Boot overlay shows "Loading…" then disappears.
-- assertVisible: "Loading…"
+# Row 1 — boot to menu without crash. The boot overlay's "Loading…" text is
+# observable when present, but on fast devices it flashes too briefly to assert
+# reliably; on slow/cold devices the menu can take >10s to appear (audio init,
+# save load, RN bridge warmup). Just wait for "Play" with a generous timeout.
 - extendedWaitUntil:
     visible: "Play"
-    timeout: 10000
+    timeout: 60000
 
 # Row 2 — menu nav: Play → save-select → Back; Settings → Back; Credits → tap-to-return.
 - tapOn: "Play"
@@ -66,7 +68,7 @@ tags:
     clearState: false
 - extendedWaitUntil:
     visible: "Play"
-    timeout: 10000
+    timeout: 60000
 - tapOn: "Settings"
 - assertVisible: "Reduced motion"
 # Toggle state should be retained from before stopApp; if Maestro can read the

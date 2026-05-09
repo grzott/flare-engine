@@ -30,13 +30,29 @@
 
 set -euo pipefail
 
-APK_PATH="${APK_PATH:-}"
-IPA_PATH="${IPA_PATH:-}"
-TTI_THRESHOLD_MS="${TTI_THRESHOLD_MS:-3000}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
 MAESTRO_DIR="$APP_DIR/.maestro"
 GATE="$APP_DIR/scripts/tti-gate.ts"
+ENV_FILE="$APP_DIR/.env.testingbot"
+
+# Auto-load .env.testingbot if present. `set -a` auto-exports every var defined
+# in the sourced file, so the .env file can use plain `KEY=value` syntax — no
+# `export` prefix required, no manual `source` step in the user's shell.
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+fi
+
+APK_PATH="${APK_PATH:-}"
+IPA_PATH="${IPA_PATH:-}"
+TTI_THRESHOLD_MS="${TTI_THRESHOLD_MS:-3000}"
+TTI_RUN_COUNT="${TTI_RUN_COUNT:-3}"
+# Force device locale so smoke.yaml's English text matchers ("Play", "Settings",
+# "Back", etc.) resolve. Override via env if you need to smoke-test PL strings.
+SMOKE_DEVICE_LOCALE="${SMOKE_DEVICE_LOCALE:-en_US}"
 
 mode="${1:-all}"
 
@@ -49,9 +65,12 @@ require_cmd() {
 
 require_cmd testingbot "Install via npm install -g @testingbot/cli"
 require_cmd bun "Install bun: https://bun.sh"
+require_cmd unzip "Install unzip (Git Bash on Windows includes it; on Linux: apt install unzip)"
 
 if [[ -z "${TESTINGBOT_KEY:-}" || -z "${TESTINGBOT_SECRET:-}" ]]; then
-  echo "ERROR: TESTINGBOT_KEY and TESTINGBOT_SECRET env vars required." >&2
+  echo "ERROR: TESTINGBOT_KEY and TESTINGBOT_SECRET required." >&2
+  echo "       Either set them in the shell or in $ENV_FILE" >&2
+  echo "       (copy from .env.testingbot.example and fill in values)." >&2
   exit 1
 fi
 
@@ -78,27 +97,48 @@ run_android_tier() {
   fi
   echo "[run-smoke-cloud] android tier=$tier device=$device os=$os"
   if [[ "$mode" != "smoke-only" ]]; then
-    local artifact_dir; artifact_dir="$(mktemp -d)"
-    testingbot maestro "$APK_PATH" "$MAESTRO_DIR/cold-start-tti.yaml" \
-      --device "$device" \
-      --deviceVersion "$os" \
-      --real-device \
-      --artifacts-dir "$artifact_dir" \
-      || { echo "ERROR: TTI flow failed on $device" >&2; return 4; }
-    local logfile; logfile="$(find "$artifact_dir" -name 'logcat*.txt' -print -quit)"
-    if [[ -z "$logfile" ]]; then
-      echo "WARN: no logcat artifact returned by TestingBot for $device — TTI gate skipped" >&2
+    local logcat_dump; logcat_dump="$(mktemp)"
+    local i
+    echo "[run-smoke-cloud] running cold-start TTI x $TTI_RUN_COUNT on $device ($tier)"
+    : > "$logcat_dump"
+    for ((i = 1; i <= TTI_RUN_COUNT; i++)); do
+      echo "[run-smoke-cloud]   iteration $i / $TTI_RUN_COUNT"
+      local artifact_dir; artifact_dir="$(mktemp -d)"
+      testingbot maestro "$APK_PATH" "$MAESTRO_DIR/cold-start-tti.yaml" \
+        --device "$device" \
+        --deviceVersion "$os" \
+        --real-device \
+        --device-locale "$SMOKE_DEVICE_LOCALE" \
+        --download-artifacts all \
+        --artifacts-output-dir "$artifact_dir" \
+        || { echo "ERROR: TTI flow failed on $device (iteration $i)" >&2; rm -rf "$artifact_dir"; rm -f "$logcat_dump"; return 4; }
+      # CLI saves a single artifacts.zip; extract in place before searching.
+      find "$artifact_dir" -maxdepth 2 -name '*.zip' -print0 | while IFS= read -r -d '' z; do
+        unzip -q -o "$z" -d "$artifact_dir" 2>/dev/null || true
+      done
+      local logfile; logfile="$(find "$artifact_dir" -name 'logcat*.txt' -print -quit)"
+      if [[ -z "$logfile" ]]; then
+        echo "WARN: no logcat artifact for $device iteration $i — skipping sample" >&2
+      else
+        grep "\[boot-trace\]" "$logfile" | head -1 >> "$logcat_dump" || true
+      fi
+      rm -rf "$artifact_dir"
+    done
+    local total_count; total_count="$(grep -c '\[boot-trace\]' "$logcat_dump" 2>/dev/null || true)"
+    if [[ "$total_count" -eq 0 ]]; then
+      echo "WARN: no [boot-trace] lines captured for $device ($tier) — TTI gate skipped" >&2
     else
-      bun "$APP_DIR/scripts/parse-boot-trace.ts" < "$logfile" \
+      bun "$APP_DIR/scripts/parse-boot-trace.ts" < "$logcat_dump" \
         | DEVICE_NAME="$device ($tier)" TTI_THRESHOLD_MS="$TTI_THRESHOLD_MS" bun "$GATE" \
-        || { echo "ERROR: TTI gate breached on $device ($tier)" >&2; return 3; }
+        || { echo "ERROR: TTI gate breached on $device ($tier)" >&2; rm -f "$logcat_dump"; return 3; }
     fi
-    rm -rf "$artifact_dir"
+    rm -f "$logcat_dump"
   fi
   testingbot maestro "$APK_PATH" "$MAESTRO_DIR/smoke.yaml" \
     --device "$device" \
     --deviceVersion "$os" \
     --real-device \
+    --device-locale "$SMOKE_DEVICE_LOCALE" \
     || { echo "ERROR: smoke flow failed on $device" >&2; return 5; }
   echo "[run-smoke-cloud] android tier=$tier OK"
 }
@@ -117,27 +157,47 @@ run_ios_tier() {
   fi
   echo "[run-smoke-cloud] ios tier=$tier device=$device os=$os"
   if [[ "$mode" != "smoke-only" ]]; then
-    local artifact_dir; artifact_dir="$(mktemp -d)"
-    testingbot maestro "$IPA_PATH" "$MAESTRO_DIR/cold-start-tti.yaml" \
-      --device "$device" \
-      --deviceVersion "$os" \
-      --real-device \
-      --artifacts-dir "$artifact_dir" \
-      || { echo "ERROR: TTI flow failed on $device" >&2; return 4; }
-    local logfile; logfile="$(find "$artifact_dir" -name 'logcat*.txt' -o -name 'xcode*.log' -print -quit 2>/dev/null || true)"
-    if [[ -z "$logfile" ]]; then
-      echo "WARN: no log artifact returned by TestingBot for $device — TTI gate skipped" >&2
+    local log_dump; log_dump="$(mktemp)"
+    local i
+    echo "[run-smoke-cloud] running cold-start TTI x $TTI_RUN_COUNT on $device ($tier)"
+    : > "$log_dump"
+    for ((i = 1; i <= TTI_RUN_COUNT; i++)); do
+      echo "[run-smoke-cloud]   iteration $i / $TTI_RUN_COUNT"
+      local artifact_dir; artifact_dir="$(mktemp -d)"
+      testingbot maestro "$IPA_PATH" "$MAESTRO_DIR/cold-start-tti.yaml" \
+        --device "$device" \
+        --deviceVersion "$os" \
+        --real-device \
+        --device-locale "$SMOKE_DEVICE_LOCALE" \
+        --download-artifacts all \
+        --artifacts-output-dir "$artifact_dir" \
+        || { echo "ERROR: TTI flow failed on $device (iteration $i)" >&2; rm -rf "$artifact_dir"; rm -f "$log_dump"; return 4; }
+      find "$artifact_dir" -maxdepth 2 -name '*.zip' -print0 | while IFS= read -r -d '' z; do
+        unzip -q -o "$z" -d "$artifact_dir" 2>/dev/null || true
+      done
+      local logfile; logfile="$(find "$artifact_dir" \( -name 'logcat*.txt' -o -name 'xcode*.log' \) -print -quit 2>/dev/null || true)"
+      if [[ -z "$logfile" ]]; then
+        echo "WARN: no log artifact for $device iteration $i — skipping sample" >&2
+      else
+        grep "\[boot-trace\]" "$logfile" | head -1 >> "$log_dump" || true
+      fi
+      rm -rf "$artifact_dir"
+    done
+    local total_count; total_count="$(grep -c '\[boot-trace\]' "$log_dump" 2>/dev/null || true)"
+    if [[ "$total_count" -eq 0 ]]; then
+      echo "WARN: no [boot-trace] lines captured for $device ($tier) — TTI gate skipped" >&2
     else
-      bun "$APP_DIR/scripts/parse-boot-trace.ts" < "$logfile" \
+      bun "$APP_DIR/scripts/parse-boot-trace.ts" < "$log_dump" \
         | DEVICE_NAME="$device ($tier)" TTI_THRESHOLD_MS="$TTI_THRESHOLD_MS" bun "$GATE" \
-        || { echo "ERROR: TTI gate breached on $device ($tier)" >&2; return 3; }
+        || { echo "ERROR: TTI gate breached on $device ($tier)" >&2; rm -f "$log_dump"; return 3; }
     fi
-    rm -rf "$artifact_dir"
+    rm -f "$log_dump"
   fi
   testingbot maestro "$IPA_PATH" "$MAESTRO_DIR/smoke.yaml" \
     --device "$device" \
     --deviceVersion "$os" \
     --real-device \
+    --device-locale "$SMOKE_DEVICE_LOCALE" \
     || { echo "ERROR: smoke flow failed on $device" >&2; return 5; }
   echo "[run-smoke-cloud] ios tier=$tier OK"
 }

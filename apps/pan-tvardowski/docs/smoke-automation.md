@@ -68,13 +68,10 @@ Windows alternative: download the latest installer from the Maestro releases pag
 2. Go to your dashboard → submit a "convert to open-source" request, citing the
    Flare engine repo (MIT-licensed).
 3. Once approved, copy your API key + secret from the user settings page.
-4. Add to your local shell profile (do **not** commit):
-
-   ```bash
-   export TESTINGBOT_KEY="..."
-   export TESTINGBOT_SECRET="..."
-   ```
-
+4. Copy `.env.testingbot.example` → `.env.testingbot` (gitignored) and fill in
+   `TESTINGBOT_KEY` + `TESTINGBOT_SECRET`. The `run-smoke-cloud.sh` script
+   auto-loads this file via `set -a; source` — no shell-profile export, no
+   manual `source` step needed.
 5. Install the CLI:
 
    ```bash
@@ -82,7 +79,8 @@ Windows alternative: download the latest installer from the Maestro releases pag
    ```
 
 The OSS tier includes unlimited testing + 2 concurrent sessions across the full
-device catalog. Paid tier is $20/mo if OSS is rejected.
+device catalog. Paid tier is ~$60/mo (~1 000 device-minutes, 1 parallel session)
+if OSS is rejected.
 
 ### 3. Local Android Studio AVD (for fast iteration)
 
@@ -113,6 +111,9 @@ The script:
 # Build release artifacts first (Android + iOS).
 eas build --profile preview --platform android --local
 eas build --profile preview --platform ios --local
+# Note: on Windows --local is not supported for iOS (no Xcode); use
+# `eas build --profile preview --platform ios` (EAS cloud build) instead,
+# which requires an Apple Developer account + EAS quota.
 # Run the canonical gate: Pixel 10 (Android) then iPhone 16 Pro (iOS).
 APK_PATH=./build-*.apk IPA_PATH=./build-*.ipa bun --cwd apps/pan-tvardowski run smoke:cloud
 # Or one platform at a time:
@@ -173,5 +174,59 @@ Pipe into `jq '.medianTotalMs'` or fold into `docs/perf-baseline.md` post-run.
 |---|---|---|
 | Local (smoke:local) | $0 | Every PR / per-commit if you want |
 | Cloud (smoke:cloud, OSS free) | $0 | Every release branch, every PR if approved for OSS tier |
-| Cloud (smoke:cloud, paid) | ~$20/mo | Same; only relevant if OSS request rejected |
+| Cloud (smoke:cloud, paid) | ~$60/mo (~1 000 device-min, 1 parallel session) | Same; only relevant if OSS request rejected |
 | Cloud (smoke:cloud:low/mid/high, OSS) | $0 | Optional; future 3-tier expansion path |
+
+## Cloud tier policy
+
+### Which tier to use
+
+1. **TestingBot OSS free tier** — start here. Covers unlimited testing on the
+   full device catalog. Apply via testingbot.com → OSS open-source request,
+   citing the Flare engine MIT repo. Typically approved within 1–2 business days.
+2. **TestingBot paid tier** — upgrade only if the OSS application is rejected or
+   revoked. As of 2026-05: ~$60/mo, ~1 000 device-minutes/mo, 1 parallel session.
+   The runner code is identical — same TestingBot endpoint and same CLI flags.
+   Only the account credentials change.
+
+No code change is required when switching tiers; update the credentials in
+`.env.testingbot` and re-run.
+
+### Cloud-first → local fallback decision tree
+
+The canonical sequence for each release-gate run:
+
+```
+1. Try  smoke:cloud:android  (Pixel 10, TestingBot)
+   ├── EXIT 0 → record PASS in device-smoke.md; continue to step 2.
+   ├── EXIT 3 (TTI gate breach) → STOP. Open a perf-investigation session.
+   ├── EXIT 5 (Maestro assertion fail) → STOP. Fix the flow or the UI regression.
+   └── EXIT other (creds/network/quota error)
+           └── Fall back: smoke:local:android
+                   ├── EXIT 0 → record PASS (local-fallback) in device-smoke.md.
+                   └── non-zero → STOP. Surface the local failure; investigate.
+
+2. Try  smoke:cloud:ios  (iPhone 16 Pro, TestingBot)
+   ├── EXIT 0 → record PASS in device-smoke.md.
+   ├── EXIT 3 → STOP. Perf-investigation session.
+   ├── EXIT 5 → STOP. Flow/UI regression.
+   └── EXIT other (creds/network/quota)
+           └── iOS local fallback requires macOS Xcode toolchain.
+               On Windows: skip + log gap in device-smoke.md ("ios-local-skip:windows").
+               On macOS: smoke:local:ios (if a local-iOS runner is wired up).
+```
+
+**Fallback tagging rule.** When a result row in `device-smoke.md` is populated
+from a local run (not cloud), append `(local-fallback)` to the result cell so
+the release sign-off can decide whether a cloud re-run is required.
+
+**What counts as a creds/network/quota error.** Any `testingbot` CLI exit code
+that is not 3 or 5, combined with stderr containing one of: `Unauthorized`,
+`403`, `quota`, `timeout`, `ECONNREFUSED`, `no available devices`. When in
+doubt, treat as infrastructure failure and fall back rather than blocking.
+
+**Implementation status.** The fallback orchestration is **policy only** — it
+is not yet wired as an automatic shell wrapper. The decision tree above is the
+spec for a future session to implement. Until then, apply it manually: check the
+`run-smoke-cloud.sh` exit code + stderr, decide which branch applies, invoke the
+fallback command by hand, and note the result cell tag.

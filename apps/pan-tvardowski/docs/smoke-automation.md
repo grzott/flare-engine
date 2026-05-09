@@ -23,28 +23,33 @@ Cloud + local Maestro automation for the device-smoke gate. Replaces the manual
 
 ## Device tier matrix
 
-The TTI gate passes only if every tier's median is `< 3000ms`. Functional smoke
-must pass on every tier.
+The TTI gate passes only if every device's median is `< 3000ms`. Functional smoke
+must pass on both primary devices.
 
-### Android (live today)
+### Primary gate (canonical real-hardware path)
+
+| Platform | TestingBot device | OS | Role |
+|---|---|---|---|
+| Android | Pixel 10 | 16 | Android flagship; latest API; new-OS regressions |
+| iOS | iPhone 16 Pro | 18 | iOS flagship; first real-device iOS coverage |
+
+Both devices run in sequence via `bun run smoke:cloud` (no-arg default). Each
+device runs `cold-start-tti.yaml` once + `smoke.yaml` once. TTI median gate
+applies to both.
+
+### Future expansion (optional, not part of the release gate)
+
+The 3-tier Android matrix below is retained for extended coverage but is not
+required for release sign-off:
 
 | Tier | TestingBot device | OS | Why |
 |---|---|---|---|
 | Low | Galaxy A12 | 11 | Older mid-range; catches stale-API + slow-storage regressions |
-| Mid | Galaxy A55 | 14 | Mainstream — primary smoke target |
-| High | Pixel 10 | 16 | Latest Android, latest API; new-OS regressions |
+| Mid | Galaxy A55 | 14 | Mainstream Android |
+| High | Pixel 10 | 16 | Already in primary gate; included here for parity |
 
-> **Note on Galaxy A54 / Pixel 7.** TestingBot does not list either as of 2026-05.
-> A55 is one generation ahead of A54 (same hardware family) and Pixel 10 is two
-> ahead of Pixel 7. The cloud test is therefore an upper-bound check; if you
-> own a physical A54 you can sanity-run `smoke:local` on it for the strictest
-> TTI signal.
-
-### iOS (deferred)
-
-Wired as stubs in `run-smoke-cloud.sh`; activated when iOS lands. TestingBot has
-iPhone 13 (mid) + iPhone 16 Pro (high). No low tier — iOS has no entry-level
-hardware in the TestingBot catalog.
+Run individual tiers via `bun run smoke:cloud:low`, `smoke:cloud:mid`,
+`smoke:cloud:high`. These are power-user paths; they do not block release.
 
 ## Setup — first run
 
@@ -82,7 +87,7 @@ device catalog. Paid tier is $20/mo if OSS is rejected.
 ### 3. Local Android Studio AVD (for fast iteration)
 
 1. Install Android Studio.
-2. AVD Manager → create a Pixel 7 (or any Pixel 6+) image, API 34/35, with Google APIs.
+2. AVD Manager → create a Pixel AVD (any Pixel 6+ image, API 34/35, with Google APIs) — a Pixel 7 or Pixel 8 is ideal for local iteration before promoting to the Pixel 10 cloud run.
 3. Boot it before invoking `bun run smoke:local`.
 
 ## Daily run
@@ -105,15 +110,17 @@ The script:
 ### Cloud (real devices, OSS free tier)
 
 ```bash
-# Build a release APK first.
+# Build release artifacts first (Android + iOS).
 eas build --profile preview --platform android --local
-# Run all 3 Android tiers.
-APK_PATH=./build-*.apk bun --cwd apps/pan-tvardowski run smoke:cloud
-# Or one tier at a time (saves cloud minutes during iteration):
-APK_PATH=./build-*.apk bun --cwd apps/pan-tvardowski run smoke:cloud:mid
+eas build --profile preview --platform ios --local
+# Run the canonical gate: Pixel 10 (Android) then iPhone 16 Pro (iOS).
+APK_PATH=./build-*.apk IPA_PATH=./build-*.ipa bun --cwd apps/pan-tvardowski run smoke:cloud
+# Or one platform at a time:
+APK_PATH=./build-*.apk bun --cwd apps/pan-tvardowski run smoke:cloud:android
+IPA_PATH=./build-*.ipa bun --cwd apps/pan-tvardowski run smoke:cloud:ios
 ```
 
-Each tier runs `cold-start-tti.yaml` once + `smoke.yaml` once. Artifact logs
+Each device runs `cold-start-tti.yaml` once + `smoke.yaml` once. Artifact logs
 (including logcat) are downloaded; the TTI gate parses the `[boot-trace]` line
 from each.
 
@@ -123,7 +130,7 @@ from each.
 
 ```json
 {
-  "device": "Galaxy A55 (mid)",
+  "device": "Pixel 10 (android)",
   "runs": [
     { "label": "boot-trace", "totalMs": 2480.5, "deltas": { "boot-start->providers-mounted": 312.4, ... } },
     { "label": "boot-trace", "totalMs": 2390.0, "deltas": { ... } },
@@ -167,4 +174,4 @@ Pipe into `jq '.medianTotalMs'` or fold into `docs/perf-baseline.md` post-run.
 | Local (smoke:local) | $0 | Every PR / per-commit if you want |
 | Cloud (smoke:cloud, OSS free) | $0 | Every release branch, every PR if approved for OSS tier |
 | Cloud (smoke:cloud, paid) | ~$20/mo | Same; only relevant if OSS request rejected |
-| Manual A54 smoke | 15-30 min/release | Optional sanity run for strictest TTI signal |
+| Cloud (smoke:cloud:low/mid/high, OSS) | $0 | Optional; future 3-tier expansion path |

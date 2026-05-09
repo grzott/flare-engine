@@ -4,20 +4,18 @@
 
 | Device tier | Metric | Target |
 |---|---|---|
-| Galaxy A54 (mid-tier reference) | Cold-start TTI | ≤ 3000 ms |
-| Pixel 7 (second-device reference) | Cold-start TTI | ≤ 3000 ms |
-| Galaxy A54 | Sustained frame rate | 60 fps stable |
-| Pixel 7 | Sustained frame rate | 60 fps stable |
+| Pixel 10 (Android flagship) | Cold-start TTI | ≤ 3000 ms |
+| iPhone 16 Pro (iOS flagship) | Cold-start TTI | ≤ 3000 ms |
+| Pixel 10 | Sustained frame rate | 60 fps stable |
+| iPhone 16 Pro | Sustained frame rate | 60 fps stable |
 | Entry-level Android | Minimum frame rate | 30 fps floor |
 | Any | Resident memory | ≤ 250 MB |
-
-> **iOS / iPhone 12 deferred.** Per session #107 plan (2026-05-09), only Android device measurements are in scope right now. iOS targets are held for a follow-up row in `docs/plans/sessions.md`.
 
 ## How to measure
 
 - **Boot trace (in-app)** — `App.tsx` calls `dumpBootTrace()` immediately after `markBootMilestone('first-frame')`. The helper prints one `console.log` line tagged `[boot-trace]` containing `total=<ms>` plus per-step deltas. In a release build this surfaces via the Expo `RNLog` bridge under `logcat` tag `ReactNativeJS`.
 - **Android** — Android Studio CPU Profiler (Callstack Sample or System Trace); start recording before app launch, stop after first frame.
-- **iOS (deferred)** — Xcode Instruments > Time Profiler with "App Launch" template. Held for a future iOS-smoke session.
+- **iOS** — Xcode Instruments > Time Profiler with "App Launch" template — captured via TestingBot artifact when TTI flow runs there.
 - **Hermes timeline** — enable `hermes.enableSampledTraceToFile` in `metro.config.js`, open trace in `chrome://tracing`.
 
 ### Cold-start TTI capture recipe (Android, release build)
@@ -100,9 +98,8 @@ The watchdog fires when the 180-frame rolling average drops below **55 fps**. Ra
 
 | Device | Cold-start TTI | Sustained fps | Notes |
 |---|---|---|---|
-| Galaxy A54 | — | — | Pending real-device measurement (session #107, 2026-05-09) |
-| Pixel 7 | — | — | Pending real-device measurement (session #107, 2026-05-09) |
-| iPhone 12 | — | — | Deferred to future iOS-smoke row (post-Android landing) |
+| Pixel 10 | — | — | Pending real-device measurement (session #107, TestingBot Android run) |
+| iPhone 16 Pro | — | — | Pending real-device measurement (session #107, TestingBot iOS run) |
 
 ---
 
@@ -139,8 +136,7 @@ The watchdog now disables **both** `chromatic-aberration` and `crt` on first tri
 
 | Device | Cold-start TTI (median of 3) | Sustained fps | Notes |
 |---|---|---|---|
-| Galaxy A54 | — | — | Captured via `[boot-trace]` adb logcat — see "Cold-start TTI capture recipe" above. Pending session #107 device-run. |
-| Pixel 7 | — | — | Captured via `[boot-trace]` adb logcat — see recipe above. Pending session #107 device-run. |
-| iPhone 12 | — | — | Deferred to future iOS-smoke row. Will use Xcode Instruments > Time Profiler "App Launch" template. |
+| Pixel 10 | — | — | Captured via `[boot-trace]` adb logcat — see "Cold-start TTI capture recipe" above. Pending session #107 TestingBot run. |
+| iPhone 16 Pro | — | — | Captured via TestingBot artifact (Xcode Instruments "App Launch" template). Pending session #107 TestingBot iOS run. |
 
-Android columns are filled during PT-DeviceSmoke (#107) using the in-app `dumpBootTrace` helper + adb logcat capture. iOS measurement is held for the deferred iOS-smoke row.
+Both columns are filled during PT-DeviceSmoke (#107) using the TestingBot cloud runner (Pixel 10 + iPhone 16 Pro). Android uses `dumpBootTrace` + adb logcat; iOS uses the Xcode Instruments artifact downloaded from TestingBot.

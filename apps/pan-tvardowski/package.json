@@ -18,6 +18,8 @@
     "smoke:local:tti": "bash scripts/run-smoke-local.sh tti",
     "smoke:local:smoke": "bash scripts/run-smoke-local.sh smoke",
     "smoke:cloud": "bash scripts/run-smoke-cloud.sh",
+    "smoke:cloud:android": "bash scripts/run-smoke-cloud.sh android",
+    "smoke:cloud:ios": "bash scripts/run-smoke-cloud.sh ios",
     "smoke:cloud:low": "bash scripts/run-smoke-cloud.sh low",
     "smoke:cloud:mid": "bash scripts/run-smoke-cloud.sh mid",
     "smoke:cloud:high": "bash scripts/run-smoke-cloud.sh high"

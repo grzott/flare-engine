@@ -60,8 +60,8 @@ The engine must support **three ship modes** without branching: (a) 100 % free, 
 - [x] ✅ Save-schema migrator v1→v7 step-chain tested with synthetic fixtures (session #21, 2026-04-28).
 - [x] ✅ Deep-link registration in `app.json` / `Info.plist` / `AndroidManifest.xml` — `pantvardowski://zone/N` routes wired end-to-end in prod build.
 - [ ] ⬜ `bun run test` + `bun run build` green in CI on the release branch.
-- [ ] ⬜ Device smoke test on one physical Android + one physical iOS (release build, airplane mode ok).
-- [ ] ⬜ Cold-start perf: time-to-first-interactive < 3 s on Galaxy A54 / iPhone 12.
+- [ ] ⬜ Device smoke test on Pixel 10 (Android) + iPhone 16 Pro (iOS) via TestingBot OSS free tier (release build).
+- [ ] ⬜ Cold-start perf: TTI < 3s on Pixel 10 + iPhone 16 Pro (TestingBot).
 
 ## 6. Analytics + leaderboards + achievements
 

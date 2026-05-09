@@ -15,11 +15,9 @@
 - Capture cold-start TTI per device via `[boot-trace]` adb logcat lines (see "Capturing cold-start TTI" below)
 - Record results in the tables below before closing the session
 
-> **iOS smoke deferred.** Per session #107 plan, only Android (Galaxy A54 + Pixel 7) is in scope. The iOS / iPhone 12 column is held for a future row tracked in `docs/plans/sessions.md`. Do not attempt iOS smoke until that row is opened.
-
 ## Devices
 
-### Galaxy A54 (Android — mid-tier reference)
+### Pixel 10 (Android — TestingBot canonical)
 
 | # | Check | Maestro flow | EN | PL |
 |---|-------|--------------|----|----|
@@ -46,7 +44,7 @@ Cold-start TTI (boot-start → first-frame, three runs, take median):
 | 3   |          |
 | **median** |    |
 
-### Pixel 7 (Android — second device)
+### iPhone 16 Pro (iOS — TestingBot canonical)
 
 | # | Check | Maestro flow | EN | PL |
 |---|-------|--------------|----|----|
@@ -120,4 +118,5 @@ mark the session done; open a perf-investigation follow-up row and report the br
 
 > Document version: session #154 (automation primary, manual fallback).
 > Supersedes session #50 / #59 / #107 manual-only versions.
-> Do NOT mark the session closed until both Android device columns + median TTI cells are filled.
+> Updated session #107 follow-up (2026-05-09): TestingBot single Android + single iOS gate, see smoke-automation.md.
+> Do NOT mark the session closed until both device columns + median TTI cells are filled.

@@ -3072,3 +3072,38 @@ Note: `apps/pan-tvardowski/src/visual-spec/index.ts` declared in touched paths b
 **Next session:** #111 "VS-S8c deprecated typography purge: delete 6 deprecated aliases (h1/h2/h3/body/caption/xs) from theme/typography.ts; grep-fix any remaining consumers to use spec-equivalent tokens"
 
 ---
+
+## Session 111 — 2026-05-09 (scope: [game])
+
+**Goal (from sessions.md row #111):** VS-S8c deprecated typography purge: delete 6 deprecated aliases (h1/h2/h3/body/caption/xs) from theme/typography.ts; grep-fix any remaining consumers to use spec-equivalent tokens (displayM/bodyL/bodyM/smallcap/monoDebug)
+
+**Touched files**
+- `apps/pan-tvardowski/src/theme/typography.ts`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/tests/typography.test.ts`
+- `apps/pan-tvardowski/tests/runtime-rewire-integration.test.ts`
+- `docs/plans/pan-tvardowski-build-plan.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅
+- typecheck: ✅ (tsc --noEmit, exit 0 confirmed by builder post-doc-sync)
+- test: ✅ (+0 new; 710 pass, 0 fail — alias-deletion tests rewritten to assert absence; baseline unchanged)
+- build: N/A (not in row gates; refactor + test-only session)
+- device smoke: deferred to session #107 (no new scene/rendering change)
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — dated `2026-05-09` VS-S8c Change log entry appended (single-bullet local style, after VS-S8b entry at line ~615)
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row updated: `+ VS-S8c deprecated typography purge (session #111)` inserted before the `complete (last closed:` marker; last-closed date updated to 2026-05-09
+- `docs/plans/release-readiness-checklist.md` — no new ticks (VS-S8c is a refactor, not a release item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `refactor(pan-tvardowski): purge 6 deprecated typography aliases`
+2. `test(pan-tvardowski): update typography tests post-alias purge`
+3. `docs(pan-tvardowski): VS-S8c change log + builder-reference mirror row`
+
+**Next session:** #112 "VS-S8d palette.ts absorption: move ZONE_PALETTES + ZonePalette + ZoneId + AmbienceKind + getUiPrimaryHex into visual-spec/; repoint play.ts + Hud.tsx + ambience.ts + theme/colors.ts consumers; delete palette.ts"
+
+---

@@ -16,9 +16,9 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ZONES } from '../src/config/zones';
-import type { ZoneId } from '../src/palette';
 import { SHAPE_CATALOGUE } from '../src/shape-catalogue';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
+import type { ZoneId } from '../src/visual-spec/zones-palette';
 
 const HEX_REGEX = /^#[0-9A-F]{6}([0-9A-F]{2})?$/i;
 
@@ -147,7 +147,7 @@ describe('visual-spec — boss/zone alignment vs config/zones.ts', () => {
 
 describe('visual-spec — ambience alignment vs palette.ts', () => {
   test('zone.bg.ambience.kind matches ZONE_PALETTES[id].ambienceName', async () => {
-    const { ZONE_PALETTES } = await import('../src/palette');
+    const { ZONE_PALETTES } = await import('../src/visual-spec/zones-palette');
     for (let id = 1; id <= 8; id++) {
       const visualKind = ZONE_VISUAL_SPECS[id as ZoneId].bg.ambience.kind;
       const paletteKind = ZONE_PALETTES[id as ZoneId].ambienceName;
@@ -156,7 +156,7 @@ describe('visual-spec — ambience alignment vs palette.ts', () => {
   });
 
   test('zone.bg.ambience.count matches ZONE_PALETTES[id].ambienceParticles', async () => {
-    const { ZONE_PALETTES } = await import('../src/palette');
+    const { ZONE_PALETTES } = await import('../src/visual-spec/zones-palette');
     for (let id = 1; id <= 8; id++) {
       const visualCount = ZONE_VISUAL_SPECS[id as ZoneId].bg.ambience.count;
       const paletteCount = ZONE_PALETTES[id as ZoneId].ambienceParticles;
@@ -208,7 +208,10 @@ describe('visual-spec — schema canary', () => {
   // no public-surface schema change.
   // Bumped at Session 121 (Z3-Refactor): added 'water-shader' | 'fog-shader' variants
   // to ParallaxLayer.content union — additive per schema stability protocol.
-  const SCHEMA_CANARY = '6b622556419d8cfddc1acdc5f63a9476554ba0f1f48daa148212be021325b213';
+  // Bumped at Session 112 (VS-S8d palette absorption): reordered imports in types.ts
+  // (EntityId before AmbienceKind/ZoneId) to satisfy Biome organizeImports — refactor
+  // only, no public-surface schema change.
+  const SCHEMA_CANARY = '80acd1dcc43371bd857e7d355698d42160eabac02d62e0426e6868e7eb80854b';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

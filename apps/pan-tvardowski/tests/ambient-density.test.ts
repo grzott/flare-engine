@@ -3,8 +3,8 @@ import { createSpriteSheet } from '@flare-engine/assets';
 import { Position } from '@flare-engine/ecs';
 import { createTestWorld } from '@flare-engine/testing';
 import { createAmbienceState, tickAmbience } from '../src/fx/ambience';
-import { ZONE_PALETTES } from '../src/palette';
 import type { AtlasHandle } from '../src/spawn';
+import { ZONE_PALETTES } from '../src/visual-spec/zones-palette';
 
 function makeAtlas(): AtlasHandle {
   const sheet = createSpriteSheet();

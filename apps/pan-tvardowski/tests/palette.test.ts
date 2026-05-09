@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { ZONE_PALETTES, type ZoneId } from '../src/palette';
+import { ZONE_PALETTES, type ZoneId } from '../src/visual-spec/zones-palette';
 
 describe('zone palette', () => {
   test('all 8 zones present', () => {

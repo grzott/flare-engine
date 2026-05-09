@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { ZONES } from '../src/config/zones';
 import type { ZoneId as ZoneConfigId } from '../src/events';
-import type { ZoneId as ZoneNumId } from '../src/palette';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
+import type { ZoneId as ZoneNumId } from '../src/visual-spec/zones-palette';
 
 const ZONE_NUMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { ZONE_PALETTES, getUiPrimary, getUiPrimaryHex } from '../src/palette';
+import { ZONE_PALETTES, getUiPrimary, getUiPrimaryHex } from '../src/visual-spec/zones-palette';
 
 describe('z8 silver UI', () => {
   test('getUiPrimary("z8") returns bone/silver ARGB', () => {

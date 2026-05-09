@@ -9,7 +9,7 @@ type Skia = typeof SkiaModule;
  * Load the sprite atlas described by `manifest`.
  *
  * Dispatch on `entry.kind`:
- *   - `'shape-atlas'` → build the procedural shape atlas from `shape-catalogue.ts`
+ *   - `'shape-atlas'` → build the procedural shape atlas from `visual-spec/shapes-catalogue.ts`
  *   - `'texture-packer'` → reserved for M9.6 production drop (throws)
  *
  * The manifest must contain exactly one entry. Multiple or zero entries are

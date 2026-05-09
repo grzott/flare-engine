@@ -4,7 +4,7 @@
     {
       "key": "shape-atlas",
       "kind": "shape-atlas",
-      "source": "src/shape-catalogue.ts"
+      "source": "src/visual-spec/shapes-catalogue.ts"
     }
   ]
 }

@@ -5,9 +5,8 @@
  * in spec form, not imported from theme/. This file is the S7 source of truth.
  *
  * NOTES:
- * - theme/typography.ts:72-107 carries six deprecated aliases (h1/h2/h3/body/
- *   caption/xs) that are excluded from TypeTokenId and therefore omitted here.
- *   They will be deleted in VS-S8 cleanup.
+ * - Six deprecated aliases (h1/h2/h3/body/caption/xs) were excluded from
+ *   TypeTokenId and omitted here. They were deleted at session #114.
  * - colors.ui.cb.{player,hazard,safe} are flattened to 'cb-player'/'cb-hazard'/
  *   'cb-safe' per ColorTokenId. 'hazard' and 'hazardOrange' both map to #E84B2A
  *   — this is intentional (same physical color, two semantic names in theme/).

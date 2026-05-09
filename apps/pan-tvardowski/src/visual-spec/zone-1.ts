@@ -2,8 +2,8 @@
  * Worked example — Zone 1 (Dachy Krakowa) as a typed visual spec.
  *
  * Data sourced from existing facts:
- *   - palette: src/palette.ts (zone 1 ambience, hex tokens via theme/colors.ts)
- *   - boss shape: src/shape-catalogue.ts → bosses['smok-krzemionkowski']
+ *   - palette: visual-spec/zones-palette.ts (zone 1 ambience, hex tokens)
+ *   - boss shape: visual-spec/shapes-catalogue.ts → bosses['smok-krzemionkowski']
  *   - HP / phases: docs/visual-reference.md §10
  *   - phase motifs: docs/visual-reference.md §10 boss specs table
  *

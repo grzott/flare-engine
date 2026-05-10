@@ -5,7 +5,7 @@ applyTo: "packages/engine/**"
 
 # `@flare-engine/engine` — package rules
 
-Layer 4 (top). Integration package that wires every lower layer together. Depends on all 14 lower `@flare-engine/*` packages.
+Layer 4 (top). Integration package that wires every lower layer together. Depends on all lower `@flare-engine/*` packages (currently 30+ across layers 0–3.5; see [docs/design/architecture.md](../../docs/design/architecture.md) for the live count).
 
 ## Factory contract
 
@@ -21,7 +21,7 @@ Layer 4 (top). Integration package that wires every lower layer together. Depend
 
 ## Re-exports
 
-- `src/index.ts` re-exports all 14 lower `@flare-engine/*` packages as a convenience bundle. Adding a new `@flare-engine/*` package to the monorepo requires adding a matching `import + export` line here — this is the one place tree-shaking is deliberately sacrificed for DX.
+- `src/index.ts` re-exports the lower `@flare-engine/*` packages as a convenience bundle. Adding a new `@flare-engine/*` package to the monorepo requires adding a matching `import + export` line here — this is the one place tree-shaking is deliberately sacrificed for DX.
 - Keep the re-exports in dependency order (layer 0 → 3). It makes the file scannable.
 
 ## Tests

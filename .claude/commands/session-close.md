@@ -19,7 +19,7 @@ Delegate to the `verifier` agent (via the `Agent` tool). The verifier has no edi
 3. **Device smoke** (game scope only) — print the command; user runs it; paste-back confirms.
 4. **Doc-sync check** per [.github/instructions/status-sync.instructions.md](../../.github/instructions/status-sync.instructions.md):
    - Engine: `builder-reference.md` Current State row updated, `build-plan.md` Phase Summary updated if phase state changed.
-   - Game: `<game>-build-plan.md` §17 engine-coverage ticks + Change log entry, `builder-reference.md` mirror row, `release-readiness-checklist.md` ticks.
+   - Game: `<game>-build-plan.md` §17 engine-coverage ticks (no Change log entry — that section was retired session #103; verifier writes to `SESSION_LOG.md` instead), `builder-reference.md` mirror row, `release-readiness-checklist.md` ticks.
 5. **Emit commit blocks** — Conventional Commits, subject only, ≤72 chars, scoped by concern (feat/fix/perf/refactor/test/docs/chore). Each commit = one fenced ```bash block.
 6. **Write session artifacts**:
    - Flip `docs/plans/sessions.md` row `in_progress` → `done`, stamp close date.

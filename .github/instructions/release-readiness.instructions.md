@@ -46,9 +46,9 @@ When closing any M9.x milestone:
 
 1. Tick the relevant items in [release-readiness-checklist.md](../../docs/plans/release-readiness-checklist.md).
 2. If any item moved 🟡 → ❌ (rejected), write the rationale inline on that line.
-3. Update the Change log in [pan-tvardowski-build-plan.md](../../docs/plans/pan-tvardowski-build-plan.md) with the milestone's date line — see [status-sync.instructions.md](./status-sync.instructions.md).
+3. Closure record is the verifier's `SESSION_LOG.md` block — **do not** append to `pan-tvardowski-build-plan.md` Change log (retired 2026-05-10, session #103).
 4. Surface any **uncovered release gap** discovered during the milestone — add it as a new checklist item rather than silently absorbing it.
 
 ## Extraction review gate (complements build-plan §11.14)
 
-At every M9.x close, the architect reviews: _did this milestone produce anything extractable under the strict genre-agnostic rule?_ If yes, add a row to the Extraction candidates table in [builder-reference.md](../../docs/references/builder-reference.md). If no, state so in the changelog entry (one line). Never skip the review silently.
+At every M9.x close, the architect reviews: _did this milestone produce anything extractable under the strict genre-agnostic rule?_ If yes, add a row to the Extraction candidates table in [builder-reference.md](../../docs/references/builder-reference.md). If no, state so in the verifier's SESSION_LOG closure block. Never skip the review silently.

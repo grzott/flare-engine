@@ -23,5 +23,5 @@ Full protocol lives in [.github/prompts/build-next-milestone.prompt.md](../../.g
 5. Implement.
 6. Tests (deterministic concerns only).
 7. Gates (typecheck → lint → tests → build, per [game-builder.md](../agents/game-builder.md)). Device smoke is user step.
-8. Sync docs: game plan §17 ticks + Change log, `builder-reference.md` mirror row, `release-readiness-checklist.md`.
+8. Sync docs: game plan §17 ticks (no Change log entry — retired #103), `builder-reference.md` mirror row, `release-readiness-checklist.md`. Closure record written to `SESSION_LOG.md` by verifier at `/session-close`.
 9. Emit commit blocks. Never commit.

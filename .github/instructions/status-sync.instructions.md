@@ -13,7 +13,7 @@ Stale status docs cause wrong planning. This file defines the single-source-of-t
 | -------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Engine phase status (0–12) | [docs/plans/build-plan.md](../../docs/plans/build-plan.md) **Phase Summary table**     | [docs/references/builder-reference.md](../../docs/references/builder-reference.md) **Current State table** |
 | Engine package status      | [docs/references/builder-reference.md](../../docs/references/builder-reference.md)     | —                                                                                                          |
-| Game app status (per game) | [docs/plans/\<game\>-build-plan.md](../../docs/plans/) **§17 Milestones + Change log** | `builder-reference.md` mirrors ONLY the last-milestone marker (one row per game)                           |
+| Game app status (per game) | [docs/plans/\<game\>-build-plan.md](../../docs/plans/) **§17 Milestones** ticks + [SESSION_LOG.md](../../SESSION_LOG.md) per-session blocks (verifier-written) | `builder-reference.md` mirrors ONLY the last-milestone marker (one row per game)                           |
 | Stub Tier-2 packages       | `builder-reference.md`                                                                 | —                                                                                                          |
 
 Rules:
@@ -47,8 +47,8 @@ When a phase / milestone / session ends — successful OR abandoned:
 ### Game milestone (game-builder)
 
 1. Tick engine-coverage checkboxes in `<game>-build-plan.md` §16/§17.
-2. Append a dated `**Mn complete.**` line to the Change log — one paragraph, same cadence as prior entries.
-3. Update the single mirror row in `builder-reference.md` for `apps/<game>` → `Mn done, M(n+1) pending` with today's date.
+2. Update the single mirror row in `builder-reference.md` for `apps/<game>` → `Mn done, M(n+1) pending` with today's date.
+3. The verifier writes the closure record to [`SESSION_LOG.md`](../../SESSION_LOG.md) at `/session-close`. Do **not** append a free-form `**Mn complete.**` paragraph to `<game>-build-plan.md` — the Change log section was retired 2026-05-10 (session #103 doc-refactor); historical entries up to session #156 live in `SESSION_LOG.md` Pan Tvardowski appendix.
 
 ### Architect / instruction changes
 

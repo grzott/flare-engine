@@ -29,6 +29,24 @@ export interface SkImageLike {
   readonly _skImageBrand?: never;
 }
 
+/** Minimal rect shape used by `SkiaCanvasLike.drawImageRect`. */
+export interface SkRectLike {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Minimal paint handle needed by the compositor hot path. */
+export interface SkiaPaintLike {
+  setShader(shader: unknown): void;
+}
+
+/** Minimal canvas handle needed by the compositor hot path. */
+export interface SkiaCanvasLike {
+  drawImageRect(image: SkImageLike, src: SkRectLike, dst: SkRectLike, paint: SkiaPaintLike): void;
+}
+
 /** Shared frozen sentinel — every pass with no extra children points here. */
 const EMPTY_CHILDREN: readonly SkImageLike[] = Object.freeze([]);
 
@@ -42,6 +60,9 @@ export interface SkiaRuntimeEffectFactory {
 
 export interface SkiaPostFxModuleLike {
   RuntimeEffect: SkiaRuntimeEffectFactory;
+  /** Optional Paint factory. When present, `createPostFxRuntime` allocates a
+   *  compositor paint lazily on first `apply()` call and reuses it every frame. */
+  Paint?(): SkiaPaintLike;
 }
 
 export interface CompiledShader {
@@ -58,6 +79,30 @@ export interface PostFxRuntime {
   packUniforms(effect: Effect, width: number, height: number): Float32Array;
   /** Build a list of `{ shader, uniforms }` tuples in chain order for enabled effects. */
   buildPass(chain: EffectChain, width: number, height: number): CompiledPass[];
+  /**
+   * Composite a postfx chain onto `canvas` using `source` as the scene texture.
+   *
+   * For each enabled pass the method calls
+   * `pass.shader.makeShader(uniforms, [source, ...pass.children])`, sets the
+   * resulting shader on the compositor paint, then blits via
+   * `canvas.drawImageRect(source, srcRect, dstRect, paint)`.
+   *
+   * No-ops when:
+   *  - `runtime.supported === false`
+   *  - `source` is null
+   *  - the chain has 0 enabled effects
+   *  - the injected Skia module has no `Paint` factory
+   *
+   * The compositor paint is allocated lazily on the first call and reused
+   * on every subsequent call (zero-alloc hot path).
+   */
+  apply(
+    canvas: SkiaCanvasLike,
+    chain: EffectChain,
+    source: SkImageLike | null,
+    width: number,
+    height: number,
+  ): void;
   /** Drop all cached compiled shaders. */
   reset(): void;
 }
@@ -98,6 +143,11 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
   const cache = new Map<EffectKind, CompiledShader>();
   const supported = skia !== null && typeof skia.RuntimeEffect?.Make === 'function';
 
+  // Compositor paint — allocated once on first apply() call, reused every frame.
+  let compositorPaint: SkiaPaintLike | null = null;
+  // Reusable rect sentinels — mutated in place each apply() call (zero-alloc).
+  const applyRect: SkRectLike = { x: 0, y: 0, width: 0, height: 0 };
+
   return {
     supported,
     compile(kind) {
@@ -133,6 +183,21 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
         });
       }
       return out;
+    },
+    apply(canvas, chain, source, width, height) {
+      if (!supported || source === null || skia === null) return;
+      if (typeof skia.Paint !== 'function') return;
+      const passes = this.buildPass(chain, width, height);
+      if (passes.length === 0) return;
+      if (compositorPaint === null) compositorPaint = skia.Paint();
+      const paint = compositorPaint;
+      applyRect.width = width;
+      applyRect.height = height;
+      for (const pass of passes) {
+        const shader = pass.shader.makeShader(pass.uniforms, [source, ...pass.children]);
+        paint.setShader(shader);
+        canvas.drawImageRect(source, applyRect, applyRect, paint);
+      }
     },
     reset() {
       cache.clear();

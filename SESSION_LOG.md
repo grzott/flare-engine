@@ -4003,3 +4003,40 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #166 "PT-PostFx-Wire (replan)" — lowest pending P0; depends on #165 (done).
 
 ---
+
+## Session 167 — 2026-05-10 (scope: [game])
+
+**Goal (from sessions.md row #167):** PT-PauseSettings-UX-Fix: 1) sim gates on `gameState.paused` (mirror dialogue precedent), 2) wire `actions.onSettings` on pause overlay, 3) settings exit reachable on small screens via close-X + origin-aware back-route preserving pause
+
+**Touched files**
+- `apps/pan-tvardowski/src/state.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts`
+- `apps/pan-tvardowski/tests/pause-and-settings-flow.test.ts`
+- `docs/plans/sessions.md` (row #167 flipped `in_progress → done`, close date stamped)
+- `SESSION_LOG.md` (this block)
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 295 files, no fixes applied)
+- typecheck: ✅ (tsc --noEmit clean)
+- test: ✅ (+8 new, total 745 pass / 0 fail; declared +4, widened to +8 by full flow coverage in new test file)
+- build: ✅ (stub echo — native builds via bun run android|ios, documented pattern)
+- device smoke: deferred — pure UX bugfix; behavioural coverage via 8 new state-machine tests; visible smoke to be picked up alongside sessions #166/#163 on next APK
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no change; no new engine-coverage checkboxes apply (pure game-layer UX bugfix, no new engine packages exercised)
+- `docs/references/builder-reference.md` — no change; no milestone marker transition (bugfix session, not a milestone boundary)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (bugfix only, no user-facing feature addition)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `fix(pan-tvardowski): pause overlay halts play sim + wires settings btn`
+2. `test(pan-tvardowski): +8 pause+settings flow tests`
+3. `docs(plan): close session #167 PT-PauseSettings-UX-Fix`
+
+**Next session:** #166 "PT-PostFx-Wire (replan)" — lowest pending P0; depends on #165 (done).
+
+---
+
+---

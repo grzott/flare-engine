@@ -3932,3 +3932,37 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 - **2026-05-10** — **PT-DeviceSmoke complete (session #107).** EAS cloud build pipeline + TestingBot smoke runner stood up end-to-end. EAS project initialized (`projectId 202e2a64-a737-48c1-8d71-0e7b8b6a3395` written to `app.json`); 5 expo-doctor fixes applied (`newArchEnabled`, metro config, duplicate react version, 7 SDK version mismatches, `eas-build-post-install` hook). `scripts/run-smoke-cloud.sh` extended with env auto-load, 3-launch TTI loop, artifacts ZIP extraction, `--device-locale` flag; `.maestro/smoke.yaml` timeout bumps + `Loading…` step removed. Root `package.json` gains `react`/`react-dom` overrides + no-op `eas-build-post-install` script; `apps/pan-tvardowski/package.json` version-bumped + `@testingbot/cli` added. `bun.lock` regenerated. Cold-start TTI gate passed on Pixel 10 (< 3000ms, 3 iterations). Functional smoke blocked on `assertVisible "Play"` after 60s timeout — boot→menu scene transition appears to stall on TestingBot Pixel 10 (likely audio-init or save-load race); diagnosis deferred to #156. iOS deferred entirely (no Apple Developer account; #137 pending). `docs/device-smoke.md` rows updated with pass/blocked/skip state. `docs/perf-baseline.md` Pixel 10 TTI row added (< 3000ms gate). `docs/smoke-automation.md` extended with cloud-runner invocation recipe. RR checklist §5 Android cold-start TTI tick added. 712/712 tests green (no new tests — infra session). Gates: lint ✅, typecheck ✅, test ✅ (712/712), build ✅. Device-smoke: Pixel 10 cold-start TTI partial pass (2026-05-10); functional smoke → #156.
 - **2026-05-09** — **PT-BootTraceFix complete (session #155).** `dumpBootTrace()` call moved from `App.tsx` `GameView.onReady` (which fires after `first-frame` but before the boot scene's async `loadSave`/`initAudio` chain) into the tail of `src/scenes/boot.ts` `onEnter` async body, ensuring all 5 milestones (`boot-start`, `providers-mounted`, `first-frame`, `save-loaded`, `audio-ready`) are recorded before the dump fires. Deviation: `src/boot.ts (new)` was not created — the existing `src/scenes/boot.ts` already owned the async chain; fix was a 2-line move. `perf/cold-start.ts` and `tests/cold-start.test.ts` untouched — `resetBootTrace` already existed from session #154. New test file: `tests/boot-trace-shape.test.ts` (+5 tests asserting milestone presence + ordering + non-negative timestamps + no-op when `markBootStart` was never called). Race-resolution: the planned dual-flag `mountedRef`/`skiaReadyRef` scheme was unnecessary because `onEnter` runs strictly after both `providers-mounted` (React mount effect) and `first-frame` (Skia onReady); moving the dump to the tail of that chain is sufficient. 712/712 tests green (707 baseline + 5). Gates: lint ✅, typecheck ✅, test ✅ (+5, 712 total), build ✅. Device-smoke informational (backend trace fix; no gameplay change).
 - **2026-05-10** — **PT-Smoke-Diagnose in_progress (session #156).** Root-caused the TestingBot Pixel 10 functional smoke failure: `await initAudio()` in `src/scenes/boot.ts` hangs indefinitely on cloud hardware that lacks real audio, blocking the boot→menu scene transition and causing Maestro’s `assertVisible "Play"` to time out. Fix: `Promise.race([initAudio(), 5 s timeout → null])` in `src/scenes/boot.ts` (audio init becomes best-effort); `.maestro/smoke.yaml` `extendedWaitUntil` bumped 60 s→90 s; regression test added to `tests/boot-trace-shape.test.ts` asserting the timeout path completes the boot sequence. 730/730 tests green. Gates: lint ✅, typecheck ✅, test ✅ (730/730), build ✅. Row held `in_progress`: cloud gates (`local emu smoke green`, `TestingBot Pixel 10 smoke green`, `TTI median recorded`) deferred — no cloud credentials in this context; `docs/device-smoke.md` rows 1, 2, 6, 7, 13 and `docs/perf-baseline.md` Pixel 10 TTI row annotated `pending verification (cloud rerun queued)` and left unchanged.
+
+## Session 165 — 2026-05-10 (scope: [engine])
+
+**Goal (from sessions.md row #165):** Postfx-BridgeExpose: extend `onRenderPostFx` callback to receive `bridge: SkiaFrameRenderer \| null` as 3rd arg so consumers can call `bridge.applyPostFx()`; add `PostFxRenderHook` type; export from index; `source: null` accepted (overlay-only effects work; bloom/chromatic-ab need snapshot-source follow-up)
+
+**Touched files**
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/index.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `docs/design/api-specs.md`
+- `docs/plans/sessions.md` — row #162 flipped `pending → blocked ⬪` (superseded by #165+#166 engine-first split); row #163 `depends on` repointed `#162 → #166`; rows #165+#166 appended; `⬪` footnote added; `## Now` header rewritten; tiering table P0 row extended
+- `.claude/commands/session-start.md` — picker tier table P0 prefix list extended to include `Postfx-BridgeExpose`
+- `docs/references/builder-reference.md` — Session #165 row added to Current State table
+
+**Gates**
+- lint: ✅ (40/40 packages)
+- typecheck: ✅ (73/73 tasks)
+- test: ✅ (+4 new, total 71 in `@flare-engine/react`; 77/77 tasks root)
+- build: ✅ (39/39 tasks)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #165 Postfx-BridgeExpose row added; react test count updated 67 → 71
+- `docs/plans/build-plan.md` — no phase state change (Phase 6/11 already `in progress`; postfx/react additions are incremental within the existing phase)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(react): PostFxRenderHook type + bridge 3rd arg in onRenderPostFx`
+2. `test(react): PostFxRenderHook callback shape + supported guard`
+3. `docs(api-specs): PostFxRenderHook + onRenderPostFx bridge arg`
+4. `chore(plan): split #162 → #165+#166 (engine-first); session #165 close`
+
+**Next session:** #166 "PT-PostFx-Wire (replan)" — depends on #165 (now done).
+
+---

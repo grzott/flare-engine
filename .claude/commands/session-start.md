@@ -22,7 +22,7 @@ If no pickable row → report "no pending sessions — run /plan-sessions" and s
 
 | Tier | Match prefixes | Picker |
 |------|---------------|--------|
-| **P0 — visual-runtime closure** (current focus) | `Postfx-Compositor`, `PT-PostFx-Wire`, `PT-Boss-PaletteShift-Wire`, `PT-HUD-DataDriven` | **active first** — these 4 close the postfx-not-rendering + boss-palette-unwired + HUD-hardcoded gaps surfaced in session #103 audit. |
+| **P0 — visual-runtime closure** (current focus) | `Postfx-Compositor`, `Postfx-BridgeExpose`, `PT-PostFx-Wire`, `PT-Boss-PaletteShift-Wire`, `PT-HUD-DataDriven` | **active first** — closes the postfx-not-rendering + boss-palette-unwired + HUD-hardcoded gaps surfaced in session #103 audit. `Postfx-BridgeExpose` (#165) was added 2026-05-10 as the engine half of the #162 → #165+#166 split (engine-first split per CLAUDE.md). |
 | **P2 — quality + dev-tooling** | `Hermes-`, `PT-LocaleQA-Fix`, `PT-DocSync-`, `PT-Smoke-`, `PT-DebugHUD`, `PT-UnskipCloudSmoke` | active after P0 drains, picked AFTER P1 default (dev-tooling has lowest priority among active tiers). |
 | **P1 — default** (no explicit prefix) | anything else not matching P0 / P2 / Deferred | active after P0 drains, picked BEFORE P2 (engine→PT chains live here: `Scene-`, `Render-`, `Animation-`, `PT-EasedTransitions`, `PT-PerlinShake`, `PT-SigilPulse`, `PT-SlowMo-`, `PT-Z*-ShaderBg`, etc.) |
 | **Deferred — manual launch tier** | `PT-Store`, `PT-Legal-`, `PT-Submit-`, `PT-Accounts`, `PT-DataSafety`, `PT-RR-Walk`, `PT-AppIcon`, `PT-Screenshots-`, `PT-Trailer`, `PT-DocsiteLive`, `PT-ClosedTest-Kickoff` | **skipped** — owner runs these directly outside the session loop. Tracked in [`release-readiness-checklist.md`](../../docs/plans/release-readiness-checklist.md). |

@@ -9,10 +9,10 @@ You are the **engine ecosystem researcher**. You deliver structured, actionable 
 
 ## Workspace context
 
-Flare is a modular 2D game engine for React Native + Web built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). **34 packages** across 7+ tiers (Foundation / Runtime / Systems / Persistence / Features / UI / Integration + Tooling + Tier-2 stubs).
+Flare is a modular 2D game engine for React Native + Web built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). **37 packages** across 7+ tiers (Foundation / Runtime / Systems / Persistence / Features / UI / Integration + Tooling + Tier-2 stubs).
 
 Read these for context:
-- [AGENTS.md](../../AGENTS.md) — architecture, 34 packages, layering
+- [AGENTS.md](../../AGENTS.md) — architecture, 37 packages, layering
 - [docs/design/architecture.md](../../docs/design/architecture.md) — layered design, rendering pipeline
 - [docs/design/ecosystem.md](../../docs/design/ecosystem.md) — competitive landscape
 - [docs/references/researcher-reference.md](../../docs/references/researcher-reference.md) — report format template

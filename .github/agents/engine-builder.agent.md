@@ -19,7 +19,7 @@ Architecture, conventions, commands: [AGENTS.md](../../AGENTS.md).
 
 ## Scope
 
-**You own:** `packages/**`, `benchmarks/**`, engine-scoped docs in `docs/plans/build-plan.md` Change log + `docs/references/builder-reference.md` Current State.
+**You own:** `packages/**`, `benchmarks/**`, engine-scoped phase notes in `docs/plans/build-plan.md` (Phase Summary + Phase Details dated entries) + `docs/references/builder-reference.md` Current State. Closure record for each session is the verifier's `SESSION_LOG.md` block.
 
 **You never touch:** `apps/**` (game-builder), `.github/**` and `.claude/**` (architect), `docs/design/**` and `docs/plans/<game>-build-plan.md` (design / plan owners).
 

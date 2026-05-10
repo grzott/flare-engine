@@ -22,8 +22,8 @@ Open `docs/plans/<game>-build-plan.md`. Find the lowest milestone with **incompl
 
 Verify doc ↔ code consistency (per [status-sync.instructions.md](../instructions/status-sync.instructions.md)):
 
-1. The plan's Change log last entry should match recent commits from `git log --oneline -n 20 -- apps/<game>`.
-2. The `apps/<game>` mirror row in `docs/references/builder-reference.md` should agree with the plan.
+1. The latest `SESSION_LOG.md` block tagged `apps/<game>` should match recent commits from `git log --oneline -n 20 -- apps/<game>`.
+2. The `apps/<game>` mirror row in `docs/references/builder-reference.md` should agree with the plan + SESSION_LOG.
 
 If any contradiction is found, **stop and surface it** — do not plan on stale docs.
 

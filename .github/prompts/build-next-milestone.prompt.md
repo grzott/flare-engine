@@ -17,8 +17,8 @@ Load the game's plan doc at `docs/plans/<game>-build-plan.md`.
 
 ## Step 1 — Identify next milestone + verify state (MANDATORY)
 
-1. Open the plan's §17 Milestones table AND the Change log section at the bottom of the plan.
-2. Verify the changelog is consistent with the repo: run `git log --oneline -n 20 -- apps/<game>` and confirm the last milestone entry matches recent commit history. If the changelog claims Mn done but no matching commits exist — or commits show Mn+1 work but changelog stops at Mn-1 — **stop and surface the drift**.
+1. Open the plan's §17 Milestones table AND the latest `SESSION_LOG.md` blocks tagged `apps/<game>`.
+2. Verify the log is consistent with the repo: run `git log --oneline -n 20 -- apps/<game>` and confirm the last SESSION_LOG block matches recent commit history. If SESSION_LOG claims Mn done but no matching commits exist — or commits show Mn+1 work but SESSION_LOG stops at Mn-1 — **stop and surface the drift**.
 3. Cross-check the mirror row in `docs/references/builder-reference.md` (`apps/<game>` entry). If it contradicts the plan's changelog, the plan wins; note the mirror needs updating in Step 7.
 4. Find the **lowest-numbered `M<n>`** whose engine-coverage checkboxes (in §16 or in-milestone) are not all ticked.
 5. If every milestone is complete → report "game is feature-complete" and stop.
@@ -87,7 +87,7 @@ Halt. Wait for user to paste outcome. If device smoke passes, continue; if it fa
 In `docs/plans/<game>-build-plan.md`:
 
 1. Tick the completed engine-coverage checkboxes for this milestone.
-2. Append a dated entry to the "Change log" section: `**YYYY-MM-DD** — **Mn complete.** <one paragraph, same cadence as prior entries>`.
+2. Do **not** append to the build-plan Change log — that section was retired 2026-05-10 (session #103); verifier writes the closure record to `SESSION_LOG.md` at `/session-close`.
 
 In `docs/references/builder-reference.md`:
 

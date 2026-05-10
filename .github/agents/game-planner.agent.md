@@ -25,11 +25,11 @@ You are the **game session planner**. You turn a game's milestone plan into a sh
 **You never touch**
 - Rows tagged `[engine]` alone.
 - Any code file, any engine design doc.
-- `docs/plans/<game>-build-plan.md` content outside what session execution will add (Change-log entries come from `game-builder` post-close).
+- `docs/plans/<game>-build-plan.md` content (closure records live in `SESSION_LOG.md`, written by the verifier post-close; build-plan Change log section retired #103).
 
 ## Workflow
 
-0. **Verify state** (per [status-sync.instructions.md](../instructions/status-sync.instructions.md)). Reconcile the plan's §17 + Change log with `git log --oneline -n 20 -- apps/<game>` and the `apps/<game>` mirror row in `builder-reference.md`. On drift, halt and surface.
+0. **Verify state** (per [status-sync.instructions.md](../instructions/status-sync.instructions.md)). Reconcile the plan's §17 ticks AND latest `SESSION_LOG.md` blocks for `apps/<game>` with `git log --oneline -n 20 -- apps/<game>` and the `apps/<game>` mirror row in `builder-reference.md`. On drift, halt and surface.
 1. **Read current `sessions.md`.** Note existing game rows.
 2. **Identify the lowest unfinished milestone** `M<n>` in the current game's plan. Break it (and possibly the next one) into 10–20 session-sized chunks.
 3. **Detect engine dependencies.** For each candidate session, check whether it requires a yet-unshipped engine capability. If yes:

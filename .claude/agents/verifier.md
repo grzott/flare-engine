@@ -64,7 +64,7 @@ Per [status-sync.instructions.md](../../.github/instructions/status-sync.instruc
 
 **Engine sessions** — confirm `docs/references/builder-reference.md` Current State table row for touched packages matches disk (module count, test count, size). Confirm `docs/plans/build-plan.md` Phase Summary + dated phase note if phase state changed. If either is stale, surface — the builder must fix before close.
 
-**Game sessions** — confirm `docs/plans/<game>-build-plan.md` §17 engine-coverage ticks match what the diff added. Confirm a dated `**YYYY-MM-DD** — **M<n> complete.**` Change-log entry was appended. Confirm the `apps/<game>` mirror row in `builder-reference.md` was updated. Confirm satisfied items in `docs/plans/release-readiness-checklist.md` are ticked.
+**Game sessions** — confirm `docs/plans/<game>-build-plan.md` §17 engine-coverage ticks match what the diff added. Confirm the `apps/<game>` mirror row in `builder-reference.md` was updated. Confirm satisfied items in `docs/plans/release-readiness-checklist.md` are ticked. Do **not** check for a `<game>-build-plan.md` Change log entry — that section was retired 2026-05-10 (session #103); the closure record you write to `SESSION_LOG.md` IS the changelog. Historical entries (sessions #1–#156) live in the `SESSION_LOG.md` Pan Tvardowski appendix.
 
 If any doc-sync item is missing, **halt** and surface — do NOT close silently.
 

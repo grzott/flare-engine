@@ -51,7 +51,7 @@ Reject sessions that:
 ## Constraints
 
 - Propose-only in the planning turn. Writes require explicit approval.
-- Never modify engine or game source. Never rewrite `build-plan.md` — only append Change-log entries as directed by the builder post-close.
+- Never modify engine or game source. Never rewrite `build-plan.md` — phase status / Phase Details dated entries are owned by the engine-builder; closure records are verifier-written to `SESSION_LOG.md`.
 - Never skip state verification, even for a "quick refresh."
 - Session row status values: `pending`, `in_progress`, `done`, `blocked`. No custom statuses.
 - Rows are append-only in chronological numbering — do not renumber closed rows.

@@ -13,7 +13,7 @@ Conventions: [AGENTS.md](../../AGENTS.md).
 
 **You own**
 - `apps/<game>/**` — any folder under `apps/` that is a game (not `apps/site`, not `apps/bench-dashboard`)
-- The game's build plan at `docs/plans/<game>-build-plan.md` (Change log + engine-coverage checkboxes)
+- The game's build plan at `docs/plans/<game>-build-plan.md` (engine-coverage checkboxes; closed-session history lives in `SESSION_LOG.md`)
 - The `apps/<game>` mirror row in `docs/references/builder-reference.md`
 
 **You never touch**
@@ -38,13 +38,13 @@ Conventions: [AGENTS.md](../../AGENTS.md).
 
 Each invocation = **one milestone** from the game's build plan. Typical milestone = one zone or one cross-cutting feature pass.
 
-0. **Verify state** (MANDATORY). Read the plan's §17 + Change log AND `docs/references/builder-reference.md` `apps/<game>` row. Run `git log --oneline -n 20 -- apps/<game>` to confirm the changelog matches reality. If any contradiction, halt and surface the drift.
+0. **Verify state** (MANDATORY). Read the plan's §17 ticks AND `docs/references/builder-reference.md` `apps/<game>` row AND the latest `SESSION_LOG.md` blocks for `apps/<game>`. Run `git log --oneline -n 20 -- apps/<game>` to confirm the log matches reality. If any contradiction, halt and surface the drift.
 1. **Identify milestone.** Find the lowest-numbered `M<n>` whose engine-coverage checkboxes are not all ticked. If none → report "feature-complete" and stop.
 2. **Plan.** List files touched, tests added, engine-coverage boxes to tick, new deps (flag + justify), suspected engine gaps. **STOP. Present the plan. Wait for user approval.**
 3. **Implement.** Match existing patterns from completed milestones. Load per-package skills only as needed.
 4. **Write tests** — deterministic concerns only (boss FSM, score math, ICU plurals, dialogue branches, save-schema migrations). Skip visual/audio/timing — those are device-verified.
 5. **Run gates** (see below). Halt on first failure; surface the error trimmed to the relevant section. Do NOT loop on the same fix more than twice.
-6. **Sync docs (MANDATORY)** — tick engine-coverage checkboxes in `docs/plans/<game>-build-plan.md` §17; append dated `**YYYY-MM-DD** — **M<n> complete.**` line to Change log; update the `apps/<game>` mirror row in `docs/references/builder-reference.md`; tick satisfied items in [docs/plans/release-readiness-checklist.md](../../docs/plans/release-readiness-checklist.md), flag new gaps.
+6. **Sync docs (MANDATORY)** — tick engine-coverage checkboxes in `docs/plans/<game>-build-plan.md` §17; update the `apps/<game>` mirror row in `docs/references/builder-reference.md`; tick satisfied items in [docs/plans/release-readiness-checklist.md](../../docs/plans/release-readiness-checklist.md), flag new gaps. Do **not** append to the build-plan Change log — that section was retired session #103 (2026-05-10); verifier writes the closure record to `SESSION_LOG.md` at `/session-close`.
 7. **Emit commit blocks.** Conventional Commits, scope = `<game>`. Split by concern:
    - `feat(<game>): …` gameplay
    - `test(<game>): …` new tests

@@ -41,6 +41,27 @@ export type SkiaModuleLike = Pick<
 };
 
 /**
+ * Minimal structural view of a PostFxRuntime that the bridge needs.
+ * Declared locally so `@flare-engine/react` does not take a hard dep on
+ * `@flare-engine/postfx`; interfaces are compatible structurally.
+ */
+export interface PostFxRuntimeLike {
+  readonly supported: boolean;
+  apply(
+    canvas: { drawImageRect(image: unknown, src: unknown, dst: unknown, paint: unknown): void },
+    chain: PostFxChainLike,
+    source: unknown,
+    width: number,
+    height: number,
+  ): void;
+}
+
+/** Minimal structural view of an EffectChain the bridge needs. */
+export interface PostFxChainLike {
+  enabled(): Iterable<unknown>;
+}
+
+/**
  * Frame renderer that bridges a `SpriteBatch` to a Skia `<Picture>`.
  *
  * Each frame:
@@ -68,6 +89,25 @@ export interface SkiaFrameRenderer {
    * always supply a real `SkImage`.
    */
   drawAtlas(image: SkImageLike, commands: SpriteDrawCommand[]): void;
+  /**
+   * Apply a postfx chain onto the active recording canvas using `source` as
+   * the scene texture. Delegates to `runtime.apply(currentCanvas, ...)`.
+   *
+   * No-ops when:
+   *  - no active recording (before `beginFrame` or after `endFrame`)
+   *  - `source` is null
+   *  - `runtime.supported === false`
+   *
+   * Source-snapshot capture is **not** done here — the host (row #162) must
+   * supply a pre-captured `SkImage` from the current frame.
+   */
+  applyPostFx(
+    runtime: PostFxRuntimeLike,
+    chain: PostFxChainLike,
+    source: SkImageLike | null,
+    width: number,
+    height: number,
+  ): void;
   endFrame(): SkPicture | null;
 }
 
@@ -372,6 +412,11 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       paint.setAlphaf(alpha);
       current.drawAtlas(skImage, srcs, dsts, paint);
       paint.setAlphaf(1);
+    },
+
+    applyPostFx(runtime, chain, source, width, height) {
+      if (current === null || source === null || !runtime.supported) return;
+      runtime.apply(current, chain, source, width, height);
     },
 
     endFrame(): SkPicture | null {

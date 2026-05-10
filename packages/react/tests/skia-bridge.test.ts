@@ -954,3 +954,75 @@ describe('createSkiaFrameRenderer — per-sprite alpha', () => {
     expect(calls[1]?.paintAlphaf).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// applyPostFx
+// ---------------------------------------------------------------------------
+
+import type { PostFxChainLike, PostFxRuntimeLike } from '../src/skia-bridge.js';
+
+interface MockPostFxRuntime extends PostFxRuntimeLike {
+  applyCalls: Array<{
+    canvas: unknown;
+    chain: PostFxChainLike;
+    source: unknown;
+    width: number;
+    height: number;
+  }>;
+}
+
+function makeMockPostFxRuntime(supported: boolean): MockPostFxRuntime {
+  return {
+    supported,
+    applyCalls: [],
+    apply(canvas, chain, source, width, height) {
+      this.applyCalls.push({ canvas, chain, source, width, height });
+    },
+  };
+}
+
+function makeMockChain(): PostFxChainLike {
+  return { enabled: () => [] };
+}
+
+describe('createSkiaFrameRenderer — applyPostFx', () => {
+  it('no-op before beginFrame — apply never called on runtime', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    const runtime = makeMockPostFxRuntime(true);
+    const chain = makeMockChain();
+    const source = mockImage();
+
+    bridge.applyPostFx(runtime, chain, source, 800, 600);
+
+    expect(runtime.applyCalls).toHaveLength(0);
+  });
+
+  it('source === null — apply never called on runtime', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime = makeMockPostFxRuntime(true);
+    const chain = makeMockChain();
+
+    bridge.applyPostFx(runtime, chain, null, 800, 600);
+
+    expect(runtime.applyCalls).toHaveLength(0);
+  });
+
+  it('delegates to runtime.apply with current canvas, chain, source, width, height', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime = makeMockPostFxRuntime(true);
+    const chain = makeMockChain();
+    const source = mockImage();
+
+    bridge.applyPostFx(runtime, chain, source, 800, 600);
+
+    expect(runtime.applyCalls).toHaveLength(1);
+    const call = runtime.applyCalls[0]!;
+    expect(call.source).toBe(source);
+    expect(call.chain).toBe(chain);
+    expect(call.width).toBe(800);
+    expect(call.height).toBe(600);
+    expect(call.canvas).not.toBeNull();
+  });
+});

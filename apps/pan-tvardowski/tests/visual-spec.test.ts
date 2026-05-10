@@ -217,7 +217,9 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 152 (PT-SpiralCollapse): SpiralCollapseDef gained 5 optional
   // fields (inwardEasing, scaleFrom, scaleTo, alphaFrom, alphaTo) — additive per
   // schema stability protocol ("adding optional fields" is permitted).
-  const SCHEMA_CANARY = 'aac9995d6ce1ac6d33aa828ac704c1e35225dc6d1beb4c47db83f8cf57dea7e8';
+  // Bumped at Session 164 (PT-HUD-DataDriven): Inset.dx/dy widened from `number`
+  // to `number | \`${number}%\`` (InsetValue) — additive union variant per protocol.
+  const SCHEMA_CANARY = '4f935c9ff1c6da8f65e27b14b81e92e6da905dddddae2a021b10551cb8886a24';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

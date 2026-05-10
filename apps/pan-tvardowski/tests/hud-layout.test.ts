@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { rawStyles } from '../src/hud/Hud.styles';
+import { HUD_SPEC } from '../src/visual-spec/hud';
 import { THEME_SPEC, UI_COLORS } from '../src/visual-spec/theme';
 
 describe('HUD layout', () => {
@@ -33,5 +34,31 @@ describe('HUD layout', () => {
   test('minibossBar left/right use hudCornerX token', () => {
     expect(rawStyles.minibossBar.left).toBe(THEME_SPEC.spacing.hudCornerX);
     expect(rawStyles.minibossBar.right).toBe(THEME_SPEC.spacing.hudCornerX);
+  });
+
+  test("HUD_SPEC slot 'score' inset matches hudCornerX/Y tokens", () => {
+    const slot = HUD_SPEC.slots.find((s) => s.id === 'score');
+    expect(slot?.inset?.dx).toBe(THEME_SPEC.spacing.hudCornerX);
+    expect(slot?.inset?.dy).toBe(THEME_SPEC.spacing.hudCornerY);
+  });
+
+  test("HUD_SPEC slot 'boss-bar' inset.dy matches hudCornerY token", () => {
+    const slot = HUD_SPEC.slots.find((s) => s.id === 'boss-bar');
+    expect(slot?.inset?.dy).toBe(THEME_SPEC.spacing.hudCornerY);
+  });
+
+  test("HUD_SPEC slot 'miniboss-bar' inset.dy is 56", () => {
+    const slot = HUD_SPEC.slots.find((s) => s.id === 'miniboss-bar');
+    expect(slot?.inset?.dy).toBe(56);
+  });
+
+  test("HUD_SPEC slot 'zone-banner' anchor is 'mid-center'", () => {
+    const slot = HUD_SPEC.slots.find((s) => s.id === 'zone-banner');
+    expect(slot?.anchor).toBe('mid-center');
+  });
+
+  test("HUD_SPEC slot 'zone-banner' inset.dy === '38%'", () => {
+    const slot = HUD_SPEC.slots.find((s) => s.id === 'zone-banner');
+    expect(slot?.inset?.dy).toBe('38%');
   });
 });

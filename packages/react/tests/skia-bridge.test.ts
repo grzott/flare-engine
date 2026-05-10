@@ -45,8 +45,10 @@ interface MockPaint {
   readonly id: number;
   colorFilter: MockColorFilter | null;
   shader: MockShader | null;
+  alphaf: number;
   setColorFilter(filter: MockColorFilter | null): void;
   setShader(shader: MockShader | null): void;
+  setAlphaf(alpha: number): void;
 }
 
 interface MockRuntimeEffect {
@@ -78,6 +80,8 @@ interface MockCanvas {
     srcs: readonly unknown[];
     dsts: readonly unknown[];
     paint: MockPaint;
+    /** Snapshot of paint.alphaf at the moment drawAtlas was called. */
+    paintAlphaf: number;
   }>;
   clearCalls: Float32Array[];
 }
@@ -136,11 +140,15 @@ function makeMockSkia(): SkiaModuleLike {
         id: paintCount,
         colorFilter: null,
         shader: null,
+        alphaf: 1,
         setColorFilter(filter) {
           this.colorFilter = filter;
         },
         setShader(shader) {
           this.shader = shader;
+        },
+        setAlphaf(alpha) {
+          this.alphaf = alpha;
         },
       };
       return p as unknown as ReturnType<SkiaModuleLike['Paint']>;
@@ -208,6 +216,7 @@ function makeMockSkia(): SkiaModuleLike {
                 srcs: srcSnap,
                 dsts: dstSnap,
                 paint,
+                paintAlphaf: (paint as MockPaint).alphaf,
               });
             },
           };
@@ -339,6 +348,7 @@ function cmd(partial: Partial<SpriteDrawCommand>): SpriteDrawCommand {
     dstW: 32,
     dstH: 32,
     effect: undefined,
+    alpha: 1,
     ...partial,
   };
 }
@@ -905,5 +915,42 @@ describe('createSkiaFrameRenderer — fog effect', () => {
     expect(() => bridge.drawAtlas(mockImage(), [cmd({ effect })])).not.toThrow();
     const call = currentMockCanvas?.drawAtlasCalls[0];
     expect(call?.paint.id).toBe(1);
+  });
+});
+
+describe('createSkiaFrameRenderer — per-sprite alpha', () => {
+  it('alpha=1 (default) — paint setAlphaf is called with 1', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ alpha: 1 })]);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paintAlphaf).toBe(1);
+  });
+
+  it('alpha=0.5 — paint setAlphaf is called with 0.5', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ alpha: 0.5 })]);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paintAlphaf).toBe(0.5);
+  });
+
+  it('alpha=0 — drawAtlas does not crash and paint alpha is 0', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    expect(() => bridge.drawAtlas(mockImage(), [cmd({ alpha: 0 })])).not.toThrow();
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paintAlphaf).toBe(0);
+  });
+
+  it('paint alpha is reset to 1 after draw (no state bleed to next call)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ alpha: 0.3 })]);
+    bridge.drawAtlas(mockImage(), [cmd({ alpha: 1 })]);
+    const calls = currentMockCanvas?.drawAtlasCalls ?? [];
+    // Snapshot at draw time — first call should have 0.3
+    expect(calls[0]?.paintAlphaf).toBe(0.3);
+    expect(calls[1]?.paintAlphaf).toBe(1);
   });
 });

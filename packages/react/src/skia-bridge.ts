@@ -296,8 +296,10 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     commands: SpriteDrawCommand[],
     n: number,
     effect: OutlineEffect,
+    alpha: number,
   ): void {
     const paint = applyOutlinePaint(effect);
+    paint.setAlphaf(alpha);
     const srcs = srcRects.length === n ? srcRects : srcRects.slice(0, n);
     for (let k = 0; k < OUTLINE_OFFSETS.length; k++) {
       const offset = OUTLINE_OFFSETS[k] as readonly [number, number];
@@ -305,10 +307,13 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       const dsts = xforms.length === n ? xforms : xforms.slice(0, n);
       canvas.drawAtlas(image, srcs, dsts, paint);
     }
+    paint.setAlphaf(1);
     // Main pass with original positions and the default (unfiltered) paint.
+    defaultPaint.setAlphaf(alpha);
     fillXforms(commands, n, 0, 0);
     const mainDsts = xforms.length === n ? xforms : xforms.slice(0, n);
     canvas.drawAtlas(image, srcs, mainDsts, defaultPaint);
+    defaultPaint.setAlphaf(1);
   }
 
   function resolveEffectPaint(effect: AnySpriteEffect): SkPaint {
@@ -352,10 +357,11 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       fillSrcRects(commands, n);
 
       const effect = commands[0]?.effect;
+      const alpha = commands[0]?.alpha ?? 1;
       const skImage = image as SkImage;
 
       if (effect?.type === 'outline') {
-        drawOutlined(current, skImage, commands, n, effect);
+        drawOutlined(current, skImage, commands, n, effect, alpha);
         return;
       }
 
@@ -363,7 +369,9 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       const srcs = srcRects.length === n ? srcRects : srcRects.slice(0, n);
       const dsts = xforms.length === n ? xforms : xforms.slice(0, n);
       const paint = effect === undefined ? defaultPaint : resolveEffectPaint(effect);
+      paint.setAlphaf(alpha);
       current.drawAtlas(skImage, srcs, dsts, paint);
+      paint.setAlphaf(1);
     },
 
     endFrame(): SkPicture | null {

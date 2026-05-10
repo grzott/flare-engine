@@ -20,12 +20,18 @@ export interface SpriteDrawCommand {
   /** Optional per-sprite effect. Shared by reference across commands in a
    *  batch — the render adapter applies it once per batch. */
   effect: AnySpriteEffect | undefined;
+  /** Per-instance alpha multiplier. Range [0, 1]. Default 1 (fully opaque).
+   *  Participates in the batch key — sprites with different alphas are
+   *  placed in separate batches so the renderer can apply each alpha once
+   *  per draw call without per-sprite overhead. */
+  alpha: number;
 }
 
-/** Internal grouping bucket — one per unique (texture, effect) pair. */
+/** Internal grouping bucket — one per unique (texture, effect, alpha) triple. */
 interface Batch {
   image: SkImageLike;
   effect: AnySpriteEffect | undefined;
+  alpha: number;
   commands: SpriteDrawCommand[];
 }
 
@@ -57,7 +63,9 @@ export class SpriteBatch {
    *  `anchorX` / `anchorY` define the pivot point of the sprite as a
    *  fraction of its destination size — `(0, 0)` = top-left (default),
    *  `(0.5, 0.5)` = center, `(1, 1)` = bottom-right. `dstX` / `dstY`
-   *  then refer to the anchor point instead of the top-left corner. */
+   *  then refer to the anchor point instead of the top-left corner.
+   *
+   *  `alpha` is a per-instance opacity multiplier in [0, 1]. Default 1. */
   draw(
     image: SkImageLike,
     frame: SpriteFrame,
@@ -68,6 +76,7 @@ export class SpriteBatch {
     effect?: AnySpriteEffect,
     anchorX = 0,
     anchorY = 0,
+    alpha = 1,
   ): void {
     const cmd = this._acquire();
     const w = dstW ?? frame.w;
@@ -82,11 +91,14 @@ export class SpriteBatch {
     cmd.dstW = w;
     cmd.dstH = h;
     cmd.effect = effect;
+    cmd.alpha = alpha;
     this._commands.push(cmd);
   }
 
   /** Queue a raw sprite draw with explicit src/dst rects. `dstX` / `dstY`
-   *  refer to the anchor point — offset by `anchorX * dstW` / `anchorY * dstH`. */
+   *  refer to the anchor point — offset by `anchorX * dstW` / `anchorY * dstH`.
+   *
+   *  `alpha` is a per-instance opacity multiplier in [0, 1]. Default 1. */
   drawRaw(
     image: SkImageLike,
     srcX: number,
@@ -100,6 +112,7 @@ export class SpriteBatch {
     effect?: AnySpriteEffect,
     anchorX = 0,
     anchorY = 0,
+    alpha = 1,
   ): void {
     const cmd = this._acquire();
     cmd.image = image;
@@ -112,15 +125,17 @@ export class SpriteBatch {
     cmd.dstW = dstW;
     cmd.dstH = dstH;
     cmd.effect = effect;
+    cmd.alpha = alpha;
     this._commands.push(cmd);
   }
 
   /**
-   * Flush all queued commands, grouped by (texture, effect) identity.
+   * Flush all queued commands, grouped by (texture, effect, alpha) identity.
    *
    * @param drawAtlas Callback invoked once per batch. Receives
-   *   `(image, commands)` — all commands in a batch share the same texture
-   *   and the same effect (readable from `commands[0].effect`).
+   *   `(image, commands)` — all commands in a batch share the same texture,
+   *   the same effect (readable from `commands[0].effect`), and the same
+   *   alpha (readable from `commands[0].alpha`).
    * @param renderer Optional renderer to record stats.
    */
   flush(
@@ -129,20 +144,20 @@ export class SpriteBatch {
   ): void {
     if (this._commands.length === 0) return;
 
-    // Group by (image, effect) via linear scan. Typical frames have few
-    // unique batches, so O(n·k) is effectively O(n).
+    // Group by (image, effect, alpha) via linear scan. Typical frames have
+    // few unique batches, so O(n·k) is effectively O(n).
     const batches = this._batches;
     for (const cmd of this._commands) {
       let batch: Batch | undefined;
       for (let i = 0; i < batches.length; i++) {
         const b = batches[i]!;
-        if (b.image === cmd.image && b.effect === cmd.effect) {
+        if (b.image === cmd.image && b.effect === cmd.effect && b.alpha === cmd.alpha) {
           batch = b;
           break;
         }
       }
       if (!batch) {
-        batch = { image: cmd.image, effect: cmd.effect, commands: [] };
+        batch = { image: cmd.image, effect: cmd.effect, alpha: cmd.alpha, commands: [] };
         batches.push(batch);
       }
       batch.commands.push(cmd);
@@ -196,6 +211,7 @@ export class SpriteBatch {
       dstW: 0,
       dstH: 0,
       effect: undefined,
+      alpha: 1,
     };
   }
 }

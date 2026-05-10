@@ -35,6 +35,10 @@ export interface SpriteData {
   effect?: AnySpriteEffect;
   /** Optional pivot point for the sprite. Defaults to top-left `(0, 0)`. */
   anchor?: SpriteAnchor;
+  /** Per-instance alpha multiplier. Range [0, 1]. Default 1 (fully opaque).
+   *  Mutate directly each frame — e.g. `sprite.alpha = lerp(1, 0, t)`.
+   *  Sprites with different alphas are placed in separate draw batches. */
+  alpha?: number;
 }
 
 /** Cached entry for sorting. Reused each frame to avoid allocs. */
@@ -113,6 +117,7 @@ export function createRenderSystem(
         sprite.effect,
         anchor ? anchor.x : 0,
         anchor ? anchor.y : 0,
+        sprite.alpha ?? 1,
       );
     }
   };

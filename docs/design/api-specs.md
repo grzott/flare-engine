@@ -234,7 +234,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 | API                     | Description                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `<GameView>`            | Root component. Skia Canvas + game loop + input. Props: `config`, `onReady`, `style`, `children`, `safeArea?`. If `safeArea` is omitted, insets are resolved from `react-native-safe-area-context` (optional peer dep) and fall back to zero. |
+| `<GameView>`            | Root component. Skia Canvas + game loop + input. Props: `config`, `onReady`, `style`, `children`, `safeArea?`. If `safeArea` is omitted, insets are resolved from `react-native-safe-area-context` (optional peer dep) and fall back to zero. `GameConfig.onRenderPostFx` is typed as `PostFxRenderHook` (receives `bridge` as 3rd arg). |
 | `<VirtualJoystick>`     | Overlay RN component                                                                                              |
 | `<VirtualButton>`       | Overlay RN component                                                                                              |
 | `<LoadingScreen>`       | Full-screen asset-preload overlay. Props: `progress` (0–1, clamped), `message?`, `barColor?`, `trackColor?`, `textColor?`, `style?`. Pure RN View + Text so it works before `<GameView>` mounts its Skia canvas. |
@@ -244,6 +244,8 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 | `useSafeArea()`         | Returns the `SafeArea` insets `{ top, right, bottom, left }` from the nearest `<GameView>`. Throws `'useSafeArea must be used inside a <GameView>'` if called outside one. |
 | `SafeArea`              | Type: `{ top: number; right: number; bottom: number; left: number }`. Device safe-area insets in logical pixels. |
 | `SafeAreaContext`       | `React.Context<SafeArea \| null>`. Provided by `<GameView>`; `null` outside it. Prefer `useSafeArea()` for direct consumption. |
+| `PostFxRenderHook`      | `(ctx: GameContextValue, canvas: unknown, bridge: SkiaFrameRenderer \| null) => void`. Callback type for `GameConfig.onRenderPostFx`. The `bridge` arg exposes `applyPostFx(runtime, chain, source, w, h)` so the hook can composite a postfx chain without reaching back into the engine internals. `bridge` is `null` only on future non-Skia render paths. |
+| `RenderHook`            | `(ctx: GameContextValue, canvas: unknown) => void`. Callback type for `GameConfig.onRenderBackground`. |
 
 ### `@flare-engine/engine` (< 2KB gzip)
 

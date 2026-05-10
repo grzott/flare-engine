@@ -262,8 +262,7 @@ Current wiring at [`src/fx/postfx.ts:21`](../src/fx/postfx.ts#L21). Flash trigge
 Per-trigger decay override wired at session #94: `triggerHitFlash(decayRate?)` accepts an explicit decay rate — 12.5/s (80 ms) player-hit, 5/s (200 ms) bomb, 0.833/s (1200 ms) boss-defeat. All three call sites in `play.ts` pass the correct rate.
 
 PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` wired as `Skia` in
-[`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) (session #69). Chain tracks intensities live; visible pixel
-compositing requires the GameView SkCanvas bridge (future engine session).
+[`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) (session #69). **Open: visible pixel compositing not yet shipped.** `play.ts:451–456` calls `postfx.buildPass()` per frame but the resulting `CompiledPass[]` is dropped — `runtime.apply()` does not exist in `@flare-engine/postfx`. Vignette, bloom, CRT, chromatic-ab, and grayscale-flash all run as intensity bookkeeping with no framebuffer effect. Sessions [#161 Postfx-Compositor](../../../docs/plans/sessions.md) (engine `runtime.apply()` + skia-bridge wire) + [#162 PT-PostFx-Wire](../../../docs/plans/sessions.md) (PT-side switch from `buildPass()` to `apply()`) close the gap.
 
 ### Always-on chain
 
@@ -365,7 +364,9 @@ Spacing tokens: [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) (`THEM
 
 ### Live code state
 
-HUD aligns with folio IX. HP gradient anchor `#2a0810` is intentional and distinct from brand `crimson-deep #7A1322` — see §13.
+HUD aligns with folio IX visually. HP gradient anchor `#2a0810` is intentional and distinct from brand `crimson-deep #7A1322` — see §13.
+
+**Open:** slot positions in [`src/hud/Hud.tsx:94-107`](../src/hud/Hud.tsx#L94) are hardcoded literals (`top: 32 + topInset`, `left: 16 + horizontalInsetLeft`, etc.). [`src/visual-spec/hud.ts`](../src/visual-spec/hud.ts) `HUD_SPEC` exports authoritative slot data but no consumer reads it. Closed by [#164 PT-HUD-DataDriven](../../../docs/plans/sessions.md).
 
 ### HP-bar gradient spec
 
@@ -449,9 +450,9 @@ Boss FSMs: `src/systems/boss/{smok,borowy,wodnik,boruta,baba-jaga,bazyliszek,mef
 - 3-phase bosses: phase2 at 2/3 HP (`THREE_PHASE_P2_RATIO`), phase3 at 1/3 HP (`PHASE3_HP_RATIO`).
   Constants at [`src/config/gameplay.ts:200–203`](../src/config/gameplay.ts#L200).
 
-### Per-phase palette shift — done at session #73
+### Per-phase palette shift — partial (FSM-side done #73, consumer wire open)
 
-Each phase entry triggers a palette shift via `onPaletteShift` callback in boss FSMs: boss shape recolored to the phase's accent color, background lighting shifts to phase color. Wired in all 8 boss FSMs at session #73.
+Each phase entry **emits** an `onPaletteShift(phase, accent)` callback in [`src/systems/boss/types.ts:36`](../src/systems/boss/types.ts#L36) (and `onPhasePostFx`); all 8 boss FSMs invoke them at session #73. **Open:** `play.ts` `updateBoss()` deps object never provides these callbacks, so the optional-chained call is a noop. Boss shape tint never recolors and postfx chain never swaps. Closed by [#163 PT-Boss-PaletteShift-Wire](../../../docs/plans/sessions.md).
 
 ---
 
@@ -535,26 +536,6 @@ FPS watchdog: done at session #75. Perf baseline instrumentation:
 
 ---
 
-## Divergences — M2 punch-list
-
-Items requiring code changes. Code-today links use live line numbers as of 2026-04-29.
-
-| Topic | Deck spec | Code today | File:line | Severity | Target session | Status |
-|---|---|---|---|---|---|---|
-| Gold token | `#C9A24A` | `#C9A24A` (matches) | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
-| Hazard token | `#E84B2A` | `#E84B2A` (matches) | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
-| Ink-black bg | `#0E1A12` | `rgba(14,26,18,0.92)` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | high | #67 | done |
-| 9 missing pigments | bog-green/moss/parchment/verdigris/bone/rust/terracotta/void/parchment-2 | all present | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
-| Zone ARGB palettes | per-zone deck tokens | aligned at #72 | [`src/visual-spec/zones-palette.ts:52`](../src/visual-spec/zones-palette.ts#L52) | high | #72 | done |
-| Fonts | EB Garamond / Source Sans 3 / JetBrains Mono | `@expo-google-fonts/*` + `useFonts` | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | high | #68 | done |
-| Icon system | 30 stamps (MaterialCommunityIcons) | Skia shapes only | — | — | — | intentional |
-| Particles | 5-tier up to 256p | 5-tier system live | [`src/fx/explosions.ts`](../src/fx/explosions.ts) | high | #70 | done |
-| PostFX Skia | bloom+vignette always-on | `skiaPostFx` wired as Skia | [`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) | high | #69 | done |
-| Boss per-phase palette | per-phase color in BOSS_SPECS | wired in all boss FSMs | `src/systems/boss/*.ts` | high | #73 | done |
-| Reduce-motion + cb tokens | 5-rule policy + cb.player/hazard/safe | all rules done, cb tokens present | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts), [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
-
----
-
 ## §13 — Intentional deviations
 
 ### HP-bar gradient anchor
@@ -578,77 +559,9 @@ Both values are correct and intentional. Do not unify them.
 
 ---
 
-## §15 — Open work against folios
+## §15 — History
 
-Punch-list of folio-vs-code gaps. Each row maps to a session row in [`docs/plans/sessions.md`](../../../docs/plans/sessions.md).
-
-| # | Gap | Folio | Code locus | Severity | Session | Status |
-|---|---|---|---|---|---|---|
-| 1 | Ship-anatomy 3-element rule (`hull + N rect weapons + 1 square engine`) not implemented across the 29-ship codex | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/visual-spec/shapes-catalogue.ts`](../src/visual-spec/shapes-catalogue.ts) | critical | sessions #76–#78 | done |
-| 2 | 12-pigment palette migration incomplete (9 of 12 absent) | IV | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | critical | #67 | done |
-| 3 | HUD layout — boss bar at top, no HP gradient, no weapon meter, no zone banner Roman-numeral, no combo readout | IX | [`src/hud/Hud.tsx`](../src/hud/Hud.tsx), [`Hud.styles.ts`](../src/hud/Hud.styles.ts) | critical | #71 + #79 | done |
-| 4 | Zone ARGB palettes diverge from folio tokens | XII, XIIB | [`src/visual-spec/zones-palette.ts`](../src/visual-spec/zones-palette.ts), [`src/config/zones.ts`](../src/config/zones.ts) | high | #72 | done |
-| 5 | Per-phase boss palette shift not wired (`PhaseScript` carries no color fields) | XIII | `src/systems/boss/*.ts` | high | #73 | done |
-| 6 | Reduced-motion rules 1–4 not implemented (rule 5 only) | XIV | [`src/a11y/reduced-motion.ts`](../src/a11y/reduced-motion.ts) | low | #74 | done |
-| 7 | Color-blind tokens absent (`cb.player`, `cb.hazard`, `cb.safe`) | XIV | [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) | low | #74 | done |
-| 8 | Zone parallax stacks not yet audited against folio specs | XIIB | [`src/fx/ambience.ts`](../src/fx/ambience.ts), play-scene | medium | #84 | done |
-| 9 | Frame-budget per-scene caps not enforced by FPS watchdog | XV | [`src/perf/cold-start.ts`](../src/perf/cold-start.ts) + [`src/fx/budget.ts`](../src/fx/budget.ts) | medium | #75 | done |
-| 10 | Ship-anatomy 29-ship codex migration | XIIIa, XIIIb, XIIIb+, XIIIc, XIIIf | [`src/visual-spec/shapes-catalogue.ts`](../src/visual-spec/shapes-catalogue.ts) | critical | sessions #76–#78 | done |
-| 11 | Overlay folio XI alignment (inventory, codex, dialogue, shop, paywall, achievements) | XI | overlay scenes in `src/scenes/` | high | sessions #82–#83 | done |
-| 12 | Frontmatter folio X alignment (boot, menu, save-select, settings, credits) | X | frontmatter scenes in `src/scenes/` | high | sessions #80–#81 | done |
-| 13 | Easing assignments 9 items (4 engine gaps documented in §11) | XIV | [`src/scenes/play.ts`](../src/scenes/play.ts), [`src/hud/zone-banner.ts`](../src/hud/zone-banner.ts) | medium | #85 | done |
-| 14 | Typed visual-spec schema + `@flare-engine/shapes` engine package — architectural shift (sessions #91–#92). Introduces `src/visual-spec/` typed schema (HullPreset/ShipDef/BulletDef/WeaponDef/PickupDef/AnimationDef/ZoneVisualSpec/HudSpec/OverlaySpec/ScreenSpec/ThemeSpec), 14 schema-invariant tests, and `@flare-engine/shapes` with 12 atomic primitives (+ arc/annulus/trapezoid/path) replacing the deleted `src/shapes.ts` + `src/shapes-draw.ts`. Schema canary locked: SHA-256 `b056ac8e…` at S2 close. All §3 glow-helper and shape-type cross-links updated to point at `packages/shapes/src/`. | — (cross-cutting) | `src/visual-spec/{types,index,zone-*.ts}`, `packages/shapes/src/{types,draw,bounds,index}.ts` | architectural | sessions #91–#92 | done — 2026-05-07 |
-| 15 | Flicker animation — hazard-edge recipe §5: enemy-bullet 8 Hz frame alternation. Two atlas frames `enemy-bullet-a` (fill only) + `enemy-bullet-b` (fill + inner 0.5 px hazardOrange stroke at alpha 0.6). Phase driven by dt-accumulator in play-scene `onUpdate`; `reducedMotion` locks to frame-a. | — | [`src/shape-atlas.ts`](../src/shape-atlas.ts), [`src/spawn.ts`](../src/spawn.ts), [`src/scenes/play.ts`](../src/scenes/play.ts) | low | #151 | done — 2026-05-10 |
-
-### Verification
-
-After each session that closes a row above, capture a device-build screenshot of the affected scene and place it next to the corresponding folio in `docs/references/pan-tvardowski/folios/diff/<folio>-current.png`. The visual-diff is the verification: builder + verifier confirm the live render matches the folio before flipping the row to `done`.
-
----
-
-## §16 — M1 Audit Results (2026-05-07)
-
-Full folio-vs-code audit: 21 PNG folios cross-referenced against §1–§15 of this document and live code symbols. Verdicts: ✓ match · ⚠ minor drift (doc-fixable) · ✗ runtime divergence (code fix required) · n/a (device-smoke gate required).
-
-| Folio | Title | Code surface | Verdict | Notes |
-|-------|-------|--------------|---------|-------|
-| I | Cover / brand voice | `src/visual-spec/theme.ts` (`UI_COLORS`), brand principles in §0.1 | ✓ | Ink-black bg, EB Garamond, crimson signature mark — all match §0.1. |
-| II | Index — "A book in ten parts" | Scene registry (`src/scene-registry.ts`), section map in §0 | ✓ | All 10 deck chapters have corresponding §N entries in this document. |
-| III | Brand principles (5 rules) | `src/visual-spec/theme.ts` (`UI_COLORS`), `src/a11y/reduced-motion.ts`, `src/fx/budget.ts` | ✓ | Darkness-canvas (#0E1A12 bg), crimson-as-ink (trail/sigil/flash only), recolor-before-redraw (ShipSpec hull+tint), diacritics (§2 PL char set), 60 fps gospel (≤1k draws/≤512p/≤3 postfx per §12) — all codified. |
-| IV | Palette — twelve pigments | `src/visual-spec/theme.ts` (`UI_COLORS`) | ✓ | All 12 folio pigments present at exact deck hexes; HP-bar anchor `#2a0810` disambiguation documented in §1. Session #67 migration complete; theme/ shim deleted at session #114. |
-| V | Typography — three voices | `src/visual-spec/theme.ts` (`TYPOGRAPHY`) | ✓ | Font families + sizes match folio V. Six deprecated aliases (h1/h2/h3/body/caption/xs) deleted at session #114. |
-| VI | Skia language — no sprites, only shapes | `src/visual-spec/shapes-catalogue.ts`, `@flare-engine/shapes` | ⚠ | 6 primitive types confirmed. §3 glow-helper cross-links referenced deleted files `src/shapes.ts` + `src/shapes-draw.ts`; corrected in M2 to point at `@flare-engine/shapes` (session #92 migration). |
-| VIb | Explosions — 5 tiers | `src/fx/explosions.ts` | ✓ | 5-tier table (chip/pop/burst/detonation/cataclysm), particle counts, lifetimes, shake amplitudes, concurrent caps — all match folio VIb per §6. |
-| IX | HUD anatomy — play frame | `src/hud/Hud.tsx`, `src/hud/Hud.styles.ts` | n/a — device-smoke gate covers this | Slot layout, font roles, HP gradient, weapon meter, zone banner, boss bar: all wired per §7 code. Pixel alignment vs folio IX verified only on physical device (Galaxy A54 + iPhone 12). |
-| X | Frontmatter screens (5 of 13) | `src/scenes/{boot,menu,save-select,settings,credits}.ts`, `src/hud/{Boot,Menu}Overlay.tsx` | n/a — device-smoke gate covers this | Scene catalogue complete per §8; folio X layout (boot sigil, menu 4-button stack, save-select flat grid, settings 4-group scroll, credits typography) all implemented at sessions #80–#81. Pixel match requires device. |
-| XI | Overlays (5 panels) | `src/hud/{Inventory,Codex,Dialogue,Shop,Achievements,Paywall}Overlay.tsx` + `*.styles.ts` | n/a — device-smoke gate covers this | Inventory tabs, codex unlocked/locked entries, dialogue portrait slot 44×44, shop product cards, achievements entries — all aligned at sessions #82–#83. Pixel match requires device. |
-| XII | Zones — 8 cards | `src/visual-spec/zones-palette.ts`, `src/config/zones.ts` | ✓ | 8 zones, zone names (PL), ambience kinds and particle counts match folio XII per §9 table. |
-| XIIB | Zone specs — canonical source of truth | `src/visual-spec/zones-palette.ts` (ZONE_PALETTES), `src/fx/ambience.ts` | ✓ | Per-zone palette tokens (primary/accent/hazard), ambience particle counts, parallax rates (VEL_SLOW 10 px/s, VEL_FAST 20 px/s after session #84 correction), spawn spawn rules — all match folio XIIB. |
-| XIII | Boss visual beats — phases + postfx | `src/systems/boss/*.ts`, `src/fx/boss-postfx.ts` | ✓ | 8 bosses × phase descriptions + particle presets + postfx chains match §10 table. Per-phase palette shift wired at session #73. |
-| XIIIa | Ship anatomy — 3-element rule | `src/visual-spec/shapes-catalogue.ts` (ShipSpec), `@flare-engine/shapes` (ShipSpec type) | ✓ | All 29 ships satisfy hull + N rect weapons + 1 square engine. Weapon counts per tier correct (enemy 1–2, mini-boss 2–3, boss 2–4, player 2). Migration complete at sessions #76–#78. |
-| XIIIb | Enemy ships (14) | `src/visual-spec/shapes-catalogue.ts` (enemies section, lines 45–162) | ✓ | All 14 enemy ShipSpecs confirmed against folio XIIIb silhouettes. Hull kinds, weapon counts, hue families match. |
-| XIIIb+ | Mini-bosses (4) — canonical bosses | `src/visual-spec/shapes-catalogue.ts` (minibosses section, lines 164–206) | ✓ | All 4 mini-boss ShipSpecs in crimson hue family. Folio shows Leszy (arch), Bes (bottle), Mars (stepped), Czart (drop) — code uses ngon-4/ngon-6/ngon-5/triangle hulls. Visual mapping is preserved; exact silhouette only verifiable on device. |
-| XIIIc | Weapons, artifacts, player ships | `src/visual-spec/shapes-catalogue.ts` (weaponPickups + upgradePickups + ships sections) | ✓ | 4 weapon pickups, 6 upgrade pickups, 3 player ships (Kogut gold/Twardoń green/Bazyl blue) — all present with correct glow:friendly tags per folio XIIIc. |
-| XIIId | Weapon specs — 8 weapons, source of truth | `src/config/gameplay.ts`, `src/visual-spec/shapes-catalogue.ts`, `src/localization/keys.ts` | ✓ (M1+M2 aligned; M3 locale keys done) | Folio XIIId silhouette alignment (M1) + unlock progression (M2) + 12 per-tier locale keys (M3) completed at session #95. Balance constants now match folio XIIID damage/cooldown/particle columns. Pixel-level projectile alignment still requires device smoke. |
-| XIIIf | Boss ships (8) | `src/visual-spec/shapes-catalogue.ts` (bosses section, lines 208–300) | ✓ | All 8 boss ShipSpecs in violet hue family. Hull kinds match folio XIIIf (Boruta=moon/arch, Mefist=star-6, Lucyper=star-8, Baba=triangle, etc.). Weapon counts (2–4) correct. |
-| XIV | Motion + accessibility | `src/scenes/play.ts`, `src/hud/zone-banner.ts`, `src/a11y/reduced-motion.ts`, `src/visual-spec/theme.ts` (`UI_COLORS`) | ✓ | 5 easing assignments shipped (items 1/5/6/8/9); 4 engine gaps documented in §11 (items 2/3/4/7). 5-rule reduce-motion policy complete. Color-blind tokens (`cb.player/hazard/safe`) present. Contrast floor 14.2:1 maintained. |
-| XV | Frame budget — per-scene caps | `src/fx/budget.ts`, `src/perf/cold-start.ts` | ✓ | Per-scene caps from folio XV encoded in `FRAME_BUDGET` constants; fps watchdog (< 55 fps over 3s → drop chromatic-ab); degradation policy per §12. Real-device measurement deferred to session #59 (PT-Perf). |
-
-### Audit summary
-
-- 14 ✓ confirmed match
-- 2 ⚠ minor drift (doc cross-link staleness only, corrected in M2 of this session)
-- 0 ✗ runtime code divergences
-- 4 n/a (device-smoke gate: folios IX, X, XI — pixel alignment requires physical device; XIIId balance/silhouette alignment done at session #95, pixel verification deferred to device smoke)
-
-No runtime code changes were required. All divergences were documentation-level (stale file paths, stale line numbers, stale "will migrate" notes) and resolved in M2.
-
----
-
-## §17 — Change log
-
-Tracks significant doc-only arcs (structural rewrites, path migrations, audits). Code-level changes are logged in the game build plan change log.
-
-| Arc | Sessions | Summary | Date |
-|-----|----------|---------|------|
-| VS-S8 — visual-spec migration + audit | #113–#116 | Deleted `src/theme/`, `src/shape-catalogue.ts`, `src/palette.ts`; moved all presentation-layer symbols to `src/visual-spec/`; ran M1 folio-vs-code audit (14 ✓, 0 ✗, 4 n/a); updated all cross-links in this doc, in CLAUDE.md, and in stale comments throughout `apps/pan-tvardowski/src/`. Workflow lock (CLAUDE.md + §0 mirror sentence) applied at VS-S8h. | 2026-05-09 |
+- Punch-list of folio-vs-code gaps (formerly §15) lived here through 2026-05-09; all 15 rows closed across sessions #67–#151. Removed 2026-05-10 (session #103 doc-refactor) — open visual work tracks in [`docs/plans/sessions.md`](../../../docs/plans/sessions.md) under tier P0/P1.
+- M1 folio-vs-code audit (formerly §16, dated 2026-05-07) ran on 21 PNG folios; verdict 14 ✓ + 2 ⚠ + 0 ✗ + 4 n/a (device-smoke-gate). Removed 2026-05-10 — running state is captured in per-row "done — #N" annotations throughout §1–§14. Re-audit if rebrand changes folios.
+- Doc change log (formerly §17, single VS-S8 arc entry) covered by SESSION_LOG.md per-session blocks.
+- Divergences M2 punch-list table removed 2026-05-10 — every row was `done` and one row falsely claimed "boss per-phase palette wired in all boss FSMs" (callbacks emit but no consumer; closed by #163).

@@ -22,11 +22,17 @@ Claude Code sub-agents live in [.claude/agents/](.claude/agents/). Eight single-
 Execute work as short, gated sessions. The unified session plan lives in [docs/plans/sessions.md](docs/plans/sessions.md).
 
 1. `/plan-sessions` — planner proposes the next 10–20 session slice. You approve before it writes.
-2. `/session-start` — builder verifies state, picks next pending session (presentation-layer rows preferred over release-polishing rows; see [.claude/commands/session-start.md](.claude/commands/session-start.md) Step 0), presents implementation plan, waits for approval.
+2. `/session-start` — builder verifies state, picks next pending session per the P0 / P1 / P2 / Deferred tier rule in [.claude/commands/session-start.md](.claude/commands/session-start.md) Step 0, presents implementation plan, waits for approval.
 3. Implement (builder).
 4. `/session-close` — verifier runs lint → typecheck → test → build, syncs docs, appends to [SESSION_LOG.md](SESSION_LOG.md), emits paste-ready commit bash blocks. You run the commits.
 
 Each commit ≤72 chars, Conventional Commits, subject only. See [.github/instructions/git.instructions.md](.github/instructions/git.instructions.md).
+
+## Engine-first
+
+The goal of game development is engine development. If a presentation-layer feature requires engine support — postfx compositor, scene transition easing, periodic animation driver, custom shader, runtime API — **the engine session ships first** in `packages/**`; the PT-side wire follows in the next session. Builders never patch engine gaps with PT-local workarounds; engine gaps surfaced during a `[game]` session must be split into a `[mixed]` pair (engine session first, PT wire second).
+
+Release-infra rows (store accounts, store products, legal filings, app icon, screenshots, store-page copy, RR walk, production submits) are the **manual launch tier** — owner runs them directly outside the session loop. Picker skips them. Tracked in [docs/plans/release-readiness-checklist.md](docs/plans/release-readiness-checklist.md).
 
 ## Skills
 

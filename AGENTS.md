@@ -4,12 +4,12 @@
 
 ## Architecture
 
-36 packages (`@flare-engine/*` + `create-flare-app`) across layered tiers. Dependencies flow **downward only**.
+37 packages (`@flare-engine/*` + `create-flare-app`) across layered tiers. Dependencies flow **downward only**.
 
 ```
 Layer 0   Foundation         math · events
 Layer 1   Runtime            core · ecs
-Layer 2   Systems            render · input · physics · audio · assets
+Layer 2   Systems            render · shapes · input · physics · audio · assets
 Layer 2.5 Persistence        storage · errors · testing · localization ·
                              deep-links · share · a11y
 Layer 3   Features           scene · animation · particles · tilemap · debug ·

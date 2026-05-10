@@ -244,7 +244,7 @@ Game 2 content moved to post-launch private repo. No impact on OSS 0.1.0 — lau
   3. Device FPS captures on iOS + Android hardware via the `apps/pan-tvardowski` bench scene (landing at M9.6); populate `benchmarks/results/device.json`; regenerate `docs/references/benchmarks.md`. Closes Phase 8 pending item.
   4. **Kenney atlas swap — DROPPED (2026-04-22).** Replaced by the Pan Tvardowski showcase game ([pan-tvardowski-build-plan.md](./pan-tvardowski-build-plan.md)), which uses a shape-atlas visual style instead of sprite art. `apps/demo` was retired at stage 11.14; PT's free zones 1–3 are the canonical end-to-end reference.
   5. **EUIPO trademark filing.** File word mark "Pan Tvardowski" in Classes 9 + 41 (details in [pan-tvardowski-build-plan.md §19](./pan-tvardowski-build-plan.md#19--trademark-plan)). ~€900 DIY; filing date protects rights pre-launch even though certificate arrives post-launch.
-  6. Flip `"private": true` → `false` on the shipping `packages/*` (all 28 Tier-1 / Tier-2 / genre / stub packages that are not apps or benchmarks). Keep `apps/*` and `benchmarks` private.
+  6. Flip `"private": true` → `false` on the shipping `packages/*` (all `@flare-engine/*` packages that are not apps or benchmarks). Keep `apps/*` and `benchmarks` private.
   7. Changeset version cut to `0.1.0-rc.1`; publish all shipping packages to npm under `rc` dist-tag; dry-run install `npm create flare-app@latest` from the RC.
 - **Done when.** A fresh machine can install the RC and run the demo; API snapshots committed; device bench doc regenerated; governance files land before the public flip; trademark filing receipt in hand.
 
@@ -414,7 +414,7 @@ Posts lead with a generic technique; each ends with a "this is extracted from bu
 
 - Launch October 2026 (6 months from 2026-04-17). No rush.
 - RN is primary platform; web is secondary. **Landing-page demo = MP4 + poster by default** (docs-site-friendly, zero CanvasKit perf risk); live WebGL demo is a stretch.
-- Shipping at 0.1.0: all 28 `@flare-engine/*` packages currently DONE (14 Tier-1 + 2 genre + 4 Tier-2 stubs + 8 from phases 1–6). Tier-2 adapters + `@flare-engine/a11y` full pass + roadmap packages ship in 0.2.0+.
+- Shipping at 0.1.0: 37 packages on disk (`@flare-engine/*` + `create-flare-app`) — see [AGENTS.md](../../AGENTS.md) for the layered breakdown. Tier-2 adapters beyond `iap-revenuecat`, the `@flare-engine/a11y` full pass, and roadmap packages ship in 0.2.0+.
 - **Game 2 (roguelike + JRPG battle) deferred post-launch to a separate private repo.** Acts as the post-release real-world dogfood test of the published engine; surfaces 0.1.x patch candidates for `@flare-engine/pathfinding`, `@flare-engine/dialogue`, `@flare-engine/storage`, `@flare-engine/ui`.
 - Technique posts pre-launch, not architecture posts.
 - Discussions, not Discord, at launch.

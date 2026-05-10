@@ -1,3 +1,7 @@
+import type { EasingFn } from '@flare-engine/math';
+
+export type { EasingFn };
+
 /** Slide direction — where the outgoing scene moves off-screen to. */
 export type SlideDirection = 'left' | 'right' | 'up' | 'down';
 
@@ -29,14 +33,32 @@ export interface Transition {
   update(state: TransitionState, dt: number): TransitionState;
 }
 
-function advanceLinear(state: TransitionState, dt: number, duration: number): TransitionState {
-  if (state.done) return state;
-  state.progress += dt / duration;
-  if (state.progress >= 1) {
-    state.progress = 1;
-    state.done = true;
-  }
-  return state;
+const identity: EasingFn = (t) => t;
+
+/**
+ * Returns a stateful advance function that tracks raw (linear) progress in its
+ * own closure so the easing function is applied without accumulating drift.
+ * Call `reset()` when starting a new transition phase.
+ */
+function makeAdvancer(duration: number, easing: EasingFn) {
+  let raw = 0;
+  return {
+    reset() {
+      raw = 0;
+    },
+    advance(state: TransitionState, dt: number): TransitionState {
+      if (state.done) return state;
+      raw += dt / duration;
+      if (raw >= 1) {
+        raw = 1;
+        state.progress = 1;
+        state.done = true;
+      } else {
+        state.progress = easing(raw);
+      }
+      return state;
+    },
+  };
 }
 
 /** No transition — instant scene switch. */
@@ -56,15 +78,17 @@ export function noneTransition(): Transition {
 }
 
 /** Fade transition — consumer interprets `progress` as alpha. */
-export function fadeTransition(duration = 0.3): Transition {
+export function fadeTransition(duration = 0.3, easing: EasingFn = identity): Transition {
+  const advancer = makeAdvancer(duration, easing);
   return {
     kind: 'fade',
     duration,
     start(phase) {
+      advancer.reset();
       return { progress: 0, done: false, phase };
     },
     update(state, dt) {
-      return advanceLinear(state, dt, duration);
+      return advancer.advance(state, dt);
     },
   };
 }
@@ -73,16 +97,22 @@ export function fadeTransition(duration = 0.3): Transition {
  * Slide transition — consumer interprets `progress` as a 0→1 offset along `direction`.
  * Default direction is 'left' (outgoing scene slides off to the left, incoming enters from the right).
  */
-export function slideTransition(duration = 0.3, direction: SlideDirection = 'left'): Transition {
+export function slideTransition(
+  duration = 0.3,
+  direction: SlideDirection = 'left',
+  easing: EasingFn = identity,
+): Transition {
+  const advancer = makeAdvancer(duration, easing);
   return {
     kind: 'slide',
     duration,
     direction,
     start(phase) {
+      advancer.reset();
       return { progress: 0, done: false, phase };
     },
     update(state, dt) {
-      return advanceLinear(state, dt, duration);
+      return advancer.advance(state, dt);
     },
   };
 }

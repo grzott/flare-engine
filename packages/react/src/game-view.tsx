@@ -23,6 +23,17 @@ import { createSkiaFrameRenderer } from './skia-bridge.js';
  *  is already applied. */
 export type RenderHook = (ctx: GameContextValue, canvas: unknown) => void;
 
+/** Render hook for post-processing passes. Receives the game context, the
+ *  active Skia canvas, and the `SkiaFrameRenderer` bridge so the hook can
+ *  call `bridge.applyPostFx(runtime, chain, source, w, h)` directly.
+ *  `bridge` is `null` only on platforms where no Skia renderer was created
+ *  (future web fallback). */
+export type PostFxRenderHook = (
+  ctx: GameContextValue,
+  canvas: unknown,
+  bridge: import('./skia-bridge.js').SkiaFrameRenderer | null,
+) => void;
+
 /** Configuration passed to <GameView>. */
 export interface GameConfig {
   /** Fixed timestep in seconds (default 1/60). */
@@ -37,8 +48,9 @@ export interface GameConfig {
    *  Intended for tilemap / background layer rendering. */
   onRenderBackground?: RenderHook;
   /** Called after the sprite batch has been flushed, before `renderer.end()`.
-   *  Intended for post-processing / full-screen effects (postfx). */
-  onRenderPostFx?: RenderHook;
+   *  Receives the bridge as 3rd arg so the hook can call
+   *  `bridge.applyPostFx(runtime, chain, source, w, h)` directly. */
+  onRenderPostFx?: PostFxRenderHook;
   /**
    * Promote the underlying Skia surface from a TextureView (default) to a
    * SurfaceView on Android. With `opaque: true`, SurfaceView paints in a
@@ -140,7 +152,7 @@ export function GameView({
       if (onRenderBackground) onRenderBackground(ctx, ctx.renderer.canvas);
       renderSystem();
       ctx.batch.flush(bridge.drawAtlas, ctx.renderer);
-      if (onRenderPostFx) onRenderPostFx(ctx, ctx.renderer.canvas);
+      if (onRenderPostFx) onRenderPostFx(ctx, ctx.renderer.canvas, bridge);
       ctx.renderer.end();
       const pic = bridge.endFrame();
       if (pic !== null) setPicture(pic);

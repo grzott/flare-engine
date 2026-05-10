@@ -4074,3 +4074,45 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #163 "PT-Boss-PaletteShift-Wire" — lowest pending P0; depends on #166 (now done).
 
 ---
+
+## Session 168 — 2026-05-10 (scope: [engine])
+
+**Goal (from sessions.md row #168):** Engine-PostfxScene-A (3-phase): P1 Postfx-SnapshotSource — implement `SkSurface.makeImageSnapshot()` plumb in postfx runtime so `source !== null` path works (bloom/chromatic-ab need real scene texture); P2 Postfx-PingPong — add ping-pong FBO swap for multi-pass chains (current single-buffer path corrupts when >2 passes read prior output); P3 Scene-TransitionEasing — add optional `easing?: EasingFn` param to `fadeTransition`/`slideTransition` in @flare-engine/scene; progress interpolation applies easing to linear 0-1 ramp; default linear for backward compat
+
+**Touched files**
+- `packages/scene/src/transition.ts`
+- `packages/scene/tests/transition.test.ts`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/react/tests/ping-pong.test.ts` (new)
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md` (row #168 flipped `in_progress → done`, close date stamped)
+- `SESSION_LOG.md` (this block)
+
+**Deviations**
+1. Test location: session row listed `packages/postfx/tests/{snapshot-source,ping-pong}.test.ts`; actual tests landed in `packages/react/tests/{skia-bridge,ping-pong}.test.ts`. Implementation lives in the skia-bridge (react package) which owns surface lifecycle and ping-pong iteration — postfx package has no surface allocator. Accepted per builder pre-disclosure.
+2. `packages/scene/src/index.ts` in declared touched paths but untouched in final diff. `EasingFn` re-export from scene/index.ts was reverted to avoid a barrel collision in `@flare-engine/engine`. Accepted — planning-time guess.
+3. `docs/references/builder-reference.md` edited but not in declared touched paths. Builder synced engine mirror row per status-sync protocol. Allowed and noted.
+4. Target commits 4 → actual 3. `packages/react/src/skia-bridge.ts` carries both P1 (captureSceneSnapshot) and P2 (ping-pong) work; splitting naively across two commits would not function. Combined into a single `feat(react)` commit. Documented here.
+
+**Gates**
+- lint: ✅ (biome check src/ — 40 packages, no fixes applied; 2 cache misses for @flare-engine/react and @flare-engine/scene)
+- typecheck: ✅ (tsc --noEmit clean, 73 tasks all successful, FULL TURBO)
+- test: ✅ (+12 new, total 2335 pass / 0 fail; scene 37, react 79, postfx 68 — all green)
+- build: ✅ (39 tasks all successful, FULL TURBO)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #168 Postfx-SnapshotPingPongEasing row added; test counts updated (scene 33→37, react 71→79); SkSurfaceLike, captureSceneSnapshot, ping-pong FBO, EasingFn transition param noted
+- `docs/design/api-specs.md` — Transitions row updated with `easing?` param and `EasingFn` semantics; `PostFxRenderHook` row updated with `captureSceneSnapshot`; new rows for `SkiaFrameRenderer`, `SkSurfaceLike`, `PostFxRuntimeLike` added
+- `docs/plans/build-plan.md` — no phase state change; no note required
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(scene): EasingFn + easing param on fade/slideTransition`
+2. `feat(react): captureSceneSnapshot + ping-pong postfx bridge`
+3. `docs(api-specs): postfx snapshot + ping-pong + scene easing`
+4. `docs(plan): close session #168 Engine-PostfxScene-A`
+
+**Next session:** #169 "Engine-MotionShader-B (3-phase)" — pending, depends on #168 (now done).
+
+---

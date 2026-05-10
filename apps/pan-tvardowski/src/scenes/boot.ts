@@ -31,7 +31,17 @@ export function createBootScene(
         gameState.bootProgress = { value: 0.5, labelKey: 'boot.loading.save' };
         notifyStateChanged();
         if (initAudio && audioRef) {
-          audioRef.current = await initAudio();
+          let audioResult: AudioHandles | null = null;
+          try {
+            audioResult = await Promise.race([
+              initAudio(),
+              new Promise<null>((res) => setTimeout(() => res(null), 10000)),
+            ]);
+          } catch (err) {
+            console.warn('[boot] initAudio failed, continuing without audio', err);
+            audioResult = null;
+          }
+          audioRef.current = audioResult;
           markBootMilestone('audio-ready');
         }
         dumpBootTrace();

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import type { GameContextValue } from '@flare-engine/engine';
 import {
   getBootTrace,
@@ -115,5 +115,84 @@ describe('boot trace shape', () => {
     // startT is null after resetBootTrace without a new markBootStart
     markBootMilestone('premature');
     expect(getBootTrace()).toHaveLength(0);
+  });
+
+  test('scene advances to menu even when initAudio times out (simulated hang)', async () => {
+    markBootMilestone('providers-mounted');
+    markBootMilestone('first-frame');
+
+    let sceneTarget = '';
+    const fakeCtx = {
+      scenes: {
+        go: (name: string) => {
+          sceneTarget = name;
+          return Promise.resolve();
+        },
+      },
+    } as unknown as GameContextValue;
+
+    const hangingAudio = () => new Promise<null>(() => {});
+    const audioRef = { current: null };
+
+    const scene = createBootScene(fakeCtx, async () => {}, hangingAudio, audioRef)();
+    scene.onEnter?.({} as never);
+    await new Promise((r) => setTimeout(r, 10100));
+    expect(sceneTarget).toBe('menu');
+  }, 11000);
+
+  test('scene advances to menu when initAudio throws synchronously', async () => {
+    markBootMilestone('providers-mounted');
+    markBootMilestone('first-frame');
+
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+
+    let sceneTarget = '';
+    const fakeCtx = {
+      scenes: {
+        go: (name: string) => {
+          sceneTarget = name;
+          return Promise.resolve();
+        },
+      },
+    } as unknown as GameContextValue;
+
+    const throwingAudio = () => {
+      throw new Error('no audio device');
+    };
+    const audioRef = { current: null };
+
+    const scene = createBootScene(fakeCtx, async () => {}, throwingAudio, audioRef)();
+    await scene.onEnter?.({} as never);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sceneTarget).toBe('menu');
+
+    warnSpy.mockRestore();
+  });
+
+  test('scene advances to menu when initAudio returns a rejecting promise', async () => {
+    markBootMilestone('providers-mounted');
+    markBootMilestone('first-frame');
+
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+
+    let sceneTarget = '';
+    const fakeCtx = {
+      scenes: {
+        go: (name: string) => {
+          sceneTarget = name;
+          return Promise.resolve();
+        },
+      },
+    } as unknown as GameContextValue;
+
+    const rejectingAudio = () => Promise.reject(new Error('no audio device'));
+    const audioRef = { current: null };
+
+    const scene = createBootScene(fakeCtx, async () => {}, rejectingAudio, audioRef)();
+    await scene.onEnter?.({} as never);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sceneTarget).toBe('menu');
+
+    warnSpy.mockRestore();
   });
 });

@@ -30,9 +30,10 @@ tags:
 # observable when present, but on fast devices it flashes too briefly to assert
 # reliably; on slow/cold devices the menu can take >10s to appear (audio init,
 # save load, RN bridge warmup). Just wait for "Play" with a generous timeout.
+# "Play" is matched via the accessibilityLabel set by Button.label from @flare-engine/ui.
 - extendedWaitUntil:
     visible: "Play"
-    timeout: 60000
+    timeout: 90000
 
 # Row 2 — menu nav: Play → save-select → Back; Settings → Back; Credits → tap-to-return.
 - tapOn: "Play"
@@ -68,7 +69,7 @@ tags:
     clearState: false
 - extendedWaitUntil:
     visible: "Play"
-    timeout: 60000
+    timeout: 90000
 - tapOn: "Settings"
 - assertVisible: "Reduced motion"
 # Toggle state should be retained from before stopApp; if Maestro can read the

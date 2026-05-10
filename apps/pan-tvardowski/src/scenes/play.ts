@@ -14,7 +14,16 @@ import { applyShake } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
-import { Boss, Bullet, Enemy, Lifetime, Miniboss, MirrorTwin, Ship } from '../components';
+import {
+  Boss,
+  Bullet,
+  Enemy,
+  Lifetime,
+  Miniboss,
+  MirrorTwin,
+  Ship,
+  SpiralCollapse,
+} from '../components';
 import {
   BAZYLISZEK_GAZE_SPEED_MUL,
   DZIWOZONA_SKRZAT_SPAWN,
@@ -42,7 +51,7 @@ import {
   recordSubShapeDraws,
   resetFpsRing,
 } from '../fx/budget';
-import { resetCataclysmGate, triggerExplosion } from '../fx/explosions';
+import { resetCataclysmGate, triggerExplosion, triggerSpiralCollapse } from '../fx/explosions';
 import { type PanPostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
 import {
   type ZoneBannerState,
@@ -202,6 +211,7 @@ interface PlayState {
   minibossQuery: ReturnType<GameContextValue['world']['query']>;
   lifetimeQuery: ReturnType<GameContextValue['world']['query']>;
   mirrorTwinQuery: ReturnType<GameContextValue['world']['query']>;
+  spiralCollapseQuery: ReturnType<GameContextValue['world']['query']>;
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
@@ -269,6 +279,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         minibossQuery: ctx.world.query(Miniboss),
         lifetimeQuery: ctx.world.query(Lifetime),
         mirrorTwinQuery: ctx.world.query(MirrorTwin),
+        spiralCollapseQuery: ctx.world.query(SpiralCollapse),
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
@@ -801,7 +812,18 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           enemyQuery: s.enemyQuery,
           shipQuery: s.shipQuery,
           lifetimeQuery: s.lifetimeQuery,
+          spiralCollapseQuery: s.spiralCollapseQuery,
           bounds: s.bounds,
+          onEliteDeath: (entityId, x, y) => {
+            return triggerSpiralCollapse(
+              ctx.world,
+              entityId,
+              x,
+              y,
+              gameState.settings.reducedMotion,
+              postfx,
+            );
+          },
           onEnemyKilled: (score, x, y, pattern) => {
             gameState.score += score;
             gameState.runStats.score = gameState.score;

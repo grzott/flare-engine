@@ -177,3 +177,28 @@ export const MirrorTwin = defineComponent<MirrorTwinData>('MirrorTwin', () => ({
   ownerId: -1,
   fireCooldown: 0,
 }));
+
+export interface SpiralCollapseData {
+  originX: number;
+  originY: number;
+  elapsed: number;
+  duration: number;
+  turns: number;
+  initialRadius: number;
+  scaleFrom: number;
+  scaleTo: number;
+  alphaFrom: number;
+  alphaTo: number;
+}
+export const SpiralCollapse = defineComponent<SpiralCollapseData>('SpiralCollapse', () => ({
+  originX: 0,
+  originY: 0,
+  elapsed: 0,
+  duration: 1.2,
+  turns: 3,
+  initialRadius: 24,
+  scaleFrom: 1.0,
+  scaleTo: 0.0,
+  alphaFrom: 1.0,
+  alphaTo: 0.0,
+}));

@@ -326,6 +326,11 @@ export interface SpiralCollapseDef {
   readonly id: 'spiral-collapse';
   readonly turns: number;
   readonly durationMs: number;
+  readonly inwardEasing?: string;
+  readonly scaleFrom?: number;
+  readonly scaleTo?: number;
+  readonly alphaFrom?: number;
+  readonly alphaTo?: number;
 }
 
 export type AnimationDef =

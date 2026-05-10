@@ -6,10 +6,6 @@
  * HUD tweens — easing names are verbatim exported function names from
  * '@flare-engine/math' (easings.ts). They are stored as strings here so this
  * data file has no runtime dependency on the math package.
- *
- * NOTE: 'spiral-collapse' AnimationDef is a placeholder (★). Turns + duration
- * are design stubs; authoritative values require a device-rendered spiral pass
- * scheduled for S7/S8 polish. Flag this in the S6 close footnote.
  */
 
 import type { AnimationDef } from './types';
@@ -43,6 +39,11 @@ export const ANIMATION_DEFS: readonly AnimationDef[] = [
     id: 'spiral-collapse',
     turns: 3,
     durationMs: 1200,
+    inwardEasing: 'easeInCubic',
+    scaleFrom: 1.0,
+    scaleTo: 0.0,
+    alphaFrom: 1.0,
+    alphaTo: 0.0,
   },
 ] as const;
 

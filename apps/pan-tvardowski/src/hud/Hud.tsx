@@ -6,6 +6,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
 import { getUiPrimaryHex } from '../visual-spec/zones-palette';
 import { rawStyles } from './Hud.styles';
+import { PauseOverlay } from './PauseOverlay';
+import { rawStyles as pauseRawStyles } from './PauseOverlay.styles';
 import { zoneRomanNumeral } from './zone-banner';
 
 function dismissStaleEntitlement(): void {
@@ -18,6 +20,8 @@ export interface HudActions {
   onContinue: () => void;
   onShare: () => void;
   onMainMenu: () => void;
+  /** Navigate to the settings scene. Optional — button is a no-op if omitted. */
+  onSettings?: () => void;
 }
 
 /** Minimal structural shape of safe-area insets. Kept local so tests and
@@ -36,6 +40,11 @@ function cloneState(): GameState {
     runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
     zoneBanner: { ...gameState.zoneBanner },
   };
+}
+
+function setPaused(paused: boolean): void {
+  gameState.paused = paused;
+  notifyStateChanged();
 }
 
 /** Pre-built segment descriptors — avoids per-frame allocation in the weapon meter. */
@@ -127,11 +136,22 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
   const isGameOver = s.currentScene === 'game-over';
   const isVictory = s.currentScene === 'victory';
 
+  const pauseBtnStyle = useMemo(
+    () => [
+      pauseStyles.pauseBtn,
+      {
+        top: 32 + topInset,
+        right: 16 + horizontalInsetRight,
+      },
+    ],
+    [topInset, horizontalInsetRight],
+  );
+
   return (
-    <View pointerEvents="none" style={styles.root}>
+    <View pointerEvents="box-none" style={styles.root}>
       {inPlay ? (
         <>
-          <View style={topLeftStyle}>
+          <View style={topLeftStyle} pointerEvents="none">
             <Text style={styles.score}>{t('hud.score', { score: s.score })}</Text>
             {s.comboCount > 1 ? (
               <Text
@@ -177,8 +197,13 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
             </View>
             <Text style={styles.bombs}>{t('hud.bombs_remaining', { n: s.bombCharges })}</Text>
           </View>
+          {!s.dialogue ? (
+            <Pressable style={pauseBtnStyle} onPress={() => setPaused(true)}>
+              <Text style={pauseStyles.pauseBtnLabel}>{'||'}</Text>
+            </Pressable>
+          ) : null}
           {s.bossActive && s.bossHpMax > 0 ? (
-            <View style={bossBarStyle}>
+            <View style={bossBarStyle} pointerEvents="none">
               <Text style={styles.bossName}>
                 {t('hud.boss_name', {
                   name: t(s.bossNameKey),
@@ -200,7 +225,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
             </View>
           ) : null}
           {s.minibossActive && s.minibossHpMax > 0 && !s.bossActive ? (
-            <View style={minibossBarStyle}>
+            <View style={minibossBarStyle} pointerEvents="none">
               <Text style={styles.minibossName}>
                 {t('hud.miniboss_name', {
                   name: t(s.minibossNameKey),
@@ -236,6 +261,19 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
                 <Text style={styles.staleBannerCloseLabel}>{'×'}</Text>
               </Pressable>
             </View>
+          ) : null}
+          {s.paused ? (
+            <PauseOverlay
+              localization={localization}
+              actions={{
+                onResume: () => setPaused(false),
+                onSettings: actions.onSettings,
+                onQuit: () => {
+                  setPaused(false);
+                  actions.onMainMenu();
+                },
+              }}
+            />
           ) : null}
         </>
       ) : null}
@@ -277,3 +315,4 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
 }
 
 const styles = StyleSheet.create(rawStyles);
+const pauseStyles = StyleSheet.create(pauseRawStyles);

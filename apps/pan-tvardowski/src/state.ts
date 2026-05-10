@@ -229,6 +229,12 @@ export interface GameState {
    * Reduced-motion: snaps to 1 immediately.
    */
   gameOverOpacity: number;
+  /**
+   * Whether the game is currently paused by the player (pause overlay visible).
+   * Gameplay loop must check this flag and skip update/physics when true.
+   * Dialogue pausing uses `dialogue !== null` separately.
+   */
+  paused: boolean;
 }
 
 export const gameState: GameState = {
@@ -272,6 +278,7 @@ export const gameState: GameState = {
   comboPulseScale: 1,
   bossBarOpacity: 0,
   gameOverOpacity: 0,
+  paused: false,
 };
 
 export const stateChanged = new Signal<void>();
@@ -334,6 +341,7 @@ export function resetGameState(): void {
   gameState.comboPulseScale = 1;
   gameState.bossBarOpacity = 0;
   gameState.gameOverOpacity = 0;
+  gameState.paused = false;
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

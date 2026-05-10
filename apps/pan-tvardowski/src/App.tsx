@@ -420,7 +420,7 @@ function AppRoot(): React.ReactElement {
             // alpha = FF), so SurfaceView is safe.
             opaque: true,
             onRenderBackground: (ctx, canvas) => renderHooks.background?.(ctx, canvas),
-            onRenderPostFx: (ctx, canvas) => renderHooks.postfx?.(ctx, canvas),
+            onRenderPostFx: (ctx, canvas, bridge) => renderHooks.postfx?.(ctx, canvas, bridge),
           }}
           onReady={(ready) => {
             // StrictMode / hot-reload safety — if a prior bootstrap is still

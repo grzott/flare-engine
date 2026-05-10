@@ -9,6 +9,7 @@ import { canAccessContent } from '@flare-engine/iap';
 import { easeInCubic, easeOutBack, easeOutExpo } from '@flare-engine/math';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
+import type { PostFxRenderHook } from '@flare-engine/react';
 import { Sprite } from '@flare-engine/render';
 import { applyShake } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
@@ -156,7 +157,7 @@ export interface AudioRef {
 
 export interface PlayRenderHooks {
   background: ((ctx: GameContextValue, canvas: unknown) => void) | null;
-  postfx: ((ctx: GameContextValue, canvas: unknown) => void) | null;
+  postfx: PostFxRenderHook | null;
 }
 
 export interface PlaySceneDeps {
@@ -448,11 +449,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       // Background: tile entities live in the ECS world so the sprite system
       // draws them naturally — no raw canvas work needed here.
       deps.renderHooks.background = null;
-      deps.renderHooks.postfx = (_ctx, _canvas) => {
+      deps.renderHooks.postfx = (_ctx, _canvas, bridge) => {
         if (!s) return;
-        // Build the per-frame compiled pass list. Visible pixel application
-        // awaits the GameView SkCanvas bridge — see M3 change-log entry.
         postfx.buildPass(s.bounds.width, s.bounds.height);
+        bridge?.applyPostFx(postfx.runtime, postfx.chain, null, s.bounds.width, s.bounds.height);
       };
     }
 

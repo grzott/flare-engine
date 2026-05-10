@@ -46,12 +46,28 @@ describe('vs-animations — ANIMATION_DEFS', () => {
     expect(def.lifetimeMs).toBe(400);
   });
 
-  test('spiral-collapse (★ placeholder): turns=3, durationMs=1200', () => {
+  test('spiral-collapse: turns=3, durationMs=1200', () => {
     const def = ANIMATION_DEFS.find((a) => a.id === 'spiral-collapse');
     expect(def).toBeDefined();
     if (def?.id !== 'spiral-collapse') return;
     expect(def.turns).toBe(3);
     expect(def.durationMs).toBe(1200);
+  });
+
+  test('spiral-collapse inwardEasing is a non-empty string', () => {
+    const def = ANIMATION_DEFS.find((a) => a.id === 'spiral-collapse');
+    if (def?.id !== 'spiral-collapse') return;
+    expect(typeof def.inwardEasing).toBe('string');
+    expect((def.inwardEasing ?? '').length).toBeGreaterThan(0);
+  });
+
+  test('spiral-collapse scale/alpha envelope: scaleFrom=1, scaleTo=0, alphaFrom=1, alphaTo=0', () => {
+    const def = ANIMATION_DEFS.find((a) => a.id === 'spiral-collapse');
+    if (def?.id !== 'spiral-collapse') return;
+    expect(def.scaleFrom).toBe(1.0);
+    expect(def.scaleTo).toBe(0.0);
+    expect(def.alphaFrom).toBe(1.0);
+    expect(def.alphaTo).toBe(0.0);
   });
 });
 

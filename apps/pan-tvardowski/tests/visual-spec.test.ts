@@ -214,7 +214,10 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 113 (VS-S8e shape-catalogue absorption): EntityId inlined as a
   // concrete string-literal union in types.ts (moved from shape-catalogue.ts); import
   // of EntityId from '../shape-catalogue' removed. Same type semantics — relocation only.
-  const SCHEMA_CANARY = '605899b74501a25362cbee36332ec99b3fb21bd9ec8ab8a343ce58e64a8620bb';
+  // Bumped at Session 152 (PT-SpiralCollapse): SpiralCollapseDef gained 5 optional
+  // fields (inwardEasing, scaleFrom, scaleTo, alphaFrom, alphaTo) — additive per
+  // schema stability protocol ("adding optional fields" is permitted).
+  const SCHEMA_CANARY = 'aac9995d6ce1ac6d33aa828ac704c1e35225dc6d1beb4c47db83f8cf57dea7e8';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

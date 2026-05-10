@@ -1,6 +1,21 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
+import type { GameContextValue } from '@flare-engine/engine';
 import type { Effect } from '@flare-engine/postfx';
+import type { SkiaFrameRenderer } from '@flare-engine/react';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
+
+const mockCtx = {} as GameContextValue;
+const mockCanvas = {};
+
+function makeSpyBridge(): SkiaFrameRenderer {
+  return {
+    canvas: {},
+    beginFrame: mock(() => {}),
+    drawAtlas: mock(() => {}),
+    applyPostFx: mock(() => {}),
+    endFrame: mock(() => null),
+  } as unknown as SkiaFrameRenderer;
+}
 
 describe('postfx chain', () => {
   test('chain has vignette + bloom + grayscale-flash', () => {
@@ -43,5 +58,55 @@ describe('postfx chain', () => {
     const f = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
     if (f?.uniforms.kind !== 'grayscale-flash') throw new Error('grayscale-flash missing');
     expect(f.uniforms.intensity).toBeLessThan(0.05);
+  });
+
+  describe('postfx hook invocation', () => {
+    const bounds = { width: 360, height: 720 };
+
+    function makeHook() {
+      const fx = createPanTvardowskiPostFx(null);
+      const hook = (_ctx: GameContextValue, _canvas: unknown, bridge: SkiaFrameRenderer | null) => {
+        fx.buildPass(bounds.width, bounds.height);
+        bridge?.applyPostFx(fx.runtime, fx.chain, null, bounds.width, bounds.height);
+      };
+      return { fx, hook };
+    }
+
+    test('postfx hook does not throw when bridge is null', () => {
+      const { fx, hook } = makeHook();
+      expect(() => hook(mockCtx, mockCanvas, null)).not.toThrow();
+      expect(fx.chain.all().length).toBeGreaterThan(0);
+    });
+
+    test('bridge.applyPostFx is invoked with runtime + chain + null source + numeric w/h when bridge non-null', () => {
+      const { fx, hook } = makeHook();
+      const bridge = makeSpyBridge();
+      hook(mockCtx, mockCanvas, bridge);
+      const spy = bridge.applyPostFx as ReturnType<typeof mock>;
+      expect(spy.mock.calls.length).toBe(1);
+      const [runtime, chain, source, w, h] = spy.mock.calls[0] as [
+        unknown,
+        unknown,
+        unknown,
+        number,
+        number,
+      ];
+      expect(runtime).toBe(fx.runtime);
+      expect(chain).toBe(fx.chain);
+      expect(source).toBeNull();
+      expect(w).toBe(bounds.width);
+      expect(h).toBe(bounds.height);
+    });
+
+    test('chain effect membership preserved across hook invocations', () => {
+      const { fx, hook } = makeHook();
+      const bridge = makeSpyBridge();
+      const kindsBefore = fx.chain.all().map((e: Effect) => e.id);
+      hook(mockCtx, mockCanvas, bridge);
+      hook(mockCtx, mockCanvas, bridge);
+      const kindsAfter = fx.chain.all().map((e: Effect) => e.id);
+      expect(kindsAfter).toEqual(kindsBefore);
+      expect(kindsAfter.length).toBe(kindsBefore.length);
+    });
   });
 });

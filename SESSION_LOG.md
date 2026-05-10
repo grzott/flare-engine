@@ -3558,3 +3558,49 @@ Declared touched paths were `apps/pan-tvardowski/docs/{device-smoke.md,perf-base
 **Next session:** #152 PT-SpiralCollapse — spiral-collapse death animation for elite enemies
 
 ---
+
+## Session 152 — 2026-05-10 (scope: [mixed])
+
+**Goal (from sessions.md row #152):** PT-SpiralCollapse: author spiral-collapse death animation for elite enemies — 3-turn inward spiral over 1200ms replacing instant-despawn; update AnimationDef placeholder with real values; wire on elite-kill event
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/animations.ts`
+- `apps/pan-tvardowski/src/components.ts`
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/src/systems/cleanup.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/vs-animations.test.ts`
+- `packages/render/src/render-system.ts`
+- `packages/render/src/sprite-batch.ts`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `docs/design/api-specs.md`
+
+**Narrative**
+Session declared as [game], expanded to [mixed] during implementation. Engine gap surfaced: `SpriteData` in `@flare-engine/render` had no `alpha` field, blocking per-frame fade on the spiral. `sprite.alpha: number` added to `SpriteData`, applied in `SpriteBatch` batch key (prevents fade-bleed across opaque sprites) and in `skia-bridge` `drawAtlas`/`drawOutlined`. PT side: `SpiralCollapseDef` in `visual-spec/types.ts` extended with 5 optional fields; `animations.ts` spiral-collapse entry filled with authoritative values (`easeInCubic`, scale/alpha 1.0→0.0), ★ placeholder removed; `SpiralCollapse` component added; `triggerSpiralCollapse` + pre-allocated 8-slot pool added to `explosions.ts`; `isElitePattern` predicate (hp ≥ 4, covering wapierz/poludnica/licho/topielec/dziwozona) + `spiralCollapseQuery` wiring added to `cleanup.ts`; per-frame visual update: position via `cos/sin × easeInCubic`-collapsing radius, scale and alpha lerp 1→0; reduced-motion path destroys immediately and fires `triggerChromaticAb(100)`. Pre-existing import bug fixed: `cleanup.ts` was importing from `@flare-engine/engine` (transitively pulls react-native, broke 4 tests on load) — swapped to `@flare-engine/ecs` + `@flare-engine/physics`.
+
+**Gates**
+- lint: ✅ (biome 40/40 packages, 0 errors)
+- typecheck: ✅ (0 errors, turbo 73/73)
+- test: ✅ (+23 new, total 723 — render +11 → 115, react +4 → 64, pan-tvardowski +8 → 723)
+- build: ✅ (turbo 39/39)
+- device smoke: deferred per #156 in-flight; functional smoke gated until that session diagnoses the Pixel 10 boot→menu stall; spiral-collapse is a visual change requiring manual observation paste-back
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row: test count updated 715 → 723; session #152 description expanded with per-frame visual + cross-package alpha addition + [mixed] retag
+- `docs/plans/build-plan.md` — no change (Phase 3 Rendering already ✅ DONE; alpha addition is additive within existing done phase; no phase state change)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — change-log entry `2026-05-10 — PT-SpiralCollapse complete (session #152)` appended (spiral-collapse animation, cross-package sprite.alpha, import bug fix, +23 tests, [mixed] retag)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (elite-death animation is presentation polish; no RR checklist row exists for this item)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(render): mutable sprite.alpha for per-instance fade`
+2. `test(render,react): sprite.alpha plumbing + skia-bridge paint coverage`
+3. `feat(pan-tvardowski): spiral-collapse death animation for elite enemies`
+4. `test(pan-tvardowski): spiral-collapse + per-frame visual + vs-animations`
+5. `docs: api-specs sprite alpha + sessions row + build-plan change log`
+
+**Next session:** #153 PT-PauseOverlay — PauseOverlay.tsx with resume/settings/quit buttons + ink-black 85% backdrop
+
+---

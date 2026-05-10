@@ -366,7 +366,7 @@ Spacing tokens: [`src/visual-spec/theme.ts`](../src/visual-spec/theme.ts) (`THEM
 
 HUD aligns with folio IX visually. HP gradient anchor `#2a0810` is intentional and distinct from brand `crimson-deep #7A1322` — see §13.
 
-**Open:** slot positions in [`src/hud/Hud.tsx:94-107`](../src/hud/Hud.tsx#L94) are hardcoded literals (`top: 32 + topInset`, `left: 16 + horizontalInsetLeft`, etc.). [`src/visual-spec/hud.ts`](../src/visual-spec/hud.ts) `HUD_SPEC` exports authoritative slot data but no consumer reads it. Closed by [#164 PT-HUD-DataDriven](../../../docs/plans/sessions.md).
+**Closed (session #164):** slot positions in [`src/hud/Hud.tsx:102-107`](../src/hud/Hud.tsx#L102) are now read from `HUD_SPEC.slots` via the module-level `SLOT` map (line 16); hardcoded literals removed. `Inset.dx`/`dy` widened to `number | \`${number}%\`` in [`src/visual-spec/types.ts`](../src/visual-spec/types.ts); `zone-banner` slot gained `inset: { dx: 0, dy: '38%' }` in [`src/visual-spec/hud.ts`](../src/visual-spec/hud.ts).
 
 ### HP-bar gradient spec
 

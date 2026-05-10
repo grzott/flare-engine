@@ -3966,3 +3966,40 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #166 "PT-PostFx-Wire (replan)" — depends on #165 (now done).
 
 ---
+
+## Session 164 — 2026-05-10 (scope: [game])
+
+**Goal (from sessions.md row #164):** PT-HUD-DataDriven: replace hardcoded slot positions in `Hud.tsx` (lines 94–107) with reads from `HUD_SPEC.slots.*` in `visual-spec/hud.ts`; close the unused-data-export gap surfaced by #103 audit
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts` (⊞ schema extension — see footnote)
+- `apps/pan-tvardowski/src/visual-spec/hud.ts` (⊞ zone-banner slot entry — see footnote)
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/tests/hud-layout.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` (⊞ canary bump — see footnote)
+- `apps/pan-tvardowski/docs/visual-reference.md` (doc-sync: §7 Open note flipped to Closed)
+- `docs/references/builder-reference.md` (doc-sync: mirror row appended session #164 suffix)
+- `docs/plans/sessions.md` (row #164 flipped in_progress → done ⊞; ⊞ footnote appended)
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 294 files, no fixes applied)
+- typecheck: ✅ (tsc --noEmit clean)
+- test: ✅ (+5 new, total 737 pass / 0 fail; declared +4, widened to +5 by zone-banner inset.dy assertion)
+- build: ✅ (stub echo — native builds via bun run android|ios, documented pattern)
+- device smoke: deferred — HUD layout is deterministic spec-driven; coord assertions cover the change; visible smoke to be picked up alongside sessions #166/#163 once the postfx-wire chain lands and a fresh APK is on device
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §7 "Open:" note flipped to "Closed (session #164)"; line cross-link updated from `Hud.tsx:94-107` to `Hud.tsx:102-107`; Inset widening and zone-banner dy='38%' recorded
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row appended: `PT-HUD-DataDriven (session #164, 2026-05-10) — 737 tests green`
+- `docs/plans/pan-tvardowski-build-plan.md` — no change; §17 has no checkbox for this HUD data-driven refactor (P0 visual-runtime arc, not a new milestone)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (refactor only, no user-facing feature)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): HUD slots from HUD_SPEC; Inset accepts percent`
+2. `test(pan-tvardowski): +5 HUD_SPEC slot inset assertions + canary bump`
+3. `docs(pan-tvardowski): close §7 HUD gap; sync builder-reference row`
+
+**Next session:** #166 "PT-PostFx-Wire (replan)" — lowest pending P0; depends on #165 (done).
+
+---

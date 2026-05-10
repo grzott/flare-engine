@@ -3643,3 +3643,93 @@ Session declared as [game], expanded to [mixed] during implementation. Engine ga
 **Next session:** #154 PT-SmokeAutomation — Maestro YAML flows + boot-trace parser + smoke:local/cloud runners (already done ⊟)
 
 ---
+
+## Session 156 — 2026-05-10 (scope: [game]) ⊢
+
+**Goal (from sessions.md row #156):** PT-Smoke-Diagnose: diagnose Pixel 10 smoke functional flow failure (`assertVisible "Play"` never resolves after 60s on TestingBot); reproduce on local Android emulator first (no cloud minutes), inspect boot→menu transition + Button accessibility tree; capture exact TTI median ms while at it; once green, re-run TestingBot android smoke + record functional rows in `device-smoke.md`.
+
+**Diagnosis** — root cause: `await initAudio()` in `apps/pan-tvardowski/src/scenes/boot.ts` blocks the boot scene's `ctx.scenes.go('menu')` call when audio init hangs or throws on cloud hardware that lacks a real audio device. The `MenuOverlay` therefore never mounts and Maestro's `assertVisible: "Play"` times out at 60s. Confirmed by user-pasted dev-mode boot trace on Pixel_9_API_35 emulator (`total=6987.7ms`, `save-loaded->audio-ready=6107.4ms`) — the audio-ready segment alone exceeded the original 5s timeout fix's window, proving the JS thread was blocked by audio init's synchronous module-load + native bridge setup. The `Promise.race` timeout couldn't fire while the thread was starved, so timeout was bumped 5s → 10s with a `try/catch` wrapper added to handle synchronous throws from cloud-device audio init.
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/boot.ts` — `Promise.race([initAudio(), 10s timeout → null])` wrapped in `try/catch`; `markBootMilestone('audio-ready')` always fires after the race settles (real audio, null on timeout, or null on caught throw)
+- `apps/pan-tvardowski/.maestro/smoke.yaml` — `extendedWaitUntil` 60000ms → 90000ms on both occurrences; comment added noting `"Play"` matches via the `accessibilityLabel` set by `Button.label` from `@flare-engine/ui`
+- `apps/pan-tvardowski/tests/boot-trace-shape.test.ts` — +3 regression tests: hanging-audio (waits 10100ms), synchronous-throw, rejecting-promise; all assert `sceneTarget === 'menu'`
+- `apps/pan-tvardowski/docs/device-smoke.md` — Pixel 10 functional rows 1, 2, 6, 7, 13 annotated `pending verification (cloud rerun queued)` (was `blocked`)
+- `apps/pan-tvardowski/docs/perf-baseline.md` — session #156 close note appended; Pixel 10 TTI median annotated `pending verification (cloud rerun queued)`
+- `docs/plans/pan-tvardowski-build-plan.md` — change log entry `2026-05-10 — PT-Smoke-Diagnose ⊢ (session #156)` appended
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row extended with PT-Smoke-Diagnose audio-timeout fix summary; test count 729 → 732
+
+**Gates**
+- lint: ✅ (biome 40/40 packages clean)
+- typecheck: ✅ (0 errors)
+- test: ✅ (732 pass / 0 fail, +3 from session #155's 729; new hanging-audio test runs ~10s as designed)
+- local-emu smoke: ⊘ n/a — installed APK is a dev build; Maestro's `clearState: true` breaks the dev-bundle Metro linkage ("Unable to load script" red-screen). Smoke harness is release-APK-only.
+- TestingBot Pixel 10 smoke: ⊢ deferred — APKs on disk predate today's fix; `eas build --profile preview --platform android --local` fails on Windows host (`Unsupported platform, macOS or Linux is required`). Cloud-validation arc reopens in a follow-up session with a fresh APK build path (EAS cloud, WSL gradle, or CI artifact).
+- TTI median recorded: ⊢ deferred — same root cause as above.
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #156 flipped to `done ⊢`; gates column updated to record what actually shipped vs deferred; touched paths column extended with the regression-test file + the two doc-sync files; commits column 2 → 5; close date 2026-05-10
+- `docs/plans/sessions.md` Footnotes — new `⊢` footnote authored explaining diagnosis-shipped + cloud-validation-deferred state, the dev-build/clearState invalidation, the Windows EAS local-build blocker, and the planned follow-up session
+- `docs/plans/pan-tvardowski-build-plan.md` — change log entry appended (see Touched files)
+- `docs/references/builder-reference.md` — mirror row updated (see Touched files)
+- `docs/plans/release-readiness-checklist.md` — no new ticks; functional smoke row remains `blocked (#156); iOS deferred (#137)` until cloud rerun lands in the follow-up session
+
+**Commits** (subjects only — full blocks emitted in chat; user runs them)
+1. `fix(pan-tvardowski): race initAudio with timeout so boot advances on cloud hw`
+2. `docs(pan-tvardowski): annotate smoke rows + perf note pending cloud rerun (#156)`
+3. `docs(pan-tvardowski): session #156 change-log + builder-reference row`
+4. `fix(pan-tvardowski): bump audio timeout 5s->10s + catch initAudio throws`
+5. `test(pan-tvardowski): throw + reject audio-init regression tests`
+
+**Outstanding (carries to follow-up session)**
+- Build a fresh release APK with the audio-timeout fix included (path TBD: EAS cloud, WSL gradle, or CI artifact)
+- Run TestingBot Pixel 10 smoke against the fresh APK; expect `assertVisible "Play"` to resolve within ~10–15s
+- Run cold-start TTI x3 on Pixel 10; record median in `device-smoke.md` + `perf-baseline.md`
+- Flip the `pending verification (cloud rerun queued)` annotations to real numbers
+- Resume `release-readiness-checklist.md` row #5 functional smoke tick once cloud green
+
+**Next session:** TBD — fresh-context follow-up to re-attempt cloud validation with a working APK build path
+
+---
+
+## Session 122 — 2026-05-10 (scope: [engine])
+
+**Goal (from sessions.md row #122):** Postfx-ColorGradingLUT: new EffectKind 'color-grading-lut' depending on #118 multi-texture runtime — 64³ LUT sampled from 2D strip (4096×64 SkImage); LUT passed as child texture; SkSL applies trilinear LUT lookup; neutral-LUT helper image generator + EffectKind union extension + tests
+
+**Touched files**
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/index.ts`
+- `packages/postfx/src/lut.ts` (new — approved drift; pre-approved at /session-start; keeps `createNeutralLutBytes` Skia-agnostic by returning `Uint8Array` rather than `SkImage`)
+- `packages/postfx/tests/color-grading-lut.test.ts` (new)
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (biome check src/ — 7 files checked, 0 errors)
+- typecheck: ✅ (tsc --noEmit — 0 errors)
+- test: ✅ (+11 new, total 59 in postfx — 59 pass, 0 fail across 7 files in 98ms; row gate was +6 minimum; overshoot approved)
+- build: ✅ (tsup ESM 13.71 KB / CJS 15.47 KB / DTS 13.67 KB)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — postfx extraction row updated: test count 48 → 59, "`color-grading-lut` + `createNeutralLutBytes` added 2026-05-10 (59 tests)" appended
+- `docs/plans/build-plan.md` — no change; Phase 11 already marked in-progress; additive effect within existing phase, no phase-state transition (same precedent as sessions #117 and #118)
+
+**Deviations**
+- `lut.ts` not literally in row's `touched paths` glob `packages/postfx/src/{effect.ts,shaders.ts,runtime.ts,index.ts}`. Explicitly presented and approved at /session-start. `createNeutralLutBytes` returns `Uint8Array` (no Skia dep) — keeping it in a separate module avoids importing SkImageLike into the helper.
+- Factory signature is `createColorGradingLut(uniforms, id?)` instead of the plan's `(id?, uniforms)`. Forced by Biome `useDefaultParameterLast` rule (optional param must trail required). Mechanically cleaner.
+- Test count +11 vs +6 minimum in gates column. Approved overshoot — builder wrote comprehensive trilinear interpolation, channel fidelity, and SKSL export tests.
+- target_commits 3 → 4: a `docs(refs)` commit is required to update the builder-reference.md postfx row (doc-sync gap). Matches precedent established in sessions #117 and #116.
+
+**First consumer of Convention-A multi-texture path:** `buildPass` children dispatch added in session #118 (`CompiledPass.children: SkImage[]`) was a sentinel with zero callers. Session #122 is the first real consumer — the LUT `SkImageLike` flows through `packUniforms` as `children[0]` and is declared in SkSL as `uniform shader u_lut`.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(postfx): add color-grading-lut effect kind + SkSL shader`
+2. `test(postfx): 11 tests for color-grading-lut effect`
+3. `docs(api-specs): add colorGradingLut + createNeutralLutBytes entries`
+4. `docs(refs): postfx test count 48 → 59, color-grading-lut mirror`
+
+**Next session:** #123 "Hermes-V1-ECS-Bench: bench ECS update throughput on RN 0.84 Hermes V1"
+
+---

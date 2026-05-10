@@ -172,6 +172,7 @@ function makeMockSkia(): SkiaModuleLike {
             scale(sx: number, sy: number): void;
             rotate(r: number, cx: number, cy: number): void;
             clear(color: Float32Array): void;
+            drawPicture(picture: unknown): void;
             drawAtlas(
               image: unknown,
               srcs: readonly unknown[],
@@ -188,6 +189,7 @@ function makeMockSkia(): SkiaModuleLike {
             clear(color) {
               this.clearCalls.push(new Float32Array(color));
             },
+            drawPicture: () => {},
             drawAtlas(image, srcs, dsts, paint) {
               const srcSnap: MockRect[] = [];
               for (const s of srcs) {
@@ -959,7 +961,7 @@ describe('createSkiaFrameRenderer — per-sprite alpha', () => {
 // applyPostFx
 // ---------------------------------------------------------------------------
 
-import type { PostFxChainLike, PostFxRuntimeLike } from '../src/skia-bridge.js';
+import type { PostFxChainLike, PostFxRuntimeLike, SkSurfaceLike } from '../src/skia-bridge.js';
 
 interface MockPostFxRuntime extends PostFxRuntimeLike {
   applyCalls: Array<{
@@ -1036,5 +1038,110 @@ describe('createSkiaFrameRenderer — applyPostFx', () => {
     bridge.applyPostFx(runtime, chain, source, 800, 600);
 
     expect(runtime.applyCalls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// captureSceneSnapshot
+// ---------------------------------------------------------------------------
+
+interface MockSurface extends SkSurfaceLike {
+  drawPictureCalls: number;
+  snapshotCallCount: number;
+  lastSnapshot: { width: number; height: number };
+}
+
+function makeMockSurface(w: number, h: number): MockSurface {
+  const surface: MockSurface = {
+    drawPictureCalls: 0,
+    snapshotCallCount: 0,
+    lastSnapshot: { width: w, height: h },
+    getCanvas() {
+      return {
+        drawPicture: (_picture: unknown) => {
+          surface.drawPictureCalls++;
+        },
+        drawImageRect: () => {},
+      };
+    },
+    makeImageSnapshot() {
+      surface.snapshotCallCount++;
+      return { width: () => w, height: () => h };
+    },
+  };
+  return surface;
+}
+
+let surfaceAllocCount = 0;
+let lastAllocW = 0;
+let lastAllocH = 0;
+let mockSurfaceInstance: MockSurface | null = null;
+
+function makeMockSkiaWithMakeSurface(returnNull = false): SkiaModuleLike {
+  const base = makeMockSkia();
+  return {
+    ...base,
+    MakeSurface(w: number, h: number): SkSurfaceLike | null {
+      surfaceAllocCount++;
+      lastAllocW = w;
+      lastAllocH = h;
+      if (returnNull) return null;
+      mockSurfaceInstance = makeMockSurface(w, h);
+      return mockSurfaceInstance;
+    },
+  };
+}
+
+describe('createSkiaFrameRenderer — captureSceneSnapshot', () => {
+  beforeEach(() => {
+    surfaceAllocCount = 0;
+    lastAllocW = 0;
+    lastAllocH = 0;
+    mockSurfaceInstance = null;
+  });
+
+  it('returns null before beginFrame (no active recording)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+    expect(bridge.captureSceneSnapshot(800, 600)).toBeNull();
+  });
+
+  it('returns null when MakeSurface is not on the Skia module', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    expect(bridge.captureSceneSnapshot(800, 600)).toBeNull();
+  });
+
+  it('returns a snapshot image when a surface is available', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+    bridge.beginFrame(800, 600);
+    const snapshot = bridge.captureSceneSnapshot(800, 600);
+    expect(snapshot).not.toBeNull();
+    expect(mockSurfaceInstance?.snapshotCallCount).toBe(1);
+  });
+
+  it('reuses the offscreen surface across calls with the same dimensions', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+    bridge.beginFrame(800, 600);
+    bridge.captureSceneSnapshot(800, 600);
+    const allocsAfterFirst = surfaceAllocCount;
+    // Subsequent snapshot on a new frame with same size — surface is reused.
+    bridge.endFrame();
+    bridge.beginFrame(800, 600);
+    bridge.captureSceneSnapshot(800, 600);
+    expect(surfaceAllocCount).toBe(allocsAfterFirst);
+  });
+
+  it('reallocates the offscreen surface when viewport dimensions change', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+    bridge.beginFrame(800, 600);
+    bridge.captureSceneSnapshot(800, 600);
+    expect(surfaceAllocCount).toBe(1);
+    bridge.endFrame();
+    // New frame with different dimensions — surface must be replaced.
+    bridge.beginFrame(1024, 768);
+    bridge.captureSceneSnapshot(1024, 768);
+    expect(surfaceAllocCount).toBe(2);
+    expect(lastAllocW).toBe(1024);
+    expect(lastAllocH).toBe(768);
   });
 });

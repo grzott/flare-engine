@@ -28,6 +28,15 @@ import type {
   Skia,
 } from '@shopify/react-native-skia';
 
+/** Structural canvas surface — minimal subset needed for offscreen capture. */
+export interface SkSurfaceLike {
+  getCanvas(): {
+    drawPicture(picture: unknown): void;
+    drawImageRect(image: unknown, src: unknown, dst: unknown, paint: unknown): void;
+  };
+  makeImageSnapshot(): SkImageLike;
+}
+
 /**
  * Narrow view of the Skia module — only the factories the bridge needs.
  * Declared as its own type so tests can pass a plain mock without pulling
@@ -38,7 +47,18 @@ export type SkiaModuleLike = Pick<
   'XYWHRect' | 'RSXform' | 'Paint' | 'PictureRecorder' | 'ColorFilter'
 > & {
   RuntimeEffect?: { Make(sksl: string): SkRuntimeEffect | null };
+  MakeSurface?: (width: number, height: number) => SkSurfaceLike | null;
 };
+
+/** Minimal structural view of a single compiled postfx pass. */
+export interface PostFxPassLike {
+  readonly id: string;
+}
+
+/** Canvas subset needed for ping-pong blit operations. */
+export interface PingPongCanvasLike {
+  drawImageRect(image: unknown, src: unknown, dst: unknown, paint: unknown): void;
+}
 
 /**
  * Minimal structural view of a PostFxRuntime that the bridge needs.
@@ -48,8 +68,22 @@ export type SkiaModuleLike = Pick<
 export interface PostFxRuntimeLike {
   readonly supported: boolean;
   apply(
-    canvas: { drawImageRect(image: unknown, src: unknown, dst: unknown, paint: unknown): void },
+    canvas: PingPongCanvasLike,
     chain: PostFxChainLike,
+    source: unknown,
+    width: number,
+    height: number,
+  ): void;
+  /**
+   * Optional multi-pass interface. When present, the bridge uses it to
+   * determine whether ping-pong FBO allocation is needed (passes.length > 1).
+   * Each pass is applied individually with `applyPass` if provided.
+   */
+  buildPass?(chain: PostFxChainLike, width: number, height: number): readonly PostFxPassLike[];
+  /** Apply a single compiled pass. Required when `buildPass` is present. */
+  applyPass?(
+    canvas: PingPongCanvasLike,
+    pass: PostFxPassLike,
     source: unknown,
     width: number,
     height: number,
@@ -89,6 +123,23 @@ export interface SkiaFrameRenderer {
    * always supply a real `SkImage`.
    */
   drawAtlas(image: SkImageLike, commands: SpriteDrawCommand[]): void;
+  /**
+   * Capture a snapshot of the current frame's scene drawing as an image.
+   *
+   * Finishes the current recording into a picture, draws it onto a lazily-
+   * allocated offscreen surface (reused and resized across frames), and
+   * returns the resulting image.
+   *
+   * Returns null when:
+   *  - no active recording (before `beginFrame` or after `endFrame`)
+   *  - `Skia.MakeSurface` is not available in the Skia module
+   *  - the surface could not be created (w/h=0, OOM, etc.)
+   *
+   * After this call the recording continues — `endFrame()` still returns
+   * the full frame picture including any subsequent `drawAtlas` calls.
+   */
+  captureSceneSnapshot(width: number, height: number): SkImageLike | null;
+
   /**
    * Apply a postfx chain onto the active recording canvas using `source` as
    * the scene texture. Delegates to `runtime.apply(currentCanvas, ...)`.
@@ -200,6 +251,23 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
 
   let currentFrameTime = 0;
   let current: SkCanvas | null = null;
+
+  // Offscreen surface for captureSceneSnapshot — allocated lazily, reused
+  // across frames, replaced when the viewport dimensions change.
+  let snapshotSurface: SkSurfaceLike | null = null;
+  let snapshotSurfaceW = 0;
+  let snapshotSurfaceH = 0;
+
+  // Ping-pong surfaces for multi-pass postfx chains — allocated lazily,
+  // reused across frames, replaced when the viewport dimensions change.
+  let pingPingSurface: SkSurfaceLike | null = null;
+  let pingPongSurface: SkSurfaceLike | null = null;
+  let pingPongW = 0;
+  let pingPongH = 0;
+
+  // Saved viewport dims for restarting the recording after a mid-frame snapshot.
+  let currentViewportW = 0;
+  let currentViewportH = 0;
 
   const canvas: CanvasLike = {
     save: () => current?.save() ?? 0,
@@ -384,6 +452,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     beginFrame(viewportWidth: number, viewportHeight: number, time = 0): void {
       if (viewportWidth === 0 || viewportHeight === 0) return;
       currentFrameTime = time;
+      currentViewportW = viewportWidth;
+      currentViewportH = viewportHeight;
       recordingBounds.setXYWH(0, 0, viewportWidth, viewportHeight);
       current = recorder.beginRecording(recordingBounds);
     },
@@ -414,8 +484,84 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       paint.setAlphaf(1);
     },
 
+    captureSceneSnapshot(width: number, height: number): SkImageLike | null {
+      if (current === null) return null;
+      if (Skia.MakeSurface === undefined) return null;
+
+      // Resize (or create) the offscreen surface when the viewport changes.
+      if (snapshotSurface === null || snapshotSurfaceW !== width || snapshotSurfaceH !== height) {
+        snapshotSurface = Skia.MakeSurface(width, height);
+        snapshotSurfaceW = width;
+        snapshotSurfaceH = height;
+      }
+      if (snapshotSurface === null) return null;
+
+      // Finish the current recording, render it to the offscreen surface,
+      // then restart the recording so the frame can continue.
+      current = null;
+      const picture = recorder.finishRecordingAsPicture();
+      const offscreenCanvas = snapshotSurface.getCanvas();
+      offscreenCanvas.drawPicture(picture);
+      const snapshot = snapshotSurface.makeImageSnapshot();
+
+      // Restart the recording — frame continues after the snapshot.
+      recordingBounds.setXYWH(0, 0, currentViewportW, currentViewportH);
+      current = recorder.beginRecording(recordingBounds);
+      // Replay the original picture so subsequent drawAtlas calls layer on top.
+      current.drawPicture(picture);
+
+      return snapshot;
+    },
+
     applyPostFx(runtime, chain, source, width, height) {
       if (current === null || source === null || !runtime.supported) return;
+
+      // Multi-pass ping-pong path — used when the runtime exposes buildPass +
+      // applyPass and there are more than one enabled passes.
+      if (
+        runtime.buildPass !== undefined &&
+        runtime.applyPass !== undefined &&
+        Skia.MakeSurface !== undefined
+      ) {
+        const passes = runtime.buildPass(chain, width, height);
+        if (passes.length > 1) {
+          // Ensure ping-pong surfaces are allocated / resized.
+          if (pingPingSurface === null || pingPongW !== width || pingPongH !== height) {
+            pingPingSurface = Skia.MakeSurface(width, height);
+            pingPongSurface = Skia.MakeSurface(width, height);
+            pingPongW = width;
+            pingPongH = height;
+          }
+          if (pingPingSurface === null || pingPongSurface === null) {
+            // Surface allocation failed — fall through to single-pass apply.
+            runtime.apply(current, chain, source, width, height);
+            return;
+          }
+
+          let readSurface = pingPingSurface;
+          let writeSurface = pingPongSurface;
+          let readSource: unknown = source;
+
+          for (let i = 0; i < passes.length; i++) {
+            const pass = passes[i] as PostFxPassLike;
+            const isLast = i === passes.length - 1;
+            if (isLast) {
+              // Final pass blits directly to the current recording canvas.
+              runtime.applyPass(current, pass, readSource, width, height);
+            } else {
+              // Intermediate pass: write to the write surface, then swap.
+              runtime.applyPass(writeSurface.getCanvas(), pass, readSource, width, height);
+              readSource = writeSurface.makeImageSnapshot();
+              const tmp = readSurface;
+              readSurface = writeSurface;
+              writeSurface = tmp;
+            }
+          }
+          return;
+        }
+      }
+
+      // Single-pass (or no buildPass): delegate unchanged.
       runtime.apply(current, chain, source, width, height);
     },
 

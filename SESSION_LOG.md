@@ -3604,3 +3604,42 @@ Session declared as [game], expanded to [mixed] during implementation. Engine ga
 **Next session:** #153 PT-PauseOverlay — PauseOverlay.tsx with resume/settings/quit buttons + ink-black 85% backdrop
 
 ---
+
+## Session 153 — 2026-05-10 (scope: [game])
+
+**Goal (from sessions.md row #153):** PT-PauseOverlay: implement PauseOverlay.tsx with resume/settings/quit buttons + ink-black 85% backdrop; replace pause placeholder in visual-spec/overlays.ts; add PL+EN keys for pause labels; reconcile OverlayId/ScreenId overlap for boot+menu
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/PauseOverlay.tsx` (new)
+- `apps/pan-tvardowski/src/hud/PauseOverlay.styles.ts` (new)
+- `apps/pan-tvardowski/src/visual-spec/overlays.ts`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/state.ts`
+- `apps/pan-tvardowski/src/localization/keys.ts` (justified scope addition — `menu.pause.settings` typed key registry entry required for typecheck)
+- `apps/pan-tvardowski/locales/en.json`
+- `apps/pan-tvardowski/locales/pl.json`
+- `apps/pan-tvardowski/tests/pause-overlay.test.ts` (new)
+- `apps/pan-tvardowski/tests/vs-overlays.test.ts`
+
+**Gates**
+- lint: ✅ (biome 40/40 packages, 294 files checked, 0 errors)
+- typecheck: ✅ (0 errors)
+- test: ✅ (+6 new, total 729 pass / 0 fail, 8506 expect() calls, 150 files)
+- build: ✅ (script is a stub echo for native builds — `bun run android|ios` is the real device path)
+- device smoke: pending — deferred per #156 in-flight (Pixel 10 boot→menu stall diagnosis); run `bun --cwd apps/pan-tvardowski run smoke:cloud:mid` once #156 resolves
+
+**Docs synced**
+- `docs/plans/pan-tvardowski-build-plan.md` — change log entry `2026-05-10 — PT-PauseOverlay complete (session #153)` appended
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row extended with `+ PT-PauseOverlay (session #153)`; test count updated 723 → 729; last-closed date unchanged (2026-05-10)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new engine-coverage ticks needed; ui ✅, a11y ✅, localization ✅ already ticked in prior milestones
+- `docs/plans/release-readiness-checklist.md` — no new ticks (no pause-overlay item in checklist)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): pause overlay — button, state, overlay component`
+2. `feat(pan-tvardowski): pause locales + overlays.ts spec`
+3. `test(pan-tvardowski): pause-overlay state + locale + vs-overlays real sections`
+4. `docs(pan-tvardowski): session #153 close + change log`
+
+**Next session:** #154 PT-SmokeAutomation — Maestro YAML flows + boot-trace parser + smoke:local/cloud runners (already done ⊟)
+
+---

@@ -6,13 +6,16 @@
  * RuntimeEffect at draw time.
  */
 
+import type { SkImageLike } from './runtime.js';
+
 export type EffectKind =
   | 'vignette'
   | 'grayscale-flash'
   | 'chromatic-aberration'
   | 'crt'
   | 'bloom'
-  | 'god-rays';
+  | 'god-rays'
+  | 'color-grading-lut';
 
 export interface VignetteUniforms {
   intensity: number;
@@ -48,13 +51,19 @@ export interface GodRaysUniforms {
   samples: number;
 }
 
+export interface ColorGradingLutUniforms {
+  lut: SkImageLike;
+  intensity: number;
+}
+
 export type EffectUniforms =
   | ({ kind: 'vignette' } & VignetteUniforms)
   | ({ kind: 'grayscale-flash' } & GrayscaleFlashUniforms)
   | ({ kind: 'chromatic-aberration' } & ChromaticAberrationUniforms)
   | ({ kind: 'crt' } & CrtUniforms)
   | ({ kind: 'bloom' } & BloomUniforms)
-  | ({ kind: 'god-rays' } & GodRaysUniforms);
+  | ({ kind: 'god-rays' } & GodRaysUniforms)
+  | ({ kind: 'color-grading-lut' } & ColorGradingLutUniforms);
 
 export interface Effect {
   id: string;
@@ -134,6 +143,21 @@ export function createGodRays(id = 'god-rays', uniforms: Partial<GodRaysUniforms
       density: uniforms.density ?? 0.5,
       weight: uniforms.weight ?? 0.4,
       samples: uniforms.samples ?? 48,
+    },
+  };
+}
+
+export function createColorGradingLut(
+  uniforms: { lut: SkImageLike; intensity?: number },
+  id = 'color-grading-lut',
+): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'color-grading-lut',
+      lut: uniforms.lut,
+      intensity: uniforms.intensity ?? 1.0,
     },
   };
 }

@@ -7,6 +7,7 @@ export {
   type CrtUniforms,
   type BloomUniforms,
   type GodRaysUniforms,
+  type ColorGradingLutUniforms,
   type Effect,
   createVignette,
   createGrayscaleFlash,
@@ -14,6 +15,7 @@ export {
   createCrt,
   createBloom,
   createGodRays,
+  createColorGradingLut,
 } from './effect.js';
 
 export { EffectChain } from './chain.js';
@@ -36,7 +38,10 @@ export {
   CRT_SKSL,
   BLOOM_SKSL,
   GOD_RAYS_SKSL,
+  COLOR_GRADING_LUT_SKSL,
 } from './shaders.js';
+
+export { createNeutralLutBytes } from './lut.js';
 
 export {
   type PostFxController,

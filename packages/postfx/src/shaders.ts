@@ -90,6 +90,39 @@ half4 main(float2 coord) {
 }
 `;
 
+// Trilinear LUT lookup against a 64³ identity stored as a 4096×64 strip.
+// src is the scene; lut is the 4096×64 RGBA image passed as a child texture.
+export const COLOR_GRADING_LUT_SKSL = /* sksl */ `
+uniform shader src;
+uniform shader lut;
+uniform float intensity;
+
+half4 main(float2 coord) {
+  half4 scene = src.eval(coord);
+
+  float r = float(scene.r) * 63.0;
+  float g = float(scene.g) * 63.0;
+  float b = float(scene.b) * 63.0;
+
+  float bFloor = floor(b);
+  float bCeil  = min(bFloor + 1.0, 63.0);
+  float bFrac  = b - bFloor;
+
+  float2 uvFloor = float2((bFloor * 64.0 + r + 0.5) / 4096.0,
+                          (g + 0.5) / 64.0);
+  float2 uvCeil  = float2((bCeil  * 64.0 + r + 0.5) / 4096.0,
+                          (g + 0.5) / 64.0);
+
+  half3 lutFloor = lut.eval(uvFloor * float2(4096.0, 64.0)).rgb;
+  half3 lutCeil  = lut.eval(uvCeil  * float2(4096.0, 64.0)).rgb;
+
+  half3 graded = mix(lutFloor, lutCeil, half(bFrac));
+  half3 result = mix(scene.rgb, graded, half(intensity));
+
+  return half4(result, scene.a);
+}
+`;
+
 // Single-pass volumetric light scattering (GPU Gems 3, Ch. 13).
 // MAX_SAMPLES is a compile-time constant to satisfy SkSL's loop-count rules;
 // the runtime-provided u_samples float drives an early break so the actual

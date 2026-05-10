@@ -3,6 +3,7 @@ import type { Effect, EffectKind, EffectUniforms } from './effect.js';
 import {
   BLOOM_SKSL,
   CHROMATIC_ABERRATION_SKSL,
+  COLOR_GRADING_LUT_SKSL,
   CRT_SKSL,
   GOD_RAYS_SKSL,
   GRAYSCALE_FLASH_SKSL,
@@ -85,6 +86,7 @@ const SKSL_SOURCE: Record<EffectKind, string> = {
   crt: CRT_SKSL,
   bloom: BLOOM_SKSL,
   'god-rays': GOD_RAYS_SKSL,
+  'color-grading-lut': COLOR_GRADING_LUT_SKSL,
 };
 
 /**
@@ -120,12 +122,14 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
         if (!compiled) continue;
         const uniforms = packUniforms(effect.uniforms, width, height);
         if (scale !== 1) scaleIntensity(effect.uniforms.kind, uniforms, scale);
+        const children: readonly SkImageLike[] =
+          effect.uniforms.kind === 'color-grading-lut' ? [effect.uniforms.lut] : EMPTY_CHILDREN;
         out.push({
           id: effect.id,
           kind: effect.uniforms.kind,
           shader: compiled.effect,
           uniforms,
-          children: EMPTY_CHILDREN,
+          children,
         });
       }
       return out;
@@ -166,6 +170,8 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
         samples,
       ]);
     }
+    case 'color-grading-lut':
+      return new Float32Array([u.intensity]);
   }
 }
 
@@ -198,6 +204,10 @@ function scaleIntensity(kind: EffectKind, packed: Float32Array, scale: number): 
     case 'god-rays':
       // [width, height, lightX, lightY, colorR, colorG, colorB, intensity, decay, density, weight, samples]
       packed[7] = (packed[7] ?? 0) * scale;
+      return;
+    case 'color-grading-lut':
+      // [intensity]
+      packed[0] = (packed[0] ?? 0) * scale;
       return;
   }
 }

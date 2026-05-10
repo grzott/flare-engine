@@ -28,6 +28,7 @@ function zonesUpTo(zoneReached: ZoneId): readonly ZoneId[] {
 
 export interface MenuOverlayActions {
   goMenu(): void;
+  goPlay(): void;
   goSaveSelect(): void;
   goSettings(): void;
   goCredits(): void;
@@ -286,6 +287,18 @@ function SettingsView({
     void save.setPrivacy(next);
   };
 
+  // Settings exit — persist + route by origin. Pause-launched returns to the
+  // play scene with `paused` preserved so the pause overlay re-shows.
+  const back = (): void => {
+    actions.persistSettings();
+    void save.persist();
+    if (gameState.settingsOrigin === 'pause') {
+      actions.goPlay();
+    } else {
+      actions.goMenu();
+    }
+  };
+
   const volumeRow = (
     labelKey: string,
     field: 'masterVolume' | 'musicVolume' | 'sfxVolume',
@@ -307,6 +320,9 @@ function SettingsView({
   return (
     <View style={styles.panelContainer}>
       <Panel padding="lg" radius="lg" style={styles.panel}>
+        <Pressable style={styles.settingsCloseBtn} onPress={back} accessibilityRole="button">
+          <Text style={styles.settingsCloseBtnLabel}>{'×'}</Text>
+        </Pressable>
         <Label variant="xl" tone="accent" style={{ marginBottom: 12 }}>
           {t('menu.settings.title')}
         </Label>
@@ -467,15 +483,7 @@ function SettingsView({
           </View>
         ) : null}
         <View style={{ marginTop: THEME_SPEC.spacing.lg }}>
-          <Button
-            label={t('menu.settings.back')}
-            variant="ghost"
-            onPress={() => {
-              actions.persistSettings();
-              void save.persist();
-              actions.goMenu();
-            }}
-          />
+          <Button label={t('menu.settings.back')} variant="ghost" onPress={back} />
         </View>
       </Panel>
       <PrivacyOverlay

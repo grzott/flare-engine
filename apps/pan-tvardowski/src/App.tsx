@@ -270,6 +270,10 @@ function AppRoot(): React.ReactElement {
       onMainMenu: () => {
         void ctxRef.current?.scenes.go('menu');
       },
+      onSettings: () => {
+        gameState.settingsOrigin = 'pause';
+        void ctxRef.current?.scenes.go('settings');
+      },
     }),
     [ctxRef, shareManager, localization],
   );
@@ -279,10 +283,14 @@ function AppRoot(): React.ReactElement {
       goMenu: () => {
         void ctxRef.current?.scenes.go('menu');
       },
+      goPlay: () => {
+        void ctxRef.current?.scenes.go('play');
+      },
       goSaveSelect: () => {
         void ctxRef.current?.scenes.go('save-select');
       },
       goSettings: () => {
+        gameState.settingsOrigin = 'menu';
         void ctxRef.current?.scenes.go('settings');
       },
       goCredits: () => {

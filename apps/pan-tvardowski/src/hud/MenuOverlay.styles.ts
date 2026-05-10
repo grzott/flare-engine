@@ -25,6 +25,18 @@ export const rawStyles = {
     maxWidth: THEME_SPEC.spacing.panelMdWidth,
     width: '100%' as const,
   },
+  settingsCloseBtn: {
+    position: 'absolute' as const,
+    top: THEME_SPEC.spacing.lg,
+    right: THEME_SPEC.spacing.lg,
+    padding: THEME_SPEC.spacing.md,
+    zIndex: 1,
+  },
+  settingsCloseBtnLabel: {
+    color: UI_COLORS.tint60,
+    ...TYPOGRAPHY.label,
+    fontSize: 20,
+  },
   slotRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,

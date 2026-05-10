@@ -235,6 +235,12 @@ export interface GameState {
    * Dialogue pausing uses `dialogue !== null` separately.
    */
   paused: boolean;
+  /**
+   * Where the user navigated to the settings scene from. `'menu'` = main-menu
+   * route, return goes to menu. `'pause'` = in-game pause overlay, return goes
+   * to play (paused stays true so the pause overlay re-shows on the way back).
+   */
+  settingsOrigin: 'menu' | 'pause';
 }
 
 export const gameState: GameState = {
@@ -279,6 +285,7 @@ export const gameState: GameState = {
   bossBarOpacity: 0,
   gameOverOpacity: 0,
   paused: false,
+  settingsOrigin: 'menu',
 };
 
 export const stateChanged = new Signal<void>();
@@ -342,6 +349,7 @@ export function resetGameState(): void {
   gameState.bossBarOpacity = 0;
   gameState.gameOverOpacity = 0;
   gameState.paused = false;
+  gameState.settingsOrigin = 'menu';
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

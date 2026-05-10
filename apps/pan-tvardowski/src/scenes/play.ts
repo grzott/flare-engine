@@ -483,6 +483,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           resetBombButtonFrame();
           return;
         }
+        // User-initiated pause via the HUD pause button. Same precedent as the
+        // dialogue gate above — camera + postfx tick, sim halts.
+        if (gameState.paused) {
+          refreshBounds(s);
+          postfx.update(dt);
+          resetBombButtonFrame();
+          return;
+        }
 
         refreshBounds(s);
         s.elapsed += dt;

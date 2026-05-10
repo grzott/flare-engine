@@ -4039,4 +4039,38 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 
 ---
 
+## Session 166 — 2026-05-10 (scope: [game])
+
+**Goal (from sessions.md row #166):** PT-PostFx-Wire (replan, rescoped 2026-05-10): structural wire — type `PlayRenderHooks.postfx` as `PostFxRenderHook`, forward `bridge` through `App.tsx`, call `bridge?.applyPostFx(postfx.runtime, postfx.chain, null, w, h)` from the hook so the dead-callback gap surfaced by #103 audit closes; visibility of vignette/CRT/grayscale-flash deferred — engine `applyPostFx` no-ops on `source === null` (skia-bridge.ts:418), needs a follow-up [engine] snapshot-source session before any postfx pixels paint
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/tests/postfx-chain.test.ts`
+- `docs/plans/sessions.md` (row #166 flipped `in_progress → done`, close date stamped, deviation note added)
+- `docs/references/builder-reference.md` (apps/pan-tvardowski mirror row appended: sessions #166 + #167, 748 tests)
+- `SESSION_LOG.md` (this block)
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 295 files, no fixes applied; full turbo lint 40 packages clean)
+- typecheck: ✅ (tsc --noEmit clean)
+- test: ✅ (+3 new, total 748 pass / 0 fail)
+- build: ✅ (stub echo — native builds via bun run android|ios, documented pattern)
+- device smoke: deferred — `applyPostFx` no-ops on `source === null`; structural wire only; visible smoke to be picked up alongside #163 on next APK. Owner command: `bun --cwd apps/pan-tvardowski run smoke:local` (or `smoke:cloud:android` for TestingBot Pixel 10)
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #166 flipped `in_progress → done`; close date `2026-05-10` stamped; deviation note added (rescoped mid-session, visible-pixels deferred to 3-session engine arc, builder self-committed)
+- `docs/references/builder-reference.md` — apps/pan-tvardowski mirror row appended: PT-PostFx-Wire structural wire (session #166) + PT-PauseSettings-UX-Fix (session #167); test count updated to 748
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no change; `postfx` engine-coverage tick was already ✔ from M3; structural wire does not open a new checkbox
+- `docs/plans/release-readiness-checklist.md` — no new ticks (structural wire only, no user-facing visual change)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): wire PostFxRenderHook bridge in play.ts + App.tsx`
+2. `test(pan-tvardowski): +3 postfx-chain hook-invocation assertions`
+3. `docs(plan): close session #166 PT-PostFx-Wire (structural)`
+
+**Deferred arc:** visible postfx pixels require a 3-session engine arc — (1) offscreen SkSurface lifecycle on skia-bridge, (2) postfx ping-pong compositor for multi-pass, (3) PT wire. Owner to queue in next `/plan-sessions`.
+
+**Next session:** #163 "PT-Boss-PaletteShift-Wire" — lowest pending P0; depends on #166 (now done).
+
 ---

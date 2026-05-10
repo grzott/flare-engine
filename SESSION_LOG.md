@@ -3808,6 +3808,45 @@ Session declared as [game], expanded to [mixed] during implementation. Engine ga
 
 ---
 
+## Session 161 — 2026-05-10 (scope: [engine])
+
+**Goal (from sessions.md row #161):** Postfx-Compositor: implement `runtime.apply(canvas, chain, source, width, height)` in `@flare-engine/postfx` — pipes `CompiledPass[]` through Skia ImageFilter compositing, producing the framebuffer-applied frame; bridge through `packages/react/src/skia-bridge.ts` so `onRenderPostFx` actually composites; existing `buildPass()` API kept unchanged for backwards compat
+
+**Touched files**
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/index.ts`
+- `packages/postfx/tests/runtime-apply.test.ts` (new)
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `docs/design/api-specs.md`
+- `docs/plans/sessions.md` (row #161 close)
+- `docs/references/builder-reference.md` (postfx extraction row + Session #161 row)
+
+**Drift notes (pre-approved)**
+- `SkRectLike` interface added in `packages/postfx/src/runtime.ts` — structural stub for `SkiaCanvasLike.drawImageRect` args; in a declared file, backwards-compat addition.
+- `PostFxRuntimeLike` + `PostFxChainLike` interfaces added in `packages/react/src/skia-bridge.ts` — local structural views so `@flare-engine/react` accepts postfx runtime/chain without a hard cross-package dep; in a declared file.
+- Test count: +12 actual vs +8 declared in row gate. postfx: 9 new tests (runtime-apply.test.ts — 9 concrete-value compositor cases covering no-op paths, pass dispatch, LUT child-texture threading, width/height rect flow, paint reuse, zero-alloc paint sentinel). react: 3 new tests (applyPostFx no-op guards, dispatch delegation). ⊞ overshoot per `tests_must_be_real.md`.
+
+**Gates**
+- lint: ✅ (40/40 tasks, 0 errors)
+- typecheck: ✅ (73/73 tasks, 0 errors)
+- test: ✅ (+12 new, 2302 pass total; 1 pre-existing fail `RenderSystem > works with the real @flare-engine/ecs World` at `packages/render/tests/render-system.test.ts:202` — pre-dates session #161, first noted session #107, confirmed via `git stash` baseline)
+- build: ✅ (39/39 tasks green)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — postfx extraction row updated: test count 59 → 68, `runtime.apply()` + structural stubs added 2026-05-10 suffix; Session #161 row added
+- `docs/plans/build-plan.md` — no change; Phase 11.4 postfx already ✅ DONE; additive API enhancement within existing done phase, no phase-state transition
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(postfx): add runtime.apply() compositor method`
+2. `test(postfx): runtime-apply.test.ts — 9 compositor cases`
+3. `feat(react): skia-bridge applyPostFx method`
+4. `docs(api-specs): runtime.apply + SkiaPaintLike types`
+
+**Next session:** #162 "PT-PostFx-Wire: replace play.ts postfx-hook buildPass() call with runtime.apply()" (P0, depends on #161 — now done)
+
+---
+
 ## Pan Tvardowski — historical change log (imported from build-plan, sessions #1–#156)
 
 Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/pan-tvardowski-build-plan.md` `## Change log` section. Format preserved verbatim: one bullet per closed milestone or session, dated, prose summary. Newer entries (sessions #157+) land in the per-session blocks above this appendix, not here.

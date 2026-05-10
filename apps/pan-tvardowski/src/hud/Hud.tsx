@@ -4,11 +4,19 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
+import { HUD_SPEC } from '../visual-spec/hud';
+import type { HudSlotId } from '../visual-spec/types';
 import { getUiPrimaryHex } from '../visual-spec/zones-palette';
 import { rawStyles } from './Hud.styles';
 import { PauseOverlay } from './PauseOverlay';
 import { rawStyles as pauseRawStyles } from './PauseOverlay.styles';
 import { zoneRomanNumeral } from './zone-banner';
+
+/** Module-level slot map — avoids repeated linear scans at render time. */
+const SLOT = Object.fromEntries(HUD_SPEC.slots.map((s) => [s.id, s])) as Record<
+  HudSlotId,
+  (typeof HUD_SPEC.slots)[number]
+>;
 
 function dismissStaleEntitlement(): void {
   gameState.entitlementHealth = 'ok';
@@ -90,32 +98,55 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
   const bottomInset = insets?.bottom ?? 0;
   const horizontalInsetLeft = insets?.left ?? 0;
   const horizontalInsetRight = insets?.right ?? 0;
+
+  const scoreDy = SLOT.score.inset?.dy ?? 0;
+  const bossDy = SLOT['boss-bar'].inset?.dy ?? 0;
+  const minibossDy = SLOT['miniboss-bar'].inset?.dy ?? 0;
+  const scoreDx = SLOT.score.inset?.dx ?? 0;
+  const bossDx = SLOT['boss-bar'].inset?.dx ?? 0;
+  const minibossDx = SLOT['miniboss-bar'].inset?.dx ?? 0;
+
   const topLeftStyle = useMemo(
-    () => [styles.topLeft, { top: 32 + topInset, left: 16 + horizontalInsetLeft }],
-    [topInset, horizontalInsetLeft],
+    () => [
+      styles.topLeft,
+      {
+        top: (typeof scoreDy === 'number' ? scoreDy : 0) + topInset,
+        left: (typeof scoreDx === 'number' ? scoreDx : 0) + horizontalInsetLeft,
+      },
+    ],
+    [topInset, horizontalInsetLeft, scoreDy, scoreDx],
   );
   const bossBarStyle = useMemo(
     () => [
       styles.bossBar,
       {
-        top: 32 + topInset,
-        left: 16 + horizontalInsetLeft,
-        right: 16 + horizontalInsetRight,
+        top: (typeof bossDy === 'number' ? bossDy : 0) + topInset,
+        left: (typeof bossDx === 'number' ? bossDx : 0) + horizontalInsetLeft,
+        right: (typeof bossDx === 'number' ? bossDx : 0) + horizontalInsetRight,
         opacity: s.bossBarOpacity,
       },
     ],
-    [topInset, horizontalInsetLeft, horizontalInsetRight, s.bossBarOpacity],
+    [topInset, horizontalInsetLeft, horizontalInsetRight, s.bossBarOpacity, bossDy, bossDx],
   );
   const minibossBarStyle = useMemo(
     () => [
       styles.minibossBar,
       {
-        top: 56 + topInset,
-        left: 16 + horizontalInsetLeft,
-        right: 16 + horizontalInsetRight,
+        top: (typeof minibossDy === 'number' ? minibossDy : 0) + topInset,
+        left: (typeof minibossDx === 'number' ? minibossDx : 0) + horizontalInsetLeft,
+        right: (typeof minibossDx === 'number' ? minibossDx : 0) + horizontalInsetRight,
       },
     ],
-    [topInset, horizontalInsetLeft, horizontalInsetRight],
+    [topInset, horizontalInsetLeft, horizontalInsetRight, minibossDy, minibossDx],
+  );
+
+  const zoneBannerDy = SLOT['zone-banner'].inset?.dy;
+  const zoneBannerStyle = useMemo(
+    () => [
+      styles.zoneBanner,
+      { top: typeof zoneBannerDy === 'string' ? zoneBannerDy : (zoneBannerDy ?? 0) },
+    ],
+    [zoneBannerDy],
   );
 
   const centerOverlayStyle = useMemo(
@@ -245,7 +276,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
           ) : null}
           {s.zoneBanner.visible && s.zoneBanner.opacity > 0.01 ? (
             <View
-              style={[styles.zoneBanner, { opacity: s.zoneBanner.opacity }]}
+              style={[...zoneBannerStyle, { opacity: s.zoneBanner.opacity }]}
               pointerEvents="none"
             >
               <Text style={styles.zoneBannerNumeral}>{zoneRomanNumeral(s.currentZone)}</Text>

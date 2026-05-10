@@ -65,7 +65,7 @@ export const rawStyles = {
   minibossBarFill: { height: '100%' as const, backgroundColor: UI_COLORS.secondary },
   zoneBanner: {
     position: 'absolute' as const,
-    top: '38%' as const,
+    top: 0,
     left: 0,
     right: 0,
     alignItems: 'center' as const,

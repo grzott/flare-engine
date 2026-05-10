@@ -94,9 +94,12 @@ export type Anchor =
   | 'bot-center'
   | 'bot-right';
 
+/** Pixel offset (number) or viewport-percentage offset (`'38%'` etc.). */
+export type InsetValue = number | `${number}%`;
+
 export interface Inset {
-  readonly dx?: number;
-  readonly dy?: number;
+  readonly dx?: InsetValue;
+  readonly dy?: InsetValue;
 }
 
 export type PostFxKind = 'bloom' | 'vignette' | 'chrom' | 'flash' | 'crt' | 'grayscale';

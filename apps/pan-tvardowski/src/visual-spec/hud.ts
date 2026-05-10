@@ -14,9 +14,9 @@
  * S6 close footnote.
  *
  * NOTES:
- * - zone-banner: anchor 'mid-center' with top: 38% in Hud.styles.ts:64. The
- *   Inset schema can only express pixel dy offsets — percentage top is
- *   unrepresentable. Consumers must read Hud.styles.ts:64 for the literal style.
+ * - zone-banner: anchor 'mid-center', inset.dy = '38%' (viewport-percentage).
+ *   InsetValue was widened in session #164 to support `number | \`${number}%\``.
+ *   Consumers check typeof inset.dy === 'string' to skip px-based safe-area math.
  * - miniboss-bar: literal top = 56 (Hud.tsx:104 topInset + 56). This is 4 px
  *   above hudCornerY(32) + xxl(20) = 52. The 4 px discrepancy is a deliberate
  *   visual tightening in Hud.tsx; spacing.hudCornerY + spacing.xxl is the
@@ -93,8 +93,9 @@ export const HUD_SPEC: HudSpec = {
     {
       id: 'zone-banner',
       anchor: 'mid-center',
+      inset: { dx: 0, dy: '38%' },
       notes:
-        'top: 38% in Hud.styles.ts:64 — schema cannot express percentage; see Hud.styles.ts:64. Opacity driven by ZoneBannerState tween.',
+        'dy: "38%" — viewport-percentage offset; passes through as-is to React Native top style. Opacity driven by ZoneBannerState tween.',
     },
   ] satisfies readonly HudSlot[],
 };

@@ -387,13 +387,15 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 | API                                                                            | Description                                                                                                                                                            |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EffectKind`                                                                   | Union: `'vignette' \| 'grayscale-flash' \| 'chromatic-aberration' \| 'crt' \| 'bloom' \| 'god-rays'`.                                                                  |
+| `EffectKind`                                                                   | Union: `'vignette' \| 'grayscale-flash' \| 'chromatic-aberration' \| 'crt' \| 'bloom' \| 'god-rays' \| 'color-grading-lut'`.                                           |
 | `createVignette` / `createGrayscaleFlash` / `createChromaticAberration` / `createCrt` / `createBloom` / `createGodRays` | Factory helpers returning an `Effect` (id, enabled, typed uniforms). Sensible defaults per effect. `createGodRays` defaults: `lightX=0.5`, `lightY=0.1`, `color=[1,0.95,0.8]`, `intensity=0.6`, `decay=0.96`, `density=0.5`, `weight=0.4`, `samples=48`. |
+| `createColorGradingLut(uniforms, id?)` → `Effect<'color-grading-lut'>`         | Factory for the LUT color-grading effect. `uniforms.lut` (required) is a 4096×64 RGBA `SkImageLike` — a 64³ LUT encoded as a horizontal B-tile strip. `uniforms.intensity` defaults to `1.0`. `id` defaults to `'color-grading-lut'`. First effect to consume the Convention-A child-texture path added in #118. Helper: `createNeutralLutBytes()` returns identity LUT bytes; host wraps them via `Skia.MakeImage`. |
+| `createNeutralLutBytes()` → `Uint8Array`                                       | Pure-TS helper (no Skia dep). Returns `4096 * 64 * 4` RGBA bytes forming the identity 64³ LUT strip. Pass to `Skia.MakeImage` to get a passthrough `lut` for `createColorGradingLut`. |
 | `EffectChain`                                                                  | Ordered pipeline: `add` / `insert` / `remove` / `move` / `get` / `setEnabled` / `setUniforms` (kind-checked) / `clear` / `enabled()` iterator. Duplicate ids throw.    |
 | `createPostFxRuntime(skia)`                                                    | Compiles shaders against a Skia-like module: `compile(kind)` (cached), `packUniforms(effect, w, h)` (per-kind Float32Array), `buildPass(chain, w, h) → CompiledPass[]`. |
 | `CompiledPass`                                                                 | `{ id, kind, shader, uniforms, children }` — what the renderer consumes per-effect per-frame. See Convention A below.             |
 | `SkImageLike`                                                                  | Structural stub for a Skia image handle (`{ readonly _skImageBrand?: never }`). No Skia import required; renderers assign real `SkImage` values to `children`.          |
-| `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` / `GOD_RAYS_SKSL` | Raw shader sources, exported for advanced consumers.                                                                                |
+| `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` / `GOD_RAYS_SKSL` / `COLOR_GRADING_LUT_SKSL` | Raw shader sources, exported for advanced consumers.                                                          |
 
 **Implementation notes:**
 
@@ -404,7 +406,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 - `GOD_RAYS_SKSL` is a single-pass volumetric light scattering shader (GPU Gems 3, Ch. 13). SkSL requires loop counts to be compile-time constants, so the shader declares `const int MAX_SAMPLES = 64` and uses an `if (float(i) >= u_samples) break` guard inside the loop — this keeps the shader compilable while allowing runtime-configurable sample counts (1–64, clamped at pack time).
 
 **Convention A — `CompiledPass.children`:**
-`children` holds *extra* sampler children only, excluding the implicit `src` scene texture. The renderer binds `src` itself as `children[0]` at draw time. For all built-in effects (which declare only `src`) `children` is always the frozen `EMPTY_CHILDREN` sentinel — a single allocation shared across every pass, keeping `buildPass` zero-alloc on the hot path.
+`children` holds *extra* sampler children only, excluding the implicit `src` scene texture. The renderer binds `src` itself as `children[0]` at draw time. For most built-in effects (which declare only `src`) `children` is always the frozen `EMPTY_CHILDREN` sentinel — a single allocation shared across every pass, keeping `buildPass` zero-alloc on the hot path. `color-grading-lut` is the first effect that populates `children`: it sets `children[0]` to the caller-supplied `lut` image so the renderer can bind it as the second `uniform shader` slot.
 
 
 ---

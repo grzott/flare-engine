@@ -9,7 +9,7 @@
  * - 'menu': renders via MenuOverlay.tsx as a full-screen host for sub-views
  *   (menu / save-select / settings / credits). Schema overlap with ScreenId
  *   ('boot', 'menu') is a known design gap deferred to S7/S8.
- * - 'pause': not yet implemented — placeholder sections only (★ S7/S8).
+ * - 'pause': implemented in session #153 (PauseOverlay.tsx); sections updated from placeholder.
  */
 
 import type { OverlayId, OverlaySpec } from './types';
@@ -140,10 +140,18 @@ export const OVERLAY_SPECS: Readonly<Record<OverlayId, OverlaySpec>> = Object.fr
     backdropAlpha: 0.55,
     sections: [
       {
-        id: 'pause-placeholder',
+        id: 'pause-title',
         order: 0,
+        type: 'text',
+        title: 'menu.pause.title',
+        focusFirst: true,
+        notes: 'Source: PauseOverlay.tsx title label.',
+      },
+      {
+        id: 'pause-actions',
+        order: 1,
         type: 'buttons',
-        notes: 'unimplemented — S6 placeholder (★ S7/S8)',
+        notes: 'Resume / Settings / Quit to menu. Source: PauseOverlay.tsx.',
       },
     ],
     closeButton: 'top-right',

@@ -41,6 +41,7 @@ const menu = [
   'menu.credits.skip',
   'menu.pause.title',
   'menu.pause.resume',
+  'menu.pause.settings',
   'menu.pause.quit',
   'menu.game_over.title',
   'menu.victory.title',

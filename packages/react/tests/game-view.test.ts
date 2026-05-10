@@ -364,3 +364,40 @@ describe('GameView — input wiring', () => {
     unmountAll();
   });
 });
+
+describe('GameView — PostFxRenderHook', () => {
+  it('onRenderPostFx receives bridge as 3rd argument', () => {
+    const received: unknown[] = [];
+    mount({
+      config: {
+        onRenderPostFx: (_ctx, _canvas, bridge) => {
+          received.push(bridge);
+        },
+      },
+    });
+    _loopInstance!.onPreRender._handler?.();
+    expect(received).toHaveLength(1);
+    expect(received[0]).not.toBeNull();
+    unmountAll();
+  });
+
+  it('bridge passed to onRenderPostFx exposes applyPostFx method', () => {
+    let capturedBridge: unknown = undefined;
+    mount({
+      config: {
+        onRenderPostFx: (_ctx, _canvas, bridge) => {
+          capturedBridge = bridge;
+        },
+      },
+    });
+    _loopInstance!.onPreRender._handler?.();
+    expect(typeof (capturedBridge as { applyPostFx?: unknown })?.applyPostFx).toBe('function');
+    unmountAll();
+  });
+
+  it('no-op when onRenderPostFx is absent — onPreRender does not throw', () => {
+    mount({ config: {} });
+    expect(() => _loopInstance!.onPreRender._handler?.()).not.toThrow();
+    unmountAll();
+  });
+});

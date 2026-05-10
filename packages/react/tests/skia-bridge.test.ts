@@ -1025,4 +1025,16 @@ describe('createSkiaFrameRenderer — applyPostFx', () => {
     expect(call.height).toBe(600);
     expect(call.canvas).not.toBeNull();
   });
+
+  it('no-op when runtime.supported is false — apply never called', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime = makeMockPostFxRuntime(false);
+    const chain = makeMockChain();
+    const source = mockImage();
+
+    bridge.applyPostFx(runtime, chain, source, 800, 600);
+
+    expect(runtime.applyCalls).toHaveLength(0);
+  });
 });

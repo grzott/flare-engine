@@ -84,11 +84,18 @@ describe('vs-overlays — close buttons', () => {
 });
 
 describe('vs-overlays — placeholder flags', () => {
-  test('pause has a single placeholder section with unimplemented note', () => {
+  test('pause has 2 real sections: pause-title and pause-actions', () => {
     const { sections } = OVERLAY_SPECS.pause;
-    expect(sections.length).toBe(1);
-    expect(sections[0]?.id).toBe('pause-placeholder');
-    expect(sections[0]?.notes).toContain('unimplemented');
+    expect(sections.length).toBe(2);
+    const ids = sections.map((s) => s.id);
+    expect(ids).toContain('pause-title');
+    expect(ids).toContain('pause-actions');
+  });
+
+  test('pause-title section has focusFirst=true and title key', () => {
+    const titleSection = OVERLAY_SPECS.pause.sections.find((s) => s.id === 'pause-title');
+    expect(titleSection?.focusFirst).toBe(true);
+    expect(titleSection?.title).toBe('menu.pause.title');
   });
 
   test('boot overlay notes flag it as a placeholder (schema overlap)', () => {

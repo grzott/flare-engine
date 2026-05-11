@@ -308,10 +308,10 @@ Updated 2026-04-29 (session #70): 5-tier preset system live in [`src/fx/explosio
 | Tier | Name | Particles | Life | Shake | PostFX | +Draws | Use | Status |
 |---|---|---|---|---|---|---|---|---|
 | I | Chip | 8 spark | 120 ms | — | — | +0 | bullet hit | live — #70 |
-| II | Pop | 24 spark+smoke | 280 ms | 2 px·80 ms | flash | +12 | grunt death | live — #70 |
-| III | Burst | 64 spark+smoke | 520 ms | 5 px·180 ms | flash | +38 | elite/mini-boss | live — #70 |
-| IV | Detonation | 128 spark+smoke | 900 ms | 10 px·320 ms | flash | +86 | boss phase-break | live — #70 |
-| V | Cataclysm | 256 spark+debris | 1600 ms | 14 px·900 ms | flash | +220 | boss final, once/zone | live — #70 |
+| II | Pop | 24 spark+smoke | 280 ms | 2 px·80 ms sinusoidal | flash | +12 | grunt death | live — #70 |
+| III | Burst | 64 spark+smoke | 520 ms | 5 px·180 ms sinusoidal | flash | +38 | elite/mini-boss | live — #70 |
+| IV | Detonation | 128 spark+smoke | 900 ms | 10 px·320 ms Perlin | flash | +86 | boss phase-break | live — #171 |
+| V | Cataclysm | 256 spark+debris | 1600 ms | 14 px·900 ms Perlin | flash | +220 | boss final, once/zone | live — #171 |
 
 Public API: [`src/fx/explosions.ts`](../src/fx/explosions.ts) — `triggerExplosion`, `resetCataclysmGate`, `EXPLOSION_PRESETS`.
 Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'cataclysm'`.
@@ -320,7 +320,6 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 
 - **`state.timeScale` slow-mo** — Tier V deck specifies a slow-motion envelope on cataclysm (no engine `timeScale` API available).
 - **Sequenced postfx chain** — deck specifies `flash→grayscale→bloom` cascade per tier; current engine `triggerHitFlash()` fires a single grayscale decay; per-trigger decay overrides deferred.
-- **Perlin-noise shake** — deck specifies Perlin noise for Quake-class shake (Tier IV + V); current `camera.shake()` is sinusoidal only.
 
 ### Concurrent caps — done at session #70
 
@@ -333,12 +332,12 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 
 ### Camera shake taxonomy
 
-| Name | Amplitude | Duration | Motion | Trigger |
-|---|---|---|---|---|
-| Tap | 2 px | 80 ms | perpendicular | bullet hit |
-| Jolt | 5 px | 180 ms | radial | grunt death |
-| Slam | 10 px | 320 ms | radial + rotation | mini-boss death |
-| Quake | 14 px | 900 ms | Perlin noise | boss phase-break / Cataclysm |
+| Name | Amplitude | Duration | Motion | Trigger | Status |
+|---|---|---|---|---|---|
+| Tap | 2 px | 80 ms | perpendicular | bullet hit | live — #70 |
+| Jolt | 5 px | 180 ms | radial | grunt death | live — #70 |
+| Slam | 10 px | 320 ms | radial + rotation | mini-boss death | live — #70 |
+| Quake | 14 px | 900 ms | Perlin noise | boss phase-break / Cataclysm | live — #171 |
 
 ---
 

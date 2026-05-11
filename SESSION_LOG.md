@@ -4208,3 +4208,39 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #171 "PT-PerlinShake" — pending P0, depends on #169 (done).
 
 ---
+
+## Session 171 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #171):** PT-PerlinShake: wire Perlin shake on Tier-IV (boss phase-break) and Tier-V (Cataclysm) explosion triggers using `shakePerlin` from #169-P1; Tiers I-III remain sinusoidal; reduce-motion path dims to still-frame fallback (no shake); update camera shake taxonomy in visual-reference.md
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/a11y/reduced-motion.ts`
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `apps/pan-tvardowski/tests/explosion-tiers.test.ts`
+- `apps/pan-tvardowski/tests/reduced-motion-extended.test.ts`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 295 files, 0 fixes; 40 packages total, 39 cache hits)
+- typecheck: ✅ (tsc --noEmit clean; 0 errors; pan-tvardowski cache miss executed)
+- test: ✅ (+3 new; 755 total, 0 fail, 151 files)
+- build: ✅ (native build stub; EAS cloud path confirmed)
+- device smoke: deferred — owner runs `cd apps/pan-tvardowski && bun run smoke:cloud:android`
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: `+ PT-PerlinShake (session #171, 2026-05-11)`, test count updated 752 → 755
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; PT-PerlinShake is a P0 visual-runtime row, not a milestone boundary
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+- `apps/pan-tvardowski/docs/visual-reference.md` §6 — Tier-IV/V shake column updated to Perlin (status `live — #171`); Quake row added to camera-shake taxonomy table with Status column
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): route Tier-IV/V explosions to shakePerlin`
+2. `test(pan-tvardowski): +3 Perlin-shake tier + reduced-motion`
+3. `docs(pan-tvardowski): update §6 shake taxonomy for Perlin`
+
+**Next session:** #172 "PT-SigilPulse" — pending P0, depends on #169 (done).
+
+---

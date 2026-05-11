@@ -3,7 +3,9 @@ import {
   type AnySpriteEffect,
   type CanvasLike,
   type CustomShaderEffect,
+  FIRE_SKSL,
   FOG_SKSL,
+  type FireEffect,
   type FlashEffect,
   type FogEffect,
   type GrayscaleEffect,
@@ -204,6 +206,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   let waterRuntimeEffect: SkRuntimeEffect | null = null;
   let fogPaint: SkPaint | null = null;
   let fogRuntimeEffect: SkRuntimeEffect | null = null;
+  let firePaint: SkPaint | null = null;
+  let fireRuntimeEffect: SkRuntimeEffect | null = null;
 
   // Reused across frames via beginRecording / finishRecording cycles.
   const recorder: SkPictureRecorder = Skia.PictureRecorder();
@@ -248,6 +252,12 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   // Declaration order: [resW, resH, color.r, color.g, color.b,
   //                     density, speed, scale, time]
   const fogUniforms: number[] = new Array(9).fill(0);
+
+  // Pre-allocated 11-float uniform buffer for the fire effect.
+  // Declaration order: [resW, resH, color.r, color.g, color.b,
+  //                     tipColor.r, tipColor.g, tipColor.b,
+  //                     speed, intensity, time]
+  const fireUniforms: number[] = new Array(11).fill(0);
 
   let currentFrameTime = 0;
   let current: SkCanvas | null = null;
@@ -398,6 +408,31 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     return fogPaint;
   }
 
+  function applyFire(effect: FireEffect, time: number): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (fireRuntimeEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(FIRE_SKSL);
+      if (compiled === null) return defaultPaint;
+      fireRuntimeEffect = compiled;
+    }
+    if (firePaint === null) firePaint = Skia.Paint();
+    // Layout: [resW, resH, color.r, color.g, color.b,
+    //          tipColor.r, tipColor.g, tipColor.b, speed, intensity, time]
+    fireUniforms[0] = 0;
+    fireUniforms[1] = 0;
+    fireUniforms[2] = effect.color.r;
+    fireUniforms[3] = effect.color.g;
+    fireUniforms[4] = effect.color.b;
+    fireUniforms[5] = effect.tipColor.r;
+    fireUniforms[6] = effect.tipColor.g;
+    fireUniforms[7] = effect.tipColor.b;
+    fireUniforms[8] = effect.speed;
+    fireUniforms[9] = effect.intensity;
+    fireUniforms[10] = time;
+    firePaint.setShader(fireRuntimeEffect.makeShader(fireUniforms));
+    return firePaint;
+  }
+
   function drawOutlined(
     canvas: SkCanvas,
     image: SkImage,
@@ -438,11 +473,15 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
         return applyWater(effect, currentFrameTime);
       case 'fog':
         return applyFog(effect, currentFrameTime);
+      case 'fire':
+        return applyFire(effect, currentFrameTime);
       case 'outline':
         // Outline is drawn via a multi-pass path; this branch is only reached
         // if a caller bypasses `drawOutlined`. Return the outline paint so
         // the single-pass drawAtlas still renders something visible.
         return applyOutlinePaint(effect);
+      default:
+        return defaultPaint;
     }
   }
 

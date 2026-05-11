@@ -205,6 +205,8 @@ mock.module('@flare-engine/render', () => ({
   createRenderSystem: () => () => {},
   WATER_SKSL: '',
   FOG_SKSL: '',
+  FIRE_SKSL: '',
+  fire: () => ({ type: 'fire', color: {}, tipColor: {}, speed: 1, intensity: 0.8 }),
 }));
 
 mock.module('@flare-engine/audio', () => ({

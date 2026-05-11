@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
 import type {
   CustomShaderEffect,
+  FireEffect,
   FlashEffect,
   FogEffect,
   GrayscaleEffect,
@@ -307,8 +308,15 @@ interface MockWaterRuntimeEffect {
   makeShader(uniforms: number[]): MockShader;
 }
 
+interface MockFireRuntimeEffect {
+  makeShaderCalls: Array<readonly number[]>;
+  makeCount: number;
+  makeShader(uniforms: number[]): MockShader;
+}
+
 let runtimeEffectMakeCalls = 0;
 let currentMockWaterEffect: MockWaterRuntimeEffect | null = null;
+let currentMockFireEffect: MockFireRuntimeEffect | null = null;
 
 function makeMockWaterRuntimeEffect(): MockWaterRuntimeEffect {
   const effect: MockWaterRuntimeEffect = {
@@ -368,6 +376,7 @@ beforeEach(() => {
   runtimeEffectMakeCalls = 0;
   currentMockWaterEffect = null;
   currentMockFogEffect = null;
+  currentMockFireEffect = null;
 });
 
 describe('createSkiaFrameRenderer', () => {
@@ -917,6 +926,122 @@ describe('createSkiaFrameRenderer — fog effect', () => {
     expect(() => bridge.drawAtlas(mockImage(), [cmd({ effect })])).not.toThrow();
     const call = currentMockCanvas?.drawAtlasCalls[0];
     expect(call?.paint.id).toBe(1);
+  });
+});
+
+function makeMockFireRuntimeEffect(): MockFireRuntimeEffect {
+  const effect: MockFireRuntimeEffect = {
+    makeShaderCalls: [],
+    makeCount: 0,
+    makeShader(u) {
+      this.makeShaderCalls.push([...u]);
+      return { uniforms: [...u] };
+    },
+  };
+  return effect;
+}
+
+function makeMockSkiaWithFireRuntimeEffect(): SkiaModuleLike {
+  const base = makeMockSkia();
+  currentMockFireEffect = makeMockFireRuntimeEffect();
+  const fireRef = currentMockFireEffect;
+  return {
+    ...base,
+    RuntimeEffect: {
+      Make(_sksl: string): MockFireRuntimeEffect {
+        runtimeEffectMakeCalls++;
+        fireRef.makeCount++;
+        return fireRef;
+      },
+    } as unknown as NonNullable<SkiaModuleLike['RuntimeEffect']>,
+  };
+}
+
+describe('fire effect', () => {
+  it('RuntimeEffect.Make(FIRE_SKSL) called on first fire draw', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFireRuntimeEffect());
+    bridge.beginFrame(800, 600);
+    const effect: FireEffect = {
+      type: 'fire',
+      color: { r: 1, g: 0.4, b: 0, a: 1 },
+      tipColor: { r: 1, g: 1, b: 0, a: 1 },
+      speed: 1.0,
+      intensity: 0.8,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    expect(runtimeEffectMakeCalls).toBe(1);
+    expect(currentMockFireEffect?.makeShaderCalls).toHaveLength(1);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paint.shader).not.toBeNull();
+  });
+
+  it('RuntimeEffect cached — Make called only once across 2 frames', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFireRuntimeEffect());
+    const effect: FireEffect = {
+      type: 'fire',
+      color: { r: 1, g: 0.4, b: 0, a: 1 },
+      tipColor: { r: 1, g: 1, b: 0, a: 1 },
+      speed: 1.0,
+      intensity: 0.8,
+    };
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    bridge.endFrame();
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    bridge.endFrame();
+    expect(runtimeEffectMakeCalls).toBe(1);
+    expect(currentMockFireEffect?.makeShaderCalls).toHaveLength(2);
+  });
+
+  it('uniform layout matches FIRE_SKSL declaration order', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFireRuntimeEffect());
+    bridge.beginFrame(800, 600, 3.7);
+    const effect: FireEffect = {
+      type: 'fire',
+      color: { r: 0.2, g: 0.4, b: 0.6, a: 1 },
+      tipColor: { r: 0.9, g: 0.95, b: 1.0, a: 1 },
+      speed: 1.5,
+      intensity: 0.6,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const uniforms = currentMockFireEffect?.makeShaderCalls[0];
+    expect(uniforms).toHaveLength(11);
+    // [0,1] = resolution (zeroed — callers fill via drawAtlas)
+    expect(uniforms?.[0]).toBe(0);
+    expect(uniforms?.[1]).toBe(0);
+    // [2..4] = color.rgb
+    expect(uniforms?.[2]).toBeCloseTo(0.2);
+    expect(uniforms?.[3]).toBeCloseTo(0.4);
+    expect(uniforms?.[4]).toBeCloseTo(0.6);
+    // [5..7] = tipColor.rgb
+    expect(uniforms?.[5]).toBeCloseTo(0.9);
+    expect(uniforms?.[6]).toBeCloseTo(0.95);
+    expect(uniforms?.[7]).toBeCloseTo(1.0);
+    // [8] = speed
+    expect(uniforms?.[8]).toBeCloseTo(1.5);
+    // [9] = intensity
+    expect(uniforms?.[9]).toBeCloseTo(0.6);
+    // [10] = time
+    expect(uniforms?.[10]).toBeCloseTo(3.7);
+  });
+
+  it('fire arm in resolveEffectPaint — drawAtlas called, no fallthrough to default', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithFireRuntimeEffect());
+    bridge.beginFrame(800, 600);
+    const effect: FireEffect = {
+      type: 'fire',
+      color: { r: 1, g: 0, b: 0, a: 1 },
+      tipColor: { r: 1, g: 1, b: 0, a: 1 },
+      speed: 1.0,
+      intensity: 0.8,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call).toBeDefined();
+    // Fire paint has shader set; default paint (id=1) has shader=null.
+    expect(call?.paint.shader).not.toBeNull();
+    expect(call?.paint.id).not.toBe(1);
   });
 });
 

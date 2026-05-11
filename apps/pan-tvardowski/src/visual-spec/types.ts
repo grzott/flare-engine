@@ -556,7 +556,11 @@ export type ColorTokenId =
   | 'safe'
   | 'cb-player'
   | 'cb-hazard'
-  | 'cb-safe';
+  | 'cb-safe'
+  | 'vistulaBlue'
+  | 'foamBlue'
+  | 'mistBlue'
+  | 'lunarInk';
 
 export interface TypographyValue {
   readonly fontFamily: string;

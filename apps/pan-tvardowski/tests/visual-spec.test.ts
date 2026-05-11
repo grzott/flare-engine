@@ -223,7 +223,9 @@ describe('visual-spec — schema canary', () => {
   // AnimationPresetId and AnimationDef union — additive per schema stability protocol.
   // Bumped at Session 174 (PT-Z1-ShaderBg): 'fire-shader' added to ParallaxLayer.content
   // union — additive variant per schema stability protocol.
-  const SCHEMA_CANARY = 'fb168b677a8197c4d81a91c4ff3992137096da1a7b016862fdb1867ec70568d3';
+  // Bumped at Session 175 (PT-Z5-Z8-ShaderBg): 4 new ColorTokenId entries added
+  // (vistulaBlue, foamBlue, mistBlue, lunarInk) — additive per schema stability protocol.
+  const SCHEMA_CANARY = 'ca3f24ae768effc592487607e1cb0ab32c56b09c627ac9d954121251c34749e8';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

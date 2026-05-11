@@ -26,6 +26,10 @@ const COLOR_TOKENS: readonly ColorTokenId[] = [
   'cb-player',
   'cb-hazard',
   'cb-safe',
+  'vistulaBlue',
+  'foamBlue',
+  'mistBlue',
+  'lunarInk',
 ];
 
 const TYPE_TOKENS: readonly TypeTokenId[] = [
@@ -65,7 +69,7 @@ const SPACING_TOKENS: readonly SpacingTokenId[] = [
 ];
 
 describe('vs-theme — colors', () => {
-  test('all 21 ColorTokenIds present in THEME_SPEC.colors', () => {
+  test('all 25 ColorTokenIds present in THEME_SPEC.colors', () => {
     for (const id of COLOR_TOKENS) {
       expect(THEME_SPEC.colors[id], `color token: ${id}`).toBeDefined();
     }

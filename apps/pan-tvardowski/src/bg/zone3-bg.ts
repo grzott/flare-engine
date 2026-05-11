@@ -13,14 +13,16 @@ import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
 import { Sprite, fog, water } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
+import { hexToRgba01 } from '../visual-spec/color-util';
+import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_WATER = -100;
 const Z_FOG = -90;
 
 // Vistula palette: deep verdigris water, pale bone foam, muted blue-grey fog.
-const WATER_COLOR = { r: 0x2f / 255, g: 0x5f / 255, b: 0x7a / 255, a: 1 } as const;
-const FOAM_COLOR = { r: 0xd9 / 255, g: 0xe4 / 255, b: 0xe7 / 255, a: 0.6 } as const;
-const FOG_COLOR = { r: 0xe4 / 255, g: 0xf0 / 255, b: 0xff / 255, a: 0.55 } as const;
+const WATER_COLOR = hexToRgba01(THEME_SPEC.colors.vistulaBlue);
+const FOAM_COLOR = hexToRgba01(THEME_SPEC.colors.foamBlue, 0.6);
+const FOG_COLOR = hexToRgba01(THEME_SPEC.colors.mistBlue, 0.55);
 
 export interface Zone3BgDeps {
   world: World;

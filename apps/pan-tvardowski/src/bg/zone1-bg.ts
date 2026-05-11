@@ -13,14 +13,16 @@ import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
 import { Sprite, fire, fog } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
+import { hexToRgba01 } from '../visual-spec/color-util';
+import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_FIRE = -100;
 const Z_FOG = -90;
 
 // Zone 1 palette: terracotta ember glow, gold tip, rust chimney smoke.
-const EMBER_COLOR = { r: 0xb0 / 255, g: 0x5a / 255, b: 0x3c / 255, a: 1 } as const;
-const GLOW_TIP_COLOR = { r: 0xc9 / 255, g: 0xa2 / 255, b: 0x4a / 255, a: 1 } as const;
-const CHIMNEY_FOG_COLOR = { r: 0x8b / 255, g: 0x3a / 255, b: 0x1f / 255, a: 0.4 } as const;
+const EMBER_COLOR = hexToRgba01(THEME_SPEC.colors.terracotta);
+const GLOW_TIP_COLOR = hexToRgba01(THEME_SPEC.colors.gold);
+const CHIMNEY_FOG_COLOR = hexToRgba01(THEME_SPEC.colors.rust, 0.4);
 
 export interface Zone1BgDeps {
   world: World;

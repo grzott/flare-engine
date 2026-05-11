@@ -43,6 +43,10 @@ export const THEME_SPEC: ThemeSpec = {
     'cb-player': '#FF8C42',
     'cb-hazard': '#FFD23F',
     'cb-safe': '#4FC3F7',
+    vistulaBlue: '#2F5F7A',
+    foamBlue: '#D9E4E7',
+    mistBlue: '#E4F0FF',
+    lunarInk: '#1A1F2A',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

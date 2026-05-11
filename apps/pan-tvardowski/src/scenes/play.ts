@@ -616,6 +616,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               bossPos?.y ?? 100,
               'detonation',
               s?.zone.id ?? '',
+              () => {
+                gameState.redFlash = true;
+                notifyStateChanged();
+              },
             );
             postfx.triggerChromaticAb(200);
             if (s) gameEvents.emit('boss-phase-change', s.zone.id, phase);
@@ -675,6 +679,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               bossPos?.y ?? 100,
               'cataclysm',
               s.zone.id,
+              () => {
+                gameState.redFlash = true;
+                notifyStateChanged();
+              },
             );
             postfx.triggerHitFlash(0.833);
             gameState.bossActive = false;

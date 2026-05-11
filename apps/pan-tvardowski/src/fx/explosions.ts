@@ -11,6 +11,7 @@ export type ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'cataclysm
 interface ShakePreset {
   amp: number;
   durMs: number;
+  shakeMode: 'sinusoidal' | 'perlin';
 }
 
 interface ExplosionPreset {
@@ -25,25 +26,25 @@ export const EXPLOSION_PRESETS = {
   pop: {
     particles: 24,
     lifeMs: 280,
-    shake: { amp: 2, durMs: 80 },
+    shake: { amp: 2, durMs: 80, shakeMode: 'sinusoidal' },
     postfx: true,
   } as ExplosionPreset,
   burst: {
     particles: 64,
     lifeMs: 520,
-    shake: { amp: 5, durMs: 180 },
+    shake: { amp: 5, durMs: 180, shakeMode: 'sinusoidal' },
     postfx: true,
   } as ExplosionPreset,
   detonation: {
     particles: 128,
     lifeMs: 900,
-    shake: { amp: 10, durMs: 320 },
+    shake: { amp: 10, durMs: 320, shakeMode: 'perlin' },
     postfx: true,
   } as ExplosionPreset,
   cataclysm: {
     particles: 256,
     lifeMs: 1600,
-    shake: { amp: 14, durMs: 900 },
+    shake: { amp: 14, durMs: 900, shakeMode: 'perlin' },
     postfx: true,
   } as ExplosionPreset,
 } as const satisfies Record<ExplosionTier, ExplosionPreset>;
@@ -96,17 +97,24 @@ export function resetCataclysmGate(_zoneId: string): void {
  *
  * Returns the *effective* tier after cap-degradation.
  * Callers can ignore; tests use it to assert degradation.
+ *
+ * onReducedMotion is fired when screenShakeEnabled=false and the preset has a
+ * shake — lets callers substitute a visual cue (e.g. red flash) for motion.
  */
 export function triggerExplosion(
   world: World,
   atlas: AtlasHandle,
-  camera: { shake(amp: number, dur: number): void } | null,
+  camera: {
+    shake(amp: number, dur: number): void;
+    shakePerlin(amp: number, dur: number): void;
+  } | null,
   postfx: { triggerHitFlash(): void } | null,
   screenShakeEnabled: boolean,
   x: number,
   y: number,
   tier: ExplosionTier,
   zoneId: string,
+  onReducedMotion?: () => void,
 ): ExplosionTier {
   _pruneExpired();
 
@@ -139,7 +147,13 @@ export function triggerExplosion(
 
   // Screen shake.
   if (screenShakeEnabled && preset.shake) {
-    camera?.shake(preset.shake.amp, preset.shake.durMs / 1000);
+    if (preset.shake.shakeMode === 'perlin') {
+      camera?.shakePerlin(preset.shake.amp, preset.shake.durMs / 1000);
+    } else {
+      camera?.shake(preset.shake.amp, preset.shake.durMs / 1000);
+    }
+  } else if (!screenShakeEnabled && preset.shake) {
+    onReducedMotion?.();
   }
 
   // PostFX.

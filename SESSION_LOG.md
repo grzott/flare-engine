@@ -4481,3 +4481,42 @@ Mid-session owner approved expansion beyond declared touched-paths: (a) Z1+Z3 `*
 **Next session:** #178 "PT-ColorUnify-B" — pending
 
 ---
+
+## Session 178 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #178):** PT-ColorUnify-B: refactor `visual-spec/zones-palette.ts` — replace 27 raw `argb(0xRRGGBB)` literals with theme-token lookups via `THEME_SPEC.colors` (same hex, just routed through theme); preserves ZONE_PALETTES output bit-for-bit; closes Phase B of the bg-shader color unification arc started in #175
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/zones-palette.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts` (drift — additive: `katakumbyDark` added to `ColorTokenId` union + schema canary bump)
+- `apps/pan-tvardowski/src/visual-spec/theme.ts` (drift — additive: `katakumbyDark: '#1A1410'` entry added; Z6 primary, previously the only un-tokenized hex)
+- `apps/pan-tvardowski/src/visual-spec/color-util.ts` (drift — additive: `hexToArgb(hex: string): number` export added; existing `hexToRgba01` produces float tuples, wrong shape for argb integers)
+- `apps/pan-tvardowski/tests/zones-palette.test.ts` (declared — new file)
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` (declared — canary bump)
+- `apps/pan-tvardowski/tests/vs-theme.test.ts` (drift — additive: `'katakumbyDark'` added to `COLOR_TOKENS` array; count bumped 25→26 to keep pre-existing invariant test passing after additive `ColorTokenId` change)
+- `docs/plans/sessions.md`
+- `docs/references/builder-reference.md`
+
+**Deviations from declared touched paths**
+`types.ts`, `theme.ts`, `color-util.ts`, and `tests/vs-theme.test.ts` were touched beyond the declared paths. All changes are purely additive (new token, new export, count bump). Same mechanical-drift precedent as sessions #170/#172/#173/#174/#175/#176/#177 — owner accepted at plan time.
+
+**Gates**
+- lint: ✅ (turbo 40/40; pan-tvardowski: 306 files, 0 errors via Biome)
+- typecheck: ✅ (0 errors, silent exit)
+- test: ✅ (+25 new, total 806 pass / 0 fail)
+- build: ✅ (native echo script — `bun run android|ios`)
+- device smoke: owner-deferred — pure refactor, no visual change; run `cd apps/pan-tvardowski && bun run smoke:cloud:android` before next visual-change session; precedent #173/#175/#176/#177
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #178 flipped `in_progress` → `done ⊞`; close date 2026-05-11; notes cell populated; `## Now` block updated to reflect #178 done and #179 as next pending
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-ColorUnify-B session #178 entry; +25 tests (806 total)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; this is Phase B of the color-unification arc (refactor only); no new engine-package coverage boundary crossed; `postfx ✅` was already ticked at M3 in #175
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no matching launch-tier row for color-token unification
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `refactor(pan-tvardowski): unify zones-palette argb via theme tokens`
+2. `test(pan-tvardowski): zones-palette token-routing + canary bump`
+
+**Next session:** #179 "PT-ColorUnify-C" — pending
+
+---

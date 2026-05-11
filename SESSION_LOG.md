@@ -4284,3 +4284,45 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #173 "PT-SlowMo-Cataclysm" — pending P0, depends on #171 (done).
 
 ---
+
+## Session 173 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #173):** PT-SlowMo-Cataclysm: on Tier-V cataclysm, ramp `clock.timescale` to 0.3 for 800ms then ramp back to 1.0 over 400ms via tween; reduce-motion path skips (no slow-mo); close §6 timeScale slow-mo gap
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/a11y/reduced-motion.ts`
+- `apps/pan-tvardowski/tests/explosion-tiers.test.ts`
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.styles.ts` (carry-over, out-of-scope — displayXl→displayL on menuTitle; committed as 4th refactor commit)
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 296 files, 0 fixes; 40 packages total, 39 cache hits; pan-tvardowski cache miss executed cleanly)
+- typecheck: ✅ (tsc --noEmit clean; 0 errors)
+- test: ✅ (+3 new, total 761 pass / 0 fail, 8580 expect() calls, 152 files)
+- build: ✅ (native echo stub; engine packages 39/39 turbo cache hit)
+- device smoke: deferred — owner runs `cd apps/pan-tvardowski && bun run smoke:cloud:android` (Windows EAS local blocked; Pixel 10 TestingBot cloud smoke queued)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: `+ PT-SlowMo-Cataclysm (session #173, 2026-05-11)`, test count updated 758 → 761
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; PT-SlowMo-Cataclysm is a P0 visual-runtime row, not a milestone boundary
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+- `apps/pan-tvardowski/docs/visual-reference.md` §6 — "clock.timescale slow-mo" engine gap already marked closed at #173 (written by builder); confirmed present at line 321
+
+**Deviations**
+- `fx/explosions.ts` declared-but-untouched: Tier-V trigger already wired in #171; no changes needed.
+- `tests/reduced-motion-extended.test.ts` declared-but-untouched: `shouldAllowSlowMo` helper is additive; existing assertions cover the gate path for reduce-motion skip.
+- `MenuOverlay.styles.ts` (4th commit): single-line `TYPOGRAPHY.displayXl → TYPOGRAPHY.displayL` on menuTitle; out-of-scope carry-over committed separately as `refactor(pan-tvardowski)`.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): slow-mo timescale ramp on Tier-V cataclysm`
+2. `test(pan-tvardowski): +3 cataclysm slow-mo + reduced-motion skip`
+3. `docs(pan-tvardowski): close §6 timeScale slow-mo engine gap`
+4. `refactor(pan-tvardowski): downsize menuTitle to displayL`
+
+**Next session:** #174 "PT-Z1-ShaderBg" — pending, depends on #169 (done).
+
+---

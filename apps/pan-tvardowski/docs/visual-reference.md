@@ -318,7 +318,7 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 
 ### Engine gaps deferred from #70
 
-- **`state.timeScale` slow-mo** — Tier V deck specifies a slow-motion envelope on cataclysm (no engine `timeScale` API available).
+- **`clock.timescale` slow-mo** — closed at #173; Tier-V cataclysm ramps `clock.timescale` 1.0→0.3 over 800 ms (easeInCubic) then 0.3→1.0 over 400 ms (easeOutCubic); ticks on `rawDt`; skipped under reducedMotion.
 - **Sequenced postfx chain** — deck specifies `flash→grayscale→bloom` cascade per tier; current engine `triggerHitFlash()` fires a single grayscale decay; per-trigger decay overrides deferred.
 
 ### Concurrent caps — done at session #70

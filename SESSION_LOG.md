@@ -4244,3 +4244,43 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #172 "PT-SigilPulse" — pending P0, depends on #169 (done).
 
 ---
+
+## Session 172 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #172):** PT-SigilPulse: wire sigil-pulse sineInOut 2400ms loop on player ship using `periodicTween` from #169-P2; opacity oscillates 0.4-1.0; reduce-motion path dims to static 70%; close §11 sigil-pulse engine gap
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts` (mechanical drift — `SigilPulseDef` interface + union extensions)
+- `apps/pan-tvardowski/src/visual-spec/animations.ts`
+- `apps/pan-tvardowski/src/state.ts` (mechanical drift — `playerSigilOpacity: number` field)
+- `apps/pan-tvardowski/src/a11y/reduced-motion.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/sigil-pulse.test.ts` (new)
+- `apps/pan-tvardowski/tests/reduced-motion-extended.test.ts` (modified in-place — assertion 0.35→0.7)
+- `apps/pan-tvardowski/tests/vs-animations.test.ts` (mechanical drift — count assertion 5→6)
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` (mechanical drift — canary hash bump)
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 296 files, 0 fixes; 40 packages total, 39 cache hits)
+- typecheck: ✅ (tsc --noEmit clean; 0 errors)
+- test: ✅ (+3 new, total 758 pass / 0 fail, 8575 expect() calls, 152 files) — deviation: row spec declared +4; reduced-motion assertion corrected in-place in `reduced-motion-extended.test.ts` (sigilOpacity 0.35→0.7) rather than adding a duplicate test; gate intent (assert reduce-motion contract) is satisfied
+- build: ✅ (39 tasks cached, FULL TURBO — native build via EAS cloud path)
+- device smoke: deferred — owner runs `cd apps/pan-tvardowski && bun run smoke:cloud:android` (local Android emulator + TestingBot Pixel 10 recommended; #172 is a small wiring change on top of #169-P2 which already passed smoke)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: `+ PT-SigilPulse (session #172, 2026-05-11)`, test count updated 755 → 758
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; PT-SigilPulse is a P0 visual-runtime row, not a milestone boundary
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+- `apps/pan-tvardowski/docs/visual-reference.md` §11 — "Sigil pulse" easing row flipped to `done — #172`; engine-gap bullet "No sigil-pulse driver" marked closed at #172
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): wire sigil-pulse periodicTween on player ship`
+2. `test(pan-tvardowski): +3 sigil-pulse + reduced-motion assertion`
+3. `docs(pan-tvardowski): close §11 sigil-pulse engine gap`
+
+**Next session:** #173 "PT-SlowMo-Cataclysm" — pending P0, depends on #171 (done).
+
+---

@@ -464,7 +464,7 @@ Each phase entry **emits** an `onPaletteShift(phase, accent)` callback in [`src/
 | Menu enter | cubicOut | 320 ms | done — #170; `fadeTransition(0.32, easeOutCubic)` in `scene-registry.ts` |
 | Overlay open | expoOut | 240 ms | done — #170; `Animated.timing` + `Easing.out(Easing.exp)` 240 ms in `Hud.tsx` |
 | Overlay close | expoIn | 180 ms | done — #170; `Animated.timing` + `Easing.in(Easing.exp)` 180 ms in `Hud.tsx` |
-| Sigil pulse | sineInOut | 2400 ms loop | engine gap: no per-trigger sigil-pulse driver |
+| Sigil pulse | sineInOut | 2400 ms loop | done — #172; `periodicTween(0.4, 1.0, 2.4)` on player `Sprite.alpha`; reduce-motion static 0.7 |
 | Combo pulse | backOut(1.4) | 120 ms | done — #85; scale via `comboPulseScale` in state + play-scene tween |
 | Boss intro | expoOut | 600 ms | done — #85; `bossBarOpacity` tween in play-scene |
 | Player-hit flash | linear | 80 ms | done — #94; per-trigger decay rates (12.5/5/0.833 /s) wired in `play.ts` |
@@ -474,7 +474,7 @@ Each phase entry **emits** an `onPaletteShift(phase, accent)` callback in [`src/
 Engine gaps surfaced at #85:
 - `fadeTransition` easing param — closed at #170; `fadeTransition(duration, easingFn)` shipped in engine session #168.
 - Overlay open/close easing — closed at #170; `Animated.timing` with `Easing.out/in(Easing.exp)` in `Hud.tsx` (React-Native path; no scene-level API needed).
-- No sigil-pulse driver — no built-in periodic animation driver; would require a timer system in the engine.
+- No sigil-pulse driver — closed at #172; `periodicTween` shipped in `@flare-engine/animation` (session #169-P2); `periodicTween(0.4, 1.0, 2.4)` wired on player `Sprite.alpha` in `play.ts`.
 - Per-trigger flash decay — resolved at session #94; `triggerHitFlash(decayRate?)` accepts per-call rate (12.5/5/0.833 /s for 80/200/1200 ms).
 
 ### Reduce-motion policy (5 rules) — done at sessions #74, #84, #85

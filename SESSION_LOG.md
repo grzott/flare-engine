@@ -4446,4 +4446,38 @@ Mid-session owner approved expansion beyond declared touched-paths: (a) Z1+Z3 `*
 
 ---
 
+## Session 177 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #177):** PT-Boss-PaletteShift-Wire: provide `onPaletteShift` + `onPhasePostFx` callbacks to `updateBoss()` deps in `play.ts`; consumer recolors boss sprite tint + swaps postfx chain on phase transition; requires visible postfx from #176; closes the dead-callback gap surfaced by #103 audit
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/boss-palette-shift.test.ts` (new)
+- `docs/plans/sessions.md`
+- `docs/references/builder-reference.md`
+
+**Deviations from declared touched paths**
+- `apps/pan-tvardowski/src/systems/boss/types.ts` declared but untouched — callbacks already declared at session start; same precedent as #170/#172/#173/#175/#176.
+- `bossPaletteAccent` closure variable dropped: `createVignette` has no color uniform, so `onPaletteShift` is wired as `(_phase, _accent) => {}`. The dead-callback gap is structurally closed (callback is no longer undefined); per-phase color shift is wired but visually inert until a future engine session adds a vignette-tint or sprite-tint surface. Matches the plan's documented best-effort caveat.
+
+**Gates**
+- lint: ✅ (turbo 40/40, pan-tvardowski: 305 files checked via Biome, 0 errors)
+- typecheck: ✅ (0 errors, silent exit)
+- test: ✅ (+5 new, total 778 pass / 0 fail)
+- build: not in gate row for this session — skipped
+- device smoke: owner-deferred — run `cd apps/pan-tvardowski && bun run smoke:cloud:android` once fresh APK available; per-phase postfx burst (bloom+chrom+flash on boss phase transitions) to be confirmed on device. Deferred per #173/#175/#176 precedent.
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #177 flipped `in_progress` → `done ⊞`; close date 2026-05-11; deviation note appended; `## Now` block updated to reflect #177 done and #178 as next pending
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-Boss-PaletteShift-Wire session #177 entry; +5 tests (778 total)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; boss-phase callbacks are operational wiring, not a new engine-package coverage boundary; `postfx ✅` was already ticked at M3
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no matching row for dead-callback closure
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): wire onPaletteShift + onPhasePostFx at updateBoss callsite`
+2. `test(pan-tvardowski): +5 boss-palette-shift wire-contract tests`
+3. `docs(plans): close session #177 PT-Boss-PaletteShift-Wire`
+
+**Next session:** #178 "PT-ColorUnify-B" — pending
+
 ---

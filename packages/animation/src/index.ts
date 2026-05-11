@@ -33,3 +33,10 @@ export {
   updateTweens,
   clearTweens,
 } from './tween-manager.js';
+
+export {
+  type PeriodicTween,
+  periodicTween,
+  updatePeriodicTween,
+  resetPeriodicTween,
+} from './periodic.js';

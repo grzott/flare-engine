@@ -22,9 +22,8 @@ export const zone1: ZoneVisualSpec = {
     accent: '#0E1A12', // ink-black
     hazard: '#C9A24A', // gold
     parallax: [
-      { id: 'z1-sky', speed: 0, content: 'tilemap' },
-      { id: 'z1-spires', speed: 0.2, content: 'tilemap' },
-      { id: 'z1-rooftops', speed: 0.5, content: 'tilemap' },
+      { id: 'z1-fire', speed: 0, content: 'fire-shader' },
+      { id: 'z1-smoke', speed: 0, content: 'fog-shader' },
     ],
     ambience: { kind: 'ember', count: 32 },
   },

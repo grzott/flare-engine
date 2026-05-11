@@ -17,9 +17,8 @@ export const zone5: ZoneVisualSpec = {
     accent: '#0E1A12', // ink-black (corrected per §9 footnote)
     hazard: '#C9A24A', // gold
     parallax: [
-      { id: 'z5-sky', speed: 0, content: 'tilemap' },
-      { id: 'z5-summit', speed: 0.2, content: 'tilemap' },
-      { id: 'z5-boulders', speed: 0.5, content: 'tilemap' },
+      { id: 'z5-fire', speed: 0, content: 'fire-shader' },
+      { id: 'z5-fog', speed: 0, content: 'fog-shader' },
     ],
     ambience: { kind: 'ash', count: 128 },
   },

@@ -16,9 +16,8 @@ export const zone8: ZoneVisualSpec = {
     accent: '#1A1F2A', // ink (Z8-specific variant)
     hazard: '#D4213D', // crimson
     parallax: [
-      { id: 'z8-sky', speed: 0, content: 'tilemap' },
-      { id: 'z8-craters', speed: 0.2, content: 'tilemap' },
-      { id: 'z8-surface', speed: 0.5, content: 'tilemap' },
+      { id: 'z8-water', speed: 0, content: 'water-shader' },
+      { id: 'z8-fog', speed: 0, content: 'fog-shader' },
     ],
     ambience: { kind: 'float', count: 64 },
   },

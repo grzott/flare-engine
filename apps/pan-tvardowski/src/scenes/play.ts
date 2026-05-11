@@ -24,6 +24,8 @@ import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type Zone1BgController, createZone1Bg } from '../bg/zone1-bg';
 import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
+import { type Zone5BgController, createZone5Bg } from '../bg/zone5-bg';
+import { type Zone8BgController, createZone8Bg } from '../bg/zone8-bg';
 import {
   Boss,
   Bullet,
@@ -229,6 +231,10 @@ interface PlayState {
   zone1Bg: Zone1BgController | null;
   /** Zone 3 only — water + fog shader background entities. */
   zone3Bg: Zone3BgController | null;
+  /** Zone 5 only — fire + ash-fog shader background entities. */
+  zone5Bg: Zone5BgController | null;
+  /** Zone 8 only — water + lunar-fog shader background entities. */
+  zone8Bg: Zone8BgController | null;
   /** Previous-frame playerHp — used to detect damage and flash postfx. */
   lastPlayerHp: number;
   /** Set in onExit — deferred / signal-driven callbacks bail out when true
@@ -303,6 +309,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         viewportReady: false,
         zone1Bg: null,
         zone3Bg: null,
+        zone5Bg: null,
+        zone8Bg: null,
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
         autoSaveAccum: 0,
@@ -348,6 +356,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       if (state.zone3Bg) {
         state.zone3Bg.destroy();
         state.zone3Bg = null;
+      }
+      if (state.zone5Bg) {
+        state.zone5Bg.destroy();
+        state.zone5Bg = null;
+      }
+      if (state.zone8Bg) {
+        state.zone8Bg.destroy();
+        state.zone8Bg = null;
       }
       const ids: number[] = [];
       for (const id of state.posQuery) ids.push(id);
@@ -450,6 +466,22 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       }
       if (zoneId === 'z3') {
         s.zone3Bg = createZone3Bg({
+          world: ctx.world,
+          atlas,
+          viewportWidth: s.bounds.width,
+          viewportHeight: s.bounds.height,
+        });
+      }
+      if (zoneId === 'z5') {
+        s.zone5Bg = createZone5Bg({
+          world: ctx.world,
+          atlas,
+          viewportWidth: s.bounds.width,
+          viewportHeight: s.bounds.height,
+        });
+      }
+      if (zoneId === 'z8') {
+        s.zone8Bg = createZone8Bg({
           world: ctx.world,
           atlas,
           viewportWidth: s.bounds.width,

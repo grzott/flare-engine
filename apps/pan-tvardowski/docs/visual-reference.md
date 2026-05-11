@@ -462,19 +462,19 @@ Each phase entry **emits** an `onPaletteShift(phase, accent)` callback in [`src/
 
 | Element | Easing | Duration | Status |
 |---|---|---|---|
-| Menu enter | cubicOut | 320 ms | engine gap: `fadeTransition` linear-only; cubicOut cannot be applied until transition API exposes easing param |
-| Overlay open | expoOut | 240 ms | engine gap: no overlay open/close API with easing |
-| Overlay close | expoIn | 180 ms | engine gap: no overlay open/close API with easing |
+| Menu enter | cubicOut | 320 ms | done — #170; `fadeTransition(0.32, easeOutCubic)` in `scene-registry.ts` |
+| Overlay open | expoOut | 240 ms | done — #170; `Animated.timing` + `Easing.out(Easing.exp)` 240 ms in `Hud.tsx` |
+| Overlay close | expoIn | 180 ms | done — #170; `Animated.timing` + `Easing.in(Easing.exp)` 180 ms in `Hud.tsx` |
 | Sigil pulse | sineInOut | 2400 ms loop | engine gap: no per-trigger sigil-pulse driver |
 | Combo pulse | backOut(1.4) | 120 ms | done — #85; scale via `comboPulseScale` in state + play-scene tween |
 | Boss intro | expoOut | 600 ms | done — #85; `bossBarOpacity` tween in play-scene |
 | Player-hit flash | linear | 80 ms | done — #94; per-trigger decay rates (12.5/5/0.833 /s) wired in `play.ts` |
-| Game-over | cubicIn | 1200 ms | done — #85; `gameOverOpacity` tween in play-scene |
+| Game-over | cubicIn | 1200 ms | done — #85 (`gameOverOpacity` tween in play-scene); scene-level transition wire added at #170 (`fadeTransition(1.2, easeInCubic)` in `onPlayerDown`) |
 | Zone banner | quartOut | 800 ms | done — #85; `createZoneBannerState` in `src/hud/zone-banner.ts` |
 
 Engine gaps surfaced at #85:
-- `fadeTransition` is linear-only — no easing function parameter in the engine transition API.
-- No overlay open/close API — overlays are rendered as React components; no scene-level enter/exit easing hooks.
+- `fadeTransition` easing param — closed at #170; `fadeTransition(duration, easingFn)` shipped in engine session #168.
+- Overlay open/close easing — closed at #170; `Animated.timing` with `Easing.out/in(Easing.exp)` in `Hud.tsx` (React-Native path; no scene-level API needed).
 - No sigil-pulse driver — no built-in periodic animation driver; would require a timer system in the engine.
 - Per-trigger flash decay — resolved at session #94; `triggerHitFlash(decayRate?)` accepts per-call rate (12.5/5/0.833 /s for 80/200/1200 ms).
 

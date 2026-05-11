@@ -45,3 +45,11 @@ export function sigilOpacity(reducedMotion: boolean): number {
 export function getParallaxVelocity(base: number, reducedMotion: boolean): number {
   return reducedMotion ? 0 : base;
 }
+
+/**
+ * Returns true when slow-motion effects are permitted.
+ * Under reducedMotion the Tier-V cataclysm timescale ramp is skipped.
+ */
+export function shouldAllowSlowMo(reducedMotion: boolean): boolean {
+  return !reducedMotion;
+}

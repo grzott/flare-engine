@@ -19,7 +19,7 @@ import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxRenderHook } from '@flare-engine/react';
 import { Sprite } from '@flare-engine/render';
-import { applyShake, sigilOpacity } from '../a11y/reduced-motion';
+import { applyShake, shouldAllowSlowMo, sigilOpacity } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
@@ -243,6 +243,10 @@ interface PlayState {
   comboPulseTween: Tween;
   /** Session #172: player sigil opacity tween — sineInOut 2.4 s period, 0.4..1.0. */
   sigilTween: PeriodicTween;
+  /** Session #173: Tier-V cataclysm slow-mo ramp — 1.0→0.3 over 0.8 s (easeInCubic). */
+  slowDownTween: Tween;
+  /** Session #173: Tier-V cataclysm recovery ramp — 0.3→1.0 over 0.4 s (easeOutCubic). */
+  recoveryTween: Tween;
   /** Session #151: pre-looked-up enemy-bullet sprite frames for zero-alloc flicker swap. */
   bulletFrameA: SpriteFrame;
   bulletFrameB: SpriteFrame;
@@ -303,6 +307,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         gameOverTween: { ...tween(0, 1, 1.2, easeInCubic), done: true },
         comboPulseTween: { ...tween(1, 1.18, 0.12, easeOutBack), done: true },
         sigilTween: periodicTween(0.4, 1.0, 2.4),
+        slowDownTween: { ...tween(1.0, 0.3, 0.8, easeInCubic), done: true },
+        recoveryTween: { ...tween(0.3, 1.0, 0.4, easeOutCubic), done: true },
         bulletFrameA: (() => {
           const f = getFrame(atlas.sheet, 'enemy-bullet-a');
           if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet-a"');
@@ -695,6 +701,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 notifyStateChanged();
               },
             );
+            if (shouldAllowSlowMo(gameState.settings.reducedMotion)) {
+              resetTween(s.slowDownTween);
+              resetTween(s.recoveryTween);
+            }
             postfx.triggerHitFlash(0.833);
             gameState.bossActive = false;
             gameState.bossGazeActive = false;
@@ -974,6 +984,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           }
         }
 
+        // Tier-V cataclysm slow-mo: tick on rawDt so the ramp itself is unscaled.
+        {
+          const rawDt = ctx.loop.clock.rawDt;
+          if (!s.slowDownTween.done) {
+            ctx.loop.clock.timescale = updateTween(s.slowDownTween, rawDt);
+          } else if (!s.recoveryTween.done) {
+            ctx.loop.clock.timescale = updateTween(s.recoveryTween, rawDt);
+          }
+        }
+
         // Sigil pulse: advance periodicTween or write static value under reduce-motion.
         {
           const reducedMotion = gameState.settings.reducedMotion;
@@ -1038,6 +1058,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       onExit() {
         if (!s) return;
         s.disposed = true;
+        ctx.loop.clock.timescale = 1;
         clearWorld(s);
         clearBossFsms();
         clearMinibossFsms();

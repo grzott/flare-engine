@@ -560,7 +560,8 @@ export type ColorTokenId =
   | 'vistulaBlue'
   | 'foamBlue'
   | 'mistBlue'
-  | 'lunarInk';
+  | 'lunarInk'
+  | 'katakumbyDark';
 
 export interface TypographyValue {
   readonly fontFamily: string;

@@ -47,6 +47,7 @@ export const THEME_SPEC: ThemeSpec = {
     foamBlue: '#D9E4E7',
     mistBlue: '#E4F0FF',
     lunarInk: '#1A1F2A',
+    katakumbyDark: '#1A1410',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

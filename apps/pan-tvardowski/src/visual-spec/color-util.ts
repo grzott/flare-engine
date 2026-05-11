@@ -1,3 +1,13 @@
+/**
+ * Converts a #RRGGBB hex string to a 32-bit ARGB integer with alpha = 0xff.
+ * Case-insensitive. Equivalent to `(0xff000000 | parseInt(hex.slice(1), 16)) >>> 0`.
+ */
+export function hexToArgb(hex: string): number {
+  const rgb = Number.parseInt(hex.slice(1), 16);
+  if (Number.isNaN(rgb)) throw new Error(`hexToArgb: malformed hex string "${hex}"`);
+  return (0xff000000 | rgb) >>> 0;
+}
+
 export interface Rgba01 {
   readonly r: number;
   readonly g: number;

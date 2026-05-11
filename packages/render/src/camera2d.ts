@@ -26,6 +26,80 @@ function pseudoRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
+// ─── Simplex-like 2D noise for shakePerlin ───────────────────────────────────
+// 256-entry permutation table — written once at module load, never mutated.
+const PERM = new Uint8Array(256);
+{
+  for (let i = 0; i < 256; i++) PERM[i] = i;
+  // Deterministic Fisher-Yates with a fixed seed (no Math.random()).
+  let s = 0x9e3779b9;
+  for (let i = 255; i > 0; i--) {
+    s = (s ^ (s >>> 15)) >>> 0;
+    s = Math.imul(s, 0x85ebca6b) >>> 0;
+    s = (s ^ (s >>> 13)) >>> 0;
+    const j = s % (i + 1);
+    const t = PERM[i]!;
+    PERM[i] = PERM[j]!;
+    PERM[j] = t;
+  }
+}
+
+// 8 evenly-spaced 2D gradient directions (unit vectors × 1 for integer math).
+const S = Math.SQRT1_2; // ≈ 0.7071 — diagonal component
+const GRADS: ReadonlyArray<readonly [number, number]> = [
+  [1, 0],
+  [S, S],
+  [0, 1],
+  [-S, S],
+  [-1, 0],
+  [-S, -S],
+  [0, -1],
+  [S, -S],
+];
+
+function grad2(hash: number, x: number, y: number): number {
+  const g = GRADS[hash & 7]!;
+  return g[0] * x + g[1] * y;
+}
+
+function fade(t: number): number {
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+/** 2D value-gradient noise in [-1, 1]. */
+function noise2d(x: number, y: number): number {
+  const xi = Math.floor(x) & 255;
+  const yi = Math.floor(y) & 255;
+  const xf = x - Math.floor(x);
+  const yf = y - Math.floor(y);
+  const u = fade(xf);
+  const v = fade(yf);
+
+  const aa = PERM[PERM[xi]! + yi]!;
+  const ab = PERM[PERM[xi]! + yi + 1]!;
+  const ba = PERM[PERM[(xi + 1) & 255]! + yi]!;
+  const bb = PERM[PERM[(xi + 1) & 255]! + yi + 1]!;
+
+  const x1 = xf;
+  const y1 = yf;
+  const x2 = xf - 1;
+  const y2 = yf - 1;
+
+  const n00 = grad2(aa, x1, y1);
+  const n10 = grad2(ba, x2, y1);
+  const n01 = grad2(ab, x1, y2);
+  const n11 = grad2(bb, x2, y2);
+
+  const lerpX0 = n00 + u * (n10 - n00);
+  const lerpX1 = n01 + u * (n11 - n01);
+  return lerpX0 + v * (lerpX1 - lerpX0);
+}
+
+/** 2-octave FBM for shake displacement — result in [-1, 1]. */
+function fbmNoise2d(x: number, y: number): number {
+  return 0.6667 * noise2d(x, y) + 0.3333 * noise2d(x * 2, y * 2);
+}
+
 /**
  * Camera2D — 2D camera with position, zoom, rotation, follow, and shake.
  * Pure data + methods — no Skia dependency. The renderer reads camera state
@@ -53,7 +127,9 @@ export class Camera2D {
 
   private _follow: { target: Vec2; options: FollowOptions } | null = null;
   private _shake: ShakeState | null = null;
+  private _shakePerlin: ShakeState | null = null;
   private _shakeSeed = 0;
+  private _shakePerlinSeed = 0;
   private _motionScale = 1;
 
   /** Set viewport dimensions. */
@@ -110,6 +186,26 @@ export class Camera2D {
   }
 
   /**
+   * Start a Perlin-noise-based camera shake. Overwrites any in-flight
+   * shakePerlin (same semantics as shake()). Respects motionScale.
+   */
+  shakePerlin(intensity: number, duration: number): void {
+    const k = this._motionScale;
+    if (k <= 0) {
+      this._shakePerlin = null;
+      return;
+    }
+    this._shakePerlin = {
+      intensity: intensity * k,
+      duration: duration * k,
+      elapsed: 0,
+      offsetX: 0,
+      offsetY: 0,
+    };
+    this._shakePerlinSeed++;
+  }
+
+  /**
    * Update camera. Call once per frame.
    * @param dt Delta time in seconds.
    */
@@ -152,7 +248,7 @@ export class Camera2D {
       this._clampToBounds();
     }
 
-    // Shake
+    // Shake (pseudo-random)
     if (this._shake) {
       this._shake.elapsed += dt;
       if (this._shake.elapsed >= this._shake.duration) {
@@ -165,16 +261,30 @@ export class Camera2D {
         this._shake.offsetY = (pseudoRandom(seed + 1) * 2 - 1) * this._shake.intensity * decay;
       }
     }
+
+    // Shake (Perlin / FBM noise)
+    if (this._shakePerlin) {
+      this._shakePerlin.elapsed += dt;
+      if (this._shakePerlin.elapsed >= this._shakePerlin.duration) {
+        this._shakePerlin = null;
+      } else {
+        const progress = this._shakePerlin.elapsed / this._shakePerlin.duration;
+        const decay = 1 - progress;
+        const t = this._shakePerlin.elapsed * 4.7 + this._shakePerlinSeed * 17.3;
+        this._shakePerlin.offsetX = fbmNoise2d(t, 0) * this._shakePerlin.intensity * decay;
+        this._shakePerlin.offsetY = fbmNoise2d(0, t + 5.4) * this._shakePerlin.intensity * decay;
+      }
+    }
   }
 
-  /** Get the effective camera X (including shake offset). */
+  /** Get the effective camera X (including shake + shakePerlin offsets). */
   get effectiveX(): number {
-    return this.x + (this._shake?.offsetX ?? 0);
+    return this.x + (this._shake?.offsetX ?? 0) + (this._shakePerlin?.offsetX ?? 0);
   }
 
-  /** Get the effective camera Y (including shake offset). */
+  /** Get the effective camera Y (including shake + shakePerlin offsets). */
   get effectiveY(): number {
-    return this.y + (this._shake?.offsetY ?? 0);
+    return this.y + (this._shake?.offsetY ?? 0) + (this._shakePerlin?.offsetY ?? 0);
   }
 
   /** Convert world coordinates to screen coordinates. */

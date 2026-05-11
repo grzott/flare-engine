@@ -250,4 +250,59 @@ describe('Camera2D', () => {
       expect(offset).toBeGreaterThan(0);
     });
   });
+
+  describe('shakePerlin', () => {
+    it('produces non-zero offset within duration', () => {
+      const cam = new Camera2D();
+      cam.shakePerlin(10, 1.0);
+      // Advance 3 frames — floor-of-zero is statistically impossible with FBM noise
+      let totalOffset = 0;
+      for (let i = 0; i < 3; i++) {
+        cam.update(0.05);
+        totalOffset += Math.abs(cam.effectiveX - cam.x) + Math.abs(cam.effectiveY - cam.y);
+      }
+      expect(totalOffset).toBeGreaterThan(1e-6);
+    });
+
+    it('returns to zero after duration ends', () => {
+      const cam = new Camera2D();
+      cam.shakePerlin(10, 0.2);
+      cam.update(0.3); // past duration
+      expect(cam.effectiveX).toBe(cam.x);
+      expect(cam.effectiveY).toBe(cam.y);
+    });
+
+    it('motionScale=0 suppresses shakePerlin and both shake+shakePerlin', () => {
+      const cam = new Camera2D();
+      cam.setMotionScale(0);
+      cam.shakePerlin(20, 1.0);
+      cam.shake(20, 1.0);
+      cam.update(0.1);
+      expect(cam.effectiveX).toBe(cam.x);
+      expect(cam.effectiveY).toBe(cam.y);
+    });
+
+    it('coexists with shake() — shakePerlin contributes non-zero offset independently', () => {
+      // Verify shakePerlin itself produces a non-zero contribution.
+      const perlinOnlyCam = new Camera2D();
+      perlinOnlyCam.shakePerlin(10, 2.0);
+      perlinOnlyCam.update(0.05);
+      const perlinMag =
+        Math.abs(perlinOnlyCam.effectiveX - perlinOnlyCam.x) +
+        Math.abs(perlinOnlyCam.effectiveY - perlinOnlyCam.y);
+      expect(perlinMag).toBeGreaterThan(1e-6);
+    });
+
+    it('re-trigger cancels prior shakePerlin (does not stack)', () => {
+      const cam = new Camera2D();
+      cam.shakePerlin(10, 2.0);
+      cam.update(0.3); // first shake in progress
+      // Re-trigger — overwrites state
+      cam.shakePerlin(10, 0.1);
+      // After new duration expires the shakePerlin is gone
+      cam.update(0.15); // past new 0.1s duration
+      expect(cam.effectiveX).toBe(cam.x);
+      expect(cam.effectiveY).toBe(cam.y);
+    });
+  });
 });

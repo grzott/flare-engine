@@ -139,7 +139,18 @@ function buildFrames(): FrameBuild[] {
     },
   });
 
-  // Tile frames for the Zone-3 tilemap background.
+  // Tile frames for zone shader backgrounds (Zone 1 fire, Zone 3 water/fog).
+  frames.push({
+    name: 'tile-fire',
+    w: 32,
+    h: 32,
+    draw: (Skia, canvas) => {
+      const paint = Skia.Paint();
+      argbTo(ATLAS_COLOR, 0xffb05a3c);
+      paint.setColor(ATLAS_COLOR);
+      canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), paint);
+    },
+  });
   frames.push({
     name: 'tile-water',
     w: 32,

@@ -33,6 +33,25 @@ const COLOR_TOKENS: readonly ColorTokenId[] = [
   'katakumbyDark',
   'riverDepth',
   'marshOlive',
+  'shadowBlack',
+  'violetDark',
+  'violetMid',
+  'violetDeep',
+  'darkRed',
+  'leafGreen',
+  'waterTeal',
+  'pale',
+  'teal',
+  'silver',
+  'moonBlue',
+  'deepBlue',
+  'straw',
+  'hellfire',
+  'eyeYellow',
+  'brown',
+  'orange',
+  'purpleBright',
+  'white',
 ];
 
 const TYPE_TOKENS: readonly TypeTokenId[] = [
@@ -72,11 +91,11 @@ const SPACING_TOKENS: readonly SpacingTokenId[] = [
 ];
 
 describe('vs-theme — colors', () => {
-  test('all 28 ColorTokenIds present in THEME_SPEC.colors', () => {
+  test('all 47 ColorTokenIds present in THEME_SPEC.colors', () => {
     for (const id of COLOR_TOKENS) {
       expect(THEME_SPEC.colors[id], `color token: ${id}`).toBeDefined();
     }
-    expect(Object.keys(THEME_SPEC.colors).length).toBe(COLOR_TOKENS.length);
+    expect(Object.keys(THEME_SPEC.colors).length).toBe(47);
   });
 
   test('every color value is a valid #RRGGBB hex', () => {
@@ -100,6 +119,22 @@ describe('vs-theme — colors', () => {
     expect(THEME_SPEC.colors['cb-player']).toBe('#FF8C42');
     expect(THEME_SPEC.colors['cb-hazard']).toBe('#FFD23F');
     expect(THEME_SPEC.colors['cb-safe']).toBe('#4FC3F7');
+  });
+
+  test('shadowBlack = #111111', () => {
+    expect(THEME_SPEC.colors.shadowBlack).toBe('#111111');
+  });
+
+  test('violetDark = #3A0F5C', () => {
+    expect(THEME_SPEC.colors.violetDark).toBe('#3A0F5C');
+  });
+
+  test('silver = #C8CDD4', () => {
+    expect(THEME_SPEC.colors.silver).toBe('#C8CDD4');
+  });
+
+  test('orange = #FF9944', () => {
+    expect(THEME_SPEC.colors.orange).toBe('#FF9944');
   });
 });
 

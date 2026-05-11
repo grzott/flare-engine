@@ -8,6 +8,7 @@
  * data file has no runtime dependency on the math package.
  */
 
+import { THEME_SPEC } from './theme';
 import type { AnimationDef } from './types';
 
 export const ANIMATION_DEFS: readonly AnimationDef[] = [
@@ -32,13 +33,13 @@ export const ANIMATION_DEFS: readonly AnimationDef[] = [
   {
     id: 'muzzle-flash',
     durationMs: 80,
-    color: '#C9A24A',
+    color: THEME_SPEC.colors.gold,
     r: 6,
   },
   {
     id: 'rocket-trail',
     emitRate: 30,
-    color: '#E84B2A',
+    color: THEME_SPEC.colors.hazard,
     lifetimeMs: 400,
   },
   {

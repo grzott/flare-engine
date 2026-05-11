@@ -42,6 +42,18 @@ const VIOLET_MID = 0xff8844cc;
 const BOG_GREEN = 0xff1a2e1f;
 const DEEP_BLUE = 0xff1a2e4a;
 
+// Enemy intermediate — moon-wraith uses a distinct indigo not in the primary triad
+const MOON_WRAITH_BLUE = 0xff2b2d5a;
+
+// Boss-hull intermediates — five violet shades outside the primary VIOLET_* triad
+// (VIOLET_DARK/MID/DEEP). Each boss hull needs a unique shade for silhouette
+// readability at phone scale; these don't map to ColorTokenId by design.
+const VIOLET_BORUTA = 0xff4a1270;
+const VIOLET_BABA_JAGA = 0xff6a28a8;
+const VIOLET_BAZYLISZEK = 0xff9d3dff;
+const VIOLET_MEFISTOFELES = 0xff2a0840;
+const VIOLET_LUCYPER = 0xff7020b8;
+
 // ---- Enemies (14) -----------------------------------------------------------
 
 const enemies = {
@@ -155,9 +167,9 @@ const enemies = {
   },
   'moon-wraith': {
     kind: 'ship',
-    hull: { kind: 'triangle', size: 14, fill: 0xff2b2d5a },
+    hull: { kind: 'triangle', size: 14, fill: MOON_WRAITH_BLUE },
     weapons: [{ kind: 'rect', w: 8, h: 3, fill: MIRROR, ox: 0, oy: 6 }],
-    engine: { kind: 'square', size: 20, fill: 0xff2b2d5a },
+    engine: { kind: 'square', size: 20, fill: MOON_WRAITH_BLUE },
   },
 } as const satisfies Record<string, ShipSpec>;
 
@@ -242,20 +254,18 @@ const bosses = {
   },
   boruta: {
     kind: 'ship',
-    // 0xff4a1270 — violet between VIOLET_DARK and VIOLET_DEEP
-    hull: { kind: 'ngon', n: 8, r: 50, fill: 0xff4a1270, stroke: VIOLET_MID, strokeWidth: 2 },
+    hull: { kind: 'ngon', n: 8, r: 50, fill: VIOLET_BORUTA, stroke: VIOLET_MID, strokeWidth: 2 },
     weapons: [
       { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: -38, oy: -16 },
       { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: -12, oy: -36 },
       { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: 12, oy: -36 },
       { kind: 'rect', w: 8, h: 16, fill: VIOLET_MID, ox: 38, oy: -16 },
     ],
-    engine: { kind: 'square', size: 20, fill: 0xff4a1270 },
+    engine: { kind: 'square', size: 20, fill: VIOLET_BORUTA },
   },
   'baba-jaga': {
     kind: 'ship',
-    // 0xff6a28a8 — lighter violet, brighter than VIOLET_MID
-    hull: { kind: 'ngon', n: 3, r: 48, fill: 0xff6a28a8 },
+    hull: { kind: 'ngon', n: 3, r: 48, fill: VIOLET_BABA_JAGA },
     weapons: [
       { kind: 'rect', w: 8, h: 20, fill: VIOLET_DARK, ox: -28, oy: 12 },
       { kind: 'rect', w: 8, h: 20, fill: VIOLET_DARK, ox: 28, oy: 12 },
@@ -264,8 +274,7 @@ const bosses = {
   },
   'bazyliszek-warszawski': {
     kind: 'ship',
-    // 0xff9d3dff — brighter violet-purple (retained from previous catalogue)
-    hull: { kind: 'ngon', n: 6, r: 52, fill: 0xff9d3dff },
+    hull: { kind: 'ngon', n: 6, r: 52, fill: VIOLET_BAZYLISZEK },
     weapons: [
       { kind: 'rect', w: 10, h: 18, fill: VIOLET_MID, ox: -40, oy: 0 },
       { kind: 'rect', w: 10, h: 12, fill: VIOLET_MID, ox: -20, oy: -28 },
@@ -276,8 +285,7 @@ const bosses = {
   },
   mefistofeles: {
     kind: 'ship',
-    // 0xff2a0840 — near-black violet, darkest of the 8
-    hull: { kind: 'star', points: 6, rOuter: 50, rInner: 20, fill: 0xff2a0840 },
+    hull: { kind: 'star', points: 6, rOuter: 50, rInner: 20, fill: VIOLET_MEFISTOFELES },
     weapons: [
       { kind: 'rect', w: 8, h: 22, fill: VIOLET_MID, ox: -30, oy: -18 },
       { kind: 'rect', w: 8, h: 22, fill: VIOLET_MID, ox: 30, oy: -18 },
@@ -287,8 +295,7 @@ const bosses = {
   },
   'lucyper-ksiezycowy': {
     kind: 'ship',
-    // 0xff7020b8 — vivid mid-violet, brightest hull in the boss set
-    hull: { kind: 'star', points: 8, rOuter: 54, rInner: 22, fill: 0xff7020b8 },
+    hull: { kind: 'star', points: 8, rOuter: 54, rInner: 22, fill: VIOLET_LUCYPER },
     weapons: [
       { kind: 'rect', w: 8, h: 20, fill: VIOLET_MID, ox: -44, oy: -16 },
       { kind: 'rect', w: 8, h: 20, fill: VIOLET_MID, ox: -14, oy: -44 },

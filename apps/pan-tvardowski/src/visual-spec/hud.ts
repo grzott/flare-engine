@@ -23,6 +23,7 @@
  *   formula in Hud.styles.ts:44 but the rendered literal is 56. See Hud.tsx:104.
  */
 
+import { THEME_SPEC } from './theme';
 import type { HudSlot, HudSpec } from './types';
 
 export const HUD_SPEC: HudSpec = {
@@ -32,7 +33,7 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-left',
       inset: { dx: 16, dy: 32 },
       type: 'bodyL',
-      fg: '#C9A24A',
+      fg: THEME_SPEC.colors.gold,
       notes: 'Source: Hud.styles.ts topLeft + score; inset from spacing.hudCornerX/Y',
     },
     {
@@ -40,7 +41,7 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-left',
       inset: { dx: 16, dy: 32 },
       type: 'monoHud',
-      fg: '#D4213D',
+      fg: THEME_SPEC.colors.crimson,
       notes: 'Rendered below score in topLeft stack. Visible only when comboCount > 1.',
     },
     {
@@ -48,8 +49,8 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-left',
       inset: { dx: 16, dy: 32 },
       size: { w: 0, h: 10 },
-      fg: '#D4213D',
-      bg: '#7A1322',
+      fg: THEME_SPEC.colors.crimson,
+      bg: THEME_SPEC.colors.crimsonDeep,
       notes: 'Rendered in topLeft stack below combo. Width = fill %. h=10 from Hud.styles.ts:205.',
     },
     {
@@ -57,7 +58,7 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-left',
       inset: { dx: 16, dy: 32 },
       size: { w: 16, h: 6 },
-      fg: '#D4213D',
+      fg: THEME_SPEC.colors.crimson,
       notes: '5 segments × w:16 h:6 (spacing.weaponMeterHeight). Gap 2 px between segments.',
     },
     {
@@ -65,7 +66,7 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-left',
       inset: { dx: 16, dy: 32 },
       type: 'bodyS',
-      fg: '#FFFFFF',
+      fg: THEME_SPEC.colors.white,
       notes:
         'Rendered in topLeft stack below weapon-meter. Uses deprecated body style (bodyS at use site).',
     },
@@ -74,8 +75,8 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-center',
       inset: { dx: 0, dy: 32 },
       size: { w: 0, h: 8 },
-      fg: '#E84B2A',
-      bg: '#C9A24A',
+      fg: THEME_SPEC.colors.hazard,
+      bg: THEME_SPEC.colors.gold,
       type: 'label',
       notes:
         'Visible only when bossActive && bossHpMax > 0. Width = fill %. dy = spacing.hudCornerY.',
@@ -85,7 +86,7 @@ export const HUD_SPEC: HudSpec = {
       anchor: 'top-center',
       inset: { dx: 0, dy: 56 },
       size: { w: 0, h: 6 },
-      fg: '#D4213D',
+      fg: THEME_SPEC.colors.crimson,
       type: 'smallcap',
       notes:
         'dy literal = 56 from Hud.tsx:104 (topInset + 56). Discrepancy: spacing.hudCornerY(32) + spacing.xxl(20) = 52, not 56. 4 px tightened in code. Width 70% of container.',

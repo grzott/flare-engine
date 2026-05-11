@@ -1,4 +1,7 @@
+import { THEME_SPEC } from './theme';
 import type { BulletDef, BulletSpecId } from './types';
+
+const c = THEME_SPEC.colors;
 
 const id = (s: string) => s as BulletSpecId;
 
@@ -11,7 +14,7 @@ export const BULLET_DEFS: readonly BulletDef[] = [
     r: 3,
     spread: 6,
     intensity: 1.2,
-    fill: '#ff9944',
+    fill: c.orange,
     glow: 'friendly',
   },
   {
@@ -20,7 +23,8 @@ export const BULLET_DEFS: readonly BulletDef[] = [
     width: 2,
     length: 14,
     intensity: 1.4,
-    fill: '#fff7a6',
+    // one-off piorun-bullet fill — kept as literal since it appears nowhere else
+    fill: '#FFF7A6',
     glow: 'friendly',
   },
   {
@@ -28,7 +32,7 @@ export const BULLET_DEFS: readonly BulletDef[] = [
     kind: 'laser',
     width: 4,
     intensity: 1.8,
-    fill: '#c8cdd4',
+    fill: c.silver,
     glow: 'friendly',
   },
   {
@@ -36,7 +40,7 @@ export const BULLET_DEFS: readonly BulletDef[] = [
     kind: 'dot',
     r: 6,
     intensity: 1.5,
-    fill: '#8844ff',
+    fill: c.purpleBright,
     glow: 'friendly',
   },
   {
@@ -45,7 +49,7 @@ export const BULLET_DEFS: readonly BulletDef[] = [
     width: 2,
     length: 12,
     intensity: 1.0,
-    fill: '#e84b2a',
+    fill: c.hazard,
     glow: 'hazard',
   },
 ] as const;

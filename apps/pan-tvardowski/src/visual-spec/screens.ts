@@ -9,13 +9,14 @@
  * handles the composited surface at runtime.
  */
 
+import { THEME_SPEC } from './theme';
 import type { ScreenId, ScreenSpec } from './types';
 
 export const SCREEN_SPECS: Readonly<Record<ScreenId, ScreenSpec>> = Object.freeze({
   boot: {
     id: 'boot',
     background: {
-      sky: '#050A07',
+      sky: THEME_SPEC.colors.void,
     },
     sections: [
       {
@@ -52,7 +53,7 @@ export const SCREEN_SPECS: Readonly<Record<ScreenId, ScreenSpec>> = Object.freez
   menu: {
     id: 'menu',
     background: {
-      sky: '#0E1A12',
+      sky: THEME_SPEC.colors.inkBlack,
     },
     sections: [
       {
@@ -87,7 +88,7 @@ export const SCREEN_SPECS: Readonly<Record<ScreenId, ScreenSpec>> = Object.freez
   'save-select': {
     id: 'save-select',
     background: {
-      sky: '#0E1A12',
+      sky: THEME_SPEC.colors.inkBlack,
     },
     sections: [
       {
@@ -124,7 +125,7 @@ export const SCREEN_SPECS: Readonly<Record<ScreenId, ScreenSpec>> = Object.freez
   settings: {
     id: 'settings',
     background: {
-      sky: '#0E1A12',
+      sky: THEME_SPEC.colors.inkBlack,
     },
     sections: [
       {
@@ -185,7 +186,7 @@ export const SCREEN_SPECS: Readonly<Record<ScreenId, ScreenSpec>> = Object.freez
   credits: {
     id: 'credits',
     background: {
-      sky: '#0E1A12',
+      sky: THEME_SPEC.colors.inkBlack,
     },
     sections: [
       {

@@ -52,6 +52,12 @@ const COLOR_TOKENS: readonly ColorTokenId[] = [
   'orange',
   'purpleBright',
   'white',
+  'portraitKingGold',
+  'portraitKingCrownBronze',
+  'portraitFaceParchment',
+  'portraitTwardowskiViolet',
+  'portraitInnkeeperBrown',
+  'portraitInnkeeperHatDark',
 ];
 
 const TYPE_TOKENS: readonly TypeTokenId[] = [
@@ -91,11 +97,11 @@ const SPACING_TOKENS: readonly SpacingTokenId[] = [
 ];
 
 describe('vs-theme — colors', () => {
-  test('all 47 ColorTokenIds present in THEME_SPEC.colors', () => {
+  test('all 53 ColorTokenIds present in THEME_SPEC.colors', () => {
     for (const id of COLOR_TOKENS) {
       expect(THEME_SPEC.colors[id], `color token: ${id}`).toBeDefined();
     }
-    expect(Object.keys(THEME_SPEC.colors).length).toBe(47);
+    expect(Object.keys(THEME_SPEC.colors).length).toBe(53);
   });
 
   test('every color value is a valid #RRGGBB hex', () => {
@@ -135,6 +141,30 @@ describe('vs-theme — colors', () => {
 
   test('orange = #FF9944', () => {
     expect(THEME_SPEC.colors.orange).toBe('#FF9944');
+  });
+
+  test('portraitKingGold = #D6A54E', () => {
+    expect(THEME_SPEC.colors.portraitKingGold).toBe('#D6A54E');
+  });
+
+  test('portraitKingCrownBronze = #B5882A', () => {
+    expect(THEME_SPEC.colors.portraitKingCrownBronze).toBe('#B5882A');
+  });
+
+  test('portraitFaceParchment = #EAE1CC', () => {
+    expect(THEME_SPEC.colors.portraitFaceParchment).toBe('#EAE1CC');
+  });
+
+  test('portraitTwardowskiViolet = #3A3050', () => {
+    expect(THEME_SPEC.colors.portraitTwardowskiViolet).toBe('#3A3050');
+  });
+
+  test('portraitInnkeeperBrown = #7A5C2E', () => {
+    expect(THEME_SPEC.colors.portraitInnkeeperBrown).toBe('#7A5C2E');
+  });
+
+  test('portraitInnkeeperHatDark = #5C3D12', () => {
+    expect(THEME_SPEC.colors.portraitInnkeeperHatDark).toBe('#5C3D12');
   });
 });
 

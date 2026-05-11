@@ -4520,3 +4520,45 @@ Mid-session owner approved expansion beyond declared touched-paths: (a) Z1+Z3 `*
 **Next session:** #179 "PT-ColorUnify-C" — pending
 
 ---
+
+## Session 179 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #179):** PT-ColorUnify-C: refactor `visual-spec/zone-1.ts` through `zone-8.ts` (~80 hex literals) — replace zone-spec hex strings with `THEME_SPEC.colors.*` references where hex matches an existing token; ADD missing tokens to THEME_SPEC for zone-unique colors not yet covered; preserves all visual output
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-2.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-3.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-4.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-5.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-6.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-7.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-8.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — turbo cache hit)
+- typecheck: ✅ (0 errors, silent exit)
+- test: ✅ (+0 new assertions, total 806 pass / 0 fail — canary + COLOR_TOKENS invariants updated, no count delta)
+- build: ✅ (native echo script — `bun run android|ios`)
+- device smoke: owner-deferred — pure refactor, byte-identical hex output routed through tokens; run `cd apps/pan-tvardowski && bun run smoke:cloud:android` before next visual-change session; precedent #173/#175/#176/#177/#178
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #179 flipped `in_progress` → `done ⊞`; close date 2026-05-11; notes cell populated; `## Now` block updated to reflect #179 done and #180 as next pending
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-ColorUnify-C session #179 entry; 806 tests (no count delta)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick; pure refactor, no new engine-package coverage boundary crossed
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no launch-tier row for color-token unification
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add riverDepth + marshOlive color tokens`
+2. `refactor(pan-tvardowski): route zone hex via THEME_SPEC tokens`
+3. `test(pan-tvardowski): bump canary + COLOR_TOKENS for 2 new tokens`
+
+**Next session:** #180 "PT-ColorUnify-D"
+
+---
+
+---

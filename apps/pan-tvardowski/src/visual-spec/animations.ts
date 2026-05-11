@@ -95,4 +95,37 @@ export const HUD_TWEENS: readonly HudTweenSpec[] = [
     easingName: 'easeOutBack',
     notes: 'Scale overshoot on combo hit. Source: easing-assignments.test.ts',
   },
+  {
+    id: 'scene-menu-enter',
+    from: 0,
+    to: 1,
+    durationSec: 0.32,
+    easingName: 'easeOutCubic',
+    notes: 'Folio XIV item 1. Scene-level fadeTransition from boot→menu.',
+  },
+  {
+    id: 'overlay-open',
+    from: 0,
+    to: 1,
+    durationSec: 0.24,
+    easingName: 'easeOutExpo',
+    notes: 'Pause overlay fade-in. Source: Hud.tsx Animated.timing open branch.',
+  },
+  {
+    id: 'overlay-close',
+    from: 1,
+    to: 0,
+    durationSec: 0.18,
+    easingName: 'easeInExpo',
+    notes: 'Pause overlay fade-out. Source: Hud.tsx Animated.timing close branch.',
+  },
+  {
+    id: 'scene-game-over',
+    from: 0,
+    to: 1,
+    durationSec: 1.2,
+    easingName: 'easeInCubic',
+    notes:
+      'Folio XIV M2. Scene-level fadeTransition into game-over. Source: scenes/play.ts onPlayerDown.',
+  },
 ] as const;

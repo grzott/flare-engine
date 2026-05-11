@@ -3,6 +3,7 @@ import type { GameContextValue } from '@flare-engine/engine';
 import { fadeTransition } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
+import { easeOutCubic } from '@flare-engine/math';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import { Skia } from '@shopify/react-native-skia';
 import { SPRITES_MANIFEST, loadSpriteAtlas } from './assets';
@@ -119,7 +120,5 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
   );
   ctx.scenes.register('game-over', createGameOverScene(ctx));
   ctx.scenes.register('victory', createVictoryScene(ctx));
-  // Folio XIV item 1: menu enter 320 ms. Engine gap: fadeTransition is linear-only;
-  // cubicOut easing cannot be applied until the transition API exposes an easing param.
-  ctx.scenes.setTransition(fadeTransition(0.32));
+  ctx.scenes.setTransition(fadeTransition(0.32, easeOutCubic));
 }

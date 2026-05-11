@@ -3,10 +3,10 @@ import { type Tween, resetTween, tween, updateTween } from '@flare-engine/animat
 import type { SpriteFrame } from '@flare-engine/assets';
 import { getFrame } from '@flare-engine/assets';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
-import { Position } from '@flare-engine/engine';
+import { Position, fadeTransition } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
 import { canAccessContent } from '@flare-engine/iap';
-import { easeInCubic, easeOutBack, easeOutExpo } from '@flare-engine/math';
+import { easeInCubic, easeOutBack, easeOutCubic, easeOutExpo } from '@flare-engine/math';
 import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxRenderHook } from '@flare-engine/react';
@@ -720,6 +720,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               // to the victory summary scene. If no dialogue controller is
               // wired (tests, headless), transition immediately.
               const goVictory = () => {
+                ctx.scenes.setTransition(fadeTransition(0.32, easeOutCubic));
                 void ctx.scenes.go('victory');
               };
               if (deps.dialogue) {
@@ -889,6 +890,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 noHit: false,
               });
             }
+            ctx.scenes.setTransition(fadeTransition(1.2, easeInCubic));
             void ctx.scenes.go('game-over');
           },
         });

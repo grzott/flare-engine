@@ -72,10 +72,10 @@ describe('vs-animations — ANIMATION_DEFS', () => {
 });
 
 describe('vs-animations — HUD_TWEENS', () => {
-  test('has exactly 4 tween entries with unique ids', () => {
-    expect(HUD_TWEENS.length).toBe(4);
+  test('has exactly 8 tween entries with unique ids', () => {
+    expect(HUD_TWEENS.length).toBe(8);
     const ids = HUD_TWEENS.map((t) => t.id);
-    expect(new Set(ids).size).toBe(4);
+    expect(new Set(ids).size).toBe(8);
   });
 
   test('zone-banner-fade-in: from=0, to=1, durationSec=0.8, easing=easeOutQuart', () => {

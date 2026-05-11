@@ -4,7 +4,13 @@ import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { type Direction2D, normalizeDirection } from '../../util/direction';
+import { hexToArgb } from '../../visual-spec/color-util';
+import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const ARGB_P1 = hexToArgb(THEME_SPEC.colors.crimsonDeep);
+const ARGB_P2 = hexToArgb(THEME_SPEC.colors.crimson);
+const ARGB_P3 = hexToArgb(THEME_SPEC.colors.white);
 
 const aim: Direction2D = { x: 0, y: 0 };
 
@@ -88,10 +94,10 @@ export const babaJagaScript: PhaseScript = {
     }
   },
   onPhase1Enter(c) {
-    c.deps.onPaletteShift?.('phase1', 0xff7a1322);
+    c.deps.onPaletteShift?.('phase1', ARGB_P1);
   },
   onPhase2Enter(c) {
-    c.deps.onPaletteShift?.('phase2', 0xffd4213d);
+    c.deps.onPaletteShift?.('phase2', ARGB_P2);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);
@@ -100,7 +106,7 @@ export const babaJagaScript: PhaseScript = {
   },
   onPhase3Enter(c) {
     // White-out finale (M3): full-screen white palette + detonation burst.
-    c.deps.onPaletteShift?.('phase3', 0xffffffff);
+    c.deps.onPaletteShift?.('phase3', ARGB_P3);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);

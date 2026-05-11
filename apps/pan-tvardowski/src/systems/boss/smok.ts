@@ -4,7 +4,12 @@ import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { type Direction2D, normalizeDirection } from '../../util/direction';
+import { hexToArgb } from '../../visual-spec/color-util';
+import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const ARGB_P1 = hexToArgb(THEME_SPEC.colors.terracotta);
+const ARGB_P2 = hexToArgb(THEME_SPEC.colors.rust);
 
 const aim: Direction2D = { x: 0, y: 0 };
 
@@ -16,10 +21,10 @@ export const smokScript: PhaseScript = {
   fire1Cooldown: 0.5,
   fire2Cooldown: 1.1,
   onPhase1Enter(c) {
-    c.deps.onPaletteShift?.('phase1', 0xffb05a3c);
+    c.deps.onPaletteShift?.('phase1', ARGB_P1);
   },
   onPhase2Enter(c) {
-    c.deps.onPaletteShift?.('phase2', 0xff8b3a1f);
+    c.deps.onPaletteShift?.('phase2', ARGB_P2);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);

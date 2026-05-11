@@ -10,7 +10,12 @@ import {
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { type Direction2D, normalizeDirection } from '../../util/direction';
+import { hexToArgb } from '../../visual-spec/color-util';
+import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
+
+const ARGB_P1 = hexToArgb(THEME_SPEC.colors.verdigris);
+const ARGB_P2 = hexToArgb(THEME_SPEC.colors.riverDepth);
 
 const aim: Direction2D = { x: 0, y: 0 };
 
@@ -62,7 +67,7 @@ export const wodnikScript: PhaseScript = {
   fire1Cooldown: 0.45,
   fire2Cooldown: 0.9,
   onPhase1Enter(c) {
-    c.deps.onPaletteShift?.('phase1', 0xff4a7a6a);
+    c.deps.onPaletteShift?.('phase1', ARGB_P1);
   },
   fire1(c) {
     const pos = c.world.get(c.id, Position);
@@ -103,7 +108,7 @@ export const wodnikScript: PhaseScript = {
     );
   },
   onPhase2Enter(c) {
-    c.deps.onPaletteShift?.('phase2', 0xff2a4a4a);
+    c.deps.onPaletteShift?.('phase2', ARGB_P2);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);

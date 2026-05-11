@@ -4,8 +4,14 @@ import { BAZYLISZEK_TELEPORT_SEC, BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../.
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { type Direction2D, normalizeDirection } from '../../util/direction';
+import { hexToArgb } from '../../visual-spec/color-util';
+import { THEME_SPEC } from '../../visual-spec/theme';
 import { BOSS_HALF_W } from './shared';
 import type { BossCtx, PhaseScript } from './types';
+
+const ARGB_P1 = hexToArgb(THEME_SPEC.colors.bone);
+const ARGB_P2 = hexToArgb(THEME_SPEC.colors.katakumbyDark);
+const ARGB_P3 = hexToArgb(THEME_SPEC.colors.crimson);
 
 const aim: Direction2D = { x: 0, y: 0 };
 
@@ -91,14 +97,14 @@ export const bazyliszekScript: PhaseScript = {
     }
   },
   onPhase1Enter(c) {
-    c.deps.onPaletteShift?.('phase1', 0xffc7b89a);
+    c.deps.onPaletteShift?.('phase1', ARGB_P1);
     c.deps.onGazeChange?.(true);
   },
   onPhase1Exit(c) {
     c.deps.onGazeChange?.(false);
   },
   onPhase2Enter(c) {
-    c.deps.onPaletteShift?.('phase2', 0xff1a1410);
+    c.deps.onPaletteShift?.('phase2', ARGB_P2);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);
@@ -106,7 +112,7 @@ export const bazyliszekScript: PhaseScript = {
     }
   },
   onPhase3Enter(c) {
-    c.deps.onPaletteShift?.('phase3', 0xffd4213d);
+    c.deps.onPaletteShift?.('phase3', ARGB_P3);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);

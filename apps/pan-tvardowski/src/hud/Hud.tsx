@@ -1,8 +1,8 @@
 import type { LocalizationManager } from '@flare-engine/localization';
 import { LinearGradient } from 'expo-linear-gradient';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
 import { HUD_SPEC } from '../visual-spec/hud';
 import type { HudSlotId } from '../visual-spec/types';
@@ -68,6 +68,38 @@ export interface HudProps {
 
 export function Hud({ localization, actions, insets }: HudProps): React.ReactElement {
   const [s, setS] = useState<GameState>(() => cloneState());
+  const pauseOverlayOpacity = useRef(new Animated.Value(0));
+  const [pauseMounted, setPauseMounted] = useState(false);
+
+  useEffect(() => {
+    if (s.paused) {
+      setPauseMounted(true);
+      if (s.settings.reducedMotion) {
+        pauseOverlayOpacity.current.setValue(1);
+      } else {
+        Animated.timing(pauseOverlayOpacity.current, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.exp),
+          useNativeDriver: true,
+        }).start();
+      }
+    } else {
+      if (s.settings.reducedMotion) {
+        pauseOverlayOpacity.current.setValue(0);
+        setPauseMounted(false);
+      } else {
+        Animated.timing(pauseOverlayOpacity.current, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.in(Easing.exp),
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) setPauseMounted(false);
+        });
+      }
+    }
+  }, [s.paused, s.settings.reducedMotion]);
 
   useEffect(() => {
     const off = stateChanged.add(() => {
@@ -293,18 +325,23 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
               </Pressable>
             </View>
           ) : null}
-          {s.paused ? (
-            <PauseOverlay
-              localization={localization}
-              actions={{
-                onResume: () => setPaused(false),
-                onSettings: actions.onSettings,
-                onQuit: () => {
-                  setPaused(false);
-                  actions.onMainMenu();
-                },
-              }}
-            />
+          {pauseMounted ? (
+            <Animated.View
+              style={{ opacity: pauseOverlayOpacity.current, flex: 1 }}
+              pointerEvents={s.paused ? 'box-none' : 'none'}
+            >
+              <PauseOverlay
+                localization={localization}
+                actions={{
+                  onResume: () => setPaused(false),
+                  onSettings: actions.onSettings,
+                  onQuit: () => {
+                    setPaused(false);
+                    actions.onMainMenu();
+                  },
+                }}
+              />
+            </Animated.View>
           ) : null}
         </>
       ) : null}

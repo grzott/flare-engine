@@ -4166,3 +4166,45 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #170 "PT-EasedTransitions" — pending P0, depends on #168 (done).
 
 ---
+
+## Session 170 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #170):** PT-EasedTransitions: wire cubicOut 320ms menu-enter, expoOut 240ms overlay-open, expoIn 180ms overlay-close, cubicIn 1200ms game-over using new eased fadeTransition from #168-P3; close 4 engine-gap items in visual-reference.md §11
+
+**Touched files**
+- `apps/pan-tvardowski/src/scene-registry.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/visual-spec/animations.ts` (deviation — see below)
+- `apps/pan-tvardowski/tests/easing-assignments.test.ts`
+- `apps/pan-tvardowski/tests/vs-animations.test.ts` (deviation — see below)
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/references/builder-reference.md`
+- `docs/plans/sessions.md`
+
+**Deviations**
+1. `apps/pan-tvardowski/src/visual-spec/animations.ts` — not in declared touched-paths; 4 `HudTweenSpec` entries added (audit trail, no runtime imports). Pre-approved in plan §1; same precedent as sessions #112/#113.
+2. `apps/pan-tvardowski/tests/vs-animations.test.ts` — not in declared touched-paths; count assertion updated 4→8 as mechanical consequence of the 4 new visual-spec entries. Same precedent as sessions #112/#113.
+
+**Gates**
+- lint: ✅ (biome check — 40 packages, 40 tasks, no fixes applied; FULL TURBO cache hit)
+- typecheck: ✅ (tsc --noEmit clean; 0 errors)
+- test: ✅ (+4 new; 752 total, 0 fail, 151 files)
+- build: ✅ (native build stub; EAS cloud path confirmed)
+- device smoke: deferred — manual paste-back required; run `cd apps/pan-tvardowski && bun run smoke:cloud:android`
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: `+ PT-EasedTransitions (session #170, 2026-05-11)`
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; PT-EasedTransitions is a P0 visual-runtime row, not a milestone boundary; `scene` package coverage already ✔ in §16
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+- `apps/pan-tvardowski/docs/visual-reference.md` §11 — 3 engine-gap rows flipped to done (#170 annotations); game-over row annotated with `scene-level transition wire added at #170`
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): wire eased fadeTransition for menu + game-over`
+2. `feat(pan-tvardowski): animated fade for pause overlay (expoIn/expoOut)`
+3. `docs(pan-tvardowski): close §11 engine-gap rows for PT-EasedTransitions`
+4. `docs(plan): close session #170 PT-EasedTransitions`
+
+**Next session:** #171 "PT-PerlinShake" — pending P0, depends on #169 (done).
+
+---

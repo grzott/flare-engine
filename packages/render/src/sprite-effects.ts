@@ -75,6 +75,15 @@ export interface FogEffect extends SpriteEffect {
   readonly scale: number;
 }
 
+/** Fire / flame effect — value-noise FBM flame rising upward from a sprite. */
+export interface FireEffect extends SpriteEffect {
+  readonly type: 'fire';
+  readonly color: SpriteColor;
+  readonly tipColor: SpriteColor;
+  readonly speed: number;
+  readonly intensity: number;
+}
+
 /** Any concrete sprite effect. */
 export type AnySpriteEffect =
   | TintEffect
@@ -83,7 +92,8 @@ export type AnySpriteEffect =
   | OutlineEffect
   | CustomShaderEffect
   | WaterEffect
-  | FogEffect;
+  | FogEffect
+  | FireEffect;
 
 /** Create a tint effect. */
 export function tint(color: SpriteColor, amount: number): TintEffect {
@@ -129,6 +139,23 @@ export function fog(color: SpriteColor, density = 0.5, speed = 0.3, scale = 2.0)
   return { type: 'fog', color, density, speed, scale };
 }
 
+/** Create a fire / flame effect. Time is passed to the renderer each
+ *  frame via `beginFrame(w, h, time)` — the effect itself is time-invariant. */
+export function fire(opts: {
+  color: SpriteColor;
+  tipColor: SpriteColor;
+  speed?: number;
+  intensity?: number;
+}): FireEffect {
+  return {
+    type: 'fire',
+    color: opts.color,
+    tipColor: opts.tipColor,
+    speed: opts.speed ?? 1.0,
+    intensity: opts.intensity ?? 0.8,
+  };
+}
+
 /**
  * Advance a time-based effect by `dt` seconds.
  *
@@ -144,6 +171,9 @@ export function updateEffect(effect: AnySpriteEffect, dt: number): AnySpriteEffe
     const elapsed = effect.elapsed + dt;
     if (elapsed >= effect.duration) return null;
     return { type: 'flash', color: effect.color, duration: effect.duration, elapsed };
+  }
+  if (effect.type === 'fire') {
+    return effect;
   }
   return effect;
 }

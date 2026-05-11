@@ -1,3 +1,41 @@
+export const FIRE_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float3 color;
+uniform float3 tipColor;
+uniform float speed;
+uniform float intensity;
+uniform float time;
+
+float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+
+float vnoise(float2 p) {
+  float2 i = floor(p);
+  float2 f = fract(p);
+  float2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + float2(1.0, 0.0));
+  float c = hash(i + float2(0.0, 1.0));
+  float d = hash(i + float2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(float2 p) {
+  return 0.5 * vnoise(p) + 0.25 * vnoise(p * 2.0);
+}
+
+half4 main(float2 coord) {
+  half4 srcColor = src.eval(coord);
+  float2 uv = coord / max(resolution, float2(1.0));
+  float2 np = float2(uv.x * 4.0, uv.y * 6.0 - time * speed * 2.0);
+  float n = fbm(np);
+  float flameMask = smoothstep(0.0, intensity, n * (1.0 - uv.y));
+  float3 fireRgb = mix(color, tipColor, uv.y);
+  half4 fireColor = half4(fireRgb.r, fireRgb.g, fireRgb.b, flameMask);
+  return half4(fireColor.rgb, fireColor.a * srcColor.a);
+}
+`;
+
 export const FOG_SKSL = /* sksl */ `
 uniform shader src;
 uniform float2 resolution;

@@ -29,6 +29,7 @@ export {
   type CustomShaderEffect,
   type WaterEffect,
   type FogEffect,
+  type FireEffect,
   type AnySpriteEffect,
   tint,
   flash,
@@ -37,11 +38,12 @@ export {
   custom,
   water,
   fog,
+  fire,
   updateEffect,
   flashIntensity,
 } from './sprite-effects.js';
 
-export { WATER_SKSL, FOG_SKSL } from './shaders.js';
+export { WATER_SKSL, FOG_SKSL, FIRE_SKSL } from './shaders.js';
 
 export {
   type Glyph,

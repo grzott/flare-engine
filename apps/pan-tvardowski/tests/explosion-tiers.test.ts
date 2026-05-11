@@ -1,7 +1,10 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { resetTween, tween, updateTween } from '@flare-engine/animation';
 import { createSpriteSheet } from '@flare-engine/assets';
 import { Position } from '@flare-engine/ecs';
+import { easeInCubic, easeOutCubic } from '@flare-engine/math';
 import { createTestWorld } from '@flare-engine/testing';
+import { shouldAllowSlowMo } from '../src/a11y/reduced-motion';
 import { Lifetime } from '../src/components';
 import {
   EXPLOSION_PRESETS,
@@ -85,5 +88,70 @@ describe('explosion tier presets', () => {
       if (world.get(id, Lifetime)) count++;
     }
     expect(count).toBe(EXPLOSION_PRESETS.pop.particles);
+  });
+});
+
+describe('Tier-V cataclysm slow-mo tweens', () => {
+  test('slowDownTween reaches ≈0.3 at t=800ms', () => {
+    const slowDown = tween(1.0, 0.3, 0.8, easeInCubic);
+    resetTween(slowDown);
+
+    // Step to exactly 800 ms using rawDt steps.
+    let timescale = 1.0;
+    let accumulated = 0;
+    const step = 0.016;
+    while (accumulated < 0.8) {
+      const remaining = 0.8 - accumulated;
+      const dt = Math.min(step, remaining);
+      timescale = updateTween(slowDown, dt);
+      accumulated += dt;
+    }
+
+    expect(timescale).toBeCloseTo(0.3, 1);
+  });
+
+  test('recoveryTween reaches ≈1.0 at t=1200ms (after slowDown completes at 800ms)', () => {
+    const slowDown = tween(1.0, 0.3, 0.8, easeInCubic);
+    const recovery = tween(0.3, 1.0, 0.4, easeOutCubic);
+    resetTween(slowDown);
+    resetTween(recovery);
+
+    let timescale = 1.0;
+    // Drive slowDown for 800 ms.
+    let accum = 0;
+    const step = 0.016;
+    while (accum < 0.8) {
+      const dt = Math.min(step, 0.8 - accum);
+      timescale = updateTween(slowDown, dt);
+      accum += dt;
+    }
+    // Drive recovery for 400 ms (total 1200 ms).
+    accum = 0;
+    while (accum < 0.4) {
+      const dt = Math.min(step, 0.4 - accum);
+      timescale = updateTween(recovery, dt);
+      accum += dt;
+    }
+
+    expect(timescale).toBeCloseTo(1.0, 1);
+  });
+
+  test('reducedMotion=true → shouldAllowSlowMo returns false (timescale stays 1.0)', () => {
+    expect(shouldAllowSlowMo(true)).toBe(false);
+    expect(shouldAllowSlowMo(false)).toBe(true);
+
+    // Simulate the gate: reducedMotion=true means tweens are never reset,
+    // so timescale is never touched and stays at 1.0.
+    const slowDown = tween(1.0, 0.3, 0.8, easeInCubic);
+    // Do NOT resetTween — gate is closed.
+    // Tick 800 ms of rawDt — tween is done=false initial but we check done flag.
+    let timescale = 1.0;
+    if (!shouldAllowSlowMo(true)) {
+      // Gate closed: write nothing; timescale remains 1.0.
+    } else {
+      resetTween(slowDown);
+      timescale = updateTween(slowDown, 0.8);
+    }
+    expect(timescale).toBe(1.0);
   });
 });

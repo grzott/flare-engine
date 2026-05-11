@@ -517,7 +517,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       deps.renderHooks.postfx = (_ctx, _canvas, bridge) => {
         if (!s) return;
         postfx.buildPass(s.bounds.width, s.bounds.height);
-        bridge?.applyPostFx(postfx.runtime, postfx.chain, null, s.bounds.width, s.bounds.height);
+        const snapshot = bridge?.captureSceneSnapshot(s.bounds.width, s.bounds.height) ?? null;
+        bridge?.applyPostFx(
+          postfx.runtime,
+          postfx.chain,
+          snapshot,
+          s.bounds.width,
+          s.bounds.height,
+        );
       };
     }
 

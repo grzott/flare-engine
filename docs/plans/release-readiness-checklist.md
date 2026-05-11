@@ -6,6 +6,10 @@ This list is **scoped to a single game ship** (PT 0.1.0). Reusable items are tra
 
 Legend: ⬜ not started · 🟡 in progress · ✅ done · ❌ rejected.
 
+> **Status (2026-05-11 — manual launch tier deferred, no schedule).** Release infra is the **final stage** — store accounts, legal filings, app icon, screenshots/trailer, store-page copy, RR walk, production submits. None of these are actively planned. They open as a batch **after the presentation arc closes** (sessions #182–#191 in [`sessions.md`](./sessions.md): remaining shader bgs + sequenced postfx + budget recheck + visual-ref refresh), followed by the engine-promotion harvest (#192–#196). The session picker explicitly skips manual-tier rows; tracked here for completeness only. Owner runs these directly outside the session loop when triggered.
+>
+> **Test pipeline (locked since 2026-05-09 / session #154).** EAS cloud build → TestingBot Maestro flows on Pixel 10 (Android canonical) + iPhone 16 Pro (iOS canonical, deferred behind §2 Apple Developer account). Maestro YAML in `apps/pan-tvardowski/.maestro/`. Manual 13-row checklist at [`apps/pan-tvardowski/docs/device-smoke.md`](../../apps/pan-tvardowski/docs/device-smoke.md) is now fallback only.
+
 ---
 
 ## 1. Creative assets (swap slots — ready to drop)

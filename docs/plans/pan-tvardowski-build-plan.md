@@ -542,6 +542,33 @@ What PT produced that belongs back in the engine. Strict rule: **genre-agnostic 
 
 Extraction reviews run at each M9.x gate (see [release-readiness-checklist.md](./release-readiness-checklist.md)).
 
+### Engine-promotion harvest — 2026-05-11
+
+Mid-arc audit (sessions #181 close) surfaced 4 additional reusable patterns + 2 duplicates of existing engine primitives. Queued as sessions #192–#196 in [`sessions.md`](./sessions.md).
+
+**Accepted lifts:**
+
+| Source in PT                              | Destination                                         | Session |
+| ----------------------------------------- | --------------------------------------------------- | ------- |
+| `src/fx/budget.ts` (frame-budget + watchdog)   | `@flare-engine/debug` — `createFrameBudget`           | #192    |
+| `src/perf/cold-start.ts` (boot-trace timing)   | `@flare-engine/debug` — `createBootTrace`             | #193    |
+| `src/util/direction.ts normalizeDirection`     | `@flare-engine/math` — `Vec2.normalizeOut`            | #194    |
+| `src/fx/postfx.ts triggerChromaticAb(decayMs)` | `@flare-engine/postfx` — `chain.triggerTimed`         | #195    |
+
+**Duplicates of existing engine primitives — delete on PT side (session #196):**
+
+| PT helper                              | Use instead                            |
+| -------------------------------------- | -------------------------------------- |
+| `src/util/rng.ts mulberry32`           | `@flare-engine/math` `SeededRNG`       |
+| `src/visual-spec/color-util.ts hexToRgba01` | `@flare-engine/math` `Color.fromHex` |
+
+**Documented as recipes (no extraction):**
+
+| Pattern                                       | Reason                                                  |
+| --------------------------------------------- | ------------------------------------------------------- |
+| Shader-bg recipe (`src/bg/zone*-bg.ts`)       | 8-line glue per zone — too thin to package; will document at `docs/recipes/shader-bg.md` after #186 closes (all 8 zones use the pattern). |
+| Explosion tier presets (`src/fx/explosions.ts`)| Tier counts + caps are gameplay tuning — game-local. The 5-tier *shape* is generic but the data isn't. |
+
 ---
 
 ## Change log

@@ -4561,4 +4561,47 @@ Mid-session owner approved expansion beyond declared touched-paths: (a) Z1+Z3 `*
 
 ---
 
+## Session 180 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #180):** PT-ColorUnify-D: refactor `visual-spec/{ships,shapes-catalogue,bullets,pickups,hud,animations,screens,hull-presets}.ts` (~210 hex literals) — same single-source pattern; ADD missing tokens to THEME_SPEC; may require splitting into D1+D2 sub-sessions if scope exceeds one gate cycle
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/visual-spec/ships.ts`
+- `apps/pan-tvardowski/src/visual-spec/bullets.ts`
+- `apps/pan-tvardowski/src/visual-spec/hud.ts`
+- `apps/pan-tvardowski/src/visual-spec/animations.ts`
+- `apps/pan-tvardowski/src/visual-spec/screens.ts`
+- `apps/pan-tvardowski/src/visual-spec/shapes-catalogue.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/vs-ships.test.ts` (new)
+- `apps/pan-tvardowski/tests/vs-bullets.test.ts` (new)
+
+Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hull-presets.ts`. Precedent: #170/#172/#173/#174/#175/#176/#177/#178/#179.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors — turbo cache hit)
+- typecheck: ✅ (0 errors, silent exit)
+- test: ✅ (+12 new, total 818 pass / 0 fail — 2 new test files + 4 vs-theme spot-checks)
+- build: ✅ (native echo script — `bun run android|ios`)
+- device smoke: owner-deferred — pure data refactor, no rendering behavior change; run `cd apps/pan-tvardowski && bun run smoke:cloud:android` before next visual-change session; precedent #173/#175/#176/#177/#178/#179
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #180 flipped `in_progress` → `done ⊞`; close date 2026-05-11; notes cell populated; `## Now` block updated to reflect #180 done and #181 as next pending
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-ColorUnify-D session #180 entry; 818 tests (+12)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no PT-ColorUnify-D checkbox exists; no new milestone tick (pure refactor)
+- `docs/plans/release-readiness-checklist.md` — no new ticks; no launch-tier row for color-token unification
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add 19 color tokens for entity palette`
+2. `refactor(pan-tvardowski): route ships/bullets/hud/anim/screens hex via tokens`
+3. `test(pan-tvardowski): bump canary + COLOR_TOKENS for 19 new tokens`
+4. `docs(builder-reference): append PT-ColorUnify-D entry`
+5. `docs(plans): close session #180 PT-ColorUnify-D`
+6. `docs(session-log): append session #180 PT-ColorUnify-D block`
+
+**Next session:** #181 "PT-ColorUnify-E"
+
 ---

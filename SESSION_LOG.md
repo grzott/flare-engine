@@ -4326,3 +4326,43 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #174 "PT-Z1-ShaderBg" — pending, depends on #169 (done).
 
 ---
+
+## Session 174 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #174):** PT-Z1-ShaderBg: replace Z1 Dachy tilemap placeholder with 2-entity shader bg — FireEffect ember glow (z=-100) + FogEffect chimney smoke (z=-90) using `fire()` from #169-P3; same 2-entity pattern as Z3 (#121)
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/zone1-bg.ts` (new)
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts`
+- `apps/pan-tvardowski/tests/zone-1-bg.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` (canary hash bump — mechanical drift)
+- `apps/pan-tvardowski/src/shape-atlas.ts` (tile-fire atlas frame — mechanical drift)
+- `apps/pan-tvardowski/src/visual-spec/types.ts` ('fire-shader' literal — mechanical drift)
+- `docs/references/builder-reference.md` (PT mirror row doc-sync)
+
+**Gates**
+- lint: ✅
+- typecheck: ✅ (0 errors)
+- test: ✅ (+3 new, total 764 pass / 0 fail)
+- build: ✅
+- device smoke: deferred — owner runs `cd apps/pan-tvardowski && bun run smoke:cloud:android` (Windows EAS local blocked; Pixel 10 TestingBot cloud smoke queued)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: `PT-Z1-ShaderBg (session #174, 2026-05-11) — ...; +3 tests (764 total).`
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; PT-Z1-ShaderBg is a P0 visual-runtime row, not a milestone boundary
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+
+**Deviations**
+- `shape-atlas.ts`: tile-fire atlas frame added as mechanical dependency of zone1-bg.ts; declared-but-untouched precedent per #170/#172/#173.
+- `visual-spec/types.ts`: 'fire-shader' literal added as mechanical dependency; same precedent.
+- `tests/visual-spec.test.ts`: canary hash bumped to reflect new visual-spec entry; same precedent.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add tile-fire atlas frame for Z1 shader bg`
+2. `feat(pan-tvardowski): zone1-bg two-entity FireEffect+FogEffect bg`
+3. `docs(pan-tvardowski): update zone-1 visual spec parallax to shader layers`
+
+**Next session:** #175 "PT-Z5-Z8-ShaderBg" — pending, depends on #169 (done).
+
+---

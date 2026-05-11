@@ -4650,3 +4650,33 @@ Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hu
 **Next session:** no next session, run /plan-sessions.
 
 ---
+
+## Session 182 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #182):** PT-DocStale-Sweep: fix stale "Open" annotations in visual-reference.md (postfx-visible #265 closed by #176; palette-shift #452 closed by #177; weaponCooldownPct @stub in state.ts already wired at play.ts:626); update sessions.md tiering table (P0 drained, all rows done)
+
+**Touched files**
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `apps/pan-tvardowski/src/state.ts`
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (tsc --noEmit, 0 errors)
+- test: ✅ (+0 new, total 839)
+- build: ✅ (echo script — native build via bun run android|ios)
+- device smoke: skipped — pure doc/comment edits, no runtime behavior change
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #182 flipped `in_progress` → `done`; close date 2026-05-11; `## Now` block updated (Last closed bumped to #182, Recommended next trimmed)
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-DocStale-Sweep session #182 entry; 839 tests (no delta)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — N/A; no engine-coverage checkbox for a doc-staleness sweep
+- `docs/plans/release-readiness-checklist.md` — no new ticks
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): clear stale Open annotations + cooldown stub`
+2. `docs(plans): close session #182 PT-DocStale-Sweep`
+
+**Next session:** #183 "PT-Z2-ShaderBg"
+
+---

@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
+import type { SkImageLike } from '@flare-engine/assets';
 import type { GameContextValue } from '@flare-engine/engine';
 import type { Effect } from '@flare-engine/postfx';
 import type { SkiaFrameRenderer } from '@flare-engine/react';
@@ -7,11 +8,12 @@ import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 const mockCtx = {} as GameContextValue;
 const mockCanvas = {};
 
-function makeSpyBridge(): SkiaFrameRenderer {
+function makeSpyBridge(snapshotReturn: SkImageLike | null = null): SkiaFrameRenderer {
   return {
     canvas: {},
     beginFrame: mock(() => {}),
     drawAtlas: mock(() => {}),
+    captureSceneSnapshot: mock(() => snapshotReturn),
     applyPostFx: mock(() => {}),
     endFrame: mock(() => null),
   } as unknown as SkiaFrameRenderer;
@@ -67,7 +69,8 @@ describe('postfx chain', () => {
       const fx = createPanTvardowskiPostFx(null);
       const hook = (_ctx: GameContextValue, _canvas: unknown, bridge: SkiaFrameRenderer | null) => {
         fx.buildPass(bounds.width, bounds.height);
-        bridge?.applyPostFx(fx.runtime, fx.chain, null, bounds.width, bounds.height);
+        const snapshot = bridge?.captureSceneSnapshot(bounds.width, bounds.height) ?? null;
+        bridge?.applyPostFx(fx.runtime, fx.chain, snapshot, bounds.width, bounds.height);
       };
       return { fx, hook };
     }
@@ -107,6 +110,40 @@ describe('postfx chain', () => {
       const kindsAfter = fx.chain.all().map((e: Effect) => e.id);
       expect(kindsAfter).toEqual(kindsBefore);
       expect(kindsAfter.length).toBe(kindsBefore.length);
+    });
+
+    test('captureSceneSnapshot is called before applyPostFx and its return value flows into source', () => {
+      const { hook } = makeHook();
+      const bridge = makeSpyBridge();
+      const captureSpy = bridge.captureSceneSnapshot as ReturnType<typeof mock>;
+      const applyspy = bridge.applyPostFx as ReturnType<typeof mock>;
+      hook(mockCtx, mockCanvas, bridge);
+      expect(captureSpy.mock.calls.length).toBe(1);
+      expect(applyspy.mock.calls.length).toBe(1);
+      const captureOrder = captureSpy.mock.invocationCallOrder?.[0] ?? 0;
+      const applyOrder = applyspy.mock.invocationCallOrder?.[0] ?? 1;
+      expect(captureOrder).toBeLessThan(applyOrder);
+      const [, , source] = applyspy.mock.calls[0] as [unknown, unknown, unknown];
+      expect(source).toBeNull();
+    });
+
+    test('non-null snapshot from captureSceneSnapshot flows into applyPostFx source', () => {
+      const fakeImage = { __kind: 'SkImageLike' } as unknown as SkImageLike;
+      const { hook } = makeHook();
+      const bridge = makeSpyBridge(fakeImage);
+      hook(mockCtx, mockCanvas, bridge);
+      const applyspy = bridge.applyPostFx as ReturnType<typeof mock>;
+      const [, , source] = applyspy.mock.calls[0] as [unknown, unknown, unknown];
+      expect(source).toBe(fakeImage);
+    });
+
+    test('null from captureSceneSnapshot flows into applyPostFx source as null', () => {
+      const { hook } = makeHook();
+      const bridge = makeSpyBridge(null);
+      hook(mockCtx, mockCanvas, bridge);
+      const applyspy = bridge.applyPostFx as ReturnType<typeof mock>;
+      const [, , source] = applyspy.mock.calls[0] as [unknown, unknown, unknown];
+      expect(source).toBeNull();
     });
   });
 });

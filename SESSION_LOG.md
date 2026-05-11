@@ -4605,3 +4605,48 @@ Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hu
 **Next session:** #181 "PT-ColorUnify-E"
 
 ---
+
+## Session 181 — 2026-05-11 (scope: [game])
+
+**Goal (from sessions.md row #181):** PT-ColorUnify-E: refactor `systems/boss/*.ts` (8 boss files, ~24 hex literals) + `dialogue/portrait-manifest.ts` (~19 literals) — POLICY DECISION resolved 2026-05-11: option (a) THEME-OWNED — extend `ColorTokenId` in THEME_SPEC with boss/portrait-specific tokens, continue the single-source unification rule from #178/#179/#180
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/systems/boss/baba-jaga.ts`
+- `apps/pan-tvardowski/src/systems/boss/bazyliszek.ts`
+- `apps/pan-tvardowski/src/systems/boss/borowy.ts`
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts`
+- `apps/pan-tvardowski/src/systems/boss/lucyper.ts`
+- `apps/pan-tvardowski/src/systems/boss/mefistofeles.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/wodnik.ts`
+- `apps/pan-tvardowski/src/dialogue/portrait-manifest.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/portrait-manifest.test.ts` (new)
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (0 errors, silent exit)
+- test: ✅ (+21 new, total 839 pass / 0 fail)
+- build: ✅ (native echo script — `bun run android|ios`)
+- device smoke: owner-deferred — pure data refactor, no rendering behavior change; run `bun run smoke:cloud:android` before next visual-change session
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #181 flipped `in_progress` → `done ⊞`; close date 2026-05-11; `## Now` block updated
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-ColorUnify-E session #181 entry; 839 tests (+21)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no checkbox for PT-ColorUnify-E; no new milestone tick (pure refactor)
+- `docs/plans/release-readiness-checklist.md` — no new ticks
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add 6 portrait color tokens (47->53)`
+2. `refactor(pan-tvardowski): route boss+portrait hex via THEME_SPEC tokens`
+3. `test(pan-tvardowski): bump canary + COLOR_TOKENS for portrait tokens`
+4. `docs(builder-reference): append PT-ColorUnify-E entry`
+5. `docs(plans): close session #181 PT-ColorUnify-E`
+6. `docs(session-log): append session #181 PT-ColorUnify-E block`
+
+**Next session:** no next session, run /plan-sessions.
+
+---

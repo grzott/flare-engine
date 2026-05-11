@@ -227,7 +227,9 @@ describe('visual-spec — schema canary', () => {
   // (vistulaBlue, foamBlue, mistBlue, lunarInk) — additive per schema stability protocol.
   // Bumped at Session 178 (PT-ColorUnify-B): 'katakumbyDark' added to ColorTokenId
   // union — additive per schema stability protocol.
-  const SCHEMA_CANARY = '8c7a476021ba4156f622b8d7015f440daaafeeac992b6200917fdacb77e923bf';
+  // Bumped at Session 179 (PT-ColorUnify-C): 'riverDepth' + 'marshOlive' added to
+  // ColorTokenId union — additive per schema stability protocol.
+  const SCHEMA_CANARY = '720d2f78bf1496457999fd350314a60c26d7dbd075bfee0dddb251f119be71fe';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

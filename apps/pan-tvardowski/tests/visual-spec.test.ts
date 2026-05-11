@@ -219,7 +219,9 @@ describe('visual-spec — schema canary', () => {
   // schema stability protocol ("adding optional fields" is permitted).
   // Bumped at Session 164 (PT-HUD-DataDriven): Inset.dx/dy widened from `number`
   // to `number | \`${number}%\`` (InsetValue) — additive union variant per protocol.
-  const SCHEMA_CANARY = '4f935c9ff1c6da8f65e27b14b81e92e6da905dddddae2a021b10551cb8886a24';
+  // Bumped at Session 172 (PT-SigilPulse): SigilPulseDef added; 'sigil-pulse' added to
+  // AnimationPresetId and AnimationDef union — additive per schema stability protocol.
+  const SCHEMA_CANARY = '8ee473559f0f13e815683dc6af1595131282eb0ad7046cb8932f41fd4ad8236d';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

@@ -4,10 +4,10 @@ import { ANIMATION_DEFS, HUD_TWEENS } from '../src/visual-spec';
 const HEX_RE = /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/;
 
 describe('vs-animations — ANIMATION_DEFS', () => {
-  test('has exactly 5 entries with unique ids', () => {
-    expect(ANIMATION_DEFS.length).toBe(5);
+  test('has exactly 6 entries with unique ids', () => {
+    expect(ANIMATION_DEFS.length).toBe(6);
     const ids = ANIMATION_DEFS.map((a) => a.id);
-    expect(new Set(ids).size).toBe(5);
+    expect(new Set(ids).size).toBe(6);
   });
 
   test('shatter-3: fragments=3, direction=random, fxTier=detonation', () => {

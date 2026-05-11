@@ -41,8 +41,8 @@ describe('reduced-motion extended helpers', () => {
     expect(sigilOpacity(false)).toBe(1.0);
   });
 
-  test('sigilOpacity returns 0.35 when reducedMotion=true', () => {
-    expect(sigilOpacity(true)).toBe(0.35);
+  test('sigilOpacity returns 0.7 when reducedMotion=true', () => {
+    expect(sigilOpacity(true)).toBe(0.7);
   });
 
   test('getParallaxVelocity passes base through when reducedMotion=false', () => {

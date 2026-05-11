@@ -582,7 +582,13 @@ export type ColorTokenId =
   | 'brown'
   | 'orange'
   | 'purpleBright'
-  | 'white';
+  | 'white'
+  | 'portraitKingGold'
+  | 'portraitKingCrownBronze'
+  | 'portraitFaceParchment'
+  | 'portraitTwardowskiViolet'
+  | 'portraitInnkeeperBrown'
+  | 'portraitInnkeeperHatDark';
 
 export interface TypographyValue {
   readonly fontFamily: string;

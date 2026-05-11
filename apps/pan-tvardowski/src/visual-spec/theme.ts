@@ -69,6 +69,12 @@ export const THEME_SPEC: ThemeSpec = {
     orange: '#FF9944',
     purpleBright: '#8844FF',
     white: '#FFFFFF',
+    portraitKingGold: '#D6A54E',
+    portraitKingCrownBronze: '#B5882A',
+    portraitFaceParchment: '#EAE1CC',
+    portraitTwardowskiViolet: '#3A3050',
+    portraitInnkeeperBrown: '#7A5C2E',
+    portraitInnkeeperHatDark: '#5C3D12',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

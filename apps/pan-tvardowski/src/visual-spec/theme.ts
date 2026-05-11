@@ -48,6 +48,8 @@ export const THEME_SPEC: ThemeSpec = {
     mistBlue: '#E4F0FF',
     lunarInk: '#1A1F2A',
     katakumbyDark: '#1A1410',
+    riverDepth: '#2A4A4A',
+    marshOlive: '#5A6A2A',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

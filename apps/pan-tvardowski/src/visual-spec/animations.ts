@@ -24,6 +24,12 @@ export const ANIMATION_DEFS: readonly AnimationDef[] = [
     maxOpacity: 1.0,
   },
   {
+    id: 'sigil-pulse',
+    hz: 0.41667,
+    minOpacity: 0.4,
+    maxOpacity: 1.0,
+  },
+  {
     id: 'muzzle-flash',
     durationMs: 80,
     color: '#C9A24A',

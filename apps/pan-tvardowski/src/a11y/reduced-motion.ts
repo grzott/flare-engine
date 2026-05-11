@@ -31,11 +31,11 @@ export function applyShakePerlin(
 }
 
 /**
- * Returns 1.0 normally; 0.35 under reducedMotion so animated sigils
- * remain visible but do not pulse/flash at full intensity.
+ * Returns 1.0 normally; 0.7 under reducedMotion (dim 70% per folio XIV §11
+ * reduce-motion rule 2 — "sigil pulse → dim 70%, no animation").
  */
 export function sigilOpacity(reducedMotion: boolean): number {
-  return reducedMotion ? 0.35 : 1.0;
+  return reducedMotion ? 0.7 : 1.0;
 }
 
 /**

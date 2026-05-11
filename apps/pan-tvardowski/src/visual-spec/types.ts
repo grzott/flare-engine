@@ -290,6 +290,7 @@ export interface PickupDef {
 export type AnimationPresetId =
   | 'shatter-3'
   | 'exhaust-pulse'
+  | 'sigil-pulse'
   | 'muzzle-flash'
   | 'rocket-trail'
   | 'spiral-collapse';
@@ -336,9 +337,18 @@ export interface SpiralCollapseDef {
   readonly alphaTo?: number;
 }
 
+export interface SigilPulseDef {
+  readonly id: 'sigil-pulse';
+  /** Pulse frequency in Hz. 1/hz gives the full cycle period in seconds. */
+  readonly hz: number;
+  readonly minOpacity: number;
+  readonly maxOpacity: number;
+}
+
 export type AnimationDef =
   | ShatterDef
   | ExhaustPulseDef
+  | SigilPulseDef
   | MuzzleFlashDef
   | RocketTrailDef
   | SpiralCollapseDef;

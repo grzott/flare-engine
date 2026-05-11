@@ -1,5 +1,13 @@
 import type { A11yBridge } from '@flare-engine/a11y';
-import { type Tween, resetTween, tween, updateTween } from '@flare-engine/animation';
+import {
+  type PeriodicTween,
+  type Tween,
+  periodicTween,
+  resetTween,
+  tween,
+  updatePeriodicTween,
+  updateTween,
+} from '@flare-engine/animation';
 import type { SpriteFrame } from '@flare-engine/assets';
 import { getFrame } from '@flare-engine/assets';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
@@ -11,7 +19,7 @@ import { CollisionWorld } from '@flare-engine/physics';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxRenderHook } from '@flare-engine/react';
 import { Sprite } from '@flare-engine/render';
-import { applyShake } from '../a11y/reduced-motion';
+import { applyShake, sigilOpacity } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
@@ -233,6 +241,8 @@ interface PlayState {
   gameOverTween: Tween;
   /** Folio XIV M1 item 5: combo-pulse tween (easeOutBack 120 ms). */
   comboPulseTween: Tween;
+  /** Session #172: player sigil opacity tween — sineInOut 2.4 s period, 0.4..1.0. */
+  sigilTween: PeriodicTween;
   /** Session #151: pre-looked-up enemy-bullet sprite frames for zero-alloc flicker swap. */
   bulletFrameA: SpriteFrame;
   bulletFrameB: SpriteFrame;
@@ -292,6 +302,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bossBarTween: { ...tween(0, 1, 0.6, easeOutExpo), done: true },
         gameOverTween: { ...tween(0, 1, 1.2, easeInCubic), done: true },
         comboPulseTween: { ...tween(1, 1.18, 0.12, easeOutBack), done: true },
+        sigilTween: periodicTween(0.4, 1.0, 2.4),
         bulletFrameA: (() => {
           const f = getFrame(atlas.sheet, 'enemy-bullet-a');
           if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet-a"');
@@ -959,6 +970,23 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           const nextScale = updateTween(s.comboPulseTween, dt);
           if (Math.abs(gameState.comboPulseScale - nextScale) > 0.01) {
             gameState.comboPulseScale = nextScale;
+            notifyStateChanged();
+          }
+        }
+
+        // Sigil pulse: advance periodicTween or write static value under reduce-motion.
+        {
+          const reducedMotion = gameState.settings.reducedMotion;
+          let nextSigil: number;
+          if (reducedMotion) {
+            nextSigil = sigilOpacity(true);
+          } else {
+            nextSigil = updatePeriodicTween(s.sigilTween, dt);
+          }
+          const playerSprite = ctx.world.get(s.playerId, Sprite);
+          if (playerSprite) playerSprite.alpha = nextSigil;
+          if (Math.abs(gameState.playerSigilOpacity - nextSigil) > 0.005) {
+            gameState.playerSigilOpacity = nextSigil;
             notifyStateChanged();
           }
         }

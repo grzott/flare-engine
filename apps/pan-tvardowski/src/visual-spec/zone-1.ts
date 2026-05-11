@@ -11,16 +11,17 @@
  * later consume it; for now it stands as the design brief.
  */
 
+import { THEME_SPEC } from './theme';
 import type { ZoneVisualSpec } from './types';
 
 export const zone1: ZoneVisualSpec = {
   id: 1,
   nameKey: 'zones.1.name',
   bg: {
-    sky: '#B05A3C', // terracotta
-    ground: '#8B3A1F', // rust
-    accent: '#0E1A12', // ink-black
-    hazard: '#C9A24A', // gold
+    sky: THEME_SPEC.colors.terracotta, // terracotta
+    ground: THEME_SPEC.colors.rust, // rust
+    accent: THEME_SPEC.colors.inkBlack, // ink-black
+    hazard: THEME_SPEC.colors.gold, // gold
     parallax: [
       { id: 'z1-fire', speed: 0, content: 'fire-shader' },
       { id: 'z1-smoke', speed: 0, content: 'fog-shader' },
@@ -48,15 +49,15 @@ export const zone1: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#B05A3C', // terracotta
-        bullet: '#E84B2A', // hazard
+        accent: THEME_SPEC.colors.terracotta, // terracotta
+        bullet: THEME_SPEC.colors.hazard, // hazard
         motif: 'cone-fire sweeps',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#8B3A1F', // rust
-        bullet: '#D4213D', // crimson
+        accent: THEME_SPEC.colors.rust, // rust
+        bullet: THEME_SPEC.colors.crimson, // crimson
         motif: 'dive-loops with ember trail',
         breakTier: 'cataclysm',
       },

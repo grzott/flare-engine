@@ -3,16 +3,17 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
+import { THEME_SPEC } from './theme';
 import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone2: ZoneVisualSpec = {
   id: 2,
   nameKey: 'zones.2.name',
   bg: {
-    sky: '#243A29', // moss
-    ground: '#1A2E1F', // bog-green
-    accent: '#4A7A6A', // verdigris
-    hazard: '#C7B89A', // bone
+    sky: THEME_SPEC.colors.moss, // moss
+    ground: THEME_SPEC.colors.bogGreen, // bog-green
+    accent: THEME_SPEC.colors.verdigris, // verdigris
+    hazard: THEME_SPEC.colors.bone, // bone
     parallax: [
       { id: 'z2-sky', speed: 0, content: 'tilemap' },
       { id: 'z2-canopy', speed: 0.2, content: 'tilemap' },
@@ -42,15 +43,15 @@ export const zone2: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#243A29',
-        bullet: '#C7B89A',
+        accent: THEME_SPEC.colors.moss,
+        bullet: THEME_SPEC.colors.bone,
         motif: 'moss rolling boulders',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#4A7A6A',
-        bullet: '#C7B89A',
+        accent: THEME_SPEC.colors.verdigris,
+        bullet: THEME_SPEC.colors.bone,
         motif: 'verdigris root-maze',
         breakTier: 'cataclysm',
       },
@@ -64,8 +65,8 @@ export const zone2: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson charge-burst',
         breakTier: 'burst',
       },

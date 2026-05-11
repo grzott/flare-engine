@@ -6,16 +6,17 @@
  * corrects to ink-black '#0E1A12'. Using the corrected value.
  */
 
+import { THEME_SPEC } from './theme';
 import type { ZoneVisualSpec } from './types';
 
 export const zone5: ZoneVisualSpec = {
   id: 5,
   nameKey: 'zones.5.name',
   bg: {
-    sky: '#7A1322', // crimson-deep
-    ground: '#D4213D', // crimson
-    accent: '#0E1A12', // ink-black (corrected per §9 footnote)
-    hazard: '#C9A24A', // gold
+    sky: THEME_SPEC.colors.crimsonDeep, // crimson-deep
+    ground: THEME_SPEC.colors.crimson, // crimson
+    accent: THEME_SPEC.colors.inkBlack, // ink-black (corrected per §9 footnote)
+    hazard: THEME_SPEC.colors.gold, // gold
     parallax: [
       { id: 'z5-fire', speed: 0, content: 'fire-shader' },
       { id: 'z5-fog', speed: 0, content: 'fog-shader' },
@@ -43,22 +44,22 @@ export const zone5: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson-smoke cauldrons',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#C9A24A',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.gold,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson+gold mortar flight',
         breakTier: 'detonation',
       },
       {
         phase: 3,
-        accent: '#E8DCC4',
-        bullet: '#E8DCC4',
+        accent: THEME_SPEC.colors.parchment,
+        bullet: THEME_SPEC.colors.parchment,
         motif: 'white-out broom sweep',
         breakTier: 'cataclysm',
       },

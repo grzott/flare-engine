@@ -3,16 +3,17 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
+import { THEME_SPEC } from './theme';
 import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone4: ZoneVisualSpec = {
   id: 4,
   nameKey: 'zones.4.name',
   bg: {
-    sky: '#243A29', // moss
-    ground: '#5A6A2A', // olive
-    accent: '#8E6F2C', // gold-deep
-    hazard: '#E84B2A', // hazard
+    sky: THEME_SPEC.colors.moss, // moss
+    ground: THEME_SPEC.colors.marshOlive, // olive
+    accent: THEME_SPEC.colors.goldDeep, // gold-deep
+    hazard: THEME_SPEC.colors.hazard, // hazard
     parallax: [
       { id: 'z4-sky', speed: 0, content: 'tilemap' },
       { id: 'z4-marsh', speed: 0.2, content: 'tilemap' },
@@ -42,15 +43,15 @@ export const zone4: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#E84B2A',
-        bullet: '#E84B2A',
+        accent: THEME_SPEC.colors.hazard,
+        bullet: THEME_SPEC.colors.hazard,
         motif: 'hazard whip-chains',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson mud-geysers + summons',
         breakTier: 'cataclysm',
       },
@@ -64,8 +65,8 @@ export const zone4: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson thorn-volley',
         breakTier: 'burst',
       },

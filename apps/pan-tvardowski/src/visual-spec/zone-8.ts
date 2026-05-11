@@ -5,16 +5,17 @@
  * Z8 is the silver-UI override zone (palette.ts silverUi: true).
  */
 
+import { THEME_SPEC } from './theme';
 import type { ZoneVisualSpec } from './types';
 
 export const zone8: ZoneVisualSpec = {
   id: 8,
   nameKey: 'zones.8.name',
   bg: {
-    sky: '#C7B89A', // bone
-    ground: '#E8DCC4', // parchment
-    accent: '#1A1F2A', // ink (Z8-specific variant)
-    hazard: '#D4213D', // crimson
+    sky: THEME_SPEC.colors.bone, // bone
+    ground: THEME_SPEC.colors.parchment, // parchment
+    accent: THEME_SPEC.colors.lunarInk, // ink (Z8-specific variant)
+    hazard: THEME_SPEC.colors.crimson, // crimson
     parallax: [
       { id: 'z8-water', speed: 0, content: 'water-shader' },
       { id: 'z8-fog', speed: 0, content: 'fog-shader' },
@@ -42,22 +43,22 @@ export const zone8: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#C7B89A',
-        bullet: '#C7B89A',
+        accent: THEME_SPEC.colors.bone,
+        bullet: THEME_SPEC.colors.bone,
         motif: 'silver cosmic-rain',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#1A1F2A',
-        bullet: '#C7B89A',
+        accent: THEME_SPEC.colors.lunarInk,
+        bullet: THEME_SPEC.colors.bone,
         motif: 'ink+silver eclipse',
         breakTier: 'detonation',
       },
       {
         phase: 3,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson shattered-mirrors',
         breakTier: 'cataclysm',
       },

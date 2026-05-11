@@ -3,16 +3,17 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
+import { THEME_SPEC } from './theme';
 import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone7: ZoneVisualSpec = {
   id: 7,
   nameKey: 'zones.7.name',
   bg: {
-    sky: '#8B3A1F', // rust
-    ground: '#C9A24A', // gold
-    accent: '#7A1322', // crimson-deep
-    hazard: '#E8DCC4', // parchment
+    sky: THEME_SPEC.colors.rust, // rust
+    ground: THEME_SPEC.colors.gold, // gold
+    accent: THEME_SPEC.colors.crimsonDeep, // crimson-deep
+    hazard: THEME_SPEC.colors.parchment, // parchment
     parallax: [
       { id: 'z7-sky', speed: 0, content: 'tilemap' },
       { id: 'z7-rafters', speed: 0.2, content: 'tilemap' },
@@ -52,22 +53,22 @@ export const zone7: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#C9A24A',
-        bullet: '#C9A24A',
+        accent: THEME_SPEC.colors.gold,
+        bullet: THEME_SPEC.colors.gold,
         motif: 'warm gold contracts',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#B05A3C',
-        bullet: '#E84B2A',
+        accent: THEME_SPEC.colors.terracotta,
+        bullet: THEME_SPEC.colors.hazard,
         motif: 'terracotta fire-pits',
         breakTier: 'detonation',
       },
       {
         phase: 3,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson mirror-twin',
         breakTier: 'cataclysm',
       },
@@ -81,8 +82,8 @@ export const zone7: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#D4213D',
-        bullet: '#8B3A1F',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.rust,
         motif: 'crimson blaze-sweep',
         breakTier: 'burst',
       },

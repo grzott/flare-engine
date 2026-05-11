@@ -3,16 +3,17 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
+import { THEME_SPEC } from './theme';
 import type { BossVisualSpec, ZoneVisualSpec } from './types';
 
 export const zone6: ZoneVisualSpec = {
   id: 6,
   nameKey: 'zones.6.name',
   bg: {
-    sky: '#1A1410', // ink (zone-specific)
-    ground: '#C7B89A', // bone
-    accent: '#8E6F2C', // gold-deep
-    hazard: '#7A1322', // crimson-deep
+    sky: THEME_SPEC.colors.katakumbyDark, // ink (zone-specific)
+    ground: THEME_SPEC.colors.bone, // bone
+    accent: THEME_SPEC.colors.goldDeep, // gold-deep
+    hazard: THEME_SPEC.colors.crimsonDeep, // crimson-deep
     parallax: [
       { id: 'z6-sky', speed: 0, content: 'tilemap' },
       { id: 'z6-vaults', speed: 0.2, content: 'tilemap' },
@@ -42,22 +43,22 @@ export const zone6: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#C7B89A',
-        bullet: '#7A1322',
+        accent: THEME_SPEC.colors.bone,
+        bullet: THEME_SPEC.colors.crimsonDeep,
         motif: 'bone gaze-cone',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#1A1410',
-        bullet: '#7A1322',
+        accent: THEME_SPEC.colors.katakumbyDark,
+        bullet: THEME_SPEC.colors.crimsonDeep,
         motif: 'ink venom puddles',
         breakTier: 'detonation',
       },
       {
         phase: 3,
-        accent: '#D4213D',
-        bullet: '#D4213D',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimson,
         motif: 'crimson gaze-beam maze',
         breakTier: 'cataclysm',
       },
@@ -71,8 +72,8 @@ export const zone6: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#D4213D',
-        bullet: '#7A1322',
+        accent: THEME_SPEC.colors.crimson,
+        bullet: THEME_SPEC.colors.crimsonDeep,
         motif: 'crimson hunt-spread',
         breakTier: 'burst',
       },

@@ -3,16 +3,17 @@
  * Sources: palette.ts, visual-reference.md §9 + §10.
  */
 
+import { THEME_SPEC } from './theme';
 import type { ZoneVisualSpec } from './types';
 
 export const zone3: ZoneVisualSpec = {
   id: 3,
   nameKey: 'zones.3.name',
   bg: {
-    sky: '#4A7A6A', // verdigris
-    ground: '#2A4A4A', // grey-green
-    accent: '#8E6F2C', // gold-deep
-    hazard: '#C7B89A', // bone
+    sky: THEME_SPEC.colors.verdigris, // verdigris
+    ground: THEME_SPEC.colors.riverDepth, // grey-green
+    accent: THEME_SPEC.colors.goldDeep, // gold-deep
+    hazard: THEME_SPEC.colors.bone, // bone
     parallax: [
       { id: 'z3-water', speed: 0, content: 'water-shader' },
       { id: 'z3-fog', speed: 0, content: 'fog-shader' },
@@ -40,15 +41,15 @@ export const zone3: ZoneVisualSpec = {
     phases: [
       {
         phase: 1,
-        accent: '#4A7A6A',
-        bullet: '#C7B89A',
+        accent: THEME_SPEC.colors.verdigris,
+        bullet: THEME_SPEC.colors.bone,
         motif: 'verdigris water-spouts',
         breakTier: 'detonation',
       },
       {
         phase: 2,
-        accent: '#2A4A4A',
-        bullet: '#C7B89A',
+        accent: THEME_SPEC.colors.riverDepth,
+        bullet: THEME_SPEC.colors.bone,
         motif: 'grey-green bubble-shield',
         breakTier: 'cataclysm',
       },

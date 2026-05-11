@@ -262,7 +262,7 @@ Current wiring at [`src/fx/postfx.ts:21`](../src/fx/postfx.ts#L21). Flash trigge
 Per-trigger decay override wired at session #94: `triggerHitFlash(decayRate?)` accepts an explicit decay rate — 12.5/s (80 ms) player-hit, 5/s (200 ms) bomb, 0.833/s (1200 ms) boss-defeat. All three call sites in `play.ts` pass the correct rate.
 
 PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` wired as `Skia` in
-[`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) (session #69). **Open: visible pixel compositing not yet shipped.** `play.ts:451–456` calls `postfx.buildPass()` per frame but the resulting `CompiledPass[]` is dropped — `runtime.apply()` does not exist in `@flare-engine/postfx`. Vignette, bloom, CRT, chromatic-ab, and grayscale-flash all run as intensity bookkeeping with no framebuffer effect. Sessions [#161 Postfx-Compositor](../../../docs/plans/sessions.md) (engine `runtime.apply()` + skia-bridge wire) + [#162 PT-PostFx-Wire](../../../docs/plans/sessions.md) (PT-side switch from `buildPass()` to `apply()`) close the gap.
+[`src/scene-registry.ts:68`](../src/scene-registry.ts#L68) (session #69). Closed (session #176 PT-PostFx-Visible): visible pixel compositing shipped; `play.ts` postfx hook flipped from `source: null` to real scene texture; vignette, bloom, CRT, chromatic-ab, and grayscale-flash all produce visible framebuffer pixels.
 
 ### Always-on chain
 
@@ -449,9 +449,9 @@ Boss FSMs: `src/systems/boss/{smok,borowy,wodnik,boruta,baba-jaga,bazyliszek,mef
 - 3-phase bosses: phase2 at 2/3 HP (`THREE_PHASE_P2_RATIO`), phase3 at 1/3 HP (`PHASE3_HP_RATIO`).
   Constants at [`src/config/gameplay.ts:200–203`](../src/config/gameplay.ts#L200).
 
-### Per-phase palette shift — partial (FSM-side done #73, consumer wire open)
+### Per-phase palette shift — closed #177
 
-Each phase entry **emits** an `onPaletteShift(phase, accent)` callback in [`src/systems/boss/types.ts:36`](../src/systems/boss/types.ts#L36) (and `onPhasePostFx`); all 8 boss FSMs invoke them at session #73. **Open:** `play.ts` `updateBoss()` deps object never provides these callbacks, so the optional-chained call is a noop. Boss shape tint never recolors and postfx chain never swaps. Closed by [#163 PT-Boss-PaletteShift-Wire](../../../docs/plans/sessions.md).
+Each phase entry **emits** an `onPaletteShift(phase, accent)` callback in [`src/systems/boss/types.ts:36`](../src/systems/boss/types.ts#L36) (and `onPhasePostFx`); all 8 boss FSMs invoke them at session #73. Closed (session #177 PT-Boss-PaletteShift-Wire): `play.ts` `updateBoss()` now provides `onPaletteShift` + `onPhasePostFx` callbacks; `onPhasePostFx` applies the boss postfx chain per phase; `onPaletteShift` is structurally wired (vignette-tint engine gap deferred to #187).
 
 ---
 

@@ -201,7 +201,7 @@ export interface GameState {
   comboHit: boolean;
   /**
    * Weapon special-move charge as a 0..1 fraction (1.0 = full).
-   * @stub Will be wired by future session; HUD renders the 5-segment meter at all times.
+   * Wired at play.ts:626 — updated each frame from ship cooldown / fireRate.
    */
   weaponCooldownPct: number;
   /**

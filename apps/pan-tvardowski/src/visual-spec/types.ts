@@ -563,7 +563,26 @@ export type ColorTokenId =
   | 'lunarInk'
   | 'katakumbyDark'
   | 'riverDepth'
-  | 'marshOlive';
+  | 'marshOlive'
+  | 'shadowBlack'
+  | 'violetDark'
+  | 'violetMid'
+  | 'violetDeep'
+  | 'darkRed'
+  | 'leafGreen'
+  | 'waterTeal'
+  | 'pale'
+  | 'teal'
+  | 'silver'
+  | 'moonBlue'
+  | 'deepBlue'
+  | 'straw'
+  | 'hellfire'
+  | 'eyeYellow'
+  | 'brown'
+  | 'orange'
+  | 'purpleBright'
+  | 'white';
 
 export interface TypographyValue {
   readonly fontFamily: string;

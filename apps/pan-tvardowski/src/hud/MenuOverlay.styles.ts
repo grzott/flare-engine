@@ -113,7 +113,7 @@ export const rawStyles = {
   },
   menuTitle: {
     color: UI_COLORS.gold,
-    ...TYPOGRAPHY.displayXl,
+    ...TYPOGRAPHY.displayL,
     textAlign: 'center' as const,
     marginBottom: THEME_SPEC.spacing.md,
   },

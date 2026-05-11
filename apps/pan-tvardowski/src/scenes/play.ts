@@ -55,6 +55,7 @@ import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
 import type { AmbienceState } from '../fx/ambience';
 import { createAmbienceState, tickAmbience } from '../fx/ambience';
+import type { BossPostFxKind } from '../fx/boss-postfx';
 import {
   checkFpsWatchdog,
   consumeSubShapeDrawCount,
@@ -271,6 +272,20 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
   if (deps.a11y) {
     deps.a11y.attachCamera(ctx.camera);
     deps.a11y.attachPostfx(postfx);
+  }
+
+  function applyBossPostFxChain(kind: BossPostFxKind): void {
+    if (kind === 'bloom+chrom') {
+      postfx.triggerChromaticAb(200);
+    } else if (kind === 'bloom+flash') {
+      postfx.triggerHitFlash();
+    } else if (kind === 'bloom+chrom+flash') {
+      postfx.triggerChromaticAb(200);
+      postfx.triggerHitFlash();
+    } else if (kind === 'bloom+flash+CRT') {
+      postfx.triggerHitFlash();
+      postfx.setCrtEnabled(true);
+    }
   }
 
   return () => {
@@ -817,6 +832,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           onExplosion: (x: number, y: number) => {
             burstExplosion(ctx.world, atlas, x, y, 14, ((s?.elapsed ?? 0) * 1000) | 1);
             playSfx(audioRef?.current, 'explode');
+          },
+          onPaletteShift: (_phase, _accent) => {},
+          onPhasePostFx: (kind) => {
+            applyBossPostFxChain(kind);
           },
         });
         integrate(ctx.world, dt, s.posQuery);

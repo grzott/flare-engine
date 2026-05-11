@@ -4413,4 +4413,37 @@ Mid-session owner approved expansion beyond declared touched-paths: (a) Z1+Z3 `*
 
 ---
 
+## Session 176 — 2026-05-11 (scope: game)
+
+**Goal (from sessions.md row #176):** PT-PostFx-Visible: with snapshot-source from #168-P1 now available, flip `source: null` to real scene texture in play.ts postfx hook; verify vignette + bloom + CRT + chromatic-ab + grayscale-flash produce visible pixels on device; close the deferred-visibility gap from #166
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/play.ts` (postfx hook: `captureSceneSnapshot` call inserted; snapshot passed to `applyPostFx` replacing `null`; multi-line Biome formatting)
+- `apps/pan-tvardowski/tests/postfx-chain.test.ts` (`SkImageLike` import added; `makeSpyBridge` extended with `captureSceneSnapshot` mock param; `makeHook` inline hook updated; 3 new tests)
+
+**Scope deviation**
+`apps/pan-tvardowski/src/fx/postfx.ts` is in the declared touched paths but was not modified. Declared-but-untouched precedent per sessions #170/#172/#173/#175.
+
+**Gates**
+- lint: ✅ (0 errors, 304 files)
+- typecheck: ✅ (0 errors)
+- test: ✅ (+3 new, total 773 pass / 0 fail)
+- build: ✅ (39/39 tasks, FULL TURBO)
+- device smoke: deferred — owner runs `cd apps/pan-tvardowski && bun run smoke:cloud:android` (Windows EAS local blocked; Pixel 10 TestingBot cloud smoke queued; visible bloom/vignette on Z1+Z5+Z8 to be confirmed)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-PostFx-Visible session #176 entry; +3 tests (773 total)
+- `docs/plans/build-plan.md` — no change (game-scope session)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; `postfx ✅` was already marked in M3; this session is operational plumbing (source wiring), not a new package coverage boundary
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): flip postfx source null → captureSceneSnapshot`
+2. `test(pan-tvardowski): assert applyPostFx receives snapshot source`
+3. `docs(plans): close session #176 PT-PostFx-Visible`
+
+**Next session:** #177 "PT-Boss-PaletteShift-Wire" — pending, dep #176 now done.
+
+---
+
 ---

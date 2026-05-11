@@ -22,6 +22,7 @@ import { Sprite } from '@flare-engine/render';
 import { applyShake, shouldAllowSlowMo, sigilOpacity } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
+import { type Zone1BgController, createZone1Bg } from '../bg/zone1-bg';
 import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
 import {
   Boss,
@@ -224,6 +225,8 @@ interface PlayState {
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
+  /** Zone 1 only — fire + smoke shader background entities. */
+  zone1Bg: Zone1BgController | null;
   /** Zone 3 only — water + fog shader background entities. */
   zone3Bg: Zone3BgController | null;
   /** Previous-frame playerHp — used to detect damage and flash postfx. */
@@ -298,6 +301,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
+        zone1Bg: null,
         zone3Bg: null,
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
@@ -337,6 +341,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     }
 
     function clearWorld(state: PlayState): void {
+      if (state.zone1Bg) {
+        state.zone1Bg.destroy();
+        state.zone1Bg = null;
+      }
       if (state.zone3Bg) {
         state.zone3Bg.destroy();
         state.zone3Bg = null;
@@ -432,6 +440,14 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       ctx.camera.rotation = 0;
       s.playerId = spawnPlayer(s.spawnCtx, s.bounds.width / 2, s.bounds.height - 90);
 
+      if (zoneId === 'z1') {
+        s.zone1Bg = createZone1Bg({
+          world: ctx.world,
+          atlas,
+          viewportWidth: s.bounds.width,
+          viewportHeight: s.bounds.height,
+        });
+      }
       if (zoneId === 'z3') {
         s.zone3Bg = createZone3Bg({
           world: ctx.world,

@@ -221,7 +221,9 @@ describe('visual-spec — schema canary', () => {
   // to `number | \`${number}%\`` (InsetValue) — additive union variant per protocol.
   // Bumped at Session 172 (PT-SigilPulse): SigilPulseDef added; 'sigil-pulse' added to
   // AnimationPresetId and AnimationDef union — additive per schema stability protocol.
-  const SCHEMA_CANARY = '8ee473559f0f13e815683dc6af1595131282eb0ad7046cb8932f41fd4ad8236d';
+  // Bumped at Session 174 (PT-Z1-ShaderBg): 'fire-shader' added to ParallaxLayer.content
+  // union — additive variant per schema stability protocol.
+  const SCHEMA_CANARY = 'fb168b677a8197c4d81a91c4ff3992137096da1a7b016862fdb1867ec70568d3';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

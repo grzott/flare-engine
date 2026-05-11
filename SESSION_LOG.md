@@ -4366,3 +4366,51 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #175 "PT-Z5-Z8-ShaderBg" — pending, depends on #169 (done).
 
 ---
+
+## Session 175 — 2026-05-11 (scope: game)
+
+**Goal (from sessions.md row #175):** PT-Z5-Z8-ShaderBg: Z5 Lysa Gora FireEffect (ash haze) + FogEffect (sulfur mist); Z8 Ksiezyc WaterEffect (silver shimmer) + FogEffect (lunar dust) — 2-entity shader bg each using fire/water/fog from #169-P3 + #119/#120
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts` (+4 ColorTokenId entries)
+- `apps/pan-tvardowski/src/visual-spec/theme.ts` (+4 entries to THEME_SPEC.colors)
+- `apps/pan-tvardowski/src/visual-spec/color-util.ts` (new — owner-approved Phase A helper)
+- `apps/pan-tvardowski/src/bg/zone1-bg.ts` (refactored onto theme tokens)
+- `apps/pan-tvardowski/src/bg/zone3-bg.ts` (refactored onto new theme tokens)
+- `apps/pan-tvardowski/src/bg/zone5-bg.ts` (new)
+- `apps/pan-tvardowski/src/bg/zone8-bg.ts` (new)
+- `apps/pan-tvardowski/src/scenes/play.ts` (Z5+Z8 wiring: imports, PlayState fields, init, clearWorld destroy, startZone cases)
+- `apps/pan-tvardowski/src/visual-spec/zone-5.ts` (parallax: tilemap → fire-shader + fog-shader)
+- `apps/pan-tvardowski/src/visual-spec/zone-8.ts` (parallax: tilemap → water-shader + fog-shader)
+- `apps/pan-tvardowski/tests/color-util.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-5-bg.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-8-bg.test.ts` (new)
+- `apps/pan-tvardowski/tests/visual-spec.test.ts` (canary hash bump — mechanical drift)
+- `apps/pan-tvardowski/tests/vs-theme.test.ts` (COLOR_TOKENS count 21→25 — mechanical drift)
+
+**Scope deviation (owner-approved — Phase A of bg-shader color unification arc)**
+Mid-session owner approved expansion beyond declared touched-paths: (a) Z1+Z3 `*-bg.ts` files refactored onto `THEME_SPEC.colors` (byte-identical RGBA output, no visual change); (b) 4 new ColorTokenId tokens added to `visual-spec/types.ts` + `visual-spec/theme.ts` (`vistulaBlue`, `foamBlue`, `mistBlue`, `lunarInk`); (c) `visual-spec/color-util.ts` helper introduced as single-source-of-truth for color conversion used by bg files. Test count +6 vs declared +4 — extra +2 cover `color-util.ts` (justified by single-source-of-truth introduction). Phases B–E of the unification arc filed as new sessions #178–#181.
+
+**Gates**
+- lint: ✅ (0 errors, 304 files)
+- typecheck: ✅ (0 errors)
+- test: ✅ (+6 new, total 770 pass / 0 fail)
+- build: ✅
+- device smoke: deferred — owner runs `cd apps/pan-tvardowski && bun run smoke:cloud:android` (Windows EAS local blocked; Pixel 10 TestingBot cloud smoke queued)
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #175 flipped `in_progress` → `done ⊞`, closed 2026-05-11; deviation footnote added covering Phase A scope expansion, +6 vs +4 tests, #178–#181 filed; `## Now` block updated to #175 done
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: `PT-Z5-Z8-ShaderBg (session #175, 2026-05-11) — ...` with Phase A scope expansion summary; +6 tests (770 total)
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new milestone tick required; PT-Z5-Z8-ShaderBg is a P0 visual-runtime row, not a milestone boundary
+- `docs/plans/release-readiness-checklist.md` — no new ticks; not a launch-tier row
+
+**Commits** (subjects only — full blocks emitted above in chat; all 3 were already applied before /session-close was invoked)
+1. `refactor(pan-tvardowski): unify bg shader colors under theme tokens`
+2. `feat(pan-tvardowski): zone5-bg + zone8-bg shader bg via theme`
+3. `test(pan-tvardowski): +4 zone-5-bg + zone-8-bg shader bg tests`
+
+**Next session:** #176 "PT-PostFx-Visible" — pending, depends on #168 (done).
+
+---
+
+---

@@ -225,7 +225,9 @@ describe('visual-spec — schema canary', () => {
   // union — additive variant per schema stability protocol.
   // Bumped at Session 175 (PT-Z5-Z8-ShaderBg): 4 new ColorTokenId entries added
   // (vistulaBlue, foamBlue, mistBlue, lunarInk) — additive per schema stability protocol.
-  const SCHEMA_CANARY = 'ca3f24ae768effc592487607e1cb0ab32c56b09c627ac9d954121251c34749e8';
+  // Bumped at Session 178 (PT-ColorUnify-B): 'katakumbyDark' added to ColorTokenId
+  // union — additive per schema stability protocol.
+  const SCHEMA_CANARY = '8c7a476021ba4156f622b8d7015f440daaafeeac992b6200917fdacb77e923bf';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

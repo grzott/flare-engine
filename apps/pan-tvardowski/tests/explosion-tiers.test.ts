@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import { createSpriteSheet } from '@flare-engine/assets';
 import { Position } from '@flare-engine/ecs';
 import { createTestWorld } from '@flare-engine/testing';
@@ -49,6 +49,26 @@ describe('explosion tier presets', () => {
     expect(EXPLOSION_PRESETS.burst.shake?.amp).toBe(5);
     expect(EXPLOSION_PRESETS.detonation.shake?.amp).toBe(10);
     expect(EXPLOSION_PRESETS.cataclysm.shake?.amp).toBe(14);
+  });
+
+  test('detonation and cataclysm presets use perlin shakeMode', () => {
+    expect(EXPLOSION_PRESETS.detonation.shake?.shakeMode).toBe('perlin');
+    expect(EXPLOSION_PRESETS.cataclysm.shake?.shakeMode).toBe('perlin');
+  });
+
+  test('triggerExplosion detonation calls shakePerlin, not shake', () => {
+    _resetCapsForTest();
+    const { world } = createTestWorld();
+    const atlas = makeAtlas();
+    const spyShake = mock(() => {});
+    const spyShakePerlin = mock(() => {});
+    const camera = { shake: spyShake, shakePerlin: spyShakePerlin };
+
+    triggerExplosion(world, atlas, camera, null, true, 100, 200, 'detonation', 'z1');
+
+    expect(spyShakePerlin).toHaveBeenCalledTimes(1);
+    expect(spyShakePerlin).toHaveBeenCalledWith(10, 0.32);
+    expect(spyShake).not.toHaveBeenCalled();
   });
 
   test('triggerExplosion spawns N entities for tier', () => {

@@ -1,11 +1,12 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { createSpriteSheet } from '@flare-engine/assets';
 import { Position, Velocity } from '@flare-engine/ecs';
 import { createTestWorld } from '@flare-engine/testing';
-import { getParallaxVelocity, sigilOpacity } from '../src/a11y/reduced-motion';
+import { applyShakePerlin, getParallaxVelocity, sigilOpacity } from '../src/a11y/reduced-motion';
 import { Lifetime } from '../src/components';
 import { createAmbienceState, tickAmbience } from '../src/fx/ambience';
 import type { AtlasHandle } from '../src/spawn';
+import { gameState, resetGameState } from '../src/state';
 import { ZONE_PALETTES } from '../src/visual-spec/zones-palette';
 
 function makeAtlas(): AtlasHandle {
@@ -16,6 +17,24 @@ function makeAtlas(): AtlasHandle {
 }
 
 const BOUNDS = { width: 360, height: 640 };
+
+describe('applyShakePerlin reduced-motion gate', () => {
+  afterEach(() => {
+    resetGameState();
+  });
+
+  test('reducedMotion=true: sets redFlash=true, does not call shakePerlin', () => {
+    gameState.settings.reducedMotion = true;
+    gameState.settings.screenShake = true;
+    const spyShakePerlin = mock(() => {});
+    const camera = { shakePerlin: spyShakePerlin };
+
+    applyShakePerlin(camera, 10, 0.32);
+
+    expect(gameState.redFlash).toBe(true);
+    expect(spyShakePerlin).not.toHaveBeenCalled();
+  });
+});
 
 describe('reduced-motion extended helpers', () => {
   test('sigilOpacity returns 1.0 when reducedMotion=false', () => {

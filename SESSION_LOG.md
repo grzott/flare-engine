@@ -4116,3 +4116,53 @@ Imported 2026-05-10 (session #103 doc-refactor). Original location: `docs/plans/
 **Next session:** #169 "Engine-MotionShader-B (3-phase)" — pending, depends on #168 (now done).
 
 ---
+
+## Session 169 — 2026-05-11 (scope: [engine])
+
+**Goal (from sessions.md row #169):** Engine-MotionShader-B (3-phase): P1 Render-PerlinShake — add `shakePerlin(intensity, duration)` to Camera2D (FBM 2-octave simplex, inline, no dep); P2 Animation-PeriodicDriver — add `periodicTween(from, to, period, easing?)` to @flare-engine/animation with `updatePeriodicTween(tw, dt)` + reset; P3 Render-FireEffect — new typed `FireEffect` kind in AnySpriteEffect union (`fire({ color, tipColor, speed, intensity })`) with animated noise SkSL; same render+react cross-package pattern as water/fog (#119/#120)
+
+**Touched files**
+- `packages/render/src/camera2d.ts`
+- `packages/render/tests/camera2d.test.ts`
+- `packages/animation/src/periodic.ts` (new)
+- `packages/animation/src/index.ts`
+- `packages/animation/tests/periodic.test.ts` (new)
+- `packages/render/src/shaders.ts`
+- `packages/render/src/sprite-effects.ts`
+- `packages/render/src/index.ts`
+- `packages/render/tests/fire-effect.test.ts` (new)
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/react/tests/game-view.test.ts` (mock stub — see Deviations)
+- `packages/react/tests/safe-area.test.ts` (mock stub — see Deviations)
+- `docs/design/api-specs.md`
+- `docs/plans/sessions.md` (row #169 flipped `in_progress → done ⊞`, close date stamped)
+- `docs/references/builder-reference.md` (session #169 row added — see Deviations)
+- `SESSION_LOG.md` (this block)
+
+**Deviations**
+1. `packages/react/tests/game-view.test.ts` and `packages/react/tests/safe-area.test.ts` not in declared touched-paths. Both carry a `@flare-engine/render` mock stub; adding `FireEffect` + `fire()` + `FIRE_SKSL` to the real package required updating the stub so the mock matches the new export surface. Without these updates the tests would fail to resolve `fire`/`FIRE_SKSL` imports. Mechanical scope creep, not feature drift. Pre-approved by owner.
+2. `docs/references/builder-reference.md` not in declared touched-paths. Builder did not update it during the session. Verifier surfaced this as a doc-sync gap; owner must add the session #169 row before committing. The required row text is in commit 5 below and in the chat surface note.
+3. Stash@{0} on main branch: `WIP on main: 6d8abec` is a redundant earlier version of the same session work. Harmless — working tree has the same code plus test refinements. Owner will drop it manually post-commit.
+
+**Gates**
+- lint: ✅ (biome check — 40 packages, 40 tasks, no fixes applied; FULL TURBO cache hit)
+- typecheck: ✅ (tsc --noEmit clean; 73 tasks all successful, FULL TURBO)
+- test: ✅ (+33 new: render 104→124, animation 44→53, react 79→83; 77 turbo tasks all successful; 748 PT tests green; pre-existing failure `packages/render/tests/render-system.test.ts:202` present in full-suite ordering run, absent in isolation — known issue pre-dating session #161, not introduced by this session)
+- build: ✅ (39 tasks all successful, FULL TURBO)
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #169 flipped `in_progress → done ⊞`; close date `2026-05-11` stamped; `## Now` updated to reflect #169 closed and #170 as next P0
+- `docs/references/builder-reference.md` — session #169 row added: render 104→124, animation 44→53, react 79→83; `shakePerlin`, `periodicTween`, `FireEffect`/`fire()`/`FIRE_SKSL`, `applyFire` bridge noted
+- `docs/plans/build-plan.md` — no phase state change; Phase 11 remains `in progress (M1–M5)`; no note required
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(render): shakePerlin via 2-octave FBM simplex on Camera2D`
+2. `feat(animation): periodicTween oscillating driver + reset`
+3. `feat(render): FireEffect type + fire() factory + FIRE_SKSL shader`
+4. `feat(react): applyFire bridge + skia-bridge FireEffect dispatch`
+5. `docs(plan): close session #169 Engine-MotionShader-B`
+
+**Next session:** #170 "PT-EasedTransitions" — pending P0, depends on #168 (done).
+
+---

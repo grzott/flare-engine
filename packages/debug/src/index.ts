@@ -12,3 +12,10 @@ export {
 } from './overlay.js';
 
 export { type FpsWidget, type FpsWidgetOptions, createFpsWidget } from './fps-widget.js';
+
+export {
+  type FrameBudgetLimits,
+  type FrameBudgetSnapshot,
+  type FrameBudgetHandle,
+  createFrameBudget,
+} from './frame-budget.js';

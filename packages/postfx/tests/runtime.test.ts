@@ -66,7 +66,7 @@ describe('createPostFxRuntime', () => {
     const rt = createPostFxRuntime(skia);
     const vig = createVignette('v', { intensity: 0.5, radius: 0.7 });
     const uV = rt.packUniforms(vig, 800, 600);
-    expect(uV.length).toBe(4);
+    expect(uV.length).toBe(7);
     expect(uV[0]).toBe(800);
     expect(uV[1]).toBe(600);
     expect(uV[2]).toBeCloseTo(0.5, 5);

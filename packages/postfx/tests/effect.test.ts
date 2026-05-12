@@ -12,7 +12,7 @@ describe('effect factories', () => {
     const e = createVignette();
     expect(e.id).toBe('vignette');
     expect(e.enabled).toBe(true);
-    expect(e.uniforms).toEqual({ kind: 'vignette', intensity: 0.4, radius: 0.8 });
+    expect(e.uniforms).toEqual({ kind: 'vignette', intensity: 0.4, radius: 0.8, color: [0, 0, 0] });
   });
 
   test('grayscale-flash defaults to 0 intensity (off)', () => {

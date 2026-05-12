@@ -14,6 +14,7 @@ uniform shader src;
 uniform float2 resolution;
 uniform float intensity;
 uniform float radius;
+uniform float3 color;
 
 half4 main(float2 coord) {
   half4 c = src.eval(coord);
@@ -21,7 +22,7 @@ half4 main(float2 coord) {
   float2 centered = uv - 0.5;
   float d = length(centered);
   float v = smoothstep(radius, radius * 0.5, d);
-  return half4(c.rgb * mix(1.0 - intensity, 1.0, v), c.a);
+  return half4(mix(half3(color), c.rgb, mix(1.0 - intensity, 1.0, v)), c.a);
 }
 `;
 

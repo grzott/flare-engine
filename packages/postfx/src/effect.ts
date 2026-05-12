@@ -20,6 +20,7 @@ export type EffectKind =
 export interface VignetteUniforms {
   intensity: number;
   radius: number;
+  color?: readonly [number, number, number];
 }
 
 export interface GrayscaleFlashUniforms {
@@ -79,6 +80,7 @@ export function createVignette(id = 'vignette', uniforms: Partial<VignetteUnifor
       kind: 'vignette',
       intensity: uniforms.intensity ?? 0.4,
       radius: uniforms.radius ?? 0.8,
+      color: uniforms.color ?? [0, 0, 0],
     },
   };
 }

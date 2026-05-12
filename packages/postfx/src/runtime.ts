@@ -207,9 +207,11 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
 
 function packUniforms(u: EffectUniforms, width: number, height: number): Float32Array {
   switch (u.kind) {
-    case 'vignette':
-      // resolution.xy, intensity, radius
-      return new Float32Array([width, height, u.intensity, u.radius]);
+    case 'vignette': {
+      // resolution.xy, intensity, radius, color.rgb
+      const col = u.color ?? [0, 0, 0];
+      return new Float32Array([width, height, u.intensity, u.radius, col[0], col[1], col[2]]);
+    }
     case 'grayscale-flash':
       return new Float32Array([u.intensity]);
     case 'chromatic-aberration':

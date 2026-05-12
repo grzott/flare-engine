@@ -14,11 +14,23 @@ import { tint } from '../src/sprite-effects.js';
 // The factory must return a plain object (spread) — not a module namespace object.
 const _realEcs = await import('../../ecs/src/index.ts');
 mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
-const { Position: EcsPosition, World: EcsWorld } = await import('@flare-engine/ecs');
+const { World: EcsWorld } = await import('@flare-engine/ecs');
 
 // Dynamically import render-system AFTER the ecs mock is restored so the
 // static `import { defineComponent }` inside render-system.ts resolves correctly.
 const { Sprite: RenderSprite, createRenderSystem } = await import('../src/render-system.js');
+
+// Define the test's Position via the real defineComponent *after* RenderSprite
+// is loaded so its id increments off the live counter and cannot collide with
+// RenderSprite.id. Using the canonical _realEcs.Position is order-dependent:
+// its id was baked when components.ts first loaded, which may equal whatever
+// the counter happens to be when render-system.ts later evaluates Sprite —
+// causing world.add to overwrite the position store with sprite data and
+// surfacing as `pos.x = undefined → dstX = NaN` under full-suite runs.
+const EcsPosition = _realEcs.defineComponent<{ x: number; y: number }>('Position', () => ({
+  x: 0,
+  y: 0,
+}));
 
 function mockImage(): SkImageLike {
   return { width: () => 64, height: () => 64 };

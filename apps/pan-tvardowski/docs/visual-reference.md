@@ -257,7 +257,7 @@ Flicker: two strokes alternate at ~8 Hz.
 
 Duration: 80 ms deck spec. Envelope: white frame 20% opacity → transparent 100%.
 Implemented via `createGrayscaleFlash('grayscale-flash', { intensity: 0 })` with auto-decay (4.2/s ≈ 238 ms).
-Current wiring at [`src/fx/postfx.ts:21`](../src/fx/postfx.ts#L21). Flash triggered on `player-hit` (existing), bomb detonation, and boss defeat — done at session #69.
+Current wiring at [`src/fx/postfx.ts:35`](../src/fx/postfx.ts#L35). Flash triggered on `player-hit` (existing), bomb detonation, and boss defeat — done at session #69.
 
 Per-trigger decay override wired at session #94: `triggerHitFlash(decayRate?)` accepts an explicit decay rate — 12.5/s (80 ms) player-hit, 5/s (200 ms) bomb, 0.833/s (1200 ms) boss-defeat. All three call sites in `play.ts` pass the correct rate.
 
@@ -271,7 +271,7 @@ PostFx controller: [`src/fx/postfx.ts`](../src/fx/postfx.ts). `skiaPostFx` wired
 | `vignette` | intensity 0.35, radius 0.82 | Darkness canvas framing | done — session #69 |
 | `bloom` | threshold 0.72, intensity 0.5 | Luminosity lift on bright shapes | done — session #69 |
 
-Both in [`src/fx/postfx.ts:19–20`](../src/fx/postfx.ts#L19).
+Both in [`src/fx/postfx.ts:33–34`](../src/fx/postfx.ts#L33).
 
 ### Situational effects
 
@@ -280,6 +280,18 @@ Both in [`src/fx/postfx.ts:19–20`](../src/fx/postfx.ts#L19).
 | Chromatic-aberration | Boss phase-break, elite death | done — session #70 |
 | CRT scanlines | Z8 Księżyc only (Lucyper) | done — session #70 |
 | Grayscale-flash | Player hit, bomb detonation, boss defeat | done — session #69 |
+
+### Sequenced postfx cascade — done at session #188
+
+Per-tier `flash → grayscale-hold → bloom-pulse` cascade wired in [`src/fx/explosions.ts:163–178`](../src/fx/explosions.ts#L163). New methods on `PanPostFxController` at [`src/fx/postfx.ts:18–19`](../src/fx/postfx.ts#L18): `triggerGrayscaleHold(durationMs)` at [`src/fx/postfx.ts:73`](../src/fx/postfx.ts#L73), `triggerBloomPulse(durationMs)` at [`src/fx/postfx.ts:76`](../src/fx/postfx.ts#L76).
+
+| Tier | flash | grayscale-hold | bloom-pulse |
+|---|---|---|---|
+| I (chip) | — | — | — |
+| II (pop) | yes | — | — |
+| III (burst) | yes | 400 ms | — |
+| IV (detonation) | yes | 600 ms | 300 ms |
+| V (cataclysm) | yes (0.833/s) | 900 ms | 500 ms |
 
 ### Glow recipes
 
@@ -319,7 +331,7 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 ### Engine gaps deferred from #70
 
 - **`clock.timescale` slow-mo** — closed at #173; Tier-V cataclysm ramps `clock.timescale` 1.0→0.3 over 800 ms (easeInCubic) then 0.3→1.0 over 400 ms (easeOutCubic); ticks on `rawDt`; skipped under reducedMotion.
-- **Sequenced postfx chain** — deck specifies `flash→grayscale→bloom` cascade per tier; current engine `triggerHitFlash()` fires a single grayscale decay; per-trigger decay overrides deferred.
+- **Sequenced postfx chain** — closed at session #188; per-tier `flash→grayscale-hold→bloom-pulse` cascade wired in [`src/fx/explosions.ts:163–178`](../src/fx/explosions.ts#L163).
 
 ### Concurrent caps — done at session #70
 
@@ -424,6 +436,21 @@ ARGB palette integers: [`src/visual-spec/zones-palette.ts:52`](../src/visual-spe
 | Z8 | Księżyc | bone `#C7B89A` | parchment `#E8DCC4` | ink `#1A1F2A` | crimson `#D4213D` | `0xffc8cdd4` | float 64p | Lucyper Księżycowy | — |
 
 Zone ARGB palettes aligned with deck tokens at session #72. Z8 silver-UI implemented at #72.
+
+### Shader backgrounds
+
+Two fullscreen-stretched ECS `Sprite` entities per zone (z=-100 layer 1, z=-90 layer 2). Both static in world space; shaders animate autonomously via `beginFrame(w, h, time)`. Pattern established at session #121 (Z3), extended across all 8 zones by sessions #174, #175, #183.
+
+| Zone | Layer 1 (z=-100) | Layer 2 (z=-90) | Atlas frame | Source | Session |
+|---|---|---|---|---|---|
+| Z1 | `FireEffect` (ember glow) | `FogEffect` (chimney smoke) | `tile-fire` | [`src/bg/zone1-bg.ts`](../src/bg/zone1-bg.ts) | #174 |
+| Z2 | `FogEffect` (pine mist) | `FogEffect` (pollen haze) | `tile-water` | [`src/bg/zone2-bg.ts`](../src/bg/zone2-bg.ts) | #183 |
+| Z3 | `WaterEffect` (Vistula surface) | `FogEffect` (hovering mist) | `tile-water` | [`src/bg/zone3-bg.ts`](../src/bg/zone3-bg.ts) | #121 |
+| Z4 | `WaterEffect` (swamp gas ripple) | `FogEffect` (bog vapour) | `tile-water` | [`src/bg/zone4-bg.ts`](../src/bg/zone4-bg.ts) | #183 |
+| Z5 | `FireEffect` (volcanic ember glow) | `FogEffect` (ash fog) | `tile-fire` | [`src/bg/zone5-bg.ts`](../src/bg/zone5-bg.ts) | #175 |
+| Z6 | `FireEffect` (torch flicker) | `FogEffect` (dust haze) | `tile-fire` | [`src/bg/zone6-bg.ts`](../src/bg/zone6-bg.ts) | #183 |
+| Z7 | `FireEffect` (hearth glow) | `FogEffect` (smoke haze) | `tile-fire` | [`src/bg/zone7-bg.ts`](../src/bg/zone7-bg.ts) | #183 |
+| Z8 | `WaterEffect` (lunar surface shimmer) | `FogEffect` (lunar fog) | `tile-water` | [`src/bg/zone8-bg.ts`](../src/bg/zone8-bg.ts) | #175 |
 
 ---
 

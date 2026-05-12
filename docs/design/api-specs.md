@@ -12,7 +12,7 @@
 
 | API                                                           | Description                                                                                                                                          |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Vec2`                                                        | `{x,y}` object. Static methods: `add`, `sub`, `scale`, `normalize`, `dot`, `cross`, `length`, `distance`, `lerp`, `rotate`, `angle`, `clampLength`. `vec2(x,y)` factory. Zero-alloc forms take an `out` param. |
+| `Vec2`                                                        | `{x,y}` object. Static methods: `add`, `sub`, `scale`, `normalize`, `normalizeOut(dx, dy, speed, out)`, `dot`, `cross`, `length`, `distance`, `lerp`, `rotate`, `angle`, `clampLength`. `vec2(x,y)` factory. Zero-alloc forms take an `out` param. `normalizeOut` takes scalar components (not a Vec2) so callers avoid a temporary in hot paths. |
 | `Rect`                                                        | AABB. `contains(point)`, `intersects(rect)`, `intersection`, `union`, `expand`, `center`, `fromPoints`                                               |
 | `Circle`                                                      | Position + radius. `contains`, `overlaps` with Rect/Circle                                                                                           |
 | `Transform2D`                                                 | Position (Vec2) + rotation (radians) + scale (Vec2). `localToWorld()`, `worldToLocal()`                                                              |

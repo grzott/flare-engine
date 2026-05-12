@@ -5008,3 +5008,32 @@ None — audit-only close per row allowance.
 **Next session:** #194 "Engine-Promote-Vec2Normalize" — add zero-alloc `Vec2.normalizeOut(dx, dy, speed, out)` to `@flare-engine/math`
 
 ---
+
+## Session 194 — 2026-05-13 (scope: [engine])
+
+**Goal (from sessions.md row #194):** Engine-Promote-Vec2Normalize: add zero-alloc `Vec2.normalizeOut(dx, dy, speed, out)` to `@flare-engine/math` covering PT's `src/util/direction.ts` shape — every shmup/action game needs this primitive. PT-side strip lands in #196.
+
+**Touched files**
+- `packages/math/src/vec2.ts`
+- `packages/math/tests/vec2.test.ts`
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md` (verifier doc-sync — Session #194 row added)
+- `docs/plans/sessions.md` (verifier close — row flipped in_progress → done)
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (73/73 tasks successful)
+- test: ✅ (+3 new, total 357 in @flare-engine/math)
+- build: ✅ (39/39 tasks, FULL TURBO)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #194 row added: Vec2.normalizeOut, 354→357 tests, zero-alloc hot-path helper; builder did not pre-write this row
+- `docs/plans/build-plan.md` — no change; Phase 11 remains in progress (M1–M5); single-method promote within existing Phase 11 DONE envelope
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(math): add Vec2.normalizeOut zero-alloc helper`
+2. `docs(api-specs): add Vec2.normalizeOut under @flare-engine/math`
+
+**Next session:** #195 "Engine-Promote-PostfxTimedTrigger" — extract triggerTimed decay helper into @flare-engine/postfx
+
+---

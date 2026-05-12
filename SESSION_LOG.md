@@ -4917,3 +4917,64 @@ None — audit-only close per row allowance.
 **Next session:** #191 "PT-VisualRef-Refresh" — depends on #190 + #188 (both done)
 
 ---
+
+## Session 191 — 2026-05-12 (scope: [game])
+
+**Goal (from sessions.md row #191):** PT-VisualRef-Refresh: update visual-reference.md with Z2/Z4/Z6/Z7 shader bg entries in section 9; update section 5 postfx chain with sequenced cascade from #188; verify all file:line cross-links still valid after #182-#190
+
+**Touched files**
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `docs/plans/sessions.md`
+
+**Gates**
+- lint: ✅ (40/40 packages, 317 files, 0 errors)
+- typecheck: ✅ (0 errors)
+- test: n/a — doc-only session, no runtime changes
+- build: n/a — doc-only session
+- device smoke: n/a — doc-only session, no runtime changes
+
+**Docs synced**
+- `apps/pan-tvardowski/docs/visual-reference.md` — §5: stale anchors `:19–20` → `:33–34` and `:21` → `:35` corrected; sequenced postfx cascade sub-section added (5-row per-tier table + file:line refs to `explosions.ts:163–178`, `postfx.ts:73`, `postfx.ts:76`, `postfx.ts:18–19`); §6: "Sequenced postfx chain" deferred bullet flipped to closed-at-#188; §9: 8-zone "Shader backgrounds" sub-section added (Z1–Z8, layer 1/2 effect, atlas frame, source link, closing session #)
+- `docs/references/builder-reference.md` — audit-only; PT row already reflects sessions through #190 (861 tests); no update required
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new ticks; doc-refresh session, no new engine coverage added
+- `docs/plans/release-readiness-checklist.md` — no new ticks; doc-refresh is not a launch-gate item
+
+**Deviation**
+1. Row targets 2 commits; collapsed to 1 — `docs/references/builder-reference.md` was audit-only (PT row already reflected #190 closure with 861 tests; no changes required). Approved.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): refresh visual-reference §5/§6/§9 for sessions #183/#188`
+
+**Next session:** #192 "Engine-Promote-PerfBudget" — lift `apps/pan-tvardowski/src/fx/budget.ts` into `@flare-engine/debug` as `createFrameBudget`
+
+---
+
+## Session 192 — 2026-05-12 (scope: [engine])
+
+**Goal (from sessions.md row #192):** Engine-Promote-PerfBudget: lift `apps/pan-tvardowski/src/fx/budget.ts` (frame-budget snapshot + FPS ring + 55fps watchdog) into a new module of `@flare-engine/debug` as `createFrameBudget({ limits, onWatchdog })`. Generic; consumer passes the postfx chain it wants to dim. Keeps PT zero-alloc shape. PT-side strip lands in #196.
+
+**Touched files**
+- `packages/debug/src/frame-budget.ts` (new)
+- `packages/debug/src/index.ts`
+- `packages/debug/tests/frame-budget.test.ts` (new)
+- `docs/design/api-specs.md`
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (73/73 tasks successful)
+- test: ✅ (+9 new, total 39 in @flare-engine/debug — declared +6; 3 extra cases cover ring wrap-around, watchdog idempotency, zero-alloc snapshot-ref invariant)
+- build: ✅ (dist/index.mjs 6.37 KB)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #192 row added between #169 and apps/pan-tvardowski: `createFrameBudget` module, 30→39 tests, dist size confirmed
+- `docs/plans/build-plan.md` — no change; no phase state rolled over; single-module promote within existing Phase 11.2–11.5 DONE envelope
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(debug): add createFrameBudget fps-ring watchdog module`
+2. `test(debug): cover createFrameBudget ring, watchdog, zero-alloc`
+3. `docs(api-specs): add createFrameBudget entry under @flare-engine/debug`
+4. `docs(plans): close session #192 Engine-Promote-PerfBudget`
+
+**Next session:** #193 "Engine-Promote-BootTrace" — lift `apps/pan-tvardowski/src/perf/cold-start.ts` into `@flare-engine/debug` as `createBootTrace()`
+
+---

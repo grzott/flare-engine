@@ -4680,3 +4680,44 @@ Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hu
 **Next session:** #183 "PT-Z2-ShaderBg"
 
 ---
+
+## Session 183 — 2026-05-12 (scope: [game])
+
+**Goal (from sessions.md row #183):** PT-Z2-Z4-Z6-Z7-ShaderBg ★★★ — M1 Z2 Puszcza (FogEffect pine mist z=-100 + FogEffect pollen haze z=-90) → M2 Z4 Leczyckie Blota (FogEffect swamp gas z=-100 + WaterEffect bog ripple z=-90) → M3 Z6 Katakumby (FireEffect torch flicker z=-100 + FogEffect dust z=-90) → M4 Z7 Karczma "Rzym" (FireEffect hearth glow z=-100 + FogEffect smoke haze z=-90); same 2-entity pattern as Z1/Z3/Z5/Z8 (#121/#174/#175)
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/zone2-bg.ts` (new)
+- `apps/pan-tvardowski/src/bg/zone4-bg.ts` (new)
+- `apps/pan-tvardowski/src/bg/zone6-bg.ts` (new)
+- `apps/pan-tvardowski/src/bg/zone7-bg.ts` (new)
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/zone-2-bg.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-4-bg.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-6-bg.test.ts` (new)
+- `apps/pan-tvardowski/tests/zone-7-bg.test.ts` (new)
+
+**Drift notes**
+- `visual-spec/zone-{2,4,6,7}.ts` listed in declared touched paths but NOT modified — parallax `content: 'tilemap'` is orthogonal to the shader-bg ECS layer. Pre-approved at /session-start; same precedent as #174/#175.
+- Z4 z-order builder adjustment: spec wrote "FogEffect swamp gas z=-100 + WaterEffect bog ripple z=-90"; builder implemented WaterEffect z=-100 + FogEffect z=-90 with rationale that swamp gas (fog) hugs the water surface, ripples slightly above. Tests lock the implemented ordering. Noted, not a blocker.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (tsc --noEmit, 0 errors)
+- test: ✅ (+12 new, total 851)
+- build: ✅ (echo script — native build via bun run android|ios)
+- device smoke: pending — run `bun run smoke:cloud` in `apps/pan-tvardowski/` targeting Z2+Z4+Z6+Z7; confirm 60fps locked
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-Z2-Z4-Z6-Z7-ShaderBg session #183 entry; 851 tests
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — N/A; milestone table has no shader-bg checkboxes; all 8 zones using shader-bg pattern is tracked via SESSION_LOG
+- `docs/plans/release-readiness-checklist.md` — no new ticks (presentation work, not release infra)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add Z2 Puszcza 2-entity shader bg + tests`
+2. `feat(pan-tvardowski): add Z4 Leczyckie Blota 2-entity shader bg + tests`
+3. `feat(pan-tvardowski): add Z6 Katakumby 2-entity shader bg + tests`
+4. `feat(pan-tvardowski): add Z7 Karczma shader bg + play.ts wiring + tests`
+
+**Next session:** #187 "Engine-VignetteTint" (depends on nothing; next P1 after #183)
+
+---

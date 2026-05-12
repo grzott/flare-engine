@@ -15,6 +15,8 @@ export type { PostFxController };
 export interface PanPostFxController extends PostFxController {
   triggerChromaticAb(decayMs: number): void;
   triggerHitFlash(decayRate?: number): void;
+  triggerGrayscaleHold(durationMs: number): void;
+  triggerBloomPulse(durationMs: number): void;
   setCrtEnabled(enabled: boolean): void;
   setVignetteColor(r: number, g: number, b: number): void;
 }
@@ -37,9 +39,13 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     skia,
   });
 
+  const bloomBaseline = 0.5;
+
   let chromAbTimerMs = 0;
   let flashIntensity = 0;
   let flashDecayRate = 12.5;
+  let grayscaleHoldMs = 0;
+  let bloomPulseMs = 0;
 
   const ctrl: PanPostFxController = {
     get chain() {
@@ -64,6 +70,17 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
         });
       }
     },
+    triggerGrayscaleHold(durationMs: number): void {
+      grayscaleHoldMs = durationMs;
+    },
+    triggerBloomPulse(durationMs: number): void {
+      bloomPulseMs = durationMs;
+      base.chain.setUniforms('bloom', {
+        kind: 'bloom',
+        threshold: 0.72,
+        intensity: 1.2,
+      });
+    },
     setCrtEnabled(enabled: boolean): void {
       const crt = base.chain.get('crt');
       if (crt) crt.enabled = enabled;
@@ -79,6 +96,9 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     update(dt: number): void {
       if (flashIntensity > 0) {
         flashIntensity = Math.max(0, flashIntensity - flashDecayRate * dt);
+        if (grayscaleHoldMs > 0) {
+          flashIntensity = Math.max(flashIntensity, 0.6);
+        }
         base.chain.setUniforms('grayscale-flash', {
           kind: 'grayscale-flash',
           intensity: flashIntensity,
@@ -96,6 +116,23 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
               amount: 0,
             });
           }
+        }
+      }
+      if (grayscaleHoldMs > 0) {
+        grayscaleHoldMs -= dt * 1000;
+        if (grayscaleHoldMs <= 0) {
+          grayscaleHoldMs = 0;
+        }
+      }
+      if (bloomPulseMs > 0) {
+        bloomPulseMs -= dt * 1000;
+        if (bloomPulseMs <= 0) {
+          bloomPulseMs = 0;
+          base.chain.setUniforms('bloom', {
+            kind: 'bloom',
+            threshold: 0.72,
+            intensity: bloomBaseline,
+          });
         }
       }
     },

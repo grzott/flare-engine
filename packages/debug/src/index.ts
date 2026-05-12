@@ -19,3 +19,5 @@ export {
   type FrameBudgetHandle,
   createFrameBudget,
 } from './frame-budget.js';
+
+export { type BootEntry, type BootTraceHandle, createBootTrace } from './boot-trace.js';

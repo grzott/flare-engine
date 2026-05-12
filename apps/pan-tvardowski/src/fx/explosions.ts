@@ -108,7 +108,11 @@ export function triggerExplosion(
     shake(amp: number, dur: number): void;
     shakePerlin(amp: number, dur: number): void;
   } | null,
-  postfx: { triggerHitFlash(): void } | null,
+  postfx: {
+    triggerHitFlash(decayRate?: number): void;
+    triggerGrayscaleHold(durationMs: number): void;
+    triggerBloomPulse(durationMs: number): void;
+  } | null,
   screenShakeEnabled: boolean,
   x: number,
   y: number,
@@ -156,9 +160,22 @@ export function triggerExplosion(
     onReducedMotion?.();
   }
 
-  // PostFX.
-  if (preset.postfx) {
-    postfx?.triggerHitFlash();
+  // PostFX — per-tier cascade.
+  if (preset.postfx && postfx) {
+    if (effective === 'pop') {
+      postfx.triggerHitFlash();
+    } else if (effective === 'burst') {
+      postfx.triggerHitFlash();
+      postfx.triggerGrayscaleHold(400);
+    } else if (effective === 'detonation') {
+      postfx.triggerHitFlash();
+      postfx.triggerGrayscaleHold(600);
+      postfx.triggerBloomPulse(300);
+    } else if (effective === 'cataclysm') {
+      postfx.triggerHitFlash(0.833);
+      postfx.triggerGrayscaleHold(900);
+      postfx.triggerBloomPulse(500);
+    }
   }
 
   return effective;

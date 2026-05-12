@@ -6,6 +6,7 @@ import { Boss, Hp } from '../src/components';
 import type { BossPattern, BossPhase } from '../src/components';
 import { BORUTA_HP_MAX, SMOK_HP_MAX } from '../src/config/gameplay';
 import type { BossPostFxKind } from '../src/fx/boss-postfx';
+import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 import type { SpawnCtx } from '../src/spawn';
 import type { BossDeps } from '../src/systems/boss';
 import { clearBossFsms, updateBoss } from '../src/systems/boss';
@@ -182,5 +183,88 @@ describe('boss-palette-shift wire M1', () => {
       updateBoss(world, 0.016, deps);
     }).not.toThrow();
     expect(world.get(id, Boss)?.phase).toBe('phase2');
+  });
+});
+
+describe('vignette-tint wire M2', () => {
+  test('ARGB bit-extraction: 0xff8b3a1f → r≈0.545, g≈0.227, b≈0.122', () => {
+    const accent = 0xff8b3a1f;
+    const r = ((accent >>> 16) & 0xff) / 255;
+    const g = ((accent >>> 8) & 0xff) / 255;
+    const b = (accent & 0xff) / 255;
+    expect(r).toBeCloseTo(0x8b / 255, 3);
+    expect(g).toBeCloseTo(0x3a / 255, 3);
+    expect(b).toBeCloseTo(0x1f / 255, 3);
+  });
+
+  test('onPaletteShift calls setVignetteColor with extracted [r,g,b] for smok accent 0xff8b3a1f', () => {
+    clearBossFsms();
+    const { world } = createTestWorld();
+    const spawnCtx = makeSpawnCtx(world);
+    const id = spawnBoss(world, 'smok-krzemionkowski', SMOK_HP_MAX);
+    const query = world.query(Boss);
+
+    const calls: [number, number, number][] = [];
+    const fakePostfx = {
+      setVignetteColor: (r: number, g: number, b: number) => calls.push([r, g, b]),
+    };
+
+    const accent = 0xff8b3a1f;
+    const deps = {
+      spawnCtx,
+      query,
+      playerX: 180,
+      playerY: 540,
+      bounds: { width: 360, height: 640 },
+      onPaletteShift: (_phase: BossPhase, acc: number) => {
+        const r = ((acc >>> 16) & 0xff) / 255;
+        const g = ((acc >>> 8) & 0xff) / 255;
+        const b = (acc & 0xff) / 255;
+        fakePostfx.setVignetteColor(r, g, b);
+      },
+    };
+
+    const hp = world.get(id, Hp);
+    if (hp) hp.current = Math.floor(SMOK_HP_MAX * 0.49);
+    keepCooldownHigh(world, id);
+    updateBoss(world, 0.016, deps);
+
+    expect(calls.length).toBeGreaterThan(0);
+    const last = calls[calls.length - 1];
+    expect(last).toBeDefined();
+    if (last) {
+      expect(last[0]).toBeCloseTo(((accent >>> 16) & 0xff) / 255, 3);
+      expect(last[1]).toBeCloseTo(((accent >>> 8) & 0xff) / 255, 3);
+      expect(last[2]).toBeCloseTo((accent & 0xff) / 255, 3);
+    }
+  });
+
+  test('no-accent fallback: onPaletteShift with accent 0 → setVignetteColor(0, 0, 0)', () => {
+    const calls: [number, number, number][] = [];
+    const fakePostfx = {
+      setVignetteColor: (r: number, g: number, b: number) => calls.push([r, g, b]),
+    };
+
+    const onPaletteShift = (_phase: BossPhase, accent: number) => {
+      const r = ((accent >>> 16) & 0xff) / 255;
+      const g = ((accent >>> 8) & 0xff) / 255;
+      const b = (accent & 0xff) / 255;
+      fakePostfx.setVignetteColor(r, g, b);
+    };
+
+    onPaletteShift('phase1', 0);
+
+    expect(calls.length).toBe(1);
+    expect(calls[0]).toEqual([0, 0, 0]);
+  });
+
+  test('setVignetteColor mutates the vignette chain entry uniforms.color', () => {
+    const postfx = createPanTvardowskiPostFx(null);
+    postfx.setVignetteColor(0.5, 0.1, 0.9);
+    const effect = postfx.chain.get('vignette');
+    expect(effect).not.toBeNull();
+    if (effect && effect.uniforms.kind === 'vignette') {
+      expect(effect.uniforms.color).toEqual([0.5, 0.1, 0.9]);
+    }
   });
 });

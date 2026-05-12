@@ -146,4 +146,47 @@ describe('postfx chain', () => {
       expect(source).toBeNull();
     });
   });
+
+  test('triggerGrayscaleHold: intensity stays at hold floor during hold window, then decays after', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.triggerHitFlash();
+    fx.triggerGrayscaleHold(400);
+
+    // After ~100 ms with default decay 12.5/s, natural intensity ≈ 0.875.
+    // The hold floor of 0.6 clamps decay — either way intensity must be >= 0.55.
+    for (let i = 0; i < 10; i++) fx.update(0.01);
+    const entryMid = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
+    const uMid = entryMid?.uniforms as { kind: 'grayscale-flash'; intensity: number } | undefined;
+    expect(uMid?.intensity).toBeGreaterThanOrEqual(0.55);
+
+    // Advance past the 400 ms hold (40 more × 0.01 = 400 ms; 500 ms total).
+    // With 12.5/s decay over 500 ms the flash reaches 0 long before hold expires.
+    // After hold expires decay is unclamped — intensity must be below 0.5.
+    for (let i = 0; i < 40; i++) fx.update(0.01);
+    const entryAfter = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
+    const uAfter = entryAfter?.uniforms as
+      | { kind: 'grayscale-flash'; intensity: number }
+      | undefined;
+    expect(uAfter?.intensity).toBeLessThan(0.5);
+  });
+
+  test('triggerBloomPulse: bloom intensity spikes then restores to baseline', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.triggerBloomPulse(300);
+
+    // Immediately after trigger bloom should be spiked above baseline 0.5.
+    const entrySpike = fx.chain.all().find((e: Effect) => e.id === 'bloom');
+    const uSpike = entrySpike?.uniforms as
+      | { kind: 'bloom'; threshold: number; intensity: number }
+      | undefined;
+    expect(uSpike?.intensity).toBeGreaterThan(0.5);
+
+    // Advance past 300 ms (31 × 0.01 = 310 ms).
+    for (let i = 0; i < 31; i++) fx.update(0.01);
+    const entryAfter = fx.chain.all().find((e: Effect) => e.id === 'bloom');
+    const uAfter = entryAfter?.uniforms as
+      | { kind: 'bloom'; threshold: number; intensity: number }
+      | undefined;
+    expect(uAfter?.intensity).toBeCloseTo(0.5);
+  });
 });

@@ -4796,3 +4796,37 @@ Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hu
 **Next session:** #188 "PT-PostFx-Sequenced" (depends on #187)
 
 ---
+
+## Session 188 — 2026-05-12 (scope: [game])
+
+**Goal (from sessions.md row #188):** PT-PostFx-Sequenced: implement flash-then-grayscale-then-bloom cascade per explosion tier; Tier-I/II single flash; Tier-III flash+grayscale; Tier-IV/V flash+grayscale+bloom pulse; close the "sequenced postfx chain" gap deferred from #70
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/tests/postfx-chain.test.ts`
+- `apps/pan-tvardowski/tests/explosion-tiers.test.ts`
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (0 errors)
+- test: ✅ (+4 new, total 859)
+- build: ✅ (native build via `bun run android|ios`; no bundler step)
+- device smoke: deferred — run `bun --cwd apps/pan-tvardowski run smoke:cloud` then confirm flash-grayscale-bloom cascade visible on Tier-III/IV/V explosions; owner-deferred per #173/#175/#176/#177/#187 cloud-batch precedent
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-PostFx-Sequenced session #188 entry; 855→859 tests
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new ticks; postfx engine-coverage already ✔ (M3); sequenced cascade is a PT-layer enhancement, not a new milestone checkbox
+- `docs/plans/release-readiness-checklist.md` — no new ticks
+
+**Declared-but-untouched path**
+- `apps/pan-tvardowski/src/scenes/play.ts` — declared in touched paths; no edit required; call site type-checks automatically against widened `postfx` interface; accepted per #170/#172/#173/#175/#177/#187 precedent
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(pan-tvardowski): add grayscale-hold and bloom-pulse to postfx controller`
+2. `feat(pan-tvardowski): sequence postfx cascade per explosion tier`
+3. `test(pan-tvardowski): cover grayscale-hold, bloom-pulse, and tier cascade`
+
+**Next session:** #189 "PT-ShaderBg-ColorUnify"
+
+---

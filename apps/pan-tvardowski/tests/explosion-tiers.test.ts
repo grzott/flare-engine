@@ -155,3 +155,42 @@ describe('Tier-V cataclysm slow-mo tweens', () => {
     expect(timescale).toBe(1.0);
   });
 });
+
+describe('explosion postfx cascade per tier', () => {
+  function makePostfxMock() {
+    return {
+      triggerHitFlash: mock((_decayRate?: number) => {}),
+      triggerGrayscaleHold: mock((_durationMs: number) => {}),
+      triggerBloomPulse: mock((_durationMs: number) => {}),
+    };
+  }
+
+  test('Tier-III burst: calls triggerHitFlash and triggerGrayscaleHold, not triggerBloomPulse', () => {
+    _resetCapsForTest();
+    const { world } = createTestWorld();
+    const atlas = makeAtlas();
+    const postfx = makePostfxMock();
+
+    triggerExplosion(world, atlas, null, postfx, false, 0, 0, 'burst', 'z1');
+
+    expect(postfx.triggerHitFlash).toHaveBeenCalledTimes(1);
+    expect(postfx.triggerGrayscaleHold).toHaveBeenCalledTimes(1);
+    expect(postfx.triggerGrayscaleHold).toHaveBeenCalledWith(400);
+    expect(postfx.triggerBloomPulse).toHaveBeenCalledTimes(0);
+  });
+
+  test('Tier-IV detonation: calls all three cascade methods', () => {
+    _resetCapsForTest();
+    const { world } = createTestWorld();
+    const atlas = makeAtlas();
+    const postfx = makePostfxMock();
+
+    triggerExplosion(world, atlas, null, postfx, false, 0, 0, 'detonation', 'z1');
+
+    expect(postfx.triggerHitFlash).toHaveBeenCalledTimes(1);
+    expect(postfx.triggerGrayscaleHold).toHaveBeenCalledTimes(1);
+    expect(postfx.triggerGrayscaleHold).toHaveBeenCalledWith(600);
+    expect(postfx.triggerBloomPulse).toHaveBeenCalledTimes(1);
+    expect(postfx.triggerBloomPulse).toHaveBeenCalledWith(300);
+  });
+});

@@ -897,7 +897,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             burstExplosion(ctx.world, atlas, x, y, 14, ((s?.elapsed ?? 0) * 1000) | 1);
             playSfx(audioRef?.current, 'explode');
           },
-          onPaletteShift: (_phase, _accent) => {},
+          onPaletteShift: (_phase, accent) => {
+            const r = ((accent >>> 16) & 0xff) / 255;
+            const g = ((accent >>> 8) & 0xff) / 255;
+            const b = (accent & 0xff) / 255;
+            postfx.setVignetteColor(r, g, b);
+          },
           onPhasePostFx: (kind) => {
             applyBossPostFxChain(kind);
           },

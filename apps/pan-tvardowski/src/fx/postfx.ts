@@ -16,6 +16,7 @@ export interface PanPostFxController extends PostFxController {
   triggerChromaticAb(decayMs: number): void;
   triggerHitFlash(decayRate?: number): void;
   setCrtEnabled(enabled: boolean): void;
+  setVignetteColor(r: number, g: number, b: number): void;
 }
 
 export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): PanPostFxController {
@@ -66,6 +67,14 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     setCrtEnabled(enabled: boolean): void {
       const crt = base.chain.get('crt');
       if (crt) crt.enabled = enabled;
+    },
+    setVignetteColor(r: number, g: number, b: number): void {
+      base.chain.setUniforms('vignette', {
+        kind: 'vignette',
+        intensity: 0.35,
+        radius: 0.82,
+        color: [r, g, b],
+      });
     },
     update(dt: number): void {
       if (flashIntensity > 0) {

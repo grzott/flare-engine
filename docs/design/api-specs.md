@@ -224,6 +224,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 - Collision bounds, entity origins, velocity vectors overlay
 - FPS, entity count, draw calls, atlas usage stats
 - `createFpsWidget(opts?)` — formatter that consumes a `DebugStats` snapshot and exposes a compact one-line summary (`"60 FPS | 16.7ms | e:42 d:8"`) plus a multi-line breakdown. Rendering-agnostic: hosts draw the strings via Skia `canvas.drawText`, an RN `<Text>` overlay, or anything else.
+- `createFrameBudget(opts)` — fps-ring watchdog + per-counter budget tracker. `opts`: `{ limits: FrameBudgetLimits; fpsThreshold?: number (default 55); ringSize?: number (default 180); onWatchdog?: () => void; debug?: boolean (default false) }`. Returns `FrameBudgetHandle`: `recordFrame(dtSec)` (writes into pre-allocated `Float32Array` ring, fires `onWatchdog` once when avg fps drops below threshold), `recordCounters(snapshot)` (copies values into a pre-allocated snapshot object in-place; warns on limit breach when `debug=true`), `getSnapshot()` (returns the same mutable object reference — zero-alloc), `getAvgFps()` (returns 0 until ring is full), `resetFpsRing()` (clears ring and re-arms watchdog). `FrameBudgetLimits` and `FrameBudgetSnapshot` are both `Record<string, number>`. Consumer's `onWatchdog` is opaque — no postfx dependency.
 - Pause, step-frame, slow-motion via `timeScale`
 - Entity-inspector (tap to log components) — deferred
 

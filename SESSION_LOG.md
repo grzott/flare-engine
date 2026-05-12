@@ -5037,3 +5037,37 @@ None — audit-only close per row allowance.
 **Next session:** #195 "Engine-Promote-PostfxTimedTrigger" — extract triggerTimed decay helper into @flare-engine/postfx
 
 ---
+
+## Session 195 — 2026-05-13 (scope: [engine])
+
+**Goal (from sessions.md row #195):** Engine-Promote-PostfxTimedTrigger: extract the "enable + auto-decay" pattern from `apps/pan-tvardowski/src/fx/postfx.ts triggerChromaticAb(decayMs)` into a generic `chain.triggerTimed(effectId, decayMs)` helper on `@flare-engine/postfx` PostFxController. Resets uniforms + disables on expiry; works for any timed-overlay effect. PT-side strip lands in #196.
+
+**Touched files**
+- `packages/postfx/src/controller.ts`
+- `packages/postfx/tests/timed-trigger.test.ts` (new)
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md` (verifier doc-sync — Session #195 row added, postfx extraction row updated to 76 tests)
+- `docs/plans/sessions.md` (verifier close — row flipped in_progress → done)
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (73/73 tasks successful)
+- test: ✅ (+4 new, total 76 in @flare-engine/postfx; 2438 across full repo)
+- build: ✅ (39/39 tasks, FULL TURBO)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #195 row added: triggerTimed auto-decay, 72→76 postfx tests, optional-? deviation + re-tighten note for #196; postfx extraction row updated from 72 to 76 tests
+- `docs/plans/build-plan.md` — no change; Phase 11 remains in progress (M1–M5); single-method promote within existing Phase 11 DONE envelope
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(postfx): add triggerTimed auto-decay to PostFxController`
+2. `test(postfx): cover triggerTimed enable, expiry, reset, retrigger`
+3. `docs(api-specs): add triggerTimed under @flare-engine/postfx`
+
+**Deviations**
+- `triggerTimed?` declared optional in `PostFxController` interface rather than required. Builder scoped typecheck missed PT cascade (`PanPostFxController extends PostFxController`; `apps/pan-tvardowski/tests/fps-watchdog.test.ts` mock). Fixed mid-close with Option A (one-char `?`). Interface should be re-tightened to required once PT wire lands in session #196.
+- `chain.ts` and `index.ts` listed in sessions.md touched-paths but left unmodified — implementation landed on `controller.ts` directly, consistent with precedent from sessions #170/#172/#173/#175/#176/#187/#190.
+
+**Next session:** #196 "PT-Strip-Duplicates" — consume engine lifts from #192–#195; delete PT-local duplicates; repoint consumers; device smoke (cloud Pixel 10)
+
+---

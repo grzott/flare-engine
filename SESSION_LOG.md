@@ -4721,3 +4721,78 @@ Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hu
 **Next session:** #187 "Engine-VignetteTint" (depends on nothing; next P1 after #183)
 
 ---
+
+## Session 187 — 2026-05-12 (scope: [mixed])
+
+**Goal (from sessions.md row #187):** Engine-VignetteTint: add optional `color?: [r,g,b]` uniform to `createVignette` in @flare-engine/postfx; default unchanged (black vignette); SkSL multiplies vignette mask by color; PT wire: `onPaletteShift` passes boss-accent color to vignette
+
+**Touched files**
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/tests/vignette-tint.test.ts` (new)
+- `packages/postfx/tests/effect.test.ts` (mechanical update — approved deviation #1)
+- `packages/postfx/tests/runtime.test.ts` (mechanical update — approved deviation #1)
+- `apps/pan-tvardowski/src/fx/postfx.ts` (approved deviation #2 — `setVignetteColor` encapsulation)
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/boss-palette-shift.test.ts`
+- `docs/design/api-specs.md`
+- `docs/plans/sessions.md`
+- `docs/references/builder-reference.md`
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (73/73 tasks cached, 0 errors)
+- test: ✅ (+4 postfx 68→72, +4 PT 851→855, total 2467 pass; 1 pre-existing fail in packages/render/tests/render-system.test.ts:202, pre-dates #161)
+- build: ✅ (39/39 tasks successful)
+- device smoke: deferred — run `bun --cwd apps/pan-tvardowski run android --device` then confirm tinted vignette visible on boss phase shift; cloud rerun batch per #173/#175/#176/#177/#183 precedent
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `createPostFxController` extraction row: "68 tests" → "72 tests"; vignette color uniform added 2026-05-12 noted
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: Engine-VignetteTint session #187 entry; 851→855 tests
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new ticks; postfx engine-coverage already ✔ (M3); color uniform is an enhancement, not a new milestone checkbox
+- `docs/plans/release-readiness-checklist.md` — no new ticks
+
+**Approved deviations**
+1. Engine: `packages/postfx/tests/{effect,runtime}.test.ts` — mechanical length assertions updated (4→7 float pack); follows from the float-count expansion and was pre-approved.
+2. Game: `apps/pan-tvardowski/src/fx/postfx.ts` outside declared touched paths — `setVignetteColor(r, g, b)` added to `PanPostFxController` to avoid leaking `'vignette'` chain-id + intensity/radius constants into the play.ts scene layer.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(postfx): add color uniform to createVignette`
+2. `test(postfx): add vignette-tint coverage`
+3. `docs(api-specs): document vignette color uniform`
+4. `feat(pan-tvardowski): tint vignette on boss palette shift`
+5. `test(pan-tvardowski): add vignette-tint wire coverage`
+6. `docs(plans): close session #187 Engine-VignetteTint`
+
+**Next session:** #188 "PT-PostFx-Sequenced" (depends on #187)
+
+
+---
+
+## Session 197 — 2026-05-12 (scope: [engine])
+
+**Goal (from sessions.md row #197):** Render-TestIsolation-Fix: deterministic id assignment for EcsPosition in render-system.test.ts — define via _realEcs.defineComponent after RenderSprite import to avoid component-id collision under full-suite test ordering (_resetComponentIds + module-init timing); root cause is broader (any cross-module defineComponent caller can collide) — backlog noted for engine follow-up
+
+**Touched files**
+- `packages/render/tests/render-system.test.ts`
+
+**Gates**
+- lint: ✅
+- typecheck: ✅
+- test: ✅ (full repo 2468/2468; prior failing test at render-system.test.ts:202 now green)
+- build: ✅
+
+**Docs synced**
+- `docs/plans/sessions.md` — row #197 opened and closed same day (2026-05-12); no builder-reference.md update needed (test-isolation fix, not a feature)
+
+**Root cause:** `_resetComponentIds()` in ECS test `beforeEach` recycles the global component-id counter. `EcsPosition.id` (baked at module-init of `packages/ecs/src/components.ts`) and `RenderSprite.id` (baked at module-init of `packages/render/src/render-system.ts`) occasionally land on the same recycled id under full-suite ordering; World stores both at that slot, sprite overwrites position, `pos.x` → `undefined` → `dstX` → `NaN`. Fix: drop `Position` from the `@flare-engine/ecs` destructure on line 17 of the test file; define `EcsPosition` via `_realEcs.defineComponent('Position', …)` AFTER `RenderSprite` is imported so its id is assigned deterministically against the live counter.
+
+**Broader risk:** Any cross-module `defineComponent` caller can collide under full-suite ordering whenever `_resetComponentIds` recycles. Backlog candidate: engine session to either remove `_resetComponentIds` entirely and rework ECS tests around isolated World instances, or make `defineComponent` skip ids already in use by the live registry.
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `fix(render): isolate render-system test from id-counter pollution`
+
+**Next session:** #188 "PT-PostFx-Sequenced" (depends on #187)
+
+---

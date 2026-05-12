@@ -4978,3 +4978,33 @@ None — audit-only close per row allowance.
 **Next session:** #193 "Engine-Promote-BootTrace" — lift `apps/pan-tvardowski/src/perf/cold-start.ts` into `@flare-engine/debug` as `createBootTrace()`
 
 ---
+
+## Session 193 — 2026-05-13 (scope: [engine])
+
+**Goal (from sessions.md row #193):** Engine-Promote-BootTrace: lift `apps/pan-tvardowski/src/perf/cold-start.ts` (markBootStart/markBootMilestone/getBootTrace/dumpBootTrace) into `@flare-engine/debug` as `createBootTrace()`. Logcat format compatible with the existing Maestro `parse-boot-trace.ts` harness — no smoke-pipeline changes. PT-side strip lands in #196.
+
+**Touched files**
+- `packages/debug/src/boot-trace.ts` (new)
+- `packages/debug/src/index.ts`
+- `packages/debug/tests/boot-trace.test.ts` (new)
+- `docs/design/api-specs.md`
+- `docs/references/builder-reference.md` (builder overstep — pre-written by builder; verified accurate and accepted)
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (73/73 tasks successful)
+- test: ✅ (+7 new, total 46 in @flare-engine/debug — declared +5; 2 extra cases cover getEntries snapshot-copy invariant and custom label)
+- build: ✅ (dist/index.mjs 7.54 KB)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — Session #193 row added: createBootTrace module, 39→46 tests, dist/index.mjs 7.54 KB; builder pre-wrote the row; verifier confirmed accuracy
+- `docs/plans/build-plan.md` — no change; Phase 11 remains in progress (M1–M5); single-module promote within existing Phase 11 DONE envelope
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `feat(debug): add createBootTrace factory with logcat-compat dump`
+2. `test(debug): cover createBootTrace milestones, dump format, reset`
+3. `docs(api-specs): add createBootTrace entry under @flare-engine/debug`
+
+**Next session:** #194 "Engine-Promote-Vec2Normalize" — add zero-alloc `Vec2.normalizeOut(dx, dy, speed, out)` to `@flare-engine/math`
+
+---

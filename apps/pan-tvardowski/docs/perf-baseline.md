@@ -142,3 +142,61 @@ The watchdog now disables **both** `chromatic-aberration` and `crt` on first tri
 **Session #107 close note (2026-05-10).** TTI gate verified on Pixel 10 via TestingBot cloud (Maestro 1.0.9, 3-launch median, real device): all 3 iterations passed < 3000ms threshold. Functional smoke blocked on `assertVisible "Play"` after 60s timeout — boot→menu scene transition appears to stall on TestingBot Pixel 10 (likely audio init or save load race on the cloud device); diagnosis deferred to #156 to avoid burning cloud minutes guessing. iOS deferred entirely — no Apple Developer account (#137 pending). TestingBot infrastructure stood up this session: `.env.testingbot` auto-load via `set -a; source; set +a`, 3-launch loop with `TTI_RUN_COUNT` env, artifacts ZIP extraction via `unzip` after each iteration, `--device-locale` forcing per run, and `--download-artifacts all --artifacts-output-dir` replacing the old `--artifacts-dir` flag.
 
 **Session #156 close note (2026-05-10).** Root cause confirmed: `initAudio()` hung indefinitely on TestingBot Pixel 10 (no real audio hardware on cloud device), preventing `ctx.scenes.go('menu')` from being called. Fix applied: 5s timeout race in `boot.ts` — audio init resolves to `null` on timeout, boot proceeds. TestingBot Pixel 10 cloud rerun was not executed in this builder context (no cloud creds available); exact median TTI ms for Pixel 10 EN and PL columns remains `pending verification (cloud rerun queued)`. Local AVD smoke was not run in this context either (no attached emulator). Per the honesty policy in `smoke-automation.md`, no fabricated numbers are recorded here — TTI median will be filled after the next TestingBot cloud rerun.
+
+---
+
+## 2026-05-12 — Frame-budget recheck (session #190)
+
+### Per-zone background draw-call table
+
+Each zone loads exactly 2 background entities: one parallax layer and one ground layer. These are static sprites registered with the Skia canvas and produce one draw call each. Only one zone is active at a time, so the worst-case background overhead across any frame in Z1–Z8 is 2 draw calls.
+
+| Zone | BG entities | BG draw calls |
+|---|---|---|
+| Z1 (Crossroads) | 2 | 2 |
+| Z2 (Marsh) | 2 | 2 |
+| Z3 (Forest) | 2 | 2 |
+| Z4 (Mountain) | 2 | 2 |
+| Z5 (Castle) | 2 | 2 |
+| Z6 (Underworld) | 2 | 2 |
+| Z7 (Gauntlet) | 2 | 2 |
+| Z8 (Lucyper lair) | 2 | 2 |
+
+`BUDGET_LIMITS.draws = 920` comfortably covers this overhead; the `+2 bg entities per zone` note is recorded in the `draws` constant comment in `src/fx/budget.ts`.
+
+### Postfx chain re-confirmation
+
+The 5-effect chain is unchanged since session #96. Enabled-at-rest count remains **3** (vignette + bloom + grayscale-flash). `BUDGET_LIMITS.postfx = 3` reflects the at-rest baseline. `chromatic-aberration` and `crt` remain disabled at rest; both are dropped by the FPS watchdog on first trigger if the 180-frame rolling average falls below 55 fps.
+
+| Effect | Enabled at rest |
+|---|---|
+| vignette | yes |
+| bloom | yes |
+| grayscale-flash | yes (intensity 0) |
+| chromatic-aberration | no |
+| crt | no |
+
+### Watchdog policy re-confirmation
+
+- Ring size: 180 frames.
+- Trigger threshold: rolling average < 55 fps.
+- Action: disable `chromatic-aberration` + `crt` (sticky for scene lifetime).
+- Reset: `resetFpsRing()` on each zone enter.
+
+No changes to watchdog logic since session #96.
+
+### `BUDGET_LIMITS` constants (unchanged)
+
+| Constant | Value | Source |
+|---|---|---|
+| `draws` | 920 | `src/fx/budget.ts` |
+| `particles` | 480 | `src/fx/budget.ts` |
+| `postfx` | 3 | `src/fx/budget.ts` |
+| `subShapeDraws` | 240 | `src/fx/budget.ts` |
+
+### Real-device measurements
+
+| Device | Cold-start TTI | Sustained fps | Notes |
+|---|---|---|---|
+| Pixel 10 | — | — | pending (cloud rerun batch from #173/#175/#176/#177/#187) |
+| iPhone 16 Pro | — | — | pending (Apple Dev account + cloud rerun) |

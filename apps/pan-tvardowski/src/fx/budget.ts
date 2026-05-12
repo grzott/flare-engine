@@ -8,6 +8,7 @@ export interface BudgetSnapshot {
 }
 
 export const BUDGET_LIMITS = {
+  // +2 bg entities per zone (parallax + ground layer), worst-case Z1-Z8 = 2 draws.
   draws: 920,
   particles: 480,
   postfx: 3,

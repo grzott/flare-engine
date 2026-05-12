@@ -4830,3 +4830,90 @@ Declared-but-untouched (per plan policy, ARGB int data files): `pickups.ts`, `hu
 **Next session:** #189 "PT-ShaderBg-ColorUnify"
 
 ---
+
+## Session 189 — 2026-05-12 (scope: [game])
+
+**Goal (from sessions.md row #189):** PT-ShaderBg-ColorUnify (narrowed 2026-05-11): #183 must already route through `THEME_SPEC.colors.*` (the Z1/Z3/Z5/Z8 pattern is established). This row is the consolidating token-add + canary-bump pass — audit Z2/Z4/Z6/Z7 bg authoring, add any zone-unique tokens Z2/Z4/Z6/Z7 introduce (analog to riverDepth/marshOlive added in #179), bump visual-spec canary. Audit-only if no new tokens needed; close as `done` (no commits).
+
+**Audit outcome — Branch B (audit-only, zero modifications)**
+
+Row allowance: "Audit-only if no new tokens needed; close as `done` (no commits)." Invoked.
+
+All four zone bg files ship with `THEME_SPEC.colors.<token>` lookups only — zero inline hex literals. Every referenced token is present in the `ColorTokenId` union and `THEME_SPEC.colors` object (enforced by `satisfies Record<ColorTokenId, \`#${string}\`>` at theme.ts:78):
+
+| Zone | Local const | Token | Hex |
+|------|-------------|-------|-----|
+| Z2 | `PINE_MIST_COLOR` | `moss` | `#243A29` |
+| Z2 | `POLLEN_HAZE_COLOR` | `bone` | `#C7B89A` |
+| Z4 | `SWAMP_COLOR` | `marshOlive` | `#5A6A2A` |
+| Z4 | `SWAMP_FOAM` | `riverDepth` | `#2A4A4A` |
+| Z4 | `BOG_FOG_COLOR` | `waterTeal` | `#3AA08C` |
+| Z6 | `TORCH_COLOR` | `terracotta` | `#B05A3C` |
+| Z6 | `TORCH_TIP_COLOR` | `goldDeep` | `#8E6F2C` |
+| Z6 | `DUST_FOG_COLOR` | `parchment` | `#E8DCC4` |
+| Z7 | `HEARTH_COLOR` | `rust` | `#8B3A1F` |
+| Z7 | `HEARTH_TIP_COLOR` | `gold` | `#C9A24A` |
+| Z7 | `SMOKE_COLOR` | `shadowBlack` | `#111111` |
+
+`THEME_SPEC.colors` entry count: 53 (unchanged). No `SCHEMA_CANARY` symbol exists in the visual-spec — token completeness is enforced statically by the `satisfies` constraint. No new tokens were needed; no canary bump was needed.
+
+**Touched files**
+
+None — audit-only. Only `docs/plans/sessions.md` carries the open-date stamp from `/session-start` (expected).
+
+**Gates**
+
+Skipped per row allowance (no source changes since prior green tip `4791c50`; lint/typecheck/test/build were all green at session #188 close). No gate runs required.
+
+- device smoke: skipped — no runtime changes
+
+**Docs synced**
+- `docs/plans/sessions.md` row 242 — flipped `in_progress` → `done`, stamped close date `2026-05-12`, appended audit-only note
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new ticks; audit session adds no milestone coverage
+- `docs/references/builder-reference.md` — no update; audit-only session, no code changes
+- `docs/plans/release-readiness-checklist.md` — no new ticks; presentation-layer audit, not a checklist item
+
+**Commits** (subjects only)
+
+None — audit-only close per row allowance.
+
+**Next session:** #190 "PT-FrameBudget-Recheck" — depends on #189
+
+---
+
+## Session 190 — 2026-05-12 (scope: [game])
+
+**Goal (from sessions.md row #190):** PT-FrameBudget-Recheck: re-bench frame budget + fps watchdog after 8-zone shader bgs (Z1-Z8 all shader now); update perf-baseline.md with fresh draw counts; verify degradation policy still triggers correctly
+
+**Touched files**
+- `apps/pan-tvardowski/docs/perf-baseline.md`
+- `apps/pan-tvardowski/src/fx/budget.ts`
+- `apps/pan-tvardowski/tests/frame-budget.test.ts`
+
+**Declared-but-untouched path**
+- `apps/pan-tvardowski/src/perf/cold-start.ts` — declared in session row; no logic affected by shader bg conversion; confirmed untouched.
+
+**Gates**
+- lint: ✅ (40/40 packages, 0 errors)
+- typecheck: ✅ (0 errors)
+- test: ✅ (+2 new, total 861)
+- build: ✅ (native build echo, no bundler step)
+- device smoke: owner-deferred — run `bun --cwd apps/pan-tvardowski run smoke:cloud`; per cloud-rerun batch precedent (#173/#175/#176/#177/#187/#188)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — `apps/pan-tvardowski` mirror row appended: PT-FrameBudget-Recheck session #190 entry; 859→861 tests
+- `docs/plans/pan-tvardowski-build-plan.md` §17 — no new ticks; frame-budget recheck is not a milestone deliverable; all relevant engine-coverage boxes already ticked in prior sessions
+- `docs/plans/release-readiness-checklist.md` — no new ticks; perf-baseline doc update is not a launch-gate checklist item
+
+**Deviations**
+1. Commit count 2 (row cap met) — builder proposed 3 subjects; verifier folded `docs(perf-baseline.md section)` + `fix(budget.ts comment-only)` into single `docs(pan-tvardowski):` commit. `test(pan-tvardowski):` remains separate.
+2. `src/perf/cold-start.ts` declared in touched paths but untouched — no cold-start logic is affected by shader bg conversion; accepted.
+3. Device smoke owner-deferred per established cloud-rerun batch precedent (same as #173/#175/#176/#177/#187/#188).
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `docs(pan-tvardowski): recheck frame-budget after Z1-Z8 shader bg`
+2. `test(pan-tvardowski): assert bg-draw + postfx-chain count headroom`
+
+**Next session:** #191 "PT-VisualRef-Refresh" — depends on #190 + #188 (both done)
+
+---

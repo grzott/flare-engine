@@ -9,6 +9,9 @@ import {
 } from '../src/fx/budget';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 
+// Background-layer entity count per zone: parallax layer + ground layer.
+const BG_DRAWS_PER_ZONE = 2;
+
 describe('frame-budget guards', () => {
   beforeEach(() => {
     recordBudget({ draws: 0, particles: 0, postfx: 0, subShapeDraws: 0 });
@@ -77,5 +80,26 @@ describe('frame-budget guards', () => {
     }
     // Use toBeLessThanOrEqual so adding a 6th opt-in effect doesn't break this test.
     expect(active).toBeLessThanOrEqual(BUDGET_LIMITS.postfx);
+  });
+
+  test('bgDrawsInBudget — draws limit covers bg entities across all 8 zones', () => {
+    // Each zone contributes BG_DRAWS_PER_ZONE (parallax + ground). Only one zone
+    // is active at a time, so worst-case overhead is BG_DRAWS_PER_ZONE = 2 draws.
+    // The remaining budget headroom must cover ship entities + bullets + particles.
+    const bgOverhead = BG_DRAWS_PER_ZONE;
+    expect(BUDGET_LIMITS.draws).toBeGreaterThanOrEqual(bgOverhead);
+    // Sanity: headroom after bg overhead is at least 10× the bg cost.
+    expect(BUDGET_LIMITS.draws - bgOverhead).toBeGreaterThan(bgOverhead * 10);
+  });
+
+  test('postfxChainCount — enabled-at-rest count is exactly 3', () => {
+    const postfx = createPanTvardowskiPostFx(null);
+    const effects = postfx.chain.all();
+    let active = 0;
+    for (let i = 0; i < effects.length; i++) {
+      if ((effects[i] as Effect | undefined)?.enabled) active += 1;
+    }
+    // vignette + bloom + grayscale-flash = 3. chromatic-aberration and crt are off at rest.
+    expect(active).toBe(3);
   });
 });

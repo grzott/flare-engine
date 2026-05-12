@@ -230,3 +230,29 @@ describe('Vec2.clampLength', () => {
     expect(Math.abs(Vec2.length(out) - 5)).toBeLessThan(1e-6);
   });
 });
+
+describe('Vec2.normalizeOut', () => {
+  it('axis-aligned vector scaled to speed', () => {
+    const out = vec2();
+    const result = Vec2.normalizeOut(0, 3, 5, out);
+    expect(result).toBe(out);
+    expect(out.x).toBe(0);
+    expect(out.y).toBe(5);
+  });
+  it('diagonal vector preserves direction with magnitude == speed', () => {
+    const out = vec2();
+    Vec2.normalizeOut(3, 4, 10, out);
+    expect(out.x).toBeCloseTo(6);
+    expect(out.y).toBeCloseTo(8);
+  });
+  it('zero vector writes zeros and does not produce NaN', () => {
+    const out = vec2();
+    Vec2.normalizeOut(0, 0, 5, out);
+    expect(out.x).toBe(0);
+    expect(out.y).toBe(0);
+    expect(Number.isNaN(out.x)).toBe(false);
+    expect(Number.isNaN(out.y)).toBe(false);
+    expect(Number.isFinite(out.x)).toBe(true);
+    expect(Number.isFinite(out.y)).toBe(true);
+  });
+});

@@ -86,6 +86,20 @@ export const Vec2 = {
     return { x: v.x * inv, y: v.y * inv };
   },
 
+  /** Zero-alloc; writes into `out`. Mandatory `out` so callers avoid temporaries in hot paths. */
+  normalizeOut(dx: number, dy: number, speed: number, out: Vec2): Vec2 {
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len <= 1e-6) {
+      out.x = 0;
+      out.y = 0;
+      return out;
+    }
+    const inv = speed / len;
+    out.x = dx * inv;
+    out.y = dy * inv;
+    return out;
+  },
+
   /** Dot product. */
   dot(a: Vec2, b: Vec2): number {
     return a.x * b.x + a.y * b.y;

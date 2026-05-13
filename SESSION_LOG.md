@@ -5139,3 +5139,52 @@ None — audit-only close per row allowance.
 **Next session:** #197 "Render-TestIsolation-Fix" — done (2026-05-12); run /plan-sessions for next planning slice.
 
 ---
+
+## Session 122 — 2026-05-13 (scope: game)
+
+**Goal:** PT rim light prototype (lighting §1)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/budget.ts`
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/lighting/`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/systems/boss/fsm.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/types.ts`
+- `apps/pan-tvardowski/tests/frame-budget.test.ts`
+- `apps/pan-tvardowski/tests/rim-light-math.test.ts`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 123 — 2026-05-13 (scope: engine)
+
+**Goal:** Engine — bridge canvas shape primitives + occluder render helper (lighting §2a)
+
+**Touched files**
+- `SESSION_LOG.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/react/src/index.ts`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/ping-pong.test.ts`
+- `packages/react/tests/render-shapes.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

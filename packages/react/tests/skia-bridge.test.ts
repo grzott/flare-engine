@@ -1187,6 +1187,8 @@ function makeMockSurface(w: number, h: number): MockSurface {
           surface.drawPictureCalls++;
         },
         drawImageRect: () => {},
+        drawRect: () => {},
+        clear: () => {},
       };
     },
     makeImageSnapshot() {

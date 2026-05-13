@@ -30,13 +30,37 @@ import type {
   Skia,
 } from '@shopify/react-native-skia';
 
+/** Structural canvas — minimal subset needed for offscreen rendering. */
+export interface SkOffscreenCanvasLike {
+  drawPicture(picture: unknown): void;
+  drawImageRect(image: unknown, src: unknown, dst: unknown, paint: unknown): void;
+  drawRect(rect: unknown, paint: unknown): void;
+  clear(color: unknown): void;
+}
+
 /** Structural canvas surface — minimal subset needed for offscreen capture. */
 export interface SkSurfaceLike {
-  getCanvas(): {
-    drawPicture(picture: unknown): void;
-    drawImageRect(image: unknown, src: unknown, dst: unknown, paint: unknown): void;
-  };
+  getCanvas(): SkOffscreenCanvasLike;
   makeImageSnapshot(): SkImageLike;
+}
+
+/** A single axis-aligned rectangle shape to draw into an offscreen surface. */
+export interface ShapeRect {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+  /** ARGB packed integer: 0xAARRGGBB */
+  readonly color: number;
+}
+
+/** Options for `renderShapesToImage`. */
+export interface RenderShapesOpts {
+  readonly width: number;
+  readonly height: number;
+  /** ARGB packed integer: 0xAARRGGBB */
+  readonly clearColor: number;
+  readonly shapes: readonly ShapeRect[];
 }
 
 /**
@@ -610,6 +634,49 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       return recorder.finishRecordingAsPicture();
     },
   };
+}
+
+// Scratch buffer for ARGB → RGBA-float unpacking in renderShapesToImage.
+// Allocated once per call (not module-level) so concurrent callers are safe.
+// Hot paths inside createSkiaFrameRenderer use their own pre-allocated buffers.
+
+/**
+ * Render a list of solid rectangles into a fresh offscreen surface and return
+ * the resulting image snapshot. Returns `null` if `MakeSurface` is absent or
+ * fails. The surface is not cached — callers that need reuse should cache the
+ * returned image themselves.
+ */
+export function renderShapesToImage(
+  skia: SkiaModuleLike,
+  opts: RenderShapesOpts,
+): SkImageLike | null {
+  if (skia.MakeSurface === undefined) return null;
+  const surface = skia.MakeSurface(opts.width, opts.height);
+  if (surface === null) return null;
+
+  const scratch = new Float32Array(4);
+  const canvas = surface.getCanvas();
+
+  unpackArgb(scratch, opts.clearColor);
+  canvas.clear(scratch);
+
+  const paint = skia.Paint();
+  for (const shape of opts.shapes) {
+    unpackArgb(scratch, shape.color);
+    paint.setColor(scratch);
+    const rect = skia.XYWHRect(shape.x, shape.y, shape.w, shape.h);
+    canvas.drawRect(rect, paint);
+  }
+
+  return surface.makeImageSnapshot();
+}
+
+/** Unpack a 0xAARRGGBB integer into a Float32Array [r, g, b, a] in 0..1 range. */
+function unpackArgb(out: Float32Array, argb: number): void {
+  out[0] = ((argb >>> 16) & 0xff) / 255;
+  out[1] = ((argb >>> 8) & 0xff) / 255;
+  out[2] = (argb & 0xff) / 255;
+  out[3] = ((argb >>> 24) & 0xff) / 255;
 }
 
 function writeColor(out: SkColor, color: SpriteColor, alphaMul: number): void {

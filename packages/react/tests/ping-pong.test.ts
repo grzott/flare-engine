@@ -32,6 +32,8 @@ function makeMockSurface(): MockSurface {
         drawImageRect(image: unknown, _src: unknown, _dst: unknown, _paint: unknown) {
           surface.drawImageRectCalls.push({ source: image });
         },
+        drawRect: () => {},
+        clear: () => {},
       };
     },
     makeImageSnapshot() {

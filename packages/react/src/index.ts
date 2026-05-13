@@ -9,6 +9,10 @@ export {
 export { useGame, useEntity, useGameLoop } from './hooks.js';
 export {
   createSkiaFrameRenderer,
+  renderShapesToImage,
+  type RenderShapesOpts,
+  type ShapeRect,
+  type SkOffscreenCanvasLike,
   type SkiaFrameRenderer,
   type SkiaModuleLike,
 } from './skia-bridge.js';

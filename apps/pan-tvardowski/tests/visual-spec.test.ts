@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ZONES } from '../src/config/zones';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { SHIP_DEFS } from '../src/visual-spec/ships';
 import type { ZoneId } from '../src/visual-spec/zones-palette';
 
 const HEX_REGEX = /^#[0-9A-F]{6}([0-9A-F]{2})?$/i;
@@ -86,17 +86,23 @@ describe('visual-spec — zone registry integrity', () => {
 });
 
 describe('visual-spec — boss EntityId resolution', () => {
-  const bossKeys = new Set(Object.keys(SHAPE_CATALOGUE.bosses));
-  const minibossKeys = new Set(Object.keys(SHAPE_CATALOGUE.minibosses));
+  const bossKeys = new Set(
+    SHIP_DEFS.filter((d) => d.weaponRatio === '1:12' && d.glow === 'hazard').map(
+      (d) => d.id as string,
+    ),
+  );
+  const minibossKeys = new Set(
+    SHIP_DEFS.filter((d) => d.weaponRatio === '1:10').map((d) => d.id as string),
+  );
 
-  test('every BossVisualSpec.id resolves in SHAPE_CATALOGUE.bosses', () => {
+  test('every BossVisualSpec.id resolves in SHIP_DEFS bosses', () => {
     for (let id = 1; id <= 8; id++) {
       const bossId = ZONE_VISUAL_SPECS[id as ZoneId].boss.id;
       expect(bossKeys, `Z${id}.boss.id=${bossId}`).toContain(bossId);
     }
   });
 
-  test('every miniboss BossVisualSpec.id resolves in SHAPE_CATALOGUE.minibosses', () => {
+  test('every miniboss BossVisualSpec.id resolves in SHIP_DEFS minibosses', () => {
     for (let id = 1; id <= 8; id++) {
       const m = ZONE_VISUAL_SPECS[id as ZoneId].miniboss;
       if (m) expect(minibossKeys, `Z${id}.miniboss.id=${m.id}`).toContain(m.id);

@@ -1,4 +1,5 @@
 import { defineComponent } from '@flare-engine/ecs';
+import type { PickupEffect, PickupSpecId, WeaponSpecId } from './visual-spec/types';
 
 export interface ShipData {
   fireRate: number;
@@ -176,6 +177,15 @@ export interface MirrorTwinData {
 export const MirrorTwin = defineComponent<MirrorTwinData>('MirrorTwin', () => ({
   ownerId: -1,
   fireCooldown: 0,
+}));
+
+export interface PickupData {
+  pickupId: PickupSpecId;
+  effect: PickupEffect;
+}
+export const Pickup = defineComponent<PickupData>('Pickup', () => ({
+  pickupId: 'pickup-iskry' as PickupSpecId,
+  effect: { kind: 'weapon-swap', weapon: 'iskry' as WeaponSpecId },
 }));
 
 export interface SpiralCollapseData {

@@ -14,6 +14,7 @@ import {
   Lifetime,
   Miniboss,
   type MinibossPattern,
+  Pickup,
   Ship,
 } from './components';
 import {
@@ -23,6 +24,7 @@ import {
   ENEMY_SPECS,
 } from './config/gameplay';
 import { Layer, Mask } from './layers';
+import type { PickupDef } from './visual-spec/types';
 
 export interface AtlasHandle {
   image: SkImage;
@@ -224,5 +226,24 @@ export function spawnBullet(
   world.add(id, Bullet, { damage: 1, ownerLayer });
   world.add(id, Lifetime, { remaining: 3 });
   coll.add(id, AABB(f.w, f.h), x, y, true, layer, mask);
+  return id;
+}
+
+export function spawnPickup(ctx: SpawnCtx, def: PickupDef, x: number, y: number): number {
+  const { world, coll, atlas } = ctx;
+  const id = world.spawn();
+  const frameName = String(def.id);
+  const f = frame(atlas.sheet, frameName);
+  world.add(id, Position, { x, y });
+  world.add(id, Velocity, { x: 0, y: 0 });
+  world.add(id, Sprite, {
+    image: atlas.image,
+    frame: f,
+    z: 5,
+    anchor: CENTER_ANCHOR,
+  });
+  world.add(id, Pickup, { pickupId: def.id, effect: def.effect });
+  world.add(id, Lifetime, { remaining: 12 });
+  coll.add(id, AABB(f.w, f.h), x, y, true, Layer.pickup, Mask.pickup);
   return id;
 }

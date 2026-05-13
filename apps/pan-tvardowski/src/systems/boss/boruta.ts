@@ -1,12 +1,10 @@
 import { Position } from '@flare-engine/ecs';
-import { Color, Vec2 as V, type Vec2 } from '@flare-engine/math';
-function hexToArgb(hex: string): number {
-  return Color.toSkColor(Color.fromHex(hex));
-}
+import { Vec2 as V, type Vec2 } from '@flare-engine/math';
 import { Boss } from '../../components';
 import { BORUTA_SUMMON_COUNT, BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
+import { hexToArgb } from '../../util/hex';
 
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';

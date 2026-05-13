@@ -10,7 +10,6 @@ export type {
   PolylineSpec,
   GradientRectSpec,
 } from '@flare-engine/shapes';
-export { SHAPE_CATALOGUE } from './visual-spec/shapes-catalogue';
 export type { EntityId } from './visual-spec/types';
 export {
   createLocalization,

@@ -1,12 +1,13 @@
 /**
  * Shape-atlas builder — rasterizes every gameplay-relevant entity from
- * `SHAPE_CATALOGUE` (plus a few runtime-only frames: bullets, particles)
- * onto a single offscreen Skia surface and returns a `SpriteSheet` keyed
- * by frame name.
+ * `SHIP_DEFS` + `HULL_PRESETS` + `PICKUP_DEFS` (plus runtime-only frames:
+ * bullets, particles, tiles) onto a single offscreen Skia surface and returns
+ * a `SpriteSheet` keyed by frame name.
  *
- * Frame names mirror the catalogue keys, plus:
- *   - `player-bullet` / `enemy-bullet` — colored rects
- *   - `particle-spark` / `particle-smoke` — small dots
+ * Frame names:
+ *   - Ships: entity id (e.g. 'kogut-zloty', 'smok-krzemionkowski')
+ *   - Pickups: PickupSpecId (e.g. 'pickup-iskry', 'pickup-czarna-ksiega')
+ *   - Runtime: 'player-bullet', 'enemy-bullet-a/b', 'particle-spark/smoke', tiles
  *
  * Built once at boot. Zero per-frame cost — the render system just reads
  * pre-rasterized frames like any other sprite atlas.
@@ -14,9 +15,12 @@
 
 import { type SpriteFrame, type SpriteSheet, createSpriteSheet } from '@flare-engine/assets';
 import { argbTo, drawShape, shapeBoundsRadius } from '@flare-engine/shapes';
-import type { ShapeSpec, ShipSpec } from '@flare-engine/shapes';
+import type { RectSpec, ShapeSpec, ShipSpec } from '@flare-engine/shapes';
 import type { SkImage, Skia as SkiaModule } from '@shopify/react-native-skia';
-import { SHAPE_CATALOGUE } from './visual-spec/shapes-catalogue';
+import { hexToArgb } from './util/hex';
+import { HULL_PRESETS } from './visual-spec/hull-presets';
+import { PICKUP_DEFS } from './visual-spec/pickups';
+import { SHIP_DEFS } from './visual-spec/ships';
 
 type Skia = typeof SkiaModule;
 
@@ -34,6 +38,52 @@ interface FrameBuild {
   w: number;
   h: number;
   draw: (Skia: Skia, canvas: import('@shopify/react-native-skia').SkCanvas) => void;
+}
+
+/** Weapon-rect dimensions keyed by weaponRatio string. */
+const WEAPON_SIZES: Readonly<Record<'1:8' | '1:10' | '1:12', { w: number; h: number }>> = {
+  '1:8': { w: 4, h: 32 },
+  '1:10': { w: 6, h: 60 },
+  '1:12': { w: 8, h: 96 },
+};
+
+function weaponRectSize(ratio: '1:8' | '1:10' | '1:12'): { w: number; h: number } {
+  return WEAPON_SIZES[ratio];
+}
+
+function buildWeaponRects(
+  count: 1 | 2,
+  hooks: {
+    readonly one: { x: number; y: number };
+    readonly two: readonly [{ x: number; y: number }, { x: number; y: number }];
+  },
+  w: number,
+  h: number,
+  fill: number,
+): RectSpec[] {
+  if (count === 1) {
+    return [{ kind: 'rect', w, h, fill, ox: hooks.one.x, oy: hooks.one.y }];
+  }
+  return [
+    { kind: 'rect', w, h, fill, ox: hooks.two[0].x, oy: hooks.two[0].y },
+    { kind: 'rect', w, h, fill, ox: hooks.two[1].x, oy: hooks.two[1].y },
+  ];
+}
+
+/**
+ * Return a copy of the hull ShapeSpec with fill (and optional stroke) applied
+ * from the ShipDef. The preset carries a neutral placeholder fill.
+ */
+function coloredHull(
+  spec: ShapeSpec,
+  fill: number,
+  stroke?: number,
+  strokeWidth?: number,
+): ShapeSpec {
+  const base = { ...spec, fill };
+  if (stroke !== undefined) (base as Record<string, unknown>).stroke = stroke;
+  if (strokeWidth !== undefined) (base as Record<string, unknown>).strokeWidth = strokeWidth;
+  return base as ShapeSpec;
 }
 
 function buildFrames(): FrameBuild[] {
@@ -55,24 +105,35 @@ function buildFrames(): FrameBuild[] {
     });
   };
 
-  // ShipSpec records — each value is a single composite spec; wrap in a
-  // single-element array so drawShape dispatches via `case 'ship'`.
-  for (const category of [
-    SHAPE_CATALOGUE.enemies,
-    SHAPE_CATALOGUE.ships,
-    SHAPE_CATALOGUE.minibosses,
-    SHAPE_CATALOGUE.bosses,
-  ]) {
-    for (const [id, spec] of Object.entries(category)) {
-      addShapeEntity(id, [spec as ShipSpec]);
-    }
+  // Ship frames — built from SHIP_DEFS + HULL_PRESETS. Frame name = ship id.
+  for (const ship of SHIP_DEFS) {
+    const preset = HULL_PRESETS[ship.hullPreset];
+    const hullShape = preset.shapes[0];
+    if (!hullShape) continue;
+    const hullArgb = hexToArgb(ship.hullColor);
+    const weaponArgb = hexToArgb(ship.weaponColor);
+    const engineArgb = hexToArgb(ship.engineColor);
+    const { w: wW, h: wH } = weaponRectSize(ship.weaponRatio);
+    const weapons: RectSpec[] = buildWeaponRects(
+      ship.weaponCount,
+      preset.weaponHooks,
+      wW,
+      wH,
+      weaponArgb,
+    );
+    const strokeArgb = ship.hullStroke !== undefined ? hexToArgb(ship.hullStroke) : undefined;
+    const shipSpec: ShipSpec = {
+      kind: 'ship',
+      hull: coloredHull(hullShape, hullArgb, strokeArgb, ship.hullStrokeWidth),
+      weapons,
+      engine: { kind: 'square', size: 20, fill: engineArgb },
+    };
+    addShapeEntity(ship.id, [shipSpec]);
   }
 
-  // ShapeSpec[] records — each value is already an array of primitives.
-  for (const category of [SHAPE_CATALOGUE.weaponPickups, SHAPE_CATALOGUE.upgradePickups]) {
-    for (const [id, specs] of Object.entries(category)) {
-      addShapeEntity(id, specs as readonly ShapeSpec[]);
-    }
+  // Pickup frames — built from PICKUP_DEFS. Frame name = PickupSpecId (has 'pickup-' prefix).
+  for (const pickup of PICKUP_DEFS) {
+    addShapeEntity(pickup.id as string, pickup.shapes);
   }
 
   // Runtime-only frames — bullets + particles as flat colored rects/dots.

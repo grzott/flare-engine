@@ -1,26 +1,29 @@
 import { describe, expect, test } from 'bun:test';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { PICKUP_DEFS } from '../src/visual-spec/pickups';
+import { SHIP_DEFS } from '../src/visual-spec/ships';
 
 const ZONE_NUMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
+// Zone entityIds use old-style pickup names ('iskry', 'czarna-ksiega') which
+// match PICKUP_DEFS ids with the 'pickup-' prefix stripped.
+function pickupEntityKey(id: string): string {
+  return id.startsWith('pickup-') ? id.slice('pickup-'.length) : id;
+}
+
 const ALL_ENTITY_KEYS: ReadonlySet<string> = new Set([
-  ...Object.keys(SHAPE_CATALOGUE.enemies),
-  ...Object.keys(SHAPE_CATALOGUE.minibosses),
-  ...Object.keys(SHAPE_CATALOGUE.bosses),
-  ...Object.keys(SHAPE_CATALOGUE.ships),
-  ...Object.keys(SHAPE_CATALOGUE.weaponPickups),
-  ...Object.keys(SHAPE_CATALOGUE.upgradePickups),
+  ...SHIP_DEFS.map((d) => d.id as string),
+  ...PICKUP_DEFS.map((d) => pickupEntityKey(String(d.id))),
 ]);
 
 describe('zone entity-id resolution (session #99)', () => {
-  test('all entityIds resolve in SHAPE_CATALOGUE', () => {
+  test('all entityIds resolve in SHIP_DEFS + PICKUP_DEFS', () => {
     for (const n of ZONE_NUMS) {
       const zone = ZONE_VISUAL_SPECS[n];
       for (const id of zone.entityIds) {
         expect(
           ALL_ENTITY_KEYS.has(id),
-          `Z${n}: entityId '${id}' not found in SHAPE_CATALOGUE`,
+          `Z${n}: entityId '${id}' not found in SHIP_DEFS or PICKUP_DEFS`,
         ).toBe(true);
       }
     }

@@ -11,13 +11,9 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import { Color } from '@flare-engine/math';
+import { hexToArgb } from '../src/util/hex';
 import { THEME_SPEC } from '../src/visual-spec/theme';
 import { ZONE_PALETTES, getUiPrimary, getUiPrimaryHex } from '../src/visual-spec/zones-palette';
-
-function hexToArgb(hex: string): number {
-  return Color.toSkColor(Color.fromHex(hex));
-}
 
 describe('zones-palette — hexToArgb token round-trip', () => {
   test('gold', () => {

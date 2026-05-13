@@ -1,55 +1,52 @@
 import { describe, expect, test } from 'bun:test';
-import type { ShipSpec } from '@flare-engine/shapes';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { SHIP_DEFS } from '../src/visual-spec/ships';
+import type { ShipDef } from '../src/visual-spec/types';
 
 /**
- * Player ship anatomy — session #77 M3.
- * All 3 player ships rewritten as ShipSpec with brand hue families (folio XIIIc).
- * kogut-zloty = GOLD, alembik = BOG_GREEN/Twardoń, zwierciadlo = DEEP_BLUE/Bazyl.
+ * Player ship anatomy — session #77 M3 (migrated from SHAPE_CATALOGUE).
+ * All 3 player ships: kogut-zloty (GOLD), alembik (BOG_GREEN), zwierciadlo (DEEP_BLUE).
  */
 
-const { ships } = SHAPE_CATALOGUE;
-const SHIP_ENTRIES = Object.entries(ships) as [string, ShipSpec][];
+const PLAYER_DEFS = SHIP_DEFS.filter(
+  (d): d is ShipDef => d.weaponRatio === '1:12' && d.glow === 'friendly',
+);
 
-// Brand hue constants (must match shape-catalogue.ts)
-const GOLD = 0xffc9a24a;
-const BOG_GREEN = 0xff1a2e1f;
-const DEEP_BLUE = 0xff1a2e4a;
+// Brand hue hex values (must match ships.ts / theme.ts)
+const GOLD = '#C9A24A';
+const BOG_GREEN = '#1A2E1F';
+const DEEP_BLUE = '#1A2E4A';
 
-describe('player ShipSpec structure — session #77 M3', () => {
-  test('all 3 player ships have kind=ship', () => {
-    expect(SHIP_ENTRIES).toHaveLength(3);
-    for (const [name, spec] of SHIP_ENTRIES) {
-      expect(spec.kind, name).toBe('ship');
+describe('player ShipDef structure — session #77 M3', () => {
+  test('all 3 player ships present', () => {
+    expect(PLAYER_DEFS).toHaveLength(3);
+  });
+
+  test('all 3 player ships have glow=friendly', () => {
+    for (const def of PLAYER_DEFS) {
+      expect(def.glow, `${def.id} glow`).toBe('friendly');
     }
   });
 
-  test('all 3 player ships have glow=friendly at ShipSpec level', () => {
-    for (const [name, spec] of SHIP_ENTRIES) {
-      expect(spec.glow, `${name} glow`).toBe('friendly');
-    }
-  });
-
-  test('each player ship has exactly 2 weapons', () => {
-    for (const [name, spec] of SHIP_ENTRIES) {
-      expect(spec.weapons.length, `${name} weapons.length`).toBe(2);
+  test('each player ship has weaponCount=2', () => {
+    for (const def of PLAYER_DEFS) {
+      expect(def.weaponCount, `${def.id} weaponCount`).toBe(2);
     }
   });
 });
 
 describe('player ship brand hue families — session #77 M3', () => {
-  test('kogut-zloty uses GOLD hull fill', () => {
-    const spec = ships['kogut-zloty'];
-    expect(spec.hull.fill).toBe(GOLD);
+  test('kogut-zloty uses GOLD hull color', () => {
+    const def = PLAYER_DEFS.find((d) => d.id === 'kogut-zloty');
+    expect(def?.hullColor.toUpperCase()).toBe(GOLD.toUpperCase());
   });
 
-  test('alembik uses BOG_GREEN hull fill', () => {
-    const spec = ships.alembik;
-    expect(spec.hull.fill).toBe(BOG_GREEN);
+  test('alembik uses BOG_GREEN hull color', () => {
+    const def = PLAYER_DEFS.find((d) => d.id === 'alembik');
+    expect(def?.hullColor.toUpperCase()).toBe(BOG_GREEN.toUpperCase());
   });
 
-  test('zwierciadlo uses DEEP_BLUE hull fill', () => {
-    const spec = ships.zwierciadlo;
-    expect(spec.hull.fill).toBe(DEEP_BLUE);
+  test('zwierciadlo uses DEEP_BLUE hull color', () => {
+    const def = PLAYER_DEFS.find((d) => d.id === 'zwierciadlo');
+    expect(def?.hullColor.toUpperCase()).toBe(DEEP_BLUE.toUpperCase());
   });
 });

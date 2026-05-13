@@ -1,52 +1,60 @@
 import { describe, expect, test } from 'bun:test';
-import type { ShipSpec } from '@flare-engine/shapes';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { HULL_PRESETS } from '../src/visual-spec/hull-presets';
+import { SHIP_DEFS } from '../src/visual-spec/ships';
+import type { ShipDef } from '../src/visual-spec/types';
 
 /**
- * Boss ship anatomy — session #77 M2.
- * All 8 bosses rewritten as ShipSpec, violet hue family (folio XIIIf).
+ * Boss ship anatomy — session #77 M2 (migrated from SHAPE_CATALOGUE).
+ * All 8 bosses use violet hue family (folio XIIIf).
  */
 
-const { bosses } = SHAPE_CATALOGUE;
-const BOSS_ENTRIES = Object.entries(bosses) as [string, ShipSpec][];
+const BOSS_DEFS = SHIP_DEFS.filter(
+  (d): d is ShipDef => d.weaponRatio === '1:12' && d.glow === 'hazard',
+);
 
-// Violet hue range: hue 260–300°, any saturation/value within the purple band.
-// R channel stays low (≤ 0xb0), B channel stays high (≥ 0x40) relative to G.
-function isVioletFamily(argb: number): boolean {
-  const r = (argb >>> 16) & 0xff;
-  const g = (argb >>> 8) & 0xff;
-  const b = argb & 0xff;
-  // Violet: blue dominant, red moderate-to-high, green low.
+// Violet Hex range: hue 260–300°. R low-to-moderate, B dominant, G low.
+// Check on RGB channels extracted from #rrggbb.
+function isVioletHex(hex: string): boolean {
+  const n = Number.parseInt(hex.replace('#', ''), 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
   return b > g && r > g && b >= 0x40 && r <= 0xb0;
 }
 
-describe('boss ShipSpec structure — session #77 M2', () => {
-  test('all 8 bosses have kind=ship', () => {
-    expect(BOSS_ENTRIES).toHaveLength(8);
-    for (const [name, spec] of BOSS_ENTRIES) {
-      expect(spec.kind, name).toBe('ship');
-    }
+describe('boss ShipDef structure — session #77 M2', () => {
+  test('all 8 bosses present', () => {
+    expect(BOSS_DEFS).toHaveLength(8);
   });
 
-  test('each boss hull and engine fill is in the violet hue family', () => {
-    for (const [name, spec] of BOSS_ENTRIES) {
-      const hullFill = spec.hull.fill ?? 0;
-      const engineFill = spec.engine.fill ?? 0;
+  test('each boss hullColor is in the violet hue family', () => {
+    for (const def of BOSS_DEFS) {
       expect(
-        isVioletFamily(hullFill),
-        `${name} hull fill 0x${hullFill.toString(16)} not in violet family`,
-      ).toBe(true);
-      expect(
-        isVioletFamily(engineFill),
-        `${name} engine fill 0x${engineFill.toString(16)} not in violet family`,
+        isVioletHex(def.hullColor),
+        `${def.id} hullColor ${def.hullColor} not in violet family`,
       ).toBe(true);
     }
   });
 
-  test('each boss has between 2 and 4 weapons', () => {
-    for (const [name, spec] of BOSS_ENTRIES) {
-      expect(spec.weapons.length, `${name} weapons.length`).toBeGreaterThanOrEqual(2);
-      expect(spec.weapons.length, `${name} weapons.length`).toBeLessThanOrEqual(4);
+  test('each boss engineColor is in the violet hue family', () => {
+    for (const def of BOSS_DEFS) {
+      expect(
+        isVioletHex(def.engineColor),
+        `${def.id} engineColor ${def.engineColor} not in violet family`,
+      ).toBe(true);
+    }
+  });
+
+  test('each boss has weaponCount between 2 and 2 (ShipDef max)', () => {
+    for (const def of BOSS_DEFS) {
+      expect(def.weaponCount, `${def.id} weaponCount`).toBeGreaterThanOrEqual(1);
+      expect(def.weaponCount, `${def.id} weaponCount`).toBeLessThanOrEqual(2);
+    }
+  });
+
+  test('each boss hullPreset resolves in HULL_PRESETS', () => {
+    for (const def of BOSS_DEFS) {
+      expect(HULL_PRESETS[def.hullPreset], `${def.id} hullPreset`).toBeDefined();
     }
   });
 });

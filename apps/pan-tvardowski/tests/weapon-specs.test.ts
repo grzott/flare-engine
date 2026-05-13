@@ -2,23 +2,23 @@ import { describe, expect, test } from 'bun:test';
 import { WEAPON_PROJECTILE_SPECS } from '../src/config/gameplay';
 import type { WeaponId } from '../src/config/gameplay';
 import { LOCALIZATION_KEYS } from '../src/localization/keys';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { BULLET_DEFS } from '../src/visual-spec/bullets';
 
 const WEAPON_IDS: WeaponId[] = ['iskry', 'piorun', 'sol-swiecona', 'znak-pentagramu'];
 
-describe('weapon projectile catalogue — M1', () => {
-  test('weaponProjectiles has exactly 4 entries (one per WeaponId)', () => {
-    const entries = Object.keys(SHAPE_CATALOGUE.weaponProjectiles);
-    expect(entries.length).toBe(4);
+describe('weapon bullet visual catalogue — BULLET_DEFS', () => {
+  test('BULLET_DEFS has an entry for each weapon (bullet id follows <weapon>-bullet convention)', () => {
+    const bulletIds = BULLET_DEFS.map((d) => String(d.id));
     for (const id of WEAPON_IDS) {
-      expect(entries).toContain(id);
+      const match = bulletIds.some((bid) => bid.startsWith(id));
+      expect(match, `no BULLET_DEFS entry for weapon ${id}`).toBe(true);
     }
   });
 
-  test('each weaponProjectiles entry is non-empty', () => {
-    for (const id of WEAPON_IDS) {
-      const shapes = SHAPE_CATALOGUE.weaponProjectiles[id];
-      expect(shapes.length, `${id} projectile shapes`).toBeGreaterThan(0);
+  test('each BULLET_DEFS entry has a positive intensity and a hex fill', () => {
+    for (const def of BULLET_DEFS) {
+      expect(def.intensity, String(def.id)).toBeGreaterThan(0);
+      expect(def.fill, String(def.id)).toMatch(/^#[0-9A-Fa-f]{6}$/);
     }
   });
 });

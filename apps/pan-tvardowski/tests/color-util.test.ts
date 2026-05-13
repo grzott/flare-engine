@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { Color } from '@flare-engine/math';
+import { hexToArgb } from '../src/util/hex';
 
 describe('Color.fromHex', () => {
   test('#FF0000 yields r=1 g=0 b=0 a=1', () => {
@@ -42,5 +43,19 @@ describe('Color.toSkColor', () => {
   test('#ffffff yields 0xffffffff', () => {
     const argb = Color.toSkColor(Color.fromHex('#ffffff'));
     expect(argb >>> 0).toBe(0xffffffff);
+  });
+});
+
+describe('hexToArgb util — single source of truth', () => {
+  test('#FF0000 yields 0xffff0000', () => {
+    expect(hexToArgb('#FF0000') >>> 0).toBe(0xffff0000);
+  });
+
+  test('#C9A24A (gold) round-trips to 0xffc9a24a', () => {
+    expect(hexToArgb('#C9A24A') >>> 0).toBe(0xffc9a24a);
+  });
+
+  test('#3A0F5C (violetDark) round-trips to 0xff3a0f5c', () => {
+    expect(hexToArgb('#3A0F5C') >>> 0).toBe(0xff3a0f5c);
   });
 });

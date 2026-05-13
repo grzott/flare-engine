@@ -1,74 +1,55 @@
 import { describe, expect, test } from 'bun:test';
-import type { ShipSpec } from '@flare-engine/shapes';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { HULL_PRESETS } from '../src/visual-spec/hull-presets';
+import { SHIP_DEFS } from '../src/visual-spec/ships';
+import type { ShipDef } from '../src/visual-spec/types';
 
-const ENEMY_ENTRIES = Object.entries(SHAPE_CATALOGUE.enemies) as [string, ShipSpec][];
+const ENEMY_DEFS = SHIP_DEFS.filter((d) => d.weaponRatio === '1:8') as ShipDef[];
 
 describe('ship anatomy — 3-element rule (folio XIIIa/XIIIb)', () => {
-  test('T1 ShipSpec has kind=ship', () => {
-    const spec: ShipSpec = {
-      kind: 'ship',
-      hull: { kind: 'circle', r: 10, fill: 0xff000000 },
-      weapons: [{ kind: 'rect', w: 4, h: 8, fill: 0xff000000 }],
-      engine: { kind: 'square', size: 20, fill: 0xff000000 },
-    };
-    expect(spec.kind).toBe('ship');
-    expect(spec.hull.kind).toBe('circle');
-    expect(spec.engine.kind).toBe('square');
+  test('T1 ShipDef type has id, hullPreset, weaponCount, engineColor', () => {
+    const def = ENEMY_DEFS[0];
+    expect(def).toBeDefined();
+    expect(typeof def?.id).toBe('string');
+    expect(typeof def?.hullPreset).toBe('string');
+    expect(typeof def?.weaponCount).toBe('number');
+    expect(typeof def?.engineColor).toBe('string');
   });
 
-  test('T2 all 14 enemies have kind=ship', () => {
-    expect(ENEMY_ENTRIES).toHaveLength(14);
-    for (const [name, spec] of ENEMY_ENTRIES) {
-      expect(spec.kind, name).toBe('ship');
+  test('T2 all 14 enemies present in SHIP_DEFS', () => {
+    expect(ENEMY_DEFS).toHaveLength(14);
+  });
+
+  test('T3 weaponCount is in [1, 2] for all enemies', () => {
+    for (const def of ENEMY_DEFS) {
+      expect(def.weaponCount, `${def.id} weaponCount`).toBeGreaterThanOrEqual(1);
+      expect(def.weaponCount, `${def.id} weaponCount`).toBeLessThanOrEqual(2);
     }
   });
 
-  test('T3 weapons.length is in [1, 2] for all enemies', () => {
-    for (const [name, spec] of ENEMY_ENTRIES) {
-      expect(spec.weapons.length, `${name} weapons.length`).toBeGreaterThanOrEqual(1);
-      expect(spec.weapons.length, `${name} weapons.length`).toBeLessThanOrEqual(2);
+  test('T4 every enemy hullPreset resolves in HULL_PRESETS', () => {
+    for (const def of ENEMY_DEFS) {
+      expect(HULL_PRESETS[def.hullPreset], `${def.id} hullPreset`).toBeDefined();
     }
   });
 
-  test('T4 engine is present and kind=square for all enemies', () => {
-    for (const [name, spec] of ENEMY_ENTRIES) {
-      expect(spec.engine, `${name} engine`).toBeDefined();
-      expect(spec.engine.kind, `${name} engine.kind`).toBe('square');
-    }
-  });
-
-  test('T5 no two enemies share the same hull silhouette (kind+shape params+fill)', () => {
+  test('T5 no two enemies share the same silhouette key (hullPreset + hullColor + weaponColor)', () => {
     const seen = new Set<string>();
-    for (const [name, spec] of ENEMY_ENTRIES) {
-      const h = spec.hull;
-      // Build a key that encodes the shape-discriminating parameters so that
-      // bies (ngon-6) and wapierz (ngon-8) are distinct even with same fill.
-      let shapeParams = '';
-      if (h.kind === 'circle' || h.kind === 'ring') shapeParams = String(h.r);
-      else if (h.kind === 'ngon') shapeParams = `n${h.n}r${h.r}`;
-      else if (h.kind === 'triangle') shapeParams = String(h.size);
-      else if (h.kind === 'star') shapeParams = `${h.points}o${h.rOuter}i${h.rInner}`;
-      else if (h.kind === 'rect') shapeParams = `${h.w}x${h.h}`;
-      const key = `${h.kind}:${shapeParams}:${String(h.fill ?? 'none')}`;
-      expect(seen.has(key), `${name} duplicate hull silhouette key=${key}`).toBe(false);
+    for (const def of ENEMY_DEFS) {
+      const key = `${def.hullPreset}:${def.hullColor}:${def.weaponColor}`;
+      expect(seen.has(key), `${def.id} duplicate silhouette key=${key}`).toBe(false);
       seen.add(key);
     }
   });
 
-  test('T6 engine.size === 20 for all 14 enemies', () => {
-    for (const [name, spec] of ENEMY_ENTRIES) {
-      expect(spec.engine.size, `${name} engine.size`).toBe(20);
+  test('T6 every enemy has engineColor defined', () => {
+    for (const def of ENEMY_DEFS) {
+      expect(def.engineColor.length, `${def.id} engineColor`).toBeGreaterThan(0);
     }
   });
 
-  test('T7 every weapon has w > 0 and h > 0', () => {
-    for (const [name, spec] of ENEMY_ENTRIES) {
-      for (let i = 0; i < spec.weapons.length; i++) {
-        const w = spec.weapons[i];
-        expect(w?.w, `${name} weapon[${i}].w`).toBeGreaterThan(0);
-        expect(w?.h, `${name} weapon[${i}].h`).toBeGreaterThan(0);
-      }
+  test('T7 every enemy has weaponColor defined', () => {
+    for (const def of ENEMY_DEFS) {
+      expect(def.weaponColor.length, `${def.id} weaponColor`).toBeGreaterThan(0);
     }
   });
 });

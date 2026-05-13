@@ -1,11 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { Color } from '@flare-engine/math';
 import { PORTRAIT_MANIFEST, resolvePortraitShape } from '../src/dialogue/portrait-manifest';
+import { hexToArgb } from '../src/util/hex';
 import { THEME_SPEC } from '../src/visual-spec';
-
-function hexToArgb(hex: string): number {
-  return Color.toSkColor(Color.fromHex(hex));
-}
 
 describe('portrait-manifest — shape routing via THEME_SPEC tokens', () => {
   test('portrait.king base shape fill routes to portraitKingGold ARGB', () => {

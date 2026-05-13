@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import type { ShapeSpec } from '@flare-engine/shapes';
-import { SHAPE_CATALOGUE } from '../src/visual-spec/shapes-catalogue';
+import { PICKUP_DEFS } from '../src/visual-spec/pickups';
 
-const { weaponPickups, upgradePickups } = SHAPE_CATALOGUE;
+const WEAPON_PICKUP_DEFS = PICKUP_DEFS.filter((d) => d.effect.kind === 'weapon-swap');
+const UPGRADE_PICKUP_DEFS = PICKUP_DEFS.filter((d) => d.effect.kind !== 'weapon-swap');
 
-const WEAPON_PICKUP_ENTRIES = Object.entries(weaponPickups) as [string, readonly ShapeSpec[]][];
-const UPGRADE_PICKUP_ENTRIES = Object.entries(upgradePickups) as [string, readonly ShapeSpec[]][];
+const WEAPON_PICKUP_ENTRIES = WEAPON_PICKUP_DEFS.map((d) => [String(d.id), d.shapes] as const);
+const UPGRADE_PICKUP_ENTRIES = UPGRADE_PICKUP_DEFS.map((d) => [String(d.id), d.shapes] as const);
 
 /**
  * Signature = kind + first discriminating param + fill.
- * Pickups use non-ship shapes so we encode: kind:param:fill
  */
 function pickupSignature(spec: ShapeSpec): string {
   if (spec.kind === 'circle') return `circle:r${spec.r}:${String(spec.fill ?? 'none')}`;
@@ -23,39 +23,39 @@ function pickupSignature(spec: ShapeSpec): string {
   if (spec.kind === 'triangle') return `triangle:${spec.size}:${String(spec.fill ?? 'none')}`;
   if (spec.kind === 'gradient-rect')
     return `gradient-rect:${spec.w}x${spec.h}:${String(spec.colorA)}`;
-  return `unknown:${String(spec.fill ?? 'none')}`;
+  return `unknown:${String((spec as { fill?: unknown }).fill ?? 'none')}`;
 }
 
 describe('pickup folio-conformance (folio XIIIc) — session #78 M1', () => {
-  test('T1: 4 weapon-pickup entries, each non-empty ShapeSpec[]', () => {
+  test('T1: 4 weapon-pickup entries, each non-empty shapes[]', () => {
     expect(WEAPON_PICKUP_ENTRIES).toHaveLength(4);
-    for (const [name, specs] of WEAPON_PICKUP_ENTRIES) {
-      expect(specs.length, `${name} should be non-empty`).toBeGreaterThan(0);
+    for (const [name, shapes] of WEAPON_PICKUP_ENTRIES) {
+      expect(shapes.length, `${name} should be non-empty`).toBeGreaterThan(0);
     }
   });
 
-  test('T2: 6 upgrade-pickup entries, each non-empty ShapeSpec[]', () => {
+  test('T2: 6 upgrade-pickup entries, each non-empty shapes[]', () => {
     expect(UPGRADE_PICKUP_ENTRIES).toHaveLength(6);
-    for (const [name, specs] of UPGRADE_PICKUP_ENTRIES) {
-      expect(specs.length, `${name} should be non-empty`).toBeGreaterThan(0);
+    for (const [name, shapes] of UPGRADE_PICKUP_ENTRIES) {
+      expect(shapes.length, `${name} should be non-empty`).toBeGreaterThan(0);
     }
   });
 
   test('T3: every pickup first spec has glow=friendly', () => {
-    for (const [name, specs] of WEAPON_PICKUP_ENTRIES) {
-      expect(specs[0]?.glow, `weapon pickup ${name} first spec glow`).toBe('friendly');
+    for (const [name, shapes] of WEAPON_PICKUP_ENTRIES) {
+      expect(shapes[0]?.glow, `weapon pickup ${name} first spec glow`).toBe('friendly');
     }
-    for (const [name, specs] of UPGRADE_PICKUP_ENTRIES) {
-      expect(specs[0]?.glow, `upgrade pickup ${name} first spec glow`).toBe('friendly');
+    for (const [name, shapes] of UPGRADE_PICKUP_ENTRIES) {
+      expect(shapes[0]?.glow, `upgrade pickup ${name} first spec glow`).toBe('friendly');
     }
   });
 
   test('T4: no two weapon-pickups share same shape-signature', () => {
     const seen = new Set<string>();
-    for (const [name, specs] of WEAPON_PICKUP_ENTRIES) {
-      const first = specs[0];
+    for (const [name, shapes] of WEAPON_PICKUP_ENTRIES) {
+      const first = shapes[0];
       if (first === undefined) continue;
-      const sig = pickupSignature(first);
+      const sig = pickupSignature(first as ShapeSpec);
       expect(seen.has(sig), `${name} duplicate signature: ${sig}`).toBe(false);
       seen.add(sig);
     }
@@ -63,10 +63,10 @@ describe('pickup folio-conformance (folio XIIIc) — session #78 M1', () => {
 
   test('T5: no two upgrade-pickups share same shape-signature', () => {
     const seen = new Set<string>();
-    for (const [name, specs] of UPGRADE_PICKUP_ENTRIES) {
-      const first = specs[0];
+    for (const [name, shapes] of UPGRADE_PICKUP_ENTRIES) {
+      const first = shapes[0];
       if (first === undefined) continue;
-      const sig = pickupSignature(first);
+      const sig = pickupSignature(first as ShapeSpec);
       expect(seen.has(sig), `${name} duplicate signature: ${sig}`).toBe(false);
       seen.add(sig);
     }

@@ -7,13 +7,9 @@
  * of locale. Colors match the entity's game representation where applicable.
  */
 
-import { Color } from '@flare-engine/math';
 import type { ShapeSpec } from '@flare-engine/shapes';
+import { hexToArgb } from '../util/hex';
 import { THEME_SPEC } from '../visual-spec/theme';
-
-function hexToArgb(hex: string): number {
-  return Color.toSkColor(Color.fromHex(hex));
-}
 
 const ARGB_KING_GOLD = hexToArgb(THEME_SPEC.colors.portraitKingGold);
 const ARGB_KING_CROWN = hexToArgb(THEME_SPEC.colors.portraitKingCrownBronze);

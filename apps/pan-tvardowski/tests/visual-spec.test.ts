@@ -236,7 +236,7 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 179 (PT-ColorUnify-C): 'riverDepth' + 'marshOlive' added to
   // ColorTokenId union — additive per schema stability protocol.
   // canary bumped #181 PT-ColorUnify-E
-  const SCHEMA_CANARY = 'f0e86682747c12a7a5fa8353582f6988528ee58afcbf5be10391b897085d619f';
+  const SCHEMA_CANARY = '80f99e48d9fb29259b523c7b9536377e638cbd975539a6adde70cc3651cd511a';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

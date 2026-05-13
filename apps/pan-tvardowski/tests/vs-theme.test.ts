@@ -43,6 +43,7 @@ const COLOR_TOKENS: readonly ColorTokenId[] = [
   'pale',
   'teal',
   'silver',
+  'smokeGrey',
   'moonBlue',
   'deepBlue',
   'straw',
@@ -101,7 +102,7 @@ describe('vs-theme — colors', () => {
     for (const id of COLOR_TOKENS) {
       expect(THEME_SPEC.colors[id], `color token: ${id}`).toBeDefined();
     }
-    expect(Object.keys(THEME_SPEC.colors).length).toBe(53);
+    expect(Object.keys(THEME_SPEC.colors).length).toBe(54);
   });
 
   test('every color value is a valid #RRGGBB hex', () => {

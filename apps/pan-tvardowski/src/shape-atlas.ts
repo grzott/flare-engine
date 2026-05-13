@@ -22,6 +22,7 @@ import type { SkImage, Skia as SkiaModule } from '@shopify/react-native-skia';
 import { hexToArgb } from './util/hex';
 import { BULLET_DEFS } from './visual-spec/bullets';
 import { HULL_PRESETS } from './visual-spec/hull-presets';
+import { PARTICLE_DEFS } from './visual-spec/particles';
 import { PICKUP_DEFS } from './visual-spec/pickups';
 import { SHIP_DEFS } from './visual-spec/ships';
 
@@ -250,28 +251,22 @@ function buildFrames(): FrameBuild[] {
       });
     }
   }
-  frames.push({
-    name: 'particle-spark',
-    w: 4,
-    h: 4,
-    draw: (Skia, canvas) => {
-      const paint = Skia.Paint();
-      argbTo(ATLAS_COLOR, 0xfff3c262);
-      paint.setColor(ATLAS_COLOR);
-      canvas.drawCircle(2, 2, 2, paint);
-    },
-  });
-  frames.push({
-    name: 'particle-smoke',
-    w: 6,
-    h: 6,
-    draw: (Skia, canvas) => {
-      const paint = Skia.Paint();
-      argbTo(ATLAS_COLOR, 0x99888888);
-      paint.setColor(ATLAS_COLOR);
-      canvas.drawCircle(3, 3, 3, paint);
-    },
-  });
+  for (const def of PARTICLE_DEFS) {
+    const fillArgb = hexToArgb(def.fill);
+    const side = Math.ceil(def.size * 2);
+    const r = def.size;
+    frames.push({
+      name: String(def.id),
+      w: side,
+      h: side,
+      draw: (Skia, canvas) => {
+        const paint = Skia.Paint();
+        argbTo(ATLAS_COLOR, fillArgb);
+        paint.setColor(ATLAS_COLOR);
+        canvas.drawCircle(r, r, r, paint);
+      },
+    });
+  }
 
   // Tile frames for zone shader backgrounds (Zone 1 fire, Zone 3 water/fog).
   frames.push({

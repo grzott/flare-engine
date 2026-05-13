@@ -60,6 +60,7 @@ export const THEME_SPEC: ThemeSpec = {
     pale: '#E6DCC8',
     teal: '#3AC4B4',
     silver: '#C8CDD4',
+    smokeGrey: '#888888',
     moonBlue: '#2B2D5A',
     deepBlue: '#1A2E4A',
     straw: '#F7F3A6',

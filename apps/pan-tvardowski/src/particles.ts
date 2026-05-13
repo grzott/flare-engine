@@ -5,9 +5,15 @@ import { Sprite } from '@flare-engine/render';
 import { Lifetime } from './components';
 import { triggerExplosion } from './fx/explosions';
 import type { AtlasHandle } from './spawn';
+import { PARTICLE_DEFS } from './visual-spec/particles';
+import type { ParticleSpecId } from './visual-spec/types';
 
 const PARTICLE_Z = 20;
 const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
+
+const SMOKE_LIFETIME_S =
+  (PARTICLE_DEFS.find((d) => d.id === ('particle-smoke' as ParticleSpecId))?.lifetimeMs ?? 80) /
+  1000;
 
 /**
  * Backward-compatible wrapper: fires a Tier-II "pop" explosion.
@@ -32,5 +38,5 @@ export function burstMuzzleFlash(world: World, atlas: AtlasHandle, x: number, y:
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: -40 });
   world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
-  world.add(id, Lifetime, { remaining: 0.08 });
+  world.add(id, Lifetime, { remaining: SMOKE_LIFETIME_S });
 }

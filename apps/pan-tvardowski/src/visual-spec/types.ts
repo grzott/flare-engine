@@ -285,6 +285,20 @@ export interface PickupDef {
   readonly glow: 'friendly';
 }
 
+// ---- Particle definition ----------------------------------------------------
+
+export type ParticleSpecId = string & { readonly __brand: 'ParticleSpecId' };
+
+export interface ParticleDef {
+  readonly id: ParticleSpecId;
+  readonly fill: Hex;
+  readonly shape: 'circle';
+  /** Radius in design pixels. */
+  readonly size: number;
+  /** Optional lifetime cap in milliseconds. Omit for fire-and-forget. */
+  readonly lifetimeMs?: number;
+}
+
 // ---- Animation preset definition --------------------------------------------
 
 export type AnimationPresetId =
@@ -574,6 +588,7 @@ export type ColorTokenId =
   | 'pale'
   | 'teal'
   | 'silver'
+  | 'smokeGrey'
   | 'moonBlue'
   | 'deepBlue'
   | 'straw'

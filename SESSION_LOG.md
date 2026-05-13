@@ -5304,3 +5304,76 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 128 — 2026-05-13 (scope: game)
+
+**Goal:** PT — visual-spec/particles (PARTICLE_DEFS schema)
+
+**Touched files**
+- `apps/pan-tvardowski/src/particles.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/particles.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/atlas-particle-wire.test.ts`
+- `apps/pan-tvardowski/tests/particle-spec.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 129 — 2026-05-13 (scope: game)
+
+**Goal:** PT — visual-spec/tiles (TILE_DEFS schema)
+
+**Touched files**
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/tiles.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/atlas-tile-wire.test.ts`
+- `apps/pan-tvardowski/tests/tile-spec.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `docs/plans/todo.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 130 — 2026-05-13 (scope: game)
+
+**Goal:** PT — visual-spec/explosions (EXPLOSION_TIER_DEFS schema)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/src/visual-spec/explosions.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/explosion-spec.test.ts`
+- `apps/pan-tvardowski/tests/explosion-tiers.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `docs/plans/todo.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

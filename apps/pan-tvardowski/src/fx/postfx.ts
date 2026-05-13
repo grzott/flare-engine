@@ -9,7 +9,7 @@ import {
   createPostFxController,
   createVignette,
 } from '@flare-engine/postfx';
-import { RIM_LIGHT_CHAIN, type RimLightRuntime, createRimLightRuntime } from '../lighting';
+import { SHADOW_RIM_CHAIN, type ShadowRimRuntime, createShadowRimRuntime } from '../lighting';
 
 export type { PostFxController };
 
@@ -20,16 +20,16 @@ export interface PanPostFxController extends PostFxController {
   triggerBloomPulse(durationMs: number): void;
   setCrtEnabled(enabled: boolean): void;
   setVignetteColor(r: number, g: number, b: number): void;
-  /** Enable the rim-light pass and update light + boss positions this frame. */
+  /** Enable the shadow-rim pass and update light + boss positions this frame. */
   setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void;
-  /** Disable the rim-light pass (boss defeated or budget watchdog triggered). */
+  /** Disable the shadow-rim pass (boss defeated or budget watchdog triggered). */
   disableRimLight(): void;
-  /** True when the rim-light pass is active. */
+  /** True when the shadow-rim pass is active. */
   readonly rimLightEnabled: boolean;
-  /** The rim-light runtime — used by play.ts render hook for the second applyPostFx call. */
-  readonly rimLight: RimLightRuntime;
-  /** The trivial chain for the rim-light pass. */
-  readonly rimLightChain: typeof RIM_LIGHT_CHAIN;
+  /** The shadow-rim runtime — used by play.ts render hook for the second applyPostFx call. */
+  readonly rimLight: ShadowRimRuntime;
+  /** The trivial chain for the shadow-rim pass. */
+  readonly rimLightChain: typeof SHADOW_RIM_CHAIN;
 }
 
 // Default rim-light parameters for smok-krzemionkowski (Zone 1).
@@ -59,7 +59,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     skia,
   });
 
-  const rimLight = createRimLightRuntime(skia);
+  const rimLight = createShadowRimRuntime(skia);
   let rimLightEnabled = false;
 
   const bloomBaseline = 0.5;
@@ -83,7 +83,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
       return rimLight;
     },
     get rimLightChain() {
-      return RIM_LIGHT_CHAIN;
+      return SHADOW_RIM_CHAIN;
     },
     setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void {
       rimLightEnabled = true;
@@ -99,6 +99,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
         bossY,
         BOSS_DISC_RADIUS,
       );
+      rimLight.updateOccluders(bossX, bossY);
     },
     disableRimLight(): void {
       rimLightEnabled = false;

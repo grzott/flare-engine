@@ -28,7 +28,7 @@ export {
   getExplosionDef,
 } from './explosions';
 export { THEME_SPEC } from './theme';
-export { ANIMATION_DEFS, HUD_TWEENS } from './animations';
+export { ANIMATION_DEFS, HUD_TWEENS, OVERLAY_OPEN_MS, OVERLAY_CLOSE_MS } from './animations';
 export type { HudTweenSpec } from './animations';
 export { HUD_SPEC } from './hud';
 export { OVERLAY_SPECS } from './overlays';

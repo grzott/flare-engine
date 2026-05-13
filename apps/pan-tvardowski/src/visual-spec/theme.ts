@@ -76,6 +76,13 @@ export const THEME_SPEC: ThemeSpec = {
     portraitTwardowskiViolet: '#3A3050',
     portraitInnkeeperBrown: '#7A5C2E',
     portraitInnkeeperHatDark: '#5C3D12',
+    pitchBrown: '#1A0E0A',
+    charcoal: '#333333',
+    hpBarDark: '#2A0810',
+    crashBg: '#0A0610',
+    parchmentLight: '#F3D6A4',
+    ashGrey: '#A89B8C',
+    crashButtonBg: '#8A2F2F',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

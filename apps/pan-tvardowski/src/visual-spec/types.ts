@@ -636,7 +636,14 @@ export type ColorTokenId =
   | 'portraitFaceParchment'
   | 'portraitTwardowskiViolet'
   | 'portraitInnkeeperBrown'
-  | 'portraitInnkeeperHatDark';
+  | 'portraitInnkeeperHatDark'
+  | 'pitchBrown'
+  | 'charcoal'
+  | 'hpBarDark'
+  | 'crashBg'
+  | 'parchmentLight'
+  | 'ashGrey'
+  | 'crashButtonBg';
 
 export interface TypographyValue {
   readonly fontFamily: string;

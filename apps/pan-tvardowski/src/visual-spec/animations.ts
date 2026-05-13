@@ -136,3 +136,12 @@ export const HUD_TWEENS: readonly HudTweenSpec[] = [
       'Folio XIV M2. Scene-level fadeTransition into game-over. Source: scenes/play.ts onPlayerDown.',
   },
 ] as const;
+
+const _overlayOpen = HUD_TWEENS.find((t) => t.id === 'overlay-open');
+const _overlayClose = HUD_TWEENS.find((t) => t.id === 'overlay-close');
+
+if (_overlayOpen === undefined) throw new Error('HUD_TWEENS missing overlay-open');
+if (_overlayClose === undefined) throw new Error('HUD_TWEENS missing overlay-close');
+
+export const OVERLAY_OPEN_MS: number = Math.round(_overlayOpen.durationSec * 1000);
+export const OVERLAY_CLOSE_MS: number = Math.round(_overlayClose.durationSec * 1000);

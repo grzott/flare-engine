@@ -4,7 +4,9 @@ import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
+import { OVERLAY_CLOSE_MS, OVERLAY_OPEN_MS } from '../visual-spec/animations';
 import { HUD_SPEC } from '../visual-spec/hud';
+import { THEME_SPEC } from '../visual-spec/theme';
 import type { HudSlotId } from '../visual-spec/types';
 import { getUiPrimaryHex } from '../visual-spec/zones-palette';
 import { rawStyles } from './Hud.styles';
@@ -79,7 +81,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       } else {
         Animated.timing(pauseOverlayOpacity.current, {
           toValue: 1,
-          duration: 240,
+          duration: OVERLAY_OPEN_MS,
           easing: Easing.out(Easing.exp),
           useNativeDriver: true,
         }).start();
@@ -91,7 +93,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
       } else {
         Animated.timing(pauseOverlayOpacity.current, {
           toValue: 0,
-          duration: 180,
+          duration: OVERLAY_CLOSE_MS,
           easing: Easing.in(Easing.exp),
           useNativeDriver: true,
         }).start(({ finished }) => {
@@ -229,7 +231,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
             ) : null}
             <View style={styles.hpBarBg}>
               <LinearGradient
-                colors={['#2a0810', '#D4213D']}
+                colors={[THEME_SPEC.colors.hpBarDark, THEME_SPEC.colors.crimson]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[

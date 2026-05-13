@@ -6,6 +6,8 @@ import { StyleSheet, View } from 'react-native';
 import { PORTRAITS_MANIFEST, resolvePortraitViaManifest } from '../assets';
 import type { DialogueController } from '../dialogue';
 import { type DialogueHudState, gameState, stateChanged } from '../state';
+import { hexToArgb } from '../util/hex';
+import { THEME_SPEC } from '../visual-spec/theme';
 import { rawStyles } from './DialogueOverlay.styles';
 
 const styles = StyleSheet.create(rawStyles);
@@ -51,7 +53,7 @@ export function DialogueOverlay({
                   style={[
                     styles.portraitBox,
                     {
-                      backgroundColor: `#${(shapes[0]?.fill ?? 0xff333333).toString(16).slice(2)}`,
+                      backgroundColor: `#${(shapes[0]?.fill ?? hexToArgb(THEME_SPEC.colors.charcoal)).toString(16).slice(2)}`,
                     },
                   ]}
                 />

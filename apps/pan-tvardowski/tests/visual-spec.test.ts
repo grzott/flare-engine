@@ -240,7 +240,10 @@ describe('visual-spec — schema canary', () => {
   // added — additive per schema stability protocol.
   // Bumped at Session 128+ (PT-ExplosionTierDef): ExplosionTierDef interface added
   // after TileDef — additive per schema stability protocol.
-  const SCHEMA_CANARY = 'bb319e1348c077eddcce63796274e1ae4e4ff669a0f0abaa1bb1bbbe956c94a3';
+  // Bumped at Session 131 (PT-TokenRefactor): 7 new ColorTokenId entries added
+  // (pitchBrown, charcoal, hpBarDark, crashBg, parchmentLight, ashGrey, crashButtonBg)
+  // — additive per schema stability protocol.
+  const SCHEMA_CANARY = '8d314d0e5dc3553932735301d62f21d4cf61a21241af1607be67c93790c97067';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

@@ -59,6 +59,13 @@ const COLOR_TOKENS: readonly ColorTokenId[] = [
   'portraitTwardowskiViolet',
   'portraitInnkeeperBrown',
   'portraitInnkeeperHatDark',
+  'pitchBrown',
+  'charcoal',
+  'hpBarDark',
+  'crashBg',
+  'parchmentLight',
+  'ashGrey',
+  'crashButtonBg',
 ];
 
 const TYPE_TOKENS: readonly TypeTokenId[] = [
@@ -98,11 +105,11 @@ const SPACING_TOKENS: readonly SpacingTokenId[] = [
 ];
 
 describe('vs-theme — colors', () => {
-  test('all 53 ColorTokenIds present in THEME_SPEC.colors', () => {
+  test('all 60 ColorTokenIds present in THEME_SPEC.colors', () => {
     for (const id of COLOR_TOKENS) {
       expect(THEME_SPEC.colors[id], `color token: ${id}`).toBeDefined();
     }
-    expect(Object.keys(THEME_SPEC.colors).length).toBe(54);
+    expect(Object.keys(THEME_SPEC.colors).length).toBe(61);
   });
 
   test('every color value is a valid #RRGGBB hex', () => {

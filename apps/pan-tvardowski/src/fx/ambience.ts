@@ -6,6 +6,8 @@ import type { AnySpriteEffect } from '@flare-engine/render';
 import { getParallaxVelocity } from '../a11y/reduced-motion';
 import { Lifetime } from '../components';
 import type { AtlasHandle } from '../spawn';
+import { hexToArgb } from '../util/hex';
+import { THEME_SPEC } from '../visual-spec/theme';
 import type { ZonePalette } from '../visual-spec/zones-palette';
 
 const PARTICLE_Z = 19;
@@ -56,7 +58,7 @@ function argbToTint(argb: number): AnySpriteEffect {
  * ring buffer sized to the zone's ambienceParticles count.
  */
 export function createAmbienceState(world: World, atlas: AtlasHandle): AmbienceState {
-  const initialPrimary = 0xffb05a3c;
+  const initialPrimary = hexToArgb(THEME_SPEC.colors.terracotta);
   const ring = new Int32Array(256);
   ring.fill(-1);
   return {

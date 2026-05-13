@@ -56,6 +56,8 @@ import {
 } from './state';
 import { getTier2Providers } from './tier2/providers';
 import { mountTier2Wiring } from './tier2/wiring';
+import { hexToArgb } from './util/hex';
+import { THEME_SPEC } from './visual-spec/theme';
 
 markBootStart();
 
@@ -413,7 +415,7 @@ function AppRoot(): React.ReactElement {
         <StatusBar hidden />
         <GameView
           config={{
-            clearColor: 0xff1a0e0a,
+            clearColor: hexToArgb(THEME_SPEC.colors.pitchBrown),
             // Android: promote the Skia canvas to SurfaceView so full-screen RN
             // overlays (HUDs, menus, dialogue) layer above it without needing
             // per-overlay elevation. Game canvas is fully opaque (clearColor
@@ -501,25 +503,25 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   crashRoot: {
     flex: 1,
-    backgroundColor: '#0a0610',
+    backgroundColor: THEME_SPEC.colors.crashBg,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
   crashTitle: {
-    color: '#f3d6a4',
+    color: THEME_SPEC.colors.parchmentLight,
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
   },
   crashMessage: {
-    color: '#a89b8c',
+    color: THEME_SPEC.colors.ashGrey,
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 24,
   },
   crashButton: {
-    backgroundColor: '#8a2f2f',
+    backgroundColor: THEME_SPEC.colors.crashButtonBg,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 6,

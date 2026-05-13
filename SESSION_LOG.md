@@ -5233,3 +5233,55 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 126 — 2026-05-13 (scope: game)
+
+**Goal:** PT — wire visual-spec defs to runtime (single source of truth)
+
+**Touched files**
+- `apps/pan-tvardowski/src/components.ts`
+- `apps/pan-tvardowski/src/dialogue/portrait-manifest.ts`
+- `apps/pan-tvardowski/src/index.ts`
+- `apps/pan-tvardowski/src/layers.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/src/systems/boss/baba-jaga.ts`
+- `apps/pan-tvardowski/src/systems/boss/bazyliszek.ts`
+- `apps/pan-tvardowski/src/systems/boss/borowy.ts`
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts`
+- `apps/pan-tvardowski/src/systems/boss/lucyper.ts`
+- `apps/pan-tvardowski/src/systems/boss/mefistofeles.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/wodnik.ts`
+- `apps/pan-tvardowski/src/util/`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/shapes-catalogue.ts`
+- `apps/pan-tvardowski/src/visual-spec/zones-palette.ts`
+- `apps/pan-tvardowski/tests/atlas-ship-wire.test.ts`
+- `apps/pan-tvardowski/tests/boss-ships.test.ts`
+- `apps/pan-tvardowski/tests/boss-visual-audit.test.ts`
+- `apps/pan-tvardowski/tests/color-util.test.ts`
+- `apps/pan-tvardowski/tests/entity-resolution.test.ts`
+- `apps/pan-tvardowski/tests/glow-recipes.test.ts`
+- `apps/pan-tvardowski/tests/miniboss-ships.test.ts`
+- `apps/pan-tvardowski/tests/pickup-ships.test.ts`
+- `apps/pan-tvardowski/tests/player-ships.test.ts`
+- `apps/pan-tvardowski/tests/portrait-manifest.test.ts`
+- `apps/pan-tvardowski/tests/shape-atlas.test.ts`
+- `apps/pan-tvardowski/tests/shape-catalogue.test.ts`
+- `apps/pan-tvardowski/tests/ship-anatomy.test.ts`
+- `apps/pan-tvardowski/tests/ship-silhouette-audit.test.ts`
+- `apps/pan-tvardowski/tests/ships-migration.test.ts`
+- `apps/pan-tvardowski/tests/spawn-pickup.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/weapon-specs.test.ts`
+- `apps/pan-tvardowski/tests/zones-palette.test.ts`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+

@@ -19,6 +19,7 @@ export { BULLET_DEFS } from './bullets';
 export { WEAPON_DEFS } from './weapons';
 export { PICKUP_DEFS } from './pickups';
 export { PARTICLE_DEFS } from './particles';
+export { TILE_DEFS } from './tiles';
 export { THEME_SPEC } from './theme';
 export { ANIMATION_DEFS, HUD_TWEENS } from './animations';
 export type { HudTweenSpec } from './animations';

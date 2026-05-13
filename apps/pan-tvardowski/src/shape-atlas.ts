@@ -25,6 +25,7 @@ import { HULL_PRESETS } from './visual-spec/hull-presets';
 import { PARTICLE_DEFS } from './visual-spec/particles';
 import { PICKUP_DEFS } from './visual-spec/pickups';
 import { SHIP_DEFS } from './visual-spec/ships';
+import { TILE_DEFS } from './visual-spec/tiles';
 
 type Skia = typeof SkiaModule;
 
@@ -268,45 +269,31 @@ function buildFrames(): FrameBuild[] {
     });
   }
 
-  // Tile frames for zone shader backgrounds (Zone 1 fire, Zone 3 water/fog).
-  frames.push({
-    name: 'tile-fire',
-    w: 32,
-    h: 32,
-    draw: (Skia, canvas) => {
-      const paint = Skia.Paint();
-      argbTo(ATLAS_COLOR, 0xffb05a3c);
-      paint.setColor(ATLAS_COLOR);
-      canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), paint);
-    },
-  });
-  frames.push({
-    name: 'tile-water',
-    w: 32,
-    h: 32,
-    draw: (Skia, canvas) => {
-      const base = Skia.Paint();
-      argbTo(ATLAS_COLOR, 0xff2f5f7a);
-      base.setColor(ATLAS_COLOR);
-      canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), base);
-      const ripple = Skia.Paint();
-      argbTo(ATLAS_COLOR, 0x66d9e4e7);
-      ripple.setColor(ATLAS_COLOR);
-      canvas.drawRect(Skia.XYWHRect(4, 8, 24, 2), ripple);
-      canvas.drawRect(Skia.XYWHRect(8, 20, 20, 2), ripple);
-    },
-  });
-  frames.push({
-    name: 'tile-fog',
-    w: 32,
-    h: 32,
-    draw: (Skia, canvas) => {
-      const paint = Skia.Paint();
-      argbTo(ATLAS_COLOR, 0x44e4f0ff);
-      paint.setColor(ATLAS_COLOR);
-      canvas.drawRect(Skia.XYWHRect(0, 0, 32, 32), paint);
-    },
-  });
+  // Tile frames for zone shader backgrounds — driven by TILE_DEFS.
+  for (const def of TILE_DEFS) {
+    const side = def.size;
+    const baseArgb = hexToArgb(def.baseFill);
+    const accentArgb = def.accent !== undefined ? hexToArgb(def.accent.fill) : 0;
+    const hasAccent = def.accent !== undefined;
+    frames.push({
+      name: String(def.id),
+      w: side,
+      h: side,
+      draw: (Skia, canvas) => {
+        const base = Skia.Paint();
+        argbTo(ATLAS_COLOR, baseArgb);
+        base.setColor(ATLAS_COLOR);
+        canvas.drawRect(Skia.XYWHRect(0, 0, side, side), base);
+        if (hasAccent) {
+          const ripple = Skia.Paint();
+          argbTo(ATLAS_COLOR, accentArgb);
+          ripple.setColor(ATLAS_COLOR);
+          canvas.drawRect(Skia.XYWHRect(4, 8, 24, 2), ripple);
+          canvas.drawRect(Skia.XYWHRect(8, 20, 20, 2), ripple);
+        }
+      },
+    });
+  }
 
   return frames;
 }

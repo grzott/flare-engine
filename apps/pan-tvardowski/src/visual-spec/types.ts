@@ -299,6 +299,20 @@ export interface ParticleDef {
   readonly lifetimeMs?: number;
 }
 
+// ---- Tile definition --------------------------------------------------------
+
+export type TileSpecId = string & { readonly __brand: 'TileSpecId' };
+
+export interface TileDef {
+  readonly id: TileSpecId;
+  readonly size: number;
+  readonly baseFill: Hex;
+  readonly accent?: {
+    readonly fill: Hex;
+    readonly pattern: 'ripple-2line';
+  };
+}
+
 // ---- Animation preset definition --------------------------------------------
 
 export type AnimationPresetId =

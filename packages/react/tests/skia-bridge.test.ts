@@ -266,7 +266,7 @@ function makeMockSkia(): SkiaModuleLike {
 }
 
 function mockImage(): SkImageLike {
-  return { width: () => 64, height: () => 64 };
+  return { width: () => 64, height: () => 64, readPixels: () => null };
 }
 
 function makeMockRuntimeEffect(
@@ -1193,7 +1193,7 @@ function makeMockSurface(w: number, h: number): MockSurface {
     },
     makeImageSnapshot() {
       surface.snapshotCallCount++;
-      return { width: () => w, height: () => h };
+      return { width: () => w, height: () => h, readPixels: () => null };
     },
   };
   return surface;

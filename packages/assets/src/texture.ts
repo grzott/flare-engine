@@ -2,6 +2,7 @@
 export interface SkImageLike {
   width(): number;
   height(): number;
+  readPixels(): Float32Array | Uint8Array | null;
 }
 
 /** A loaded texture wrapping a Skia SkImage. */

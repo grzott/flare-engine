@@ -3,7 +3,7 @@ import { createTexture } from '../src/texture.js';
 import type { SkImageLike } from '../src/texture.js';
 
 function mockImage(w: number, h: number): SkImageLike {
-  return { width: () => w, height: () => h };
+  return { width: () => w, height: () => h, readPixels: () => null };
 }
 
 describe('Texture', () => {
@@ -21,10 +21,21 @@ describe('Texture', () => {
     const img: SkImageLike = {
       width: () => w,
       height: () => 32,
+      readPixels: () => null,
     };
     const tex = createTexture('test', img);
     // Dimensions are captured at creation
     w = 128;
     expect(tex.width).toBe(64);
+  });
+
+  it('accepts a mock implementation returning a Uint8Array', () => {
+    const bytes = new Uint8Array([255, 0, 128, 255]);
+    const img: SkImageLike = {
+      width: () => 1,
+      height: () => 1,
+      readPixels: () => bytes,
+    };
+    expect(img.readPixels?.()).toBe(bytes);
   });
 });

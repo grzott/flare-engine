@@ -5188,3 +5188,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 124 — 2026-05-13 (scope: engine)
+
+**Goal:** lift readPixels to SkImageLike (lighting §2b prereq)
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/assets/src/texture.ts`
+- `packages/assets/tests/procedural-atlas.test.ts`
+- `packages/assets/tests/texture.test.ts`
+- `packages/react/tests/ping-pong.test.ts`
+- `packages/react/tests/render-shapes.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

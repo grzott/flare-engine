@@ -14,7 +14,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function makeMockImage(label = 'img'): SkImageLike & { label: string } {
-  return { label, width: () => 800, height: () => 600 };
+  return { label, width: () => 800, height: () => 600, readPixels: () => null };
 }
 
 interface MockSurface extends SkSurfaceLike {

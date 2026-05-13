@@ -44,7 +44,11 @@ function createMockSkia(): {
     },
   };
 
-  const image: SkImageLike = { width: () => 0, height: () => 0 } as SkImageLike;
+  const image: SkImageLike = {
+    width: () => 0,
+    height: () => 0,
+    readPixels: () => null,
+  } as SkImageLike;
 
   const skia: SkiaAtlasModuleLike = {
     Surface: {

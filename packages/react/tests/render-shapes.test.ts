@@ -49,7 +49,7 @@ function makeMockSurface(): MockSurface {
     },
     makeImageSnapshot(): SkImageLike {
       surface.snapshotCount++;
-      return { width: () => 0, height: () => 0 };
+      return { width: () => 0, height: () => 0, readPixels: () => null };
     },
   };
   return surface;

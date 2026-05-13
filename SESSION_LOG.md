@@ -5285,3 +5285,22 @@ None — audit-only close per row allowance.
 
 **Next:** see `docs/plans/todo.md`.
 
+
+## Session 127 — 2026-05-13 (scope: game)
+
+**Goal:** PT — wire BULLET_DEFS to atlas frames + bullet runtime
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/tests/atlas-bullet-wire.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

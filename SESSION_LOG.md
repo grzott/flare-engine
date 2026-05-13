@@ -5377,3 +5377,54 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 131 — 2026-05-13 (scope: game)
+
+**Goal:** PT — App + HUD hardcoded-literal sweep
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/fx/ambience.ts`
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/visual-spec/animations.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/vs-theme-literals.test.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 132 — 2026-05-13 (scope: game)
+
+**Goal:** PT — visual-spec/postfx (new POSTFX_PRESETS schema)
+
+**Touched files**
+- `SESSION_LOG.md`
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/postfx.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-8.ts`
+- `apps/pan-tvardowski/tests/postfx-preset.test.ts`
+- `apps/pan-tvardowski/tests/postfx-zone-wire.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

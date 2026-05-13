@@ -27,6 +27,7 @@ export {
   SPIRAL_INITIAL_RADIUS,
   getExplosionDef,
 } from './explosions';
+export { BASELINE_POSTFX, resolvePostFx } from './postfx';
 export { THEME_SPEC } from './theme';
 export { ANIMATION_DEFS, HUD_TWEENS, OVERLAY_OPEN_MS, OVERLAY_CLOSE_MS } from './animations';
 export type { HudTweenSpec } from './animations';

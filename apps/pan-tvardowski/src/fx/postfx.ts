@@ -10,6 +10,8 @@ import {
   createVignette,
 } from '@flare-engine/postfx';
 import { SHADOW_RIM_CHAIN, type ShadowRimRuntime, createShadowRimRuntime } from '../lighting';
+import { BASELINE_POSTFX, resolvePostFx } from '../visual-spec/postfx';
+import type { PostFxPresetDef } from '../visual-spec/types';
 
 export type { PostFxController };
 
@@ -41,17 +43,27 @@ const RIM_LIGHT_INTENSITY = 1.8;
 const RIM_LIGHT_FALLOFF_RADIUS = 160;
 const BOSS_DISC_RADIUS = 48;
 
-export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): PanPostFxController {
-  const chromaticAb = createChromaticAberration('chromatic-aberration', { amount: 0.012 });
+export function createPanTvardowskiPostFx(
+  skia: SkiaPostFxModuleLike | null,
+  preset?: Partial<PostFxPresetDef>,
+): PanPostFxController {
+  const p = resolvePostFx(BASELINE_POSTFX, preset);
+
+  const chromaticAb = createChromaticAberration('chromatic-aberration', {
+    amount: p.chroma.amount,
+  });
   chromaticAb.enabled = false;
 
-  const crtEffect = createCrt('crt', { scanlineIntensity: 0.25, curvature: 0.12 });
+  const crtEffect = createCrt('crt', {
+    scanlineIntensity: p.crt.scanlineIntensity,
+    curvature: p.crt.curvature,
+  });
   crtEffect.enabled = false;
 
   const base = createPostFxController({
     effects: [
-      createVignette('vignette', { intensity: 0.35, radius: 0.82 }),
-      createBloom('bloom', { threshold: 0.72, intensity: 0.5 }),
+      createVignette('vignette', { intensity: p.vignette.intensity, radius: p.vignette.radius }),
+      createBloom('bloom', { threshold: p.bloom.threshold, intensity: p.bloom.intensity }),
       createGrayscaleFlash('grayscale-flash', { intensity: 0 }),
       chromaticAb,
       crtEffect,
@@ -62,10 +74,10 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
   const rimLight = createShadowRimRuntime(skia);
   let rimLightEnabled = false;
 
-  const bloomBaseline = 0.5;
+  const bloomBaseline = p.bloom.intensity;
 
   let flashIntensity = 0;
-  let flashDecayRate = 12.5;
+  let flashDecayRate = p.flashDecayRate;
   let grayscaleHoldMs = 0;
   let bloomPulseMs = 0;
 
@@ -106,7 +118,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     },
     triggerHitFlash(decayRate?: number): void {
       flashIntensity = 1;
-      flashDecayRate = decayRate ?? 12.5;
+      flashDecayRate = decayRate ?? p.flashDecayRate;
       base.chain.setUniforms('grayscale-flash', { kind: 'grayscale-flash', intensity: 1 });
     },
     triggerChromaticAb(decayMs: number): void {
@@ -119,7 +131,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
       bloomPulseMs = durationMs;
       base.chain.setUniforms('bloom', {
         kind: 'bloom',
-        threshold: 0.72,
+        threshold: p.bloom.threshold,
         intensity: 1.2,
       });
     },
@@ -130,8 +142,8 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     setVignetteColor(r: number, g: number, b: number): void {
       base.chain.setUniforms('vignette', {
         kind: 'vignette',
-        intensity: 0.35,
-        radius: 0.82,
+        intensity: p.vignette.intensity,
+        radius: p.vignette.radius,
         color: [r, g, b],
       });
     },
@@ -159,7 +171,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
           bloomPulseMs = 0;
           base.chain.setUniforms('bloom', {
             kind: 'bloom',
-            threshold: 0.72,
+            threshold: p.bloom.threshold,
             intensity: bloomBaseline,
           });
         }

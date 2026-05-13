@@ -11,6 +11,19 @@ import type { ZoneVisualSpec } from './types';
 export const zone8: ZoneVisualSpec = {
   id: 8,
   nameKey: 'zones.8.name',
+  /**
+   * Lunar zone: lower bloom threshold so bone/silver bullets glow more
+   * visibly against the dark void sky. Bloom intensity bumped slightly for the
+   * same reason. Sub-object replaces baseline wholesale per resolvePostFx contract.
+   *
+   * To plumb this into the runtime: pass `zone8.postfxOverride` as the second
+   * argument to `createPanTvardowskiPostFx` at scene-bootstrap time. The call
+   * site lives in `scenes/play.ts` and is currently zone-agnostic; wiring it is
+   * a separate scene-bootstrap row (out of scope here).
+   */
+  postfxOverride: {
+    bloom: { threshold: 0.6, intensity: 0.65 },
+  },
   bg: {
     sky: THEME_SPEC.colors.bone, // bone
     ground: THEME_SPEC.colors.parchment, // parchment

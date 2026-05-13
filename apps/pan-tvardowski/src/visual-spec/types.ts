@@ -313,6 +313,27 @@ export interface TileDef {
   };
 }
 
+// ---- PostFx preset definition -----------------------------------------------
+
+export interface PostFxPresetDef {
+  readonly vignette: {
+    readonly intensity: number;
+    readonly radius: number;
+  };
+  readonly bloom: {
+    readonly threshold: number;
+    readonly intensity: number;
+  };
+  readonly chroma: {
+    readonly amount: number;
+  };
+  readonly crt: {
+    readonly scanlineIntensity: number;
+    readonly curvature: number;
+  };
+  readonly flashDecayRate: number;
+}
+
 // ---- Explosion tier definition ----------------------------------------------
 
 export interface ExplosionTierDef {
@@ -576,6 +597,8 @@ export interface ZoneVisualSpec {
   readonly entityIds: readonly EntityId[];
   /** Use only when zone overrides the global HUD (e.g. Z8 silver-UI). */
   readonly hudOverride?: Partial<HudSpec>;
+  /** Per-zone postfx tuning. Sub-objects replace the corresponding baseline sub-object wholesale. */
+  readonly postfxOverride?: Partial<PostFxPresetDef>;
 }
 
 // ============================================================================

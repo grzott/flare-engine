@@ -243,7 +243,10 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 131 (PT-TokenRefactor): 7 new ColorTokenId entries added
   // (pitchBrown, charcoal, hpBarDark, crashBg, parchmentLight, ashGrey, crashButtonBg)
   // — additive per schema stability protocol.
-  const SCHEMA_CANARY = '8d314d0e5dc3553932735301d62f21d4cf61a21241af1607be67c93790c97067';
+  // Bumped at Session 132 (PT-PostFxPresets): PostFxPresetDef interface added after
+  // ExplosionTierDef; ZoneVisualSpec gained optional postfxOverride field — additive
+  // per schema stability protocol.
+  const SCHEMA_CANARY = '959d0b9a25f2a69b07921f84f375954c5755c3af1f64d92dd675590f6394b13e';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

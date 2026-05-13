@@ -16,6 +16,21 @@ const ARGB_P2 = hexToArgb(THEME_SPEC.colors.rust);
 
 const aim: Vec2 = { x: 0, y: 0 };
 
+// Rim-light orbit constants for smok-krzemionkowski.
+// Light circles the boss at this altitude (screen Y offset) and radial distance.
+const RIM_ORBIT_ALTITUDE = -60;
+const RIM_ORBIT_RADIUS = 80;
+const RIM_ORBIT_SPEED = 0.8; // rad/s — matches boss.t drive
+
+/** Compute orbit light position in screen space from boss position + boss.t. */
+function smokLightPos(bossX: number, bossY: number, t: number): { lx: number; ly: number } {
+  const angle = t * RIM_ORBIT_SPEED;
+  return {
+    lx: bossX + Math.cos(angle) * RIM_ORBIT_RADIUS,
+    ly: bossY + RIM_ORBIT_ALTITUDE + Math.sin(angle) * RIM_ORBIT_RADIUS * 0.3,
+  };
+}
+
 // Smok Krzemionkowski (Zone 1).
 // Phase palette: P1=terracotta 0xffb05a3c, P2=rust 0xff8b3a1f (§10 visual-reference).
 export const smokScript: PhaseScript = {
@@ -25,6 +40,21 @@ export const smokScript: PhaseScript = {
   fire2Cooldown: 1.1,
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);
+    // Rim-light activates as soon as the boss enters combat.
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (pos && b) {
+      const { lx, ly } = smokLightPos(pos.x, pos.y, b.t);
+      c.deps.onRimLightUpdate?.(lx, ly, pos.x, pos.y);
+    }
+  },
+  onPhase1Update(_dt, c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (pos && b) {
+      const { lx, ly } = smokLightPos(pos.x, pos.y, b.t);
+      c.deps.onRimLightUpdate?.(lx, ly, pos.x, pos.y);
+    }
   },
   onPhase2Enter(c) {
     c.deps.onPaletteShift?.('phase2', ARGB_P2);
@@ -33,6 +63,24 @@ export const smokScript: PhaseScript = {
       c.deps.onPhaseBreak?.(pos.x, pos.y);
       c.deps.onPhasePostFx?.('bloom+chrom');
     }
+    // Rim light continues through phase 2 — update position immediately.
+    const b = c.world.get(c.id, Boss);
+    if (pos && b) {
+      const { lx, ly } = smokLightPos(pos.x, pos.y, b.t);
+      c.deps.onRimLightUpdate?.(lx, ly, pos.x, pos.y);
+    }
+  },
+  onPhase2Update(_dt, c) {
+    const pos = c.world.get(c.id, Position);
+    const b = c.world.get(c.id, Boss);
+    if (pos && b) {
+      const { lx, ly } = smokLightPos(pos.x, pos.y, b.t);
+      c.deps.onRimLightUpdate?.(lx, ly, pos.x, pos.y);
+    }
+  },
+  onPhase2Exit(c) {
+    // Boss is transitioning to dying — disable rim light.
+    c.deps.onRimLightDisable?.();
   },
   fire1(c) {
     const pos = c.world.get(c.id, Position);

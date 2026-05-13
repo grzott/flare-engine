@@ -9,6 +9,7 @@ import {
   createPostFxController,
   createVignette,
 } from '@flare-engine/postfx';
+import { RIM_LIGHT_CHAIN, type RimLightRuntime, createRimLightRuntime } from '../lighting';
 
 export type { PostFxController };
 
@@ -19,7 +20,26 @@ export interface PanPostFxController extends PostFxController {
   triggerBloomPulse(durationMs: number): void;
   setCrtEnabled(enabled: boolean): void;
   setVignetteColor(r: number, g: number, b: number): void;
+  /** Enable the rim-light pass and update light + boss positions this frame. */
+  setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void;
+  /** Disable the rim-light pass (boss defeated or budget watchdog triggered). */
+  disableRimLight(): void;
+  /** True when the rim-light pass is active. */
+  readonly rimLightEnabled: boolean;
+  /** The rim-light runtime — used by play.ts render hook for the second applyPostFx call. */
+  readonly rimLight: RimLightRuntime;
+  /** The trivial chain for the rim-light pass. */
+  readonly rimLightChain: typeof RIM_LIGHT_CHAIN;
 }
+
+// Default rim-light parameters for smok-krzemionkowski (Zone 1).
+// Light color: warm amber. Boss disc radius: 48 px (matches hull sub-shape).
+const RIM_LIGHT_R = 1.0;
+const RIM_LIGHT_G = 0.72;
+const RIM_LIGHT_B = 0.25;
+const RIM_LIGHT_INTENSITY = 1.8;
+const RIM_LIGHT_FALLOFF_RADIUS = 160;
+const BOSS_DISC_RADIUS = 48;
 
 export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): PanPostFxController {
   const chromaticAb = createChromaticAberration('chromatic-aberration', { amount: 0.012 });
@@ -39,6 +59,9 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     skia,
   });
 
+  const rimLight = createRimLightRuntime(skia);
+  let rimLightEnabled = false;
+
   const bloomBaseline = 0.5;
 
   let flashIntensity = 0;
@@ -52,6 +75,33 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
     },
     get runtime() {
       return base.runtime;
+    },
+    get rimLightEnabled() {
+      return rimLightEnabled;
+    },
+    get rimLight() {
+      return rimLight;
+    },
+    get rimLightChain() {
+      return RIM_LIGHT_CHAIN;
+    },
+    setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void {
+      rimLightEnabled = true;
+      rimLight.updateUniforms(
+        lightX,
+        lightY,
+        RIM_LIGHT_R,
+        RIM_LIGHT_G,
+        RIM_LIGHT_B,
+        RIM_LIGHT_INTENSITY,
+        RIM_LIGHT_FALLOFF_RADIUS,
+        bossX,
+        bossY,
+        BOSS_DISC_RADIUS,
+      );
+    },
+    disableRimLight(): void {
+      rimLightEnabled = false;
     },
     triggerHitFlash(decayRate?: number): void {
       flashIntensity = 1;

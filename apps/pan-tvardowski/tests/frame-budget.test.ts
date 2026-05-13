@@ -14,7 +14,7 @@ const BG_DRAWS_PER_ZONE = 2;
 
 describe('frame-budget guards', () => {
   beforeEach(() => {
-    recordBudget({ draws: 0, particles: 0, postfx: 0, subShapeDraws: 0 });
+    recordBudget({ draws: 0, particles: 0, postfx: 0, subShapeDraws: 0, postfxRimLight: false });
     // drain any accumulated sub-shape count from other tests
     consumeSubShapeDrawCount();
   });
@@ -33,7 +33,13 @@ describe('frame-budget guards', () => {
   });
 
   test('recordBudget stores snapshot fields correctly', () => {
-    recordBudget({ draws: 100, particles: 50, postfx: 2, subShapeDraws: 72 });
+    recordBudget({
+      draws: 100,
+      particles: 50,
+      postfx: 2,
+      subShapeDraws: 72,
+      postfxRimLight: false,
+    });
     const snap = getBudgetSnapshot();
     expect(snap.draws).toBe(100);
     expect(snap.particles).toBe(50);
@@ -42,8 +48,20 @@ describe('frame-budget guards', () => {
   });
 
   test('getBudgetSnapshot returns last recorded values', () => {
-    recordBudget({ draws: 500, particles: 200, postfx: 1, subShapeDraws: 0 });
-    recordBudget({ draws: 800, particles: 300, postfx: 3, subShapeDraws: 120 });
+    recordBudget({
+      draws: 500,
+      particles: 200,
+      postfx: 1,
+      subShapeDraws: 0,
+      postfxRimLight: false,
+    });
+    recordBudget({
+      draws: 800,
+      particles: 300,
+      postfx: 3,
+      subShapeDraws: 120,
+      postfxRimLight: false,
+    });
     const snap = getBudgetSnapshot();
     expect(snap.draws).toBe(800);
     expect(snap.particles).toBe(300);
@@ -52,8 +70,8 @@ describe('frame-budget guards', () => {
   });
 
   test('subsequent recordBudget overwrites previous values', () => {
-    recordBudget({ draws: 10, particles: 20, postfx: 1, subShapeDraws: 30 });
-    recordBudget({ draws: 42, particles: 0, postfx: 0, subShapeDraws: 0 });
+    recordBudget({ draws: 10, particles: 20, postfx: 1, subShapeDraws: 30, postfxRimLight: false });
+    recordBudget({ draws: 42, particles: 0, postfx: 0, subShapeDraws: 0, postfxRimLight: false });
     expect(getBudgetSnapshot().draws).toBe(42);
     expect(getBudgetSnapshot().subShapeDraws).toBe(0);
   });

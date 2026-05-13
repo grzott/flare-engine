@@ -604,6 +604,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           s.bounds.width,
           s.bounds.height,
         );
+        // Rim-light second pass — only active during smok-krzemionkowski combat.
+        if (postfx.rimLightEnabled && postfx.rimLight.supported) {
+          bridge?.applyPostFx(
+            postfx.rimLight,
+            postfx.rimLightChain,
+            snapshot,
+            s.bounds.width,
+            s.bounds.height,
+          );
+        }
       };
     }
 
@@ -818,6 +828,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           onDefeated: () => {
             if (!s) return;
             s.bossId = -1;
+            postfx.disableRimLight();
             gameState.runStats.kills.boss += 1;
             const bossPos = ctx.world.get(s.bossId, Position);
             triggerExplosion(
@@ -905,6 +916,12 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           },
           onPhasePostFx: (kind) => {
             applyBossPostFxChain(kind);
+          },
+          onRimLightUpdate: (lightX, lightY, bossX, bossY) => {
+            postfx.setRimLight(lightX, lightY, bossX, bossY);
+          },
+          onRimLightDisable: () => {
+            postfx.disableRimLight();
           },
         });
         integrate(ctx.world, dt, s.posQuery);
@@ -1193,6 +1210,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           particles: s.lifetimeQuery.count,
           postfx: activePostfx,
           subShapeDraws: consumeSubShapeDrawCount(),
+          postfxRimLight: postfx.rimLightEnabled,
         });
         recordFrameTime(dt);
         checkFpsWatchdog(postfx);

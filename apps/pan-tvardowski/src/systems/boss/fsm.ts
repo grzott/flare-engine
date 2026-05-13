@@ -92,6 +92,7 @@ function buildBossFsm(context: BossCtx): FSM<BossCtx> {
         fsm.trigger('phase2');
         return;
       }
+      script.onPhase1Update?.(dt, c);
       sweepMove(c, script.sweepSpeed1);
       b.fireCooldown -= dt;
       if (b.fireCooldown <= 0) {

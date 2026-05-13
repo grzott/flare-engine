@@ -38,6 +38,13 @@ export interface BossDeps {
   onPhaseBreak?: (x: number, y: number) => void;
   /** Called at phase-break to chain a named postfx sequence on the HUD. */
   onPhasePostFx?: (chain: BossPostFxKind) => void;
+  /**
+   * Called each frame while smok-krzemionkowski is in phase 1 or phase 2 with
+   * the computed light screen-space position so play.ts can forward it to postfx.
+   */
+  onRimLightUpdate?: (lightX: number, lightY: number, bossX: number, bossY: number) => void;
+  /** Called when smok-krzemionkowski is defeated to turn off the rim-light pass. */
+  onRimLightDisable?: () => void;
 }
 
 export interface BossStatus {
@@ -73,6 +80,7 @@ export interface PhaseScript {
 
   // -- lifecycle hooks (optional; most bosses set none) ---------------------
   onPhase1Enter?: (c: BossCtx) => void;
+  onPhase1Update?: (dt: number, c: BossCtx) => void;
   onPhase1Exit?: (c: BossCtx) => void;
   onPhase2Enter?: (c: BossCtx) => void;
   onPhase2Update?: (dt: number, c: BossCtx) => void;

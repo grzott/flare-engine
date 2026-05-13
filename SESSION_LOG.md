@@ -5212,3 +5212,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 125 — 2026-05-13 (scope: game)
+
+**Goal:** PT — 1D polar shadow maps (lighting §2b)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/lighting/index.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-map.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-rim-runtime.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-rim-sksl.ts`
+- `apps/pan-tvardowski/tests/shadow-map.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

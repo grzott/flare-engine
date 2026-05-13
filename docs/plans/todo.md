@@ -4,7 +4,7 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 ## Active
 
-- **PT — 1D polar shadow maps (lighting §2b)** — depends on §2a (landed) and the `readPixels` interface lift (landed). Smok's rect weapons cast shadows from the rim light: render occluders to small FBO via `renderShapesToImage` → reduce to 1D shadow map per light (256 angles, distance-to-nearest-occluder) → sample in polar space during the rim-light pass via `atan2(fragPos − lightPos)`. Per [lighting-2-5d.md §Validation Plan step 2](../design/lighting-2-5d.md#validation-plan-pt-first): code stays local to PT until step 3 promotion. References: [LWJGL 2D Pixel-Perfect Shadows](https://github.com/mattdesl/lwjgl-basics/wiki/2D-Pixel-Perfect-Shadows), [Defold sample](https://github.com/defold/sample-lights-and-shadows). Scope: `apps/pan-tvardowski/**`.
+_(none — pick next from Future tracks)_
 
 ## Future tracks
 
@@ -17,6 +17,7 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **PT — 1D polar shadow maps (lighting §2b)** (2026-05-13). Smok's rim light now casts shadows from rect weapons + hull-AABB occluder. PT-local: `shadow-map.ts` (256-angle ray-rect reduction via slab method, pre-allocated `Float32Array(256)`), `shadow-rim-sksl.ts` (augmented §1 shader, samples 256×1 child-shader texture via `atan2(fragToLight)` with SHADOW_BIAS), `shadow-rim-runtime.ts` (`ShadowRimRuntime` replaces `RimLightRuntime`, rebuilds 256×1 offscreen texture per occluder update). 3-element occluder array: left weapon, right weapon, hull AABB (half-extent 48). 11 new pure-JS tests (PT 878 → 889). FPS watchdog unchanged. Build 39/39 green. On-device validation needed for child-shader texture path in postfx runtime; HULL_HALF tunable to 36 (inscribed) if too heavy.
 - **Engine — lift `readPixels` to `SkImageLike` (lighting §2b prereq)** (2026-05-13). Added required `readPixels(): Float32Array | Uint8Array | null` to `SkImageLike` in `packages/assets/src/texture.ts`. Return type matches RN Skia's `SkImage.readPixels` so real images satisfy the interface structurally; callers narrow with `instanceof Uint8Array`. Updated 5 mock sites across `packages/assets/tests/**` and `packages/react/tests/**`; api-specs.md row updated; 1 new round-trip test in `texture.test.ts` (assets 26 → 29). Unblocks PT §2b.
 - **Engine — bridge canvas shape primitives + occluder render helper (lighting §2a)** (2026-05-13). Added named `SkOffscreenCanvasLike` interface (renamed from planned `SkCanvasLike` to avoid collision with the parallel `@flare-engine/assets` type). Extended `SkSurfaceLike.getCanvas()` return type. Added `ShapeRect`, `RenderShapesOpts`, `renderShapesToImage(skia, opts)` to `packages/react`. 8 new tests, +8 in react package (83 → 91). Unblocks §2b.
 - **PT — rim light prototype (lighting §1)** (2026-05-13). PT-local SkSL fullscreen pass, analytical hemisphere normals over Smok Krzemionkowski boss disc, warm amber rim light orbiting overhead at altitude -60 / radius 80. Wired through structural `PostFxRuntimeLike` (no engine package changes). FPS watchdog disables on <55fps. 13 pure-JS tests for uniform packing + normal + attenuation. Next gate: §2 (1D polar shadow maps on rect weapons) and on-device perf measurement.

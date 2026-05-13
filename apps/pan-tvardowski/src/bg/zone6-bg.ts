@@ -11,18 +11,18 @@
 import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
+import { Color } from '@flare-engine/math';
 import { Sprite, fire, fog } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
-import { hexToRgba01 } from '../visual-spec/color-util';
 import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_FIRE = -100;
 const Z_FOG = -90;
 
 // Zone 6 palette: terracotta torch body, gold-deep tip, parchment dust haze.
-const TORCH_COLOR = hexToRgba01(THEME_SPEC.colors.terracotta);
-const TORCH_TIP_COLOR = hexToRgba01(THEME_SPEC.colors.goldDeep);
-const DUST_FOG_COLOR = hexToRgba01(THEME_SPEC.colors.parchment, 0.3);
+const TORCH_COLOR = Color.fromHex(THEME_SPEC.colors.terracotta);
+const TORCH_TIP_COLOR = Color.fromHex(THEME_SPEC.colors.goldDeep);
+const DUST_FOG_COLOR = { ...Color.fromHex(THEME_SPEC.colors.parchment), a: 0.3 };
 
 export interface Zone6BgDeps {
   world: World;

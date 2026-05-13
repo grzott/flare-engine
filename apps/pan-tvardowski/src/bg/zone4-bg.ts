@@ -11,18 +11,18 @@
 import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
+import { Color } from '@flare-engine/math';
 import { Sprite, fog, water } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
-import { hexToRgba01 } from '../visual-spec/color-util';
 import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_WATER = -100;
 const Z_FOG = -90;
 
 // Zone 4 palette: marsh-olive swamp gas, river-depth undertone, teal bog vapour.
-const SWAMP_COLOR = hexToRgba01(THEME_SPEC.colors.marshOlive);
-const SWAMP_FOAM = hexToRgba01(THEME_SPEC.colors.riverDepth, 0.5);
-const BOG_FOG_COLOR = hexToRgba01(THEME_SPEC.colors.waterTeal, 0.45);
+const SWAMP_COLOR = Color.fromHex(THEME_SPEC.colors.marshOlive);
+const SWAMP_FOAM = { ...Color.fromHex(THEME_SPEC.colors.riverDepth), a: 0.5 };
+const BOG_FOG_COLOR = { ...Color.fromHex(THEME_SPEC.colors.waterTeal), a: 0.45 };
 
 export interface Zone4BgDeps {
   world: World;

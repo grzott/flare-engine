@@ -11,18 +11,18 @@
 import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
+import { Color } from '@flare-engine/math';
 import { Sprite, fog, water } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
-import { hexToRgba01 } from '../visual-spec/color-util';
 import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_WATER = -100;
 const Z_FOG = -90;
 
 // Zone 8 palette: bone water, parchment foam, lunar-ink fog.
-const WATER_COLOR = hexToRgba01(THEME_SPEC.colors.bone);
-const FOAM_COLOR = hexToRgba01(THEME_SPEC.colors.parchment, 0.7);
-const LUNAR_FOG_COLOR = hexToRgba01(THEME_SPEC.colors.lunarInk, 0.35);
+const WATER_COLOR = Color.fromHex(THEME_SPEC.colors.bone);
+const FOAM_COLOR = { ...Color.fromHex(THEME_SPEC.colors.parchment), a: 0.7 };
+const LUNAR_FOG_COLOR = { ...Color.fromHex(THEME_SPEC.colors.lunarInk), a: 0.35 };
 
 export interface Zone8BgDeps {
   world: World;

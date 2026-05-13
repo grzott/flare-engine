@@ -3,8 +3,12 @@
  * Values are 32-bit ARGB integers (alpha = 0xff). Source: visual-reference.md §9.
  */
 
-import { hexToArgb } from './color-util';
+import { Color } from '@flare-engine/math';
 import { THEME_SPEC } from './theme';
+
+function hexToArgb(hex: string): number {
+  return Color.toSkColor(Color.fromHex(hex));
+}
 
 export type ZoneId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 

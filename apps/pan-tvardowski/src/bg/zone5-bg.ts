@@ -11,18 +11,18 @@
 import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
+import { Color } from '@flare-engine/math';
 import { Sprite, fire, fog } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
-import { hexToRgba01 } from '../visual-spec/color-util';
 import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_FIRE = -100;
 const Z_FOG = -90;
 
 // Zone 5 palette: crimson-deep ember body, gold tip, ink-black ash fog.
-const EMBER_COLOR = hexToRgba01(THEME_SPEC.colors.crimsonDeep);
-const GLOW_TIP_COLOR = hexToRgba01(THEME_SPEC.colors.gold);
-const ASH_FOG_COLOR = hexToRgba01(THEME_SPEC.colors.inkBlack, 0.45);
+const EMBER_COLOR = Color.fromHex(THEME_SPEC.colors.crimsonDeep);
+const GLOW_TIP_COLOR = Color.fromHex(THEME_SPEC.colors.gold);
+const ASH_FOG_COLOR = { ...Color.fromHex(THEME_SPEC.colors.inkBlack), a: 0.45 };
 
 export interface Zone5BgDeps {
   world: World;

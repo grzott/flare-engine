@@ -1,42 +1,50 @@
-function nowMs(): number {
-  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-    return performance.now();
-  }
-  return Date.now();
-}
+import { type BootEntry, createBootTrace } from '@flare-engine/debug';
 
-export interface BootEntry {
-  readonly name: string;
-  readonly t: number;
-}
+export type { BootEntry };
 
 export interface PerfSample {
   readonly label: string;
   readonly value: number;
 }
 
-let startT: number | null = null;
-const entries: BootEntry[] = [];
+const _trace = createBootTrace('boot-trace');
+let _started = false;
 const _perfSamples: PerfSample[] = [];
 
 export function markBootStart(): void {
-  startT = nowMs();
-  entries.length = 0;
-  entries.push({ name: 'boot-start', t: 0 });
+  _trace.reset();
+  _started = true;
+  _trace.mark('boot-start');
 }
 
 export function markBootMilestone(name: string): void {
-  if (startT === null) return;
-  entries.push({ name, t: nowMs() - startT });
+  if (!_started) return;
+  _trace.mark(name);
 }
 
 export function getBootTrace(): readonly BootEntry[] {
-  return entries.slice();
+  return _trace.getEntries();
 }
 
 export function resetBootTrace(): void {
-  startT = null;
-  entries.length = 0;
+  _trace.reset();
+  _started = false;
+}
+
+export function dumpBootTrace(label = 'boot-trace'): void {
+  const entries = _trace.getEntries();
+  if (entries.length === 0) return;
+  const parts: string[] = [];
+  for (let i = 1; i < entries.length; i++) {
+    const prev = entries[i - 1];
+    const cur = entries[i];
+    if (!prev || !cur) continue;
+    parts.push(`${prev.name}->${cur.name}=${(cur.t - prev.t).toFixed(1)}ms`);
+  }
+  const last = entries[entries.length - 1];
+  const totalMs = last ? last.t.toFixed(1) : '0.0';
+  const stepStr = parts.length > 0 ? ` ${parts.join(' ')}` : '';
+  console.log(`[${label}] total=${totalMs}ms${stepStr}`);
 }
 
 export function markPerfSample(label: string, value: number): void {
@@ -49,18 +57,4 @@ export function getPerfSamples(): readonly PerfSample[] {
 
 export function resetPerfSamples(): void {
   _perfSamples.length = 0;
-}
-
-export function dumpBootTrace(label = 'boot-trace'): void {
-  if (entries.length === 0) return;
-  const parts: string[] = [];
-  for (let i = 1; i < entries.length; i++) {
-    const prev = entries[i - 1];
-    const cur = entries[i];
-    if (!prev || !cur) continue;
-    parts.push(`${prev.name}->${cur.name}=${(cur.t - prev.t).toFixed(1)}ms`);
-  }
-  const total = entries[entries.length - 1];
-  const totalMs = total ? total.t.toFixed(1) : '0.0';
-  console.log(`[${label}] total=${totalMs}ms ${parts.join(' ')}`);
 }

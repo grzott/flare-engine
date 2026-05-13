@@ -11,18 +11,18 @@
 import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
+import { Color } from '@flare-engine/math';
 import { Sprite, fire, fog } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
-import { hexToRgba01 } from '../visual-spec/color-util';
 import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_FIRE = -100;
 const Z_FOG = -90;
 
 // Zone 7 palette: rust hearth body, gold tip, shadow-black smoke haze.
-const HEARTH_COLOR = hexToRgba01(THEME_SPEC.colors.rust);
-const HEARTH_TIP_COLOR = hexToRgba01(THEME_SPEC.colors.gold);
-const SMOKE_COLOR = hexToRgba01(THEME_SPEC.colors.shadowBlack, 0.5);
+const HEARTH_COLOR = Color.fromHex(THEME_SPEC.colors.rust);
+const HEARTH_TIP_COLOR = Color.fromHex(THEME_SPEC.colors.gold);
+const SMOKE_COLOR = { ...Color.fromHex(THEME_SPEC.colors.shadowBlack), a: 0.5 };
 
 export interface Zone7BgDeps {
   world: World;

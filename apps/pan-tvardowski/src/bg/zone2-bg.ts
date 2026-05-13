@@ -11,17 +11,17 @@
 import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position } from '@flare-engine/ecs';
+import { Color } from '@flare-engine/math';
 import { Sprite, fog } from '@flare-engine/render';
 import type { AtlasHandle } from '../spawn';
-import { hexToRgba01 } from '../visual-spec/color-util';
 import { THEME_SPEC } from '../visual-spec/theme';
 
 const Z_FOG_PINE = -100;
 const Z_FOG_POLLEN = -90;
 
 // Zone 2 palette: deep moss pine mist, pale bone/gold pollen haze.
-const PINE_MIST_COLOR = hexToRgba01(THEME_SPEC.colors.moss, 0.6);
-const POLLEN_HAZE_COLOR = hexToRgba01(THEME_SPEC.colors.bone, 0.35);
+const PINE_MIST_COLOR = { ...Color.fromHex(THEME_SPEC.colors.moss), a: 0.6 };
+const POLLEN_HAZE_COLOR = { ...Color.fromHex(THEME_SPEC.colors.bone), a: 0.35 };
 
 export interface Zone2BgDeps {
   world: World;

@@ -24,7 +24,7 @@ import {
   ENEMY_SPECS,
 } from './config/gameplay';
 import { Layer, Mask } from './layers';
-import type { PickupDef } from './visual-spec/types';
+import type { BulletSpecId, PickupDef } from './visual-spec/types';
 
 export interface AtlasHandle {
   image: SkImage;
@@ -207,11 +207,12 @@ export function spawnBullet(
   vx: number,
   vy: number,
   ownerLayer: number,
+  specId?: BulletSpecId,
 ): number {
   const { world, coll, atlas } = ctx;
   const id = world.spawn();
   const isPlayer = ownerLayer === Layer.player;
-  const name = isPlayer ? 'player-bullet' : 'enemy-bullet-a';
+  const name = specId !== undefined ? String(specId) : isPlayer ? 'piorun-bullet' : 'enemy-bullet';
   const mask = isPlayer ? Mask.playerBullet : Mask.enemyBullet;
   const layer = isPlayer ? Layer.playerBullet : Layer.enemyBullet;
   const f = frame(atlas.sheet, name);

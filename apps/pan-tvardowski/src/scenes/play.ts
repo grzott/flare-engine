@@ -353,8 +353,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         slowDownTween: { ...tween(1.0, 0.3, 0.8, easeInCubic), done: true },
         recoveryTween: { ...tween(0.3, 1.0, 0.4, easeOutCubic), done: true },
         bulletFrameA: (() => {
-          const f = getFrame(atlas.sheet, 'enemy-bullet-a');
-          if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet-a"');
+          const f = getFrame(atlas.sheet, 'enemy-bullet');
+          if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet"');
           return f;
         })(),
         bulletFrameB: (() => {

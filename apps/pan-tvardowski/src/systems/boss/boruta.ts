@@ -1,17 +1,20 @@
 import { Position } from '@flare-engine/ecs';
+import { Color, Vec2 as V, type Vec2 } from '@flare-engine/math';
+function hexToArgb(hex: string): number {
+  return Color.toSkColor(Color.fromHex(hex));
+}
 import { Boss } from '../../components';
 import { BORUTA_SUMMON_COUNT, BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
-import { type Direction2D, normalizeDirection } from '../../util/direction';
-import { hexToArgb } from '../../visual-spec/color-util';
+
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.hazardOrange);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.crimson);
 
-const aim: Direction2D = { x: 0, y: 0 };
+const aim: Vec2 = { x: 0, y: 0 };
 
 /** Spawn Boruta's summons once on phase-2 entry. */
 function spawnBorutaSummons(c: BossCtx): void {
@@ -59,7 +62,7 @@ export const borutaScript: PhaseScript = {
   fire2(c) {
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     const baseAngle = Math.atan2(aim.y, aim.x);
     for (let i = -1; i <= 1; i++) {
       const a = baseAngle + i * 0.24;

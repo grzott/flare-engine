@@ -1,6 +1,6 @@
 import { FSM, Position, Velocity } from '@flare-engine/ecs';
 import type { Query, World } from '@flare-engine/engine';
-import { clamp } from '@flare-engine/math';
+import { Vec2 as V, type Vec2, clamp } from '@flare-engine/math';
 import {
   Bullet,
   Hp,
@@ -19,7 +19,6 @@ import {
 } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
-import { type Direction2D, normalizeDirection } from '../util/direction';
 import { destroyEntity } from './entity-ops';
 
 const DYING_INTERVAL = 0.16;
@@ -28,7 +27,7 @@ const MINIBOSS_HALF_W = 40;
 /** Time to reach full root extent (Rokita). */
 const ROKITA_ROOT_GROW_SEC = 25;
 
-const aim: Direction2D = { x: 0, y: 0 };
+const aim: Vec2 = { x: 0, y: 0 };
 
 export interface MinibossDeps {
   spawnCtx: SpawnCtx;
@@ -124,11 +123,11 @@ function rokitaFire(c: MinibossCtx): void {
   const rightTip = c.deps.bounds.width / 2 + corridor;
   const yTip = c.deps.bounds.height * 0.55;
   for (const tipX of [leftTip, rightTip]) {
-    normalizeDirection(c.deps.playerX - tipX, c.deps.playerY - yTip, BULLET_SPEED.enemy, aim);
+    V.normalizeOut(c.deps.playerX - tipX, c.deps.playerY - yTip, BULLET_SPEED.enemy, aim);
     spawnBullet(c.deps.spawnCtx, tipX, yTip, aim.x, aim.y, Layer.enemy);
   }
   // Central aimed shot.
-  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+  V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
   spawnBullet(c.deps.spawnCtx, pos.x, pos.y + BULLET_SPAWN_OFFSET.boss, aim.x, aim.y, Layer.enemy);
 }
 
@@ -142,7 +141,7 @@ function leszyFire(c: MinibossCtx): number {
   const oy = pos.y + BULLET_SPAWN_OFFSET.boss;
   if (m.form === 'deer') {
     // Ram: fast aimed single + two flanking shots ±8°.
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     const baseAngle = Math.atan2(aim.y, aim.x);
     for (let i = -1; i <= 1; i++) {
       const a = baseAngle + i * 0.14;
@@ -159,12 +158,7 @@ function leszyFire(c: MinibossCtx): number {
   }
   if (m.form === 'bear') {
     // Slow AOE: single heavy bullet aimed at player.
-    normalizeDirection(
-      c.deps.playerX - pos.x,
-      c.deps.playerY - pos.y,
-      BULLET_SPEED.boss * 0.55,
-      aim,
-    );
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss * 0.55, aim);
     spawnBullet(c.deps.spawnCtx, ox, oy, aim.x, aim.y, Layer.enemy);
     return 1.3;
   }
@@ -193,7 +187,7 @@ function nextLeszyForm(current: LeszyForm): LeszyForm {
 function nocnyLowcaFire(c: MinibossCtx): number {
   const pos = c.world.get(c.id, Position);
   if (!pos) return 1;
-  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+  V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
   const base = Math.atan2(aim.y, aim.x);
   for (let i = -1; i <= 1; i += 2) {
     const a = base + i * 0.18;
@@ -213,7 +207,7 @@ function nocnyLowcaFire(c: MinibossCtx): number {
 function madejFire(c: MinibossCtx): number {
   const pos = c.world.get(c.id, Position);
   if (!pos) return MADEJ_FIRE_COOLDOWN;
-  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+  V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
   const base = Math.atan2(aim.y, aim.x);
   for (let i = -1; i <= 1; i++) {
     const a = base + i * 0.22;

@@ -1,4 +1,8 @@
 import { Position } from '@flare-engine/ecs';
+import { Color, Vec2 as V, type Vec2 } from '@flare-engine/math';
+function hexToArgb(hex: string): number {
+  return Color.toSkColor(Color.fromHex(hex));
+}
 import { Boss } from '../../components';
 import {
   BULLET_SPAWN_OFFSET,
@@ -9,8 +13,7 @@ import {
 } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
-import { type Direction2D, normalizeDirection } from '../../util/direction';
-import { hexToArgb } from '../../visual-spec/color-util';
+
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
 
@@ -18,7 +21,7 @@ const ARGB_P1 = hexToArgb(THEME_SPEC.colors.gold);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.terracotta);
 const ARGB_P3 = hexToArgb(THEME_SPEC.colors.crimson);
 
-const aim: Direction2D = { x: 0, y: 0 };
+const aim: Vec2 = { x: 0, y: 0 };
 
 /**
  * Mefistofeles — Karczma "Rzym" final boss (build plan §9, three phases).
@@ -41,7 +44,7 @@ export const mefistofelesScript: PhaseScript = {
     // 3-fan of aimed contract scrolls.
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     const base = Math.atan2(aim.y, aim.x);
     for (let i = -1; i <= 1; i++) {
       const a = base + i * 0.2;
@@ -59,7 +62,7 @@ export const mefistofelesScript: PhaseScript = {
     // Two horn-shots ±0.3 rad from aim line.
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     const base = Math.atan2(aim.y, aim.x);
     for (let i = -1; i <= 1; i += 2) {
       const a = base + i * 0.3;
@@ -77,7 +80,7 @@ export const mefistofelesScript: PhaseScript = {
     // 2-fan aimed shots from the boss while the mirror-twin fires on its own.
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     const base = Math.atan2(aim.y, aim.x);
     for (let i = -1; i <= 1; i += 2) {
       const a = base + i * 0.12;

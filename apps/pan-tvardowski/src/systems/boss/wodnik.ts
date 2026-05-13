@@ -1,5 +1,9 @@
 import { Position } from '@flare-engine/ecs';
-import { clamp } from '@flare-engine/math';
+import { Color, Vec2 as V, type Vec2, clamp } from '@flare-engine/math';
+
+function hexToArgb(hex: string): number {
+  return Color.toSkColor(Color.fromHex(hex));
+}
 import { Boss } from '../../components';
 import {
   BULLET_SPAWN_OFFSET,
@@ -9,15 +13,14 @@ import {
 } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
-import { type Direction2D, normalizeDirection } from '../../util/direction';
-import { hexToArgb } from '../../visual-spec/color-util';
+
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.verdigris);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.riverDepth);
 
-const aim: Direction2D = { x: 0, y: 0 };
+const aim: Vec2 = { x: 0, y: 0 };
 
 /** Raise the bubble shield and spawn WODNIK_SHIELD_MINIONS Topielec minions. */
 function raiseWodnikShield(c: BossCtx): void {
@@ -92,12 +95,7 @@ export const wodnikScript: PhaseScript = {
   fire2(c) {
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    normalizeDirection(
-      c.deps.playerX - pos.x,
-      c.deps.playerY - pos.y,
-      BULLET_SPEED.boss * 0.9,
-      aim,
-    );
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss * 0.9, aim);
     spawnBullet(
       c.deps.spawnCtx,
       pos.x,

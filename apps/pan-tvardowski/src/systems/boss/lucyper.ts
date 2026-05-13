@@ -1,4 +1,8 @@
 import { Position } from '@flare-engine/ecs';
+import { Color, Vec2 as V, type Vec2 } from '@flare-engine/math';
+function hexToArgb(hex: string): number {
+  return Color.toSkColor(Color.fromHex(hex));
+}
 import { Boss, type BossPattern } from '../../components';
 import {
   BULLET_SPAWN_OFFSET,
@@ -10,8 +14,7 @@ import {
 } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
-import { type Direction2D, normalizeDirection } from '../../util/direction';
-import { hexToArgb } from '../../visual-spec/color-util';
+
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
 
@@ -19,7 +22,7 @@ const ARGB_P1 = hexToArgb(THEME_SPEC.colors.silver);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.lunarInk);
 const ARGB_P3 = hexToArgb(THEME_SPEC.colors.crimson);
 
-const aim: Direction2D = { x: 0, y: 0 };
+const aim: Vec2 = { x: 0, y: 0 };
 
 /** Phase-3 shattered-mirror rotation: picks a pattern from this list by idx. */
 const SHATTER_CYCLE: BossPattern[] = [
@@ -53,7 +56,7 @@ function fireRadial(c: BossCtx, rays: number, speedMul = 1): void {
 function fireAimedFan(c: BossCtx, count: number, spread: number, speedMul = 1): void {
   const pos = c.world.get(c.id, Position);
   if (!pos) return;
-  normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+  V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
   const base = Math.atan2(aim.y, aim.x);
   const half = (count - 1) / 2;
   for (let i = 0; i < count; i++) {
@@ -94,7 +97,7 @@ export const lucyperScript: PhaseScript = {
     fireRadial(c, 10);
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     spawnBullet(
       c.deps.spawnCtx,
       pos.x,

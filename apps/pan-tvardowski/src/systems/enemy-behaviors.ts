@@ -17,7 +17,6 @@ import type { EnemyData, EnemyPattern } from '../components';
 import { BULLET_SPAWN_OFFSET, BULLET_SPEED, LICHO_BLINK_SEC } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
-import type { Direction2D } from '../util/direction';
 
 export interface EnemyDeps {
   spawnCtx: SpawnCtx;
@@ -29,14 +28,14 @@ export interface EnemyDeps {
 
 export interface EnemyBehavior {
   move(e: EnemyData, pos: Vec2, vel: Vec2, dt: number, deps: EnemyDeps): void;
-  fire?(e: EnemyData, pos: Vec2, aim: Direction2D, deps: EnemyDeps): void;
+  fire?(e: EnemyData, pos: Vec2, aim: Vec2, deps: EnemyDeps): void;
 }
 
 // -- shared fire helpers ----------------------------------------------------
 
 function fireFan(
   pos: Vec2,
-  aim: Direction2D,
+  aim: Vec2,
   spawnCtx: SpawnCtx,
   count: number,
   spreadRad: number,

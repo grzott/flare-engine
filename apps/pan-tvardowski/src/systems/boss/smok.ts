@@ -1,17 +1,20 @@
 import { Position } from '@flare-engine/ecs';
+import { Color, Vec2 as V, type Vec2 } from '@flare-engine/math';
+function hexToArgb(hex: string): number {
+  return Color.toSkColor(Color.fromHex(hex));
+}
 import { Boss } from '../../components';
 import { BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
-import { type Direction2D, normalizeDirection } from '../../util/direction';
-import { hexToArgb } from '../../visual-spec/color-util';
+
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.terracotta);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.rust);
 
-const aim: Direction2D = { x: 0, y: 0 };
+const aim: Vec2 = { x: 0, y: 0 };
 
 // Smok Krzemionkowski (Zone 1).
 // Phase palette: P1=terracotta 0xffb05a3c, P2=rust 0xff8b3a1f (§10 visual-reference).
@@ -62,7 +65,7 @@ export const smokScript: PhaseScript = {
         Layer.enemy,
       );
     }
-    normalizeDirection(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
+    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
     spawnBullet(
       c.deps.spawnCtx,
       pos.x,

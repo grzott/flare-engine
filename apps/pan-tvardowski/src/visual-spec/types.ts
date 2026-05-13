@@ -313,6 +313,25 @@ export interface TileDef {
   };
 }
 
+// ---- Explosion tier definition ----------------------------------------------
+
+export interface ExplosionTierDef {
+  readonly tier: ExplosionTier;
+  readonly particles: number;
+  readonly lifeMs: number;
+  readonly shake?: {
+    readonly amp: number;
+    readonly durMs: number;
+    readonly shakeMode: 'sinusoidal' | 'perlin';
+  };
+  readonly postfx?: {
+    readonly grayscaleMs?: number;
+    readonly bloomMs?: number;
+    readonly hitFlashDecayRate?: number;
+  };
+  readonly smokeRatio?: number;
+}
+
 // ---- Animation preset definition --------------------------------------------
 
 export type AnimationPresetId =

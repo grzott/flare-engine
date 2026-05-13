@@ -20,6 +20,13 @@ export { WEAPON_DEFS } from './weapons';
 export { PICKUP_DEFS } from './pickups';
 export { PARTICLE_DEFS } from './particles';
 export { TILE_DEFS } from './tiles';
+export {
+  EXPLOSION_TIER_DEFS,
+  SPIRAL_DURATION_SEC,
+  SPIRAL_TURNS,
+  SPIRAL_INITIAL_RADIUS,
+  getExplosionDef,
+} from './explosions';
 export { THEME_SPEC } from './theme';
 export { ANIMATION_DEFS, HUD_TWEENS } from './animations';
 export type { HudTweenSpec } from './animations';

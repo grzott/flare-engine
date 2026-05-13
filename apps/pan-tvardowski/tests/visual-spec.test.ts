@@ -238,7 +238,9 @@ describe('visual-spec — schema canary', () => {
   // canary bumped #181 PT-ColorUnify-E
   // Bumped at Session 128 (PT-TileDefs): TileSpecId brand type + TileDef interface
   // added — additive per schema stability protocol.
-  const SCHEMA_CANARY = 'cc8e56296a7184531718bfca04e15202ebc1cdfeba2ed630b7b1de016b7bc680';
+  // Bumped at Session 128+ (PT-ExplosionTierDef): ExplosionTierDef interface added
+  // after TileDef — additive per schema stability protocol.
+  const SCHEMA_CANARY = 'bb319e1348c077eddcce63796274e1ae4e4ff669a0f0abaa1bb1bbbe956c94a3';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

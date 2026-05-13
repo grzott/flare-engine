@@ -6,13 +6,17 @@ import { easeInCubic, easeOutCubic } from '@flare-engine/math';
 import { createTestWorld } from '@flare-engine/testing';
 import { shouldAllowSlowMo } from '../src/a11y/reduced-motion';
 import { Lifetime } from '../src/components';
-import {
-  EXPLOSION_PRESETS,
-  type ExplosionTier,
-  _resetCapsForTest,
-  triggerExplosion,
-} from '../src/fx/explosions';
+import { type ExplosionTier, _resetCapsForTest, triggerExplosion } from '../src/fx/explosions';
 import type { AtlasHandle } from '../src/spawn';
+import { EXPLOSION_TIER_DEFS } from '../src/visual-spec';
+
+type TierKey = ExplosionTier;
+
+function getDef(tier: TierKey) {
+  const def = EXPLOSION_TIER_DEFS.find((d) => d.tier === tier);
+  if (!def) throw new Error(`No def for tier: ${tier}`);
+  return def;
+}
 
 function makeAtlas(): AtlasHandle {
   const sheet = createSpriteSheet();
@@ -28,35 +32,35 @@ function makeAtlas(): AtlasHandle {
 
 describe('explosion tier presets', () => {
   test('particle counts match deck', () => {
-    expect(EXPLOSION_PRESETS.chip.particles).toBe(8);
-    expect(EXPLOSION_PRESETS.pop.particles).toBe(24);
-    expect(EXPLOSION_PRESETS.burst.particles).toBe(64);
-    expect(EXPLOSION_PRESETS.detonation.particles).toBe(128);
-    expect(EXPLOSION_PRESETS.cataclysm.particles).toBe(256);
+    expect(getDef('chip').particles).toBe(8);
+    expect(getDef('pop').particles).toBe(24);
+    expect(getDef('burst').particles).toBe(64);
+    expect(getDef('detonation').particles).toBe(128);
+    expect(getDef('cataclysm').particles).toBe(256);
   });
 
   test('lifeMs match deck', () => {
-    expect(EXPLOSION_PRESETS.chip.lifeMs).toBe(120);
-    expect(EXPLOSION_PRESETS.pop.lifeMs).toBe(280);
-    expect(EXPLOSION_PRESETS.burst.lifeMs).toBe(520);
-    expect(EXPLOSION_PRESETS.detonation.lifeMs).toBe(900);
-    expect(EXPLOSION_PRESETS.cataclysm.lifeMs).toBe(1600);
+    expect(getDef('chip').lifeMs).toBe(120);
+    expect(getDef('pop').lifeMs).toBe(280);
+    expect(getDef('burst').lifeMs).toBe(520);
+    expect(getDef('detonation').lifeMs).toBe(900);
+    expect(getDef('cataclysm').lifeMs).toBe(1600);
   });
 
   test('chip has no shake; pop has shake.amp 2', () => {
-    expect(EXPLOSION_PRESETS.chip.shake).toBeUndefined();
-    expect(EXPLOSION_PRESETS.pop.shake?.amp).toBe(2);
+    expect(getDef('chip').shake).toBeUndefined();
+    expect(getDef('pop').shake?.amp).toBe(2);
   });
 
   test('burst/detonation/cataclysm shake amplitudes', () => {
-    expect(EXPLOSION_PRESETS.burst.shake?.amp).toBe(5);
-    expect(EXPLOSION_PRESETS.detonation.shake?.amp).toBe(10);
-    expect(EXPLOSION_PRESETS.cataclysm.shake?.amp).toBe(14);
+    expect(getDef('burst').shake?.amp).toBe(5);
+    expect(getDef('detonation').shake?.amp).toBe(10);
+    expect(getDef('cataclysm').shake?.amp).toBe(14);
   });
 
   test('detonation and cataclysm presets use perlin shakeMode', () => {
-    expect(EXPLOSION_PRESETS.detonation.shake?.shakeMode).toBe('perlin');
-    expect(EXPLOSION_PRESETS.cataclysm.shake?.shakeMode).toBe('perlin');
+    expect(getDef('detonation').shake?.shakeMode).toBe('perlin');
+    expect(getDef('cataclysm').shake?.shakeMode).toBe('perlin');
   });
 
   test('triggerExplosion detonation calls shakePerlin, not shake', () => {
@@ -87,7 +91,7 @@ describe('explosion tier presets', () => {
     for (const id of posQuery) {
       if (world.get(id, Lifetime)) count++;
     }
-    expect(count).toBe(EXPLOSION_PRESETS.pop.particles);
+    expect(count).toBe(getDef('pop').particles);
   });
 });
 

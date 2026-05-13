@@ -5,49 +5,23 @@ import { Sprite } from '@flare-engine/render';
 import { SpiralCollapse } from '../components';
 import { Lifetime } from '../components';
 import type { AtlasHandle } from '../spawn';
+import {
+  EXPLOSION_TIER_DEFS,
+  SPIRAL_DURATION_SEC,
+  SPIRAL_INITIAL_RADIUS,
+  SPIRAL_TURNS,
+} from '../visual-spec/explosions';
+import type { ExplosionTier, ExplosionTierDef } from '../visual-spec/types';
 
-export type ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'cataclysm';
+export type { ExplosionTier } from '../visual-spec';
 
-interface ShakePreset {
-  amp: number;
-  durMs: number;
-  shakeMode: 'sinusoidal' | 'perlin';
-}
-
-interface ExplosionPreset {
-  particles: number;
-  lifeMs: number;
-  shake?: ShakePreset;
-  postfx: boolean;
-}
-
-export const EXPLOSION_PRESETS = {
-  chip: { particles: 8, lifeMs: 120, postfx: false } as ExplosionPreset,
-  pop: {
-    particles: 24,
-    lifeMs: 280,
-    shake: { amp: 2, durMs: 80, shakeMode: 'sinusoidal' },
-    postfx: true,
-  } as ExplosionPreset,
-  burst: {
-    particles: 64,
-    lifeMs: 520,
-    shake: { amp: 5, durMs: 180, shakeMode: 'sinusoidal' },
-    postfx: true,
-  } as ExplosionPreset,
-  detonation: {
-    particles: 128,
-    lifeMs: 900,
-    shake: { amp: 10, durMs: 320, shakeMode: 'perlin' },
-    postfx: true,
-  } as ExplosionPreset,
-  cataclysm: {
-    particles: 256,
-    lifeMs: 1600,
-    shake: { amp: 14, durMs: 900, shakeMode: 'perlin' },
-    postfx: true,
-  } as ExplosionPreset,
-} as const satisfies Record<ExplosionTier, ExplosionPreset>;
+const DEFS_BY_TIER: Record<ExplosionTier, ExplosionTierDef> = (() => {
+  const map = {} as Record<ExplosionTier, ExplosionTierDef>;
+  for (const def of EXPLOSION_TIER_DEFS) {
+    map[def.tier] = def;
+  }
+  return map;
+})();
 
 const PARTICLE_Z = 20;
 const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
@@ -134,48 +108,38 @@ export function triggerExplosion(
     if (_active.burst.length >= 4) effective = 'pop';
   }
 
-  const preset = EXPLOSION_PRESETS[effective];
+  const def = DEFS_BY_TIER[effective];
   const now = _nowMs();
 
   // Register active slots.
   if (effective === 'cataclysm') {
     _active.lastCataclysmZone = zoneId;
   } else if (effective === 'detonation') {
-    _active.detonation.push({ expiryMs: now + preset.lifeMs });
+    _active.detonation.push({ expiryMs: now + def.lifeMs });
   } else if (effective === 'burst') {
-    _active.burst.push({ expiryMs: now + preset.lifeMs });
+    _active.burst.push({ expiryMs: now + def.lifeMs });
   }
 
   // Spawn particles.
-  _spawnParticles(world, atlas, x, y, effective, preset);
+  _spawnParticles(world, atlas, x, y, def);
 
   // Screen shake.
-  if (screenShakeEnabled && preset.shake) {
-    if (preset.shake.shakeMode === 'perlin') {
-      camera?.shakePerlin(preset.shake.amp, preset.shake.durMs / 1000);
+  if (screenShakeEnabled && def.shake) {
+    if (def.shake.shakeMode === 'perlin') {
+      camera?.shakePerlin(def.shake.amp, def.shake.durMs / 1000);
     } else {
-      camera?.shake(preset.shake.amp, preset.shake.durMs / 1000);
+      camera?.shake(def.shake.amp, def.shake.durMs / 1000);
     }
-  } else if (!screenShakeEnabled && preset.shake) {
+  } else if (!screenShakeEnabled && def.shake) {
     onReducedMotion?.();
   }
 
-  // PostFX — per-tier cascade.
-  if (preset.postfx && postfx) {
-    if (effective === 'pop') {
-      postfx.triggerHitFlash();
-    } else if (effective === 'burst') {
-      postfx.triggerHitFlash();
-      postfx.triggerGrayscaleHold(400);
-    } else if (effective === 'detonation') {
-      postfx.triggerHitFlash();
-      postfx.triggerGrayscaleHold(600);
-      postfx.triggerBloomPulse(300);
-    } else if (effective === 'cataclysm') {
-      postfx.triggerHitFlash(0.833);
-      postfx.triggerGrayscaleHold(900);
-      postfx.triggerBloomPulse(500);
-    }
+  // PostFX — read from def.postfx.
+  if (def.postfx && postfx) {
+    const { grayscaleMs, bloomMs, hitFlashDecayRate } = def.postfx;
+    postfx.triggerHitFlash(hitFlashDecayRate);
+    if (grayscaleMs !== undefined) postfx.triggerGrayscaleHold(grayscaleMs);
+    if (bloomMs !== undefined) postfx.triggerBloomPulse(bloomMs);
   }
 
   return effective;
@@ -186,9 +150,6 @@ export function triggerExplosion(
 // ============================================================================
 
 const SPIRAL_POOL_SIZE = 8;
-const SPIRAL_DURATION_SEC = 1.2;
-const SPIRAL_TURNS = 3;
-const SPIRAL_INITIAL_RADIUS = 24;
 
 interface SpiralSlot {
   entityId: number;
@@ -276,8 +237,7 @@ function _spawnParticles(
   atlas: AtlasHandle,
   x: number,
   y: number,
-  tier: ExplosionTier,
-  preset: ExplosionPreset,
+  def: ExplosionTierDef,
 ): void {
   const sparkFrame = getFrame(atlas.sheet, 'particle-spark');
   const smokeFrame = getFrame(atlas.sheet, 'particle-smoke');
@@ -286,10 +246,9 @@ function _spawnParticles(
   // Seed the LCG reproducibly from position so identical spawns are consistent.
   _lcgS = (x * 31 + y * 17) | 0 || 1;
 
-  const count = preset.particles;
-  // For cataclysm, mix in some smoke frames for debris feel.
-  const smokeRatio = tier === 'cataclysm' ? 0.25 : 0;
-  const lifeBase = preset.lifeMs / 1000;
+  const count = def.particles;
+  const smokeRatio = def.smokeRatio ?? 0;
+  const lifeBase = def.lifeMs / 1000;
 
   for (let i = 0; i < count; i++) {
     const r01 = _lcgNext();

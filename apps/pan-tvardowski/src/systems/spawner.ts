@@ -1,5 +1,5 @@
+import { SeededRNG } from '@flare-engine/math';
 import type { EnemyPattern } from '../components';
-import { mulberry32 } from '../util/rng';
 
 export interface WaveEntry {
   t: number;
@@ -55,18 +55,19 @@ export function tickSpawner(
  * Skrzat + Latawiec spawn. Spans ~130 s (boss enters at 150 s per §BOSS_SPAWN_T).
  */
 export function buildZone1Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   let t = 3;
   while (t < 130) {
-    const roll = rand();
+    const roll = rand.next();
     const pattern: EnemyPattern = roll < 0.65 ? 'skrzat' : 'latawiec';
-    const count = pattern === 'skrzat' ? 3 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+    const count =
+      pattern === 'skrzat' ? 3 + Math.floor(rand.next() * 3) : 1 + Math.floor(rand.next() * 2);
     const spacing = 42;
     const maxStart = viewportWidth - (count - 1) * spacing - 40;
-    const startX = 40 + rand() * Math.max(1, maxStart);
+    const startX = 40 + rand.next() * Math.max(1, maxStart);
     schedule.push({ t, count, pattern, spacing, startX });
-    t += 2.2 + rand() * 1.8;
+    t += 2.2 + rand.next() * 1.8;
   }
   return schedule;
 }
@@ -77,19 +78,19 @@ export function buildZone1Schedule(seed: number, viewportWidth = 360): WaveEntry
  * before the boss at 200 s.
  */
 export function buildZone2Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   const pushWaves = (from: number, to: number, intensity: number): number => {
     let t = from;
     while (t < to) {
-      const roll = rand();
+      const roll = rand.next();
       const pattern: EnemyPattern = roll < 0.55 ? 'czart' : 'bies';
-      const count = 1 + Math.floor(rand() * (pattern === 'czart' ? 2 : 3));
+      const count = 1 + Math.floor(rand.next() * (pattern === 'czart' ? 2 : 3));
       const spacing = 50;
       const maxStart = viewportWidth - (count - 1) * spacing - 40;
-      const startX = 40 + rand() * Math.max(1, maxStart);
+      const startX = 40 + rand.next() * Math.max(1, maxStart);
       schedule.push({ t, count, pattern, spacing, startX });
-      t += 2.4 + rand() * (3.0 - intensity);
+      t += 2.4 + rand.next() * (3.0 - intensity);
     }
     return t;
   };
@@ -103,18 +104,19 @@ export function buildZone2Schedule(seed: number, viewportWidth = 360): WaveEntry
  * No miniboss in Zone 3; schedule fills the stretch before the boss at 220 s.
  */
 export function buildZone3Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   let t = 3;
   while (t < 200) {
-    const roll = rand();
+    const roll = rand.next();
     const pattern: EnemyPattern = roll < 0.5 ? 'topielec' : 'strzyga';
-    const count = pattern === 'topielec' ? 1 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 2);
+    const count =
+      pattern === 'topielec' ? 1 + Math.floor(rand.next() * 2) : 2 + Math.floor(rand.next() * 2);
     const spacing = pattern === 'topielec' ? 80 : 56;
     const maxStart = viewportWidth - (count - 1) * spacing - 40;
-    const startX = 40 + rand() * Math.max(1, maxStart);
+    const startX = 40 + rand.next() * Math.max(1, maxStart);
     schedule.push({ t, count, pattern, spacing, startX });
-    t += 2.6 + rand() * 1.8;
+    t += 2.6 + rand.next() * 1.8;
   }
   return schedule;
 }
@@ -125,19 +127,20 @@ export function buildZone3Schedule(seed: number, viewportWidth = 360): WaveEntry
  * post-miniboss stretch 120..215 s before the boss gate at 230 s.
  */
 export function buildZone4Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   const pushWaves = (from: number, to: number, intensity: number): void => {
     let t = from;
     while (t < to) {
-      const roll = rand();
+      const roll = rand.next();
       const pattern: EnemyPattern = roll < 0.55 ? 'mamuna' : 'licho';
-      const count = pattern === 'mamuna' ? 1 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+      const count =
+        pattern === 'mamuna' ? 1 + Math.floor(rand.next() * 3) : 1 + Math.floor(rand.next() * 2);
       const spacing = pattern === 'mamuna' ? 48 : 64;
       const maxStart = viewportWidth - (count - 1) * spacing - 40;
-      const startX = 40 + rand() * Math.max(1, maxStart);
+      const startX = 40 + rand.next() * Math.max(1, maxStart);
       schedule.push({ t, count, pattern, spacing, startX });
-      t += 2.5 + rand() * (3.2 - intensity);
+      t += 2.5 + rand.next() * (3.2 - intensity);
     }
   };
   pushWaves(3, 90, 1.3); // pre-miniboss
@@ -150,18 +153,19 @@ export function buildZone4Schedule(seed: number, viewportWidth = 360): WaveEntry
  * No miniboss in Zone 5; schedule fills the stretch before the boss at 260 s.
  */
 export function buildZone5Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   let t = 3;
   while (t < 245) {
-    const roll = rand();
+    const roll = rand.next();
     const pattern: EnemyPattern = roll < 0.6 ? 'nocnica' : 'dziwozona';
-    const count = pattern === 'nocnica' ? 2 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+    const count =
+      pattern === 'nocnica' ? 2 + Math.floor(rand.next() * 3) : 1 + Math.floor(rand.next() * 2);
     const spacing = pattern === 'nocnica' ? 40 : 70;
     const maxStart = viewportWidth - (count - 1) * spacing - 40;
-    const startX = 40 + rand() * Math.max(1, maxStart);
+    const startX = 40 + rand.next() * Math.max(1, maxStart);
     schedule.push({ t, count, pattern, spacing, startX });
-    t += 2.3 + rand() * 1.6;
+    t += 2.3 + rand.next() * 1.6;
   }
   return schedule;
 }
@@ -172,21 +176,22 @@ export function buildZone5Schedule(seed: number, viewportWidth = 360): WaveEntry
  * stretch 120..275 s before the boss gate at 290 s.
  */
 export function buildZone6Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   const pushWaves = (from: number, to: number, intensity: number): void => {
     let t = from;
     while (t < to) {
-      const roll = rand();
+      const roll = rand.next();
       const pattern: EnemyPattern = roll < 0.55 ? 'wapierz' : 'poludnica';
       // Wąpierz is slow + tanky — fewer but bigger waves.
       // Południca sweeps horizontally — pairs or triples.
-      const count = pattern === 'wapierz' ? 1 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 2);
+      const count =
+        pattern === 'wapierz' ? 1 + Math.floor(rand.next() * 2) : 2 + Math.floor(rand.next() * 2);
       const spacing = pattern === 'wapierz' ? 64 : 56;
       const maxStart = viewportWidth - (count - 1) * spacing - 40;
-      const startX = 40 + rand() * Math.max(1, maxStart);
+      const startX = 40 + rand.next() * Math.max(1, maxStart);
       schedule.push({ t, count, pattern, spacing, startX });
-      t += 2.8 + rand() * (3.4 - intensity);
+      t += 2.8 + rand.next() * (3.4 - intensity);
     }
   };
   pushWaves(3, 90, 1.4); // pre-miniboss
@@ -200,7 +205,7 @@ export function buildZone6Schedule(seed: number, viewportWidth = 360): WaveEntry
  * gate at 105 s, pre-Mefistofeles gate at 300 s.
  */
 export function buildZone7Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   const POOL: EnemyPattern[] = [
     'skrzat',
@@ -217,19 +222,19 @@ export function buildZone7Schedule(seed: number, viewportWidth = 360): WaveEntry
     'dziwozona',
   ];
   const pick = (): EnemyPattern => {
-    const idx = Math.floor(rand() * POOL.length);
+    const idx = Math.floor(rand.next() * POOL.length);
     return POOL[idx] ?? 'skrzat';
   };
   const pushWaves = (from: number, to: number, intensity: number): void => {
     let t = from;
     while (t < to) {
       const pattern = pick();
-      const count = 1 + Math.floor(rand() * 3);
+      const count = 1 + Math.floor(rand.next() * 3);
       const spacing = 48;
       const maxStart = viewportWidth - (count - 1) * spacing - 40;
-      const startX = 40 + rand() * Math.max(1, maxStart);
+      const startX = 40 + rand.next() * Math.max(1, maxStart);
       schedule.push({ t, count, pattern, spacing, startX });
-      t += 2.4 + rand() * (3.0 - intensity);
+      t += 2.4 + rand.next() * (3.0 - intensity);
     }
   };
   pushWaves(3, 95, 1.3); // pre-miniboss
@@ -243,19 +248,19 @@ export function buildZone7Schedule(seed: number, viewportWidth = 360): WaveEntry
  * No miniboss; boss gate at `ZONE8_BOSS_T` (340 s).
  */
 export function buildZone8Schedule(seed: number, viewportWidth = 360): WaveEntry[] {
-  const rand = mulberry32(seed);
+  const rand = new SeededRNG(seed);
   const schedule: WaveEntry[] = [];
   let t = 3;
   while (t < 325) {
-    const roll = rand();
+    const roll = rand.next();
     const pattern: EnemyPattern = roll < 0.7 ? 'moon-wraith' : 'nocnica';
     const count =
-      pattern === 'moon-wraith' ? 2 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
+      pattern === 'moon-wraith' ? 2 + Math.floor(rand.next() * 3) : 1 + Math.floor(rand.next() * 2);
     const spacing = 46;
     const maxStart = viewportWidth - (count - 1) * spacing - 40;
-    const startX = 40 + rand() * Math.max(1, maxStart);
+    const startX = 40 + rand.next() * Math.max(1, maxStart);
     schedule.push({ t, count, pattern, spacing, startX });
-    t += 2.2 + rand() * 1.8;
+    t += 2.2 + rand.next() * 1.8;
   }
   return schedule;
 }

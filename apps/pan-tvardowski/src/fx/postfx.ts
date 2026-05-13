@@ -41,7 +41,6 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
 
   const bloomBaseline = 0.5;
 
-  let chromAbTimerMs = 0;
   let flashIntensity = 0;
   let flashDecayRate = 12.5;
   let grayscaleHoldMs = 0;
@@ -60,15 +59,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
       base.chain.setUniforms('grayscale-flash', { kind: 'grayscale-flash', intensity: 1 });
     },
     triggerChromaticAb(decayMs: number): void {
-      chromAbTimerMs = decayMs;
-      const ab = base.chain.get('chromatic-aberration');
-      if (ab) {
-        ab.enabled = true;
-        base.chain.setUniforms('chromatic-aberration', {
-          kind: 'chromatic-aberration',
-          amount: 0.012,
-        });
-      }
+      base.triggerTimed?.('chromatic-aberration', decayMs);
     },
     triggerGrayscaleHold(durationMs: number): void {
       grayscaleHoldMs = durationMs;
@@ -94,6 +85,7 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
       });
     },
     update(dt: number): void {
+      base.update(dt);
       if (flashIntensity > 0) {
         flashIntensity = Math.max(0, flashIntensity - flashDecayRate * dt);
         if (grayscaleHoldMs > 0) {
@@ -103,20 +95,6 @@ export function createPanTvardowskiPostFx(skia: SkiaPostFxModuleLike | null): Pa
           kind: 'grayscale-flash',
           intensity: flashIntensity,
         });
-      }
-      if (chromAbTimerMs > 0) {
-        chromAbTimerMs -= dt * 1000;
-        if (chromAbTimerMs <= 0) {
-          chromAbTimerMs = 0;
-          const ab = base.chain.get('chromatic-aberration');
-          if (ab) {
-            ab.enabled = false;
-            base.chain.setUniforms('chromatic-aberration', {
-              kind: 'chromatic-aberration',
-              amount: 0,
-            });
-          }
-        }
       }
       if (grayscaleHoldMs > 0) {
         grayscaleHoldMs -= dt * 1000;

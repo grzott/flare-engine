@@ -5071,3 +5071,71 @@ None — audit-only close per row allowance.
 **Next session:** #196 "PT-Strip-Duplicates" — consume engine lifts from #192–#195; delete PT-local duplicates; repoint consumers; device smoke (cloud Pixel 10)
 
 ---
+
+## Session 196 — 2026-05-13 (scope: [game])
+
+**Goal (from sessions.md row #196):** PT-Strip-Duplicates: consume engine lifts from #192–#195; delete `apps/pan-tvardowski/src/{perf/cold-start.ts,fx/budget.ts,util/{direction.ts,rng.ts},visual-spec/color-util.ts}`; repoint consumers to `@flare-engine/debug` boot-trace + frame-budget, `@flare-engine/math` `Vec2.normalizeOut` + `SeededRNG` + `Color.fromHex`, `@flare-engine/postfx` `triggerTimed`. Verify Maestro `parse-boot-trace.ts` still parses unchanged logcat lines.
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/zone1-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone2-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone3-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone4-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone5-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone6-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone7-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone8-bg.ts`
+- `apps/pan-tvardowski/src/dialogue/portrait-manifest.ts`
+- `apps/pan-tvardowski/src/fx/budget.ts` (refactored — adapter over `createFrameBudget`)
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/perf/cold-start.ts` (refactored — thin adapter over `createBootTrace`)
+- `apps/pan-tvardowski/src/systems/boss/baba-jaga.ts`
+- `apps/pan-tvardowski/src/systems/boss/bazyliszek.ts`
+- `apps/pan-tvardowski/src/systems/boss/borowy.ts`
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts`
+- `apps/pan-tvardowski/src/systems/boss/lucyper.ts`
+- `apps/pan-tvardowski/src/systems/boss/mefistofeles.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/wodnik.ts`
+- `apps/pan-tvardowski/src/systems/enemy-ai.ts`
+- `apps/pan-tvardowski/src/systems/enemy-behaviors.ts`
+- `apps/pan-tvardowski/src/systems/miniboss.ts`
+- `apps/pan-tvardowski/src/systems/spawner.ts`
+- `apps/pan-tvardowski/src/util/direction.ts` (deleted)
+- `apps/pan-tvardowski/src/util/rng.ts` (deleted)
+- `apps/pan-tvardowski/src/visual-spec/color-util.ts` (deleted)
+- `apps/pan-tvardowski/src/visual-spec/zones-palette.ts`
+- `apps/pan-tvardowski/tests/color-util.test.ts`
+- `apps/pan-tvardowski/tests/portrait-manifest.test.ts`
+- `apps/pan-tvardowski/tests/zones-palette.test.ts`
+- `docs/plans/sessions.md` (verifier close — row #196 flipped in_progress → done)
+- `docs/references/builder-reference.md` (verifier doc-sync — Session #196 appended to PT mirror row)
+
+**Gates**
+- lint: ✅ (biome check src/ tests/ — 314 files, 0 errors)
+- typecheck: ✅ (tsc --noEmit, 0 errors)
+- test: ✅ (+4 new, total 865 in apps/pan-tvardowski)
+- build: ✅ (native build via expo — script green)
+- device smoke: deferred — owner-batched per #173/#175/#176/#177/#187/#188/#190 precedent (cloud Pixel 10 rerun)
+
+**Docs synced**
+- `docs/references/builder-reference.md` — PT mirror row updated: Session #196 entry appended (PT-Strip-Duplicates, 861→865 tests, adapter deviations noted)
+- `docs/plans/pan-tvardowski-build-plan.md` §21 — harvest table already correctly listed session #196 as "Duplicates of existing engine primitives — delete on PT side"; no new tick required (extraction rows, not §17 milestone deliverables)
+- `docs/plans/release-readiness-checklist.md` — no new ticks (pure refactor session)
+
+**Commits** (subjects only — full blocks emitted above in chat)
+1. `refactor(pan-tvardowski): replace direction.ts with Vec2.normalizeOut`
+2. `refactor(pan-tvardowski): replace rng.ts with SeededRNG from @flare-engine/math`
+3. `refactor(pan-tvardowski): replace cold-start + color-util with engine adapters`
+4. `refactor(pan-tvardowski): wire budget.ts + postfx.ts to engine debug/postfx APIs`
+
+**Deviations**
+- Deviation #1 (approved pre-session): `fx/budget.ts` NOT deleted — refactored to wrap `createFrameBudget`; PT-specific surface (`BUDGET_LIMITS`, `checkFpsWatchdog`, sub-shape accumulators, `BudgetSnapshot`) preserved because it would leak PT domain into `@flare-engine/debug`.
+- Deviation #2 (approved pre-session): `perf/cold-start.ts` NOT deleted — becomes thin adapter over `createBootTrace()`; all exported symbols preserved; `dumpBootTrace` formats locally from `getEntries()` to avoid double-instantiation overhead; Maestro `scripts/parse-boot-trace.ts` format verified byte-identical.
+- Deviation #3 (bounded, documented): `checkFpsWatchdog` guard changed from `_fpsFilled < FPS_RING_SIZE` to `_budget.getAvgFps() === 0` — equivalent behavior (engine returns 0 until ring is full).
+- Deviation #4 (bounded, documented): 10 `hexToArgb` one-liner helpers (`Color.toSkColor(Color.fromHex(hex))`) added across consumer files — avoids inline two-call churn at each usage site.
+- Deviation #5 (bounded, documented): device smoke owner-deferred per established cloud-batch precedent (#173/#175/#176/#177/#187/#188/#190).
+
+**Next session:** #197 "Render-TestIsolation-Fix" — done (2026-05-12); run /plan-sessions for next planning slice.
+
+---

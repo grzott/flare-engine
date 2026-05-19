@@ -249,7 +249,10 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 133 (PT-AmbienceParams): ZoneBackground.ambience extended with
   // 4 optional fields (velSlowPxPerSec, velFastPxPerSec, driftSpreadPx, tintAlpha) —
   // additive per schema stability protocol.
-  const SCHEMA_CANARY = '2b703b1739ca0c6223e7ef7db36f68b5ed3aabe8f6465b1686f6ea8191880a99';
+  // Bumped at Session 134 (PT-RimLightDefs): RimLightDef interface added
+  // (colorR, colorG, colorB, intensity, falloffRadius, bossDiscRadius) — additive per
+  // schema stability protocol.
+  const SCHEMA_CANARY = '9cacb48e60dfa4c8b9505ddc9b994df452dfa2a3a36b48a6ce8e8dde3015af85';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

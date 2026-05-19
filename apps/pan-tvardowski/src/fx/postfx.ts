@@ -10,8 +10,9 @@ import {
   createVignette,
 } from '@flare-engine/postfx';
 import { SHADOW_RIM_CHAIN, type ShadowRimRuntime, createShadowRimRuntime } from '../lighting';
+import { RIM_LIGHT_DEFS } from '../visual-spec/lighting';
 import { BASELINE_POSTFX, resolvePostFx } from '../visual-spec/postfx';
-import type { PostFxPresetDef } from '../visual-spec/types';
+import type { PostFxPresetDef, RimLightDef } from '../visual-spec/types';
 
 export type { PostFxController };
 
@@ -22,6 +23,8 @@ export interface PanPostFxController extends PostFxController {
   triggerBloomPulse(durationMs: number): void;
   setCrtEnabled(enabled: boolean): void;
   setVignetteColor(r: number, g: number, b: number): void;
+  /** Cache a RimLightDef for this boss encounter; call on phase-enter. */
+  setRimLightDef(def: RimLightDef): void;
   /** Enable the shadow-rim pass and update light + boss positions this frame. */
   setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void;
   /** Disable the shadow-rim pass (boss defeated or budget watchdog triggered). */
@@ -33,15 +36,6 @@ export interface PanPostFxController extends PostFxController {
   /** The trivial chain for the shadow-rim pass. */
   readonly rimLightChain: typeof SHADOW_RIM_CHAIN;
 }
-
-// Default rim-light parameters for smok-krzemionkowski (Zone 1).
-// Light color: warm amber. Boss disc radius: 48 px (matches hull sub-shape).
-const RIM_LIGHT_R = 1.0;
-const RIM_LIGHT_G = 0.72;
-const RIM_LIGHT_B = 0.25;
-const RIM_LIGHT_INTENSITY = 1.8;
-const RIM_LIGHT_FALLOFF_RADIUS = 160;
-const BOSS_DISC_RADIUS = 48;
 
 export function createPanTvardowskiPostFx(
   skia: SkiaPostFxModuleLike | null,
@@ -73,6 +67,9 @@ export function createPanTvardowskiPostFx(
 
   const rimLight = createShadowRimRuntime(skia);
   let rimLightEnabled = false;
+  // Cached per-boss rim-light def. Defaults to smok so existing call sites are
+  // unchanged before any boss calls setRimLightDef.
+  let activeRimDef: RimLightDef = RIM_LIGHT_DEFS['smok-krzemionkowski'] as RimLightDef;
 
   const bloomBaseline = p.bloom.intensity;
 
@@ -97,19 +94,22 @@ export function createPanTvardowskiPostFx(
     get rimLightChain() {
       return SHADOW_RIM_CHAIN;
     },
+    setRimLightDef(def: RimLightDef): void {
+      activeRimDef = def;
+    },
     setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void {
       rimLightEnabled = true;
       rimLight.updateUniforms(
         lightX,
         lightY,
-        RIM_LIGHT_R,
-        RIM_LIGHT_G,
-        RIM_LIGHT_B,
-        RIM_LIGHT_INTENSITY,
-        RIM_LIGHT_FALLOFF_RADIUS,
+        activeRimDef.colorR,
+        activeRimDef.colorG,
+        activeRimDef.colorB,
+        activeRimDef.intensity,
+        activeRimDef.falloffRadius,
         bossX,
         bossY,
-        BOSS_DISC_RADIUS,
+        activeRimDef.bossDiscRadius,
       );
       rimLight.updateOccluders(bossX, bossY);
     },

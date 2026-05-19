@@ -921,6 +921,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           onRimLightUpdate: (lightX, lightY, bossX, bossY) => {
             postfx.setRimLight(lightX, lightY, bossX, bossY);
           },
+          onSetRimLightDef: (def) => {
+            postfx.setRimLightDef(def);
+          },
           onRimLightDisable: () => {
             postfx.disableRimLight();
           },

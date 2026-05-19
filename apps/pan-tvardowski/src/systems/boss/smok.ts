@@ -6,8 +6,11 @@ import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { RIM_LIGHT_DEFS } from '../../visual-spec/lighting';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const SMOK_RIM_DEF = RIM_LIGHT_DEFS['smok-krzemionkowski'];
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.terracotta);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.rust);
@@ -38,6 +41,8 @@ export const smokScript: PhaseScript = {
   fire2Cooldown: 1.1,
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);
+    // Cache the rim-light def for smok so the postfx controller uses the correct params.
+    if (SMOK_RIM_DEF) c.deps.onSetRimLightDef?.(SMOK_RIM_DEF);
     // Rim-light activates as soon as the boss enters combat.
     const pos = c.world.get(c.id, Position);
     const b = c.world.get(c.id, Boss);
@@ -56,6 +61,8 @@ export const smokScript: PhaseScript = {
   },
   onPhase2Enter(c) {
     c.deps.onPaletteShift?.('phase2', ARGB_P2);
+    // Re-assert the rim-light def in case of re-entry ordering edge cases.
+    if (SMOK_RIM_DEF) c.deps.onSetRimLightDef?.(SMOK_RIM_DEF);
     const pos = c.world.get(c.id, Position);
     if (pos) {
       c.deps.onPhaseBreak?.(pos.x, pos.y);

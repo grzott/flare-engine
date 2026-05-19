@@ -2,6 +2,7 @@ import type { Query, World } from '@flare-engine/engine';
 import type { BossPattern, BossPhase } from '../../components';
 import type { BossPostFxKind } from '../../fx/boss-postfx';
 import type { SpawnCtx } from '../../spawn';
+import type { RimLightDef } from '../../visual-spec/types';
 
 export interface BossDeps {
   spawnCtx: SpawnCtx;
@@ -45,6 +46,8 @@ export interface BossDeps {
   onRimLightUpdate?: (lightX: number, lightY: number, bossX: number, bossY: number) => void;
   /** Called when smok-krzemionkowski is defeated to turn off the rim-light pass. */
   onRimLightDisable?: () => void;
+  /** Called on phase-enter so play.ts can cache the RimLightDef on the postfx controller. */
+  onSetRimLightDef?: (def: RimLightDef) => void;
 }
 
 export interface BossStatus {

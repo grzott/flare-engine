@@ -5450,3 +5450,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 134 — 2026-05-19 (scope: game)
+
+**Goal:** PT — visual-spec/lighting (new RIM_LIGHT_DEFS, per-boss)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/lighting.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/rim-light-spec.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -5474,3 +5474,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 135 — 2026-05-19 (scope: game)
+
+**Goal:** PT — boss spawn-layout schema (new BOSS_LAYOUT_DEFS)
+
+**Touched files**
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts`
+- `apps/pan-tvardowski/src/systems/boss/wodnik.ts`
+- `apps/pan-tvardowski/src/systems/miniboss.ts`
+- `apps/pan-tvardowski/src/visual-spec/boss-layouts.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/boss-layouts.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

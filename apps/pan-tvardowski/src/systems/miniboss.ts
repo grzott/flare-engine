@@ -19,6 +19,7 @@ import {
 } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
+import { BOSS_LAYOUT_DEFS } from '../visual-spec/boss-layouts';
 import { destroyEntity } from './entity-ops';
 
 const DYING_INTERVAL = 0.16;
@@ -234,15 +235,30 @@ function madejSpike(c: MinibossCtx): void {
   m.spikeIndex += 1;
 }
 
+const NOCNY_LOWCA_LAYOUT = BOSS_LAYOUT_DEFS.find((d) => d.id === 'nocny-lowca');
+const NOCNY_LOWCA_HOUND_SUMMON = NOCNY_LOWCA_LAYOUT?.summons?.[0];
+
 /** Summon `NOCNY_LOWCA_HOUND_COUNT` hounds arcing around the miniboss. */
 function summonHounds(c: MinibossCtx): void {
   const pos = c.world.get(c.id, Position);
   const m = c.world.get(c.id, Miniboss);
   if (!pos || !m || !c.deps.onSpawnHound) return;
+  const ox = NOCNY_LOWCA_HOUND_SUMMON?.ox ?? 46;
+  const oy = NOCNY_LOWCA_HOUND_SUMMON?.oy ?? 30;
+  const origin = NOCNY_LOWCA_HOUND_SUMMON?.origin;
   const half = (NOCNY_LOWCA_HOUND_COUNT - 1) / 2;
   for (let i = 0; i < NOCNY_LOWCA_HOUND_COUNT; i++) {
-    const offset = (i - half) * 46;
-    c.deps.onSpawnHound(pos.x + offset, pos.y + 30);
+    const offset = (i - half) * ox;
+    let spawnX: number;
+    let spawnY: number;
+    if (origin === 'screen-bottom') {
+      spawnX = pos.x + offset;
+      spawnY = c.deps.bounds.height + oy;
+    } else {
+      spawnX = pos.x + offset;
+      spawnY = pos.y + oy;
+    }
+    c.deps.onSpawnHound(spawnX, spawnY);
   }
   m.hounds = NOCNY_LOWCA_HOUND_COUNT;
 }

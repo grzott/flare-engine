@@ -10,6 +10,7 @@ import {
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
+import { BOSS_LAYOUT_DEFS } from '../../visual-spec/boss-layouts';
 
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
@@ -18,6 +19,9 @@ const ARGB_P1 = hexToArgb(THEME_SPEC.colors.verdigris);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.riverDepth);
 
 const aim: Vec2 = { x: 0, y: 0 };
+
+const WODNIK_LAYOUT = BOSS_LAYOUT_DEFS.find((d) => d.id === 'wodnik-wislanny');
+const WODNIK_TOPIELEC_SUMMON = WODNIK_LAYOUT?.summons?.[0];
 
 /** Raise the bubble shield and spawn WODNIK_SHIELD_MINIONS Topielec minions. */
 function raiseWodnikShield(c: BossCtx): void {
@@ -29,11 +33,22 @@ function raiseWodnikShield(c: BossCtx): void {
   b.minionsAlive = WODNIK_SHIELD_MINIONS;
   const spawn = c.deps.onSpawnShieldMinion;
   if (!spawn) return;
-  const bottomY = c.deps.bounds.height + 40;
+  const ox = WODNIK_TOPIELEC_SUMMON?.ox ?? 70;
+  const oy = WODNIK_TOPIELEC_SUMMON?.oy ?? 40;
+  const origin = WODNIK_TOPIELEC_SUMMON?.origin;
   const halfCount = (WODNIK_SHIELD_MINIONS - 1) / 2;
   for (let i = 0; i < WODNIK_SHIELD_MINIONS; i++) {
-    const offset = (i - halfCount) * 70;
-    spawn(clamp(pos.x + offset, 40, c.deps.bounds.width - 40), bottomY);
+    const offset = (i - halfCount) * ox;
+    let spawnX: number;
+    let spawnY: number;
+    if (origin === 'screen-bottom') {
+      spawnX = clamp(pos.x + offset, 40, c.deps.bounds.width - 40);
+      spawnY = c.deps.bounds.height + oy;
+    } else {
+      spawnX = pos.x + offset;
+      spawnY = pos.y + oy;
+    }
+    spawn(spawnX, spawnY);
   }
 }
 

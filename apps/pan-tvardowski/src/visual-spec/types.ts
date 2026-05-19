@@ -325,6 +325,33 @@ export interface RimLightDef {
   readonly bossDiscRadius: number;
 }
 
+// ---- Boss spawn-layout definitions ------------------------------------------
+
+/**
+ * One summon entry within a BossLayoutDef.
+ * `ox` = lateral spacing between adjacent summons (design px).
+ * `oy` = vertical offset from the origin point (design px).
+ * `origin` defaults to `'boss'` (offset relative to boss position).
+ * `'screen-bottom'` means the Y origin is `bounds.height + oy` (summons enter
+ * from below the visible area — used by Wodnik Wiślany Topielec shield minions).
+ */
+export interface BossLayoutSummon {
+  readonly kind: EntityId;
+  readonly ox: number;
+  readonly oy: number;
+  readonly origin?: 'boss' | 'screen-bottom';
+}
+
+/**
+ * Spawn-layout descriptor for one boss or miniboss.
+ * `summons` lists every summon type the boss can produce; the FSM is the
+ * authoritative source for timing and count — this def carries geometry only.
+ */
+export interface BossLayoutDef {
+  readonly id: EntityId;
+  readonly summons?: readonly BossLayoutSummon[];
+}
+
 // ---- PostFx preset definition -----------------------------------------------
 
 export interface PostFxPresetDef {

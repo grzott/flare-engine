@@ -17,6 +17,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ZONES } from '../src/config/zones';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
+import { BOSS_LAYOUT_DEFS } from '../src/visual-spec/boss-layouts';
 import { SHIP_DEFS } from '../src/visual-spec/ships';
 import type { ZoneId } from '../src/visual-spec/zones-palette';
 
@@ -196,6 +197,47 @@ describe('visual-spec — phase structure', () => {
   });
 });
 
+describe('BOSS_LAYOUT_DEFS — parity + structure', () => {
+  test('boruta, nocny-lowca and wodnik-wislanny are each represented', () => {
+    const ids = BOSS_LAYOUT_DEFS.map((d) => d.id);
+    expect(ids).toContain('boruta');
+    expect(ids).toContain('nocny-lowca');
+    expect(ids).toContain('wodnik-wislanny');
+  });
+
+  test('no duplicate ids', () => {
+    const ids = BOSS_LAYOUT_DEFS.map((d) => d.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  test('boruta bies summon geometry: ox=60 oy=40 origin=undefined', () => {
+    const def = BOSS_LAYOUT_DEFS.find((d) => d.id === 'boruta');
+    const s = def?.summons?.[0];
+    expect(s?.kind).toBe('bies');
+    expect(s?.ox).toBe(60);
+    expect(s?.oy).toBe(40);
+    expect(s?.origin).toBeUndefined();
+  });
+
+  test('nocny-lowca hound summon geometry: ox=46 oy=30 origin=undefined', () => {
+    const def = BOSS_LAYOUT_DEFS.find((d) => d.id === 'nocny-lowca');
+    const s = def?.summons?.[0];
+    expect(s?.kind).toBe('hound');
+    expect(s?.ox).toBe(46);
+    expect(s?.oy).toBe(30);
+    expect(s?.origin).toBeUndefined();
+  });
+
+  test("wodnik-wislanny topielec summon geometry: ox=70 oy=40 origin='screen-bottom'", () => {
+    const def = BOSS_LAYOUT_DEFS.find((d) => d.id === 'wodnik-wislanny');
+    const s = def?.summons?.[0];
+    expect(s?.kind).toBe('topielec');
+    expect(s?.ox).toBe(70);
+    expect(s?.oy).toBe(40);
+    expect(s?.origin).toBe('screen-bottom');
+  });
+});
+
 describe('visual-spec — schema canary', () => {
   /**
    * Frozen hash of the normalized contents of `src/visual-spec/types.ts`.
@@ -252,7 +294,9 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 134 (PT-RimLightDefs): RimLightDef interface added
   // (colorR, colorG, colorB, intensity, falloffRadius, bossDiscRadius) — additive per
   // schema stability protocol.
-  const SCHEMA_CANARY = '9cacb48e60dfa4c8b9505ddc9b994df452dfa2a3a36b48a6ce8e8dde3015af85';
+  // Bumped at Session 135 (PT-BossLayoutDefs): BossLayoutSummon + BossLayoutDef interfaces
+  // added — additive per schema stability protocol.
+  const SCHEMA_CANARY = 'a8b57d32700cae28d6d33fc9ef75e4668564c7e3d1577a697b464521fd519b22';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

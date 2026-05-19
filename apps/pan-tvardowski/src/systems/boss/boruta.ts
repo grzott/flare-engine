@@ -5,6 +5,7 @@ import { BORUTA_SUMMON_COUNT, BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../co
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
+import { BOSS_LAYOUT_DEFS } from '../../visual-spec/boss-layouts';
 
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
@@ -14,16 +15,31 @@ const ARGB_P2 = hexToArgb(THEME_SPEC.colors.crimson);
 
 const aim: Vec2 = { x: 0, y: 0 };
 
+const BORUTA_LAYOUT = BOSS_LAYOUT_DEFS.find((d) => d.id === 'boruta');
+const BORUTA_BIES_SUMMON = BORUTA_LAYOUT?.summons?.[0];
+
 /** Spawn Boruta's summons once on phase-2 entry. */
 function spawnBorutaSummons(c: BossCtx): void {
   const b = c.world.get(c.id, Boss);
   const pos = c.world.get(c.id, Position);
   if (!b || !pos || !c.deps.onSpawnSummon) return;
   if (b.summonsSpawned >= BORUTA_SUMMON_COUNT) return;
+  const ox = BORUTA_BIES_SUMMON?.ox ?? 60;
+  const oy = BORUTA_BIES_SUMMON?.oy ?? 40;
+  const origin = BORUTA_BIES_SUMMON?.origin;
   const toSpawn = BORUTA_SUMMON_COUNT - b.summonsSpawned;
   for (let i = 0; i < toSpawn; i++) {
-    const offset = (i - (BORUTA_SUMMON_COUNT - 1) / 2) * 60;
-    c.deps.onSpawnSummon(pos.x + offset, pos.y + 40);
+    const offset = (i - (BORUTA_SUMMON_COUNT - 1) / 2) * ox;
+    let spawnX: number;
+    let spawnY: number;
+    if (origin === 'screen-bottom') {
+      spawnX = pos.x + offset;
+      spawnY = c.deps.bounds.height + oy;
+    } else {
+      spawnX = pos.x + offset;
+      spawnY = pos.y + oy;
+    }
+    c.deps.onSpawnSummon(spawnX, spawnY);
   }
   b.summonsSpawned = BORUTA_SUMMON_COUNT;
 }

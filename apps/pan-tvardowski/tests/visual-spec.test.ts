@@ -246,7 +246,10 @@ describe('visual-spec — schema canary', () => {
   // Bumped at Session 132 (PT-PostFxPresets): PostFxPresetDef interface added after
   // ExplosionTierDef; ZoneVisualSpec gained optional postfxOverride field — additive
   // per schema stability protocol.
-  const SCHEMA_CANARY = '959d0b9a25f2a69b07921f84f375954c5755c3af1f64d92dd675590f6394b13e';
+  // Bumped at Session 133 (PT-AmbienceParams): ZoneBackground.ambience extended with
+  // 4 optional fields (velSlowPxPerSec, velFastPxPerSec, driftSpreadPx, tintAlpha) —
+  // additive per schema stability protocol.
+  const SCHEMA_CANARY = '2b703b1739ca0c6223e7ef7db36f68b5ed3aabe8f6465b1686f6ea8191880a99';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

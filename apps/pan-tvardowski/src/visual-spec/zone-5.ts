@@ -21,7 +21,7 @@ export const zone5: ZoneVisualSpec = {
       { id: 'z5-fire', speed: 0, content: 'fire-shader' },
       { id: 'z5-fog', speed: 0, content: 'fog-shader' },
     ],
-    ambience: { kind: 'ash', count: 128 },
+    ambience: { kind: 'ash', count: 128, velSlowPxPerSec: 14, velFastPxPerSec: 28 },
   },
   entityIds: [
     'nocnica',

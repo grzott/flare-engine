@@ -8,7 +8,10 @@ import { Lifetime } from '../components';
 import type { AtlasHandle } from '../spawn';
 import { hexToArgb } from '../util/hex';
 import { THEME_SPEC } from '../visual-spec/theme';
+import type { ZoneBackground } from '../visual-spec/types';
 import type { ZonePalette } from '../visual-spec/zones-palette';
+
+type AmbienceSpec = ZoneBackground['ambience'];
 
 const PARTICLE_Z = 19;
 const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
@@ -19,6 +22,8 @@ export const VEL_SLOW = 10;
 export const VEL_FAST = 20;
 /** Drift spread (px/s). Folio XIIB: ±8 px/s = ±1 tile. */
 export const AMBIENCE_DRIFT_SPREAD = 16;
+/** Default tint alpha applied to particle color. */
+export const DEFAULT_TINT_ALPHA = 0.6;
 /** Particle lifetime in seconds. */
 const PARTICLE_LIFE = 4;
 
@@ -33,7 +38,9 @@ export interface AmbienceState {
   lcg: number;
   /** Cached primary color from last tick (detects zone change). */
   lastPrimary: number;
-  /** Pre-created tint effect, re-created only when primary changes. */
+  /** Cached tint alpha from last tick (detects spec change). */
+  lastTintAlpha: number;
+  /** Pre-created tint effect, re-created only when primary or tintAlpha changes. */
   cachedTint: AnySpriteEffect;
   readonly world: World;
   readonly atlas: AtlasHandle;
@@ -45,12 +52,12 @@ function lcgNext(state: AmbienceState): number {
   return (state.lcg - 1) / 2147483646;
 }
 
-function argbToTint(argb: number): AnySpriteEffect {
+function argbToTint(argb: number, alpha: number): AnySpriteEffect {
   const r = ((argb >>> 16) & 0xff) / 255;
   const g = ((argb >>> 8) & 0xff) / 255;
   const b = (argb & 0xff) / 255;
   const a = ((argb >>> 24) & 0xff) / 255;
-  return tint({ r, g, b, a }, 0.6);
+  return tint({ r, g, b, a }, alpha);
 }
 
 /**
@@ -67,7 +74,8 @@ export function createAmbienceState(world: World, atlas: AtlasHandle): AmbienceS
     accumulator: 0,
     lcg: 12345,
     lastPrimary: initialPrimary,
-    cachedTint: argbToTint(initialPrimary),
+    lastTintAlpha: DEFAULT_TINT_ALPHA,
+    cachedTint: argbToTint(initialPrimary, DEFAULT_TINT_ALPHA),
     world,
     atlas,
   };
@@ -88,6 +96,7 @@ export function tickAmbience(
   bounds: { width: number; height: number },
   reducedMotion: boolean,
   bossActive: boolean,
+  ambienceSpec?: AmbienceSpec,
 ): void {
   if (bossActive) return;
 
@@ -98,10 +107,13 @@ export function tickAmbience(
   if (state.accumulator < interval) return;
   state.accumulator -= interval;
 
-  // Update tint cache only when zone primary changes (once per zone transition).
-  if (state.lastPrimary !== zonePalette.primary) {
+  const tintAlpha = ambienceSpec?.tintAlpha ?? DEFAULT_TINT_ALPHA;
+
+  // Update tint cache when zone primary or tintAlpha changes (once per zone transition).
+  if (state.lastPrimary !== zonePalette.primary || state.lastTintAlpha !== tintAlpha) {
     state.lastPrimary = zonePalette.primary;
-    state.cachedTint = argbToTint(zonePalette.primary);
+    state.lastTintAlpha = tintAlpha;
+    state.cachedTint = argbToTint(zonePalette.primary, tintAlpha);
   }
 
   const sparkFrame = getFrame(state.atlas.sheet, 'particle-smoke');
@@ -122,13 +134,17 @@ export function tickAmbience(
   const id = state.world.spawn();
   state.ring[slot] = id;
 
+  const velSlow = ambienceSpec?.velSlowPxPerSec ?? VEL_SLOW;
+  const velFast = ambienceSpec?.velFastPxPerSec ?? VEL_FAST;
+  const driftSpread = ambienceSpec?.driftSpreadPx ?? AMBIENCE_DRIFT_SPREAD;
+
   // Alternate between slow and fast parallax layers via LCG parity.
   // Under reducedMotion, getParallaxVelocity returns 0 — particle is
   // static (spawn-static behaviour).
   const r = lcgNext(state);
   const isFast = r < 0.5;
-  const baseVy = isFast ? VEL_FAST : VEL_SLOW;
-  const baseVx = (lcgNext(state) - 0.5) * AMBIENCE_DRIFT_SPREAD;
+  const baseVy = isFast ? velFast : velSlow;
+  const baseVx = (lcgNext(state) - 0.5) * driftSpread;
   const vy = getParallaxVelocity(baseVy, reducedMotion);
   const vx = getParallaxVelocity(baseVx, reducedMotion);
 

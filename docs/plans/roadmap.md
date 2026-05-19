@@ -8,9 +8,9 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ## State (2026-05-13)
 
-**Engine:** Feature-complete at 0.1.x. 37 packages shipping. ~2,468 tests green.
-**Pan Tvardowski:** Feature-complete since 2026-04-28 (M0–M9.6 done). 8 zones, 12 enemies, 4 weapons, 3 ships, PL+EN, shape-atlas visuals. ~865 PT tests green. Manual launch tier deferred.
-**Active focus:** Meta-system refactor (this doc closes the planning-artifact loop).
+**Engine:** Feature-complete at 0.1.x. 37 packages shipping. ~2,468 tests green (last verified 2026-05-13, no engine changes since).
+**Pan Tvardowski:** Feature-complete since 2026-04-28 (M0–M9.6 done). 8 zones, 12 enemies, 4 weapons, 3 ships, PL+EN, shape-atlas visuals. 988 PT tests green (through session 132). Manual launch tier deferred.
+**Active focus:** Visual-spec single-source-of-truth arc — 6/10 rows done (through session 132), 4 remaining in `todo.md`.
 
 ---
 

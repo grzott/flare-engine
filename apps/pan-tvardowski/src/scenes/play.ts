@@ -120,6 +120,7 @@ import {
   tickSpawner,
 } from '../systems/spawner';
 import { countTopielecMinions } from '../systems/wodnik';
+import { ZONE_VISUAL_SPECS } from '../visual-spec';
 import { ZONE_PALETTES } from '../visual-spec/zones-palette';
 import { shellDefaults } from './scene-shell';
 
@@ -1104,8 +1105,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         }
 
         if (s.ambience) {
-          const zp =
-            ZONE_PALETTES[Number.parseInt(s.zone.id.slice(1), 10) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8];
+          const zoneNum = Number.parseInt(s.zone.id.slice(1), 10) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+          const zp = ZONE_PALETTES[zoneNum];
+          const ambienceSpec = ZONE_VISUAL_SPECS[zoneNum].bg.ambience;
           tickAmbience(
             s.ambience,
             dt,
@@ -1113,6 +1115,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             s.bounds,
             gameState.settings.reducedMotion,
             gameState.bossActive,
+            ambienceSpec,
           );
         }
 

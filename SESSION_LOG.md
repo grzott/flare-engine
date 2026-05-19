@@ -5428,3 +5428,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 133 — 2026-05-19 (scope: game)
+
+**Goal:** PT — visual-spec/ambience parametrization
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/ambience.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-5.ts`
+- `apps/pan-tvardowski/tests/ambience-spec.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `docs/plans/roadmap.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

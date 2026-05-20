@@ -21,3 +21,13 @@ export {
 } from './frame-budget.js';
 
 export { type BootEntry, type BootTraceHandle, createBootTrace } from './boot-trace.js';
+
+export {
+  type PerfSectionStats,
+  type PerfCounterStats,
+  type PerfReport,
+  type PerfRecorderHandle,
+  createPerfRecorder,
+} from './perf-recorder.js';
+
+export { PERF_BENCH_TAG, emitPerfReport } from './perf-output.js';

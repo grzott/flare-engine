@@ -716,7 +716,8 @@ export type ColorTokenId =
   | 'crashBg'
   | 'parchmentLight'
   | 'ashGrey'
-  | 'crashButtonBg';
+  | 'crashButtonBg'
+  | 'pureBlack';
 
 export interface TypographyValue {
   readonly fontFamily: string;

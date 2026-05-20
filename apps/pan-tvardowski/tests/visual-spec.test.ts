@@ -296,7 +296,9 @@ describe('visual-spec — schema canary', () => {
   // schema stability protocol.
   // Bumped at Session 135 (PT-BossLayoutDefs): BossLayoutSummon + BossLayoutDef interfaces
   // added — additive per schema stability protocol.
-  const SCHEMA_CANARY = 'a8b57d32700cae28d6d33fc9ef75e4668564c7e3d1577a697b464521fd519b22';
+  // Bumped (PT-TokenizeWhiteBlack): 'pureBlack' added to ColorTokenId union — additive
+  // per schema stability protocol.
+  const SCHEMA_CANARY = '11ecf13005b3b09196eb177ae65335c97c68129a039c383cd8cf1d7be807b81c';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

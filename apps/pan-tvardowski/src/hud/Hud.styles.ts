@@ -18,9 +18,9 @@ export const rawStyles = {
   },
   score: { color: UI_COLORS.primary, ...TYPOGRAPHY.bodyL },
   // kept on bodyM for layout fit — compact HP/bomb status lines
-  hp: { color: '#fff', ...TYPOGRAPHY.bodyM, marginTop: THEME_SPEC.spacing.sm },
+  hp: { color: THEME_SPEC.colors.white, ...TYPOGRAPHY.bodyM, marginTop: THEME_SPEC.spacing.sm },
   // kept on bodyM for layout fit — compact HP/bomb status lines
-  bombs: { color: '#fff', ...TYPOGRAPHY.bodyM, marginTop: THEME_SPEC.spacing.xs },
+  bombs: { color: THEME_SPEC.colors.white, ...TYPOGRAPHY.bodyM, marginTop: THEME_SPEC.spacing.xs },
   bossBar: {
     position: 'absolute' as const,
     top: THEME_SPEC.spacing.hudCornerY,
@@ -77,7 +77,7 @@ export const rawStyles = {
     paddingHorizontal: THEME_SPEC.spacing.xxxl,
   },
   zoneBannerSub: {
-    color: '#fff',
+    color: THEME_SPEC.colors.white,
     ...TYPOGRAPHY.bodyM,
     marginTop: THEME_SPEC.spacing.lg,
     letterSpacing: 1,
@@ -98,7 +98,7 @@ export const rawStyles = {
     textAlign: 'center' as const,
     paddingHorizontal: THEME_SPEC.spacing.xxxl,
   },
-  bannerSub: { color: '#fff', fontSize: 18, marginTop: THEME_SPEC.spacing.lg },
+  bannerSub: { color: THEME_SPEC.colors.white, fontSize: 18, marginTop: THEME_SPEC.spacing.lg },
   tapHint: { color: UI_COLORS.tint60, ...TYPOGRAPHY.bodyM, marginTop: THEME_SPEC.spacing.xxxl },
   shareBtn: {
     marginTop: THEME_SPEC.spacing.xxl,

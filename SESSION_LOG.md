@@ -5497,3 +5497,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 136 — 2026-05-20 (scope: game)
+
+**Goal:** PT — tokenize residual #fff/#000 (App + HUD true-100% sweep)
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/vs-theme-literals.test.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

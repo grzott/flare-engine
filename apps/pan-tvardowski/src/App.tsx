@@ -500,7 +500,7 @@ function AppRoot(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: THEME_SPEC.colors.pureBlack },
   crashRoot: {
     flex: 1,
     backgroundColor: THEME_SPEC.colors.crashBg,
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 6,
   },
-  crashButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  crashButtonText: { color: THEME_SPEC.colors.white, fontSize: 15, fontWeight: '600' },
   joystick: {
     position: 'absolute',
     width: 120,

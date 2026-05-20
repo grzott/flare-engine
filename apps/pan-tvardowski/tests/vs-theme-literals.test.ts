@@ -39,6 +39,14 @@ describe('vs-theme-literals — color token parity', () => {
   test('crimson string matches legacy HP bar gradient stop #D4213D', () => {
     expect(THEME_SPEC.colors.crimson).toBe('#D4213D');
   });
+
+  test('pureBlack hexToArgb parity 0xff000000', () => {
+    expect(hexToArgb(THEME_SPEC.colors.pureBlack)).toBe(0xff000000);
+  });
+
+  test('white string parity #FFFFFF', () => {
+    expect(THEME_SPEC.colors.white).toBe('#FFFFFF');
+  });
 });
 
 describe('vs-theme-literals — duration constants', () => {

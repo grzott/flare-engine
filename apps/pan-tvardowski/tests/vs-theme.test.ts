@@ -66,6 +66,7 @@ const COLOR_TOKENS: readonly ColorTokenId[] = [
   'parchmentLight',
   'ashGrey',
   'crashButtonBg',
+  'pureBlack',
 ];
 
 const TYPE_TOKENS: readonly TypeTokenId[] = [
@@ -105,11 +106,11 @@ const SPACING_TOKENS: readonly SpacingTokenId[] = [
 ];
 
 describe('vs-theme — colors', () => {
-  test('all 60 ColorTokenIds present in THEME_SPEC.colors', () => {
+  test('all 62 ColorTokenIds present in THEME_SPEC.colors', () => {
     for (const id of COLOR_TOKENS) {
       expect(THEME_SPEC.colors[id], `color token: ${id}`).toBeDefined();
     }
-    expect(Object.keys(THEME_SPEC.colors).length).toBe(61);
+    expect(Object.keys(THEME_SPEC.colors).length).toBe(62);
   });
 
   test('every color value is a valid #RRGGBB hex', () => {
@@ -173,6 +174,14 @@ describe('vs-theme — colors', () => {
 
   test('portraitInnkeeperHatDark = #5C3D12', () => {
     expect(THEME_SPEC.colors.portraitInnkeeperHatDark).toBe('#5C3D12');
+  });
+
+  test('pureBlack = #000000', () => {
+    expect(THEME_SPEC.colors.pureBlack).toBe('#000000');
+  });
+
+  test('white = #FFFFFF', () => {
+    expect(THEME_SPEC.colors.white).toBe('#FFFFFF');
   });
 });
 

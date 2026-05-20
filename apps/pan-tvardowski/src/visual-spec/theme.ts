@@ -83,6 +83,7 @@ export const THEME_SPEC: ThemeSpec = {
     parchmentLight: '#F3D6A4',
     ashGrey: '#A89B8C',
     crashButtonBg: '#8A2F2F',
+    pureBlack: '#000000',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

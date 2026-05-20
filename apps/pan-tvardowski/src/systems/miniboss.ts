@@ -13,13 +13,18 @@ import {
   BULLET_SPAWN_OFFSET,
   BULLET_SPEED,
   LESZY_FORM_SEC,
-  MADEJ_FIRE_COOLDOWN,
   MADEJ_SPIKE_SEC,
   NOCNY_LOWCA_HOUND_COUNT,
 } from '../config/gameplay';
 import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
 import { BOSS_LAYOUT_DEFS } from '../visual-spec/boss-layouts';
+import { MINIBOSS_TUNING_DEFS } from '../visual-spec/boss-tuning';
+
+const _rokita = MINIBOSS_TUNING_DEFS.rokita;
+const _leszy = MINIBOSS_TUNING_DEFS.leszy;
+const _nocnyLowca = MINIBOSS_TUNING_DEFS['nocny-lowca'];
+const _madej = MINIBOSS_TUNING_DEFS.madej;
 import { destroyEntity } from './entity-ops';
 
 const DYING_INTERVAL = 0.16;
@@ -138,6 +143,7 @@ function leszyFire(c: MinibossCtx): number {
   const pos = c.world.get(c.id, Position);
   const m = c.world.get(c.id, Miniboss);
   if (!pos || !m) return 1;
+  if (_leszy.kind !== 'leszy') return 1;
   const ox = pos.x;
   const oy = pos.y + BULLET_SPAWN_OFFSET.boss;
   if (m.form === 'deer') {
@@ -155,13 +161,13 @@ function leszyFire(c: MinibossCtx): number {
         Layer.enemy,
       );
     }
-    return 0.8;
+    return _leszy.fireCooldownDeerSec;
   }
   if (m.form === 'bear') {
     // Slow AOE: single heavy bullet aimed at player.
     V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss * 0.55, aim);
     spawnBullet(c.deps.spawnCtx, ox, oy, aim.x, aim.y, Layer.enemy);
-    return 1.3;
+    return _leszy.fireCooldownBearSec;
   }
   // owl — radial 8-way burst.
   for (let i = 0; i < 8; i++) {
@@ -175,7 +181,7 @@ function leszyFire(c: MinibossCtx): number {
       Layer.enemy,
     );
   }
-  return 1.6;
+  return _leszy.fireCooldownOwlSec;
 }
 
 const FORM_ORDER: readonly LeszyForm[] = ['deer', 'bear', 'owl'];
@@ -201,13 +207,14 @@ function nocnyLowcaFire(c: MinibossCtx): number {
       Layer.enemy,
     );
   }
-  return 0.9;
+  return _nocnyLowca.kind === 'simple' ? _nocnyLowca.fireCooldownSec : 0.9;
 }
 
 /** Madej: aimed heavy shot paired with a spike-lane drop on fixed cadence. */
 function madejFire(c: MinibossCtx): number {
   const pos = c.world.get(c.id, Position);
-  if (!pos) return MADEJ_FIRE_COOLDOWN;
+  const cd = _madej.kind === 'simple' ? _madej.fireCooldownSec : 1.1;
+  if (!pos) return cd;
   V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
   const base = Math.atan2(aim.y, aim.x);
   for (let i = -1; i <= 1; i++) {
@@ -221,7 +228,7 @@ function madejFire(c: MinibossCtx): number {
       Layer.enemy,
     );
   }
-  return MADEJ_FIRE_COOLDOWN;
+  return cd;
 }
 
 /** Madej: drop a persistent spike column in lane (spikeIndex % 3). */
@@ -329,11 +336,11 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
       }
       if (m.pattern === 'rokita') {
         m.rootProgress = clamp(m.phaseT / ROKITA_ROOT_GROW_SEC, 0, 1);
-        sweepMove(c, 55);
+        sweepMove(c, _rokita.kind === 'simple' ? _rokita.sweepSpeed : 55);
         m.fireCooldown -= dt;
         if (m.fireCooldown <= 0) {
           rokitaFire(c);
-          m.fireCooldown = 1.1;
+          m.fireCooldown = _rokita.kind === 'simple' ? _rokita.fireCooldownSec : 1.1;
         }
       } else if (m.pattern === 'leszy') {
         // Shape-shift every LESZY_FORM_SEC.
@@ -344,7 +351,18 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
           c.deps.onFormChange?.(m.form);
         }
         // Movement: deer rams faster, bear is slow, owl hovers fast side-to-side.
-        const speed = m.form === 'deer' ? 95 : m.form === 'bear' ? 35 : 130;
+        const speed =
+          _leszy.kind === 'leszy'
+            ? m.form === 'deer'
+              ? _leszy.sweepSpeedDeer
+              : m.form === 'bear'
+                ? _leszy.sweepSpeedBear
+                : _leszy.sweepSpeedOwl
+            : m.form === 'deer'
+              ? 95
+              : m.form === 'bear'
+                ? 35
+                : 130;
         sweepMove(c, speed);
         m.fireCooldown -= dt;
         if (m.fireCooldown <= 0) {
@@ -352,7 +370,7 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
         }
       } else if (m.pattern === 'nocny-lowca') {
         // Spectral-horse sweep — faster than Rokita/Leszy-bear.
-        sweepMove(c, 120);
+        sweepMove(c, _nocnyLowca.kind === 'simple' ? _nocnyLowca.sweepSpeed : 120);
         // Re-summon if the pack was wiped.
         const live = c.deps.countHounds?.() ?? m.hounds;
         m.hounds = live;
@@ -362,7 +380,7 @@ function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {
           m.fireCooldown = nocnyLowcaFire(c);
         }
       } else if (m.pattern === 'madej') {
-        sweepMove(c, 50);
+        sweepMove(c, _madej.kind === 'simple' ? _madej.sweepSpeed : 50);
         m.formT += dt;
         if (m.formT >= MADEJ_SPIKE_SEC) {
           m.formT -= MADEJ_SPIKE_SEC;

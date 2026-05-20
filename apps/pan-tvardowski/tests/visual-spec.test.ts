@@ -298,7 +298,10 @@ describe('visual-spec — schema canary', () => {
   // added — additive per schema stability protocol.
   // Bumped (PT-TokenizeWhiteBlack): 'pureBlack' added to ColorTokenId union — additive
   // per schema stability protocol.
-  const SCHEMA_CANARY = '11ecf13005b3b09196eb177ae65335c97c68129a039c383cd8cf1d7be807b81c';
+  // Bumped (PT-BossTuningDefs): BossTuningDef + MinibossSimpleTuningDef +
+  // MinibossLeszyTuningDef + MinibossTuningDef union added — additive per schema
+  // stability protocol.
+  const SCHEMA_CANARY = 'f0dfde8ef4c4efbdc2499a9cf8f729c4ff3e6c12950066ec979c500e58e3603c';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

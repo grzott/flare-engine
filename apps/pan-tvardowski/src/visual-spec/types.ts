@@ -352,6 +352,51 @@ export interface BossLayoutDef {
   readonly summons?: readonly BossLayoutSummon[];
 }
 
+// ---- Boss tuning definitions ------------------------------------------------
+
+/**
+ * Per-phase sweep + fire-cadence tuning for a 2-phase or 3-phase boss.
+ * `sweepSpeed3` / `fire3CooldownSec` are required only when `threePhase` is true.
+ */
+export interface BossTuningDef {
+  readonly id: EntityId;
+  readonly sweepSpeed1: number;
+  readonly sweepSpeed2: number;
+  readonly sweepSpeed3?: number;
+  readonly fire1CooldownSec: number;
+  readonly fire2CooldownSec: number;
+  readonly fire3CooldownSec?: number;
+}
+
+/**
+ * Tuning def for simple minibosses (Rokita, Nocny Łowca, Madej):
+ * a single sweep speed and a single fire cooldown.
+ */
+export interface MinibossSimpleTuningDef {
+  readonly kind: 'simple';
+  readonly id: EntityId;
+  readonly sweepSpeed: number;
+  readonly fireCooldownSec: number;
+}
+
+/**
+ * Tuning def for Leszy: three per-form fire cooldowns.
+ * Sweep speed per form is derived from the FSM (form-branch) — only
+ * the fire cadences are data-driven here.
+ */
+export interface MinibossLeszyTuningDef {
+  readonly kind: 'leszy';
+  readonly id: EntityId;
+  readonly sweepSpeedDeer: number;
+  readonly sweepSpeedBear: number;
+  readonly sweepSpeedOwl: number;
+  readonly fireCooldownDeerSec: number;
+  readonly fireCooldownBearSec: number;
+  readonly fireCooldownOwlSec: number;
+}
+
+export type MinibossTuningDef = MinibossSimpleTuningDef | MinibossLeszyTuningDef;
+
 // ---- PostFx preset definition -----------------------------------------------
 
 export interface PostFxPresetDef {

@@ -12,8 +12,11 @@ import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 import { BOSS_LAYOUT_DEFS } from '../../visual-spec/boss-layouts';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS['wodnik-wislanny'];
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.verdigris);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.riverDepth);
@@ -77,10 +80,10 @@ function tickWodnikShield(dt: number, c: BossCtx): void {
 // Phase 2: lighter aimed spout + bubble-shield.
 // Phase palette: P1=verdigris 0xff4a7a6a, P2=grey-green 0xff2a4a4a (§10 visual-reference).
 export const wodnikScript: PhaseScript = {
-  sweepSpeed1: 70,
-  sweepSpeed2: 95,
-  fire1Cooldown: 0.45,
-  fire2Cooldown: 0.9,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);
   },

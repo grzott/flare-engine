@@ -5519,3 +5519,33 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 137 — 2026-05-20 (scope: game)
+
+**Goal:** PT — visual-spec/boss-tuning (BOSS_TUNING_DEFS for sweep + fire cooldowns)
+
+**Touched files**
+- `apps/pan-tvardowski/src/config/gameplay.ts`
+- `apps/pan-tvardowski/src/systems/boss/baba-jaga.ts`
+- `apps/pan-tvardowski/src/systems/boss/bazyliszek.ts`
+- `apps/pan-tvardowski/src/systems/boss/borowy.ts`
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts`
+- `apps/pan-tvardowski/src/systems/boss/lucyper.ts`
+- `apps/pan-tvardowski/src/systems/boss/mefistofeles.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/wodnik.ts`
+- `apps/pan-tvardowski/src/systems/miniboss.ts`
+- `apps/pan-tvardowski/src/visual-spec/boss-tuning.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/boss-tuning.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

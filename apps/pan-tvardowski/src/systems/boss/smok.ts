@@ -6,9 +6,12 @@ import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { RIM_LIGHT_DEFS } from '../../visual-spec/lighting';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS['smok-krzemionkowski'];
 
 const SMOK_RIM_DEF = RIM_LIGHT_DEFS['smok-krzemionkowski'];
 
@@ -35,10 +38,10 @@ function smokLightPos(bossX: number, bossY: number, t: number): { lx: number; ly
 // Smok Krzemionkowski (Zone 1).
 // Phase palette: P1=terracotta 0xffb05a3c, P2=rust 0xff8b3a1f (§10 visual-reference).
 export const smokScript: PhaseScript = {
-  sweepSpeed1: 80,
-  sweepSpeed2: 140,
-  fire1Cooldown: 0.5,
-  fire2Cooldown: 1.1,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);
     // Cache the rim-light def for smok so the postfx controller uses the correct params.

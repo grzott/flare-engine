@@ -5,8 +5,11 @@ import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS['borowy-krol'];
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.moss);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.verdigris);
@@ -16,10 +19,10 @@ const aim: Vec2 = { x: 0, y: 0 };
 // Borowy Król (Zone 2).
 // Phase palette: P1=moss 0xff243a29, P2=verdigris 0xff4a7a6a (§10 visual-reference).
 export const borowyScript: PhaseScript = {
-  sweepSpeed1: 60,
-  sweepSpeed2: 110,
-  fire1Cooldown: 0.7,
-  fire2Cooldown: 0.55,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);
   },

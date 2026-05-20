@@ -6,8 +6,11 @@ import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS['baba-jaga'];
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.crimsonDeep);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.crimson);
@@ -23,12 +26,12 @@ const aim: Vec2 = { x: 0, y: 0 };
 //   P3=white-out 0xffffffff (§10 visual-reference, M3).
 export const babaJagaScript: PhaseScript = {
   threePhase: true,
-  sweepSpeed1: 50,
-  sweepSpeed2: 120,
-  sweepSpeed3: 35,
-  fire1Cooldown: 0.85,
-  fire2Cooldown: 0.6,
-  fire3Cooldown: 0.18,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  sweepSpeed3: _t.sweepSpeed3,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
+  fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
     const pos = c.world.get(c.id, Position);
     if (!pos) return;

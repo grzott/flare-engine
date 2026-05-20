@@ -1,20 +1,16 @@
 import { Position } from '@flare-engine/ecs';
 import { Vec2 as V, type Vec2 } from '@flare-engine/math';
 import { Boss, type BossPattern } from '../../components';
-import {
-  BULLET_SPAWN_OFFSET,
-  BULLET_SPEED,
-  LUCYPER_P1_FIRE,
-  LUCYPER_P2_FIRE,
-  LUCYPER_P3_FIRE,
-  LUCYPER_SHATTER_CYCLE,
-} from '../../config/gameplay';
+import { BULLET_SPAWN_OFFSET, BULLET_SPEED, LUCYPER_SHATTER_CYCLE } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS['lucyper-ksiezycowy'];
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.silver);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.lunarInk);
@@ -73,9 +69,10 @@ function fireAimedFan(c: BossCtx, count: number, spread: number, speedMul = 1): 
 /**
  * Lucyper Księżycowy — Zone 8 final boss (build plan §9, three phases).
  * Phase 1 cosmic rain — heavy 10-way radial + aimed anchor shot every
- *   {@link LUCYPER_P1_FIRE} s.
+ *   `BOSS_TUNING_DEFS['lucyper-ksiezycowy'].fire1CooldownSec` s.
  * Phase 2 eclipse + spotlight — tight aimed 3-fan every
- *   {@link LUCYPER_P2_FIRE} s; `onPhase2Enter` drops the arena to eclipse mode.
+ *   `BOSS_TUNING_DEFS['lucyper-ksiezycowy'].fire2CooldownSec` s;
+ *   `onPhase2Enter` drops the arena to eclipse mode.
  * Phase 3 shattered-mirror bullet hell — cycles through `SHATTER_CYCLE` every
  *   {@link LUCYPER_SHATTER_CYCLE} s, running a simplified emission for each
  *   prior boss: radial (smok), aimed spread (borowy), aimed vertical
@@ -84,12 +81,12 @@ function fireAimedFan(c: BossCtx, count: number, spread: number, speedMul = 1): 
  */
 export const lucyperScript: PhaseScript = {
   threePhase: true,
-  sweepSpeed1: 60,
-  sweepSpeed2: 90,
-  sweepSpeed3: 110,
-  fire1Cooldown: LUCYPER_P1_FIRE,
-  fire2Cooldown: LUCYPER_P2_FIRE,
-  fire3Cooldown: LUCYPER_P3_FIRE,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  sweepSpeed3: _t.sweepSpeed3,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
+  fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
     // Cosmic rain: 10-way radial + center anchor.
     fireRadial(c, 10);

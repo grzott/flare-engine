@@ -29,6 +29,7 @@ export {
 } from './explosions';
 export { BASELINE_POSTFX, resolvePostFx } from './postfx';
 export { BOSS_LAYOUT_DEFS } from './boss-layouts';
+export { BOSS_TUNING_DEFS, MINIBOSS_TUNING_DEFS } from './boss-tuning';
 export { RIM_LIGHT_DEFS } from './lighting';
 export { THEME_SPEC } from './theme';
 export { ANIMATION_DEFS, HUD_TWEENS, OVERLAY_OPEN_MS, OVERLAY_CLOSE_MS } from './animations';

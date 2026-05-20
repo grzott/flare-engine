@@ -6,9 +6,12 @@ import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import { BOSS_HALF_W } from './shared';
 import type { BossCtx, PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS['bazyliszek-warszawski'];
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.bone);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.katakumbyDark);
@@ -42,12 +45,12 @@ function bazyliszekTeleport(dt: number, c: BossCtx): void {
 // Phase 3: gaze-beam maze — 10 radial spokes + periodic teleport.
 export const bazyliszekScript: PhaseScript = {
   threePhase: true,
-  sweepSpeed1: 45,
-  sweepSpeed2: 80,
-  sweepSpeed3: 25,
-  fire1Cooldown: 0.7,
-  fire2Cooldown: 0.55,
-  fire3Cooldown: 0.22,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  sweepSpeed3: _t.sweepSpeed3,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
+  fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
     const pos = c.world.get(c.id, Position);
     if (!pos) return;

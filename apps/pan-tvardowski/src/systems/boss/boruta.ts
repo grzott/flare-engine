@@ -7,8 +7,11 @@ import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 import { BOSS_LAYOUT_DEFS } from '../../visual-spec/boss-layouts';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { BossCtx, PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS.boruta;
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.hazardOrange);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.crimson);
@@ -50,10 +53,10 @@ function spawnBorutaSummons(c: BossCtx): void {
 //          Summons (3× Bies) are spawned once on phase-2 entry.
 // Phase palette: P1=hazard 0xffe84b2a, P2=crimson 0xffd4213d (§10 visual-reference).
 export const borutaScript: PhaseScript = {
-  sweepSpeed1: 55,
-  sweepSpeed2: 90,
-  fire1Cooldown: 0.22,
-  fire2Cooldown: 0.7,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);
   },

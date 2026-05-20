@@ -1,19 +1,16 @@
 import { Position } from '@flare-engine/ecs';
 import { Vec2 as V, type Vec2 } from '@flare-engine/math';
 import { Boss } from '../../components';
-import {
-  BULLET_SPAWN_OFFSET,
-  BULLET_SPEED,
-  MEFISTOFELES_FIREPIT_SEC,
-  MEFISTOFELES_P1_FIRE,
-  MEFISTOFELES_P2_FIRE,
-} from '../../config/gameplay';
+import { BULLET_SPAWN_OFFSET, BULLET_SPEED, MEFISTOFELES_FIREPIT_SEC } from '../../config/gameplay';
 import { Layer } from '../../layers';
 import { spawnBullet } from '../../spawn';
 import { hexToArgb } from '../../util/hex';
 
+import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
 import type { PhaseScript } from './types';
+
+const _t = BOSS_TUNING_DEFS.mefistofeles;
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.gold);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.terracotta);
@@ -24,7 +21,7 @@ const aim: Vec2 = { x: 0, y: 0 };
 /**
  * Mefistofeles — Karczma "Rzym" final boss (build plan §9, three phases).
  * Phase 1: contract-scroll projectiles — a 3-fan of aimed bullets every
- *   {@link MEFISTOFELES_P1_FIRE} s.
+ *   `BOSS_TUNING_DEFS.mefistofeles.fire1CooldownSec` s.
  * Phase 2: fire-pit persistent AOE + double horn-shots (±0.3 rad). Fire-pits
  *   drop every {@link MEFISTOFELES_FIREPIT_SEC} s below the boss.
  * Phase 3: spawns the mirror-twin clone at enter; boss keeps firing a 2-fan
@@ -32,12 +29,12 @@ const aim: Vec2 = { x: 0, y: 0 };
  */
 export const mefistofelesScript: PhaseScript = {
   threePhase: true,
-  sweepSpeed1: 55,
-  sweepSpeed2: 80,
-  sweepSpeed3: 40,
-  fire1Cooldown: MEFISTOFELES_P1_FIRE,
-  fire2Cooldown: MEFISTOFELES_P2_FIRE,
-  fire3Cooldown: MEFISTOFELES_P2_FIRE,
+  sweepSpeed1: _t.sweepSpeed1,
+  sweepSpeed2: _t.sweepSpeed2,
+  sweepSpeed3: _t.sweepSpeed3,
+  fire1Cooldown: _t.fire1CooldownSec,
+  fire2Cooldown: _t.fire2CooldownSec,
+  fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
     // 3-fan of aimed contract scrolls.
     const pos = c.world.get(c.id, Position);

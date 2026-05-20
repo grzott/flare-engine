@@ -245,11 +245,7 @@ export const MADEJ_SPIKE_LIFETIME_SEC = 2.6;
 export const MEFISTOFELES_PHASE_HP = 700;
 export const MEFISTOFELES_HP_MAX = MEFISTOFELES_PHASE_HP * 3;
 
-/** Mefistofeles phase-1 contract-scroll fire cadence. */
-export const MEFISTOFELES_P1_FIRE = 1.4;
-
-/** Mefistofeles phase-2 horn-shot cadence + fire-pit drop cadence. */
-export const MEFISTOFELES_P2_FIRE = 0.9;
+/** Mefistofeles phase-2 fire-pit drop cadence. */
 export const MEFISTOFELES_FIREPIT_SEC = 2.4;
 
 /** Mefistofeles phase-2 fire-pit lifetime (persistent ground hazard). */
@@ -269,15 +265,6 @@ export const ZONE7_BOSS_T = 300;
 /** Lucyper Księżycowy HP per phase (build plan §9, 800/800/800). */
 export const LUCYPER_PHASE_HP = 800;
 export const LUCYPER_HP_MAX = LUCYPER_PHASE_HP * 3;
-
-/** Lucyper phase-1 cosmic-rain cadence (heavy 10-way radial). */
-export const LUCYPER_P1_FIRE = 1.3;
-
-/** Lucyper phase-2 eclipse spotlight cadence (aimed 3-way spotlight sweep). */
-export const LUCYPER_P2_FIRE = 0.85;
-
-/** Lucyper phase-3 shattered-mirror cadence (round-robin of prior-boss scripts). */
-export const LUCYPER_P3_FIRE = 0.55;
 
 /** Lucyper phase-3: seconds between shattered-mirror pattern rotations. */
 export const LUCYPER_SHATTER_CYCLE = 3.2;

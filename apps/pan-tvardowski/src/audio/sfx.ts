@@ -1,4 +1,5 @@
 import type { Music as MusicT } from '@flare-engine/audio';
+import { isBenchAudioMuted } from '../perf/bench-mode';
 import type { AudioHandles } from './init';
 import type { MusicKey, SfxKey } from './synth';
 
@@ -22,6 +23,7 @@ export function resetSfxThrottle(): void {
 /** Throttled SFX play. Safe to call from collision signals every frame. */
 export function playSfx(handles: AudioHandles | null | undefined, key: SfxKey): void {
   if (!handles) return;
+  if (isBenchAudioMuted()) return;
   const now = nowMs();
   const last = lastPlayedAt.get(key) ?? 0;
   if (now - last < SFX_MIN_GAP_MS) return;
@@ -34,6 +36,7 @@ export function playSfx(handles: AudioHandles | null | undefined, key: SfxKey): 
  *  overlapping crossfades. */
 export function setZoneMusic(music: MusicT | null, key: MusicKey): void {
   if (!music) return;
+  if (isBenchAudioMuted()) return;
   if (music.playing === key) return;
   if (music.playing === null) music.play(key, true);
   else music.crossfadeTo(key, 0.6, true);

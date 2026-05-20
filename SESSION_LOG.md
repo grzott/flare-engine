@@ -5549,3 +5549,51 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 138 — 2026-05-20 (scope: engine)
+
+**Goal:** Engine: createPerfRecorder + JSON emit
+
+**Touched files**
+- `apps/pan-tvardowski/package.json`
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `packages/debug/src/index.ts`
+- `packages/debug/src/perf-output.ts`
+- `packages/debug/src/perf-recorder.ts`
+- `packages/debug/tests/perf-recorder.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 139 — 2026-05-20 (scope: game)
+
+**Goal:** E2 - PT bench-mode + deterministic RNG + deep-link route
+
+**Touched files**
+- `SESSION_LOG.md`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/audio/sfx.ts`
+- `apps/pan-tvardowski/src/deep-links/router.ts`
+- `apps/pan-tvardowski/src/perf/bench-mode.ts`
+- `apps/pan-tvardowski/src/save/store.ts`
+- `apps/pan-tvardowski/tests/bench-mode.test.ts`
+- `bun.lock`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,5 +1,6 @@
 import { type StorageAdapter, createMemoryAdapter, createMmkvAdapter } from '@flare-engine/storage';
 import type { ZoneId } from '../events';
+import { isBenchSaveMuted } from '../perf/bench-mode';
 import { gameState, notifyStateChanged } from '../state';
 import {
   type PrivacySettings,
@@ -82,6 +83,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
   }
 
   async function write(): Promise<void> {
+    if (isBenchSaveMuted()) return;
     state = snapshot();
     await a.set(KEY, JSON.stringify(state));
   }
@@ -125,6 +127,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       return state.activeSlot;
     },
     introSeen() {
+      if (isBenchSaveMuted()) return true;
       return state.introSeen;
     },
     async markIntroSeen() {

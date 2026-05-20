@@ -41,6 +41,7 @@ import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { PaywallOverlay } from './hud/PaywallOverlay';
 import { ShopOverlay } from './hud/ShopOverlay';
 import { PT_ENTITLEMENT } from './iap/catalog';
+import { activateBenchMode, isBenchDone } from './perf/bench-mode';
 import { markBootMilestone, markBootStart } from './perf/cold-start';
 import { useAppProviders } from './providers';
 import { applyVolumes, buildSceneRegistry } from './scene-registry';
@@ -122,10 +123,16 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
     resetBombButtonFrame();
   });
 
-  // Deep links — `pantvardowski://zone/:n` jumps into the requested zone.
+  // Deep links:
+  //   pantvardowski://zone/:n  → jump to zone n
+  //   pantvardowski://bench/:id → activate bench mode + jump to play scene
   const manager = createPanTvardowskiDeepLinks(createNativeSource(Linking), {
     onZoneRequest: (zone: ZoneId) => {
       gameState.currentZone = zone;
+      void ctx.scenes.go('play');
+    },
+    onBenchRequest: (scenarioId) => {
+      activateBenchMode(scenarioId);
       void ctx.scenes.go('play');
     },
   });
@@ -208,6 +215,8 @@ function AppRoot(): React.ReactElement {
   // Re-render trigger for controls-side changes so joystick / bomb swap
   // position as soon as the settings toggle is flipped.
   const [controlsTick, setControlsTick] = useState(0);
+  // Bench mode: flips to true when markBenchDone() is called by a scenario.
+  const [benchDone, setBenchDone] = useState(false);
 
   // Release runtime resources on unmount — prevents a second game from
   // booting when the component remounts (OS relaunch, hot reload, Android
@@ -234,6 +243,16 @@ function AppRoot(): React.ReactElement {
       offPurchased();
     };
   }, []);
+
+  // Bench mode — poll isBenchDone() from the game loop so the BENCH_DONE
+  // sentinel Text becomes visible for Maestro assertVisible.
+  useEffect(() => {
+    if (!ctx) return;
+    const off = ctx.loop.onUpdate.add(() => {
+      if (isBenchDone()) setBenchDone(true);
+    });
+    return () => off();
+  }, [ctx]);
 
   // Tier-2 wiring (analytics / leaderboards / achievements / iap) — the
   // 0.1.x build ships noop providers; this call exercises the interface
@@ -494,6 +513,15 @@ function AppRoot(): React.ReactElement {
             <DevtoolsHUD />
           </DevtoolsProvider>
         ) : null}
+        {benchDone ? (
+          <Text
+            testID="BENCH_DONE"
+            style={styles.benchDoneSentinel}
+            accessibilityLabel="BENCH_DONE"
+          >
+            BENCH_DONE
+          </Text>
+        ) : null}
       </View>
     </ErrorBoundary>
   );
@@ -536,5 +564,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 72,
     height: 72,
+  },
+  benchDoneSentinel: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    color: THEME_SPEC.colors.white,
+    fontSize: 1,
+    opacity: 0.01,
   },
 });

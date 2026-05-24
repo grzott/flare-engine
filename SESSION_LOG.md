@@ -5691,3 +5691,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 145 — 2026-05-24 (scope: engine)
+
+**Goal:** B2 engine zone-bg shaders + perf-bench workflow double-run fix
+
+**Touched files**
+- `.github/workflows/perf-bench.yml`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/render/src/index.ts`
+- `packages/render/src/shaders.ts`
+- `packages/render/src/sprite-effects.ts`
+- `packages/render/tests/zone-bg-effects.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -5597,3 +5597,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 140 — 2026-05-24 (scope: game)
+
+**Goal:** E3 — PT: scenario library (5 scenarios)
+
+**Touched files**
+- `apps/pan-tvardowski/src/perf/scenarios/`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/perf-scenarios.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

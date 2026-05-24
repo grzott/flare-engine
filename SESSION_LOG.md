@@ -5615,3 +5615,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 141 — 2026-05-24 (scope: game)
+
+**Goal:** E4 — PT: Maestro flows for perf scenarios
+
+**Touched files**
+- `apps/pan-tvardowski/maestro/`
+- `apps/pan-tvardowski/src/scenes/boot.ts`
+- `apps/pan-tvardowski/tests/boot-to-menu.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

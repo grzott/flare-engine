@@ -22,6 +22,15 @@
         "simulator": false
       }
     },
+    "bench": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BENCH_MODE": "1"
+      }
+    },
     "production": {
       "distribution": "store",
       "android": {

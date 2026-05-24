@@ -5633,3 +5633,20 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 142 — 2026-05-24 (scope: game)
+
+**Goal:** E5 — EAS bench variant + release deep-link wire
+
+**Touched files**
+- `apps/pan-tvardowski/eas.json`
+- `apps/pan-tvardowski/tests/eas-bench-profile.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

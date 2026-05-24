@@ -5650,3 +5650,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 143 — 2026-05-24 (scope: game)
+
+**Goal:** E6 — Infra: bench-{cloud,local}.sh + devices.json + iOS spike
+
+**Touched files**
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/tests/devices.test.ts`
+- `scripts/perf/`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

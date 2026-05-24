@@ -30,6 +30,12 @@ export {
   type WaterEffect,
   type FogEffect,
   type FireEffect,
+  type RoofsCityEffect,
+  type ForestCanopyEffect,
+  type RiverWaveEffect,
+  type MoonCraterEffect,
+  type CaveInteriorEffect,
+  type MountainHillsEffect,
   type AnySpriteEffect,
   tint,
   flash,
@@ -39,11 +45,27 @@ export {
   water,
   fog,
   fire,
+  roofsCity,
+  forestCanopy,
+  riverWave,
+  moonCrater,
+  caveInterior,
+  mountainHills,
   updateEffect,
   flashIntensity,
 } from './sprite-effects.js';
 
-export { WATER_SKSL, FOG_SKSL, FIRE_SKSL } from './shaders.js';
+export {
+  WATER_SKSL,
+  FOG_SKSL,
+  FIRE_SKSL,
+  ROOFS_CITY_SKSL,
+  FOREST_CANOPY_SKSL,
+  RIVER_WAVE_SKSL,
+  MOON_CRATER_SKSL,
+  CAVE_INTERIOR_SKSL,
+  MOUNTAIN_HILLS_SKSL,
+} from './shaders.js';
 
 export {
   type Glyph,

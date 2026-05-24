@@ -84,6 +84,64 @@ export interface FireEffect extends SpriteEffect {
   readonly intensity: number;
 }
 
+// ---------------------------------------------------------------------------
+// Zone background effects — procedural-silhouette SkSL bg layers
+// ---------------------------------------------------------------------------
+
+/** Rooftop city skyline — AABB silhouettes via SDF hash fields. */
+export interface RoofsCityEffect extends SpriteEffect {
+  readonly type: 'roofs-city';
+  readonly skyColor: SpriteColor;
+  readonly roofColor: SpriteColor;
+  readonly scrollOffsetY: number;
+  readonly density: number;
+}
+
+/** Forest canopy — value-noise tree line. */
+export interface ForestCanopyEffect extends SpriteEffect {
+  readonly type: 'forest-canopy';
+  readonly skyColor: SpriteColor;
+  readonly leafColor: SpriteColor;
+  readonly scrollOffsetY: number;
+  readonly density: number;
+}
+
+/** River surface — 1D height-field wave with foam crests. */
+export interface RiverWaveEffect extends SpriteEffect {
+  readonly type: 'river-wave';
+  readonly waterColor: SpriteColor;
+  readonly foamColor: SpriteColor;
+  readonly scrollOffsetY: number;
+  readonly waveScale: number;
+}
+
+/** Moon surface — polar-SDF craters on a flat disc. */
+export interface MoonCraterEffect extends SpriteEffect {
+  readonly type: 'moon-crater';
+  readonly moonColor: SpriteColor;
+  readonly craterColor: SpriteColor;
+  readonly scrollOffsetY: number;
+  readonly craterCount: number;
+}
+
+/** Cave interior — stalactites hanging from the top edge. */
+export interface CaveInteriorEffect extends SpriteEffect {
+  readonly type: 'cave-interior';
+  readonly caveColor: SpriteColor;
+  readonly glowColor: SpriteColor;
+  readonly scrollOffsetY: number;
+  readonly stalactiteCount: number;
+}
+
+/** Mountain / hill ridge — FBM height-field silhouette. */
+export interface MountainHillsEffect extends SpriteEffect {
+  readonly type: 'mountain-hills';
+  readonly skyColor: SpriteColor;
+  readonly hillColor: SpriteColor;
+  readonly scrollOffsetY: number;
+  readonly ridgeScale: number;
+}
+
 /** Any concrete sprite effect. */
 export type AnySpriteEffect =
   | TintEffect
@@ -93,7 +151,13 @@ export type AnySpriteEffect =
   | CustomShaderEffect
   | WaterEffect
   | FogEffect
-  | FireEffect;
+  | FireEffect
+  | RoofsCityEffect
+  | ForestCanopyEffect
+  | RiverWaveEffect
+  | MoonCraterEffect
+  | CaveInteriorEffect
+  | MountainHillsEffect;
 
 /** Create a tint effect. */
 export function tint(color: SpriteColor, amount: number): TintEffect {
@@ -156,6 +220,102 @@ export function fire(opts: {
   };
 }
 
+/** Create a rooftop city skyline effect. */
+export function roofsCity(opts: {
+  skyColor: SpriteColor;
+  roofColor: SpriteColor;
+  scrollOffsetY?: number;
+  density?: number;
+}): RoofsCityEffect {
+  return {
+    type: 'roofs-city',
+    skyColor: opts.skyColor,
+    roofColor: opts.roofColor,
+    scrollOffsetY: opts.scrollOffsetY ?? 0,
+    density: opts.density ?? 6,
+  };
+}
+
+/** Create a forest canopy effect. */
+export function forestCanopy(opts: {
+  skyColor: SpriteColor;
+  leafColor: SpriteColor;
+  scrollOffsetY?: number;
+  density?: number;
+}): ForestCanopyEffect {
+  return {
+    type: 'forest-canopy',
+    skyColor: opts.skyColor,
+    leafColor: opts.leafColor,
+    scrollOffsetY: opts.scrollOffsetY ?? 0,
+    density: opts.density ?? 5,
+  };
+}
+
+/** Create a river wave surface effect. */
+export function riverWave(opts: {
+  waterColor: SpriteColor;
+  foamColor: SpriteColor;
+  scrollOffsetY?: number;
+  waveScale?: number;
+}): RiverWaveEffect {
+  return {
+    type: 'river-wave',
+    waterColor: opts.waterColor,
+    foamColor: opts.foamColor,
+    scrollOffsetY: opts.scrollOffsetY ?? 0,
+    waveScale: opts.waveScale ?? 2,
+  };
+}
+
+/** Create a moon crater surface effect. */
+export function moonCrater(opts: {
+  moonColor: SpriteColor;
+  craterColor: SpriteColor;
+  scrollOffsetY?: number;
+  craterCount?: number;
+}): MoonCraterEffect {
+  return {
+    type: 'moon-crater',
+    moonColor: opts.moonColor,
+    craterColor: opts.craterColor,
+    scrollOffsetY: opts.scrollOffsetY ?? 0,
+    craterCount: opts.craterCount ?? 4,
+  };
+}
+
+/** Create a cave interior effect. */
+export function caveInterior(opts: {
+  caveColor: SpriteColor;
+  glowColor: SpriteColor;
+  scrollOffsetY?: number;
+  stalactiteCount?: number;
+}): CaveInteriorEffect {
+  return {
+    type: 'cave-interior',
+    caveColor: opts.caveColor,
+    glowColor: opts.glowColor,
+    scrollOffsetY: opts.scrollOffsetY ?? 0,
+    stalactiteCount: opts.stalactiteCount ?? 8,
+  };
+}
+
+/** Create a mountain / hill ridge effect. */
+export function mountainHills(opts: {
+  skyColor: SpriteColor;
+  hillColor: SpriteColor;
+  scrollOffsetY?: number;
+  ridgeScale?: number;
+}): MountainHillsEffect {
+  return {
+    type: 'mountain-hills',
+    skyColor: opts.skyColor,
+    hillColor: opts.hillColor,
+    scrollOffsetY: opts.scrollOffsetY ?? 0,
+    ridgeScale: opts.ridgeScale ?? 1.5,
+  };
+}
+
 /**
  * Advance a time-based effect by `dt` seconds.
  *
@@ -171,9 +331,6 @@ export function updateEffect(effect: AnySpriteEffect, dt: number): AnySpriteEffe
     const elapsed = effect.elapsed + dt;
     if (elapsed >= effect.duration) return null;
     return { type: 'flash', color: effect.color, duration: effect.duration, elapsed };
-  }
-  if (effect.type === 'fire') {
-    return effect;
   }
   return effect;
 }

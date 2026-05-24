@@ -10,6 +10,7 @@ import {
 } from '@flare-engine/animation';
 import type { SpriteFrame } from '@flare-engine/assets';
 import { getFrame } from '@flare-engine/assets';
+import { createPerfRecorder } from '@flare-engine/debug';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position, fadeTransition } from '@flare-engine/engine';
 import type { EntitlementStore } from '@flare-engine/iap';
@@ -79,6 +80,15 @@ import {
 import type { EntitlementFallbackHandler } from '../iap/fallback';
 import { Layer } from '../layers';
 import { burstExplosion } from '../particles';
+import { getBenchScenarioId, isBenchActive, markBenchDone } from '../perf/bench-mode';
+import {
+  createBootScenario,
+  createBossLucyperZ8Scenario,
+  createBossSmokFullScenario,
+  createParticleStormScenario,
+  createZoneTransitionsScenario,
+} from '../perf/scenarios';
+import type { ScenarioHandle } from '../perf/scenarios';
 import type { SaveStore } from '../save/store';
 import {
   type AtlasHandle,
@@ -303,6 +313,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
 
   return () => {
     let s: PlayState | null = null;
+    let _benchScenario: ScenarioHandle | null = null;
+    let _benchElapsed = 0;
 
     function initState(zoneId: ZoneId): PlayState {
       const zone = ZONES[zoneId];
@@ -629,10 +641,64 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       onEnter() {
         resetFpsRing();
         startZone(gameState.currentZone, true);
+
+        // Bench mode: if activated by deep-link, wire a scenario against the
+        // live play.ts state so the full render pipeline (Sprite + atlas frame)
+        // is exercised. spawnBoss is forwarded so boss scenarios get a real
+        // entity with collision body + Sprite — not the headless stub.
+        _benchScenario = null;
+        _benchElapsed = 0;
+        if (isBenchActive() && s) {
+          const recorder = createPerfRecorder({ label: getBenchScenarioId(), ringSize: 1800 });
+          const scenarioDeps = {
+            recorder,
+            world: ctx.world,
+            spawnCtx: s.spawnCtx,
+            coll: s.coll,
+            atlas,
+            bounds: s.bounds,
+            enemyQuery: s.enemyQuery,
+            bulletQuery: s.bulletQuery,
+            lifetimeQuery: s.lifetimeQuery,
+            spawnBoss: (
+              pattern: Parameters<typeof spawnBoss>[1],
+              x: number,
+              y: number,
+              hpMax: number,
+            ) => spawnBoss(s!.spawnCtx, pattern, x, y, hpMax),
+          };
+          const id = getBenchScenarioId();
+          if (id === 'boss-smok-full') {
+            _benchScenario = createBossSmokFullScenario(scenarioDeps);
+          } else if (id === 'boss-lucyper-z8') {
+            _benchScenario = createBossLucyperZ8Scenario(scenarioDeps);
+          } else if (id === 'particle-storm') {
+            _benchScenario = createParticleStormScenario(scenarioDeps);
+          } else if (id === 'zone-transitions') {
+            _benchScenario = createZoneTransitionsScenario(scenarioDeps);
+          } else {
+            _benchScenario = createBootScenario(scenarioDeps);
+          }
+          _benchScenario.init();
+        }
       },
 
       onUpdate(dt: number) {
         if (!s || s.disposed) return;
+
+        // Bench mode: drive the active scenario and bail — the normal game loop
+        // does not run during a bench run.
+        if (_benchScenario !== null) {
+          const done = _benchScenario.tick(dt, _benchElapsed);
+          _benchElapsed += dt;
+          if (done) {
+            _benchScenario.finish();
+            _benchScenario = null;
+            markBenchDone();
+          }
+          return;
+        }
+
         if (gameState.gameOver || gameState.victory) {
           resetBombButtonFrame();
           return;
@@ -1226,6 +1292,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         if (!s) return;
         s.disposed = true;
         ctx.loop.clock.timescale = 1;
+        _benchScenario = null;
+        _benchElapsed = 0;
         clearWorld(s);
         clearBossFsms();
         clearMinibossFsms();

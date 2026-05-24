@@ -23,6 +23,8 @@
     "smoke:cloud:low": "bash scripts/run-smoke-cloud.sh low",
     "smoke:cloud:mid": "bash scripts/run-smoke-cloud.sh mid",
     "smoke:cloud:high": "bash scripts/run-smoke-cloud.sh high",
+    "bench:cloud": "bash ../../scripts/perf/bench-cloud.sh --app pan-tvardowski",
+    "bench:local": "bash ../../scripts/perf/bench-local.sh --app pan-tvardowski",
     "eas-build-post-install": "cd ../.. && bun install && bun run build"
   },
   "license": "SEE LICENSE IN LICENSE",

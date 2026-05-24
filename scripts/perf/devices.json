@@ -1,0 +1,58 @@
+[
+  {
+    "id": "pixel-6a",
+    "name": "Pixel 6a",
+    "platform": "android",
+    "osVersion": "14.0",
+    "tier": "mid-gate",
+    "local": false,
+    "skip": false
+  },
+  {
+    "id": "galaxy-a54",
+    "name": "Galaxy A54",
+    "platform": "android",
+    "osVersion": "14.0",
+    "tier": "mid-gate",
+    "local": false,
+    "skip": false
+  },
+  {
+    "id": "pixel-10",
+    "name": "Pixel 10",
+    "platform": "android",
+    "osVersion": "16.0",
+    "tier": "headroom",
+    "local": false,
+    "skip": false
+  },
+  {
+    "id": "iphone-16-pro",
+    "name": "iPhone 16 Pro",
+    "platform": "ios",
+    "osVersion": "18.0",
+    "tier": "headroom",
+    "local": false,
+    "skip": true,
+    "skipReason": "iOS real-device gate deferred; tracked in #137"
+  },
+  {
+    "id": "iphone-12-mini",
+    "name": "iPhone 12 Mini",
+    "platform": "ios",
+    "osVersion": "15.0",
+    "tier": "headroom",
+    "local": false,
+    "skip": true,
+    "skipReason": "iOS real-device gate deferred; tracked in #137"
+  },
+  {
+    "id": "local-avd",
+    "name": "local-avd",
+    "platform": "android",
+    "osVersion": "local",
+    "tier": "mid-gate",
+    "local": true,
+    "skip": false
+  }
+]

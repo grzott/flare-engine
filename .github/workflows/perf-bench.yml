@@ -1,0 +1,159 @@
+name: Perf Bench
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      bench_apk_url:
+        description: 'URL or path of bench APK (overrides vars.BENCH_APK_URL)'
+        required: false
+      tier:
+        description: 'Device tier: mid-gate | headroom | all'
+        required: false
+        default: 'mid-gate'
+      scenario:
+        description: 'Scenario: all | boot | boss-smok-full | boss-lucyper-z8 | particle-storm | zone-transitions'
+        required: false
+        default: 'all'
+      download_artifacts:
+        description: 'Artifact download mode: all | failures-only'
+        required: false
+        default: 'all'
+  pull_request:
+    types: [labeled]
+    paths:
+      - 'apps/pan-tvardowski/src/fx/**'
+      - 'packages/postfx/**'
+      - 'apps/pan-tvardowski/src/lighting/**'
+
+concurrency:
+  group: perf-bench-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bench:
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'perf-bench') ||
+      github.event_name == 'push'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    outputs:
+      ran: ${{ steps.run.outcome == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - name: Download bench APK
+        id: download-apk
+        run: |
+          APK_URL="${{ inputs.bench_apk_url || vars.BENCH_APK_URL }}"
+          if [[ -z "$APK_URL" ]]; then
+            echo "ERROR: No APK URL provided. Set vars.BENCH_APK_URL or pass bench_apk_url input." >&2
+            exit 1
+          fi
+          curl -fsSL "$APK_URL" -o bench.apk
+          echo "apk_path=$(pwd)/bench.apk" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Run perf bench
+        id: run
+        env:
+          TESTINGBOT_KEY: ${{ secrets.TESTINGBOT_KEY }}
+          TESTINGBOT_SECRET: ${{ secrets.TESTINGBOT_SECRET }}
+          BENCH_APK_PATH: ${{ steps.download-apk.outputs.apk_path }}
+        run: |
+          TIER="${{ inputs.tier || 'mid-gate' }}"
+          SCENARIO="${{ inputs.scenario || 'all' }}"
+          DOWNLOAD="${{ inputs.download_artifacts || 'failures-only' }}"
+          bash scripts/perf/bench-cloud.sh \
+            --app pan-tvardowski \
+            --tier "$TIER" \
+            --scenario "$SCENARIO" \
+            --download-artifacts "$DOWNLOAD" \
+            >> docs/perf/bench-results.ndjson
+        shell: bash
+
+      - name: Regression check
+        run: |
+          bun scripts/perf/regression-check.ts \
+            --input docs/perf/bench-results.ndjson \
+            --baseline .perf-baseline.json
+
+      - name: Render dashboard
+        run: |
+          bun scripts/perf/render-dashboard.ts \
+            --input docs/perf/bench-results.ndjson \
+            --output docs/perf/REGRESSION.md \
+            --baseline .perf-baseline.json
+
+      - name: Upload dashboard artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-dashboard
+          path: docs/perf/REGRESSION.md
+
+  commit-back:
+    needs: bench
+    if: >
+      needs.bench.result == 'success' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - name: Re-run bench to get fresh ndjson rows
+        env:
+          TESTINGBOT_KEY: ${{ secrets.TESTINGBOT_KEY }}
+          TESTINGBOT_SECRET: ${{ secrets.TESTINGBOT_SECRET }}
+          BENCH_APK_PATH: bench.apk
+        run: |
+          APK_URL="${{ inputs.bench_apk_url || vars.BENCH_APK_URL }}"
+          if [[ -n "$APK_URL" ]]; then
+            curl -fsSL "$APK_URL" -o bench.apk
+          fi
+          bash scripts/perf/bench-cloud.sh \
+            --app pan-tvardowski \
+            --tier "${{ inputs.tier || 'mid-gate' }}" \
+            --scenario "${{ inputs.scenario || 'all' }}" \
+            --download-artifacts failures-only \
+            >> docs/perf/bench-results.ndjson
+          bun scripts/perf/render-dashboard.ts \
+            --input docs/perf/bench-results.ndjson \
+            --output docs/perf/REGRESSION.md
+        shell: bash
+        continue-on-error: true
+
+      - name: Commit bench results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/perf/bench-results.ndjson docs/perf/REGRESSION.md
+          if git diff --cached --quiet; then
+            echo "No new bench rows — nothing to commit"
+          else
+            git commit -m "chore(perf): append bench results $(date -u +%Y-%m-%d)"
+            git push
+          fi
+        shell: bash

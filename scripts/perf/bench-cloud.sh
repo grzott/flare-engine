@@ -12,6 +12,11 @@
 #   --app <name>         App directory under apps/ (default: pan-tvardowski)
 #   --scenario <id>|all  Perf scenario file stem, e.g. "boot" or "all" (default: all)
 #   --tier mid-gate|headroom|all  Device tier filter (default: mid-gate)
+#   --download-artifacts all|failures-only
+#                        Control TestingBot artifact download (default: failures-only).
+#                        Use "all" during E8 baseline capture and first Tier-A landing.
+#                        "failures-only" saves wall-clock time and TestingBot retention
+#                        storage on every green run.
 #
 # For each non-skipped device matching the tier filter × each selected scenario:
 #   1. Runs testingbot maestro <apk|ipa> apps/<name>/maestro/perf-<scenario>.yml
@@ -41,6 +46,7 @@ DEVICES_JSON="$SCRIPT_DIR/devices.json"
 APP_NAME="pan-tvardowski"
 SCENARIO_FILTER="all"
 TIER_FILTER="mid-gate"
+DOWNLOAD_ARTIFACTS="failures-only"
 
 # Parse flags
 while [[ $# -gt 0 ]]; do
@@ -57,9 +63,13 @@ while [[ $# -gt 0 ]]; do
       TIER_FILTER="$2"
       shift 2
       ;;
+    --download-artifacts)
+      DOWNLOAD_ARTIFACTS="$2"
+      shift 2
+      ;;
     *)
       echo "Unknown flag: $1" >&2
-      echo "Usage: bench-cloud.sh [--app <name>] [--scenario <id>|all] [--tier mid-gate|headroom|all]" >&2
+      echo "Usage: bench-cloud.sh [--app <name>] [--scenario <id>|all] [--tier mid-gate|headroom|all] [--download-artifacts all|failures-only]" >&2
       exit 1
       ;;
   esac
@@ -178,7 +188,7 @@ run_scenario_on_device() {
       --deviceVersion "$os_version" \
       --real-device \
       --device-locale "$BENCH_DEVICE_LOCALE" \
-      --download-artifacts all \
+      --download-artifacts "$DOWNLOAD_ARTIFACTS" \
       --artifacts-output-dir "$artifact_dir"; then
     echo "ERROR: TestingBot flow failed for $device_name / $scenario" >&2
     rm -rf "$artifact_dir"

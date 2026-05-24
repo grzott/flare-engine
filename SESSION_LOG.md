@@ -5668,3 +5668,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 144 — 2026-05-24 (scope: game)
+
+**Goal:** E7 — Infra: regression-check + dashboard + CI workflow + protocol doc
+
+**Touched files**
+- `.github/workflows/perf-bench.yml`
+- `.perf-baseline.json`
+- `apps/pan-tvardowski/tests/regression-check.test.ts`
+- `apps/pan-tvardowski/tests/render-dashboard.test.ts`
+- `docs/perf/`
+- `scripts/perf/bench-cloud.sh`
+- `scripts/perf/regression-check.ts`
+- `scripts/perf/render-dashboard.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

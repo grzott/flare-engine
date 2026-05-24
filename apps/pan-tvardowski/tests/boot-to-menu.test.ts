@@ -43,4 +43,37 @@ describe('boot scene transitions to menu, not play', () => {
     scene.onEnter?.({} as never);
     expect(gameState.currentScene).toBe('boot');
   });
+
+  test('skips go("menu") when a deep-link has changed currentScene to "play"', async () => {
+    // Race scenario: a bench/zone deep-link arrives during boot's async chain
+    // and calls scenes.go('play') (which sets currentScene='play' via play
+    // scene's onEnter). When boot's IIFE finishes, it MUST NOT call go('menu')
+    // and tear down the play scene the deep-link just activated.
+    resetGameState();
+    const calls: string[] = [];
+    const fakeCtx = {
+      scenes: {
+        go: (name: string) => {
+          calls.push(name);
+          return Promise.resolve();
+        },
+      },
+    } as unknown as GameContextValue;
+
+    const loadSave = async (): Promise<void> => {
+      await Promise.resolve();
+      // Simulate the deep-link handler running mid-boot: activateBenchMode +
+      // scenes.go('play') → play.onEnter → currentScene = 'play'.
+      gameState.currentScene = 'play';
+    };
+
+    const scene: Scene = createBootScene(fakeCtx, loadSave)();
+    scene.onEnter?.({} as never);
+
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(calls).toEqual([]);
+    expect(gameState.currentScene).toBe('play');
+  });
 });

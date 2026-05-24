@@ -10,8 +10,10 @@ export interface AudioInitResult {
 
 /**
  * Boot scene — loads the save file, initializes audio, then jumps to the
- * main menu. Deep-links (`pantvardowski://zone/N`) handled by the router
- * in `App.tsx` still bypass the menu and go straight to `play`.
+ * main menu. Deep-links (`pantvardowski://zone/N`, `pantvardowski://bench/<id>`)
+ * handled by the router in `App.tsx` may take over mid-boot by calling
+ * `scenes.go('play')`; the final `go('menu')` below must respect that and
+ * only fire if no other scene has claimed the stack.
  */
 export function createBootScene(
   ctx: GameContextValue,
@@ -47,7 +49,14 @@ export function createBootScene(
         dumpBootTrace();
         gameState.bootProgress = { value: 1, labelKey: 'boot.loading.audio' };
         notifyStateChanged();
-        void ctx.scenes.go('menu');
+        // Guard against deep-link race: if a `pantvardowski://zone/N` or
+        // `pantvardowski://bench/<id>` link arrived during the async chain
+        // above, App.tsx already called scenes.go('play') and currentScene
+        // is no longer 'boot'. Clobbering with go('menu') here would tear
+        // down the play scene the deep-link just activated.
+        if (gameState.currentScene === 'boot') {
+          void ctx.scenes.go('menu');
+        }
       })();
     },
   });

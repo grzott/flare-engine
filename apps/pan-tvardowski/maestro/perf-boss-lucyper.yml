@@ -1,0 +1,31 @@
+appId: dev.flare.pantvardowski
+name: "PT Perf — boss-lucyper-z8"
+tags:
+  - perf
+  - bench
+---
+# Perf scenario: boss-lucyper-z8
+#
+# Primary gate for Tier-B (analytical-SDF SkSL rewrite). Exercises Lucyper
+# phase 1→2→3 (force-driven at t=10s and t=20s) with the Zone 8 CRT + bloom
+# postfx overrides and 5 concurrent postfx passes active in phase 3.
+#
+# Requires a build with EXPO_PUBLIC_BENCH_MODE=1 baked (EAS bench profile, E5).
+#
+# Run locally:  maestro test maestro/perf-boss-lucyper.yml
+# Run on cloud: testingbot maestro <apk> maestro/perf-boss-lucyper.yml --device "Pixel 6a"
+#
+# Readiness wait: see perf-boot.yml header — wait for "Play" before openLink
+# so the deep-link listener is wired and boot init is complete.
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Play"
+    timeout: 60000
+- openLink: "pantvardowski://bench/boss-lucyper-z8"
+- extendedWaitUntil:
+    visible:
+      id: "BENCH_DONE"
+    timeout: 60000
+- assertVisible:
+    id: "BENCH_DONE"

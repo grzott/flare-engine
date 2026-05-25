@@ -41,7 +41,7 @@ import { MenuOverlay, type MenuOverlayActions } from './hud/MenuOverlay';
 import { PaywallOverlay } from './hud/PaywallOverlay';
 import { ShopOverlay } from './hud/ShopOverlay';
 import { PT_ENTITLEMENT } from './iap/catalog';
-import { activateBenchMode, isBenchDone } from './perf/bench-mode';
+import { activateBenchMode, getBenchReport, isBenchDone } from './perf/bench-mode';
 import { markBootMilestone, markBootStart } from './perf/cold-start';
 import { useAppProviders } from './providers';
 import { applyVolumes, buildSceneRegistry } from './scene-registry';
@@ -217,6 +217,10 @@ function AppRoot(): React.ReactElement {
   const [controlsTick, setControlsTick] = useState(0);
   // Bench mode: flips to true when markBenchDone() is called by a scenario.
   const [benchDone, setBenchDone] = useState(false);
+  // Bench mode: perf report JSON rendered as the BENCH_DONE Text content so
+  // Maestro extracts it via copyTextFrom (release Hermes does not forward
+  // console.log to logcat).
+  const [benchReport, setBenchReportState] = useState<string | null>(null);
 
   // Release runtime resources on unmount — prevents a second game from
   // booting when the component remounts (OS relaunch, hot reload, Android
@@ -249,7 +253,11 @@ function AppRoot(): React.ReactElement {
   useEffect(() => {
     if (!ctx) return;
     const off = ctx.loop.onUpdate.add(() => {
-      if (isBenchDone()) setBenchDone(true);
+      if (isBenchDone()) {
+        setBenchDone(true);
+        const report = getBenchReport();
+        if (report !== null) setBenchReportState(report);
+      }
     });
     return () => off();
   }, [ctx]);
@@ -524,7 +532,7 @@ function AppRoot(): React.ReactElement {
               { bottom: 16 + insets.bottom, right: 16 + insets.right },
             ]}
           >
-            BENCH_DONE
+            {benchReport !== null ? `[perf-bench] ${benchReport}` : 'BENCH_DONE'}
           </Text>
         ) : null}
       </View>

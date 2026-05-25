@@ -21,6 +21,7 @@ interface BenchState {
   done: boolean;
   seed: number;
   rngState: number;
+  report: string | null;
 }
 
 const _state: BenchState = {
@@ -29,6 +30,7 @@ const _state: BenchState = {
   done: false,
   seed: 0,
   rngState: 0,
+  report: null,
 };
 
 /** Captured original Math.random, restored on deactivate. */
@@ -78,6 +80,7 @@ export function deactivateBenchMode(): void {
   _state.done = false;
   _state.seed = 0;
   _state.rngState = 0;
+  _state.report = null;
 
   if (_originalRandom !== null) {
     Math.random = _originalRandom;
@@ -92,6 +95,20 @@ export function deactivateBenchMode(): void {
 export function markBenchDone(): void {
   if (!_state.active) return;
   _state.done = true;
+}
+
+/**
+ * Stash the perf report JSON so the BENCH_DONE Text element can render it
+ * as its content. Maestro extracts via `copyTextFrom` since RN release Hermes
+ * does not forward `console.log` to native logcat (verified empirically).
+ */
+export function setBenchReport(reportJson: string): void {
+  _state.report = reportJson;
+}
+
+/** Read the stashed perf report JSON, or null if none has been set. */
+export function getBenchReport(): string | null {
+  return _state.report;
 }
 
 /** True while bench mode is active. */

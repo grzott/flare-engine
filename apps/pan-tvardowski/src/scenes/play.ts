@@ -10,6 +10,7 @@ import {
 } from '@flare-engine/animation';
 import type { SpriteFrame } from '@flare-engine/assets';
 import { getFrame } from '@flare-engine/assets';
+import type { PerfRecorderHandle } from '@flare-engine/debug';
 import { createPerfRecorder } from '@flare-engine/debug';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
 import { Position, fadeTransition } from '@flare-engine/engine';
@@ -80,7 +81,12 @@ import {
 import type { EntitlementFallbackHandler } from '../iap/fallback';
 import { Layer } from '../layers';
 import { burstExplosion } from '../particles';
-import { getBenchScenarioId, isBenchActive, markBenchDone } from '../perf/bench-mode';
+import {
+  getBenchScenarioId,
+  isBenchActive,
+  markBenchDone,
+  setBenchReport,
+} from '../perf/bench-mode';
 import {
   createBootScenario,
   createBossLucyperZ8Scenario,
@@ -315,6 +321,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     let s: PlayState | null = null;
     let _benchScenario: ScenarioHandle | null = null;
     let _benchElapsed = 0;
+    let _benchRecorder: PerfRecorderHandle | null = null;
 
     function initState(zoneId: ZoneId): PlayState {
       const zone = ZONES[zoneId];
@@ -648,10 +655,11 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         // entity with collision body + Sprite — not the headless stub.
         _benchScenario = null;
         _benchElapsed = 0;
+        _benchRecorder = null;
         if (isBenchActive() && s) {
-          const recorder = createPerfRecorder({ label: getBenchScenarioId(), ringSize: 1800 });
+          _benchRecorder = createPerfRecorder({ label: getBenchScenarioId(), ringSize: 1800 });
           const scenarioDeps = {
-            recorder,
+            recorder: _benchRecorder,
             world: ctx.world,
             spawnCtx: s.spawnCtx,
             coll: s.coll,
@@ -693,6 +701,10 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           _benchElapsed += dt;
           if (done) {
             _benchScenario.finish();
+            if (_benchRecorder !== null) {
+              setBenchReport(JSON.stringify(_benchRecorder.flush()));
+              _benchRecorder = null;
+            }
             _benchScenario = null;
             markBenchDone();
           }
@@ -1294,6 +1306,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         ctx.loop.clock.timescale = 1;
         _benchScenario = null;
         _benchElapsed = 0;
+        _benchRecorder = null;
         clearWorld(s);
         clearBossFsms();
         clearMinibossFsms();

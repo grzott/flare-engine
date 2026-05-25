@@ -30,3 +30,7 @@ tags:
     timeout: 60000
 - assertVisible:
     id: "BENCH_DONE"
+# See perf-boot.yml header for the copyTextFrom + evalScript rationale.
+- copyTextFrom:
+    id: "BENCH_DONE"
+- evalScript: ${console.log(maestro.copiedText)}

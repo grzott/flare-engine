@@ -36,3 +36,10 @@ tags:
     timeout: 60000
 - assertVisible:
     id: "BENCH_DONE"
+# Extract the perf report JSON rendered as the BENCH_DONE Text content.
+# release Hermes does not forward console.log to native logcat, so we
+# surface the JSON via copyTextFrom → evalScript console.log, which Maestro
+# captures in maestro.log (TestingBot artifact: logs/maestro.txt).
+- copyTextFrom:
+    id: "BENCH_DONE"
+- evalScript: ${console.log(maestro.copiedText)}

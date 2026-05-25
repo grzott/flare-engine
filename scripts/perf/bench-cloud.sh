@@ -217,14 +217,24 @@ run_scenario_on_device() {
     return 4
   fi
 
-  # Find logcat or xcode log defensively
-  local logfile
-  logfile="$(find "$artifact_dir" \( -name 'logcat*.txt' -o -name 'xcode*.log' \) -print -quit 2>/dev/null || true)"
+  # Find candidate log files. maestro.txt / maestro.log is preferred for RN
+  # release Hermes builds — see scripts/perf/README or perf-boot.yml comments.
+  # logcat / xcode log kept as fallback for non-RN cases.
+  local logfiles
+  logfiles="$(find "$artifact_dir" \( \
+      -name 'maestro*.txt' \
+      -o -name 'maestro*.log' \
+      -o -name 'logcat*.txt' \
+      -o -name 'xcode*.log' \
+    \) -print 2>/dev/null || true)"
 
   local perf_line=""
-  if [[ -n "$logfile" ]]; then
-    perf_line="$(grep '\[perf-bench\]' "$logfile" | head -1 || true)"
-  fi
+  local f
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    perf_line="$(grep '\[perf-bench\]' "$f" | head -1 || true)"
+    if [[ -n "$perf_line" ]]; then break; fi
+  done <<< "$logfiles"
 
   if [[ -z "$perf_line" ]]; then
     echo "ERROR: [perf-bench] line absent for $device_name / $scenario" >&2

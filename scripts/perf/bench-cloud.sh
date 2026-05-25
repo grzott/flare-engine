@@ -108,6 +108,14 @@ if [[ -z "${TESTINGBOT_KEY:-}" || -z "${TESTINGBOT_SECRET:-}" ]]; then
   exit 1
 fi
 
+# The testingbot Maestro plugin reads credentials from ~/.testingbot only —
+# it does not consult TESTINGBOT_KEY / TESTINGBOT_SECRET env vars even when set.
+TB_CREDS_FILE="$HOME/.testingbot"
+if [[ ! -f "$TB_CREDS_FILE" ]]; then
+  printf '%s:%s' "$TESTINGBOT_KEY" "$TESTINGBOT_SECRET" > "$TB_CREDS_FILE"
+  chmod 600 "$TB_CREDS_FILE"
+fi
+
 # Collect scenario stems from maestro/perf-*.yml
 collect_scenarios() {
   local stems=()
@@ -256,9 +264,11 @@ while IFS= read -r device_json; do
   fi
 
   for scenario in "${SCENARIOS[@]}"; do
-    if ! run_scenario_on_device "$d_name" "$d_platform" "$d_os" "$d_id" "$scenario"; then
-      exit_code=$?
-    fi
+    # `cmd || exit_code=$?` captures the real exit code on failure.
+    # The previous `if ! cmd; then exit_code=$?` pattern was broken:
+    # `!` consumes the exit code, so `$?` was always 0 in the body.
+    run_scenario_on_device "$d_name" "$d_platform" "$d_os" "$d_id" "$scenario" \
+      || exit_code=$?
   done
 done < <(jq -c '.[]' "$DEVICES_JSON")
 

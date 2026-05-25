@@ -116,7 +116,7 @@ jobs:
   commit-back:
     needs: bench
     if: >
-      needs.bench.result == 'success' &&
+      needs.bench.outputs.ran == 'true' &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:

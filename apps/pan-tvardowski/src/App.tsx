@@ -570,7 +570,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     color: THEME_SPEC.colors.white,
-    fontSize: 1,
-    opacity: 0.01,
+    backgroundColor: THEME_SPEC.colors.pureBlack,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    fontSize: 10,
   },
 });

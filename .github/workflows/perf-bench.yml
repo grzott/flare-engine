@@ -113,6 +113,14 @@ jobs:
           name: perf-bench-ndjson
           path: docs/perf/bench-results.ndjson
 
+      - name: Upload TestingBot run artifacts (logcat, video, screenshot)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-bench-tb-artifacts
+          path: perf-artifacts/
+          if-no-files-found: warn
+
   commit-back:
     needs: bench
     if: >

@@ -189,8 +189,14 @@ run_scenario_on_device() {
 
   echo "[bench-cloud] device=$device_name os=$os_version scenario=$scenario" >&2
 
-  local artifact_dir; artifact_dir="$(mktemp -d)"
+  # Persist artifacts under perf-artifacts/<device>-<scenario>/ so CI can
+  # upload them for debugging. Slug spaces in device names so the path is safe.
+  local device_slug; device_slug="${device_name// /_}"
+  local artifact_dir="$REPO_ROOT/perf-artifacts/${device_slug}-${scenario}"
+  rm -rf "$artifact_dir"
+  mkdir -p "$artifact_dir"
 
+  local flow_failed=false
   if ! testingbot maestro "$artifact_bin" "$flow_file" \
       --device "$device_name" \
       --deviceVersion "$os_version" \
@@ -199,14 +205,17 @@ run_scenario_on_device() {
       --download-artifacts "$DOWNLOAD_ARTIFACTS" \
       --artifacts-output-dir "$artifact_dir"; then
     echo "ERROR: TestingBot flow failed for $device_name / $scenario" >&2
-    rm -rf "$artifact_dir"
-    return 4
+    flow_failed=true
   fi
 
-  # Unzip any artifact archives in place
+  # Unzip any artifact archives in place so logcat etc. are inspectable
   find "$artifact_dir" -maxdepth 2 -name '*.zip' -print0 | while IFS= read -r -d '' z; do
     unzip -q -o "$z" -d "$artifact_dir" 2>/dev/null || true
   done
+
+  if [[ "$flow_failed" == "true" ]]; then
+    return 4
+  fi
 
   # Find logcat or xcode log defensively
   local logfile
@@ -216,8 +225,6 @@ run_scenario_on_device() {
   if [[ -n "$logfile" ]]; then
     perf_line="$(grep '\[perf-bench\]' "$logfile" | head -1 || true)"
   fi
-
-  rm -rf "$artifact_dir"
 
   if [[ -z "$perf_line" ]]; then
     echo "ERROR: [perf-bench] line absent for $device_name / $scenario" >&2

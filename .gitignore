@@ -27,6 +27,10 @@ apps/*/.expo/
 # TestingBot credentials — real values never committed; see .env.testingbot.example
 apps/*/.env.testingbot
 
+# TestingBot per-run artifacts persisted by bench-cloud.sh for CI inspection.
+# Uploaded as GH Actions artifact, not committed.
+perf-artifacts/
+
 # EAS local build artifacts (downloaded APK/IPA for smoke runs)
 apps/*/build-*.apk
 apps/*/build-*.ipa

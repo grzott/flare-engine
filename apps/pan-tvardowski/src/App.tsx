@@ -516,8 +516,13 @@ function AppRoot(): React.ReactElement {
         {benchDone ? (
           <Text
             testID="BENCH_DONE"
-            style={styles.benchDoneSentinel}
+            accessible={true}
+            importantForAccessibility="yes"
             accessibilityLabel="BENCH_DONE"
+            style={[
+              styles.benchDoneSentinel,
+              { bottom: 16 + insets.bottom, right: 16 + insets.right },
+            ]}
           >
             BENCH_DONE
           </Text>
@@ -567,12 +572,11 @@ const styles = StyleSheet.create({
   },
   benchDoneSentinel: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
     color: THEME_SPEC.colors.white,
     backgroundColor: THEME_SPEC.colors.pureBlack,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     fontSize: 10,
+    fontWeight: 'bold',
   },
 });

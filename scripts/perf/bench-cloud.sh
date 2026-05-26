@@ -196,16 +196,21 @@ run_scenario_on_device() {
   rm -rf "$artifact_dir"
   mkdir -p "$artifact_dir"
 
+  # testingbot CLI writes verbose progress to stdout. Redirect to stderr so our
+  # NDJSON output (the only thing we want on stdout) stays clean — downstream
+  # `>> bench-results.ndjson` in CI would otherwise pollute the file with
+  # "Uploading Maestro Flows", "Downloading artifacts...", etc.
   local flow_failed=false
-  if ! testingbot maestro "$artifact_bin" "$flow_file" \
+  testingbot maestro "$artifact_bin" "$flow_file" \
       --device "$device_name" \
       --deviceVersion "$os_version" \
       --real-device \
       --device-locale "$BENCH_DEVICE_LOCALE" \
       --download-artifacts "$DOWNLOAD_ARTIFACTS" \
-      --artifacts-output-dir "$artifact_dir"; then
+      --artifacts-output-dir "$artifact_dir" >&2 \
+    || flow_failed=true
+  if [[ "$flow_failed" == "true" ]]; then
     echo "ERROR: TestingBot flow failed for $device_name / $scenario" >&2
-    flow_failed=true
   fi
 
   # Unzip any artifact archives in place so logcat etc. are inspectable

@@ -52,10 +52,13 @@ export interface RegressionResult {
 }
 
 export function parseNdjson(raw: string): BenchRow[] {
+  // Skip lines that don't look like JSON objects. Defensive: bench-cloud.sh
+  // emits NDJSON to stdout, but the upstream `testingbot` CLI sometimes leaks
+  // progress text into the same stream depending on bash/PowerShell behavior.
   return raw
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.length > 0)
+    .filter((line) => line.startsWith('{') && line.endsWith('}'))
     .map((line) => JSON.parse(line) as BenchRow);
 }
 

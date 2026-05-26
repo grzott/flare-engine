@@ -54,6 +54,26 @@ describe('parseNdjson', () => {
   test('returns empty array for empty string', () => {
     expect(parseNdjson('')).toHaveLength(0);
   });
+
+  test('skips non-JSON garbage lines (testingbot CLI leakage)', () => {
+    const raw = [
+      'Uploading Maestro Flows',
+      '  flows.zip: done (1.1 KB)',
+      'Running Maestro Tests',
+      JSON.stringify({
+        device: 'pixel-10',
+        scenario: 'boot',
+        metric: 'frame',
+        p95: 0.0038,
+        capturedAt: '2026-05-26T05:05:38Z',
+      }),
+      'All tests completed successfully!',
+    ].join('\n');
+    const rows = parseNdjson(raw);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.device).toBe('pixel-10');
+    expect(rows[0]?.p95).toBe(0.0038);
+  });
 });
 
 // ---------------------------------------------------------------------------

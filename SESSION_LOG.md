@@ -5840,3 +5840,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 150 — 2026-05-26 (scope: engine)
+
+**Goal:** B4 — Engine: 4 weather postfx (rain/sun-shaft/dark-vignette/clouds) as postfx-bridge passes
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/index.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/tests/weather-effects.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

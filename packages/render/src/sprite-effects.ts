@@ -95,6 +95,10 @@ export interface RoofsCityEffect extends SpriteEffect {
   readonly roofColor: SpriteColor;
   readonly scrollOffsetY: number;
   readonly density: number;
+  /** Destination render width in logical pixels — used as shader resolution.x. */
+  readonly resolutionW: number;
+  /** Destination render height in logical pixels — used as shader resolution.y. */
+  readonly resolutionH: number;
 }
 
 /** Forest canopy — value-noise tree line. */
@@ -104,6 +108,8 @@ export interface ForestCanopyEffect extends SpriteEffect {
   readonly leafColor: SpriteColor;
   readonly scrollOffsetY: number;
   readonly density: number;
+  readonly resolutionW: number;
+  readonly resolutionH: number;
 }
 
 /** River surface — 1D height-field wave with foam crests. */
@@ -113,6 +119,8 @@ export interface RiverWaveEffect extends SpriteEffect {
   readonly foamColor: SpriteColor;
   readonly scrollOffsetY: number;
   readonly waveScale: number;
+  readonly resolutionW: number;
+  readonly resolutionH: number;
 }
 
 /** Moon surface — polar-SDF craters on a flat disc. */
@@ -122,6 +130,8 @@ export interface MoonCraterEffect extends SpriteEffect {
   readonly craterColor: SpriteColor;
   readonly scrollOffsetY: number;
   readonly craterCount: number;
+  readonly resolutionW: number;
+  readonly resolutionH: number;
 }
 
 /** Cave interior — stalactites hanging from the top edge. */
@@ -131,6 +141,8 @@ export interface CaveInteriorEffect extends SpriteEffect {
   readonly glowColor: SpriteColor;
   readonly scrollOffsetY: number;
   readonly stalactiteCount: number;
+  readonly resolutionW: number;
+  readonly resolutionH: number;
 }
 
 /** Mountain / hill ridge — FBM height-field silhouette. */
@@ -140,6 +152,8 @@ export interface MountainHillsEffect extends SpriteEffect {
   readonly hillColor: SpriteColor;
   readonly scrollOffsetY: number;
   readonly ridgeScale: number;
+  readonly resolutionW: number;
+  readonly resolutionH: number;
 }
 
 /** Any concrete sprite effect. */
@@ -226,6 +240,8 @@ export function roofsCity(opts: {
   roofColor: SpriteColor;
   scrollOffsetY?: number;
   density?: number;
+  resolutionW?: number;
+  resolutionH?: number;
 }): RoofsCityEffect {
   return {
     type: 'roofs-city',
@@ -233,6 +249,8 @@ export function roofsCity(opts: {
     roofColor: opts.roofColor,
     scrollOffsetY: opts.scrollOffsetY ?? 0,
     density: opts.density ?? 6,
+    resolutionW: opts.resolutionW ?? 0,
+    resolutionH: opts.resolutionH ?? 0,
   };
 }
 
@@ -242,6 +260,8 @@ export function forestCanopy(opts: {
   leafColor: SpriteColor;
   scrollOffsetY?: number;
   density?: number;
+  resolutionW?: number;
+  resolutionH?: number;
 }): ForestCanopyEffect {
   return {
     type: 'forest-canopy',
@@ -249,6 +269,8 @@ export function forestCanopy(opts: {
     leafColor: opts.leafColor,
     scrollOffsetY: opts.scrollOffsetY ?? 0,
     density: opts.density ?? 5,
+    resolutionW: opts.resolutionW ?? 0,
+    resolutionH: opts.resolutionH ?? 0,
   };
 }
 
@@ -258,6 +280,8 @@ export function riverWave(opts: {
   foamColor: SpriteColor;
   scrollOffsetY?: number;
   waveScale?: number;
+  resolutionW?: number;
+  resolutionH?: number;
 }): RiverWaveEffect {
   return {
     type: 'river-wave',
@@ -265,6 +289,8 @@ export function riverWave(opts: {
     foamColor: opts.foamColor,
     scrollOffsetY: opts.scrollOffsetY ?? 0,
     waveScale: opts.waveScale ?? 2,
+    resolutionW: opts.resolutionW ?? 0,
+    resolutionH: opts.resolutionH ?? 0,
   };
 }
 
@@ -274,6 +300,8 @@ export function moonCrater(opts: {
   craterColor: SpriteColor;
   scrollOffsetY?: number;
   craterCount?: number;
+  resolutionW?: number;
+  resolutionH?: number;
 }): MoonCraterEffect {
   return {
     type: 'moon-crater',
@@ -281,6 +309,8 @@ export function moonCrater(opts: {
     craterColor: opts.craterColor,
     scrollOffsetY: opts.scrollOffsetY ?? 0,
     craterCount: opts.craterCount ?? 4,
+    resolutionW: opts.resolutionW ?? 0,
+    resolutionH: opts.resolutionH ?? 0,
   };
 }
 
@@ -290,6 +320,8 @@ export function caveInterior(opts: {
   glowColor: SpriteColor;
   scrollOffsetY?: number;
   stalactiteCount?: number;
+  resolutionW?: number;
+  resolutionH?: number;
 }): CaveInteriorEffect {
   return {
     type: 'cave-interior',
@@ -297,6 +329,8 @@ export function caveInterior(opts: {
     glowColor: opts.glowColor,
     scrollOffsetY: opts.scrollOffsetY ?? 0,
     stalactiteCount: opts.stalactiteCount ?? 8,
+    resolutionW: opts.resolutionW ?? 0,
+    resolutionH: opts.resolutionH ?? 0,
   };
 }
 
@@ -306,6 +340,8 @@ export function mountainHills(opts: {
   hillColor: SpriteColor;
   scrollOffsetY?: number;
   ridgeScale?: number;
+  resolutionW?: number;
+  resolutionH?: number;
 }): MountainHillsEffect {
   return {
     type: 'mountain-hills',
@@ -313,6 +349,8 @@ export function mountainHills(opts: {
     hillColor: opts.hillColor,
     scrollOffsetY: opts.scrollOffsetY ?? 0,
     ridgeScale: opts.ridgeScale ?? 1.5,
+    resolutionW: opts.resolutionW ?? 0,
+    resolutionH: opts.resolutionH ?? 0,
   };
 }
 

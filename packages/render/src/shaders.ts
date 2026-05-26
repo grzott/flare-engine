@@ -115,7 +115,6 @@ half4 main(float2 coord) {
 // ---------------------------------------------------------------------------
 
 export const ROOFS_CITY_SKSL = /* sksl */ `
-uniform shader src;
 uniform float2 resolution;
 uniform float3 skyColor;
 uniform float3 roofColor;
@@ -140,13 +139,11 @@ half4 main(float2 coord) {
   half3 col = mix(half3(skyColor.r, skyColor.g, skyColor.b),
                   half3(roofColor.r, roofColor.g, roofColor.b),
                   half(buildings));
-  half4 srcColor = src.eval(coord);
-  return half4(mix(srcColor.rgb, col, half(srcColor.a)), srcColor.a);
+  return half4(col, 1.0);
 }
 `;
 
 export const FOREST_CANOPY_SKSL = /* sksl */ `
-uniform shader src;
 uniform float2 resolution;
 uniform float3 skyColor;
 uniform float3 leafColor;
@@ -172,13 +169,11 @@ half4 main(float2 coord) {
   half3 col = mix(half3(skyColor.r, skyColor.g, skyColor.b),
                   half3(leafColor.r, leafColor.g, leafColor.b),
                   half(canopy));
-  half4 srcColor = src.eval(coord);
-  return half4(mix(srcColor.rgb, col, half(srcColor.a)), srcColor.a);
+  return half4(col, 1.0);
 }
 `;
 
 export const RIVER_WAVE_SKSL = /* sksl */ `
-uniform shader src;
 uniform float2 resolution;
 uniform float3 waterColor;
 uniform float3 foamColor;
@@ -199,13 +194,11 @@ half4 main(float2 coord) {
                    half3(waterColor.r, waterColor.g, waterColor.b),
                    half(inWater));
   half3 col = mix(base, half3(foamColor.r, foamColor.g, foamColor.b), half(crest * 0.6));
-  half4 srcColor = src.eval(coord);
-  return half4(mix(srcColor.rgb, col, half(srcColor.a)), srcColor.a);
+  return half4(col, 1.0);
 }
 `;
 
 export const MOON_CRATER_SKSL = /* sksl */ `
-uniform shader src;
 uniform float2 resolution;
 uniform float3 moonColor;
 uniform float3 craterColor;
@@ -235,13 +228,11 @@ half4 main(float2 coord) {
   half3 col = mix(half3(moonColor.r, moonColor.g, moonColor.b),
                   half3(craterColor.r, craterColor.g, craterColor.b),
                   half(c));
-  half4 srcColor = src.eval(coord);
-  return half4(mix(srcColor.rgb, col, half(srcColor.a)), srcColor.a);
+  return half4(col, 1.0);
 }
 `;
 
 export const CAVE_INTERIOR_SKSL = /* sksl */ `
-uniform shader src;
 uniform float2 resolution;
 uniform float3 caveColor;
 uniform float3 glowColor;
@@ -269,13 +260,11 @@ half4 main(float2 coord) {
                   half3(glowColor.r, glowColor.g, glowColor.b),
                   half(glow));
   col = mix(col, half3(caveColor.r, caveColor.g, caveColor.b) * half(0.3), half(stalac));
-  half4 srcColor = src.eval(coord);
-  return half4(mix(srcColor.rgb, col, half(srcColor.a)), srcColor.a);
+  return half4(col, 1.0);
 }
 `;
 
 export const MOUNTAIN_HILLS_SKSL = /* sksl */ `
-uniform shader src;
 uniform float2 resolution;
 uniform float3 skyColor;
 uniform float3 hillColor;
@@ -307,7 +296,6 @@ half4 main(float2 coord) {
   half3 col = mix(half3(skyColor.r, skyColor.g, skyColor.b),
                   half3(hillColor.r, hillColor.g, hillColor.b),
                   half(mountains));
-  half4 srcColor = src.eval(coord);
-  return half4(mix(srcColor.rgb, col, half(srcColor.a)), srcColor.a);
+  return half4(col, 1.0);
 }
 `;

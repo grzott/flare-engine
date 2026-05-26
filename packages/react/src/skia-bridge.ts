@@ -1,15 +1,27 @@
 import type { SkImageLike } from '@flare-engine/assets';
 import {
   type AnySpriteEffect,
+  CAVE_INTERIOR_SKSL,
   type CanvasLike,
+  type CaveInteriorEffect,
   type CustomShaderEffect,
   FIRE_SKSL,
   FOG_SKSL,
+  FOREST_CANOPY_SKSL,
   type FireEffect,
   type FlashEffect,
   type FogEffect,
+  type ForestCanopyEffect,
   type GrayscaleEffect,
+  MOON_CRATER_SKSL,
+  MOUNTAIN_HILLS_SKSL,
+  type MoonCraterEffect,
+  type MountainHillsEffect,
   type OutlineEffect,
+  RIVER_WAVE_SKSL,
+  ROOFS_CITY_SKSL,
+  type RiverWaveEffect,
+  type RoofsCityEffect,
   type SpriteColor,
   type SpriteDrawCommand,
   type TintEffect,
@@ -232,6 +244,35 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   let fogRuntimeEffect: SkRuntimeEffect | null = null;
   let firePaint: SkPaint | null = null;
   let fireRuntimeEffect: SkRuntimeEffect | null = null;
+
+  // Zone-background shader state — one runtime effect + paint per effect type.
+  // Compiled lazily on first use; reused every frame thereafter.
+  let roofsCityPaint: SkPaint | null = null;
+  let roofsCityEffect: SkRuntimeEffect | null = null;
+  let forestCanopyPaint: SkPaint | null = null;
+  let forestCanopyEffect: SkRuntimeEffect | null = null;
+  let riverWavePaint: SkPaint | null = null;
+  let riverWaveEffect: SkRuntimeEffect | null = null;
+  let moonCraterPaint: SkPaint | null = null;
+  let moonCraterEffect: SkRuntimeEffect | null = null;
+  let caveInteriorPaint: SkPaint | null = null;
+  let caveInteriorEffect: SkRuntimeEffect | null = null;
+  let mountainHillsPaint: SkPaint | null = null;
+  let mountainHillsEffect: SkRuntimeEffect | null = null;
+
+  // Pre-allocated uniform buffers for zone-bg shaders.
+  // ROOFS_CITY:    [resW, resH, skyR, skyG, skyB, roofR, roofG, roofB, scrollOffsetY, density]
+  const roofsCityUniforms: number[] = new Array(10).fill(0);
+  // FOREST_CANOPY: [resW, resH, skyR, skyG, skyB, leafR, leafG, leafB, scrollOffsetY, density]
+  const forestCanopyUniforms: number[] = new Array(10).fill(0);
+  // RIVER_WAVE:    [resW, resH, waterR, waterG, waterB, foamR, foamG, foamB, scrollOffsetY, waveScale]
+  const riverWaveUniforms: number[] = new Array(10).fill(0);
+  // MOON_CRATER:   [resW, resH, moonR, moonG, moonB, craterR, craterG, craterB, scrollOffsetY, craterCount]
+  const moonCraterUniforms: number[] = new Array(10).fill(0);
+  // CAVE_INTERIOR: [resW, resH, caveR, caveG, caveB, glowR, glowG, glowB, scrollOffsetY, stalactiteCount]
+  const caveInteriorUniforms: number[] = new Array(10).fill(0);
+  // MOUNTAIN_HILLS:[resW, resH, skyR, skyG, skyB, hillR, hillG, hillB, scrollOffsetY, ridgeScale]
+  const mountainHillsUniforms: number[] = new Array(10).fill(0);
 
   // Reused across frames via beginRecording / finishRecording cycles.
   const recorder: SkPictureRecorder = Skia.PictureRecorder();
@@ -457,6 +498,138 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     return firePaint;
   }
 
+  function applyRoofsCity(effect: RoofsCityEffect): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (roofsCityEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(ROOFS_CITY_SKSL);
+      if (compiled === null) return defaultPaint;
+      roofsCityEffect = compiled;
+    }
+    if (roofsCityPaint === null) roofsCityPaint = Skia.Paint();
+    roofsCityUniforms[0] = effect.resolutionW;
+    roofsCityUniforms[1] = effect.resolutionH;
+    roofsCityUniforms[2] = effect.skyColor.r;
+    roofsCityUniforms[3] = effect.skyColor.g;
+    roofsCityUniforms[4] = effect.skyColor.b;
+    roofsCityUniforms[5] = effect.roofColor.r;
+    roofsCityUniforms[6] = effect.roofColor.g;
+    roofsCityUniforms[7] = effect.roofColor.b;
+    roofsCityUniforms[8] = effect.scrollOffsetY;
+    roofsCityUniforms[9] = effect.density;
+    roofsCityPaint.setShader(roofsCityEffect.makeShader(roofsCityUniforms));
+    return roofsCityPaint;
+  }
+
+  function applyForestCanopy(effect: ForestCanopyEffect): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (forestCanopyEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(FOREST_CANOPY_SKSL);
+      if (compiled === null) return defaultPaint;
+      forestCanopyEffect = compiled;
+    }
+    if (forestCanopyPaint === null) forestCanopyPaint = Skia.Paint();
+    forestCanopyUniforms[0] = effect.resolutionW;
+    forestCanopyUniforms[1] = effect.resolutionH;
+    forestCanopyUniforms[2] = effect.skyColor.r;
+    forestCanopyUniforms[3] = effect.skyColor.g;
+    forestCanopyUniforms[4] = effect.skyColor.b;
+    forestCanopyUniforms[5] = effect.leafColor.r;
+    forestCanopyUniforms[6] = effect.leafColor.g;
+    forestCanopyUniforms[7] = effect.leafColor.b;
+    forestCanopyUniforms[8] = effect.scrollOffsetY;
+    forestCanopyUniforms[9] = effect.density;
+    forestCanopyPaint.setShader(forestCanopyEffect.makeShader(forestCanopyUniforms));
+    return forestCanopyPaint;
+  }
+
+  function applyRiverWave(effect: RiverWaveEffect): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (riverWaveEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(RIVER_WAVE_SKSL);
+      if (compiled === null) return defaultPaint;
+      riverWaveEffect = compiled;
+    }
+    if (riverWavePaint === null) riverWavePaint = Skia.Paint();
+    riverWaveUniforms[0] = effect.resolutionW;
+    riverWaveUniforms[1] = effect.resolutionH;
+    riverWaveUniforms[2] = effect.waterColor.r;
+    riverWaveUniforms[3] = effect.waterColor.g;
+    riverWaveUniforms[4] = effect.waterColor.b;
+    riverWaveUniforms[5] = effect.foamColor.r;
+    riverWaveUniforms[6] = effect.foamColor.g;
+    riverWaveUniforms[7] = effect.foamColor.b;
+    riverWaveUniforms[8] = effect.scrollOffsetY;
+    riverWaveUniforms[9] = effect.waveScale;
+    riverWavePaint.setShader(riverWaveEffect.makeShader(riverWaveUniforms));
+    return riverWavePaint;
+  }
+
+  function applyMoonCrater(effect: MoonCraterEffect): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (moonCraterEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(MOON_CRATER_SKSL);
+      if (compiled === null) return defaultPaint;
+      moonCraterEffect = compiled;
+    }
+    if (moonCraterPaint === null) moonCraterPaint = Skia.Paint();
+    moonCraterUniforms[0] = effect.resolutionW;
+    moonCraterUniforms[1] = effect.resolutionH;
+    moonCraterUniforms[2] = effect.moonColor.r;
+    moonCraterUniforms[3] = effect.moonColor.g;
+    moonCraterUniforms[4] = effect.moonColor.b;
+    moonCraterUniforms[5] = effect.craterColor.r;
+    moonCraterUniforms[6] = effect.craterColor.g;
+    moonCraterUniforms[7] = effect.craterColor.b;
+    moonCraterUniforms[8] = effect.scrollOffsetY;
+    moonCraterUniforms[9] = effect.craterCount;
+    moonCraterPaint.setShader(moonCraterEffect.makeShader(moonCraterUniforms));
+    return moonCraterPaint;
+  }
+
+  function applyCaveInterior(effect: CaveInteriorEffect): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (caveInteriorEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(CAVE_INTERIOR_SKSL);
+      if (compiled === null) return defaultPaint;
+      caveInteriorEffect = compiled;
+    }
+    if (caveInteriorPaint === null) caveInteriorPaint = Skia.Paint();
+    caveInteriorUniforms[0] = effect.resolutionW;
+    caveInteriorUniforms[1] = effect.resolutionH;
+    caveInteriorUniforms[2] = effect.caveColor.r;
+    caveInteriorUniforms[3] = effect.caveColor.g;
+    caveInteriorUniforms[4] = effect.caveColor.b;
+    caveInteriorUniforms[5] = effect.glowColor.r;
+    caveInteriorUniforms[6] = effect.glowColor.g;
+    caveInteriorUniforms[7] = effect.glowColor.b;
+    caveInteriorUniforms[8] = effect.scrollOffsetY;
+    caveInteriorUniforms[9] = effect.stalactiteCount;
+    caveInteriorPaint.setShader(caveInteriorEffect.makeShader(caveInteriorUniforms));
+    return caveInteriorPaint;
+  }
+
+  function applyMountainHills(effect: MountainHillsEffect): SkPaint {
+    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+    if (mountainHillsEffect === null) {
+      const compiled = Skia.RuntimeEffect.Make(MOUNTAIN_HILLS_SKSL);
+      if (compiled === null) return defaultPaint;
+      mountainHillsEffect = compiled;
+    }
+    if (mountainHillsPaint === null) mountainHillsPaint = Skia.Paint();
+    mountainHillsUniforms[0] = effect.resolutionW;
+    mountainHillsUniforms[1] = effect.resolutionH;
+    mountainHillsUniforms[2] = effect.skyColor.r;
+    mountainHillsUniforms[3] = effect.skyColor.g;
+    mountainHillsUniforms[4] = effect.skyColor.b;
+    mountainHillsUniforms[5] = effect.hillColor.r;
+    mountainHillsUniforms[6] = effect.hillColor.g;
+    mountainHillsUniforms[7] = effect.hillColor.b;
+    mountainHillsUniforms[8] = effect.scrollOffsetY;
+    mountainHillsUniforms[9] = effect.ridgeScale;
+    mountainHillsPaint.setShader(mountainHillsEffect.makeShader(mountainHillsUniforms));
+    return mountainHillsPaint;
+  }
+
   function drawOutlined(
     canvas: SkCanvas,
     image: SkImage,
@@ -504,8 +677,18 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
         // if a caller bypasses `drawOutlined`. Return the outline paint so
         // the single-pass drawAtlas still renders something visible.
         return applyOutlinePaint(effect);
-      default:
-        return defaultPaint;
+      case 'roofs-city':
+        return applyRoofsCity(effect);
+      case 'forest-canopy':
+        return applyForestCanopy(effect);
+      case 'river-wave':
+        return applyRiverWave(effect);
+      case 'moon-crater':
+        return applyMoonCrater(effect);
+      case 'cave-interior':
+        return applyCaveInterior(effect);
+      case 'mountain-hills':
+        return applyMountainHills(effect);
     }
   }
 
@@ -526,12 +709,39 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
       const n = commands.length;
       if (n === 0) return;
 
-      ensurePoolCapacity(n);
-      fillSrcRects(commands, n);
-
       const effect = commands[0]?.effect;
       const alpha = commands[0]?.alpha ?? 1;
       const skImage = image as SkImage;
+
+      // Zone-background effects are procedural fullscreen shaders. They must be
+      // drawn via drawRect (not drawAtlas) because:
+      //   1. RSXform only encodes uniform scale — a 32×32 atlas frame stretched
+      //      to 360×640 renders as 360×360 (a square), clipping 45% of height.
+      //   2. The shaders don't sample the atlas at all (no `uniform shader src`);
+      //      they produce the entire pixel value from SkSL uniforms.
+      // Each command is an independent drawRect call — these BG entities are
+      // never batched with regular sprites (different effect identity).
+      if (
+        effect?.type === 'roofs-city' ||
+        effect?.type === 'forest-canopy' ||
+        effect?.type === 'river-wave' ||
+        effect?.type === 'moon-crater' ||
+        effect?.type === 'cave-interior' ||
+        effect?.type === 'mountain-hills'
+      ) {
+        const paint = resolveEffectPaint(effect);
+        paint.setAlphaf(alpha);
+        for (let i = 0; i < n; i++) {
+          const cmd = commands[i] as SpriteDrawCommand;
+          const rect = Skia.XYWHRect(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
+          current.drawRect(rect, paint);
+        }
+        paint.setAlphaf(1);
+        return;
+      }
+
+      ensurePoolCapacity(n);
+      fillSrcRects(commands, n);
 
       if (effect?.type === 'outline') {
         drawOutlined(current, skImage, commands, n, effect, alpha);

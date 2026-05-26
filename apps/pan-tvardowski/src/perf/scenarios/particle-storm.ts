@@ -1,15 +1,11 @@
 /**
  * particle-storm scenario — saturates the 480-particle cap.
  *
- * Spawns Lifetime-tagged entities on each tick up to PARTICLE_CAP, then
- * lets them expire naturally and respawns to keep the cap full.  Measures
- * the cost of ticking 480 live Lifetime components without running the full
- * cleanup system (no collision, no physics, no boss).
- *
- * Section: "lifetime-tick" — manual drain of Lifetime.remaining across all
- *           entities (mirrors what cleanup.ts does in production).
- *
- * Duration: ~30 s.
+ * Spawns Lifetime-tagged entities each tick to keep the count at PARTICLE_CAP.
+ * The normal game loop's lifetime cleanup system drains and destroys expired
+ * entities each frame — this scenario only refills. play.ts brackets frame
+ * work in the perf recorder so the recorded `frame` p95 reflects the cost of
+ * ticking 480 live entities every frame for 30 s.
  */
 
 import { Position, Velocity } from '@flare-engine/ecs';
@@ -22,50 +18,25 @@ const PARTICLE_LIFETIME_SEC = 0.5;
 const PARTICLE_CAP = BUDGET_LIMITS.particles;
 
 export function createParticleStormScenario(deps: ScenarioDeps): ScenarioHandle {
-  const { recorder, world, bounds, lifetimeQuery } = deps;
+  const { world, bounds, lifetimeQuery } = deps;
 
   return {
     init() {
-      recorder.reset();
       _fillParticles(world, bounds, PARTICLE_CAP);
     },
 
-    tick(dt: number, elapsed: number): boolean {
-      recorder.beginSection('lifetime-tick');
-
-      // Drain remaining and collect expired ids.
-      const expired: number[] = [];
-      for (const id of lifetimeQuery) {
-        const lt = world.get(id, Lifetime);
-        if (!lt) continue;
-        lt.remaining -= dt;
-        if (lt.remaining <= 0) expired.push(id);
-      }
-
-      // Destroy expired particles (no collision body — simple remove).
-      for (const id of expired) {
-        world.destroy(id);
-      }
-
-      recorder.endSection('lifetime-tick');
-
-      // Refill to cap so every tick exercises the maximum particle budget.
-      const live = lifetimeQuery.count;
-      const toSpawn = PARTICLE_CAP - live;
+    tick(_dt: number, elapsed: number): boolean {
+      // Refill to cap. Normal game loop's cleanup system drains expired
+      // lifetimes — we only top up so every measured frame has 480 entities.
+      const toSpawn = PARTICLE_CAP - lifetimeQuery.count;
       if (toSpawn > 0) {
         _fillParticles(world, bounds, toSpawn);
       }
-
-      recorder.recordFrame({
-        elapsed: elapsed * 1000,
-        particleCount: lifetimeQuery.count,
-      });
-
       return elapsed >= SCENARIO_DURATION_SEC;
     },
 
     finish() {
-      // Clean up any remaining particle entities.
+      // Tear down any scenario-spawned particles still alive.
       const ids: number[] = [];
       for (const id of lifetimeQuery) ids.push(id);
       for (const id of ids) world.destroy(id);

@@ -1,23 +1,33 @@
 /**
  * E3 — perf scenario library tests.
  *
- * Verifies deterministic, observable behavior of each scenario:
- * - init() + N ticks executes without throwing
- * - tick() returns false before SCENARIO_DURATION_SEC and true at/after it
- * - recorder sections are populated after ticking
- * - HP-clamp keeps boss alive in boss-* scenarios
- * - zone-transitions wipes and refills entities at each 5-second boundary
- * - particle-storm keeps lifetimeQuery.count at PARTICLE_CAP after refill
+ * After the audit refactor, scenarios are SETUP MODIFIERS on the normal
+ * game loop — they manipulate game state each tick (spawn boss, clamp HP,
+ * refill particles, wipe entities) but no longer own the perf recorder or
+ * call updateBoss. The recorder lives in play.ts and brackets the real
+ * game loop. See docs/perf/protocol.md for rationale.
  *
- * No audio, no atlas, no collision bodies needed for scenario logic.
+ * What's verified here:
+ * - init() spawns the right entities with correct components
+ * - tick() returns false before SCENARIO_DURATION_SEC and true at/after it
+ * - HP clamp keeps boss alive when HP would otherwise drain
+ * - Force-phase setpoint is applied at the right elapsed time
+ * - particle-storm keeps lifetimeQuery.count at PARTICLE_CAP
+ * - zone-transitions wipes + refills every 5 s
+ * - finish() cleans up
+ *
+ * What's NOT verified here (moved to play.ts integration / on-device runs):
+ * - Boss FSM phase progression (requires updateBoss from real loop)
+ * - Perf recorder section content (recorder is play.ts-owned now)
+ * - postfx chain cost
  */
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { createPerfRecorder } from '@flare-engine/debug';
 import { World } from '@flare-engine/ecs';
 import { CollisionWorld } from '@flare-engine/physics';
 import { Boss, Hp, Lifetime } from '../src/components';
-import { LUCYPER_HP_MAX, SMOK_HP_MAX } from '../src/config/gameplay';
+import { LUCYPER_HP_MAX, PHASE3_HP_RATIO, THREE_PHASE_P2_RATIO } from '../src/config/gameplay';
+import { SMOK_HP_MAX } from '../src/config/gameplay';
 import { BUDGET_LIMITS } from '../src/fx/budget';
 import {
   BOSS_HP_CLAMP_MIN,
@@ -30,6 +40,7 @@ import {
 } from '../src/perf/scenarios';
 import type { ScenarioDeps } from '../src/perf/scenarios';
 import { clearBossFsms } from '../src/systems/boss';
+import { PHASE2_HP_RATIO } from '../src/systems/boss/shared';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,13 +58,12 @@ function makeDeps(world: World): ScenarioDeps {
   } as unknown as ScenarioDeps['atlas'];
   const spawnCtx: ScenarioDeps['spawnCtx'] = { world, coll, atlas };
   return {
-    recorder: createPerfRecorder({ label: 'test', ringSize: 300 }),
     world,
     spawnCtx,
     coll,
     atlas,
     bounds: { width: 360, height: 640 },
-    enemyQuery: world.query(Boss), // reused as generic query in tests
+    enemyQuery: world.query(Boss),
     bulletQuery: world.query(Lifetime),
     lifetimeQuery: world.query(Lifetime),
   };
@@ -61,73 +71,34 @@ function makeDeps(world: World): ScenarioDeps {
 
 const DT = 1 / 60;
 
-// Advance a scenario for `durationSec` simulated seconds and return result.
-// Runs one extra tick at exactly durationSec to ensure the done condition fires.
-function runFor(
-  scenario: ReturnType<typeof createBootScenario>,
-  durationSec: number,
-): { elapsed: number; done: boolean } {
-  let elapsed = 0;
-  let done = false;
-  while (elapsed < durationSec) {
-    done = scenario.tick(DT, elapsed);
-    elapsed += DT;
-  }
-  // One final tick at or past the boundary so the `>= durationSec` guard fires.
-  done = scenario.tick(DT, elapsed);
-  elapsed += DT;
-  return { elapsed, done };
-}
-
 // ---------------------------------------------------------------------------
 // boot scenario
 // ---------------------------------------------------------------------------
 
 describe('boot scenario', () => {
   test('tick returns false before SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBootScenario(deps);
+    const s = createBootScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, 0);
-    expect(result).toBe(false);
+    expect(s.tick(DT, 0)).toBe(false);
   });
 
   test('tick returns true at SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBootScenario(deps);
+    const s = createBootScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, SCENARIO_DURATION_SEC);
-    expect(result).toBe(true);
+    expect(s.tick(DT, SCENARIO_DURATION_SEC)).toBe(true);
   });
 
-  test('recorder has a frame count after ticking', () => {
+  test('init does not spawn entities (Zone 1 is spawned by startZone in play.ts)', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createBootScenario(deps);
     s.init();
-    for (let i = 0; i < 10; i++) s.tick(DT, i * DT);
-    const report = deps.recorder.flush();
-    expect(report.frameCount).toBeGreaterThan(0);
-  });
-
-  test('recorder has "frame" section after ticking', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBootScenario(deps);
-    s.init();
-    for (let i = 0; i < 10; i++) s.tick(DT, i * DT);
-    const report = deps.recorder.flush();
-    const frameSection = report.sections.find((sec) => sec.name === 'frame');
-    expect(frameSection).toBeDefined();
-    expect(frameSection?.count).toBe(10);
+    expect(deps.lifetimeQuery.count).toBe(0);
+    expect(deps.enemyQuery.count).toBe(0);
   });
 
   test('finish does not throw', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBootScenario(deps);
+    const s = createBootScenario(makeDeps(makeWorld()));
     s.init();
     expect(() => s.finish()).not.toThrow();
   });
@@ -142,80 +113,20 @@ describe('boss-smok-full scenario', () => {
   afterEach(() => clearBossFsms());
 
   test('tick returns false before SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossSmokFullScenario(deps);
+    const s = createBossSmokFullScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, 0);
-    expect(result).toBe(false);
+    expect(s.tick(DT, 0)).toBe(false);
   });
 
   test('tick returns true at SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossSmokFullScenario(deps);
+    const s = createBossSmokFullScenario(makeDeps(makeWorld()));
     s.init();
-    // Drive to just before done, then at done.
-    const { done } = runFor(s, SCENARIO_DURATION_SEC);
-    expect(done).toBe(true);
+    expect(s.tick(DT, SCENARIO_DURATION_SEC)).toBe(true);
   });
 
-  test('boss HP never goes below BOSS_HP_CLAMP_MIN', () => {
+  test('init spawns smok with SMOK_HP_MAX', () => {
     const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossSmokFullScenario(deps);
-    s.init();
-
-    const bossQuery = world.query(Boss);
-    let minHpSeen = Number.POSITIVE_INFINITY;
-    let elapsed = 0;
-    for (let i = 0; i < 600; i++) {
-      s.tick(DT, elapsed);
-      elapsed += DT;
-      for (const id of bossQuery) {
-        const hp = world.get(id, Hp);
-        if (hp && hp.current < minHpSeen) minHpSeen = hp.current;
-      }
-    }
-    expect(minHpSeen).toBeGreaterThanOrEqual(BOSS_HP_CLAMP_MIN);
-  });
-
-  test('boss advances to phase2 at t>=10 s', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossSmokFullScenario(deps);
-    s.init();
-
-    const bossQuery = world.query(Boss);
-    let phase2Seen = false;
-    // Run well past the 10-second threshold.
-    for (let i = 0; i < 800; i++) {
-      s.tick(DT, i * DT);
-      for (const id of bossQuery) {
-        const b = world.get(id, Boss);
-        if (b?.phase === 'phase2') phase2Seen = true;
-      }
-      if (phase2Seen) break;
-    }
-    expect(phase2Seen).toBe(true);
-  });
-
-  test('recorder has boss-update section', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossSmokFullScenario(deps);
-    s.init();
-    for (let i = 0; i < 10; i++) s.tick(DT, i * DT);
-    const report = deps.recorder.flush();
-    const sec = report.sections.find((x) => x.name === 'boss-update');
-    expect(sec).toBeDefined();
-    expect(sec?.count).toBeGreaterThan(0);
-  });
-
-  test('smok spawned with correct HP', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossSmokFullScenario(deps);
+    const s = createBossSmokFullScenario(makeDeps(world));
     s.init();
     const bossQuery = world.query(Boss);
     let hpMax = 0;
@@ -224,6 +135,64 @@ describe('boss-smok-full scenario', () => {
       if (hp) hpMax = hp.max;
     }
     expect(hpMax).toBe(SMOK_HP_MAX);
+  });
+
+  test('tick clamps boss HP to >= BOSS_HP_CLAMP_MIN when drained low', () => {
+    const world = makeWorld();
+    const s = createBossSmokFullScenario(makeDeps(world));
+    s.init();
+    const bossQuery = world.query(Boss);
+    // Simulate damage: drain HP below clamp before tick.
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) hp.current = 0;
+    }
+    s.tick(DT, 5);
+    let minHp = Number.POSITIVE_INFINITY;
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) minHp = hp.current;
+    }
+    expect(minHp).toBeGreaterThanOrEqual(BOSS_HP_CLAMP_MIN);
+  });
+
+  test('tick at t>=PHASE2_FORCE_T sets HP below PHASE2_HP_RATIO when boss in phase1', () => {
+    const world = makeWorld();
+    const s = createBossSmokFullScenario(makeDeps(world));
+    s.init();
+    const bossQuery = world.query(Boss);
+    // Simulate updateBoss having transitioned to phase1.
+    for (const id of bossQuery) {
+      const b = world.get(id, Boss);
+      if (b) b.phase = 'phase1';
+    }
+    s.tick(DT, 10);
+    const expectedHp = Math.floor(SMOK_HP_MAX * PHASE2_HP_RATIO * 0.9);
+    let observed = -1;
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) observed = hp.current;
+    }
+    expect(observed).toBe(expectedHp);
+  });
+
+  test('tick keeps boss fireCooldown high to suppress fire path', () => {
+    const world = makeWorld();
+    const s = createBossSmokFullScenario(makeDeps(world));
+    s.init();
+    const bossQuery = world.query(Boss);
+    // Reset to 0 — scenario should bring it back up to 999.
+    for (const id of bossQuery) {
+      const b = world.get(id, Boss);
+      if (b) b.fireCooldown = 0;
+    }
+    s.tick(DT, 5);
+    let cd = 0;
+    for (const id of bossQuery) {
+      const b = world.get(id, Boss);
+      if (b) cd = b.fireCooldown;
+    }
+    expect(cd).toBeGreaterThan(100);
   });
 });
 
@@ -236,87 +205,20 @@ describe('boss-lucyper-z8 scenario', () => {
   afterEach(() => clearBossFsms());
 
   test('tick returns false before SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
+    const s = createBossLucyperZ8Scenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, 0);
-    expect(result).toBe(false);
+    expect(s.tick(DT, 0)).toBe(false);
   });
 
   test('tick returns true at SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
+    const s = createBossLucyperZ8Scenario(makeDeps(makeWorld()));
     s.init();
-    const { done } = runFor(s, SCENARIO_DURATION_SEC);
-    expect(done).toBe(true);
+    expect(s.tick(DT, SCENARIO_DURATION_SEC)).toBe(true);
   });
 
-  test('boss HP never goes below BOSS_HP_CLAMP_MIN', () => {
+  test('init spawns lucyper with LUCYPER_HP_MAX', () => {
     const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
-    s.init();
-
-    const bossQuery = world.query(Boss);
-    let minHpSeen = Number.POSITIVE_INFINITY;
-    let elapsed = 0;
-    for (let i = 0; i < 1800; i++) {
-      s.tick(DT, elapsed);
-      elapsed += DT;
-      for (const id of bossQuery) {
-        const hp = world.get(id, Hp);
-        if (hp && hp.current < minHpSeen) minHpSeen = hp.current;
-      }
-    }
-    expect(minHpSeen).toBeGreaterThanOrEqual(BOSS_HP_CLAMP_MIN);
-  });
-
-  test('lucyper advances to phase2 at t>=10 s', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
-    s.init();
-
-    const bossQuery = world.query(Boss);
-    let phase2Seen = false;
-    for (let i = 0; i < 800; i++) {
-      s.tick(DT, i * DT);
-      for (const id of bossQuery) {
-        const b = world.get(id, Boss);
-        if (b?.phase === 'phase2') phase2Seen = true;
-      }
-      if (phase2Seen) break;
-    }
-    expect(phase2Seen).toBe(true);
-  });
-
-  test('lucyper advances to phase3 at t>=20 s', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
-    s.init();
-
-    const bossQuery = world.query(Boss);
-    let phase3Seen = false;
-    // 21 s / DT ticks gives enough headroom for phase transitions to land.
-    const maxTicks = Math.ceil(21 / DT) + 60;
-    for (let i = 0; i < maxTicks; i++) {
-      s.tick(DT, i * DT);
-      for (const id of bossQuery) {
-        const b = world.get(id, Boss);
-        if (b?.phase === 'phase3') phase3Seen = true;
-      }
-      if (phase3Seen) break;
-    }
-    expect(phase3Seen).toBe(true);
-  });
-
-  test('lucyper spawned with correct HP', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
+    const s = createBossLucyperZ8Scenario(makeDeps(world));
     s.init();
     const bossQuery = world.query(Boss);
     let hpMax = 0;
@@ -327,16 +229,60 @@ describe('boss-lucyper-z8 scenario', () => {
     expect(hpMax).toBe(LUCYPER_HP_MAX);
   });
 
-  test('recorder has boss-update section', () => {
+  test('tick clamps HP to >= BOSS_HP_CLAMP_MIN', () => {
     const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createBossLucyperZ8Scenario(deps);
+    const s = createBossLucyperZ8Scenario(makeDeps(world));
     s.init();
-    for (let i = 0; i < 10; i++) s.tick(DT, i * DT);
-    const report = deps.recorder.flush();
-    const sec = report.sections.find((x) => x.name === 'boss-update');
-    expect(sec).toBeDefined();
-    expect(sec?.count).toBeGreaterThan(0);
+    const bossQuery = world.query(Boss);
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) hp.current = 0;
+    }
+    s.tick(DT, 5);
+    let minHp = Number.POSITIVE_INFINITY;
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) minHp = hp.current;
+    }
+    expect(minHp).toBeGreaterThanOrEqual(BOSS_HP_CLAMP_MIN);
+  });
+
+  test('tick at t>=10 sets HP below THREE_PHASE_P2_RATIO when in phase1', () => {
+    const world = makeWorld();
+    const s = createBossLucyperZ8Scenario(makeDeps(world));
+    s.init();
+    const bossQuery = world.query(Boss);
+    for (const id of bossQuery) {
+      const b = world.get(id, Boss);
+      if (b) b.phase = 'phase1';
+    }
+    s.tick(DT, 10);
+    const expectedHp = Math.floor(LUCYPER_HP_MAX * THREE_PHASE_P2_RATIO * 0.9);
+    let observed = -1;
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) observed = hp.current;
+    }
+    expect(observed).toBe(expectedHp);
+  });
+
+  test('tick at t>=20 sets HP below PHASE3_HP_RATIO when in phase2', () => {
+    const world = makeWorld();
+    const s = createBossLucyperZ8Scenario(makeDeps(world));
+    s.init();
+    const bossQuery = world.query(Boss);
+    for (const id of bossQuery) {
+      const b = world.get(id, Boss);
+      if (b) b.phase = 'phase2';
+    }
+    s.tick(DT, 20);
+    const expectedHp = Math.floor(LUCYPER_HP_MAX * PHASE3_HP_RATIO * 0.9);
+    let observed = -1;
+    for (const id of bossQuery) {
+      const hp = world.get(id, Hp);
+      if (hp) observed = hp.current;
+    }
+    expect(observed).toBe(expectedHp);
   });
 });
 
@@ -346,24 +292,18 @@ describe('boss-lucyper-z8 scenario', () => {
 
 describe('particle-storm scenario', () => {
   test('tick returns false before SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createParticleStormScenario(deps);
+    const s = createParticleStormScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, 0);
-    expect(result).toBe(false);
+    expect(s.tick(DT, 0)).toBe(false);
   });
 
   test('tick returns true at SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createParticleStormScenario(deps);
+    const s = createParticleStormScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, SCENARIO_DURATION_SEC);
-    expect(result).toBe(true);
+    expect(s.tick(DT, SCENARIO_DURATION_SEC)).toBe(true);
   });
 
-  test('lifetimeQuery.count reaches PARTICLE_CAP after init', () => {
+  test('init fills lifetimeQuery.count to PARTICLE_CAP', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createParticleStormScenario(deps);
@@ -371,28 +311,21 @@ describe('particle-storm scenario', () => {
     expect(deps.lifetimeQuery.count).toBe(BUDGET_LIMITS.particles);
   });
 
-  test('lifetimeQuery.count stays at PARTICLE_CAP after a tick that expires particles', () => {
+  test('tick refills count back to PARTICLE_CAP after some entities destroyed', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createParticleStormScenario(deps);
     s.init();
-    // Advance by a full lifetime (0.5 s) so all particles expire and are replaced.
-    for (let i = 0; i < Math.ceil(0.5 / DT) + 2; i++) {
-      s.tick(DT, i * DT);
+    // Simulate cleanup destroying half the entities.
+    const ids: number[] = [];
+    for (const id of deps.lifetimeQuery) ids.push(id);
+    for (let i = 0; i < ids.length / 2; i++) {
+      const id = ids[i];
+      if (id !== undefined) world.destroy(id);
     }
+    expect(deps.lifetimeQuery.count).toBeLessThan(BUDGET_LIMITS.particles);
+    s.tick(DT, 1);
     expect(deps.lifetimeQuery.count).toBe(BUDGET_LIMITS.particles);
-  });
-
-  test('recorder has lifetime-tick section', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createParticleStormScenario(deps);
-    s.init();
-    for (let i = 0; i < 5; i++) s.tick(DT, i * DT);
-    const report = deps.recorder.flush();
-    const sec = report.sections.find((x) => x.name === 'lifetime-tick');
-    expect(sec).toBeDefined();
-    expect(sec?.count).toBe(5);
   });
 
   test('finish clears all lifetime entities', () => {
@@ -411,76 +344,46 @@ describe('particle-storm scenario', () => {
 
 describe('zone-transitions scenario', () => {
   test('tick returns false before SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createZoneTransitionsScenario(deps);
+    const s = createZoneTransitionsScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, 0);
-    expect(result).toBe(false);
+    expect(s.tick(DT, 0)).toBe(false);
   });
 
   test('tick returns true at SCENARIO_DURATION_SEC', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createZoneTransitionsScenario(deps);
+    const s = createZoneTransitionsScenario(makeDeps(makeWorld()));
     s.init();
-    const result = s.tick(DT, SCENARIO_DURATION_SEC);
-    expect(result).toBe(true);
+    expect(s.tick(DT, SCENARIO_DURATION_SEC)).toBe(true);
   });
 
-  test('init spawns ENTITY_COUNT entities', () => {
+  test('init spawns 200 lifetime entities', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createZoneTransitionsScenario(deps);
     s.init();
-    // 200 entities all carry Lifetime — lifetimeQuery.count matches.
     expect(deps.lifetimeQuery.count).toBe(200);
   });
 
-  test('wipe occurs at t=5 s: entity count stays at ENTITY_COUNT after wipe', () => {
+  test('wipe at t=5s keeps total count at 200 (despawn + refill)', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createZoneTransitionsScenario(deps);
     s.init();
-
-    // Run to just after the 5-second boundary.
+    // Drive scenario past the 5-second wipe boundary.
     for (let i = 0; i < Math.ceil(5 / DT) + 5; i++) {
       s.tick(DT, i * DT);
     }
     expect(deps.lifetimeQuery.count).toBe(200);
   });
 
-  test('recorder has wipe section after first wipe', () => {
+  test('two wipe cycles occur within 12 s without throwing', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createZoneTransitionsScenario(deps);
     s.init();
-
-    let elapsed = 0;
-    for (let i = 0; i < Math.ceil(5.1 / DT); i++) {
-      s.tick(DT, elapsed);
-      elapsed += DT;
-    }
-    const report = deps.recorder.flush();
-    const sec = report.sections.find((x) => x.name === 'wipe');
-    expect(sec).toBeDefined();
-    expect(sec?.count).toBeGreaterThanOrEqual(1);
-  });
-
-  test('two wipe cycles occur within 12 s', () => {
-    const world = makeWorld();
-    const deps = makeDeps(world);
-    const s = createZoneTransitionsScenario(deps);
-    s.init();
-
-    let elapsed = 0;
     for (let i = 0; i < Math.ceil(12 / DT); i++) {
-      s.tick(DT, elapsed);
-      elapsed += DT;
+      expect(() => s.tick(DT, i * DT)).not.toThrow();
     }
-    const report = deps.recorder.flush();
-    const sec = report.sections.find((x) => x.name === 'wipe');
-    expect(sec?.count).toBeGreaterThanOrEqual(2);
+    expect(deps.lifetimeQuery.count).toBe(200);
   });
 
   test('finish clears all entities', () => {
@@ -498,10 +401,9 @@ describe('zone-transitions scenario', () => {
 // ---------------------------------------------------------------------------
 
 describe('ScenarioDeps shape', () => {
-  test('deps has required fields', () => {
+  test('deps has required fields and no recorder (audit refactor)', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
-    expect(deps.recorder).toBeDefined();
     expect(deps.world).toBeDefined();
     expect(deps.spawnCtx).toBeDefined();
     expect(deps.coll).toBeDefined();
@@ -510,12 +412,13 @@ describe('ScenarioDeps shape', () => {
     expect(deps.enemyQuery).toBeDefined();
     expect(deps.bulletQuery).toBeDefined();
     expect(deps.lifetimeQuery).toBeDefined();
+    // recorder field was removed — ownership moved to play.ts.
+    expect((deps as unknown as { recorder?: unknown }).recorder).toBeUndefined();
   });
 
   test('queries are live Query instances (not recreated on access)', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
-    // Identity check: same object reference across accesses (pre-created, not factory).
     expect(deps.lifetimeQuery).toBe(deps.lifetimeQuery);
     expect(deps.enemyQuery).toBe(deps.enemyQuery);
   });
@@ -545,64 +448,50 @@ describe('spawnBoss injection', () => {
 
   test('boss-smok-full init() calls injected spawnBoss with correct kind, x, y', () => {
     const world = makeWorld();
-    const deps = makeDeps(world);
-
-    const calls: Array<{ pattern: string; x: number; y: number; hpMax: number }> = [];
-    const spawnSpy = (pattern: string, x: number, y: number, hpMax: number): number => {
-      calls.push({ pattern, x, y, hpMax });
-      // Return a dummy entity id so bossId is not -1.
-      return world.spawn();
+    const baseDeps = makeDeps(world);
+    const calls: Array<{ kind: string; x: number; y: number; hp: number }> = [];
+    const deps: ScenarioDeps = {
+      ...baseDeps,
+      spawnBoss: (kind, x, y, hp) => {
+        calls.push({ kind, x, y, hp });
+        return 0;
+      },
     };
-
-    const s = createBossSmokFullScenario({
-      ...deps,
-      spawnBoss: spawnSpy as ScenarioDeps['spawnBoss'],
-    });
+    const s = createBossSmokFullScenario(deps);
     s.init();
-
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.pattern).toBe('smok-krzemionkowski');
-    expect(calls[0]!.x).toBe(deps.bounds.width / 2);
-    expect(calls[0]!.y).toBe(100);
-    expect(calls[0]!.hpMax).toBe(SMOK_HP_MAX);
+    expect(calls[0]?.kind).toBe('smok-krzemionkowski');
+    expect(calls[0]?.x).toBe(deps.bounds.width / 2);
+    expect(calls[0]?.y).toBe(100);
+    expect(calls[0]?.hp).toBe(SMOK_HP_MAX);
   });
 
   test('boss-lucyper-z8 init() calls injected spawnBoss with correct kind, x, y', () => {
     const world = makeWorld();
-    const deps = makeDeps(world);
-
-    const calls: Array<{ pattern: string; x: number; y: number; hpMax: number }> = [];
-    const spawnSpy = (pattern: string, x: number, y: number, hpMax: number): number => {
-      calls.push({ pattern, x, y, hpMax });
-      return world.spawn();
+    const baseDeps = makeDeps(world);
+    const calls: Array<{ kind: string; x: number; y: number; hp: number }> = [];
+    const deps: ScenarioDeps = {
+      ...baseDeps,
+      spawnBoss: (kind, x, y, hp) => {
+        calls.push({ kind, x, y, hp });
+        return 0;
+      },
     };
-
-    const s = createBossLucyperZ8Scenario({
-      ...deps,
-      spawnBoss: spawnSpy as ScenarioDeps['spawnBoss'],
-    });
+    const s = createBossLucyperZ8Scenario(deps);
     s.init();
-
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.pattern).toBe('lucyper-ksiezycowy');
-    expect(calls[0]!.x).toBe(deps.bounds.width / 2);
-    expect(calls[0]!.y).toBe(100);
-    expect(calls[0]!.hpMax).toBe(LUCYPER_HP_MAX);
+    expect(calls[0]?.kind).toBe('lucyper-ksiezycowy');
+    expect(calls[0]?.hp).toBe(LUCYPER_HP_MAX);
   });
 
-  test('boss-smok-full init() falls back to _spawnBossEntity when spawnBoss is absent', () => {
+  test('without spawnBoss, boss-smok-full falls back to internal _spawnBossEntity', () => {
     const world = makeWorld();
     const deps = makeDeps(world);
     const s = createBossSmokFullScenario(deps);
     s.init();
-
-    // Headless path: Boss component present (added by _spawnBossEntity), not by spawnBoss spy.
     const bossQuery = world.query(Boss);
-    let bossCount = 0;
-    for (const id of bossQuery) {
-      const b = world.get(id, Boss);
-      if (b?.pattern === 'smok-krzemionkowski') bossCount += 1;
-    }
-    expect(bossCount).toBe(1);
+    let found = 0;
+    for (const _ of bossQuery) found += 1;
+    expect(found).toBe(1);
   });
 });

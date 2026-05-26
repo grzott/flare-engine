@@ -659,7 +659,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         if (isBenchActive() && s) {
           _benchRecorder = createPerfRecorder({ label: getBenchScenarioId(), ringSize: 1800 });
           const scenarioDeps = {
-            recorder: _benchRecorder,
             world: ctx.world,
             spawnCtx: s.spawnCtx,
             coll: s.coll,
@@ -694,43 +693,44 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       onUpdate(dt: number) {
         if (!s || s.disposed) return;
 
-        // Bench mode: drive the active scenario and bail — the normal game loop
-        // does not run during a bench run.
+        // Bench mode: scenarios are setup MODIFIERS on the normal game loop,
+        // not replacements. Each tick manipulates game state (spawn boss,
+        // clamp HP, refill particles, etc.) BEFORE the normal loop runs.
+        // Performance is measured around the actual loop work below, matching
+        // the createFrameBudget instrumentation pattern in fx/budget.ts.
+        let _benchTerminating = false;
         if (_benchScenario !== null) {
-          const done = _benchScenario.tick(dt, _benchElapsed);
+          _benchTerminating = _benchScenario.tick(dt, _benchElapsed);
           _benchElapsed += dt;
-          if (done) {
-            _benchScenario.finish();
-            if (_benchRecorder !== null) {
-              setBenchReport(JSON.stringify(_benchRecorder.flush()));
-              _benchRecorder = null;
-            }
-            _benchScenario = null;
-            markBenchDone();
-          }
-          return;
         }
 
-        if (gameState.gameOver || gameState.victory) {
-          resetBombButtonFrame();
-          return;
+        // Pause gates suppressed in bench mode — gameOver / victory / paused /
+        // dialogue must NOT halt the 30 s measurement window.
+        const _inBench = _benchScenario !== null;
+        if (!_inBench) {
+          if (gameState.gameOver || gameState.victory) {
+            resetBombButtonFrame();
+            return;
+          }
+          if (gameState.dialogue !== null) {
+            refreshBounds(s);
+            postfx.update(dt);
+            resetBombButtonFrame();
+            return;
+          }
+          if (gameState.paused) {
+            refreshBounds(s);
+            postfx.update(dt);
+            resetBombButtonFrame();
+            return;
+          }
         }
-        // Pause gameplay while a dialogue graph is on screen. Camera + postfx
-        // keep ticking so the banner can fade; sim systems are gated below.
-        if (gameState.dialogue !== null) {
-          refreshBounds(s);
-          postfx.update(dt);
-          resetBombButtonFrame();
-          return;
-        }
-        // User-initiated pause via the HUD pause button. Same precedent as the
-        // dialogue gate above — camera + postfx tick, sim halts.
-        if (gameState.paused) {
-          refreshBounds(s);
-          postfx.update(dt);
-          resetBombButtonFrame();
-          return;
-        }
+
+        // Frame measurement bracket — captures the entire JS frame work
+        // including postfx chain, player + enemy + boss updates, collisions,
+        // particles, and HUD. Released-build compatible (perf-recorder uses
+        // performance.now() via the Web Performance API).
+        if (_benchRecorder !== null) _benchRecorder.beginSection('frame');
 
         refreshBounds(s);
         s.elapsed += dt;
@@ -742,7 +742,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           void save.persist();
         }
 
+        if (_benchRecorder !== null) _benchRecorder.beginSection('postfx');
         postfx.update(dt);
+        if (_benchRecorder !== null) _benchRecorder.endSection('postfx');
 
         // Hit-flash on player damage: diff playerHp against last observed value.
         if (gameState.playerHp < s.lastPlayerHp) postfx.triggerHitFlash();
@@ -1298,6 +1300,28 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         });
         recordFrameTime(dt);
         checkFpsWatchdog(postfx);
+
+        // Close the frame measurement bracket + record the frame counters.
+        // Done AFTER the existing instrumentation hooks above so the perf
+        // recorder captures the entire real workload, mirroring the
+        // createFrameBudget pattern.
+        if (_benchRecorder !== null) {
+          _benchRecorder.endSection('frame');
+          _benchRecorder.recordFrame({ elapsed: _benchElapsed * 1000 });
+        }
+
+        // Scenario termination: AFTER the final frame has been recorded.
+        // Setting the report here ensures the BENCH_DONE Text content
+        // contains the report when React's next paint fires.
+        if (_benchTerminating && _benchScenario !== null) {
+          _benchScenario.finish();
+          if (_benchRecorder !== null) {
+            setBenchReport(JSON.stringify(_benchRecorder.flush()));
+            _benchRecorder = null;
+          }
+          _benchScenario = null;
+          markBenchDone();
+        }
       },
 
       onExit() {

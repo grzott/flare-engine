@@ -1,38 +1,25 @@
 /**
- * boot scenario — measures per-frame play-scene overhead with no boss active.
+ * boot scenario — measures the steady-state play-scene render cost.
  *
- * Tier-E gate: this scenario brackets the render-loop frame cost (JS-thread
- * only) under a minimal-load steady state: player alive, a handful of enemies,
- * no boss, no postfx chains.  It does NOT replay the cold-start TTI trace
- * (that remains `cold-start.ts`).
+ * No setup actions: Zone 1 entities are already spawned by startZone() during
+ * the play scene's onEnter. The normal game loop ticks player + enemies +
+ * postfx for 30 seconds and play.ts brackets the frame work in the perf
+ * recorder. The recorded `frame` section p95 is the boot-scenario baseline.
  *
- * Section: "frame" — one tick of the scenario update.
- * Duration: ~30 s.
+ * This scenario is intentionally empty — its only job is to gate the 30 s
+ * measurement window. See createBossSmokFullScenario / createParticleStormScenario
+ * for examples that DO setup work each tick.
  */
 
 import { SCENARIO_DURATION_SEC } from './constants';
-import type { ScenarioDeps, ScenarioHandle } from './types';
+import type { ScenarioHandle, ScenarioDeps as _ScenarioDeps } from './types';
 
-export function createBootScenario(deps: ScenarioDeps): ScenarioHandle {
-  const { recorder } = deps;
-
+export function createBootScenario(_deps: _ScenarioDeps): ScenarioHandle {
   return {
-    init() {
-      recorder.reset();
-    },
-
+    init() {},
     tick(_dt: number, elapsed: number): boolean {
-      recorder.beginSection('frame');
-      // The boot scenario brackets the scenario driver's own tick overhead —
-      // the outer bench runner measures JS-thread wall time; the section records
-      // the incremental in-scenario cost so E7 regression-check can diff it.
-      recorder.endSection('frame');
-      recorder.recordFrame({ elapsed: elapsed * 1000 });
       return elapsed >= SCENARIO_DURATION_SEC;
     },
-
-    finish() {
-      // flush is read-only on PerfRecorderHandle; the caller (bench runner) reads it.
-    },
+    finish() {},
   };
 }

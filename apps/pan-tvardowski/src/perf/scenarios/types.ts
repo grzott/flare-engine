@@ -1,17 +1,24 @@
 /**
  * Shared types for E3 perf scenario library.
  *
+ * Scenarios are setup MODIFIERS on the normal game loop, NOT replacements.
+ * Each scenario's tick() does scenario-specific game-state manipulation
+ * (spawn boss, clamp HP, force phase transition, fill particles, wipe zone)
+ * and returns when the 30-second window has elapsed.
+ *
+ * The PerfRecorder is owned by play.ts and brackets the actual game loop
+ * frame work — scenarios never touch it. This matches the existing
+ * createFrameBudget instrumentation pattern in apps/pan-tvardowski/src/fx/budget.ts.
+ *
  * ScenarioDeps is constructed once per bench run from play.ts state —
  * all queries are pre-created outside the loop (zero-alloc rule).
  */
-import type { PerfRecorderHandle } from '@flare-engine/debug';
 import type { Query, World } from '@flare-engine/engine';
 import type { CollisionWorld } from '@flare-engine/physics';
 import type { BossPattern } from '../../components';
 import type { AtlasHandle, SpawnCtx } from '../../spawn';
 
 export interface ScenarioDeps {
-  readonly recorder: PerfRecorderHandle;
   readonly world: World;
   readonly spawnCtx: SpawnCtx;
   readonly coll: CollisionWorld;
@@ -30,12 +37,16 @@ export interface ScenarioHandle {
   /** Called once before the first tick. */
   init(): void;
   /**
-   * Called every frame.
+   * Called every frame BEFORE the normal game loop runs.
+   * Manipulates game state (spawn, clamp HP, trigger explosion, etc.) but
+   * does NOT measure performance — measurement happens in play.ts around the
+   * normal game loop, which runs immediately after this returns.
+   *
    * @param dt   Scaled delta-time in seconds.
    * @param elapsed  Total elapsed seconds since scenario start.
    * @returns true when the scenario is complete (~30 s).
    */
   tick(dt: number, elapsed: number): boolean;
-  /** Called once after the last tick. Flushes the recorder. */
+  /** Called once after the last tick. Tears down scenario state. */
   finish(): void;
 }

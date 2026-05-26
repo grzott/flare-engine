@@ -1,19 +1,15 @@
 /**
  * boss-smok-full scenario — Tier-A gate for rim-light/shadow cost.
  *
- * Spawns Smok Krzemionkowski and drives it through both phases over ~30 s.
- * Boss HP is clamped to >=1 so the FSM never exits to the dying/defeated
- * states — the scenario stays in combat at each phase for the configured
- * phase dwell.
+ * Spawns Smok Krzemionkowski and drives it through phase 1 → phase 2 over
+ * ~30 s by clamping HP and force-transitioning at t=10. The normal game
+ * loop's updateBoss runs the FSM, postfx.update drives the rim+shadow chain,
+ * and the player auto-fires at the boss. play.ts brackets frame work in
+ * the perf recorder — this scenario only manipulates game state.
  *
- * When deps.spawnBoss is provided (on-device via play.ts wiring) the boss is
- * spawned through the full render pipeline (Sprite + atlas frame).  When it is
- * absent (headless tests) _spawnBossEntity is used instead — no Sprite, no
- * atlas dependency, self-contained.
- *
- * Sections:
- *   "boss-update" — updateBoss tick
- *   "integrate"   — position integration step
+ * When deps.spawnBoss is provided (on-device via play.ts wiring) the boss
+ * goes through the full render pipeline (Sprite + atlas frame). When it is
+ * absent (headless tests) _spawnBossEntity is used — no Sprite, no atlas.
  *
  * Phase schedule:
  *   0–10 s  → entering → phase1 (boss snapped to targetY on init)
@@ -23,7 +19,7 @@
 import { Position, Velocity } from '@flare-engine/ecs';
 import { Boss, Hp } from '../../components';
 import { SMOK_HP_MAX } from '../../config/gameplay';
-import { clearBossFsms, updateBoss } from '../../systems/boss';
+import { clearBossFsms } from '../../systems/boss';
 import { PHASE2_HP_RATIO } from '../../systems/boss/shared';
 import { BOSS_HP_CLAMP_MIN, SCENARIO_DURATION_SEC } from './constants';
 import type { ScenarioDeps, ScenarioHandle } from './types';
@@ -41,7 +37,7 @@ function _spawnBossEntity(deps: ScenarioDeps, hp: number): number {
     phase: 'entering',
     t: 0,
     phaseT: 0,
-    fireCooldown: 999, // prevent fire paths — scenario times, not fire rates
+    fireCooldown: 999,
     dyingExplosions: 0,
     targetY: 100,
     shieldActive: false,
@@ -59,60 +55,31 @@ function _spawnBossEntity(deps: ScenarioDeps, hp: number): number {
 }
 
 export function createBossSmokFullScenario(deps: ScenarioDeps): ScenarioHandle {
-  const { recorder, world, spawnCtx, bounds } = deps;
+  const { world, bounds } = deps;
   let bossId = -1;
-  let bossQuery = deps.enemyQuery;
 
   return {
     init() {
-      recorder.reset();
       clearBossFsms();
       bossId = deps.spawnBoss
         ? deps.spawnBoss('smok-krzemionkowski', bounds.width / 2, 100, SMOK_HP_MAX)
         : _spawnBossEntity(deps, SMOK_HP_MAX);
-      bossQuery = world.query(Boss);
     },
 
-    tick(dt: number, elapsed: number): boolean {
+    tick(_dt: number, elapsed: number): boolean {
+      // Clamp HP + force phase 2 at t=10. Normal updateBoss (called from
+      // play.ts loop) reads this HP and transitions the FSM organically.
       const hp = world.get(bossId, Hp);
       const b = world.get(bossId, Boss);
-
       if (hp && b) {
         if (elapsed >= PHASE2_FORCE_T && b.phase === 'phase1') {
           hp.current = Math.floor(hp.max * PHASE2_HP_RATIO * 0.9);
         }
         if (hp.current < BOSS_HP_CLAMP_MIN) hp.current = BOSS_HP_CLAMP_MIN;
+        // Suppress boss fire path — bullets aren't relevant to the rim/shadow
+        // measurement and the spawnBullet atlas lookup adds noise.
+        b.fireCooldown = 999;
       }
-
-      recorder.beginSection('boss-update');
-      updateBoss(world, dt, {
-        spawnCtx,
-        query: bossQuery,
-        playerX: bounds.width / 2,
-        playerY: bounds.height - 90,
-        bounds,
-      });
-      recorder.endSection('boss-update');
-
-      // Keep fireCooldown high so the FSM's fire paths never reach the atlas.
-      // On-device the atlas is real; in headless tests spawnBullet would fail.
-      const bAfter = world.get(bossId, Boss);
-      if (bAfter) bAfter.fireCooldown = 999;
-
-      recorder.beginSection('integrate');
-      const pos = world.get(bossId, Position);
-      const vel = world.get(bossId, Velocity);
-      if (pos && vel) {
-        pos.x += vel.x * dt;
-        pos.y += vel.y * dt;
-      }
-      recorder.endSection('integrate');
-
-      recorder.recordFrame({
-        elapsed: elapsed * 1000,
-        bossPhase: b?.phase === 'phase1' ? 1 : b?.phase === 'phase2' ? 2 : 0,
-      });
-
       return elapsed >= SCENARIO_DURATION_SEC;
     },
 

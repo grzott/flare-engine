@@ -5714,3 +5714,54 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 146 — 2026-05-26 (scope: game)
+
+**Goal:** E8 — Baseline: capture pre-A baseline run
+
+**Touched files** (all already committed across 15 fix-commits during the capture run — listed here for the historical record; working tree clean at close)
+- `.github/workflows/perf-bench.yml`
+- `apps/pan-tvardowski/maestro/perf-boot.yml`
+- `apps/pan-tvardowski/maestro/perf-boss-lucyper.yml`
+- `apps/pan-tvardowski/maestro/perf-boss-smok.yml`
+- `apps/pan-tvardowski/maestro/perf-particle-storm.yml`
+- `apps/pan-tvardowski/maestro/perf-zone-transitions.yml`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/perf/bench-mode.ts`
+- `apps/pan-tvardowski/src/perf/scenarios/boot.ts`
+- `apps/pan-tvardowski/src/perf/scenarios/boss-lucyper-z8.ts`
+- `apps/pan-tvardowski/src/perf/scenarios/boss-smok-full.ts`
+- `apps/pan-tvardowski/src/perf/scenarios/particle-storm.ts`
+- `apps/pan-tvardowski/src/perf/scenarios/types.ts`
+- `apps/pan-tvardowski/src/perf/scenarios/zone-transitions.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/devices.test.ts`
+- `apps/pan-tvardowski/tests/perf-scenarios.test.ts`
+- `apps/pan-tvardowski/tests/regression-check.test.ts`
+- `docs/perf/REGRESSION.md`
+- `docs/perf/bench-results.ndjson`
+- `scripts/perf/bench-cloud.sh`
+- `scripts/perf/devices.json`
+- `scripts/perf/regression-check.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Result.** Full matrix captured 2026-05-26: 3 Android devices (Galaxy A55 / Pixel 6 / Pixel 10) × 5 scenarios × 2 metrics = **32 rows** in `docs/perf/bench-results.ndjson`. Dashboard renders clean, no regressions flagged (cold-start baseline per honesty rule). Frame p95 range 0.93–9.52 ms; all cells safely under the 16.67 ms 60fps budget. Worst cell: particle-storm on Pixel 10 (9.52 ms = 7 ms headroom).
+
+**Key in-flight fixes during the capture arc (15 commits, 56139→dca1367)**:
+1. **CI plumbing** — install `testingbot` CLI in workflow, gate `commit-back` on step outcome not job result (job had `continue-on-error: true`), download ndjson artifact instead of re-running bench in commit-back job.
+2. **TestingBot auth** — write `~/.testingbot` `key:secret` file (CLI ignores env vars), correct exit-code propagation (`cmd || rc=$?` not `if ! cmd; then rc=$?`).
+3. **Device matrix** — swap from Pixel 6a + Galaxy A54 (not on TestingBot farm) to Galaxy A55 + Pixel 6 + Pixel 10.
+4. **BENCH_DONE sentinel visibility** — respect safe-area insets (`insets.bottom + 16`, `insets.right + 16`) so the Android virtual-button bar doesn't hide the Maestro accessibility target.
+5. **Perf-report exfil** — release-Hermes `console.log` doesn't reach logcat; render JSON as the BENCH_DONE Text content, copy via Maestro `copyTextFrom` + `evalScript console.log` → captured in `maestro.log`.
+6. **NDJSON schema** — emit `{device, scenario, metric, p95, capturedAt}` per perf-recorder section via jq, redirect testingbot CLI stdout to stderr to avoid polluting the ndjson stream.
+7. **Architectural fix (the big one)** — scenarios were REPLACING the game loop (early `return` after scenario tick skipped postfx + ECS updates). First run produced synthetic 0.004 ms p95 = empty-bracket measurement. Refactored: scenarios are SETUP MODIFIERS, recorder owned by `play.ts` brackets the real loop. Validated against GameBench / Reassure / oblador react-native-performance methodology before rebuild.
+
+**Caveats explicit in the data.** n=1 per cell on shared cloud devices — same Pixel 10 boot varied 1.76 ms → 2.05 ms across two runs (~15% spread). Device-vs-device ranking inside noise floor; lead with headroom-vs-budget framing. Nightly cron will accumulate samples for rolling 7-day median.
+
+**Next:** see `docs/plans/todo.md`. A→B→C→D tier work in "Future tracks" now actionable, but the data shifted priority: particle-storm is the heaviest scenario, postfx p95 is ~0.03 ms across the board (basically free). Tier-A premise ("postfx is the bottleneck") doesn't match the baseline — reconsider scope before starting.
+
+---

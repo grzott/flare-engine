@@ -134,6 +134,12 @@ mock.module('@flare-engine/render', () => ({
   WATER_SKSL: '',
   FOG_SKSL: '',
   FIRE_SKSL: '',
+  ROOFS_CITY_SKSL: '',
+  FOREST_CANOPY_SKSL: '',
+  RIVER_WAVE_SKSL: '',
+  MOON_CRATER_SKSL: '',
+  CAVE_INTERIOR_SKSL: '',
+  MOUNTAIN_HILLS_SKSL: '',
   fire: () => ({ type: 'fire', color: {}, tipColor: {}, speed: 1, intensity: 0.8 }),
 }));
 

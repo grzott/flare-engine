@@ -5765,3 +5765,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`. A→B→C→D tier work in "Future tracks" now actionable, but the data shifted priority: particle-storm is the heaviest scenario, postfx p95 is ~0.03 ms across the board (basically free). Tier-A premise ("postfx is the bottleneck") doesn't match the baseline — reconsider scope before starting.
 
 ---
+
+## Session 147 — 2026-05-26 (scope: game)
+
+**Goal:** B1 — PT: ZONE_BG_DEFS + ZONE_FX_DEFS schema (SOT lock)
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-bg.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-fx.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-bg-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-fx-spec.test.ts`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

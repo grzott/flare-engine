@@ -75,22 +75,26 @@ describe('scripts/perf/devices.json', () => {
     expect(midGateActive.length).toBeGreaterThan(0);
   });
 
-  test('Pixel 6a is present and not skipped', () => {
-    const pixel6a = devices.find((d) => d.id === 'pixel-6a');
-    expect(pixel6a).not.toBeUndefined();
-    if (pixel6a === undefined) throw new Error('pixel-6a not found');
-    expect(pixel6a.skip).toBe(false);
-    expect(pixel6a.tier).toBe('mid-gate');
-    expect(pixel6a.platform).toBe('android');
+  // Mid-tier gate devices: Galaxy A55 (Samsung Exynos 1480) + Pixel 6 (Tensor G1)
+  // provide cross-vendor SoC/GPU coverage. Original plan had Pixel 6a + Galaxy
+  // A54 but neither is available on TestingBot — substituted with the closest
+  // TestingBot-supported equivalents (verified against testingbot.com/devices).
+  test('Galaxy A55 is present and not skipped', () => {
+    const a55 = devices.find((d) => d.id === 'galaxy-a55');
+    expect(a55).not.toBeUndefined();
+    if (a55 === undefined) throw new Error('galaxy-a55 not found');
+    expect(a55.skip).toBe(false);
+    expect(a55.tier).toBe('mid-gate');
+    expect(a55.platform).toBe('android');
   });
 
-  test('Galaxy A54 is present and not skipped', () => {
-    const a54 = devices.find((d) => d.id === 'galaxy-a54');
-    expect(a54).not.toBeUndefined();
-    if (a54 === undefined) throw new Error('galaxy-a54 not found');
-    expect(a54.skip).toBe(false);
-    expect(a54.tier).toBe('mid-gate');
-    expect(a54.platform).toBe('android');
+  test('Pixel 6 is present and not skipped', () => {
+    const pixel6 = devices.find((d) => d.id === 'pixel-6');
+    expect(pixel6).not.toBeUndefined();
+    if (pixel6 === undefined) throw new Error('pixel-6 not found');
+    expect(pixel6.skip).toBe(false);
+    expect(pixel6.tier).toBe('mid-gate');
+    expect(pixel6.platform).toBe('android');
   });
 
   test('all iOS entries are skip:true', () => {

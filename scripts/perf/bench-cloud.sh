@@ -241,14 +241,41 @@ run_scenario_on_device() {
     return 5
   fi
 
-  # Emit NDJSON line to stdout
-  printf '%s\n' "$(jq -cn \
+  # Extract the JSON payload after the [perf-bench] tag. The maestro.txt line
+  # contains: "<timestamp> [ INFO] ...: JsConsole: [perf-bench] {json}"
+  local perf_json
+  perf_json="$(printf '%s' "$perf_line" | sed -n 's/.*\[perf-bench\] //p')"
+  if [[ -z "$perf_json" ]]; then
+    echo "ERROR: failed to extract JSON payload from perf line for $device_name / $scenario" >&2
+    return 5
+  fi
+
+  # Validate it's parseable JSON before emitting rows
+  if ! echo "$perf_json" | jq empty 2>/dev/null; then
+    echo "ERROR: perf payload is not valid JSON for $device_name / $scenario" >&2
+    echo "  payload: $perf_json" >&2
+    return 5
+  fi
+
+  # Capture timestamp once per scenario; regression-check uses this for the
+  # rolling 7-day window.
+  local captured_at
+  captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  # Emit one NDJSON BenchRow per perf-recorder section. Schema must match
+  # scripts/perf/regression-check.ts:BenchRow exactly:
+  # { device, scenario, metric, p95, capturedAt }
+  echo "$perf_json" | jq -c \
     --arg device "$device_id" \
-    --arg deviceName "$device_name" \
-    --arg platform "$platform" \
     --arg scenario "$scenario" \
-    --arg raw "$perf_line" \
-    '{device: $device, deviceName: $deviceName, platform: $platform, scenario: $scenario, raw: $raw}')"
+    --arg capturedAt "$captured_at" \
+    '.sections[] | {
+      device: $device,
+      scenario: $scenario,
+      metric: .name,
+      p95: .p95,
+      capturedAt: $capturedAt
+    }'
 }
 
 # Main loop: iterate devices × scenarios

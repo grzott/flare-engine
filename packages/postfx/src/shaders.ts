@@ -124,6 +124,91 @@ half4 main(float2 coord) {
 }
 `;
 
+export const WEATHER_RAIN_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float intensity;
+uniform float direction;
+uniform float scrollOffsetY;
+
+half4 main(float2 coord) {
+  half4 scene = src.eval(coord);
+  float2 uv = coord / resolution;
+  float rad = direction * 3.14159 / 180.0;
+  float sinA = sin(rad), cosA = cos(rad);
+  float u = cosA * coord.x - sinA * coord.y;
+  float v = sinA * coord.x + cosA * coord.y + scrollOffsetY;
+  float streak = fract(u * 0.04);
+  float drop = smoothstep(0.0, 0.08, streak) * (1.0 - smoothstep(0.08, 0.12, streak));
+  float fade = smoothstep(0.0, 0.3, fract(v * 0.006));
+  half rain = half(drop * fade * intensity * 0.6);
+  return half4(scene.rgb + half3(rain), scene.a);
+}
+`;
+
+export const WEATHER_SUN_SHAFT_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float intensity;
+uniform float direction;
+
+half4 main(float2 coord) {
+  half4 scene = src.eval(coord);
+  float2 uv = coord / resolution;
+  float rad = direction * 3.14159 / 180.0;
+  float2 src_point = float2(0.5 + sin(rad) * 0.3, -0.05);
+  float2 toFrag = uv - src_point;
+  float angle = atan(toFrag.x, toFrag.y);
+  float shafts = 0.5 + 0.5 * sin(angle * 8.0);
+  float dist = length(toFrag);
+  float falloff = 1.0 - smoothstep(0.0, 1.2, dist);
+  half shaft = half(shafts * falloff * intensity * 0.35);
+  return half4(scene.rgb + half3(shaft * 0.95, shaft * 0.9, shaft * 0.6), scene.a);
+}
+`;
+
+export const WEATHER_DARK_VIGNETTE_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float intensity;
+
+half4 main(float2 coord) {
+  half4 scene = src.eval(coord);
+  float2 uv = coord / resolution - 0.5;
+  float d = length(uv);
+  float v = smoothstep(0.3, 0.85, d);
+  half dark = half(v * intensity);
+  return half4(scene.rgb * (1.0 - dark), scene.a);
+}
+`;
+
+export const WEATHER_CLOUDS_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float intensity;
+uniform float scrollOffsetX;
+
+float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+float vnoise(float2 p) {
+  float2 i = floor(p); float2 f = fract(p);
+  float2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + float2(1,0)), u.x),
+             mix(hash(i + float2(0,1)), hash(i + float2(1,1)), u.x), u.y);
+}
+float fbm(float2 p) { return vnoise(p) * 0.6 + vnoise(p * 2.3) * 0.4; }
+
+half4 main(float2 coord) {
+  half4 scene = src.eval(coord);
+  float2 uv = coord / resolution;
+  float2 cloudUv = float2(uv.x + scrollOffsetX / resolution.x, uv.y * 0.5);
+  float cloud = fbm(cloudUv * 3.0);
+  float heightFade = smoothstep(0.6, 0.2, uv.y);
+  float alpha = cloud * heightFade * intensity * 0.5;
+  half3 cloudColor = half3(0.9, 0.9, 0.95);
+  return half4(mix(scene.rgb, cloudColor, half(alpha)), scene.a);
+}
+`;
+
 // Single-pass volumetric light scattering (GPU Gems 3, Ch. 13).
 // MAX_SAMPLES is a compile-time constant to satisfy SkSL's loop-count rules;
 // the runtime-provided u_samples float drives an early break so the actual

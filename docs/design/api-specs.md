@@ -417,6 +417,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 | `SkiaCanvasLike`                                                               | Structural stub for a Skia canvas handle: `{ drawImageRect(image, src, dst, paint): void }`. Used as the `canvas` argument to `runtime.apply`. |
 | `SkRectLike`                                                                   | Structural stub: `{ x, y, width, height }`. Used by `SkiaCanvasLike.drawImageRect`.                                               |
 | `VIGNETTE_SKSL` / `GRAYSCALE_FLASH_SKSL` / `CHROMATIC_ABERRATION_SKSL` / `CRT_SKSL` / `BLOOM_SKSL` / `GOD_RAYS_SKSL` / `COLOR_GRADING_LUT_SKSL` | Raw shader sources, exported for advanced consumers.                                                          |
+| **Weather PostFx Effects** | `createWeatherRain(id?, uniforms?) → Effect`, `createWeatherSunShaft(id?, uniforms?) → Effect`, `createWeatherDarkVignette(id?, uniforms?) → Effect`, `createWeatherClouds(id?, uniforms?) → Effect`. EffectKind values: `weather-rain \| weather-sun-shaft \| weather-dark-vignette \| weather-clouds`. All consume `uniform shader src` and layer over the scene. Packed uniforms: rain=[resW,resH,intensity,direction,scrollOffsetY]; sun-shaft=[resW,resH,intensity,direction]; dark-vignette=[resW,resH,intensity]; clouds=[resW,resH,intensity,scrollOffsetX]. SKSL exports: `WEATHER_RAIN_SKSL`, `WEATHER_SUN_SHAFT_SKSL`, `WEATHER_DARK_VIGNETTE_SKSL`, `WEATHER_CLOUDS_SKSL`. B5 drives scroll offsets via `chain.setUniforms` each tick. |
 
 **Implementation notes:**
 

@@ -8,6 +8,10 @@ import {
   GOD_RAYS_SKSL,
   GRAYSCALE_FLASH_SKSL,
   VIGNETTE_SKSL,
+  WEATHER_CLOUDS_SKSL,
+  WEATHER_DARK_VIGNETTE_SKSL,
+  WEATHER_RAIN_SKSL,
+  WEATHER_SUN_SHAFT_SKSL,
 } from './shaders.js';
 
 /**
@@ -132,6 +136,10 @@ const SKSL_SOURCE: Record<EffectKind, string> = {
   bloom: BLOOM_SKSL,
   'god-rays': GOD_RAYS_SKSL,
   'color-grading-lut': COLOR_GRADING_LUT_SKSL,
+  'weather-rain': WEATHER_RAIN_SKSL,
+  'weather-sun-shaft': WEATHER_SUN_SHAFT_SKSL,
+  'weather-dark-vignette': WEATHER_DARK_VIGNETTE_SKSL,
+  'weather-clouds': WEATHER_CLOUDS_SKSL,
 };
 
 /**
@@ -239,6 +247,16 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
     }
     case 'color-grading-lut':
       return new Float32Array([u.intensity]);
+    // Weather kinds: TS interfaces are wider than the packed SkSL inputs (speed/direction
+    // for clouds, speed for rain are B5-passthrough fields; the shader doesn't consume them).
+    case 'weather-rain':
+      return new Float32Array([width, height, u.intensity, u.direction, u.scrollOffsetY]);
+    case 'weather-sun-shaft':
+      return new Float32Array([width, height, u.intensity, u.direction]);
+    case 'weather-dark-vignette':
+      return new Float32Array([width, height, u.intensity]);
+    case 'weather-clouds':
+      return new Float32Array([width, height, u.intensity, u.scrollOffsetX]);
   }
 }
 
@@ -275,6 +293,13 @@ function scaleIntensity(kind: EffectKind, packed: Float32Array, scale: number): 
     case 'color-grading-lut':
       // [intensity]
       packed[0] = (packed[0] ?? 0) * scale;
+      return;
+    case 'weather-rain':
+    case 'weather-sun-shaft':
+    case 'weather-dark-vignette':
+    case 'weather-clouds':
+      // [width, height, intensity, ...]
+      packed[2] = (packed[2] ?? 0) * scale;
       return;
   }
 }

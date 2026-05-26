@@ -15,7 +15,11 @@ export type EffectKind =
   | 'crt'
   | 'bloom'
   | 'god-rays'
-  | 'color-grading-lut';
+  | 'color-grading-lut'
+  | 'weather-rain'
+  | 'weather-sun-shaft'
+  | 'weather-dark-vignette'
+  | 'weather-clouds';
 
 export interface VignetteUniforms {
   intensity: number;
@@ -57,6 +61,29 @@ export interface ColorGradingLutUniforms {
   intensity: number;
 }
 
+export interface WeatherRainUniforms {
+  intensity: number;
+  direction: number;
+  speed: number;
+  scrollOffsetY: number;
+}
+
+export interface WeatherSunShaftUniforms {
+  intensity: number;
+  direction: number;
+}
+
+export interface WeatherDarkVignetteUniforms {
+  intensity: number;
+}
+
+export interface WeatherCloudsUniforms {
+  intensity: number;
+  direction: number;
+  speed: number;
+  scrollOffsetX: number;
+}
+
 export type EffectUniforms =
   | ({ kind: 'vignette' } & VignetteUniforms)
   | ({ kind: 'grayscale-flash' } & GrayscaleFlashUniforms)
@@ -64,7 +91,11 @@ export type EffectUniforms =
   | ({ kind: 'crt' } & CrtUniforms)
   | ({ kind: 'bloom' } & BloomUniforms)
   | ({ kind: 'god-rays' } & GodRaysUniforms)
-  | ({ kind: 'color-grading-lut' } & ColorGradingLutUniforms);
+  | ({ kind: 'color-grading-lut' } & ColorGradingLutUniforms)
+  | ({ kind: 'weather-rain' } & WeatherRainUniforms)
+  | ({ kind: 'weather-sun-shaft' } & WeatherSunShaftUniforms)
+  | ({ kind: 'weather-dark-vignette' } & WeatherDarkVignetteUniforms)
+  | ({ kind: 'weather-clouds' } & WeatherCloudsUniforms);
 
 export interface Effect {
   id: string;
@@ -160,6 +191,69 @@ export function createColorGradingLut(
       kind: 'color-grading-lut',
       lut: uniforms.lut,
       intensity: uniforms.intensity ?? 1.0,
+    },
+  };
+}
+
+export function createWeatherRain(
+  id = 'weather-rain',
+  uniforms: Partial<WeatherRainUniforms> = {},
+): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'weather-rain',
+      intensity: uniforms.intensity ?? 0.5,
+      direction: uniforms.direction ?? 0,
+      speed: uniforms.speed ?? 0,
+      scrollOffsetY: uniforms.scrollOffsetY ?? 0,
+    },
+  };
+}
+
+export function createWeatherSunShaft(
+  id = 'weather-sun-shaft',
+  uniforms: Partial<WeatherSunShaftUniforms> = {},
+): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'weather-sun-shaft',
+      intensity: uniforms.intensity ?? 0.5,
+      direction: uniforms.direction ?? 0,
+    },
+  };
+}
+
+export function createWeatherDarkVignette(
+  id = 'weather-dark-vignette',
+  uniforms: Partial<WeatherDarkVignetteUniforms> = {},
+): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'weather-dark-vignette',
+      intensity: uniforms.intensity ?? 0.5,
+    },
+  };
+}
+
+export function createWeatherClouds(
+  id = 'weather-clouds',
+  uniforms: Partial<WeatherCloudsUniforms> = {},
+): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'weather-clouds',
+      intensity: uniforms.intensity ?? 0.5,
+      direction: uniforms.direction ?? 0,
+      speed: uniforms.speed ?? 0,
+      scrollOffsetX: uniforms.scrollOffsetX ?? 0,
     },
   };
 }

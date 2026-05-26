@@ -8,6 +8,10 @@ export {
   type BloomUniforms,
   type GodRaysUniforms,
   type ColorGradingLutUniforms,
+  type WeatherRainUniforms,
+  type WeatherSunShaftUniforms,
+  type WeatherDarkVignetteUniforms,
+  type WeatherCloudsUniforms,
   type Effect,
   createVignette,
   createGrayscaleFlash,
@@ -16,6 +20,10 @@ export {
   createBloom,
   createGodRays,
   createColorGradingLut,
+  createWeatherRain,
+  createWeatherSunShaft,
+  createWeatherDarkVignette,
+  createWeatherClouds,
 } from './effect.js';
 
 export { EffectChain } from './chain.js';
@@ -42,6 +50,10 @@ export {
   BLOOM_SKSL,
   GOD_RAYS_SKSL,
   COLOR_GRADING_LUT_SKSL,
+  WEATHER_RAIN_SKSL,
+  WEATHER_SUN_SHAFT_SKSL,
+  WEATHER_DARK_VIGNETTE_SKSL,
+  WEATHER_CLOUDS_SKSL,
 } from './shaders.js';
 
 export { createNeutralLutBytes } from './lut.js';

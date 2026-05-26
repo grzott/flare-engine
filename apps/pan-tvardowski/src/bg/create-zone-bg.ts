@@ -56,18 +56,36 @@ function buildEffect(
   secondary: ReturnType<typeof Color.fromHex>,
   density: number,
   scrollOffsetY: number,
+  resolutionW: number,
+  resolutionH: number,
 ): AnySpriteEffect {
   switch (kind) {
     case 'roofs-city':
-      return roofsCity({ skyColor: primary, roofColor: secondary, scrollOffsetY, density });
+      return roofsCity({
+        skyColor: primary,
+        roofColor: secondary,
+        scrollOffsetY,
+        density,
+        resolutionW,
+        resolutionH,
+      });
     case 'forest-canopy':
-      return forestCanopy({ skyColor: primary, leafColor: secondary, scrollOffsetY, density });
+      return forestCanopy({
+        skyColor: primary,
+        leafColor: secondary,
+        scrollOffsetY,
+        density,
+        resolutionW,
+        resolutionH,
+      });
     case 'river-wave':
       return riverWave({
         waterColor: primary,
         foamColor: secondary,
         scrollOffsetY,
         waveScale: density,
+        resolutionW,
+        resolutionH,
       });
     case 'moon-crater':
       return moonCrater({
@@ -75,6 +93,8 @@ function buildEffect(
         craterColor: secondary,
         scrollOffsetY,
         craterCount: density,
+        resolutionW,
+        resolutionH,
       });
     case 'cave-interior':
       return caveInterior({
@@ -82,6 +102,8 @@ function buildEffect(
         glowColor: secondary,
         scrollOffsetY,
         stalactiteCount: density,
+        resolutionW,
+        resolutionH,
       });
     case 'mountain-hills':
       return mountainHills({
@@ -89,6 +111,8 @@ function buildEffect(
         hillColor: secondary,
         scrollOffsetY,
         ridgeScale: density,
+        resolutionW,
+        resolutionH,
       });
     default:
       return assertNever(kind);
@@ -128,7 +152,7 @@ export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController
     width: initW,
     height: initH,
     anchor,
-    effect: buildEffect(def.kind, primary, secondary, def.density, scrollOffset),
+    effect: buildEffect(def.kind, primary, secondary, def.density, scrollOffset, initW, initH),
   });
 
   const idB = world.spawn();
@@ -140,7 +164,7 @@ export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController
     width: initW,
     height: initH,
     anchor,
-    effect: buildEffect(def.kind, primary, secondary, def.density, scrollOffset),
+    effect: buildEffect(def.kind, primary, secondary, def.density, scrollOffset, initW, initH),
   });
 
   return {
@@ -172,7 +196,7 @@ export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController
         }
         sprA.width = vw;
         sprA.height = vh;
-        sprA.effect = buildEffect(def.kind, primary, secondary, def.density, scrollOffset);
+        sprA.effect = buildEffect(def.kind, primary, secondary, def.density, scrollOffset, vw, vh);
       }
 
       const sprB = world.get(idB, Sprite);
@@ -184,7 +208,7 @@ export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController
         }
         sprB.width = vw;
         sprB.height = vh;
-        sprB.effect = buildEffect(def.kind, primary, secondary, def.density, scrollOffset);
+        sprB.effect = buildEffect(def.kind, primary, secondary, def.density, scrollOffset, vw, vh);
       }
     },
   };

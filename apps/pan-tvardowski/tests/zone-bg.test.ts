@@ -197,3 +197,74 @@ describe('scrollSpeed tick integration', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Block 4 — resolution wired into effect (shader UV correctness)
+// ---------------------------------------------------------------------------
+
+describe('resolution wired into effect', () => {
+  test('at spawn: effect.resolutionW/H match camera viewport', () => {
+    // Camera provides the real canvas size. The effect must carry those
+    // dimensions so the shader can compute correct UV (coord/resolution).
+    // If resolution is 0 the shader divides by max(resolution,1) = 1, so
+    // scrollOffsetY of 18 shifts UV by 18 pixels — 18× too fast and
+    // pattern repeats at 1-pixel intervals (the "snowflake noise" symptom).
+    const CANVAS_W = 393;
+    const CANVAS_H = 852;
+    const { world } = spawnBg('z1', buildCamera(CANVAS_W, CANVAS_H));
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      const effect = sprite.effect as { resolutionW: number; resolutionH: number };
+      expect(effect.resolutionW).toBe(CANVAS_W);
+      expect(effect.resolutionH).toBe(CANVAS_H);
+    }
+  });
+
+  test('after tick(): effect.resolutionW/H track updated viewport', () => {
+    // If camera dims change (layout fires after spawn), tick() must
+    // propagate the new resolution into the rebuilt effect.
+    const CANVAS_W = 412;
+    const CANVAS_H = 900;
+    const { world, controller } = spawnBg('z1', buildCamera(CANVAS_W, CANVAS_H));
+    controller.tick(0.016);
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      const effect = sprite.effect as { resolutionW: number; resolutionH: number };
+      expect(effect.resolutionW).toBe(CANVAS_W);
+      expect(effect.resolutionH).toBe(CANVAS_H);
+    }
+  });
+
+  test('distinct zones produce distinct colors: z1 (terracotta skyColor) vs z6 (katakumbyDark caveColor)', () => {
+    // Regression guard for H1b: Color.fromHex must parse #RRGGBB strings and
+    // produce zone-specific values. If all zones collapsed to the same color,
+    // this assertion would fail.
+    const { world: w1 } = spawnBg('z1');
+    const { world: w6 } = spawnBg('z6');
+
+    const ids1 = [...w1.query(Position)];
+    const ids6 = [...w6.query(Position)];
+
+    const eff1 = w1.get(ids1[0]!, Sprite)!.effect as {
+      type: string;
+      skyColor: { r: number; g: number; b: number };
+    };
+    const eff6 = w6.get(ids6[0]!, Sprite)!.effect as {
+      type: string;
+      caveColor: { r: number; g: number; b: number };
+    };
+
+    expect(eff1.type).toBe('roofs-city');
+    expect(eff6.type).toBe('cave-interior');
+
+    // terracotta = #B05A3C → r≈0.69, g≈0.35, b≈0.24
+    expect(eff1.skyColor.r).toBeCloseTo(0.69, 1);
+    // katakumbyDark = #1A1410 → r≈0.10, g≈0.08, b≈0.063
+    expect(eff6.caveColor.r).toBeCloseTo(0.1, 1);
+
+    // The two primary colors must be different.
+    expect(eff1.skyColor.r).not.toBeCloseTo(eff6.caveColor.r, 2);
+  });
+});

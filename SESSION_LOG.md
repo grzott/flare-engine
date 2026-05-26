@@ -5788,3 +5788,37 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 148 — 2026-05-26 (scope: game)
+
+**Goal:** B3 — PT: collapse 8 zoneN-bg.ts into one data-driven createZoneBg(def)
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/create-zone-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone1-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone2-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone3-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone4-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone5-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone6-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone7-bg.ts`
+- `apps/pan-tvardowski/src/bg/zone8-bg.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/tests/zone-1-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-2-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-3-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-4-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-5-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-6-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-7-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-8-bg.test.ts`
+- `apps/pan-tvardowski/tests/zone-bg.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

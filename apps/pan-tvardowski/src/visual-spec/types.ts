@@ -621,6 +621,48 @@ export interface ScreenSpec {
   readonly navigation: 'next' | 'choices' | 'back' | 'none';
 }
 
+// ---- Zone background kind + FX kind definitions ----------------------------
+
+export type ZoneBgKindId =
+  | 'roofs-city'
+  | 'forest-canopy'
+  | 'river-wave'
+  | 'moon-crater'
+  | 'cave-interior'
+  | 'mountain-hills';
+
+export type ZoneFxKindId = 'rain' | 'sun-shaft' | 'dark-vignette' | 'clouds';
+
+export interface ZoneBgDef {
+  readonly zoneId: ZoneId;
+  readonly kind: ZoneBgKindId;
+  readonly primaryToken: ColorTokenId;
+  readonly secondaryToken: ColorTokenId;
+  readonly scrollSpeed: number;
+  /**
+   * Kind-specific geometry parameter routed by B3's dispatcher:
+   * - `roofs-city` → `density` (int, roof tile count)
+   * - `forest-canopy` → `density` (int, tree count)
+   * - `cave-interior` → `stalactiteCount` (int)
+   * - `moon-crater` → `craterCount` (int)
+   * - `river-wave` → `waveScale` (float)
+   * - `mountain-hills` → `ridgeScale` (float)
+   */
+  readonly density: number;
+}
+
+export interface ZoneFxDef {
+  readonly zoneId: ZoneId;
+  readonly kind: ZoneFxKindId;
+  readonly intensity: number;
+  /**
+   * Angle in degrees (0 = straight down / no lateral drift).
+   * `dark-vignette` ignores this field at runtime.
+   */
+  readonly direction: number;
+  readonly speed: number;
+}
+
 // ---- Background, parallax, ambience (folios XII / XIIB) --------------------
 
 export interface ParallaxLayer {

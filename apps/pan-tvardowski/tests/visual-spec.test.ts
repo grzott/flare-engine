@@ -301,7 +301,9 @@ describe('visual-spec — schema canary', () => {
   // Bumped (PT-BossTuningDefs): BossTuningDef + MinibossSimpleTuningDef +
   // MinibossLeszyTuningDef + MinibossTuningDef union added — additive per schema
   // stability protocol.
-  const SCHEMA_CANARY = 'f0dfde8ef4c4efbdc2499a9cf8f729c4ff3e6c12950066ec979c500e58e3603c';
+  // Bumped (B1-ZoneBgFxDefs): ZoneBgKindId, ZoneFxKindId, ZoneBgDef, ZoneFxDef
+  // types added — additive per schema stability protocol.
+  const SCHEMA_CANARY = '92e5f5d4c74a4a83113679e06f03899d4e6de464ac5b2a90837a45fee1e75f0e';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

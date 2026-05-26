@@ -37,6 +37,8 @@ export type { HudTweenSpec } from './animations';
 export { HUD_SPEC } from './hud';
 export { OVERLAY_SPECS } from './overlays';
 export { SCREEN_SPECS } from './screens';
+export { ZONE_BG_DEFS } from './zone-bg';
+export { ZONE_FX_DEFS } from './zone-fx';
 
 export const ZONE_VISUAL_SPECS: Readonly<Record<ZoneId, ZoneVisualSpec>> = Object.freeze({
   1: zone1,

@@ -24,14 +24,7 @@ import { Sprite } from '@flare-engine/render';
 import { applyShake, shouldAllowSlowMo, sigilOpacity } from '../a11y/reduced-motion';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
-import { type Zone1BgController, createZone1Bg } from '../bg/zone1-bg';
-import { type Zone2BgController, createZone2Bg } from '../bg/zone2-bg';
-import { type Zone3BgController, createZone3Bg } from '../bg/zone3-bg';
-import { type Zone4BgController, createZone4Bg } from '../bg/zone4-bg';
-import { type Zone5BgController, createZone5Bg } from '../bg/zone5-bg';
-import { type Zone6BgController, createZone6Bg } from '../bg/zone6-bg';
-import { type Zone7BgController, createZone7Bg } from '../bg/zone7-bg';
-import { type Zone8BgController, createZone8Bg } from '../bg/zone8-bg';
+import { type ZoneBgController, createZoneBg } from '../bg/create-zone-bg';
 import {
   Boss,
   Bullet,
@@ -249,22 +242,7 @@ interface PlayState {
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
-  /** Zone 1 only — fire + smoke shader background entities. */
-  zone1Bg: Zone1BgController | null;
-  /** Zone 2 only — pine mist + pollen haze shader background entities. */
-  zone2Bg: Zone2BgController | null;
-  /** Zone 3 only — water + fog shader background entities. */
-  zone3Bg: Zone3BgController | null;
-  /** Zone 4 only — swamp water + bog fog shader background entities. */
-  zone4Bg: Zone4BgController | null;
-  /** Zone 5 only — fire + ash-fog shader background entities. */
-  zone5Bg: Zone5BgController | null;
-  /** Zone 6 only — torch fire + dust fog shader background entities. */
-  zone6Bg: Zone6BgController | null;
-  /** Zone 7 only — hearth fire + smoke haze shader background entities. */
-  zone7Bg: Zone7BgController | null;
-  /** Zone 8 only — water + lunar-fog shader background entities. */
-  zone8Bg: Zone8BgController | null;
+  zoneBg: ZoneBgController | null;
   /** Previous-frame playerHp — used to detect damage and flash postfx. */
   lastPlayerHp: number;
   /** Set in onExit — deferred / signal-driven callbacks bail out when true
@@ -354,14 +332,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
-        zone1Bg: null,
-        zone2Bg: null,
-        zone3Bg: null,
-        zone4Bg: null,
-        zone5Bg: null,
-        zone6Bg: null,
-        zone7Bg: null,
-        zone8Bg: null,
+        zoneBg: null,
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
         autoSaveAccum: 0,
@@ -400,37 +371,9 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
     }
 
     function clearWorld(state: PlayState): void {
-      if (state.zone1Bg) {
-        state.zone1Bg.destroy();
-        state.zone1Bg = null;
-      }
-      if (state.zone2Bg) {
-        state.zone2Bg.destroy();
-        state.zone2Bg = null;
-      }
-      if (state.zone3Bg) {
-        state.zone3Bg.destroy();
-        state.zone3Bg = null;
-      }
-      if (state.zone4Bg) {
-        state.zone4Bg.destroy();
-        state.zone4Bg = null;
-      }
-      if (state.zone5Bg) {
-        state.zone5Bg.destroy();
-        state.zone5Bg = null;
-      }
-      if (state.zone6Bg) {
-        state.zone6Bg.destroy();
-        state.zone6Bg = null;
-      }
-      if (state.zone7Bg) {
-        state.zone7Bg.destroy();
-        state.zone7Bg = null;
-      }
-      if (state.zone8Bg) {
-        state.zone8Bg.destroy();
-        state.zone8Bg = null;
+      if (state.zoneBg) {
+        state.zoneBg.destroy();
+        state.zoneBg = null;
       }
       const ids: number[] = [];
       for (const id of state.posQuery) ids.push(id);
@@ -523,70 +466,13 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       ctx.camera.rotation = 0;
       s.playerId = spawnPlayer(s.spawnCtx, s.bounds.width / 2, s.bounds.height - 90);
 
-      if (zoneId === 'z1') {
-        s.zone1Bg = createZone1Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z2') {
-        s.zone2Bg = createZone2Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z3') {
-        s.zone3Bg = createZone3Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z4') {
-        s.zone4Bg = createZone4Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z5') {
-        s.zone5Bg = createZone5Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z6') {
-        s.zone6Bg = createZone6Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z7') {
-        s.zone7Bg = createZone7Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
-      if (zoneId === 'z8') {
-        s.zone8Bg = createZone8Bg({
-          world: ctx.world,
-          atlas,
-          viewportWidth: s.bounds.width,
-          viewportHeight: s.bounds.height,
-        });
-      }
+      s.zoneBg = createZoneBg(zoneId, {
+        world: ctx.world,
+        atlas,
+        viewportWidth: s.bounds.width,
+        viewportHeight: s.bounds.height,
+        camera: ctx.camera,
+      });
 
       postfx.setCrtEnabled(zoneId === 'z8');
       setZoneMusic(audioRef?.current?.music ?? null, s.zone.music);
@@ -1186,6 +1072,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           const sp = ctx.world.get(bid, Sprite);
           if (sp) sp.frame = targetFrame;
         }
+
+        s.zoneBg?.tick(dt);
 
         if (s.ambience) {
           const zoneNum = Number.parseInt(s.zone.id.slice(1), 10) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;

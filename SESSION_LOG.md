@@ -5822,3 +5822,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 149 — 2026-05-26 (scope: mixed)
+
+**Goal:** B3 fix-up — engine wire for zone-bg shaders (3 bugs found)
+
+**Touched files**
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,3 +1,2 @@
-{"device":"pixel-10","scenario":"boot","metric":"frame","p95":0.003958700597286224,"capturedAt":"2026-05-26T05:15:18Z"}
 {"device":"pixel-10","scenario":"boot","metric":"frame","p95":2.0486649870872498,"capturedAt":"2026-05-26T06:28:34Z"}
 {"device":"pixel-10","scenario":"boot","metric":"postfx","p95":0.013600250706076622,"capturedAt":"2026-05-26T06:28:34Z"}

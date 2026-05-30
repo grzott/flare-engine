@@ -5862,3 +5862,72 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 151 — 2026-05-30 (scope: mixed)
+
+**Goal:** B5 + postfx pipeline rewrite (JSX RuntimeShader)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/ambience.ts`
+- `apps/pan-tvardowski/src/fx/budget.ts`
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-rim-runtime.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-2.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-3.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-4.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-5.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-6.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-7.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-8.ts`
+- `apps/pan-tvardowski/src/visual-spec/zones-palette.ts`
+- `apps/pan-tvardowski/tests/ambience-spec.test.ts`
+- `apps/pan-tvardowski/tests/ambient-density.test.ts`
+- `apps/pan-tvardowski/tests/boss-palette-shift.test.ts`
+- `apps/pan-tvardowski/tests/chrom-ab-trigger.test.ts`
+- `apps/pan-tvardowski/tests/crt-z8.test.ts`
+- `apps/pan-tvardowski/tests/decay-override.test.ts`
+- `apps/pan-tvardowski/tests/frame-budget.test.ts`
+- `apps/pan-tvardowski/tests/parallax-audit.test.ts`
+- `apps/pan-tvardowski/tests/postfx-chain.test.ts`
+- `apps/pan-tvardowski/tests/postfx-preset.test.ts`
+- `apps/pan-tvardowski/tests/postfx.test.ts`
+- `apps/pan-tvardowski/tests/reduced-motion-extended.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-ambience.test.ts`
+- `apps/pan-tvardowski/tests/zone-fx-wire.test.ts`
+- `apps/pan-tvardowski/tests/zones-palette.test.ts`
+- `packages/assets/src/texture.ts`
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/index.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/tests/color-grading-lut.test.ts`
+- `packages/postfx/tests/composite.test.ts`
+- `packages/postfx/tests/god-rays.test.ts`
+- `packages/postfx/tests/runtime-apply.test.ts`
+- `packages/postfx/tests/runtime-children.test.ts`
+- `packages/postfx/tests/runtime.test.ts`
+- `packages/postfx/tests/vignette-tint.test.ts`
+- `packages/postfx/tests/weather-effects.test.ts`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/index.ts`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/multi-pass-descriptors.test.ts`
+- `packages/react/tests/ping-pong.test.ts`
+- `packages/react/tests/render-shapes.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

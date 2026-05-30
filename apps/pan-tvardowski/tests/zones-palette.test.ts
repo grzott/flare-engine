@@ -122,10 +122,6 @@ describe('zones-palette — getUiPrimaryHex roundtrip', () => {
 });
 
 describe('zones-palette — non-color field spot-check', () => {
-  test('Z1 ambienceName and ambienceParticles are intact', () => {
-    expect(ZONE_PALETTES[1].ambienceName).toBe('ember');
-    expect(ZONE_PALETTES[1].ambienceParticles).toBe(32);
-  });
   test('Z8 silverUi flag is set', () => {
     expect(ZONE_PALETTES[8].silverUi).toBe(true);
   });

@@ -686,18 +686,6 @@ export interface ZoneBackground {
   readonly accent: Hex;
   readonly hazard: Hex;
   readonly parallax: readonly ParallaxLayer[];
-  readonly ambience: {
-    readonly kind: AmbienceKind;
-    readonly count: number;
-    /** Slow parallax layer Y-velocity (px/s). Default: 10. */
-    readonly velSlowPxPerSec?: number;
-    /** Fast parallax layer Y-velocity (px/s). Default: 20. */
-    readonly velFastPxPerSec?: number;
-    /** Drift spread (px/s) for X jitter. Default: 16. */
-    readonly driftSpreadPx?: number;
-    /** Tint alpha applied to particle color. Default: 0.6. */
-    readonly tintAlpha?: number;
-  };
 }
 
 // ---- Boss visual recipe (folios XIII / XIIIf) ------------------------------

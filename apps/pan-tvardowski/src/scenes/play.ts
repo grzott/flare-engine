@@ -52,8 +52,6 @@ import {
 } from '../dialogue';
 import type { ZoneId } from '../events';
 import { gameEvents } from '../events';
-import type { AmbienceState } from '../fx/ambience';
-import { createAmbienceState, tickAmbience } from '../fx/ambience';
 import type { BossPostFxKind } from '../fx/boss-postfx';
 import {
   checkFpsWatchdog,
@@ -129,8 +127,8 @@ import {
   tickSpawner,
 } from '../systems/spawner';
 import { countTopielecMinions } from '../systems/wodnik';
-import { ZONE_VISUAL_SPECS } from '../visual-spec';
-import { ZONE_PALETTES } from '../visual-spec/zones-palette';
+import { ZONE_FX_DEFS } from '../visual-spec';
+
 import { shellDefaults } from './scene-shell';
 
 // Pre-computed sub-shape counts per atlas frame: hull(1) + weapons.length + engine(1).
@@ -250,8 +248,6 @@ interface PlayState {
   disposed: boolean;
   /** Accumulated seconds since last auto-save. Resets on each persist call. */
   autoSaveAccum: number;
-  /** Parallax-particle ambience state for the current zone. Null while not in play. */
-  ambience: AmbienceState | null;
   /** Folio XIV M2: boss-bar fade-in tween (easeOutExpo 600 ms). */
   bossBarTween: Tween;
   /** Folio XIV M2: game-over overlay fade-in tween (easeInCubic 1200 ms). */
@@ -336,7 +332,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         lastPlayerHp: PLAYER_HP_MAX,
         disposed: false,
         autoSaveAccum: 0,
-        ambience: null,
         bossBarTween: { ...tween(0, 1, 0.6, easeOutExpo), done: true },
         gameOverTween: { ...tween(0, 1, 1.2, easeInCubic), done: true },
         comboPulseTween: { ...tween(1, 1.18, 0.12, easeOutBack), done: true },
@@ -380,7 +375,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       for (const id of ids) destroyEntity(ctx.world, state.coll, id);
       state.coll = new CollisionWorld();
       state.spawnCtx.coll = state.coll;
-      state.ambience = null;
     }
 
     function refreshBounds(state: PlayState): void {
@@ -433,7 +427,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       clearBossFsms();
       clearMinibossFsms();
       s = initState(zoneId);
-      s.ambience = createAmbienceState(ctx.world, atlas);
 
       if (fullReset) {
         gameState.playerHp = PLAYER_HP_MAX;
@@ -475,6 +468,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       });
 
       postfx.setCrtEnabled(zoneId === 'z8');
+      const zoneNum = Number(zoneId.slice(1)) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+      postfx.setZoneFxDef(ZONE_FX_DEFS[zoneNum]);
       setZoneMusic(audioRef?.current?.music ?? null, s.zone.music);
       gameEvents.emit('zone-start', zoneId);
 
@@ -501,21 +496,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       deps.renderHooks.background = null;
       deps.renderHooks.postfx = (_ctx, _canvas, bridge) => {
         if (!s) return;
-        postfx.buildPass(s.bounds.width, s.bounds.height);
-        const snapshot = bridge?.captureSceneSnapshot(s.bounds.width, s.bounds.height) ?? null;
-        bridge?.applyPostFx(
-          postfx.runtime,
-          postfx.chain,
-          snapshot,
-          s.bounds.width,
-          s.bounds.height,
-        );
+        bridge?.setPostFxBinding(postfx.runtime, postfx.chain);
         // Rim-light second pass — only active during smok-krzemionkowski combat.
+        // Uses legacy applyPostFx (runtime.apply path) since ShadowRimRuntime
+        // does not implement buildPass. @deprecated — migration target is to
+        // implement buildPass on ShadowRimRuntime and render via JSX.
         if (postfx.rimLightEnabled && postfx.rimLight.supported) {
           bridge?.applyPostFx(
             postfx.rimLight,
             postfx.rimLightChain,
-            snapshot,
+            null,
             s.bounds.width,
             s.bounds.height,
           );
@@ -1074,21 +1064,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         }
 
         s.zoneBg?.tick(dt);
-
-        if (s.ambience) {
-          const zoneNum = Number.parseInt(s.zone.id.slice(1), 10) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-          const zp = ZONE_PALETTES[zoneNum];
-          const ambienceSpec = ZONE_VISUAL_SPECS[zoneNum].bg.ambience;
-          tickAmbience(
-            s.ambience,
-            dt,
-            zp,
-            s.bounds,
-            gameState.settings.reducedMotion,
-            gameState.bossActive,
-            ambienceSpec,
-          );
-        }
 
         if (s.pendingShake) {
           s.pendingShake = false;

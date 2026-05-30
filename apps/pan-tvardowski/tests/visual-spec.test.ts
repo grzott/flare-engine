@@ -152,26 +152,6 @@ describe('visual-spec — boss/zone alignment vs config/zones.ts', () => {
   });
 });
 
-describe('visual-spec — ambience alignment vs palette.ts', () => {
-  test('zone.bg.ambience.kind matches ZONE_PALETTES[id].ambienceName', async () => {
-    const { ZONE_PALETTES } = await import('../src/visual-spec/zones-palette');
-    for (let id = 1; id <= 8; id++) {
-      const visualKind = ZONE_VISUAL_SPECS[id as ZoneId].bg.ambience.kind;
-      const paletteKind = ZONE_PALETTES[id as ZoneId].ambienceName;
-      expect(visualKind, `Z${id} ambience kind`).toBe(paletteKind);
-    }
-  });
-
-  test('zone.bg.ambience.count matches ZONE_PALETTES[id].ambienceParticles', async () => {
-    const { ZONE_PALETTES } = await import('../src/visual-spec/zones-palette');
-    for (let id = 1; id <= 8; id++) {
-      const visualCount = ZONE_VISUAL_SPECS[id as ZoneId].bg.ambience.count;
-      const paletteCount = ZONE_PALETTES[id as ZoneId].ambienceParticles;
-      expect(visualCount, `Z${id} ambience count`).toBe(paletteCount);
-    }
-  });
-});
-
 describe('visual-spec — phase structure', () => {
   test('boss.phases is non-empty and phase numbers are 1..N contiguous', () => {
     for (let id = 1; id <= 8; id++) {
@@ -303,7 +283,9 @@ describe('visual-spec — schema canary', () => {
   // stability protocol.
   // Bumped (B1-ZoneBgFxDefs): ZoneBgKindId, ZoneFxKindId, ZoneBgDef, ZoneFxDef
   // types added — additive per schema stability protocol.
-  const SCHEMA_CANARY = '92e5f5d4c74a4a83113679e06f03899d4e6de464ac5b2a90837a45fee1e75f0e';
+  // Bumped (B5-followup): ZoneBackground.ambience field removed — ambient particle
+  // system replaced by per-zone weather postfx effects.
+  const SCHEMA_CANARY = '6229ed268d1993e09ebc9118464da1cf64d9262f51679b8494b87454e097dbc1';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

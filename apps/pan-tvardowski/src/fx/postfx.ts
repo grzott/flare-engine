@@ -1,18 +1,15 @@
 import {
   type CompiledPass,
+  type CompositeUniforms,
   type PostFxController,
   type SkiaPostFxModuleLike,
-  createBloom,
-  createChromaticAberration,
-  createCrt,
-  createGrayscaleFlash,
+  createPostFxComposite,
   createPostFxController,
-  createVignette,
 } from '@flare-engine/postfx';
 import { SHADOW_RIM_CHAIN, type ShadowRimRuntime, createShadowRimRuntime } from '../lighting';
 import { RIM_LIGHT_DEFS } from '../visual-spec/lighting';
 import { BASELINE_POSTFX, resolvePostFx } from '../visual-spec/postfx';
-import type { PostFxPresetDef, RimLightDef } from '../visual-spec/types';
+import type { PostFxPresetDef, RimLightDef, ZoneFxDef } from '../visual-spec/types';
 
 export type { PostFxController };
 
@@ -35,7 +32,17 @@ export interface PanPostFxController extends PostFxController {
   readonly rimLight: ShadowRimRuntime;
   /** The trivial chain for the shadow-rim pass. */
   readonly rimLightChain: typeof SHADOW_RIM_CHAIN;
+  /** Activate the per-zone weather FX pass. Pass undefined to deactivate. */
+  setZoneFxDef(def: ZoneFxDef | undefined): void;
 }
+
+// weatherKind integer mapping
+const WEATHER_KIND: Record<ZoneFxDef['kind'], 1 | 2 | 3 | 4> = {
+  rain: 1,
+  'sun-shaft': 2,
+  'dark-vignette': 3,
+  clouds: 4,
+};
 
 export function createPanTvardowskiPostFx(
   skia: SkiaPostFxModuleLike | null,
@@ -43,27 +50,31 @@ export function createPanTvardowskiPostFx(
 ): PanPostFxController {
   const p = resolvePostFx(BASELINE_POSTFX, preset);
 
-  const chromaticAb = createChromaticAberration('chromatic-aberration', {
-    amount: p.chroma.amount,
+  const compositeEffect = createPostFxComposite('composite', {
+    vignetteIntensity: p.vignette.intensity,
+    vignetteRadius: p.vignette.radius,
+    vignetteColor: [0, 0, 0],
+    bloomThreshold: p.bloom.threshold,
+    bloomIntensity: p.bloom.intensity,
+    flashIntensity: 0,
+    chromaAmount: 0,
+    crtScanlineIntensity: p.crt.scanlineIntensity,
+    crtCurvature: p.crt.curvature,
+    crtEnabled: false,
+    weatherKind: 0,
+    weatherIntensity: 0,
+    weatherDirection: 0,
+    weatherScrollX: 0,
+    weatherScrollY: 0,
   });
-  chromaticAb.enabled = false;
-
-  const crtEffect = createCrt('crt', {
-    scanlineIntensity: p.crt.scanlineIntensity,
-    curvature: p.crt.curvature,
-  });
-  crtEffect.enabled = false;
 
   const base = createPostFxController({
-    effects: [
-      createVignette('vignette', { intensity: p.vignette.intensity, radius: p.vignette.radius }),
-      createBloom('bloom', { threshold: p.bloom.threshold, intensity: p.bloom.intensity }),
-      createGrayscaleFlash('grayscale-flash', { intensity: 0 }),
-      chromaticAb,
-      crtEffect,
-    ],
+    effects: [compositeEffect],
     skia,
   });
+
+  // Mutable alias — uniforms object is shared by reference; fields are mutated in place.
+  const u = compositeEffect.uniforms as { kind: 'composite' } & CompositeUniforms;
 
   const rimLight = createShadowRimRuntime(skia);
   let rimLightEnabled = false;
@@ -77,6 +88,12 @@ export function createPanTvardowskiPostFx(
   let flashDecayRate = p.flashDecayRate;
   let grayscaleHoldMs = 0;
   let bloomPulseMs = 0;
+  // Decay in ms; linearly decays chromaAmount → 0 over this window.
+  let chromaDecayMs = 0;
+
+  let activeZoneFxDef: ZoneFxDef | null = null;
+  let zoneFxScrollOffsetY = 0;
+  let zoneFxScrollOffsetX = 0;
 
   const ctrl: PanPostFxController = {
     get chain() {
@@ -116,64 +133,86 @@ export function createPanTvardowskiPostFx(
     disableRimLight(): void {
       rimLightEnabled = false;
     },
+    setZoneFxDef(def: ZoneFxDef | undefined): void {
+      if (def === undefined) {
+        u.weatherKind = 0;
+        u.weatherIntensity = 0;
+        activeZoneFxDef = null;
+        zoneFxScrollOffsetY = 0;
+        zoneFxScrollOffsetX = 0;
+        return;
+      }
+      u.weatherKind = WEATHER_KIND[def.kind];
+      u.weatherIntensity = def.intensity;
+      u.weatherDirection = def.direction;
+      u.weatherScrollX = 0;
+      u.weatherScrollY = 0;
+      zoneFxScrollOffsetY = 0;
+      zoneFxScrollOffsetX = 0;
+      activeZoneFxDef = def;
+    },
     triggerHitFlash(decayRate?: number): void {
       flashIntensity = 1;
       flashDecayRate = decayRate ?? p.flashDecayRate;
-      base.chain.setUniforms('grayscale-flash', { kind: 'grayscale-flash', intensity: 1 });
+      u.flashIntensity = 1;
     },
     triggerChromaticAb(decayMs: number): void {
-      base.triggerTimed?.('chromatic-aberration', decayMs);
+      u.chromaAmount = p.chroma.amount;
+      chromaDecayMs = decayMs;
     },
     triggerGrayscaleHold(durationMs: number): void {
       grayscaleHoldMs = durationMs;
     },
     triggerBloomPulse(durationMs: number): void {
       bloomPulseMs = durationMs;
-      base.chain.setUniforms('bloom', {
-        kind: 'bloom',
-        threshold: p.bloom.threshold,
-        intensity: 1.2,
-      });
+      u.bloomIntensity = 1.2;
     },
     setCrtEnabled(enabled: boolean): void {
-      const crt = base.chain.get('crt');
-      if (crt) crt.enabled = enabled;
+      u.crtEnabled = enabled;
     },
     setVignetteColor(r: number, g: number, b: number): void {
-      base.chain.setUniforms('vignette', {
-        kind: 'vignette',
-        intensity: p.vignette.intensity,
-        radius: p.vignette.radius,
-        color: [r, g, b],
-      });
+      u.vignetteColor = [r, g, b];
     },
     update(dt: number): void {
       base.update(dt);
+
       if (flashIntensity > 0) {
         flashIntensity = Math.max(0, flashIntensity - flashDecayRate * dt);
-        if (grayscaleHoldMs > 0) {
-          flashIntensity = Math.max(flashIntensity, 0.6);
-        }
-        base.chain.setUniforms('grayscale-flash', {
-          kind: 'grayscale-flash',
-          intensity: flashIntensity,
-        });
+        if (grayscaleHoldMs > 0) flashIntensity = Math.max(flashIntensity, 0.6);
+        u.flashIntensity = flashIntensity;
       }
+
       if (grayscaleHoldMs > 0) {
         grayscaleHoldMs -= dt * 1000;
-        if (grayscaleHoldMs <= 0) {
-          grayscaleHoldMs = 0;
-        }
+        if (grayscaleHoldMs <= 0) grayscaleHoldMs = 0;
       }
+
       if (bloomPulseMs > 0) {
         bloomPulseMs -= dt * 1000;
         if (bloomPulseMs <= 0) {
           bloomPulseMs = 0;
-          base.chain.setUniforms('bloom', {
-            kind: 'bloom',
-            threshold: p.bloom.threshold,
-            intensity: bloomBaseline,
-          });
+          u.bloomIntensity = bloomBaseline;
+        }
+      }
+
+      // Linearly decays chromaAmount → 0 over chromaDecayMs ms.
+      if (chromaDecayMs > 0) {
+        chromaDecayMs -= dt * 1000;
+        if (chromaDecayMs <= 0) {
+          chromaDecayMs = 0;
+          u.chromaAmount = 0;
+        }
+      }
+
+      if (activeZoneFxDef !== null) {
+        const def = activeZoneFxDef;
+        if (def.kind === 'rain') {
+          zoneFxScrollOffsetY += def.speed * dt;
+          u.weatherScrollY = zoneFxScrollOffsetY;
+        } else if (def.kind === 'clouds') {
+          const rad = (def.direction * Math.PI) / 180;
+          zoneFxScrollOffsetX += def.speed * dt * Math.cos(rad);
+          u.weatherScrollX = zoneFxScrollOffsetX;
         }
       }
     },

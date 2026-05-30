@@ -19,7 +19,6 @@ export const zone6: ZoneVisualSpec = {
       { id: 'z6-vaults', speed: 0.2, content: 'tilemap' },
       { id: 'z6-bones', speed: 0.5, content: 'tilemap' },
     ],
-    ambience: { kind: 'dust', count: 24 },
   },
   entityIds: [
     'wapierz',

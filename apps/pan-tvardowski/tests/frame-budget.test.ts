@@ -22,7 +22,7 @@ describe('frame-budget guards', () => {
   test('BUDGET_LIMITS exports correct design targets', () => {
     expect(BUDGET_LIMITS.draws).toBe(920);
     expect(BUDGET_LIMITS.particles).toBe(480);
-    expect(BUDGET_LIMITS.postfx).toBe(3);
+    expect(BUDGET_LIMITS.postfx).toBe(4);
     expect(BUDGET_LIMITS.subShapeDraws).toBe(240);
   });
 
@@ -110,14 +110,14 @@ describe('frame-budget guards', () => {
     expect(BUDGET_LIMITS.draws - bgOverhead).toBeGreaterThan(bgOverhead * 10);
   });
 
-  test('postfxChainCount — enabled-at-rest count is exactly 3', () => {
+  test('postfxChainCount — exactly 1 composite effect enabled at rest', () => {
     const postfx = createPanTvardowskiPostFx(null);
     const effects = postfx.chain.all();
     let active = 0;
     for (let i = 0; i < effects.length; i++) {
       if ((effects[i] as Effect | undefined)?.enabled) active += 1;
     }
-    // vignette + bloom + grayscale-flash = 3. chromatic-aberration and crt are off at rest.
-    expect(active).toBe(3);
+    // Single composite effect replaces the prior 5-effect ping-pong chain.
+    expect(active).toBe(1);
   });
 });

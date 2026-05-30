@@ -1,7 +1,16 @@
 import { describe, expect, test } from 'bun:test';
+import type { CompositeUniforms } from '@flare-engine/postfx';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 import { BASELINE_POSTFX, resolvePostFx } from '../src/visual-spec/postfx';
 import type { PostFxPresetDef } from '../src/visual-spec/types';
+
+type CompositeEffect = { kind: 'composite' } & CompositeUniforms;
+
+function getComposite(fx: ReturnType<typeof createPanTvardowskiPostFx>): CompositeEffect {
+  const e = fx.chain.get('composite');
+  if (!e) throw new Error('composite effect missing');
+  return e.uniforms as CompositeEffect;
+}
 
 describe('BASELINE_POSTFX — values match prior hardcodes', () => {
   test('vignette intensity=0.35, radius=0.82', () => {
@@ -82,26 +91,22 @@ describe('resolvePostFx — sub-object replacement', () => {
 });
 
 describe('createPanTvardowskiPostFx — preset parameter', () => {
-  test('no preset: vignette and bloom match baseline', () => {
+  test('no preset: vignette and bloom uniforms match baseline', () => {
     const fx = createPanTvardowskiPostFx(null);
-    const v = fx.chain.all().find((e) => e.id === 'vignette');
-    const b = fx.chain.all().find((e) => e.id === 'bloom');
-    if (v?.uniforms.kind !== 'vignette') throw new Error('vignette missing');
-    if (b?.uniforms.kind !== 'bloom') throw new Error('bloom missing');
-    expect(v.uniforms.intensity).toBeCloseTo(BASELINE_POSTFX.vignette.intensity);
-    expect(v.uniforms.radius).toBeCloseTo(BASELINE_POSTFX.vignette.radius);
-    expect(b.uniforms.threshold).toBeCloseTo(BASELINE_POSTFX.bloom.threshold);
-    expect(b.uniforms.intensity).toBeCloseTo(BASELINE_POSTFX.bloom.intensity);
+    const u = getComposite(fx);
+    expect(u.vignetteIntensity).toBeCloseTo(BASELINE_POSTFX.vignette.intensity);
+    expect(u.vignetteRadius).toBeCloseTo(BASELINE_POSTFX.vignette.radius);
+    expect(u.bloomThreshold).toBeCloseTo(BASELINE_POSTFX.bloom.threshold);
+    expect(u.bloomIntensity).toBeCloseTo(BASELINE_POSTFX.bloom.intensity);
   });
 
-  test('bloom override flows into chain at construction', () => {
+  test('bloom override flows into composite uniforms at construction', () => {
     const fx = createPanTvardowskiPostFx(null, {
       bloom: { threshold: 0.55, intensity: 0.8 },
     });
-    const b = fx.chain.all().find((e) => e.id === 'bloom');
-    if (b?.uniforms.kind !== 'bloom') throw new Error('bloom missing');
-    expect(b.uniforms.threshold).toBeCloseTo(0.55);
-    expect(b.uniforms.intensity).toBeCloseTo(0.8);
+    const u = getComposite(fx);
+    expect(u.bloomThreshold).toBeCloseTo(0.55);
+    expect(u.bloomIntensity).toBeCloseTo(0.8);
   });
 
   test('bloom-pulse restores to overridden baseline intensity, not 0.5', () => {
@@ -111,19 +116,20 @@ describe('createPanTvardowskiPostFx — preset parameter', () => {
     });
     fx.triggerBloomPulse(100);
     for (let i = 0; i < 11; i++) fx.update(0.01);
-    const b = fx.chain.all().find((e) => e.id === 'bloom');
-    if (b?.uniforms.kind !== 'bloom') throw new Error('bloom missing');
-    expect(b.uniforms.intensity).toBeCloseTo(customIntensity);
+    expect(getComposite(fx).bloomIntensity).toBeCloseTo(customIntensity);
   });
 
-  test('vignette setVignetteColor re-send uses overridden intensity and radius', () => {
+  test('setVignetteColor updates vignetteColor on the composite', () => {
     const fx = createPanTvardowskiPostFx(null, {
       vignette: { intensity: 0.5, radius: 0.75 },
     });
     fx.setVignetteColor(1, 0, 0);
-    const v = fx.chain.all().find((e) => e.id === 'vignette');
-    if (v?.uniforms.kind !== 'vignette') throw new Error('vignette missing');
-    expect(v.uniforms.intensity).toBeCloseTo(0.5);
-    expect(v.uniforms.radius).toBeCloseTo(0.75);
+    const u = getComposite(fx);
+    expect(u.vignetteColor[0]).toBe(1);
+    expect(u.vignetteColor[1]).toBe(0);
+    expect(u.vignetteColor[2]).toBe(0);
+    // vignette shape params from the preset are unchanged
+    expect(u.vignetteIntensity).toBeCloseTo(0.5);
+    expect(u.vignetteRadius).toBeCloseTo(0.75);
   });
 });

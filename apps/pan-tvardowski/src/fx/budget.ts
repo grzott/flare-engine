@@ -14,7 +14,8 @@ export const BUDGET_LIMITS = {
   // +2 bg entities per zone (parallax + ground layer), worst-case Z1-Z8 = 2 draws.
   draws: 920,
   particles: 480,
-  postfx: 3,
+  // 4 enabled effects per zone: vignette + bloom + grayscale-flash + weather-X.
+  postfx: 4,
   // 40 concurrent ship entities × 6 sub-shapes max (hull + 4 weapons + engine).
   // Derived from catalogue worst-case (Boruta/Lucyper: 6 sub-shapes each).
   // Revisit if a future zone adds a 7th-sub-shape boss.

@@ -16,8 +16,6 @@ export interface ZonePalette {
   readonly primary: number;
   readonly accent: number;
   readonly hazard: number;
-  readonly ambienceName: AmbienceKind;
-  readonly ambienceParticles: number;
   readonly silverUi?: true;
 }
 
@@ -57,8 +55,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.terracotta), // terracotta
     accent: hexToArgb(THEME_SPEC.colors.inkBlack), // ink-black
     hazard: hexToArgb(THEME_SPEC.colors.gold), // gold
-    ambienceName: 'ember',
-    ambienceParticles: 32,
   },
   2: {
     id: 2,
@@ -66,8 +62,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.moss), // moss
     accent: hexToArgb(THEME_SPEC.colors.verdigris), // verdigris
     hazard: hexToArgb(THEME_SPEC.colors.bone), // bone
-    ambienceName: 'pollen',
-    ambienceParticles: 80,
   },
   3: {
     id: 3,
@@ -75,8 +69,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.verdigris), // verdigris
     accent: hexToArgb(THEME_SPEC.colors.goldDeep), // gold-deep
     hazard: hexToArgb(THEME_SPEC.colors.bone), // bone
-    ambienceName: 'spray',
-    ambienceParticles: 48,
   },
   4: {
     id: 4,
@@ -84,8 +76,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.moss), // moss
     accent: hexToArgb(THEME_SPEC.colors.goldDeep), // gold-deep
     hazard: hexToArgb(THEME_SPEC.colors.hazard), // hazard
-    ambienceName: 'ember',
-    ambienceParticles: 96,
   },
   5: {
     id: 5,
@@ -93,8 +83,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.crimsonDeep), // crimson-deep
     accent: hexToArgb(THEME_SPEC.colors.inkBlack), // ink-black (deck has #0E0810 — corrected to ink-black #0E1A12 per visual-reference.md §9 footnote)
     hazard: hexToArgb(THEME_SPEC.colors.gold), // gold
-    ambienceName: 'ash',
-    ambienceParticles: 128,
   },
   6: {
     id: 6,
@@ -102,8 +90,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.katakumbyDark), // katakumby dark
     accent: hexToArgb(THEME_SPEC.colors.goldDeep), // gold-deep
     hazard: hexToArgb(THEME_SPEC.colors.crimsonDeep), // crimson-deep
-    ambienceName: 'dust',
-    ambienceParticles: 24,
   },
   7: {
     id: 7,
@@ -111,8 +97,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.rust), // rust
     accent: hexToArgb(THEME_SPEC.colors.crimsonDeep), // crimson-deep
     hazard: hexToArgb(THEME_SPEC.colors.parchment), // parchment
-    ambienceName: 'smoke',
-    ambienceParticles: 16,
   },
   8: {
     id: 8,
@@ -120,8 +104,6 @@ export const ZONE_PALETTES: Readonly<Record<ZoneId, ZonePalette>> = Object.freez
     primary: hexToArgb(THEME_SPEC.colors.bone), // bone
     accent: hexToArgb(THEME_SPEC.colors.lunarInk), // lunar ink
     hazard: hexToArgb(THEME_SPEC.colors.crimson), // crimson
-    ambienceName: 'float',
-    ambienceParticles: 64,
     silverUi: true,
   },
 });

@@ -31,7 +31,7 @@ import { SHADOW_RIM_SKSL } from './shadow-rim-sksl';
 // ---------------------------------------------------------------------------
 
 interface SkiaRuntimeEffectLike {
-  makeShader(uniforms: Float32Array, children: unknown[]): unknown | null;
+  makeShaderWithChildren(uniforms: number[], children?: unknown[]): unknown | null;
 }
 
 interface ShadowPaintLike {
@@ -302,7 +302,7 @@ export function createShadowRimRuntime(skia: SkiaPostFxModuleLike | null): Shado
       const shadowShader =
         typeof shadowImage.makeShader === 'function' ? shadowImage.makeShader() : null;
 
-      const shader = effect.makeShader(uniforms, [source, shadowShader]);
+      const shader = effect.makeShaderWithChildren(Array.from(uniforms), [source, shadowShader]);
       applyPaint.setShader(shader);
       canvas.drawImageRect(source, applyRect, applyRect, applyPaint);
     },

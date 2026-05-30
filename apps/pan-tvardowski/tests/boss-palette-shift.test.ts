@@ -258,13 +258,13 @@ describe('vignette-tint wire M2', () => {
     expect(calls[0]).toEqual([0, 0, 0]);
   });
 
-  test('setVignetteColor mutates the vignette chain entry uniforms.color', () => {
+  test('setVignetteColor mutates vignetteColor on the composite uniforms', () => {
     const postfx = createPanTvardowskiPostFx(null);
     postfx.setVignetteColor(0.5, 0.1, 0.9);
-    const effect = postfx.chain.get('vignette');
+    const effect = postfx.chain.get('composite');
     expect(effect).not.toBeNull();
-    if (effect && effect.uniforms.kind === 'vignette') {
-      expect(effect.uniforms.color).toEqual([0.5, 0.1, 0.9]);
+    if (effect && effect.uniforms.kind === 'composite') {
+      expect(effect.uniforms.vignetteColor).toEqual([0.5, 0.1, 0.9]);
     }
   });
 });

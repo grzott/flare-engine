@@ -18,7 +18,6 @@ export const zone3: ZoneVisualSpec = {
       { id: 'z3-water', speed: 0, content: 'water-shader' },
       { id: 'z3-fog', speed: 0, content: 'fog-shader' },
     ],
-    ambience: { kind: 'spray', count: 48 },
   },
   entityIds: [
     'topielec',

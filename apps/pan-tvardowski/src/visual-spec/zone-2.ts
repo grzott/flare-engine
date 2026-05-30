@@ -19,7 +19,6 @@ export const zone2: ZoneVisualSpec = {
       { id: 'z2-canopy', speed: 0.2, content: 'tilemap' },
       { id: 'z2-undergrowth', speed: 0.5, content: 'tilemap' },
     ],
-    ambience: { kind: 'pollen', count: 80 },
   },
   entityIds: [
     'czart',

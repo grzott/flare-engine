@@ -33,7 +33,6 @@ export const zone8: ZoneVisualSpec = {
       { id: 'z8-water', speed: 0, content: 'water-shader' },
       { id: 'z8-fog', speed: 0, content: 'fog-shader' },
     ],
-    ambience: { kind: 'float', count: 64 },
   },
   entityIds: [
     'moon-wraith',

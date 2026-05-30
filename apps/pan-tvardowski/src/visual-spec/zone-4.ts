@@ -19,7 +19,6 @@ export const zone4: ZoneVisualSpec = {
       { id: 'z4-marsh', speed: 0.2, content: 'tilemap' },
       { id: 'z4-reeds', speed: 0.5, content: 'tilemap' },
     ],
-    ambience: { kind: 'ember', count: 96 },
   },
   entityIds: [
     'mamuna',

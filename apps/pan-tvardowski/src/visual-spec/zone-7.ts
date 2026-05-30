@@ -19,7 +19,6 @@ export const zone7: ZoneVisualSpec = {
       { id: 'z7-rafters', speed: 0.2, content: 'tilemap' },
       { id: 'z7-tavern-floor', speed: 0.5, content: 'tilemap' },
     ],
-    ambience: { kind: 'smoke', count: 16 },
   },
   entityIds: [
     'skrzat',

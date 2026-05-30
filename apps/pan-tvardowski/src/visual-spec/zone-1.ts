@@ -26,7 +26,6 @@ export const zone1: ZoneVisualSpec = {
       { id: 'z1-fire', speed: 0, content: 'fire-shader' },
       { id: 'z1-smoke', speed: 0, content: 'fog-shader' },
     ],
-    ambience: { kind: 'ember', count: 32 },
   },
   entityIds: [
     'skrzat',

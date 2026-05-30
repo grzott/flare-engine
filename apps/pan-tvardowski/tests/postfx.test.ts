@@ -1,40 +1,36 @@
 import { describe, expect, test } from 'bun:test';
+import type { CompositeUniforms } from '@flare-engine/postfx';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 
+type CompositeEffect = { kind: 'composite' } & CompositeUniforms;
+
+function getComposite(fx: ReturnType<typeof createPanTvardowskiPostFx>): CompositeEffect {
+  const e = fx.chain.get('composite');
+  if (!e) throw new Error('composite effect missing');
+  return e.uniforms as CompositeEffect;
+}
+
 describe('postfx chain', () => {
-  test('registers vignette + bloom + grayscale-flash (chromatic-aberration added disabled)', () => {
+  test('chain contains exactly one composite effect', () => {
     const fx = createPanTvardowskiPostFx(null);
-    const ids = fx.chain.all().map((e) => e.id);
-    expect(ids).toContain('vignette');
-    expect(ids).toContain('bloom');
-    expect(ids).toContain('grayscale-flash');
-    expect(ids).toContain('chromatic-aberration');
-    // chromatic-aberration is disabled at rest
-    expect(fx.chain.get('chromatic-aberration')?.enabled).toBe(false);
+    const all = fx.chain.all();
+    expect(all.length).toBe(1);
+    expect(all[0]?.id).toBe('composite');
   });
 
-  test('triggerHitFlash spikes grayscale-flash intensity to 1', () => {
+  test('triggerHitFlash spikes flashIntensity to 1', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.triggerHitFlash();
-    const entry = fx.chain.get('grayscale-flash');
-    expect(entry).not.toBeNull();
-    const u = entry?.uniforms as { kind: 'grayscale-flash'; intensity: number } | undefined;
-    expect(u?.intensity).toBe(1);
+    expect(getComposite(fx).flashIntensity).toBe(1);
   });
 
-  test('update decays flash intensity toward 0', () => {
+  test('update decays flashIntensity toward 0', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.triggerHitFlash();
     for (let i = 0; i < 50; i++) fx.update(0.01);
-    const u = fx.chain.get('grayscale-flash')?.uniforms as
-      | { kind: 'grayscale-flash'; intensity: number }
-      | undefined;
-    expect(u?.intensity).toBeLessThan(1);
+    expect(getComposite(fx).flashIntensity).toBeLessThan(1);
     for (let i = 0; i < 200; i++) fx.update(0.01);
-    const u2 = fx.chain.get('grayscale-flash')?.uniforms as
-      | { kind: 'grayscale-flash'; intensity: number }
-      | undefined;
-    expect(u2?.intensity).toBe(0);
+    expect(getComposite(fx).flashIntensity).toBe(0);
   });
 
   test('buildPass returns empty list when skia module is null (unsupported)', () => {

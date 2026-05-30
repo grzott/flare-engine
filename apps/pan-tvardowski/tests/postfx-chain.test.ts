@@ -1,55 +1,60 @@
 import { describe, expect, mock, test } from 'bun:test';
-import type { SkImageLike } from '@flare-engine/assets';
 import type { GameContextValue } from '@flare-engine/engine';
-import type { Effect } from '@flare-engine/postfx';
+import type { CompositeUniforms, Effect } from '@flare-engine/postfx';
 import type { SkiaFrameRenderer } from '@flare-engine/react';
 import { createPanTvardowskiPostFx } from '../src/fx/postfx';
 
 const mockCtx = {} as GameContextValue;
 const mockCanvas = {};
 
-function makeSpyBridge(snapshotReturn: SkImageLike | null = null): SkiaFrameRenderer {
+type CompositeEffect = { kind: 'composite' } & CompositeUniforms;
+
+function getComposite(fx: ReturnType<typeof createPanTvardowskiPostFx>): CompositeEffect {
+  const e = fx.chain.get('composite');
+  if (!e) throw new Error('composite effect missing');
+  return e.uniforms as CompositeEffect;
+}
+
+function makeSpyBridge(): SkiaFrameRenderer {
   return {
     canvas: {},
     beginFrame: mock(() => {}),
     drawAtlas: mock(() => {}),
-    captureSceneSnapshot: mock(() => snapshotReturn),
+    setPostFxBinding: mock(() => {}),
+    buildPostFxPasses: mock(() => []),
     applyPostFx: mock(() => {}),
+    captureSceneSnapshot: mock(() => null),
+    getPostfxResult: mock(() => null),
+    clearPostfxResult: mock(() => {}),
     endFrame: mock(() => null),
   } as unknown as SkiaFrameRenderer;
 }
 
 describe('postfx chain', () => {
-  test('chain has vignette + bloom + grayscale-flash', () => {
+  test('chain has exactly one composite effect', () => {
     const fx = createPanTvardowskiPostFx(null);
     const ids = fx.chain.all().map((e: Effect) => e.id);
-    expect(ids).toContain('vignette');
-    expect(ids).toContain('bloom');
-    expect(ids).toContain('grayscale-flash');
+    expect(ids).toEqual(['composite']);
   });
 
   test('vignette params match deck (intensity 0.35, radius 0.82)', () => {
     const fx = createPanTvardowskiPostFx(null);
-    const v = fx.chain.all().find((e: Effect) => e.id === 'vignette');
-    if (v?.uniforms.kind !== 'vignette') throw new Error('vignette missing');
-    expect(v.uniforms.intensity).toBeCloseTo(0.35);
-    expect(v.uniforms.radius).toBeCloseTo(0.82);
+    const u = getComposite(fx);
+    expect(u.vignetteIntensity).toBeCloseTo(0.35);
+    expect(u.vignetteRadius).toBeCloseTo(0.82);
   });
 
   test('bloom params match deck (threshold 0.72, intensity 0.5)', () => {
     const fx = createPanTvardowskiPostFx(null);
-    const b = fx.chain.all().find((e: Effect) => e.id === 'bloom');
-    if (b?.uniforms.kind !== 'bloom') throw new Error('bloom missing');
-    expect(b.uniforms.threshold).toBeCloseTo(0.72);
-    expect(b.uniforms.intensity).toBeCloseTo(0.5);
+    const u = getComposite(fx);
+    expect(u.bloomThreshold).toBeCloseTo(0.72);
+    expect(u.bloomIntensity).toBeCloseTo(0.5);
   });
 
-  test('triggerHitFlash spikes grayscale-flash intensity to 1', () => {
+  test('triggerHitFlash spikes flashIntensity to 1', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.triggerHitFlash();
-    const f = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
-    if (f?.uniforms.kind !== 'grayscale-flash') throw new Error('grayscale-flash missing');
-    expect(f.uniforms.intensity).toBeCloseTo(1);
+    expect(getComposite(fx).flashIntensity).toBeCloseTo(1);
   });
 
   test('intensity decays to ~0 after update(1/decay)', () => {
@@ -57,20 +62,14 @@ describe('postfx chain', () => {
     fx.triggerHitFlash();
     // decay rate is 4.2; after 1/4.2 ≈ 0.238 s the flash should be at ~0
     fx.update(1 / 4.2);
-    const f = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
-    if (f?.uniforms.kind !== 'grayscale-flash') throw new Error('grayscale-flash missing');
-    expect(f.uniforms.intensity).toBeLessThan(0.05);
+    expect(getComposite(fx).flashIntensity).toBeLessThan(0.05);
   });
 
   describe('postfx hook invocation', () => {
-    const bounds = { width: 360, height: 720 };
-
     function makeHook() {
       const fx = createPanTvardowskiPostFx(null);
       const hook = (_ctx: GameContextValue, _canvas: unknown, bridge: SkiaFrameRenderer | null) => {
-        fx.buildPass(bounds.width, bounds.height);
-        const snapshot = bridge?.captureSceneSnapshot(bounds.width, bounds.height) ?? null;
-        bridge?.applyPostFx(fx.runtime, fx.chain, snapshot, bounds.width, bounds.height);
+        bridge?.setPostFxBinding(fx.runtime, fx.chain);
       };
       return { fx, hook };
     }
@@ -81,24 +80,15 @@ describe('postfx chain', () => {
       expect(fx.chain.all().length).toBeGreaterThan(0);
     });
 
-    test('bridge.applyPostFx is invoked with runtime + chain + null source + numeric w/h when bridge non-null', () => {
+    test('bridge.setPostFxBinding is invoked with runtime and chain', () => {
       const { fx, hook } = makeHook();
       const bridge = makeSpyBridge();
       hook(mockCtx, mockCanvas, bridge);
-      const spy = bridge.applyPostFx as ReturnType<typeof mock>;
+      const spy = bridge.setPostFxBinding as ReturnType<typeof mock>;
       expect(spy.mock.calls.length).toBe(1);
-      const [runtime, chain, source, w, h] = spy.mock.calls[0] as [
-        unknown,
-        unknown,
-        unknown,
-        number,
-        number,
-      ];
+      const [runtime, chain] = spy.mock.calls[0] as [unknown, unknown];
       expect(runtime).toBe(fx.runtime);
       expect(chain).toBe(fx.chain);
-      expect(source).toBeNull();
-      expect(w).toBe(bounds.width);
-      expect(h).toBe(bounds.height);
     });
 
     test('chain effect membership preserved across hook invocations', () => {
@@ -112,42 +102,16 @@ describe('postfx chain', () => {
       expect(kindsAfter.length).toBe(kindsBefore.length);
     });
 
-    test('captureSceneSnapshot is called before applyPostFx and its return value flows into source', () => {
+    test('applyPostFx not called during main composite hook (no capture path)', () => {
       const { hook } = makeHook();
       const bridge = makeSpyBridge();
-      const captureSpy = bridge.captureSceneSnapshot as ReturnType<typeof mock>;
-      const applyspy = bridge.applyPostFx as ReturnType<typeof mock>;
       hook(mockCtx, mockCanvas, bridge);
-      expect(captureSpy.mock.calls.length).toBe(1);
-      expect(applyspy.mock.calls.length).toBe(1);
-      const captureOrder = captureSpy.mock.invocationCallOrder?.[0] ?? 0;
-      const applyOrder = applyspy.mock.invocationCallOrder?.[0] ?? 1;
-      expect(captureOrder).toBeLessThan(applyOrder);
-      const [, , source] = applyspy.mock.calls[0] as [unknown, unknown, unknown];
-      expect(source).toBeNull();
-    });
-
-    test('non-null snapshot from captureSceneSnapshot flows into applyPostFx source', () => {
-      const fakeImage = { __kind: 'SkImageLike' } as unknown as SkImageLike;
-      const { hook } = makeHook();
-      const bridge = makeSpyBridge(fakeImage);
-      hook(mockCtx, mockCanvas, bridge);
-      const applyspy = bridge.applyPostFx as ReturnType<typeof mock>;
-      const [, , source] = applyspy.mock.calls[0] as [unknown, unknown, unknown];
-      expect(source).toBe(fakeImage);
-    });
-
-    test('null from captureSceneSnapshot flows into applyPostFx source as null', () => {
-      const { hook } = makeHook();
-      const bridge = makeSpyBridge(null);
-      hook(mockCtx, mockCanvas, bridge);
-      const applyspy = bridge.applyPostFx as ReturnType<typeof mock>;
-      const [, , source] = applyspy.mock.calls[0] as [unknown, unknown, unknown];
-      expect(source).toBeNull();
+      const spy = bridge.applyPostFx as ReturnType<typeof mock>;
+      expect(spy.mock.calls.length).toBe(0);
     });
   });
 
-  test('triggerGrayscaleHold: intensity stays at hold floor during hold window, then decays after', () => {
+  test('triggerGrayscaleHold: flashIntensity stays at hold floor during hold window, then decays after', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.triggerHitFlash();
     fx.triggerGrayscaleHold(400);
@@ -155,38 +119,24 @@ describe('postfx chain', () => {
     // After ~100 ms with default decay 12.5/s, natural intensity ≈ 0.875.
     // The hold floor of 0.6 clamps decay — either way intensity must be >= 0.55.
     for (let i = 0; i < 10; i++) fx.update(0.01);
-    const entryMid = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
-    const uMid = entryMid?.uniforms as { kind: 'grayscale-flash'; intensity: number } | undefined;
-    expect(uMid?.intensity).toBeGreaterThanOrEqual(0.55);
+    expect(getComposite(fx).flashIntensity).toBeGreaterThanOrEqual(0.55);
 
     // Advance past the 400 ms hold (40 more × 0.01 = 400 ms; 500 ms total).
     // With 12.5/s decay over 500 ms the flash reaches 0 long before hold expires.
     // After hold expires decay is unclamped — intensity must be below 0.5.
     for (let i = 0; i < 40; i++) fx.update(0.01);
-    const entryAfter = fx.chain.all().find((e: Effect) => e.id === 'grayscale-flash');
-    const uAfter = entryAfter?.uniforms as
-      | { kind: 'grayscale-flash'; intensity: number }
-      | undefined;
-    expect(uAfter?.intensity).toBeLessThan(0.5);
+    expect(getComposite(fx).flashIntensity).toBeLessThan(0.5);
   });
 
-  test('triggerBloomPulse: bloom intensity spikes then restores to baseline', () => {
+  test('triggerBloomPulse: bloomIntensity spikes then restores to baseline', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.triggerBloomPulse(300);
 
     // Immediately after trigger bloom should be spiked above baseline 0.5.
-    const entrySpike = fx.chain.all().find((e: Effect) => e.id === 'bloom');
-    const uSpike = entrySpike?.uniforms as
-      | { kind: 'bloom'; threshold: number; intensity: number }
-      | undefined;
-    expect(uSpike?.intensity).toBeGreaterThan(0.5);
+    expect(getComposite(fx).bloomIntensity).toBeGreaterThan(0.5);
 
     // Advance past 300 ms (31 × 0.01 = 310 ms).
     for (let i = 0; i < 31; i++) fx.update(0.01);
-    const entryAfter = fx.chain.all().find((e: Effect) => e.id === 'bloom');
-    const uAfter = entryAfter?.uniforms as
-      | { kind: 'bloom'; threshold: number; intensity: number }
-      | undefined;
-    expect(uAfter?.intensity).toBeCloseTo(0.5);
+    expect(getComposite(fx).bloomIntensity).toBeCloseTo(0.5);
   });
 });

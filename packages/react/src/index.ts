@@ -10,6 +10,10 @@ export { useGame, useEntity, useGameLoop } from './hooks.js';
 export {
   createSkiaFrameRenderer,
   renderShapesToImage,
+  type CompiledPassLike,
+  type PostFxChainLike,
+  type PostFxPassDescriptor,
+  type PostFxRuntimeLike,
   type RenderShapesOpts,
   type ShapeRect,
   type SkOffscreenCanvasLike,

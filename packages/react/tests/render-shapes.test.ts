@@ -92,13 +92,15 @@ function makeMockSkia(surfaceReturnNull = false): MockSkia {
     Paint: () => mock.paint as unknown as ReturnType<SkiaModuleLike['Paint']>,
     PictureRecorder: () => ({}) as unknown as ReturnType<SkiaModuleLike['PictureRecorder']>,
     ColorFilter: {} as SkiaModuleLike['ColorFilter'],
-    MakeSurface(w: number, h: number): SkSurfaceLike | null {
-      mock.allocCount++;
-      mock.lastW = w;
-      mock.lastH = h;
-      if (surfaceReturnNull) return null;
-      mock.lastSurface = makeMockSurface();
-      return mock.lastSurface;
+    Surface: {
+      Make(w: number, h: number): SkSurfaceLike | null {
+        mock.allocCount++;
+        mock.lastW = w;
+        mock.lastH = h;
+        if (surfaceReturnNull) return null;
+        mock.lastSurface = makeMockSurface();
+        return mock.lastSurface;
+      },
     },
   };
 
@@ -124,14 +126,14 @@ function makeRect(overrides: Partial<ShapeRect> = {}): ShapeRect {
 // ---------------------------------------------------------------------------
 
 describe('renderShapesToImage', () => {
-  it('returns null when MakeSurface is absent', () => {
+  it('returns null when Surface factory is absent', () => {
     const { skia } = makeMockSkia();
-    const { MakeSurface: _unused, ...skiaWithout } = skia;
+    const { Surface: _unused, ...skiaWithout } = skia;
     const result = renderShapesToImage(skiaWithout as SkiaModuleLike, makeOpts());
     expect(result).toBeNull();
   });
 
-  it('returns null when MakeSurface returns null', () => {
+  it('returns null when Surface.Make returns null', () => {
     const { skia } = makeMockSkia(true);
     const result = renderShapesToImage(skia, makeOpts());
     expect(result).toBeNull();
@@ -185,14 +187,14 @@ describe('renderShapesToImage', () => {
     expect(Math.abs(c[3] - 1.0)).toBeLessThan(1e-6);
   });
 
-  it('fresh surface each call: two calls invoke MakeSurface twice', () => {
+  it('fresh surface each call: two calls invoke Surface.Make twice', () => {
     const mock = makeMockSkia();
     renderShapesToImage(mock.skia, makeOpts());
     renderShapesToImage(mock.skia, makeOpts());
     expect(mock.allocCount).toBe(2);
   });
 
-  it('width/height passthrough: MakeSurface receives opts.width and opts.height', () => {
+  it('width/height passthrough: Surface.Make receives opts.width and opts.height', () => {
     const mock = makeMockSkia();
     renderShapesToImage(mock.skia, makeOpts({ width: 128, height: 256 }));
     expect(mock.lastW).toBe(128);

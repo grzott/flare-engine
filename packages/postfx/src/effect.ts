@@ -19,7 +19,8 @@ export type EffectKind =
   | 'weather-rain'
   | 'weather-sun-shaft'
   | 'weather-dark-vignette'
-  | 'weather-clouds';
+  | 'weather-clouds'
+  | 'composite';
 
 export interface VignetteUniforms {
   intensity: number;
@@ -84,6 +85,24 @@ export interface WeatherCloudsUniforms {
   scrollOffsetX: number;
 }
 
+export interface CompositeUniforms {
+  vignetteIntensity: number;
+  vignetteRadius: number;
+  vignetteColor: readonly [number, number, number];
+  bloomThreshold: number;
+  bloomIntensity: number;
+  flashIntensity: number;
+  chromaAmount: number;
+  crtScanlineIntensity: number;
+  crtCurvature: number;
+  crtEnabled: boolean;
+  weatherKind: 0 | 1 | 2 | 3 | 4;
+  weatherIntensity: number;
+  weatherDirection: number;
+  weatherScrollX: number;
+  weatherScrollY: number;
+}
+
 export type EffectUniforms =
   | ({ kind: 'vignette' } & VignetteUniforms)
   | ({ kind: 'grayscale-flash' } & GrayscaleFlashUniforms)
@@ -95,7 +114,8 @@ export type EffectUniforms =
   | ({ kind: 'weather-rain' } & WeatherRainUniforms)
   | ({ kind: 'weather-sun-shaft' } & WeatherSunShaftUniforms)
   | ({ kind: 'weather-dark-vignette' } & WeatherDarkVignetteUniforms)
-  | ({ kind: 'weather-clouds' } & WeatherCloudsUniforms);
+  | ({ kind: 'weather-clouds' } & WeatherCloudsUniforms)
+  | ({ kind: 'composite' } & CompositeUniforms);
 
 export interface Effect {
   id: string;
@@ -254,6 +274,34 @@ export function createWeatherClouds(
       direction: uniforms.direction ?? 0,
       speed: uniforms.speed ?? 0,
       scrollOffsetX: uniforms.scrollOffsetX ?? 0,
+    },
+  };
+}
+
+export function createPostFxComposite(
+  id = 'composite',
+  uniforms: Partial<CompositeUniforms> = {},
+): Effect {
+  return {
+    id,
+    enabled: true,
+    uniforms: {
+      kind: 'composite',
+      vignetteIntensity: uniforms.vignetteIntensity ?? 0,
+      vignetteRadius: uniforms.vignetteRadius ?? 0.8,
+      vignetteColor: uniforms.vignetteColor ?? [0, 0, 0],
+      bloomThreshold: uniforms.bloomThreshold ?? 0.7,
+      bloomIntensity: uniforms.bloomIntensity ?? 0,
+      flashIntensity: uniforms.flashIntensity ?? 0,
+      chromaAmount: uniforms.chromaAmount ?? 0,
+      crtScanlineIntensity: uniforms.crtScanlineIntensity ?? 0.25,
+      crtCurvature: uniforms.crtCurvature ?? 0.12,
+      crtEnabled: uniforms.crtEnabled ?? false,
+      weatherKind: uniforms.weatherKind ?? 0,
+      weatherIntensity: uniforms.weatherIntensity ?? 0,
+      weatherDirection: uniforms.weatherDirection ?? 0,
+      weatherScrollX: uniforms.weatherScrollX ?? 0,
+      weatherScrollY: uniforms.weatherScrollY ?? 0,
     },
   };
 }

@@ -41,7 +41,13 @@ mock.module('react-native-safe-area-context', () => ({
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
   Picture: 'Picture',
+  Image: 'Image',
+  RuntimeShader: 'RuntimeShader',
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
+  // usePictureAsTexture returns a SharedValue-shaped object with a null image stub.
+  // In tests there is no Reanimated; we return a plain object that satisfies
+  // the <Image image={sceneTexture}/> null-check in GameView.
+  usePictureAsTexture: () => ({ value: null }),
   Skia: {
     XYWHRect: () => ({ setXYWH: () => {} }),
     RSXform: () => ({ set: () => {} }),
@@ -389,7 +395,39 @@ describe('GameView — PostFxRenderHook', () => {
     unmountAll();
   });
 
-  it('bridge passed to onRenderPostFx exposes applyPostFx method', () => {
+  it('bridge passed to onRenderPostFx exposes setPostFxBinding method', () => {
+    let capturedBridge: unknown = undefined;
+    mount({
+      config: {
+        onRenderPostFx: (_ctx, _canvas, bridge) => {
+          capturedBridge = bridge;
+        },
+      },
+    });
+    _loopInstance!.onPreRender._handler?.();
+    expect(typeof (capturedBridge as { setPostFxBinding?: unknown })?.setPostFxBinding).toBe(
+      'function',
+    );
+    unmountAll();
+  });
+
+  it('bridge passed to onRenderPostFx exposes buildPostFxPasses method', () => {
+    let capturedBridge: unknown = undefined;
+    mount({
+      config: {
+        onRenderPostFx: (_ctx, _canvas, bridge) => {
+          capturedBridge = bridge;
+        },
+      },
+    });
+    _loopInstance!.onPreRender._handler?.();
+    expect(typeof (capturedBridge as { buildPostFxPasses?: unknown })?.buildPostFxPasses).toBe(
+      'function',
+    );
+    unmountAll();
+  });
+
+  it('bridge still exposes legacy applyPostFx for rim-light fallback', () => {
     let capturedBridge: unknown = undefined;
     mount({
       config: {

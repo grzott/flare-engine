@@ -13,7 +13,7 @@ import { COLOR_GRADING_LUT_SKSL } from '../src/shaders.js';
 const mockLutImage: SkImageLike = {};
 
 function createMockSkia(): SkiaPostFxModuleLike {
-  const fake: SkiaRuntimeEffectLike = { makeShader: () => ({}) };
+  const fake: SkiaRuntimeEffectLike = { makeShaderWithChildren: () => ({}) };
   return { RuntimeEffect: { Make: () => fake } };
 }
 

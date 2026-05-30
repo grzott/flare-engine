@@ -7,7 +7,15 @@ import { InputManager } from '@flare-engine/input';
 import { Camera2D, Renderer, Sprite, SpriteBatch, createRenderSystem } from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
 import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
-import { Canvas, Picture, Skia, useCanvasRef } from '@shopify/react-native-skia';
+import {
+  Canvas,
+  Image,
+  Picture,
+  RuntimeShader,
+  Skia,
+  useCanvasRef,
+  usePictureAsTexture,
+} from '@shopify/react-native-skia';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -15,7 +23,7 @@ import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
-import { createSkiaFrameRenderer } from './skia-bridge.js';
+import { type PostFxPassDescriptor, createSkiaFrameRenderer } from './skia-bridge.js';
 
 /** Render hook invoked during the frame — receives the game context and
  *  the active Skia canvas for direct draw calls. Hooks run between
@@ -102,6 +110,13 @@ export function GameView({
   const resolvedSafeArea: SafeArea = safeArea ?? insets;
   const canvasRef = useCanvasRef();
   const [picture, setPicture] = useState<SkPicture | null>(null);
+  const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>([]);
+  const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
+  const sceneSize = useMemo(
+    () => ({ width: viewportSize.w, height: viewportSize.h }),
+    [viewportSize.w, viewportSize.h],
+  );
+  const sceneTexture = usePictureAsTexture(picture, sceneSize);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   const ctx = useMemo<GameContextValue>(() => {
@@ -139,15 +154,17 @@ export function GameView({
     });
 
     const unsubscribePre = ctx.loop.onPreRender.add(() => {
-      bridge.beginFrame(ctx.camera.viewportWidth, ctx.camera.viewportHeight);
+      const w = ctx.camera.viewportWidth;
+      const h = ctx.camera.viewportHeight;
+      bridge.beginFrame(w, h);
       ctx.renderer.begin(clearColor);
       ctx.renderer.applyCamera(
         ctx.camera.effectiveX,
         ctx.camera.effectiveY,
         ctx.camera.zoom,
         ctx.camera.rotation,
-        ctx.camera.viewportWidth,
-        ctx.camera.viewportHeight,
+        w,
+        h,
       );
       if (onRenderBackground) onRenderBackground(ctx, ctx.renderer.canvas);
       renderSystem();
@@ -156,6 +173,8 @@ export function GameView({
       ctx.renderer.end();
       const pic = bridge.endFrame();
       if (pic !== null) setPicture(pic);
+      const built = bridge.buildPostFxPasses(null, null, w, h);
+      setPasses(built);
       canvasRef.current?.redraw();
     });
 
@@ -171,6 +190,7 @@ export function GameView({
   const handleLayout = (event: LayoutChangeEvent): void => {
     const { width, height } = event.nativeEvent.layout;
     ctx.camera.setViewport(width, height);
+    setViewportSize({ w: width, h: height });
   };
 
   const onGrant = (e: GestureResponderEvent): void => {
@@ -201,7 +221,22 @@ export function GameView({
             pointerEvents="none"
             opaque={config?.opaque ?? false}
           >
-            {picture !== null ? <Picture picture={picture} /> : null}
+            {viewportSize.w === 0 ? null : passes.length > 0 && sceneTexture != null ? (
+              <Image
+                image={sceneTexture}
+                x={0}
+                y={0}
+                width={viewportSize.w}
+                height={viewportSize.h}
+                fit="cover"
+              >
+                {passes.map((p) => (
+                  <RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />
+                ))}
+              </Image>
+            ) : picture !== null ? (
+              <Picture picture={picture} />
+            ) : null}
           </Canvas>
           {children}
         </View>

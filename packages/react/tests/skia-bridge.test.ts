@@ -380,12 +380,12 @@ beforeEach(() => {
 });
 
 describe('createSkiaFrameRenderer', () => {
-  it('allocates a single Paint, PictureRecorder, and bounds rect up front', () => {
+  it('allocates a single Paint, PictureRecorder, and pre-allocated rects up front', () => {
     createSkiaFrameRenderer(makeMockSkia());
     expect(paintCount).toBe(1);
     expect(recorderCount).toBe(1);
-    // One XYWHRect pre-allocated for the recording bounds, reused each frame.
-    expect(xywhCount).toBe(1);
+    // Two XYWHRects pre-allocated: one for recording bounds + one for postfx compositor rect.
+    expect(xywhCount).toBe(2);
     expect(rsxformCount).toBe(0);
   });
 
@@ -447,8 +447,8 @@ describe('createSkiaFrameRenderer', () => {
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({}), cmd({})]);
     const xywhAfterFirst = xywhCount;
     const rsxformAfterFirst = rsxformCount;
-    // 1 pre-allocated bounds rect + 3 pool entries
-    expect(xywhAfterFirst).toBe(4);
+    // 2 pre-allocated rects (bounds + postfx compositor) + 3 pool entries
+    expect(xywhAfterFirst).toBe(5);
     expect(rsxformAfterFirst).toBe(3);
 
     // Second call with same size — pool is reused, no new allocations.
@@ -461,11 +461,11 @@ describe('createSkiaFrameRenderer', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
     bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({})]);
-    // 1 pre-allocated bounds rect + 1 pool entry
-    expect(xywhCount).toBe(2);
+    // 2 pre-allocated rects (bounds + postfx compositor) + 1 pool entry
+    expect(xywhCount).toBe(3);
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({}), cmd({})]);
-    // 1 pre-allocated bounds rect + 3 pool entries
-    expect(xywhCount).toBe(4);
+    // 2 pre-allocated rects + 3 pool entries
+    expect(xywhCount).toBe(5);
     expect(rsxformCount).toBe(3);
   });
 
@@ -1083,192 +1083,202 @@ describe('createSkiaFrameRenderer — per-sprite alpha', () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyPostFx
+// buildPostFxPasses
 // ---------------------------------------------------------------------------
 
-import type { PostFxChainLike, PostFxRuntimeLike, SkSurfaceLike } from '../src/skia-bridge.js';
-
-interface MockPostFxRuntime extends PostFxRuntimeLike {
-  applyCalls: Array<{
-    canvas: unknown;
-    chain: PostFxChainLike;
-    source: unknown;
-    width: number;
-    height: number;
-  }>;
-}
-
-function makeMockPostFxRuntime(supported: boolean): MockPostFxRuntime {
-  return {
-    supported,
-    applyCalls: [],
-    apply(canvas, chain, source, width, height) {
-      this.applyCalls.push({ canvas, chain, source, width, height });
-    },
-  };
-}
+import type { CompiledPassLike, PostFxChainLike, PostFxRuntimeLike } from '../src/skia-bridge.js';
 
 function makeMockChain(): PostFxChainLike {
   return { enabled: () => [] };
 }
 
-describe('createSkiaFrameRenderer — applyPostFx', () => {
-  it('no-op before beginFrame — apply never called on runtime', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkia());
-    const runtime = makeMockPostFxRuntime(true);
-    const chain = makeMockChain();
-    const source = mockImage();
-
-    bridge.applyPostFx(runtime, chain, source, 800, 600);
-
-    expect(runtime.applyCalls).toHaveLength(0);
-  });
-
-  it('source === null — apply never called on runtime', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame(800, 600);
-    const runtime = makeMockPostFxRuntime(true);
-    const chain = makeMockChain();
-
-    bridge.applyPostFx(runtime, chain, null, 800, 600);
-
-    expect(runtime.applyCalls).toHaveLength(0);
-  });
-
-  it('delegates to runtime.apply with current canvas, chain, source, width, height', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame(800, 600);
-    const runtime = makeMockPostFxRuntime(true);
-    const chain = makeMockChain();
-    const source = mockImage();
-
-    bridge.applyPostFx(runtime, chain, source, 800, 600);
-
-    expect(runtime.applyCalls).toHaveLength(1);
-    const call = runtime.applyCalls[0]!;
-    expect(call.source).toBe(source);
-    expect(call.chain).toBe(chain);
-    expect(call.width).toBe(800);
-    expect(call.height).toBe(600);
-    expect(call.canvas).not.toBeNull();
-  });
-
-  it('no-op when runtime.supported is false — apply never called', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkia());
-    bridge.beginFrame(800, 600);
-    const runtime = makeMockPostFxRuntime(false);
-    const chain = makeMockChain();
-    const source = mockImage();
-
-    bridge.applyPostFx(runtime, chain, source, 800, 600);
-
-    expect(runtime.applyCalls).toHaveLength(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// captureSceneSnapshot
-// ---------------------------------------------------------------------------
-
-interface MockSurface extends SkSurfaceLike {
-  drawPictureCalls: number;
-  snapshotCallCount: number;
-  lastSnapshot: { width: number; height: number };
+interface MockUniformInfo {
+  columns: number;
+  rows: number;
+  slot: number;
 }
 
-function makeMockSurface(w: number, h: number): MockSurface {
-  const surface: MockSurface = {
-    drawPictureCalls: 0,
-    snapshotCallCount: 0,
-    lastSnapshot: { width: w, height: h },
-    getCanvas() {
-      return {
-        drawPicture: (_picture: unknown) => {
-          surface.drawPictureCalls++;
-        },
-        drawImageRect: () => {},
-        drawRect: () => {},
-        clear: () => {},
-      };
-    },
-    makeImageSnapshot() {
-      surface.snapshotCallCount++;
-      return { width: () => w, height: () => h, readPixels: () => null };
-    },
-  };
-  return surface;
-}
-
-let surfaceAllocCount = 0;
-let lastAllocW = 0;
-let lastAllocH = 0;
-let mockSurfaceInstance: MockSurface | null = null;
-
-function makeMockSkiaWithMakeSurface(returnNull = false): SkiaModuleLike {
-  const base = makeMockSkia();
+function makeBuildPassShader(
+  uniformDefs: Array<{ name: string; columns: number; rows: number }>,
+): CompiledPassLike['shader'] & {
+  getUniformCount(): number;
+  getUniformName(i: number): string;
+  getUniform(i: number): MockUniformInfo;
+} {
+  let slot = 0;
+  const slots: MockUniformInfo[] = [];
+  const names: string[] = [];
+  for (const d of uniformDefs) {
+    slots.push({ columns: d.columns, rows: d.rows, slot });
+    names.push(d.name);
+    slot += d.columns * d.rows;
+  }
   return {
-    ...base,
-    MakeSurface(w: number, h: number): SkSurfaceLike | null {
-      surfaceAllocCount++;
-      lastAllocW = w;
-      lastAllocH = h;
-      if (returnNull) return null;
-      mockSurfaceInstance = makeMockSurface(w, h);
-      return mockSurfaceInstance;
-    },
+    getUniformCount: () => uniformDefs.length,
+    getUniformName: (i) => names[i] ?? '',
+    getUniform: (i) => slots[i] ?? { columns: 1, rows: 1, slot: 0 },
+    makeShaderWithChildren: (_u, _c) => ({ _kind: 'shader' }),
   };
 }
 
-describe('createSkiaFrameRenderer — captureSceneSnapshot', () => {
-  beforeEach(() => {
-    surfaceAllocCount = 0;
-    lastAllocW = 0;
-    lastAllocH = 0;
-    mockSurfaceInstance = null;
-  });
+function makePassWithUniforms(
+  id: string,
+  uniformDefs: Array<{ name: string; columns: number; rows: number }>,
+  values: number[],
+): CompiledPassLike {
+  return {
+    id,
+    shader: makeBuildPassShader(uniformDefs),
+    uniforms: new Float32Array(values),
+    children: [],
+  };
+}
 
-  it('returns null before beginFrame (no active recording)', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
-    expect(bridge.captureSceneSnapshot(800, 600)).toBeNull();
-  });
-
-  it('returns null when MakeSurface is not on the Skia module', () => {
+describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
+  it('returns [] when runtime is null', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
     bridge.beginFrame(800, 600);
-    expect(bridge.captureSceneSnapshot(800, 600)).toBeNull();
+    expect(bridge.buildPostFxPasses(null, makeMockChain(), 800, 600)).toEqual([]);
   });
 
-  it('returns a snapshot image when a surface is available', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+  it('returns [] when runtime.supported is false', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
     bridge.beginFrame(800, 600);
-    const snapshot = bridge.captureSceneSnapshot(800, 600);
-    expect(snapshot).not.toBeNull();
-    expect(mockSurfaceInstance?.snapshotCallCount).toBe(1);
+    const runtime: PostFxRuntimeLike = { supported: false, buildPass: () => [] };
+    expect(bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600)).toEqual([]);
   });
 
-  it('reuses the offscreen surface across calls with the same dimensions', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+  it('returns [] when runtime.buildPass is undefined (legacy fallback path)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
     bridge.beginFrame(800, 600);
-    bridge.captureSceneSnapshot(800, 600);
-    const allocsAfterFirst = surfaceAllocCount;
-    // Subsequent snapshot on a new frame with same size — surface is reused.
+    const runtime: PostFxRuntimeLike = { supported: true };
+    expect(bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600)).toEqual([]);
+  });
+
+  it('returns [] when chain is null and no binding set', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [] };
+    expect(bridge.buildPostFxPasses(runtime, null, 800, 600)).toEqual([]);
+  });
+
+  it('returns [] when buildPass returns empty array', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = {
+      supported: true,
+      buildPass: () => [],
+    };
+    expect(bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600)).toEqual([]);
+  });
+
+  it('returns a descriptor per CompiledPass with id, source, uniforms record, children', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms(
+      'composite',
+      [{ name: 'intensity', columns: 1, rows: 1 }],
+      [0.5],
+    );
+    const runtime: PostFxRuntimeLike = {
+      supported: true,
+      buildPass: () => [pass],
+    };
+    const result = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe('composite');
+    expect(result[0]?.source).toBe(pass.shader);
+    expect(result[0]?.children).toEqual([]);
+  });
+
+  it('scalar uniform: named key maps to number value', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms(
+      'p',
+      [
+        { name: 'a', columns: 1, rows: 1 },
+        { name: 'b', columns: 1, rows: 1 },
+      ],
+      [1, 2],
+    );
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    const [desc] = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    expect((desc?.uniforms as Record<string, unknown>).a).toBe(1);
+    expect((desc?.uniforms as Record<string, unknown>).b).toBe(2);
+  });
+
+  it('vector uniform: named key maps to number[] of correct length', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms(
+      'p',
+      [{ name: 'color', columns: 3, rows: 1 }],
+      [0.1, 0.2, 0.3],
+    );
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    const [desc] = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    const color = (desc?.uniforms as Record<string, unknown>).color;
+    expect(Array.isArray(color)).toBe(true);
+    expect(color).toHaveLength(3);
+    expect((color as number[])[0]).toBeCloseTo(0.1);
+    expect((color as number[])[1]).toBeCloseTo(0.2);
+    expect((color as number[])[2]).toBeCloseTo(0.3);
+  });
+
+  it('mixed scalar and vector uniforms pack correctly', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    // composite-like: scalar 'vignetteIntensity', vec3 'vignetteColor'
+    const pass = makePassWithUniforms(
+      'composite',
+      [
+        { name: 'vignetteIntensity', columns: 1, rows: 1 },
+        { name: 'vignetteColor', columns: 3, rows: 1 },
+      ],
+      [0.35, 0.0, 0.0, 0.0],
+    );
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    const [desc] = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    const u = desc?.uniforms as Record<string, unknown>;
+    expect(u.vignetteIntensity).toBeCloseTo(0.35);
+    expect(Array.isArray(u.vignetteColor)).toBe(true);
+    expect((u.vignetteColor as number[]).length).toBe(3);
+  });
+
+  it('uses setPostFxBinding when runtime/chain args are null', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('p', [{ name: 'x', columns: 1, rows: 1 }], [1]);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    const chain = makeMockChain();
+    bridge.setPostFxBinding(runtime, chain);
+    const result = bridge.buildPostFxPasses(null, null, 800, 600);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe('p');
+  });
+
+  it('beginFrame clears the binding so stale passes are not returned next frame', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('p', [{ name: 'x', columns: 1, rows: 1 }], [1]);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    bridge.setPostFxBinding(runtime, makeMockChain());
     bridge.endFrame();
+    // new frame — binding was cleared
     bridge.beginFrame(800, 600);
-    bridge.captureSceneSnapshot(800, 600);
-    expect(surfaceAllocCount).toBe(allocsAfterFirst);
+    const result = bridge.buildPostFxPasses(null, null, 800, 600);
+    expect(result).toEqual([]);
   });
 
-  it('reallocates the offscreen surface when viewport dimensions change', () => {
-    const bridge = createSkiaFrameRenderer(makeMockSkiaWithMakeSurface());
+  it('pass order is preserved (first descriptor corresponds to first CompiledPass)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
     bridge.beginFrame(800, 600);
-    bridge.captureSceneSnapshot(800, 600);
-    expect(surfaceAllocCount).toBe(1);
-    bridge.endFrame();
-    // New frame with different dimensions — surface must be replaced.
-    bridge.beginFrame(1024, 768);
-    bridge.captureSceneSnapshot(1024, 768);
-    expect(surfaceAllocCount).toBe(2);
-    expect(lastAllocW).toBe(1024);
-    expect(lastAllocH).toBe(768);
+    const p1 = makePassWithUniforms('bloom', [{ name: 'i', columns: 1, rows: 1 }], [1]);
+    const p2 = makePassWithUniforms('vignette', [{ name: 'i', columns: 1, rows: 1 }], [2]);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [p1, p2] };
+    const result = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    expect(result[0]?.id).toBe('bloom');
+    expect(result[1]?.id).toBe('vignette');
   });
 });

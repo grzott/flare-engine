@@ -4,6 +4,7 @@ import {
   BLOOM_SKSL,
   CHROMATIC_ABERRATION_SKSL,
   COLOR_GRADING_LUT_SKSL,
+  COMPOSITE_SKSL,
   CRT_SKSL,
   GOD_RAYS_SKSL,
   GRAYSCALE_FLASH_SKSL,
@@ -16,11 +17,8 @@ import {
 
 /**
  * Runtime — compiles SkSL sources on demand, builds uniform buffers per effect,
- * and exposes an `apply(width, height, chain)` that the renderer calls with
- * a source image to produce the final composited frame.
- *
- * The actual pixel-push happens inside the injected Skia module; this file
- * keeps the orchestration pure so it is fully testable without a GPU.
+ * and exposes `buildPass` that the bridge calls to get pass descriptors for
+ * rendering. Rendering itself is owned by the bridge in `@flare-engine/react`.
  */
 
 /**
@@ -33,29 +31,13 @@ export interface SkImageLike {
   readonly _skImageBrand?: never;
 }
 
-/** Minimal rect shape used by `SkiaCanvasLike.drawImageRect`. */
-export interface SkRectLike {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-/** Minimal paint handle needed by the compositor hot path. */
-export interface SkiaPaintLike {
-  setShader(shader: unknown): void;
-}
-
-/** Minimal canvas handle needed by the compositor hot path. */
-export interface SkiaCanvasLike {
-  drawImageRect(image: SkImageLike, src: SkRectLike, dst: SkRectLike, paint: SkiaPaintLike): void;
-}
-
 /** Shared frozen sentinel — every pass with no extra children points here. */
 const EMPTY_CHILDREN: readonly SkImageLike[] = Object.freeze([]);
 
 export interface SkiaRuntimeEffectLike {
-  makeShader(uniforms: Float32Array, children: unknown[]): unknown | null;
+  makeShaderWithChildren(uniforms: number[], children?: unknown[]): unknown | null;
+  /** Optional diagnostic — total float count expected by makeShaderWithChildren. */
+  getUniformFloatCount?(): number;
 }
 
 export interface SkiaRuntimeEffectFactory {
@@ -64,9 +46,6 @@ export interface SkiaRuntimeEffectFactory {
 
 export interface SkiaPostFxModuleLike {
   RuntimeEffect: SkiaRuntimeEffectFactory;
-  /** Optional Paint factory. When present, `createPostFxRuntime` allocates a
-   *  compositor paint lazily on first `apply()` call and reuses it every frame. */
-  Paint?(): SkiaPaintLike;
 }
 
 export interface CompiledShader {
@@ -81,32 +60,8 @@ export interface PostFxRuntime {
   compile(kind: EffectKind): CompiledShader | null;
   /** Pack an effect's uniforms into a Float32Array in the order the shader declares. */
   packUniforms(effect: Effect, width: number, height: number): Float32Array;
-  /** Build a list of `{ shader, uniforms }` tuples in chain order for enabled effects. */
+  /** Build a list of compiled pass descriptors in chain order for enabled effects. */
   buildPass(chain: EffectChain, width: number, height: number): CompiledPass[];
-  /**
-   * Composite a postfx chain onto `canvas` using `source` as the scene texture.
-   *
-   * For each enabled pass the method calls
-   * `pass.shader.makeShader(uniforms, [source, ...pass.children])`, sets the
-   * resulting shader on the compositor paint, then blits via
-   * `canvas.drawImageRect(source, srcRect, dstRect, paint)`.
-   *
-   * No-ops when:
-   *  - `runtime.supported === false`
-   *  - `source` is null
-   *  - the chain has 0 enabled effects
-   *  - the injected Skia module has no `Paint` factory
-   *
-   * The compositor paint is allocated lazily on the first call and reused
-   * on every subsequent call (zero-alloc hot path).
-   */
-  apply(
-    canvas: SkiaCanvasLike,
-    chain: EffectChain,
-    source: SkImageLike | null,
-    width: number,
-    height: number,
-  ): void;
   /** Drop all cached compiled shaders. */
   reset(): void;
 }
@@ -140,6 +95,7 @@ const SKSL_SOURCE: Record<EffectKind, string> = {
   'weather-sun-shaft': WEATHER_SUN_SHAFT_SKSL,
   'weather-dark-vignette': WEATHER_DARK_VIGNETTE_SKSL,
   'weather-clouds': WEATHER_CLOUDS_SKSL,
+  composite: COMPOSITE_SKSL,
 };
 
 /**
@@ -149,12 +105,9 @@ const SKSL_SOURCE: Record<EffectKind, string> = {
  */
 export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRuntime {
   const cache = new Map<EffectKind, CompiledShader>();
+  const _loggedCompileFailures = new Set<EffectKind>();
+  const _loggedCompileSuccesses = new Set<EffectKind>();
   const supported = skia !== null && typeof skia.RuntimeEffect?.Make === 'function';
-
-  // Compositor paint — allocated once on first apply() call, reused every frame.
-  let compositorPaint: SkiaPaintLike | null = null;
-  // Reusable rect sentinels — mutated in place each apply() call (zero-alloc).
-  const applyRect: SkRectLike = { x: 0, y: 0, width: 0, height: 0 };
 
   return {
     supported,
@@ -163,7 +116,23 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
       const cached = cache.get(kind);
       if (cached) return cached;
       const effect = skia.RuntimeEffect.Make(SKSL_SOURCE[kind]);
-      if (!effect) return null;
+      if (!effect) {
+        if (!_loggedCompileFailures.has(kind)) {
+          _loggedCompileFailures.add(kind);
+          console.warn(
+            `[postfx] RuntimeEffect.Make returned null for "${kind}" — shader failed to compile. Pass will be silently skipped.`,
+          );
+        }
+        return null;
+      }
+      if (!_loggedCompileSuccesses.has(kind)) {
+        _loggedCompileSuccesses.add(kind);
+        if (typeof effect.getUniformFloatCount === 'function') {
+          console.info(
+            `[postfx] compiled "${kind}" — getUniformFloatCount=${effect.getUniformFloatCount()}`,
+          );
+        }
+      }
       const compiled: CompiledShader = { kind, effect };
       cache.set(kind, compiled);
       return compiled;
@@ -191,21 +160,6 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
         });
       }
       return out;
-    },
-    apply(canvas, chain, source, width, height) {
-      if (!supported || source === null || skia === null) return;
-      if (typeof skia.Paint !== 'function') return;
-      const passes = this.buildPass(chain, width, height);
-      if (passes.length === 0) return;
-      if (compositorPaint === null) compositorPaint = skia.Paint();
-      const paint = compositorPaint;
-      applyRect.width = width;
-      applyRect.height = height;
-      for (const pass of passes) {
-        const shader = pass.shader.makeShader(pass.uniforms, [source, ...pass.children]);
-        paint.setShader(shader);
-        canvas.drawImageRect(source, applyRect, applyRect, paint);
-      }
     },
     reset() {
       cache.clear();
@@ -257,6 +211,29 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
       return new Float32Array([width, height, u.intensity]);
     case 'weather-clouds':
       return new Float32Array([width, height, u.intensity, u.scrollOffsetX]);
+    case 'composite':
+      // Packed in uniform-declaration order (19 floats); see COMPOSITE_SKSL header comment.
+      return new Float32Array([
+        width,
+        height,
+        u.vignetteIntensity,
+        u.vignetteRadius,
+        u.vignetteColor[0],
+        u.vignetteColor[1],
+        u.vignetteColor[2],
+        u.bloomThreshold,
+        u.bloomIntensity,
+        u.flashIntensity,
+        u.chromaAmount,
+        u.crtScanlineIntensity,
+        u.crtCurvature,
+        u.crtEnabled ? 1 : 0,
+        u.weatherKind,
+        u.weatherIntensity,
+        u.weatherDirection,
+        u.weatherScrollX,
+        u.weatherScrollY,
+      ]);
   }
 }
 
@@ -300,6 +277,15 @@ function scaleIntensity(kind: EffectKind, packed: Float32Array, scale: number): 
     case 'weather-clouds':
       // [width, height, intensity, ...]
       packed[2] = (packed[2] ?? 0) * scale;
+      return;
+    case 'composite':
+      // Scale all "strength" slots; leave geometry (vignetteRadius, bloomThreshold,
+      // crtCurvature, weatherDirection) and the discrete crtEnabled flag alone.
+      packed[2] = (packed[2] ?? 0) * scale; // vignetteIntensity
+      packed[8] = (packed[8] ?? 0) * scale; // bloomIntensity
+      packed[9] = (packed[9] ?? 0) * scale; // flashIntensity
+      packed[10] = (packed[10] ?? 0) * scale; // chromaAmount
+      packed[15] = (packed[15] ?? 0) * scale; // weatherIntensity
       return;
   }
 }

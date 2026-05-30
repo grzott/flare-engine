@@ -62,6 +62,7 @@ mock.module('react-native', () => ({
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
   Picture: 'Picture',
+  Image: 'Image',
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
   Skia: {
     XYWHRect: () => ({ setXYWH: () => {} }),

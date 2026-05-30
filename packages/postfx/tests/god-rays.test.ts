@@ -10,7 +10,7 @@ import { GOD_RAYS_SKSL } from '../src/shaders.js';
 
 function createMockSkia(): { skia: SkiaPostFxModuleLike; compiled: string[] } {
   const compiled: string[] = [];
-  const fake: SkiaRuntimeEffectLike = { makeShader: () => ({}) };
+  const fake: SkiaRuntimeEffectLike = { makeShaderWithChildren: () => ({}) };
   return {
     compiled,
     skia: {

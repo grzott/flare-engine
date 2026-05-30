@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { EffectChain } from '../src/chain.js';
 import {
   createBloom,
@@ -15,7 +15,7 @@ import {
 
 function createMockSkia(): { skia: SkiaPostFxModuleLike; compiled: string[] } {
   const compiled: string[] = [];
-  const fake: SkiaRuntimeEffectLike = { makeShader: () => ({}) };
+  const fake: SkiaRuntimeEffectLike = { makeShaderWithChildren: () => ({}) };
   return {
     compiled,
     skia: {
@@ -190,6 +190,52 @@ describe('createPostFxRuntime', () => {
       if (e && e.uniforms.kind === 'vignette') {
         expect(e.uniforms.intensity).toBe(0.8);
       }
+    });
+  });
+
+  describe('compile diagnostics', () => {
+    let warnSpy: ReturnType<typeof spyOn>;
+    let infoSpy: ReturnType<typeof spyOn>;
+
+    beforeEach(() => {
+      warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+      infoSpy = spyOn(console, 'info').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
+      infoSpy.mockRestore();
+    });
+
+    test('logs warning once when RuntimeEffect.Make returns null', () => {
+      const nullSkia: SkiaPostFxModuleLike = {
+        RuntimeEffect: { Make: () => null },
+      };
+      const rt = createPostFxRuntime(nullSkia);
+      rt.compile('vignette');
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const msg: string = (warnSpy.mock.calls[0] as string[])[0] ?? '';
+      expect(msg).toContain('vignette');
+      rt.compile('vignette');
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test('logs info once when compile succeeds and getUniformFloatCount is available', () => {
+      const stubEffect: SkiaRuntimeEffectLike = {
+        makeShaderWithChildren: () => ({}),
+        getUniformFloatCount: () => 19,
+      };
+      const countSkia: SkiaPostFxModuleLike = {
+        RuntimeEffect: { Make: () => stubEffect },
+      };
+      const rt = createPostFxRuntime(countSkia);
+      rt.compile('composite');
+      expect(infoSpy).toHaveBeenCalledTimes(1);
+      const msg: string = (infoSpy.mock.calls[0] as string[])[0] ?? '';
+      expect(msg).toContain('composite');
+      expect(msg).toContain('getUniformFloatCount=19');
+      rt.compile('composite');
+      expect(infoSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

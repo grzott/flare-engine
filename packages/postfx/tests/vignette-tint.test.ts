@@ -8,7 +8,7 @@ import {
 } from '../src/runtime.js';
 
 function createMockSkia(): SkiaPostFxModuleLike {
-  const fake: SkiaRuntimeEffectLike = { makeShader: () => ({}) };
+  const fake: SkiaRuntimeEffectLike = { makeShaderWithChildren: () => ({}) };
   return {
     RuntimeEffect: {
       Make: () => fake,

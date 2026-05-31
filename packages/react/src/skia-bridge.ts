@@ -192,7 +192,22 @@ export interface PostFxChainLike {
  */
 export interface SkiaFrameRenderer {
   readonly canvas: CanvasLike;
-  beginFrame(viewportWidth: number, viewportHeight: number, time?: number): void;
+  /**
+   * Open a fresh picture recording for this frame.
+   * @param viewportWidth  Logical viewport width (CSS pixels).
+   * @param viewportHeight Logical viewport height (CSS pixels).
+   * @param time           Frame timestamp in seconds (default 0).
+   * @param pixelDensity   Logical→physical recording scale (default 1). When
+   *                       > 1 the recording bounds are expanded to physical
+   *                       resolution and a matching scale() is baked in so
+   *                       `usePictureAsTexture` fills a physical-size backing.
+   */
+  beginFrame(
+    viewportWidth: number,
+    viewportHeight: number,
+    time?: number,
+    pixelDensity?: number,
+  ): void;
   /**
    * drawAtlas callback compatible with `SpriteBatch.flush`. Accepts
    * `SkImageLike` (the narrow `@flare-engine/assets` type used by the batch) and
@@ -718,13 +733,15 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   return {
     canvas,
 
-    beginFrame(viewportWidth: number, viewportHeight: number, time = 0): void {
+    beginFrame(viewportWidth: number, viewportHeight: number, time = 0, pixelDensity = 1): void {
       if (viewportWidth === 0 || viewportHeight === 0) return;
       _boundRuntime = null;
       _boundChain = null;
       currentFrameTime = time;
-      recordingBounds.setXYWH(0, 0, viewportWidth, viewportHeight);
+      const pd = pixelDensity;
+      recordingBounds.setXYWH(0, 0, viewportWidth * pd, viewportHeight * pd);
       current = recorder.beginRecording(recordingBounds);
+      if (pd !== 1) current.scale(pd, pd);
     },
 
     drawAtlas(image, commands): void {

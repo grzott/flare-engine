@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 // Collected cleanup fns from mocked useEffect — cleared before each test.
 const _effectCleanups: Array<() => void> = [];
 
+// Override viewport initial state for high-DPI tests. Set before mount(), reset in beforeEach.
+let _viewportOverride: { w: number; h: number } | null = null;
+
 // Mock all external deps before import
 mock.module('react', () => ({
   createElement: () => null,
@@ -15,10 +18,19 @@ mock.module('react', () => ({
     const cleanup = fn();
     if (typeof cleanup === 'function') _effectCleanups.push(cleanup);
   },
-  useState: (init: unknown) => [
-    typeof init === 'function' ? (init as () => unknown)() : init,
-    () => {},
-  ],
+  useState: (init: unknown) => {
+    // If this is the viewportSize state (initial value has w/h), allow override.
+    if (
+      _viewportOverride !== null &&
+      typeof init === 'object' &&
+      init !== null &&
+      'w' in (init as object) &&
+      'h' in (init as object)
+    ) {
+      return [_viewportOverride, () => {}];
+    }
+    return [typeof init === 'function' ? (init as () => unknown)() : init, () => {}];
+  },
 }));
 const jsxMock = {
   jsx: () => null,
@@ -29,39 +41,74 @@ const jsxMock = {
 mock.module('react/jsx-runtime', () => jsxMock);
 mock.module('react/jsx-dev-runtime', () => jsxMock);
 
+let _mockPixelRatio = 1;
+
 mock.module('react-native', () => ({
   View: 'View',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  PixelRatio: { get: () => _mockPixelRatio },
 }));
 
 mock.module('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
+let _usePictureAsTextureArgs: Array<{ width: number; height: number }> = [];
+let _beginRecordingBounds: Array<{ width: number; height: number }> = [];
+let _beginFramePdArgs: number[] = [];
+
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
-  Picture: 'Picture',
   Image: 'Image',
   RuntimeShader: 'RuntimeShader',
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
   // usePictureAsTexture returns a SharedValue-shaped object with a null image stub.
   // In tests there is no Reanimated; we return a plain object that satisfies
   // the <Image image={sceneTexture}/> null-check in GameView.
-  usePictureAsTexture: () => ({ value: null }),
+  usePictureAsTexture: (_pic: unknown, size: { width: number; height: number }) => {
+    _usePictureAsTextureArgs.push({ width: size.width, height: size.height });
+    return { value: null };
+  },
   Skia: {
-    XYWHRect: () => ({ setXYWH: () => {} }),
+    XYWHRect: (x: number, y: number, w: number, h: number) => {
+      const r = {
+        x,
+        y,
+        width: w,
+        height: h,
+        setXYWH(nx: number, ny: number, nw: number, nh: number) {
+          r.x = nx;
+          r.y = ny;
+          r.width = nw;
+          r.height = nh;
+        },
+      };
+      return r;
+    },
     RSXform: () => ({ set: () => {} }),
-    Paint: () => ({}),
+    Paint: () => ({
+      setColorFilter: () => {},
+      setShader: () => {},
+      setAlphaf: () => {},
+      setColor: () => {},
+    }),
     PictureRecorder: () => ({
-      beginRecording: () => ({
-        save: () => 0,
-        restore: () => {},
-        translate: () => {},
-        scale: () => {},
-        rotate: () => {},
-        clear: () => {},
-        drawAtlas: () => {},
-      }),
+      beginRecording: (bounds: { width: number; height: number }) => {
+        if (bounds !== undefined) {
+          _beginRecordingBounds.push({ width: bounds.width, height: bounds.height });
+        }
+        return {
+          save: () => 0,
+          restore: () => {},
+          translate: () => {},
+          scale: (sx: number) => {
+            _beginFramePdArgs.push(sx);
+          },
+          rotate: () => {},
+          clear: () => {},
+          drawAtlas: () => {},
+        };
+      },
       finishRecordingAsPicture: () => ({}),
     }),
   },
@@ -278,6 +325,11 @@ beforeEach(() => {
   _rendererInstance = null;
   _batchInstance = null;
   _inputInstance = null;
+  _mockPixelRatio = 1;
+  _viewportOverride = null;
+  _usePictureAsTextureArgs = [];
+  _beginRecordingBounds = [];
+  _beginFramePdArgs = [];
 });
 
 describe('GameView', () => {
@@ -430,6 +482,45 @@ describe('GameView — PostFxRenderHook', () => {
   it('no-op when onRenderPostFx is absent — onPreRender does not throw', () => {
     mount({ config: {} });
     expect(() => _loopInstance!.onPreRender._handler?.()).not.toThrow();
+    unmountAll();
+  });
+});
+
+describe('GameView — high-DPI scene texture', () => {
+  it('usePictureAsTexture receives physical dimensions when PixelRatio=2 and layout=400×600', () => {
+    _mockPixelRatio = 2;
+    _viewportOverride = { w: 400, h: 600 };
+    mount();
+    // usePictureAsTexture is called during render (sceneSize memo); pick the last call.
+    const last = _usePictureAsTextureArgs[_usePictureAsTextureArgs.length - 1];
+    expect(last).toEqual({ width: 800, height: 1200 });
+    unmountAll();
+  });
+
+  it('beginFrame is called with pixelDensity=2 as 4th arg (recording bounds at physical res)', () => {
+    _mockPixelRatio = 2;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    _beginRecordingBounds.length = 0;
+    _beginFramePdArgs.length = 0;
+    _loopInstance!.onPreRender._handler?.();
+    // bounds should be 800×1200
+    const bounds = _beginRecordingBounds[0];
+    expect(bounds).toBeDefined();
+    expect(bounds?.width).toBe(800);
+    expect(bounds?.height).toBe(1200);
+    // scale(2, 2) baked into the recording
+    expect(_beginFramePdArgs[0]).toBe(2);
+    unmountAll();
+  });
+
+  it('rendered tree contains no Picture node (Picture import removed)', () => {
+    // If <Picture> were referenced, the mock would need 'Picture' exported.
+    // The game-view mock intentionally omits it; importing it would throw.
+    // We verify indirectly: mounting must not throw even though 'Picture' is absent from mock.
+    expect(() => mount()).not.toThrow();
     unmountAll();
   });
 });

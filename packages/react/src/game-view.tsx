@@ -10,7 +10,6 @@ import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
 import {
   Canvas,
   Image,
-  Picture,
   RuntimeShader,
   Skia,
   useCanvasRef,
@@ -18,7 +17,7 @@ import {
 } from '@shopify/react-native-skia';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { PixelRatio, StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameContext, type GameContextValue } from './game-context.js';
@@ -114,9 +113,10 @@ export function GameView({
   const [picture, setPicture] = useState<SkPicture | null>(null);
   const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>([]);
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
+  const pd = PixelRatio.get();
   const sceneSize = useMemo(
-    () => ({ width: viewportSize.w, height: viewportSize.h }),
-    [viewportSize.w, viewportSize.h],
+    () => ({ width: viewportSize.w * pd, height: viewportSize.h * pd }),
+    [viewportSize.w, viewportSize.h, pd],
   );
   const sceneTexture = usePictureAsTexture(picture, sceneSize);
 
@@ -158,7 +158,7 @@ export function GameView({
     const unsubscribePre = ctx.loop.onPreRender.add(() => {
       const w = ctx.camera.viewportWidth;
       const h = ctx.camera.viewportHeight;
-      bridge.beginFrame(w, h);
+      bridge.beginFrame(w, h, 0, pd);
       ctx.renderer.begin(clearColor);
       ctx.renderer.applyCamera(
         ctx.camera.effectiveX,
@@ -223,7 +223,7 @@ export function GameView({
             pointerEvents="none"
             opaque={config?.opaque ?? false}
           >
-            {viewportSize.w === 0 ? null : passes.length > 0 && sceneTexture != null ? (
+            {viewportSize.w === 0 || sceneTexture == null ? null : (
               <Image
                 image={sceneTexture}
                 x={0}
@@ -236,9 +236,7 @@ export function GameView({
                   <RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />
                 ))}
               </Image>
-            ) : picture !== null ? (
-              <Picture picture={picture} />
-            ) : null}
+            )}
           </Canvas>
           {children}
         </View>

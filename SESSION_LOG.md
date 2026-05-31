@@ -5974,3 +5974,23 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 153 — 2026-05-31 (scope: engine)
+
+**Goal:** High-DPI physical-resolution scene texture for postfx
+
+**Touched files**
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

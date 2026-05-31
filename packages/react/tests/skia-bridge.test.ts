@@ -85,6 +85,7 @@ interface MockCanvas {
     paintAlphaf: number;
   }>;
   clearCalls: Float32Array[];
+  scaleCalls: Array<{ sx: number; sy: number }>;
 }
 
 let xywhCount = 0;
@@ -98,7 +99,7 @@ let finishCalls = 0;
 let beginRecordingBoundsArgs: Array<{ x: number; y: number; width: number; height: number }> = [];
 
 function createMockCanvas(): MockCanvas {
-  return { drawAtlasCalls: [], clearCalls: [] };
+  return { drawAtlasCalls: [], clearCalls: [], scaleCalls: [] };
 }
 
 function makeMockSkia(): SkiaModuleLike {
@@ -185,7 +186,9 @@ function makeMockSkia(): SkiaModuleLike {
             save: () => 0,
             restore: () => {},
             translate: () => {},
-            scale: () => {},
+            scale(sx, sy) {
+              this.scaleCalls.push({ sx, sy });
+            },
             rotate: () => {},
             clear(color) {
               this.clearCalls.push(new Float32Array(color));
@@ -521,6 +524,31 @@ describe('createSkiaFrameRenderer', () => {
     expect(beginRecordingBoundsArgs).toHaveLength(0);
     expect(currentMockCanvas).toBeNull();
     expect(bridge.endFrame()).toBeNull();
+  });
+
+  it('beginFrame with pixelDensity=2 sets physical bounds (800×1200) and emits scale(2,2)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(400, 600, 0, 2);
+    expect(beginRecordingBoundsArgs).toHaveLength(1);
+    expect(beginRecordingBoundsArgs[0]).toEqual({ x: 0, y: 0, width: 800, height: 1200 });
+    expect(currentMockCanvas?.scaleCalls).toHaveLength(1);
+    expect(currentMockCanvas?.scaleCalls[0]).toEqual({ sx: 2, sy: 2 });
+  });
+
+  it('beginFrame without pixelDensity keeps logical bounds and emits no scale call', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(400, 600);
+    expect(beginRecordingBoundsArgs).toHaveLength(1);
+    expect(beginRecordingBoundsArgs[0]).toEqual({ x: 0, y: 0, width: 400, height: 600 });
+    expect(currentMockCanvas?.scaleCalls).toHaveLength(0);
+  });
+
+  it('beginFrame with pixelDensity=1 keeps logical bounds and emits no scale call', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(400, 600, 0, 1);
+    expect(beginRecordingBoundsArgs).toHaveLength(1);
+    expect(beginRecordingBoundsArgs[0]).toEqual({ x: 0, y: 0, width: 400, height: 600 });
+    expect(currentMockCanvas?.scaleCalls).toHaveLength(0);
   });
 });
 
@@ -1280,5 +1308,22 @@ describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
     const result = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
     expect(result[0]?.id).toBe('bloom');
     expect(result[1]?.id).toBe('vignette');
+  });
+
+  it('buildPostFxPasses forwards logical w/h to rt.buildPass regardless of pixelDensity', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    // Frame recorded at pd=2 → physical bounds 800×1200, but w/h args to buildPostFxPasses are logical.
+    bridge.beginFrame(400, 600, 0, 2);
+    const buildPassArgs: [number, number][] = [];
+    const runtime: PostFxRuntimeLike = {
+      supported: true,
+      buildPass: (_ch, w, h) => {
+        buildPassArgs.push([w, h]);
+        return [];
+      },
+    };
+    bridge.buildPostFxPasses(runtime, makeMockChain(), 400, 600);
+    expect(buildPassArgs).toHaveLength(1);
+    expect(buildPassArgs[0]).toEqual([400, 600]);
   });
 });

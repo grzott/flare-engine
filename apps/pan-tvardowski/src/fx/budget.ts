@@ -1,13 +1,11 @@
 import { createFrameBudget } from '@flare-engine/debug';
-import type { PanPostFxController, PostFxController } from './postfx';
+import type { PostFxController } from './postfx';
 
 export interface BudgetSnapshot {
   draws: number;
   particles: number;
   postfx: number;
   subShapeDraws: number;
-  /** True when the rim-light fullscreen pass is active this frame. */
-  postfxRimLight: boolean;
 }
 
 export const BUDGET_LIMITS = {
@@ -34,7 +32,6 @@ const _lastSnapshot: BudgetSnapshot = {
   particles: 0,
   postfx: 0,
   subShapeDraws: 0,
-  postfxRimLight: false,
 };
 let _watchdogDropped = false;
 
@@ -43,11 +40,10 @@ export function recordBudget(s: BudgetSnapshot): void {
   _lastSnapshot.particles = s.particles;
   _lastSnapshot.postfx = s.postfx;
   _lastSnapshot.subShapeDraws = s.subShapeDraws;
-  _lastSnapshot.postfxRimLight = s.postfxRimLight;
   _budget.recordCounters({
     draws: s.draws,
     particles: s.particles,
-    postfx: s.postfx + (s.postfxRimLight ? 1 : 0),
+    postfx: s.postfx,
     subShapeDraws: s.subShapeDraws,
   });
 }
@@ -97,8 +93,6 @@ export function checkFpsWatchdog(postfx: PostFxController): boolean {
     _watchdogDropped = true;
     postfx.chain.setEnabled('chromatic-aberration', false);
     postfx.chain.setEnabled('crt', false);
-    // Disable rim-light pass when present — it's the most expensive custom pass.
-    (postfx as PanPostFxController).disableRimLight?.();
     return true;
   }
   return false;

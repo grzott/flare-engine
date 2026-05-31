@@ -313,18 +313,6 @@ export interface TileDef {
   };
 }
 
-// ---- Rim-light definition ---------------------------------------------------
-
-/** Per-boss rim-light parameters consumed by the shadow-rim SkSL pass. */
-export interface RimLightDef {
-  readonly colorR: number;
-  readonly colorG: number;
-  readonly colorB: number;
-  readonly intensity: number;
-  readonly falloffRadius: number;
-  readonly bossDiscRadius: number;
-}
-
 // ---- Boss spawn-layout definitions ------------------------------------------
 
 /**

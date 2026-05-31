@@ -6,10 +6,8 @@ import {
   createPostFxComposite,
   createPostFxController,
 } from '@flare-engine/postfx';
-import { SHADOW_RIM_CHAIN, type ShadowRimRuntime, createShadowRimRuntime } from '../lighting';
-import { RIM_LIGHT_DEFS } from '../visual-spec/lighting';
 import { BASELINE_POSTFX, resolvePostFx } from '../visual-spec/postfx';
-import type { PostFxPresetDef, RimLightDef, ZoneFxDef } from '../visual-spec/types';
+import type { PostFxPresetDef, ZoneFxDef } from '../visual-spec/types';
 
 export type { PostFxController };
 
@@ -20,18 +18,6 @@ export interface PanPostFxController extends PostFxController {
   triggerBloomPulse(durationMs: number): void;
   setCrtEnabled(enabled: boolean): void;
   setVignetteColor(r: number, g: number, b: number): void;
-  /** Cache a RimLightDef for this boss encounter; call on phase-enter. */
-  setRimLightDef(def: RimLightDef): void;
-  /** Enable the shadow-rim pass and update light + boss positions this frame. */
-  setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void;
-  /** Disable the shadow-rim pass (boss defeated or budget watchdog triggered). */
-  disableRimLight(): void;
-  /** True when the shadow-rim pass is active. */
-  readonly rimLightEnabled: boolean;
-  /** The shadow-rim runtime — used by play.ts render hook for the second applyPostFx call. */
-  readonly rimLight: ShadowRimRuntime;
-  /** The trivial chain for the shadow-rim pass. */
-  readonly rimLightChain: typeof SHADOW_RIM_CHAIN;
   /** Activate the per-zone weather FX pass. Pass undefined to deactivate. */
   setZoneFxDef(def: ZoneFxDef | undefined): void;
 }
@@ -76,12 +62,6 @@ export function createPanTvardowskiPostFx(
   // Mutable alias — uniforms object is shared by reference; fields are mutated in place.
   const u = compositeEffect.uniforms as { kind: 'composite' } & CompositeUniforms;
 
-  const rimLight = createShadowRimRuntime(skia);
-  let rimLightEnabled = false;
-  // Cached per-boss rim-light def. Defaults to smok so existing call sites are
-  // unchanged before any boss calls setRimLightDef.
-  let activeRimDef: RimLightDef = RIM_LIGHT_DEFS['smok-krzemionkowski'] as RimLightDef;
-
   const bloomBaseline = p.bloom.intensity;
 
   let flashIntensity = 0;
@@ -101,37 +81,6 @@ export function createPanTvardowskiPostFx(
     },
     get runtime() {
       return base.runtime;
-    },
-    get rimLightEnabled() {
-      return rimLightEnabled;
-    },
-    get rimLight() {
-      return rimLight;
-    },
-    get rimLightChain() {
-      return SHADOW_RIM_CHAIN;
-    },
-    setRimLightDef(def: RimLightDef): void {
-      activeRimDef = def;
-    },
-    setRimLight(lightX: number, lightY: number, bossX: number, bossY: number): void {
-      rimLightEnabled = true;
-      rimLight.updateUniforms(
-        lightX,
-        lightY,
-        activeRimDef.colorR,
-        activeRimDef.colorG,
-        activeRimDef.colorB,
-        activeRimDef.intensity,
-        activeRimDef.falloffRadius,
-        bossX,
-        bossY,
-        activeRimDef.bossDiscRadius,
-      );
-      rimLight.updateOccluders(bossX, bossY);
-    },
-    disableRimLight(): void {
-      rimLightEnabled = false;
     },
     setZoneFxDef(def: ZoneFxDef | undefined): void {
       if (def === undefined) {

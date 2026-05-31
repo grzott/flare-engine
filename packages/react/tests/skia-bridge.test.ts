@@ -384,8 +384,8 @@ describe('createSkiaFrameRenderer', () => {
     createSkiaFrameRenderer(makeMockSkia());
     expect(paintCount).toBe(1);
     expect(recorderCount).toBe(1);
-    // Two XYWHRects pre-allocated: one for recording bounds + one for postfx compositor rect.
-    expect(xywhCount).toBe(2);
+    // One XYWHRect pre-allocated: recording bounds.
+    expect(xywhCount).toBe(1);
     expect(rsxformCount).toBe(0);
   });
 
@@ -447,8 +447,8 @@ describe('createSkiaFrameRenderer', () => {
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({}), cmd({})]);
     const xywhAfterFirst = xywhCount;
     const rsxformAfterFirst = rsxformCount;
-    // 2 pre-allocated rects (bounds + postfx compositor) + 3 pool entries
-    expect(xywhAfterFirst).toBe(5);
+    // 1 pre-allocated rect (bounds) + 3 pool entries
+    expect(xywhAfterFirst).toBe(4);
     expect(rsxformAfterFirst).toBe(3);
 
     // Second call with same size — pool is reused, no new allocations.
@@ -461,11 +461,11 @@ describe('createSkiaFrameRenderer', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkia());
     bridge.beginFrame(800, 600);
     bridge.drawAtlas(mockImage(), [cmd({})]);
-    // 2 pre-allocated rects (bounds + postfx compositor) + 1 pool entry
-    expect(xywhCount).toBe(3);
+    // 1 pre-allocated rect (bounds) + 1 pool entry
+    expect(xywhCount).toBe(2);
     bridge.drawAtlas(mockImage(), [cmd({}), cmd({}), cmd({})]);
-    // 2 pre-allocated rects + 3 pool entries
-    expect(xywhCount).toBe(5);
+    // 1 pre-allocated rect + 3 pool entries
+    expect(xywhCount).toBe(4);
     expect(rsxformCount).toBe(3);
   });
 

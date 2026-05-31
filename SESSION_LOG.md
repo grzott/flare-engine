@@ -5931,3 +5931,46 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 152 — 2026-05-31 (scope: mixed)
+
+**Goal:** Cut dead shadow-rim/rim-light lighting stack + legacy postfx fallback path
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/budget.ts`
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/lighting/index.ts`
+- `apps/pan-tvardowski/src/lighting/rim-light-runtime.ts`
+- `apps/pan-tvardowski/src/lighting/rim-light-sksl.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-map.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-rim-runtime.ts`
+- `apps/pan-tvardowski/src/lighting/shadow-rim-sksl.ts`
+- `apps/pan-tvardowski/src/lighting/types.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/systems/boss/smok.ts`
+- `apps/pan-tvardowski/src/systems/boss/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/lighting.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/tests/frame-budget.test.ts`
+- `apps/pan-tvardowski/tests/postfx-chain.test.ts`
+- `apps/pan-tvardowski/tests/rim-light-math.test.ts`
+- `apps/pan-tvardowski/tests/rim-light-spec.test.ts`
+- `apps/pan-tvardowski/tests/shadow-map.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `docs/design/api-specs.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/ping-pong.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -22,10 +22,6 @@ function makeSpyBridge(): SkiaFrameRenderer {
     drawAtlas: mock(() => {}),
     setPostFxBinding: mock(() => {}),
     buildPostFxPasses: mock(() => []),
-    applyPostFx: mock(() => {}),
-    captureSceneSnapshot: mock(() => null),
-    getPostfxResult: mock(() => null),
-    clearPostfxResult: mock(() => {}),
     endFrame: mock(() => null),
   } as unknown as SkiaFrameRenderer;
 }
@@ -100,14 +96,6 @@ describe('postfx chain', () => {
       const kindsAfter = fx.chain.all().map((e: Effect) => e.id);
       expect(kindsAfter).toEqual(kindsBefore);
       expect(kindsAfter.length).toBe(kindsBefore.length);
-    });
-
-    test('applyPostFx not called during main composite hook (no capture path)', () => {
-      const { hook } = makeHook();
-      const bridge = makeSpyBridge();
-      hook(mockCtx, mockCanvas, bridge);
-      const spy = bridge.applyPostFx as ReturnType<typeof mock>;
-      expect(spy.mock.calls.length).toBe(0);
     });
   });
 

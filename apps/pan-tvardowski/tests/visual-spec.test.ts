@@ -285,7 +285,8 @@ describe('visual-spec — schema canary', () => {
   // types added — additive per schema stability protocol.
   // Bumped (B5-followup): ZoneBackground.ambience field removed — ambient particle
   // system replaced by per-zone weather postfx effects.
-  const SCHEMA_CANARY = '6229ed268d1993e09ebc9118464da1cf64d9262f51679b8494b87454e097dbc1';
+  // Bumped (shadow-rim-cut): RimLightDef interface removed — dead lighting stack cut.
+  const SCHEMA_CANARY = 'dd873aabe9b7889bc178dca8febf1f1ed97f54f427f1036076caab36592632d9';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

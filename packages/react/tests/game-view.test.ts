@@ -427,20 +427,6 @@ describe('GameView — PostFxRenderHook', () => {
     unmountAll();
   });
 
-  it('bridge still exposes legacy applyPostFx for rim-light fallback', () => {
-    let capturedBridge: unknown = undefined;
-    mount({
-      config: {
-        onRenderPostFx: (_ctx, _canvas, bridge) => {
-          capturedBridge = bridge;
-        },
-      },
-    });
-    _loopInstance!.onPreRender._handler?.();
-    expect(typeof (capturedBridge as { applyPostFx?: unknown })?.applyPostFx).toBe('function');
-    unmountAll();
-  });
-
   it('no-op when onRenderPostFx is absent — onPreRender does not throw', () => {
     mount({ config: {} });
     expect(() => _loopInstance!.onPreRender._handler?.()).not.toThrow();

@@ -33,7 +33,8 @@ export type RenderHook = (ctx: GameContextValue, canvas: unknown) => void;
 
 /** Render hook for post-processing passes. Receives the game context, the
  *  active Skia canvas, and the `SkiaFrameRenderer` bridge so the hook can
- *  call `bridge.applyPostFx(runtime, chain, source, w, h)` directly.
+ *  call `bridge.setPostFxBinding(runtime, chain)` to register the runtime
+ *  and chain for the current frame.
  *  `bridge` is `null` only on platforms where no Skia renderer was created
  *  (future web fallback). */
 export type PostFxRenderHook = (
@@ -57,7 +58,8 @@ export interface GameConfig {
   onRenderBackground?: RenderHook;
   /** Called after the sprite batch has been flushed, before `renderer.end()`.
    *  Receives the bridge as 3rd arg so the hook can call
-   *  `bridge.applyPostFx(runtime, chain, source, w, h)` directly. */
+   *  `bridge.setPostFxBinding(runtime, chain)` to register the postfx runtime
+   *  and chain for the current frame. */
   onRenderPostFx?: PostFxRenderHook;
   /**
    * Promote the underlying Skia surface from a TextureView (default) to a

@@ -39,18 +39,8 @@ import type {
   SkPictureRecorder,
   SkRSXform,
   SkRuntimeEffect,
-  SkShader,
   Skia,
 } from '@shopify/react-native-skia';
-
-// TileMode / FilterMode / MipmapMode are plain numeric enums in RN-Skia but
-// the runtime JS bundle for node/test environments does not re-export them.
-// We inline the stable numeric values here so the bridge compiles and runs in
-// both production (native) and test (Bun) environments without a runtime dep.
-// Values match @shopify/react-native-skia/.../ImageFilter.d.ts and Image.d.ts.
-const TILE_DECAL = 3 as const; // TileMode.Decal
-const FILTER_LINEAR = 1 as const; // FilterMode.Linear
-const MIPMAP_NONE = 0 as const; // MipmapMode.None
 
 /** Structural canvas — minimal subset needed for offscreen rendering. */
 export interface SkOffscreenCanvasLike {
@@ -169,20 +159,11 @@ export interface CompiledPassLike {
  * Declared locally so `@flare-engine/react` does not take a hard dep on
  * `@flare-engine/postfx`; interfaces are compatible structurally.
  *
- * Runtimes that expose `buildPass` are fully managed by the bridge (ping-pong,
- * shader invocation, drawRect). Runtimes without `buildPass` (e.g. legacy
- * shadow-rim-runtime) fall back to the optional `apply` path they own.
+ * Runtimes that expose `buildPass` are fully managed by the bridge via the
+ * JSX `<Image><RuntimeShader/></Image>` chain in GameView.
  */
 export interface PostFxRuntimeLike {
   readonly supported: boolean;
-  /** Legacy fallback — only called when `buildPass` is absent. */
-  apply?(
-    canvas: unknown,
-    chain: PostFxChainLike,
-    source: unknown,
-    width: number,
-    height: number,
-  ): void;
   buildPass?(chain: PostFxChainLike, width: number, height: number): readonly CompiledPassLike[];
 }
 
@@ -243,33 +224,6 @@ export interface SkiaFrameRenderer {
    */
   setPostFxBinding(runtime: PostFxRuntimeLike | null, chain: PostFxChainLike | null): void;
 
-  /**
-   * @deprecated Use buildPostFxPasses + JSX RuntimeShader chain instead.
-   * Retained as legacy entry point for runtimes that do not implement
-   * buildPass (e.g. shadow-rim-runtime). When runtime.buildPass is absent,
-   * calls runtime.apply(canvas, chain, source, w, h) into the recording
-   * canvas. Migration target: make ShadowRimRuntime implement buildPass.
-   */
-  applyPostFx(
-    runtime: PostFxRuntimeLike,
-    chain: PostFxChainLike,
-    source: SkImageLike | null,
-    width: number,
-    height: number,
-  ): void;
-
-  /**
-   * @deprecated Capture is no longer needed on the bridge side — the scene
-   * picture is converted to a texture via usePictureAsTexture in GameView.
-   * Retained for backward-compat until captureSceneSnapshot call sites in
-   * play.ts are removed.
-   */
-  captureSceneSnapshot(width: number, height: number): SkImageLike | null;
-
-  /** @deprecated No longer used by GameView. Returns null after refactor. */
-  getPostfxResult(): SkImageLike | null;
-  /** @deprecated No longer used by GameView. */
-  clearPostfxResult(): void;
   endFrame(): SkPicture | null;
 }
 
@@ -400,40 +354,7 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   let currentFrameTime = 0;
   let current: SkCanvas | null = null;
 
-  // Offscreen surface for captureSceneSnapshot — allocated lazily, reused
-  // across frames, replaced when the viewport dimensions change.
-  let snapshotSurface: SkSurfaceLike | null = null;
-  let snapshotSurfaceW = 0;
-  let snapshotSurfaceH = 0;
-
-  // Ping-pong surfaces for multi-pass postfx chains — allocated lazily,
-  // reused across frames, replaced when the viewport dimensions change.
-  let pingPingSurface: SkSurfaceLike | null = null;
-  let pingPongSurface: SkSurfaceLike | null = null;
-  let pingPongW = 0;
-  let pingPongH = 0;
-
-  // Output surface for postfx final composite — allocated lazily, resized on
-  // viewport change. The final pass renders here; GameView reads the snapshot
-  // via getPostfxResult() instead of displaying the recording canvas picture.
-  let outputSurface: SkSurfaceLike | null = null;
-  let outputSurfaceW = 0;
-  let outputSurfaceH = 0;
-
-  // Most recent postfx snapshot produced by applyPostFx. Cleared at beginFrame.
-  let _postfxResult: SkImageLike | null = null;
-
-  // Postfx compositor state — allocated lazily, reused every frame (zero-alloc).
-  let postfxPaint: SkPaint | null = null;
-  const postfxRect: SkHostRect = Skia.XYWHRect(0, 0, 0, 0);
-  // Scratch number array for uniforms — grown to max-seen length, never shrinks.
-  const postfxUniformScratch: number[] = [];
-
-  // Saved viewport dims for restarting the recording after a mid-frame snapshot.
-  let currentViewportW = 0;
-  let currentViewportH = 0;
-
-  // PostFx binding published by setPostFxBinding each frame (Option B).
+  // PostFx binding published by setPostFxBinding each frame.
   // GameView reads these after endFrame to drive buildPostFxPasses.
   let _boundRuntime: PostFxRuntimeLike | null = null;
   let _boundChain: PostFxChainLike | null = null;
@@ -444,17 +365,6 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     if (_loggedOnce.has(msg)) return;
     _loggedOnce.add(msg);
     console.warn(`[postfx] ${msg}`);
-  }
-
-  // Per-pass-id dedup sets for renderPassToCanvas diagnostics.
-  const _loggedPassReached = new Set<string>();
-  const _loggedShaderNull = new Set<string>();
-
-  // Prefer GPU-backed offscreen surface; fall back to CPU when unavailable.
-  function makeSurface(w: number, h: number): SkSurfaceLike | null {
-    const sf = Skia.Surface;
-    if (sf === undefined) return null;
-    return sf.MakeOffscreen?.(w, h) ?? sf.Make(w, h);
   }
 
   const canvas: CanvasLike = {
@@ -805,75 +715,14 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     }
   }
 
-  function renderPassToCanvas(
-    target: SkOffscreenCanvasLike,
-    pass: CompiledPassLike,
-    source: SkImage,
-    width: number,
-    height: number,
-  ): void {
-    if (postfxPaint === null) postfxPaint = Skia.Paint();
-
-    const sourceShader: SkShader = source.makeShaderOptions(
-      TILE_DECAL,
-      TILE_DECAL,
-      FILTER_LINEAR,
-      MIPMAP_NONE,
-    );
-
-    const children: SkShader[] = [sourceShader];
-    for (const childImage of pass.children) {
-      children.push(
-        (childImage as SkImage).makeShaderOptions(
-          TILE_DECAL,
-          TILE_DECAL,
-          FILTER_LINEAR,
-          MIPMAP_NONE,
-        ),
-      );
-    }
-
-    // Copy Float32Array → number[] (RN-Skia requires number[]).
-    // Zero-alloc steady state: grow scratch once to max-seen length, then reuse.
-    while (postfxUniformScratch.length < pass.uniforms.length) postfxUniformScratch.push(0);
-    postfxUniformScratch.length = pass.uniforms.length;
-    for (let i = 0; i < pass.uniforms.length; i++) {
-      postfxUniformScratch[i] = pass.uniforms[i] as number;
-    }
-
-    const shader = pass.shader.makeShaderWithChildren(postfxUniformScratch, children);
-
-    if (!_loggedPassReached.has(pass.id)) {
-      _loggedPassReached.add(pass.id);
-      console.info(
-        `[postfx] renderPassToCanvas reached pass="${pass.id}" shaderNonNull=${shader !== null} uniforms=${postfxUniformScratch.length} children=${children.length} width=${width} height=${height}`,
-      );
-    }
-
-    if (shader === null) {
-      if (!_loggedShaderNull.has(pass.id)) {
-        _loggedShaderNull.add(pass.id);
-        console.warn(`[postfx] makeShaderWithChildren returned null for pass="${pass.id}"`);
-      }
-      return;
-    }
-
-    postfxPaint.setShader(shader as SkShader);
-    postfxRect.setXYWH(0, 0, width, height);
-    target.drawRect(postfxRect, postfxPaint);
-  }
-
   return {
     canvas,
 
     beginFrame(viewportWidth: number, viewportHeight: number, time = 0): void {
       if (viewportWidth === 0 || viewportHeight === 0) return;
-      _postfxResult = null;
       _boundRuntime = null;
       _boundChain = null;
       currentFrameTime = time;
-      currentViewportW = viewportWidth;
-      currentViewportH = viewportHeight;
       recordingBounds.setXYWH(0, 0, viewportWidth, viewportHeight);
       current = recorder.beginRecording(recordingBounds);
     },
@@ -939,7 +788,11 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     buildPostFxPasses(runtime, chain, width, height): readonly PostFxPassDescriptor[] {
       const rt = runtime ?? _boundRuntime;
       const ch = chain ?? _boundChain;
-      if (rt === null || !rt.supported || rt.buildPass === undefined) return [];
+      if (rt === null || !rt.supported) return [];
+      if (rt.buildPass === undefined) {
+        logOnce('buildPostFxPasses: runtime.supported but buildPass absent — no passes');
+        return [];
+      }
       if (ch === null) return [];
       const passes = rt.buildPass(ch, width, height);
       if (passes.length === 0) return [];
@@ -975,144 +828,6 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
         });
       }
       return out;
-    },
-
-    captureSceneSnapshot(width: number, height: number): SkImageLike | null {
-      if (current === null) return null;
-      if (Skia.Surface === undefined) return null;
-
-      // Resize (or create) the offscreen surface when the viewport changes.
-      if (snapshotSurface === null || snapshotSurfaceW !== width || snapshotSurfaceH !== height) {
-        snapshotSurface = makeSurface(width, height);
-        snapshotSurfaceW = width;
-        snapshotSurfaceH = height;
-      }
-      if (snapshotSurface === null) return null;
-
-      // Finish the current recording, render it to the offscreen surface,
-      // then restart the recording so the frame can continue.
-      current = null;
-      const picture = recorder.finishRecordingAsPicture();
-      const offscreenCanvas = snapshotSurface.getCanvas();
-      offscreenCanvas.drawPicture(picture);
-      snapshotSurface.flush();
-      const snapshot = detachSnapshot(snapshotSurface);
-
-      // Restart the recording — frame continues after the snapshot.
-      recordingBounds.setXYWH(0, 0, currentViewportW, currentViewportH);
-      current = recorder.beginRecording(recordingBounds);
-      // Replay the original picture so subsequent drawAtlas calls layer on top.
-      current.drawPicture(picture);
-
-      return snapshot;
-    },
-
-    applyPostFx(runtime, chain, source, width, height) {
-      if (source === null) {
-        logOnce('applyPostFx skipped: source=null');
-        return;
-      }
-      if (!runtime.supported) {
-        logOnce('applyPostFx skipped: runtime not supported');
-        return;
-      }
-
-      // Legacy fallback — runtimes that don't expose buildPass own their apply path.
-      // They draw into the recording canvas, so current must be active.
-      if (runtime.buildPass === undefined) {
-        if (current === null) {
-          logOnce('applyPostFx legacy skipped: current=null');
-          return;
-        }
-        runtime.apply?.(current, chain, source, width, height);
-        return;
-      }
-
-      const passes = runtime.buildPass(chain, width, height);
-      if (passes.length === 0) {
-        logOnce('applyPostFx skipped: passes empty');
-        return;
-      }
-
-      if (Skia.Surface === undefined) {
-        logOnce('applyPostFx skipped: Skia.Surface unavailable');
-        return;
-      }
-
-      // Allocate (or resize) the output surface that will hold the final composited frame.
-      if (outputSurface === null || outputSurfaceW !== width || outputSurfaceH !== height) {
-        outputSurface = makeSurface(width, height);
-        outputSurfaceW = width;
-        outputSurfaceH = height;
-      }
-      if (outputSurface === null) {
-        logOnce('applyPostFx skipped: outputSurface allocation failed');
-        return;
-      }
-
-      // Single pass — render directly to outputSurface.
-      if (passes.length === 1) {
-        renderPassToCanvas(
-          outputSurface.getCanvas(),
-          passes[0] as CompiledPassLike,
-          source as SkImage,
-          width,
-          height,
-        );
-        outputSurface.flush();
-        _postfxResult = detachSnapshot(outputSurface);
-        return;
-      }
-
-      // Multi-pass — ping-pong intermediate surfaces, final pass to outputSurface.
-      if (pingPingSurface === null || pingPongW !== width || pingPongH !== height) {
-        pingPingSurface = makeSurface(width, height);
-        pingPongSurface = makeSurface(width, height);
-        pingPongW = width;
-        pingPongH = height;
-      }
-      if (pingPingSurface === null || pingPongSurface === null) {
-        // Ping-pong allocation failed — degrade to last-pass-only on outputSurface.
-        renderPassToCanvas(
-          outputSurface.getCanvas(),
-          passes[passes.length - 1] as CompiledPassLike,
-          source as SkImage,
-          width,
-          height,
-        );
-        outputSurface.flush();
-        _postfxResult = detachSnapshot(outputSurface);
-        return;
-      }
-
-      let readSurface = pingPingSurface;
-      let writeSurface = pingPongSurface;
-      let readSource: SkImage = source as SkImage;
-
-      for (let i = 0; i < passes.length; i++) {
-        const pass = passes[i] as CompiledPassLike;
-        const isLast = i === passes.length - 1;
-        if (isLast) {
-          renderPassToCanvas(outputSurface.getCanvas(), pass, readSource, width, height);
-          outputSurface.flush();
-          _postfxResult = detachSnapshot(outputSurface);
-        } else {
-          renderPassToCanvas(writeSurface.getCanvas(), pass, readSource, width, height);
-          writeSurface.flush();
-          readSource = detachSnapshot(writeSurface) as SkImage;
-          const tmp = readSurface;
-          readSurface = writeSurface;
-          writeSurface = tmp;
-        }
-      }
-    },
-
-    getPostfxResult(): SkImageLike | null {
-      return _postfxResult;
-    },
-
-    clearPostfxResult(): void {
-      _postfxResult = null;
     },
 
     endFrame(): SkPicture | null {
@@ -1155,7 +870,7 @@ export function renderShapesToImage(
     canvas.drawRect(rect, paint);
   }
 
-  return surface.makeImageSnapshot();
+  return detachSnapshot(surface);
 }
 
 /** Unpack a 0xAARRGGBB integer into a Float32Array [r, g, b, a] in 0..1 range. */

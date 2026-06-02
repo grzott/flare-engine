@@ -203,8 +203,19 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
       return new Float32Array([u.intensity]);
     // Weather kinds: TS interfaces are wider than the packed SkSL inputs (speed/direction
     // for clouds, speed for rain are B5-passthrough fields; the shader doesn't consume them).
-    case 'weather-rain':
-      return new Float32Array([width, height, u.intensity, u.direction, u.scrollOffsetY]);
+    case 'weather-rain': {
+      const col = u.color ?? [1.0, 1.0, 1.0];
+      return new Float32Array([
+        width,
+        height,
+        u.intensity,
+        u.direction,
+        u.scrollOffsetY,
+        col[0],
+        col[1],
+        col[2],
+      ]);
+    }
     case 'weather-sun-shaft':
       return new Float32Array([width, height, u.intensity, u.direction]);
     case 'weather-dark-vignette':
@@ -212,7 +223,7 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
     case 'weather-clouds':
       return new Float32Array([width, height, u.intensity, u.scrollOffsetX]);
     case 'composite':
-      // Packed in uniform-declaration order (19 floats); see COMPOSITE_SKSL header comment.
+      // Packed in uniform-declaration order (22 floats); see COMPOSITE_SKSL header comment.
       return new Float32Array([
         width,
         height,
@@ -233,6 +244,9 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
         u.weatherDirection,
         u.weatherScrollX,
         u.weatherScrollY,
+        u.weatherColor[0],
+        u.weatherColor[1],
+        u.weatherColor[2],
       ]);
   }
 }

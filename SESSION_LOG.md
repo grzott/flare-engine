@@ -5994,3 +5994,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 154 — 2026-06-02 (scope: engine)
+
+**Goal:** R1 — rewrite COMPOSITE_SKSL rain branch (hashed streaks + lifecycle + color uniform)
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/tests/composite.test.ts`
+- `packages/postfx/tests/weather-effects.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

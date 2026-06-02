@@ -130,19 +130,62 @@ uniform float2 resolution;
 uniform float intensity;
 uniform float direction;
 uniform float scrollOffsetY;
+uniform float3 color;
+
+float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
 
 half4 main(float2 coord) {
   half4 scene = src.eval(coord);
   float2 uv = coord / resolution;
   float rad = direction * 3.14159 / 180.0;
-  float sinA = sin(rad), cosA = cos(rad);
-  float u = cosA * coord.x - sinA * coord.y;
-  float v = sinA * coord.x + cosA * coord.y + scrollOffsetY;
-  float streak = fract(u * 0.04);
-  float drop = smoothstep(0.0, 0.08, streak) * (1.0 - smoothstep(0.08, 0.12, streak));
-  float fade = smoothstep(0.0, 0.3, fract(v * 0.006));
-  half rain = half(drop * fade * intensity * 0.6);
-  return half4(scene.rgb + half3(rain), scene.a);
+  float sinA = sin(rad);
+  float cosA = cos(rad);
+  float u2 = cosA * coord.x - sinA * coord.y;
+  float v2 = sinA * coord.x + cosA * coord.y;
+
+  float rainAcc = 0.0;
+
+  // near octave — freq 0.04, streakLen 150.0, weight 0.7
+  {
+    float col = floor(u2 * 0.04);
+    float xJitter = (hash(float2(col, 1.0)) - 0.5) * 20.0;
+    float streakWidth = 0.3 + hash(float2(col, 2.0)) * 0.4;
+    float brightness = 0.5 + hash(float2(col, 3.0)) * 0.5;
+    float speedMul = 0.7 + hash(float2(col, 4.0)) * 0.6;
+    float phase = hash(float2(col, 5.0));
+    float streakLen = 150.0;
+    float scrolled = scrollOffsetY * speedMul;
+    float life = mod(scrolled + phase * 300.0, streakLen);
+    float xFrac = fract(u2 * 0.04);
+    float xMask = smoothstep(0.0, streakWidth * 0.5, xFrac) * smoothstep(1.0, 1.0 - streakWidth * 0.5, xFrac);
+    float headFade = smoothstep(0.0, 8.0, life);
+    float tailFade = 1.0 - smoothstep(streakLen - 12.0, streakLen, life);
+    half4 refTap = src.eval(coord + float2(xJitter * 1.5, life * 0.05));
+    float refMix = float(refTap.r + refTap.g + refTap.b) * 0.05;
+    scene = half4(mix(scene.rgb, refTap.rgb, half(refMix)), scene.a);
+    rainAcc += xMask * headFade * tailFade * brightness * 0.7;
+  }
+
+  // far octave — freq 0.07, streakLen 90.0, weight 0.3, dimmer
+  {
+    float col = floor(u2 * 0.07);
+    float xJitter = (hash(float2(col, 11.0)) - 0.5) * 12.0;
+    float streakWidth = 0.3 + hash(float2(col, 12.0)) * 0.4;
+    float brightness = 0.3 + hash(float2(col, 13.0)) * 0.3;
+    float speedMul = 0.5 + hash(float2(col, 14.0)) * 0.5;
+    float phase = hash(float2(col, 15.0));
+    float streakLen = 90.0;
+    float scrolled = scrollOffsetY * speedMul;
+    float life = mod(scrolled + phase * 300.0, streakLen);
+    float xFrac = fract(u2 * 0.07);
+    float xMask = smoothstep(0.0, streakWidth * 0.5, xFrac) * smoothstep(1.0, 1.0 - streakWidth * 0.5, xFrac);
+    float headFade = smoothstep(0.0, 8.0, life);
+    float tailFade = 1.0 - smoothstep(streakLen - 12.0, streakLen, life);
+    rainAcc += xMask * headFade * tailFade * brightness * 0.3;
+  }
+
+  half rain = half(rainAcc * intensity);
+  return half4(scene.rgb + half3(color) * rain, scene.a);
 }
 `;
 
@@ -211,7 +254,7 @@ half4 main(float2 coord) {
 
 // Composite single-pass shader combining all always-runnable effects.
 //
-// Uniform layout (packed in this exact order by packUniforms — 19 floats total):
+// Uniform layout (packed in this exact order by packUniforms — 22 floats total):
 //   [0]  resolution.x
 //   [1]  resolution.y
 //   [2]  vignetteIntensity
@@ -231,6 +274,9 @@ half4 main(float2 coord) {
 //   [16] weatherDirection  (degrees)
 //   [17] weatherScrollX   (clouds x-offset)
 //   [18] weatherScrollY   (rain y-offset)
+//   [19] weatherColor.r
+//   [20] weatherColor.g
+//   [21] weatherColor.b
 
 export const COMPOSITE_SKSL = /* sksl */ `
 uniform shader src;
@@ -251,6 +297,7 @@ uniform float weatherIntensity;
 uniform float weatherDirection;
 uniform float weatherScrollX;
 uniform float weatherScrollY;
+uniform float3 weatherColor;
 
 float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
 float vnoise(float2 p) {
@@ -296,16 +343,55 @@ half4 main(float2 coord) {
   {
     float wk = weatherKind;
     if (wk >= 0.5 && wk < 1.5) {
-      // rain
+      // rain — hashed column streaks, 2 octaves, refraction tap
       float rad = weatherDirection * 3.14159 / 180.0;
-      float sinA = sin(rad); float cosA = cos(rad);
+      float sinA = sin(rad);
+      float cosA = cos(rad);
       float u2 = cosA * coord.x - sinA * coord.y;
-      float v2 = sinA * coord.x + cosA * coord.y + weatherScrollY;
-      float streak = fract(u2 * 0.04);
-      float drop = smoothstep(0.0, 0.08, streak) * (1.0 - smoothstep(0.08, 0.12, streak));
-      float fade = smoothstep(0.0, 0.3, fract(v2 * 0.006));
-      half rain = half(drop * fade * weatherIntensity * 0.6);
-      c = c + half3(rain);
+
+      float rainAcc = 0.0;
+
+      // near octave — freq 0.04, streakLen 150.0, weight 0.7
+      {
+        float col = floor(u2 * 0.04);
+        float xJitter = (hash(float2(col, 1.0)) - 0.5) * 20.0;
+        float streakWidth = 0.3 + hash(float2(col, 2.0)) * 0.4;
+        float brightness = 0.5 + hash(float2(col, 3.0)) * 0.5;
+        float speedMul = 0.7 + hash(float2(col, 4.0)) * 0.6;
+        float phase = hash(float2(col, 5.0));
+        float streakLen = 150.0;
+        float scrolled = weatherScrollY * speedMul;
+        float life = mod(scrolled + phase * 300.0, streakLen);
+        float xFrac = fract(u2 * 0.04);
+        float xMask = smoothstep(0.0, streakWidth * 0.5, xFrac) * smoothstep(1.0, 1.0 - streakWidth * 0.5, xFrac);
+        float headFade = smoothstep(0.0, 8.0, life);
+        float tailFade = 1.0 - smoothstep(streakLen - 12.0, streakLen, life);
+        half4 refTap = src.eval(coord + float2(xJitter * 1.5, life * 0.05));
+        float refMix = float(refTap.r + refTap.g + refTap.b) * 0.05;
+        c = mix(c, refTap.rgb, half(refMix));
+        rainAcc += xMask * headFade * tailFade * brightness * 0.7;
+      }
+
+      // far octave — freq 0.07, streakLen 90.0, weight 0.3, dimmer
+      {
+        float col = floor(u2 * 0.07);
+        float xJitter = (hash(float2(col, 11.0)) - 0.5) * 12.0;
+        float streakWidth = 0.3 + hash(float2(col, 12.0)) * 0.4;
+        float brightness = 0.3 + hash(float2(col, 13.0)) * 0.3;
+        float speedMul = 0.5 + hash(float2(col, 14.0)) * 0.5;
+        float phase = hash(float2(col, 15.0));
+        float streakLen = 90.0;
+        float scrolled = weatherScrollY * speedMul;
+        float life = mod(scrolled + phase * 300.0, streakLen);
+        float xFrac = fract(u2 * 0.07);
+        float xMask = smoothstep(0.0, streakWidth * 0.5, xFrac) * smoothstep(1.0, 1.0 - streakWidth * 0.5, xFrac);
+        float headFade = smoothstep(0.0, 8.0, life);
+        float tailFade = 1.0 - smoothstep(streakLen - 12.0, streakLen, life);
+        rainAcc += xMask * headFade * tailFade * brightness * 0.3;
+      }
+
+      half rain = half(rainAcc * weatherIntensity);
+      c += half3(weatherColor) * rain;
     } else if (wk >= 1.5 && wk < 2.5) {
       // sun-shaft
       float rad = weatherDirection * 3.14159 / 180.0;

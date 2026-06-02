@@ -168,6 +168,18 @@ describe('SkSL shader source content', () => {
     expect(WEATHER_RAIN_SKSL).toContain('half4 main');
   });
 
+  test('WEATHER_RAIN_SKSL contains uniform float3 color', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('uniform float3 color');
+  });
+
+  test('WEATHER_RAIN_SKSL contains hash bucketing (floor)', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('floor');
+  });
+
+  test('WEATHER_RAIN_SKSL contains refraction tap src.eval(coord +', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('src.eval(coord +');
+  });
+
   test('WEATHER_SUN_SHAFT_SKSL contains expected uniform names and entry point', () => {
     expect(WEATHER_SUN_SHAFT_SKSL).toContain('uniform shader src');
     expect(WEATHER_SUN_SHAFT_SKSL).toContain('uniform float intensity');
@@ -195,9 +207,9 @@ describe('packUniforms layout', () => {
   const { skia } = createMockSkia();
   const rt = createPostFxRuntime(skia);
 
-  test('weather-rain: length = 5', () => {
+  test('weather-rain: length = 8', () => {
     const packed = rt.packUniforms(createWeatherRain(), 800, 600);
-    expect(packed.length).toBe(5);
+    expect(packed.length).toBe(8);
   });
 
   test('weather-rain: intensity at index 2, direction at 3, scrollOffsetY at 4', () => {
@@ -211,6 +223,24 @@ describe('packUniforms layout', () => {
     expect(packed[2]).toBeCloseTo(0.7, 5);
     expect(packed[3]).toBeCloseTo(20, 5);
     expect(packed[4]).toBeCloseTo(55, 5);
+  });
+
+  test('weather-rain: color at indices 5–7', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherRain('r', { color: [0.5, 0.6, 0.7] }), 800, 600);
+    expect(packed[5]).toBeCloseTo(0.5, 5);
+    expect(packed[6]).toBeCloseTo(0.6, 5);
+    expect(packed[7]).toBeCloseTo(0.7, 5);
+  });
+
+  test('weather-rain: color default [1,1,1]', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherRain(), 800, 600);
+    expect(packed[5]).toBe(1.0);
+    expect(packed[6]).toBe(1.0);
+    expect(packed[7]).toBe(1.0);
   });
 
   test('weather-sun-shaft: length = 4', () => {
@@ -307,6 +337,18 @@ describe('globalIntensity scales weather effect intensity', () => {
     chain.globalIntensity = 0.5;
     const pass = rt.buildPass(chain, 800, 600);
     expect(pass[0]?.uniforms[2]).toBeCloseTo(0.4, 5);
+  });
+
+  test('weather-rain: color indices 5–7 are NOT scaled by globalIntensity', () => {
+    const { skia } = createMockSkia();
+    const rt = createPostFxRuntime(skia);
+    const chain = new EffectChain();
+    chain.add(createWeatherRain('r', { intensity: 1.0, color: [1.0, 1.0, 1.0] }));
+    chain.globalIntensity = 0.5;
+    const pass = rt.buildPass(chain, 800, 600);
+    expect(pass[0]?.uniforms[5]).toBe(1.0);
+    expect(pass[0]?.uniforms[6]).toBe(1.0);
+    expect(pass[0]?.uniforms[7]).toBe(1.0);
   });
 
   test('weather-sun-shaft: intensity halved at globalIntensity=0.5', () => {

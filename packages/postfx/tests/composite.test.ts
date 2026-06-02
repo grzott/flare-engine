@@ -81,11 +81,11 @@ describe('createPostFxComposite overrides', () => {
 // ── 3. packUniforms layout pin ────────────────────────────────────────────────
 
 describe('packUniforms composite layout', () => {
-  test('produces exactly 19 floats', () => {
+  test('produces exactly 22 floats', () => {
     const { skia } = createMockSkia();
     const rt = createPostFxRuntime(skia);
     const e = createPostFxComposite();
-    expect(rt.packUniforms(e, 800, 600).length).toBe(19);
+    expect(rt.packUniforms(e, 800, 600).length).toBe(22);
   });
 
   test('resolution slots 0–1', () => {
@@ -115,6 +115,7 @@ describe('packUniforms composite layout', () => {
       weatherDirection: 30,
       weatherScrollX: 55,
       weatherScrollY: 77,
+      weatherColor: [0.1, 0.2, 0.3],
     });
     const p = rt.packUniforms(e, 320, 240);
     expect(p[0]).toBe(320); // resolution.x
@@ -136,6 +137,18 @@ describe('packUniforms composite layout', () => {
     expect(p[16]).toBeCloseTo(30); // weatherDirection
     expect(p[17]).toBeCloseTo(55); // weatherScrollX
     expect(p[18]).toBeCloseTo(77); // weatherScrollY
+    expect(p[19]).toBeCloseTo(0.1); // weatherColor.r
+    expect(p[20]).toBeCloseTo(0.2); // weatherColor.g
+    expect(p[21]).toBeCloseTo(0.3); // weatherColor.b
+  });
+
+  test('weatherColor default packs as [1,1,1]', () => {
+    const { skia } = createMockSkia();
+    const rt = createPostFxRuntime(skia);
+    const p = rt.packUniforms(createPostFxComposite(), 1, 1);
+    expect(p[19]).toBe(1.0);
+    expect(p[20]).toBe(1.0);
+    expect(p[21]).toBe(1.0);
   });
 
   test('crtEnabled false packs as 0.0', () => {
@@ -149,7 +162,7 @@ describe('packUniforms composite layout', () => {
 // ── 4. buildPass integration ──────────────────────────────────────────────────
 
 describe('buildPass composite', () => {
-  test('produces a CompiledPass with correct kind, 19-float uniforms, and empty children', () => {
+  test('produces a CompiledPass with correct kind, 22-float uniforms, and empty children', () => {
     const { skia } = createMockSkia();
     const rt = createPostFxRuntime(skia);
     const chain = new EffectChain();
@@ -160,7 +173,7 @@ describe('buildPass composite', () => {
     if (!pass) throw new Error('no pass');
     expect(pass.id).toBe('comp');
     expect(pass.kind).toBe('composite');
-    expect(pass.uniforms.length).toBe(19);
+    expect(pass.uniforms.length).toBe(22);
     expect(pass.children.length).toBe(0);
   });
 });
@@ -283,5 +296,32 @@ describe('COMPOSITE_SKSL source', () => {
     expect(COMPOSITE_SKSL).toContain('uniform float weatherKind');
     expect(COMPOSITE_SKSL).toContain('uniform float weatherIntensity');
     expect(COMPOSITE_SKSL).toContain('half4 main');
+  });
+
+  test('contains uniform float3 weatherColor declaration', () => {
+    expect(COMPOSITE_SKSL).toContain('uniform float3 weatherColor');
+  });
+
+  test('rain branch does not contain baked tint literals', () => {
+    expect(COMPOSITE_SKSL).not.toContain('rain*0.5');
+    expect(COMPOSITE_SKSL).not.toContain('rain*0.55');
+    expect(COMPOSITE_SKSL).not.toContain('rain*0.65');
+  });
+
+  test('rain branch contains hash-bucketing (floor + 0.04)', () => {
+    expect(COMPOSITE_SKSL).toContain('floor');
+    expect(COMPOSITE_SKSL).toContain('0.04');
+  });
+
+  test('rain branch contains lifecycle mod', () => {
+    expect(COMPOSITE_SKSL).toContain('mod(scrolled');
+  });
+
+  test('rain branch contains far octave freq 0.07', () => {
+    expect(COMPOSITE_SKSL).toContain('0.07');
+  });
+
+  test('rain branch contains refraction tap src.eval(coord +', () => {
+    expect(COMPOSITE_SKSL).toContain('src.eval(coord +');
   });
 });

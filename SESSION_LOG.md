@@ -6237,3 +6237,22 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 164 — 2026-06-03 (scope: engine)
+
+**Goal:** KENG4 — VirtualJoystick optional base/thumb skin props
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `packages/react/src/virtual-joystick.tsx`
+- `packages/react/tests/virtual-controls.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

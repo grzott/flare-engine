@@ -18,6 +18,10 @@ export interface VirtualJoystickProps {
   onStateChange?: (state: VirtualJoystickState) => void;
   /** Style applied to the outer container. */
   style?: ViewStyle;
+  /** Custom node rendered in place of the default base circle View. */
+  base?: React.ReactNode;
+  /** Custom node rendered in place of the default knob View. */
+  thumb?: React.ReactNode;
 }
 
 /**
@@ -31,6 +35,8 @@ export function VirtualJoystick({
   config,
   onStateChange,
   style,
+  base,
+  thumb,
 }: VirtualJoystickProps): React.ReactElement {
   const stateRef = useRef<VirtualJoystickState>(createJoystickState());
   const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -64,7 +70,7 @@ export function VirtualJoystick({
   return (
     <View
       style={[
-        styles.base,
+        ...(base ? [] : [styles.base]),
         {
           width: maxRadius * 2,
           height: maxRadius * 2,
@@ -80,7 +86,23 @@ export function VirtualJoystick({
       onResponderRelease={handleRelease}
       onResponderTerminate={handleRelease}
     >
-      <View style={[styles.knob, { transform: [{ translateX: knobX }, { translateY: knobY }] }]} />
+      {base ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {base}
+        </View>
+      ) : null}
+      {thumb ? (
+        <View
+          style={{ transform: [{ translateX: knobX }, { translateY: knobY }] }}
+          pointerEvents="none"
+        >
+          {thumb}
+        </View>
+      ) : (
+        <View
+          style={[styles.knob, { transform: [{ translateX: knobX }, { translateY: knobY }] }]}
+        />
+      )}
     </View>
   );
 }

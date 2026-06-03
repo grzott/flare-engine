@@ -12,7 +12,7 @@ import { tint } from '../src/sprite-effects.js';
 // if the ecs mock cache only has { World, Position } (set by game-view.test.ts),
 // Bun throws SyntaxError: Export named 'defineComponent' not found.
 // The factory must return a plain object (spread) — not a module namespace object.
-const _realEcs = await import('../../ecs/src/index.ts');
+const _realEcs = await import('../../ecs/src/index.js');
 mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 const { World: EcsWorld } = await import('@flare-engine/ecs');
 
@@ -33,7 +33,7 @@ const EcsPosition = _realEcs.defineComponent<{ x: number; y: number }>('Position
 }));
 
 function mockImage(): SkImageLike {
-  return { width: () => 64, height: () => 64 };
+  return { width: () => 64, height: () => 64, readPixels: () => null };
 }
 
 function mockCanvas() {
@@ -246,6 +246,65 @@ describe('RenderSystem', () => {
 
     expect(captured).toHaveLength(1);
     expect(captured[0]?.effect).toBe(fx);
+  });
+
+  it('passes Sprite.rotation through to the batch command', () => {
+    const { world, query } = createMockECS();
+    const batch = new SpriteBatch();
+    const renderer = new Renderer();
+    renderer.setCanvas(mockCanvas());
+
+    const img = mockImage();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const e1 = world.spawn();
+    world.add(e1, Position, { x: 10, y: 20 });
+    world.add(e1, Sprite, {
+      image: img,
+      frame: { name: 'a', x: 0, y: 0, w: 32, h: 32 },
+      z: 0,
+      rotation: Math.PI,
+    });
+
+    const captured: SpriteDrawCommand[] = [];
+    renderer.begin();
+    renderSystem();
+    batch.flush((_image, commands) => {
+      captured.push(...commands.map((c) => ({ ...c })));
+    }, renderer);
+    renderer.end();
+
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.rotation).toBe(Math.PI);
+  });
+
+  it('omitted Sprite.rotation defaults to 0 on the batch command', () => {
+    const { world, query } = createMockECS();
+    const batch = new SpriteBatch();
+    const renderer = new Renderer();
+    renderer.setCanvas(mockCanvas());
+
+    const img = mockImage();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const e1 = world.spawn();
+    world.add(e1, Position, { x: 0, y: 0 });
+    world.add(e1, Sprite, {
+      image: img,
+      frame: { name: 'a', x: 0, y: 0, w: 32, h: 32 },
+      z: 0,
+    });
+
+    const captured: SpriteDrawCommand[] = [];
+    renderer.begin();
+    renderSystem();
+    batch.flush((_image, commands) => {
+      captured.push(...commands.map((c) => ({ ...c })));
+    }, renderer);
+    renderer.end();
+
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.rotation).toBe(0);
   });
 
   it('passes Sprite.anchor through to the batch command', () => {

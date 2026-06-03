@@ -362,6 +362,9 @@ function cmd(partial: Partial<SpriteDrawCommand>): SpriteDrawCommand {
     dstH: 32,
     effect: undefined,
     alpha: 1,
+    rotation: 0,
+    anchorX: 0,
+    anchorY: 0,
     ...partial,
   };
 }
@@ -1325,5 +1328,372 @@ describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
     bridge.buildPostFxPasses(runtime, makeMockChain(), 400, 600);
     expect(buildPassArgs).toHaveLength(1);
     expect(buildPassArgs[0]).toEqual([400, 600]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// per-sprite rotation — fillXforms
+// ---------------------------------------------------------------------------
+
+describe('createSkiaFrameRenderer — per-sprite rotation', () => {
+  it('θ=0 top-left anchor: RSXform matches current non-rotation path', () => {
+    // scale = dstW/srcW = 32/32 = 1; tx = dstX, ty = dstY
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 100,
+        dstY: 100,
+        dstW: 32,
+        dstH: 32,
+        rotation: 0,
+        anchorX: 0,
+        anchorY: 0,
+      }),
+    ]);
+    const xform = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+    expect(xform.scos).toBeCloseTo(1);
+    expect(xform.ssin).toBeCloseTo(0);
+    expect(xform.tx).toBeCloseTo(100);
+    expect(xform.ty).toBeCloseTo(100);
+  });
+
+  it('θ=π center anchor (0.5,0.5): 180° about center — anchor lands at world anchor point', () => {
+    // sprite at (84,84) top-left (= world (100,100) - 0.5*32), 32×32, center anchor
+    // scale = 1; c=-1, s≈0; scos=-1, ssin=0
+    // px = 84 + 0.5*32 = 100, py = 84 + 0.5*32 = 100
+    // axSrc=16, aySrc=16
+    // tx = 100 - (-1)*16 + 0*16 = 100 + 16 = 116? No — wait.
+    // Actually dstX in the command is already anchor-baked: dstX = pos.x - anchorX*dstW = 100 - 16 = 84
+    // px = dstX + anchorX*dstW + dx = 84 + 16 + 0 = 100
+    // tx = px - scos*axSrc + ssin*aySrc = 100 - (-1)*16 + 0*16 = 116 ← NOT 100
+    // Hmm, let me recalculate with the RSXform formula.
+    // RSXform(scos, ssin, tx, ty): maps src-local (ax, ay) to world via:
+    //   worldX = scos*(x - ax) - ssin*(y - ay) + tx
+    //   worldY = ssin*(x - ax) + scos*(y - ay) + ty
+    // We want the anchor (axSrc, aySrc) in src space to map to (px, py) in world.
+    // tx = px - scos*axSrc + ssin*aySrc = 100 - (-1*16) + 0*16 = 116
+    // ty = py - ssin*axSrc - scos*aySrc = 100 - 0*16 - (-1*16) = 116
+    // The xform IS correct — the anchor pixel lands at world (100,100):
+    //   worldX = scos*(axSrc - axSrc) - ssin*(aySrc - aySrc) + tx = 0 + 116 = 116 ← wrong
+    // Actually Skia RSXform(scos,ssin,tx,ty) draws the src quad where:
+    //   top-left src (0,0) → world (tx, ty)
+    //   after applying the similarity: worldPos = R*scale*(srcPos - pivot) + pivotWorld
+    // The RSXform encodes: maps src point (ax,ay) to world pivot, with rotation about it.
+    // Correct formula from Skia source: for src corner (x,y):
+    //   dstX = scos*x - ssin*y + tx
+    //   dstY = ssin*x + scos*y + ty
+    // So tx,ty is where src (0,0) lands. To put anchor (axSrc,aySrc) at (px,py):
+    //   px = scos*axSrc - ssin*aySrc + tx → tx = px - scos*axSrc + ssin*aySrc
+    //   py = ssin*axSrc + scos*aySrc + ty → ty = py - ssin*axSrc - scos*aySrc
+    // For θ=π, center: scos=-1, ssin≈0, px=py=100, axSrc=aySrc=16
+    //   tx = 100 - (-1)*16 + 0 = 116
+    //   ty = 100 - 0 - (-1)*16 = 116
+    // So the 180° sprite has tx=ty=116 (the top-left corner of the rotated quad lands at 116,116).
+    // The anchor (center) still maps to (100,100) in world space. This is correct.
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 84,
+        dstY: 84,
+        dstW: 32,
+        dstH: 32,
+        rotation: Math.PI,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      }),
+    ]);
+    const xform = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+    const scale = 1;
+    expect(xform.scos).toBeCloseTo(-scale);
+    expect(xform.ssin).toBeCloseTo(0);
+    // tx = 100 - (-1)*16 + 0*16 = 116
+    expect(xform.tx).toBeCloseTo(116);
+    // ty = 100 - 0*16 - (-1)*16 = 116
+    expect(xform.ty).toBeCloseTo(116);
+  });
+
+  it('θ=π/2 (90° CW) center anchor: scos≈0, ssin≈scale, tx/ty correct', () => {
+    // dstX=84, dstY=84 (anchor-baked for center of 32×32 at world (100,100))
+    // scale=1, c≈0, s≈1; scos≈0, ssin≈1
+    // px=100, py=100; axSrc=16, aySrc=16
+    // tx = 100 - 0*16 + 1*16 = 116
+    // ty = 100 - 1*16 - 0*16 = 84
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 84,
+        dstY: 84,
+        dstW: 32,
+        dstH: 32,
+        rotation: Math.PI / 2,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      }),
+    ]);
+    const xform = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+    expect(xform.scos).toBeCloseTo(0);
+    expect(xform.ssin).toBeCloseTo(1);
+    expect(xform.tx).toBeCloseTo(116);
+    expect(xform.ty).toBeCloseTo(84);
+  });
+
+  it('outline effect with rotation: dx/dy offset is applied to the rotated xform', () => {
+    // With outline effect, drawOutlined calls fillXforms multiple times with dx/dy offsets.
+    // The dx offset shifts the world anchor point px by dx (it adds to dstX+anchorX*dstW+dx).
+    // Test: outline sprite at dstX=84, center anchor, θ=π/2, width=2.
+    // One of the 8 passes uses offset (2, 0) → px = 102 instead of 100.
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const effect: OutlineEffect = {
+      type: 'outline',
+      color: { r: 1, g: 0, b: 0, a: 1 },
+      width: 2,
+    };
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 84,
+        dstY: 84,
+        dstW: 32,
+        dstH: 32,
+        rotation: Math.PI / 2,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        effect,
+      }),
+    ]);
+    const calls = currentMockCanvas?.drawAtlasCalls ?? [];
+    // 8 outline passes + 1 main pass = 9 total
+    expect(calls).toHaveLength(9);
+    // Main pass (index 8) at θ=π/2 with dx=dy=0:
+    // scos≈0, ssin≈1, tx≈116, ty≈84
+    const mainXform = calls[8]?.dsts[0] as MockXform;
+    expect(mainXform.scos).toBeCloseTo(0);
+    expect(mainXform.ssin).toBeCloseTo(1);
+    expect(mainXform.tx).toBeCloseTo(116);
+    expect(mainXform.ty).toBeCloseTo(84);
+    // Confirm at least one offset pass differs from the main pass tx/ty
+    const offsetXforms = calls.slice(0, 8).map((c) => c.dsts[0] as MockXform);
+    const anyDiffers = offsetXforms.some(
+      (xf) => Math.abs(xf.tx - mainXform.tx) > 0.01 || Math.abs(xf.ty - mainXform.ty) > 0.01,
+    );
+    expect(anyDiffers).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// per-sprite rotation — independent round-trip verification
+//
+// applyXform: Skia RSXform(scos, ssin, tx, ty) maps a src-space point (x, y)
+// to world space via:  wx = scos*x - ssin*y + tx
+//                      wy = ssin*x + scos*y + ty
+// ---------------------------------------------------------------------------
+
+function applyXform(
+  xf: { scos: number; ssin: number; tx: number; ty: number },
+  x: number,
+  y: number,
+): { x: number; y: number } {
+  return { x: xf.scos * x - xf.ssin * y + xf.tx, y: xf.ssin * x + xf.scos * y + xf.ty };
+}
+
+describe('createSkiaFrameRenderer — per-sprite rotation round-trip', () => {
+  it('θ=π center anchor: anchor src point maps back to world anchor position', () => {
+    // Sprite 32×32, center anchor (0.5,0.5), world anchor (100,100).
+    // dstX = 100 - 0.5*32 = 84, dstY = 84.
+    // axSrc = 0.5*32 = 16, aySrc = 0.5*32 = 16.
+    // For θ=π: cos=-1, sin=0.
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 84,
+        dstY: 84,
+        dstW: 32,
+        dstH: 32,
+        rotation: Math.PI,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      }),
+    ]);
+    const xf = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+    const axSrc = 0.5 * 32;
+    const aySrc = 0.5 * 32;
+    // The anchor src-point must map to the world anchor (100, 100).
+    const anchorWorld = applyXform(xf, axSrc, aySrc);
+    expect(anchorWorld.x).toBeCloseTo(100);
+    expect(anchorWorld.y).toBeCloseTo(100);
+
+    // First-principles expected position for the top-left corner (0,0):
+    // offset from anchor in src space: (0-axSrc, 0-aySrc) = (-16, -16)
+    // R(π) * scale=1 * offset = (cos*(-16) - sin*(-16), sin*(-16) + cos*(-16))
+    //                         = ((-1)*(-16) - 0*(-16), 0*(-16) + (-1)*(-16))
+    //                         = (16, 16)
+    // expected world = anchorWorld + (16, 16) = (116, 116)
+    const c = Math.cos(Math.PI);
+    const s = Math.sin(Math.PI);
+    const scale = 1;
+    const offX = scale * (0 - axSrc);
+    const offY = scale * (0 - aySrc);
+    const expectedCorner = {
+      x: 100 + (c * offX - s * offY),
+      y: 100 + (s * offX + c * offY),
+    };
+    const topLeft = applyXform(xf, 0, 0);
+    expect(topLeft.x).toBeCloseTo(expectedCorner.x);
+    expect(topLeft.y).toBeCloseTo(expectedCorner.y);
+  });
+
+  it('θ=-π/2 center anchor: ssin negative, anchor maps to world anchor, corner first-principles', () => {
+    // θ = -π/2: cos=0, sin=-1 → scos≈0, ssin≈-1 (CW/CCW sign guard)
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 84,
+        dstY: 84,
+        dstW: 32,
+        dstH: 32,
+        rotation: -Math.PI / 2,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      }),
+    ]);
+    const xf = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+
+    // Sign guard: ssin must be negative (distinguishes from +π/2 test's +1).
+    expect(xf.ssin).toBeCloseTo(-1);
+    expect(xf.scos).toBeCloseTo(0);
+
+    // Anchor round-trip.
+    const axSrc = 0.5 * 32;
+    const aySrc = 0.5 * 32;
+    const anchorWorld = applyXform(xf, axSrc, aySrc);
+    expect(anchorWorld.x).toBeCloseTo(100);
+    expect(anchorWorld.y).toBeCloseTo(100);
+
+    // First-principles for top-right corner (32, 0):
+    // offset from anchor: (32-16, 0-16) = (16, -16)
+    // R(-π/2): cos=0, sin=-1
+    // rotated offset = (0*16 - (-1)*(-16), (-1)*16 + 0*(-16)) = (0-16, -16+0) = (-16, -16)
+    // expected world = (100-16, 100-16) = (84, 84)
+    const c = Math.cos(-Math.PI / 2);
+    const s = Math.sin(-Math.PI / 2);
+    const scale = 1;
+    const offX = scale * (32 - axSrc);
+    const offY = scale * (0 - aySrc);
+    const expectedCorner = {
+      x: 100 + (c * offX - s * offY),
+      y: 100 + (s * offX + c * offY),
+    };
+    const topRight = applyXform(xf, 32, 0);
+    expect(topRight.x).toBeCloseTo(expectedCorner.x);
+    expect(topRight.y).toBeCloseTo(expectedCorner.y);
+  });
+
+  it('θ=π/2 non-center anchor (anchorX=0.5, anchorY=0): anchor and corner via first principles', () => {
+    // Anchor is top-center: axSrc=16, aySrc=0.
+    // World anchor = (100, 100).
+    // dstX = 100 - 0.5*32 = 84, dstY = 100 - 0*32 = 100.
+    // θ=π/2: cos=0, sin=1.
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 84,
+        dstY: 100,
+        dstW: 32,
+        dstH: 32,
+        rotation: Math.PI / 2,
+        anchorX: 0.5,
+        anchorY: 0,
+      }),
+    ]);
+    const xf = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+
+    const axSrc = 0.5 * 32; // = 16
+    const aySrc = 0.0 * 32; // = 0
+
+    // Anchor must map to world (100, 100).
+    const anchorWorld = applyXform(xf, axSrc, aySrc);
+    expect(anchorWorld.x).toBeCloseTo(100);
+    expect(anchorWorld.y).toBeCloseTo(100);
+
+    // First-principles for bottom-left corner (0, 32):
+    // offset from anchor in src space: (0-16, 32-0) = (-16, 32)
+    // R(π/2): cos=0, sin=1
+    // rotated offset = (0*(-16) - 1*32, 1*(-16) + 0*32) = (-32, -16)
+    // expected world = (100-32, 100-16) = (68, 84)
+    const c = Math.cos(Math.PI / 2);
+    const s = Math.sin(Math.PI / 2);
+    const scale = 1;
+    const offX = scale * (0 - axSrc);
+    const offY = scale * (32 - aySrc);
+    const expectedCorner = {
+      x: 100 + (c * offX - s * offY),
+      y: 100 + (s * offX + c * offY),
+    };
+    const bottomLeft = applyXform(xf, 0, 32);
+    expect(bottomLeft.x).toBeCloseTo(expectedCorner.x);
+    expect(bottomLeft.y).toBeCloseTo(expectedCorner.y);
+  });
+
+  it('rotation omitted vs rotation:0 produce identical RSXform', () => {
+    // Omitting rotation in cmd defaults to 0; explicit 0 must yield the same xform.
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 50,
+        dstY: 70,
+        dstW: 32,
+        dstH: 32,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      }),
+    ]);
+    const xfOmitted = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+
+    // The second bridge's makeMockSkia reassigns currentMockCanvas via side
+    // effect — no manual reset (which would narrow the type to null for tsc).
+    const bridge2 = createSkiaFrameRenderer(makeMockSkia());
+    bridge2.beginFrame(800, 600);
+    bridge2.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 50,
+        dstY: 70,
+        dstW: 32,
+        dstH: 32,
+        rotation: 0,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      }),
+    ]);
+    const xfExplicit = currentMockCanvas?.drawAtlasCalls[0]?.dsts[0] as MockXform;
+
+    expect(xfExplicit.scos).toBeCloseTo(xfOmitted.scos);
+    expect(xfExplicit.ssin).toBeCloseTo(xfOmitted.ssin);
+    expect(xfExplicit.tx).toBeCloseTo(xfOmitted.tx);
+    expect(xfExplicit.ty).toBeCloseTo(xfOmitted.ty);
   });
 });

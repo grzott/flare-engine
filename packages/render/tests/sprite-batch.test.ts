@@ -7,7 +7,7 @@ import { grayscale, tint } from '../src/sprite-effects.js';
 import type { SpriteColor } from '../src/sprite-effects.js';
 
 function mockImage(id: string): SkImageLike & { id: string } {
-  return { id, width: () => 256, height: () => 256 };
+  return { id, width: () => 256, height: () => 256, readPixels: () => null };
 }
 
 function frame(x: number, y: number, w: number, h: number): SpriteFrame {
@@ -207,6 +207,48 @@ describe('SpriteBatch', () => {
       const commands: SpriteDrawCommand[] = [];
       batch.flush((_, cmds) => commands.push(...cmds));
       expect(commands[0]?.effect).toBeUndefined();
+    });
+  });
+
+  describe('rotation', () => {
+    it('draw with no rotation arg stores rotation=0 (back-compat)', () => {
+      const batch = new SpriteBatch();
+      batch.draw(mockImage('a'), frame(0, 0, 32, 32), 100, 200);
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.rotation).toBe(0);
+      expect(commands[0]?.anchorX).toBe(0);
+      expect(commands[0]?.anchorY).toBe(0);
+    });
+
+    it('draw with rotation=Math.PI stores rotation and anchor fractions', () => {
+      const batch = new SpriteBatch();
+      batch.draw(
+        mockImage('a'),
+        frame(0, 0, 32, 32),
+        100,
+        200,
+        undefined,
+        undefined,
+        undefined,
+        0.5,
+        0.5,
+        1,
+        Math.PI,
+      );
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.rotation).toBe(Math.PI);
+      expect(commands[0]?.anchorX).toBe(0.5);
+      expect(commands[0]?.anchorY).toBe(0.5);
+    });
+
+    it('drawRaw with trailing rotation stores it on the command', () => {
+      const batch = new SpriteBatch();
+      batch.drawRaw(mockImage('a'), 0, 0, 16, 16, 50, 60, 32, 32, undefined, 0, 0, 1, Math.PI / 4);
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.rotation).toBeCloseTo(Math.PI / 4);
     });
   });
 

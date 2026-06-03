@@ -423,8 +423,30 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   function fillXforms(commands: SpriteDrawCommand[], n: number, dx: number, dy: number): void {
     for (let i = 0; i < n; i++) {
       const cmd = commands[i] as SpriteDrawCommand;
-      const scos = cmd.srcW === 0 ? 1 : cmd.dstW / cmd.srcW;
-      xforms[i]?.set(scos, 0, cmd.dstX + dx, cmd.dstY + dy);
+      const scale = cmd.srcW === 0 ? 1 : cmd.dstW / cmd.srcW;
+      if (cmd.rotation === 0) {
+        // Fast path — no trig. At θ=0: scos=scale, ssin=0, tx=dstX+dx, ty=dstY+dy.
+        xforms[i]?.set(scale, 0, cmd.dstX + dx, cmd.dstY + dy);
+      } else {
+        // Rotation about the anchor point in world space.
+        // Algebraic check at θ=0: tx = px - scale·anchorX·srcW
+        //   = (dstX + anchorX·dstW) - anchorX·(scale·srcW)
+        //   = dstX + anchorX·dstW - anchorX·dstW = dstX. ✓
+        const c = Math.cos(cmd.rotation);
+        const s = Math.sin(cmd.rotation);
+        const scos = scale * c;
+        const ssin = scale * s;
+        const px = cmd.dstX + cmd.anchorX * cmd.dstW + dx;
+        const py = cmd.dstY + cmd.anchorY * cmd.dstH + dy;
+        const axSrc = cmd.anchorX * cmd.srcW;
+        const aySrc = cmd.anchorY * cmd.srcH;
+        xforms[i]?.set(
+          scos,
+          ssin,
+          px - scos * axSrc + ssin * aySrc,
+          py - ssin * axSrc - scos * aySrc,
+        );
+      }
     }
   }
 

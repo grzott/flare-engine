@@ -25,6 +25,13 @@ export interface SpriteDrawCommand {
    *  placed in separate batches so the renderer can apply each alpha once
    *  per draw call without per-sprite overhead. */
   alpha: number;
+  /** Rotation in radians, clockwise (Skia Y-down convention). Default 0.
+   *  Rotation is applied about the anchor point. */
+  rotation: number;
+  /** Anchor X fraction stored for the bridge rotation path. Range [0, 1]. */
+  anchorX: number;
+  /** Anchor Y fraction stored for the bridge rotation path. Range [0, 1]. */
+  anchorY: number;
 }
 
 /** Internal grouping bucket — one per unique (texture, effect, alpha) triple. */
@@ -77,6 +84,7 @@ export class SpriteBatch {
     anchorX = 0,
     anchorY = 0,
     alpha = 1,
+    rotation = 0,
   ): void {
     const cmd = this._acquire();
     const w = dstW ?? frame.w;
@@ -92,6 +100,9 @@ export class SpriteBatch {
     cmd.dstH = h;
     cmd.effect = effect;
     cmd.alpha = alpha;
+    cmd.rotation = rotation;
+    cmd.anchorX = anchorX;
+    cmd.anchorY = anchorY;
     this._commands.push(cmd);
   }
 
@@ -113,6 +124,7 @@ export class SpriteBatch {
     anchorX = 0,
     anchorY = 0,
     alpha = 1,
+    rotation = 0,
   ): void {
     const cmd = this._acquire();
     cmd.image = image;
@@ -126,6 +138,9 @@ export class SpriteBatch {
     cmd.dstH = dstH;
     cmd.effect = effect;
     cmd.alpha = alpha;
+    cmd.rotation = rotation;
+    cmd.anchorX = anchorX;
+    cmd.anchorY = anchorY;
     this._commands.push(cmd);
   }
 
@@ -212,6 +227,9 @@ export class SpriteBatch {
       dstH: 0,
       effect: undefined,
       alpha: 1,
+      rotation: 0,
+      anchorX: 0,
+      anchorY: 0,
     };
   }
 }

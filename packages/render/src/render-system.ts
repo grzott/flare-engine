@@ -39,6 +39,10 @@ export interface SpriteData {
    *  Mutate directly each frame — e.g. `sprite.alpha = lerp(1, 0, t)`.
    *  Sprites with different alphas are placed in separate draw batches. */
   alpha?: number;
+  /** Rotation in radians, clockwise (Skia Y-down convention). Default 0.
+   *  Applied about the sprite's anchor point. Non-uniform scale combined with
+   *  rotation is unsupported — scale is inferred uniformly from dstW/srcW. */
+  rotation?: number;
 }
 
 /** Cached entry for sorting. Reused each frame to avoid allocs. */
@@ -118,6 +122,7 @@ export function createRenderSystem(
         anchor ? anchor.x : 0,
         anchor ? anchor.y : 0,
         sprite.alpha ?? 1,
+        sprite.rotation ?? 0,
       );
     }
   };

@@ -6208,3 +6208,32 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 163 — 2026-06-03 (scope: game)
+
+**Goal:** KG7 — full zone-1 FX/pickup/explosion coverage
+
+**Touched files**
+- `apps/pan-tvardowski/assets/kenney-src/particle-dot.png`
+- `apps/pan-tvardowski/assets/kenney/License-TankPack.txt`
+- `apps/pan-tvardowski/assets/kenney/zone1.json`
+- `apps/pan-tvardowski/assets/kenney/zone1.png`
+- `apps/pan-tvardowski/scripts/import-kenney.mjs`
+- `apps/pan-tvardowski/src/components.ts`
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/src/particles.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/systems/explosion-fire.ts`
+- `apps/pan-tvardowski/src/visual-spec/kenney-frames.ts`
+- `apps/pan-tvardowski/tests/explosion-fire.test.ts`
+- `apps/pan-tvardowski/tests/kenney-frames.test.ts`
+- `apps/pan-tvardowski/tests/spawn-pickup-kenney.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

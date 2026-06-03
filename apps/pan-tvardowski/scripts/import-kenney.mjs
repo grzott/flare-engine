@@ -26,6 +26,9 @@ const SS_LICENSE = join(KENNEY_SRC, '2D assets', 'Space Shooter Remastered');
 const UI_ICONS = join(KENNEY_SRC, 'UI assets', 'Mobile Controls', 'Sprites', 'Icons', 'Default');
 const UI_STYLEA = join(KENNEY_SRC, 'UI assets', 'Mobile Controls', 'Sprites', 'Style A', 'Default');
 const UI_LICENSE = join(KENNEY_SRC, 'UI assets', 'Mobile Controls');
+// Tank Pack — third source pack (explosion particle dot).
+const TP_PNG = join(KENNEY_SRC, '2D assets', 'Tank Pack', 'PNG', 'Default size');
+const TP_LICENSE = join(KENNEY_SRC, '2D assets', 'Tank Pack');
 
 // Explicit curated file list — every entry auditable, no globs.
 // Flat atlas sprites (go into kenney-src/ top level).
@@ -115,6 +118,11 @@ const ATLAS_FILES = [
   [UI_STYLEA, 'button_circle.png'],
   [UI_STYLEA, 'joystick_circle_pad_a.png'],
   [UI_STYLEA, 'joystick_circle_nub_a.png'],
+  // Tank Pack — explosion particle dot (1).
+  // Renamed from tank_bullet6.png → particle-dot.png to match the
+  // particle-* naming convention used by the shape atlas (particle-spark,
+  // particle-smoke) so the kenney frame name is self-documenting at call sites.
+  [TP_PNG, 'tank_bullet6.png', 'particle-dot.png'],
 ];
 
 // Background — goes into bg/ subdir, excluded from atlas packing.
@@ -124,6 +132,7 @@ const BG_FILE = [SS_BG, 'darkPurple.png'];
 const LICENSE_FILES = [
   [join(SS_LICENSE, 'License.txt'), 'License-SpaceShooterRemastered.txt'],
   [join(UI_LICENSE, 'License.txt'), 'License-MobileControls.txt'],
+  [join(TP_LICENSE, 'License.txt'), 'License-TankPack.txt'],
 ];
 
 const DEST_ATLAS = join(APP_ROOT, 'assets', 'kenney-src');
@@ -136,8 +145,8 @@ await mkdir(DEST_KENNEY, { recursive: true });
 
 let copied = 0;
 
-for (const [srcDir, name] of ATLAS_FILES) {
-  await copyFile(join(srcDir, name), join(DEST_ATLAS, name));
+for (const [srcDir, name, destName] of ATLAS_FILES) {
+  await copyFile(join(srcDir, name), join(DEST_ATLAS, destName ?? name));
   copied++;
 }
 
@@ -149,4 +158,4 @@ for (const [src, destName] of LICENSE_FILES) {
 
 console.log(`[import-kenney] copied ${copied} atlas sprites → ${DEST_ATLAS}`);
 console.log(`[import-kenney] copied background → ${DEST_BG}`);
-console.log(`[import-kenney] copied 2 license files → ${DEST_KENNEY}`);
+console.log(`[import-kenney] copied 3 license files → ${DEST_KENNEY}`);

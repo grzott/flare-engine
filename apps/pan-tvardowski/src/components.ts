@@ -197,6 +197,19 @@ export const Exhaust = defineComponent<ExhaustData>('Exhaust', () => ({
   isPlayer: false,
 }));
 
+/**
+ * KG7: marks an explosion-fire flipbook entity spawned at the explosion centre.
+ * The updateExplosionFire system cycles fire00..19 frames using elapsed as the
+ * accumulator. Lifetime drives the entity's total lifespan (same Lifetime
+ * component the rest of the particle system uses).
+ */
+export interface ExplosionFireData {
+  elapsed: number;
+}
+export const ExplosionFire = defineComponent<ExplosionFireData>('ExplosionFire', () => ({
+  elapsed: 0,
+}));
+
 export interface SpiralCollapseData {
   originX: number;
   originY: number;

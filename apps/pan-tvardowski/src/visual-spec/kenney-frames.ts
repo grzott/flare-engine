@@ -28,3 +28,15 @@ export const KENNEY_FRAME_MAP: ReadonlyMap<string, string> = new Map([
   ['pickup-srebrna-tarcza', 'shield_gold'],
   ['pickup-kamien-filozoficzny', 'star_gold'],
 ]);
+
+/**
+ * KG7: zone IDs that use the full Kenney explosion FX set:
+ *   - fire00..19 flipbook (ExplosionFire entities at the explosion centre)
+ *   - particle-dot (tank_bullet6) instead of procedural particle-spark dots
+ *
+ * Zone-1 only for now; "all zones at end" = add remaining zone IDs here.
+ * This is the single flippable point — no scattered zone.id === 'z1' checks.
+ *
+ * Key: numeric zone id (same as ZoneId = 1..8).
+ */
+export const KENNEY_FX_ZONES: ReadonlySet<number> = new Set([1]);

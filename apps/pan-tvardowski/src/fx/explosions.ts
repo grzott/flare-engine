@@ -2,7 +2,8 @@ import { getFrame } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position, Velocity } from '@flare-engine/ecs';
 import { Sprite } from '@flare-engine/render';
-import { SpiralCollapse } from '../components';
+import type { KenneyAtlasHandle } from '../assets/sprites-loader';
+import { ExplosionFire, SpiralCollapse } from '../components';
 import { Lifetime } from '../components';
 import type { AtlasHandle } from '../spawn';
 import {
@@ -11,6 +12,7 @@ import {
   SPIRAL_INITIAL_RADIUS,
   SPIRAL_TURNS,
 } from '../visual-spec/explosions';
+import { KENNEY_FX_ZONES } from '../visual-spec/kenney-frames';
 import type { ExplosionTier, ExplosionTierDef } from '../visual-spec/types';
 
 export type { ExplosionTier } from '../visual-spec';
@@ -93,6 +95,7 @@ export function triggerExplosion(
   tier: ExplosionTier,
   zoneId: string,
   onReducedMotion?: () => void,
+  kenney?: KenneyAtlasHandle | null,
 ): ExplosionTier {
   _pruneExpired();
 
@@ -121,7 +124,7 @@ export function triggerExplosion(
   }
 
   // Spawn particles.
-  _spawnParticles(world, atlas, x, y, def);
+  _spawnParticles(world, atlas, x, y, def, kenney, zoneId);
 
   // Screen shake.
   if (screenShakeEnabled && def.shake) {
@@ -238,10 +241,24 @@ function _spawnParticles(
   x: number,
   y: number,
   def: ExplosionTierDef,
+  kenney?: KenneyAtlasHandle | null,
+  zoneId?: string,
 ): void {
   const sparkFrame = getFrame(atlas.sheet, 'particle-spark');
   const smokeFrame = getFrame(atlas.sheet, 'particle-smoke');
   if (!sparkFrame) return;
+
+  // KG7: use kenney particle-dot + fire flipbook when kenney is live and the
+  // zone is in KENNEY_FX_ZONES. Parse numeric zone id from the 'z1'..'z8' string.
+  const zoneNum = zoneId ? Number(zoneId.slice(1)) : 0;
+  const kenneyLive =
+    kenney !== null &&
+    kenney !== undefined &&
+    kenney.image !== null &&
+    KENNEY_FX_ZONES.has(zoneNum);
+
+  const dotFrame = kenneyLive ? getFrame(kenney!.sheet, 'particle-dot') : null;
+  const dotImage = kenneyLive ? kenney!.image : null;
 
   // Seed the LCG reproducibly from position so identical spawns are consistent.
   _lcgS = (x * 31 + y * 17) | 0 || 1;
@@ -257,12 +274,41 @@ function _spawnParticles(
     const sp = 60 + r02 * 160;
 
     const useSmokeFrame = smokeFrame !== null && smokeFrame !== undefined && r01 < smokeRatio;
-    const frame = useSmokeFrame ? smokeFrame : sparkFrame;
+    // Dot particles: kenney particle-dot when live, else shape-atlas particle-spark.
+    const frame =
+      dotFrame !== null && dotFrame !== undefined && !useSmokeFrame
+        ? dotFrame
+        : useSmokeFrame && smokeFrame
+          ? smokeFrame
+          : sparkFrame;
+    const image =
+      dotFrame !== null && dotFrame !== undefined && !useSmokeFrame && dotImage !== null
+        ? dotImage
+        : atlas.image;
 
     const id = world.spawn();
     world.add(id, Position, { x, y });
     world.add(id, Velocity, { x: Math.cos(a) * sp, y: Math.sin(a) * sp });
-    world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
+    world.add(id, Sprite, { image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
     world.add(id, Lifetime, { remaining: lifeBase * (0.7 + r01 * 0.6) });
+  }
+
+  // KG7: spawn a central fire-flipbook entity for kenney zones.
+  // This entity stays at the explosion centre and animates through fire00..19
+  // for the full explosion lifetime. Driven by updateExplosionFire in play.ts.
+  if (kenneyLive) {
+    const fireFrame = getFrame(kenney!.sheet, 'fire00');
+    if (fireFrame) {
+      const fireId = world.spawn();
+      world.add(fireId, Position, { x, y });
+      world.add(fireId, Sprite, {
+        image: kenney!.image!,
+        frame: fireFrame,
+        z: PARTICLE_Z + 1,
+        anchor: CENTER_ANCHOR,
+      });
+      world.add(fireId, ExplosionFire, { elapsed: 0 });
+      world.add(fireId, Lifetime, { remaining: lifeBase });
+    }
   }
 }

@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import { KENNEY_FRAME_MAP } from '../src/visual-spec/kenney-frames';
+import { KENNEY_FRAME_MAP, KENNEY_FX_ZONES } from '../src/visual-spec/kenney-frames';
 import { zone1 } from '../src/visual-spec/zone-1';
 
 function isSymlinkError(e: unknown): boolean {
@@ -151,6 +151,35 @@ describe('KENNEY_FRAME_MAP — frame names exist in real zone1.json', () => {
       }
     } catch (e) {
       if (!isSymlinkError(e)) throw e;
+    }
+  });
+
+  test('particle-dot (tank_bullet6) frame is present in zone1.json (KG7)', () => {
+    try {
+      const { parseTexturePackerHash } = require('@flare-engine/assets');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const zone1Json = require('../assets/kenney/zone1.json') as unknown;
+      const sheet = parseTexturePackerHash(zone1Json);
+      const idx = sheet.frameMap.get('particle-dot');
+      expect(idx !== undefined, 'particle-dot frame not found in zone1.json').toBe(true);
+      const f = sheet.frames[idx as number];
+      expect(f !== undefined, 'particle-dot frame object is undefined').toBe(true);
+      expect((f as { w: number }).w).toBeGreaterThan(0);
+      expect((f as { h: number }).h).toBeGreaterThan(0);
+    } catch (e) {
+      if (!isSymlinkError(e)) throw e;
+    }
+  });
+});
+
+describe('KENNEY_FX_ZONES — zone flag', () => {
+  test('zone-1 is flagged for kenney FX', () => {
+    expect(KENNEY_FX_ZONES.has(1)).toBe(true);
+  });
+
+  test('zones 2–8 are NOT flagged (procedural for now)', () => {
+    for (let z = 2; z <= 8; z++) {
+      expect(KENNEY_FX_ZONES.has(z)).toBe(false);
     }
   });
 });

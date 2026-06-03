@@ -29,6 +29,7 @@ import {
   Bullet,
   Enemy,
   Exhaust,
+  ExplosionFire,
   Lifetime,
   Miniboss,
   MirrorTwin,
@@ -112,6 +113,7 @@ import { resolveCollision } from '../systems/collision';
 import { updateEnemyAI } from '../systems/enemy-ai';
 import { destroyEntity } from '../systems/entity-ops';
 import { updateExhaust } from '../systems/exhaust';
+import { updateExplosionFire } from '../systems/explosion-fire';
 import { integrate } from '../systems/integrate';
 import {
   despawnMirrorTwin,
@@ -252,6 +254,7 @@ interface PlayState {
   mirrorTwinQuery: ReturnType<GameContextValue['world']['query']>;
   spiralCollapseQuery: ReturnType<GameContextValue['world']['query']>;
   exhaustQuery: ReturnType<GameContextValue['world']['query']>;
+  explosionFireQuery: ReturnType<GameContextValue['world']['query']>;
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
@@ -338,6 +341,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         mirrorTwinQuery: ctx.world.query(MirrorTwin),
         spiralCollapseQuery: ctx.world.query(SpiralCollapse),
         exhaustQuery: ctx.world.query(Exhaust),
+        explosionFireQuery: ctx.world.query(ExplosionFire),
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
@@ -704,6 +708,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
               y,
               'burst',
               s?.zone.id ?? '',
+              undefined,
+              deps.kenney ?? null,
             );
             playSfx(audioRef?.current, 'explode');
           },
@@ -730,6 +736,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 gameState.redFlash = true;
                 notifyStateChanged();
               },
+              deps.kenney ?? null,
             );
             postfx.triggerChromaticAb(200);
             if (s) gameEvents.emit('boss-phase-change', s.zone.id, phase);
@@ -793,6 +800,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 gameState.redFlash = true;
                 notifyStateChanged();
               },
+              deps.kenney ?? null,
             );
             if (shouldAllowSlowMo(gameState.settings.reducedMotion)) {
               resetTween(s.slowDownTween);
@@ -853,7 +861,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
             }
           },
           onExplosion: (x: number, y: number) => {
-            burstExplosion(ctx.world, atlas, x, y, 14, ((s?.elapsed ?? 0) * 1000) | 1);
+            burstExplosion(
+              ctx.world,
+              atlas,
+              x,
+              y,
+              14,
+              ((s?.elapsed ?? 0) * 1000) | 1,
+              deps.kenney ?? null,
+              s?.zone.id,
+            );
             playSfx(audioRef?.current, 'explode');
           },
           onPaletteShift: (_phase, accent) => {
@@ -983,7 +1000,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
                 };
               }
             }
-            burstExplosion(ctx.world, atlas, x, y, 8, (x * 31 + y * 17) | 0 || 1);
+            burstExplosion(
+              ctx.world,
+              atlas,
+              x,
+              y,
+              8,
+              (x * 31 + y * 17) | 0 || 1,
+              deps.kenney ?? null,
+              s?.zone.id,
+            );
             playSfx(audioRef?.current, 'explode');
             // Dziwożona splits on death — spawn DZIWOZONA_SKRZAT_SPAWN Skrzats.
             if (pattern === 'dziwozona' && s) {
@@ -1048,6 +1074,13 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           accum: exhaustFlickerAccum,
           playerVisible: joystickState.active,
           reducedMotion: _reducedMotion,
+        });
+
+        // KG7: advance explosion-fire flipbook entities (fire00..19 animation).
+        updateExplosionFire(ctx.world, {
+          explosionFireQuery: s.explosionFireQuery,
+          kenney: deps.kenney ?? null,
+          dt,
         });
 
         s.zoneBg?.tick(dt);

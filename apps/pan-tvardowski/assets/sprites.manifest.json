@@ -5,6 +5,17 @@
       "key": "shape-atlas",
       "kind": "shape-atlas",
       "source": "src/visual-spec/shapes-catalogue.ts"
+    },
+    {
+      "key": "kenney-zone1",
+      "kind": "texture-packer",
+      "image": "assets/kenney/zone1.png",
+      "json": "assets/kenney/zone1.json"
+    },
+    {
+      "key": "kenney-bg",
+      "kind": "image",
+      "image": "assets/kenney/darkPurple.png"
     }
   ]
 }

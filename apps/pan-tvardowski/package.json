@@ -25,6 +25,8 @@
     "smoke:cloud:high": "bash scripts/run-smoke-cloud.sh high",
     "bench:cloud": "bash ../../scripts/perf/bench-cloud.sh --app pan-tvardowski",
     "bench:local": "bash ../../scripts/perf/bench-local.sh --app pan-tvardowski",
+    "import:kenney": "bun run scripts/import-kenney.mjs",
+    "pack:kenney": "bun run scripts/pack-kenney.mjs",
     "eas-build-post-install": "cd ../.. && bun install && bun run build"
   },
   "license": "SEE LICENSE IN LICENSE",
@@ -76,6 +78,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@flare-engine/cli": "workspace:*",
     "@types/react": "~19.2.0"
   }
 }

@@ -6066,3 +6066,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 157 — 2026-06-03 (scope: game)
+
+**Goal:** KG1 — curate + import the Kenney zone-1 subset + repack + manifest
+
+**Touched files**
+- `apps/pan-tvardowski/assets/kenney-src/`
+- `apps/pan-tvardowski/assets/kenney/`
+- `apps/pan-tvardowski/assets/sprites.manifest.json`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/import-kenney.mjs`
+- `apps/pan-tvardowski/scripts/pack-kenney.mjs`
+- `apps/pan-tvardowski/src/assets/manifest-types.ts`
+- `apps/pan-tvardowski/tests/asset-manifest.test.ts`
+- `bun.lock`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

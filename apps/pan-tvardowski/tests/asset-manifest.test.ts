@@ -44,14 +44,29 @@ describe('sprites.manifest.json', () => {
     expect(sprites.version).toBe(1);
   });
 
-  test('has at least 1 entry', () => {
-    expect(sprites.entries.length).toBeGreaterThanOrEqual(1);
+  test('has exactly 3 entries', () => {
+    expect(sprites.entries.length).toBe(3);
   });
 
   test('placeholder shape-atlas entry exists', () => {
     const entry = sprites.entries.find((e) => e.kind === 'shape-atlas');
     expect(entry).toBeDefined();
     expect(entry?.key).toBe('shape-atlas');
+  });
+
+  test('kenney-zone1 entry has kind texture-packer with image and json paths', () => {
+    const entry = sprites.entries.find((e) => e.key === 'kenney-zone1');
+    expect(entry).toBeDefined();
+    expect(entry?.kind).toBe('texture-packer');
+    expect(entry?.image).toBe('assets/kenney/zone1.png');
+    expect(entry?.json).toBe('assets/kenney/zone1.json');
+  });
+
+  test('kenney-bg entry has kind image with image path', () => {
+    const entry = sprites.entries.find((e) => e.key === 'kenney-bg');
+    expect(entry).toBeDefined();
+    expect(entry?.kind).toBe('image');
+    expect(entry?.image).toBe('assets/kenney/darkPurple.png');
   });
 });
 
@@ -123,7 +138,7 @@ describe('portraits.manifest.json', () => {
 //    allowed set for its manifest type.
 // ---------------------------------------------------------------------------
 describe('closed-union kind checks', () => {
-  const SPRITE_KINDS = new Set<string>(['shape-atlas', 'texture-packer']);
+  const SPRITE_KINDS = new Set<string>(['shape-atlas', 'texture-packer', 'image']);
   const AUDIO_KINDS = new Set<string>(['synth', 'file']);
   const PORTRAIT_KINDS = new Set<string>(['shape', 'image']);
 

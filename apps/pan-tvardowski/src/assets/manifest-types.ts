@@ -1,4 +1,4 @@
-export type SpriteEntryKind = 'shape-atlas' | 'texture-packer';
+export type SpriteEntryKind = 'shape-atlas' | 'texture-packer' | 'image';
 export type AudioEntryKind = 'synth' | 'file';
 export type PortraitEntryKind = 'shape' | 'image';
 

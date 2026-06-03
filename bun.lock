@@ -90,6 +90,7 @@
       },
       "devDependencies": {
         "@babel/core": "^7.25.0",
+        "@flare-engine/cli": "workspace:*",
         "@types/react": "~19.2.0",
       },
     },

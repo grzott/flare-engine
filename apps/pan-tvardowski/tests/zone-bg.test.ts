@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import type { SkImageLike } from '@flare-engine/assets';
 import { Position, World } from '@flare-engine/ecs';
 import { Sprite } from '@flare-engine/render';
 import type { AnySpriteEffect } from '@flare-engine/render';
 import { createZoneBg } from '../src/bg/create-zone-bg';
-import type { ZoneBgCamera } from '../src/bg/create-zone-bg';
+import type { ZoneBgCamera, ZoneBgDeps } from '../src/bg/create-zone-bg';
 
 const VW = 360;
 const VH = 640;
@@ -25,7 +26,19 @@ function buildCamera(w = VW, h = VH): ZoneBgCamera {
   return { viewportWidth: w, viewportHeight: h };
 }
 
-function spawnBg(zoneId: string, camera: ZoneBgCamera = buildCamera()) {
+function makeMockImage(w: number, h: number): SkImageLike {
+  return {
+    width: () => w,
+    height: () => h,
+    readPixels: () => null,
+  };
+}
+
+function spawnBg(
+  zoneId: string,
+  camera: ZoneBgCamera = buildCamera(),
+  extraDeps: Partial<ZoneBgDeps> = {},
+) {
   const world = new World();
   const atlas = buildAtlas();
   const controller = createZoneBg(zoneId, {
@@ -34,17 +47,17 @@ function spawnBg(zoneId: string, camera: ZoneBgCamera = buildCamera()) {
     viewportWidth: VW,
     viewportHeight: VH,
     camera,
+    ...extraDeps,
   });
   return { world, controller };
 }
 
 // ---------------------------------------------------------------------------
-// Block 1 — entity shape (all 8 zones)
+// Block 1 — entity shape: shader zones (z2-z8)
 // ---------------------------------------------------------------------------
 
-describe('createZoneBg — entity shape (all 8 zones)', () => {
-  const zones: [string, AnySpriteEffect['type']][] = [
-    ['z1', 'roofs-city'],
+describe('createZoneBg — entity shape (shader zones)', () => {
+  const shaderZones: [string, AnySpriteEffect['type']][] = [
     ['z2', 'forest-canopy'],
     ['z3', 'river-wave'],
     ['z4', 'forest-canopy'],
@@ -54,7 +67,7 @@ describe('createZoneBg — entity shape (all 8 zones)', () => {
     ['z8', 'moon-crater'],
   ];
 
-  for (const [zoneId, expectedEffectType] of zones) {
+  for (const [zoneId, expectedEffectType] of shaderZones) {
     test(`${zoneId}: spawns 2 entities, fullscreen size, correct effect type, destroy removes both`, () => {
       const { world, controller } = spawnBg(zoneId);
 
@@ -75,14 +88,50 @@ describe('createZoneBg — entity shape (all 8 zones)', () => {
       expect([...world.query(Position)].length).toBe(0);
     });
   }
+});
 
-  test('z1 fullscreen-coverage pin: sprite dimensions cover viewport exactly (regression guard for 2/3-block bug)', () => {
-    // Camera provides true canvas dims. tick() must update width/height to match
-    // camera.viewportWidth × camera.viewportHeight, not just the initial play-area size.
+// ---------------------------------------------------------------------------
+// Block 1b — dispatch routing
+// ---------------------------------------------------------------------------
+
+describe('createZoneBg — dispatch routing', () => {
+  test('z1 (image kind) → 2 entities, effect === undefined', () => {
+    const { world, controller } = spawnBg('z1');
+
+    const ids = [...world.query(Position)];
+    expect(ids.length).toBe(2);
+
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite).toBeTruthy();
+      expect(sprite.effect).toBeUndefined();
+    }
+
+    controller.destroy();
+    expect([...world.query(Position)].length).toBe(0);
+  });
+
+  test('z2 (shader kind) → 2 entities, effect type forest-canopy', () => {
+    const { world } = spawnBg('z2');
+    const ids = [...world.query(Position)];
+    expect(ids.length).toBe(2);
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite.effect?.type).toBe('forest-canopy');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Block 1c — z1 fullscreen-coverage pin (camera-sync resize)
+// ---------------------------------------------------------------------------
+
+describe('createZoneBg — z1 fullscreen-coverage pin', () => {
+  test('after tick(0) both sprites sized to camera viewport, x centred', () => {
     const CANVAS_W = 393;
     const CANVAS_H = 852;
     const PLAY_W = 393;
-    const PLAY_H = 818; // play-area after bottom-inset subtraction
+    const PLAY_H = 818;
 
     const world = new World();
     const controller = createZoneBg('z1', {
@@ -93,35 +142,24 @@ describe('createZoneBg — entity shape (all 8 zones)', () => {
       camera: buildCamera(CANVAS_W, CANVAS_H),
     });
 
-    // After one tick, BG must match canvas dimensions, not play-area dims.
     controller.tick(0);
 
     const ids = [...world.query(Position)];
     for (const id of ids) {
-      const pos = world.get(id, Position)!;
       const sprite = world.get(id, Sprite)!;
+      const pos = world.get(id, Position)!;
       expect(sprite.width).toBe(CANVAS_W);
       expect(sprite.height).toBe(CANVAS_H);
       expect(pos.x).toBe(CANVAS_W / 2);
-      expect(pos.y).toBe(CANVAS_H / 2);
     }
   });
 });
 
 // ---------------------------------------------------------------------------
-// Block 2 — kind-specific density param routing
+// Block 2 — kind-specific density param routing (shader zones)
 // ---------------------------------------------------------------------------
 
 describe('kind-specific density param routing', () => {
-  test('z1 (roofs-city): effect.density === 7', () => {
-    const { world } = spawnBg('z1');
-    const ids = [...world.query(Position)];
-    const sprite = world.get(ids[0]!, Sprite)!;
-    const effect = sprite.effect as { type: string; density: number };
-    expect(effect.type).toBe('roofs-city');
-    expect(effect.density).toBe(7);
-  });
-
   test('z2 (forest-canopy): effect.density === 6', () => {
     const { world } = spawnBg('z2');
     const ids = [...world.query(Position)];
@@ -169,31 +207,30 @@ describe('kind-specific density param routing', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Block 3 — scrollSpeed tick integration
+// Block 3 — scrollSpeed tick integration (shader zones)
 // ---------------------------------------------------------------------------
 
-describe('scrollSpeed tick integration', () => {
-  test('tick(1.0) → effect.scrollOffsetY equals zone scrollSpeed', () => {
-    // z1 scrollSpeed = 18
-    const { world, controller } = spawnBg('z1');
+describe('scrollSpeed tick integration (shader zones)', () => {
+  test('z2: tick(1.0) → effect.scrollOffsetY === 12', () => {
+    const { world, controller } = spawnBg('z2');
     controller.tick(1.0);
     const ids = [...world.query(Position)];
     for (const id of ids) {
       const sprite = world.get(id, Sprite)!;
       const effect = sprite.effect as { scrollOffsetY: number };
-      expect(effect.scrollOffsetY).toBe(18);
+      expect(effect.scrollOffsetY).toBe(12);
     }
   });
 
-  test('second tick(1.0) → scrollOffsetY doubles (accumulates)', () => {
-    const { world, controller } = spawnBg('z1');
+  test('z2: second tick(1.0) → scrollOffsetY doubles (accumulates)', () => {
+    const { world, controller } = spawnBg('z2');
     controller.tick(1.0);
     controller.tick(1.0);
     const ids = [...world.query(Position)];
     for (const id of ids) {
       const sprite = world.get(id, Sprite)!;
       const effect = sprite.effect as { scrollOffsetY: number };
-      expect(effect.scrollOffsetY).toBe(36);
+      expect(effect.scrollOffsetY).toBe(24);
     }
   });
 });
@@ -203,15 +240,10 @@ describe('scrollSpeed tick integration', () => {
 // ---------------------------------------------------------------------------
 
 describe('resolution wired into effect', () => {
-  test('at spawn: effect.resolutionW/H match camera viewport', () => {
-    // Camera provides the real canvas size. The effect must carry those
-    // dimensions so the shader can compute correct UV (coord/resolution).
-    // If resolution is 0 the shader divides by max(resolution,1) = 1, so
-    // scrollOffsetY of 18 shifts UV by 18 pixels — 18× too fast and
-    // pattern repeats at 1-pixel intervals (the "snowflake noise" symptom).
+  test('at spawn: z2 effect.resolutionW/H match camera viewport', () => {
     const CANVAS_W = 393;
     const CANVAS_H = 852;
-    const { world } = spawnBg('z1', buildCamera(CANVAS_W, CANVAS_H));
+    const { world } = spawnBg('z2', buildCamera(CANVAS_W, CANVAS_H));
     const ids = [...world.query(Position)];
     for (const id of ids) {
       const sprite = world.get(id, Sprite)!;
@@ -221,12 +253,10 @@ describe('resolution wired into effect', () => {
     }
   });
 
-  test('after tick(): effect.resolutionW/H track updated viewport', () => {
-    // If camera dims change (layout fires after spawn), tick() must
-    // propagate the new resolution into the rebuilt effect.
+  test('after tick(): z2 effect.resolutionW/H track updated viewport', () => {
     const CANVAS_W = 412;
     const CANVAS_H = 900;
-    const { world, controller } = spawnBg('z1', buildCamera(CANVAS_W, CANVAS_H));
+    const { world, controller } = spawnBg('z2', buildCamera(CANVAS_W, CANVAS_H));
     controller.tick(0.016);
     const ids = [...world.query(Position)];
     for (const id of ids) {
@@ -237,17 +267,14 @@ describe('resolution wired into effect', () => {
     }
   });
 
-  test('distinct zones produce distinct colors: z1 (terracotta skyColor) vs z6 (katakumbyDark caveColor)', () => {
-    // Regression guard for H1b: Color.fromHex must parse #RRGGBB strings and
-    // produce zone-specific values. If all zones collapsed to the same color,
-    // this assertion would fail.
-    const { world: w1 } = spawnBg('z1');
+  test('distinct shader zones produce distinct colors: z2 (moss skyColor) vs z6 (katakumbyDark caveColor)', () => {
+    const { world: w2 } = spawnBg('z2');
     const { world: w6 } = spawnBg('z6');
 
-    const ids1 = [...w1.query(Position)];
+    const ids2 = [...w2.query(Position)];
     const ids6 = [...w6.query(Position)];
 
-    const eff1 = w1.get(ids1[0]!, Sprite)!.effect as {
+    const eff2 = w2.get(ids2[0]!, Sprite)!.effect as {
       type: string;
       skyColor: { r: number; g: number; b: number };
     };
@@ -256,15 +283,250 @@ describe('resolution wired into effect', () => {
       caveColor: { r: number; g: number; b: number };
     };
 
-    expect(eff1.type).toBe('roofs-city');
+    expect(eff2.type).toBe('forest-canopy');
     expect(eff6.type).toBe('cave-interior');
+    expect(eff2.skyColor.r).not.toBeCloseTo(eff6.caveColor.r, 2);
+  });
+});
 
-    // terracotta = #B05A3C → r≈0.69, g≈0.35, b≈0.24
-    expect(eff1.skyColor.r).toBeCloseTo(0.69, 1);
-    // katakumbyDark = #1A1410 → r≈0.10, g≈0.08, b≈0.063
-    expect(eff6.caveColor.r).toBeCloseTo(0.1, 1);
+// ---------------------------------------------------------------------------
+// Block 5 — z1 image BG: 2-entity spawn + destroy
+// ---------------------------------------------------------------------------
 
-    // The two primary colors must be different.
-    expect(eff1.skyColor.r).not.toBeCloseTo(eff6.caveColor.r, 2);
+describe('z1 image BG — spawn and destroy', () => {
+  test('spawn with no bg → 2 entities, both alpha 0', () => {
+    const { world, controller } = spawnBg('z1', buildCamera(), { bg: null });
+
+    const ids = [...world.query(Position)];
+    expect(ids.length).toBe(2);
+
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite).toBeTruthy();
+      expect(sprite.alpha).toBe(0);
+      expect(sprite.effect).toBeUndefined();
+    }
+
+    controller.destroy();
+    expect([...world.query(Position)].length).toBe(0);
+  });
+
+  test('cover dims — both sprites width === vw, height === vh at spawn', () => {
+    const { world } = spawnBg('z1', buildCamera(VW, VH), { bg: null });
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      // Width/height set during tick; at spawn they are initW/initH = VW/VH.
+      expect(sprite.width).toBe(VW);
+      expect(sprite.height).toBe(VH);
+    }
+  });
+
+  test('cover dims — resize on larger camera after tick', () => {
+    const LARGE_W = 800;
+    const LARGE_H = 1200;
+    const world = new World();
+    const cam = { viewportWidth: LARGE_W, viewportHeight: LARGE_H };
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: cam,
+      bg: null,
+    });
+
+    controller.tick(0.016);
+
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite.width).toBe(LARGE_W);
+      expect(sprite.height).toBe(LARGE_H);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Block 6 — z1 image BG: null→live transition
+// ---------------------------------------------------------------------------
+
+describe('z1 image BG — null→live transition', () => {
+  test('tick with bg.image null → both alpha still 0', () => {
+    const { world, controller } = spawnBg('z1', buildCamera(), {
+      bg: { image: null, frame: { name: 'bg', x: 0, y: 0, w: 0, h: 0 } },
+    });
+    controller.tick(0.016);
+
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      expect(world.get(id, Sprite)!.alpha).toBe(0);
+    }
+  });
+
+  test('tick after bg.image becomes non-null → both alpha 1, image === mock, frame.w === mock.width()', () => {
+    const mockImage = makeMockImage(1080, 1920);
+    let currentImage: SkImageLike | null = null;
+
+    const world = new World();
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: buildCamera(),
+      bg: {
+        get image() {
+          return currentImage;
+        },
+        frame: { name: 'bg', x: 0, y: 0, w: 0, h: 0 },
+      },
+    });
+
+    // First tick — image still null.
+    controller.tick(0.016);
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      expect(world.get(id, Sprite)!.alpha).toBe(0);
+    }
+
+    // Image arrives.
+    currentImage = mockImage;
+    controller.tick(0.016);
+
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite.alpha).toBe(1);
+      expect(sprite.image).toBe(mockImage);
+      expect(sprite.frame.w).toBe(1080);
+      expect(sprite.frame.h).toBe(1920);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Block 7 — z1 image BG: scroll advances
+// ---------------------------------------------------------------------------
+
+describe('z1 image BG — scroll advances', () => {
+  test('tick(1.0) with scrollSpeed 18 → both posY advanced by +18 relative to initial', () => {
+    const world = new World();
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: buildCamera(VW, VH),
+      bg: null,
+    });
+
+    // Capture initial Y positions before tick.
+    const ids = [...world.query(Position)];
+    const initY = ids.map((id) => world.get(id, Position)!.y);
+
+    controller.tick(1.0);
+
+    for (let i = 0; i < ids.length; i++) {
+      const posY = world.get(ids[i]!, Position)!.y;
+      // After 1s at scrollSpeed 18, y should advance by 18 unless wrap fired.
+      // Initial posBot.y = cy = VH/2 = 320; after +18 = 338; cy+vh = 320+640 = 960; no wrap.
+      // Initial posTop.y = cy - VH = 320 - 640 = -320; after +18 = -302; no wrap.
+      expect(posY).toBeCloseTo(initY[i]! + 18, 5);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Block 8 — z1 image BG: wrap-no-drift
+// ---------------------------------------------------------------------------
+
+describe('z1 image BG — wrap-no-drift', () => {
+  test('sprite wraps when posY exceeds cy+vh: resets to exactly prior - 2*vh, other sprite stays vh apart', () => {
+    const world = new World();
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: buildCamera(VW, VH),
+      bg: null,
+    });
+
+    const ids = [...world.query(Position)];
+    // cy = VH/2 = 320; cy+vh = 320+640 = 960.
+    // posBot starts at cy=320; posTop starts at cy-VH = -320.
+    // We need posBot.y > 960. With scrollSpeed=18, it would take (960-320)/18 = ~35.6 ticks of dt=1.
+    // Drive it there directly via many ticks.
+    // After 40 ticks(dt=1): posBot = 320 + 40*18 = 1040, posTop = -320 + 40*18 = 400.
+    // On the tick where posBot first exceeds 960, it should wrap by -2*VH.
+    // Let's tick until we see a wrap by checking that posY is not monotonically increasing.
+
+    let prevPositions = ids.map((id) => world.get(id, Position)!.y);
+    let wrapDetected = false;
+
+    for (let i = 0; i < 60; i++) {
+      controller.tick(1.0);
+      const nextPositions = ids.map((id) => world.get(id, Position)!.y);
+
+      for (let j = 0; j < ids.length; j++) {
+        // A wrap means the sprite jumped backward by close to 2*VH.
+        const delta = nextPositions[j]! - prevPositions[j]!;
+        if (delta < -VH) {
+          // Should have moved scrollSpeed - 2*VH = 18 - 1280 = -1262 (approx).
+          expect(delta).toBeCloseTo(18 - 2 * VH, 5);
+          wrapDetected = true;
+        }
+      }
+      prevPositions = nextPositions;
+    }
+
+    expect(wrapDetected).toBe(true);
+
+    // After all ticks the two sprites must still be exactly VH apart.
+    const finalY = ids.map((id) => world.get(id, Position)!.y);
+    const gap = Math.abs(finalY[1]! - finalY[0]!);
+    // They should be exactly VH = 640 apart (modulo possible both having wrapped).
+    // The gap is either VH or 0 (if both wrapped same tick), but the design keeps them vh apart.
+    // The wrap logic ensures that: when one wraps, it repositions to prior - 2*vh,
+    // so gap remains vh. Check gap is multiple of VH and > 0.
+    expect(gap % VH).toBeCloseTo(0, 5);
+    expect(gap).toBeGreaterThan(0);
+  });
+
+  test('wrap exact reset: sprite that crosses cy+vh snaps to exactly (preWrapY + scrollSpeed*dt) - 2*vh', () => {
+    const world = new World();
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: buildCamera(VW, VH),
+      bg: null,
+    });
+
+    // cy = 320, cy+vh = 960.
+    // posBot starts at 320. Push it to just-below the threshold.
+    // With dt=1, scrollSpeed=18: after 35 ticks → 320 + 35*18 = 950 (still < 960).
+    for (let i = 0; i < 35; i++) controller.tick(1.0);
+
+    const ids = [...world.query(Position)];
+    const preWrapY = ids.map((id) => world.get(id, Position)!.y);
+
+    // One more tick: 950+18=968 > 960 for posBot → wrap fires → 968 - 2*640 = -312.
+    controller.tick(1.0);
+
+    const postWrapY = ids.map((id) => world.get(id, Position)!.y);
+
+    let foundWrap = false;
+    for (let j = 0; j < ids.length; j++) {
+      const expected = preWrapY[j]! + 18;
+      if (expected > 960) {
+        expect(postWrapY[j]!).toBeCloseTo(expected - 2 * VH, 5);
+        foundWrap = true;
+      } else {
+        expect(postWrapY[j]!).toBeCloseTo(expected, 5);
+      }
+    }
+    expect(foundWrap).toBe(true);
   });
 });

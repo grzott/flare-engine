@@ -4,11 +4,8 @@ import type { ZoneId } from './zones-palette';
 export const ZONE_BG_DEFS = {
   1: {
     zoneId: 1,
-    kind: 'roofs-city',
-    primaryToken: 'terracotta',
-    secondaryToken: 'rust',
+    kind: 'image',
     scrollSpeed: 18,
-    density: 7,
   },
   2: {
     zoneId: 2,

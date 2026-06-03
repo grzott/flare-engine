@@ -15,6 +15,7 @@ import type { AnySpriteEffect } from '@flare-engine/render';
 import type { BgImageHandle, KenneyAtlasHandle } from '../assets/sprites-loader';
 import type { AtlasHandle } from '../spawn';
 import { THEME_SPEC } from '../visual-spec/theme';
+import type { ZoneBgShaderDef } from '../visual-spec/types';
 import { ZONE_BG_DEFS } from '../visual-spec/zone-bg';
 
 const Z_LAYER_A = -100;
@@ -58,7 +59,7 @@ function assertNever(x: never): never {
 }
 
 function buildEffect(
-  kind: (typeof ZONE_BG_DEFS)[ZoneBgId]['kind'],
+  kind: ZoneBgShaderDef['kind'],
   primary: ReturnType<typeof Color.fromHex>,
   secondary: ReturnType<typeof Color.fromHex>,
   density: number,
@@ -126,12 +127,105 @@ function buildEffect(
   }
 }
 
+function createZoneImageBg(deps: ZoneBgDeps, scrollSpeed: number): ZoneBgController {
+  const { world, atlas, camera } = deps;
+
+  const initW = camera.viewportWidth > 0 ? camera.viewportWidth : deps.viewportWidth;
+  const initH = camera.viewportHeight > 0 ? camera.viewportHeight : deps.viewportHeight;
+  const initCx = initW / 2;
+  const initCy = initH / 2;
+  const anchor = { x: 0.5, y: 0.5 };
+
+  // Sentinel frame — zero-size, used while the real image is still null.
+  const sentinelFrame = { name: 'bg-sentinel', x: 0, y: 0, w: 0, h: 0 };
+
+  const idTop = world.spawn();
+  world.add(idTop, Position, { x: initCx, y: initCy - initH });
+  world.add(idTop, Sprite, {
+    image: atlas.image,
+    frame: sentinelFrame,
+    z: Z_LAYER_A,
+    width: initW,
+    height: initH,
+    anchor,
+    alpha: 0,
+  });
+
+  const idBot = world.spawn();
+  world.add(idBot, Position, { x: initCx, y: initCy });
+  world.add(idBot, Sprite, {
+    image: atlas.image,
+    frame: sentinelFrame,
+    z: Z_LAYER_A,
+    width: initW,
+    height: initH,
+    anchor,
+    alpha: 0,
+  });
+
+  let imageResolved = false;
+
+  return {
+    destroy() {
+      world.destroy(idTop);
+      world.destroy(idBot);
+    },
+
+    tick(dt: number) {
+      const vw = camera.viewportWidth > 0 ? camera.viewportWidth : deps.viewportWidth;
+      const vh = camera.viewportHeight > 0 ? camera.viewportHeight : deps.viewportHeight;
+      const cx = vw / 2;
+
+      const posTop = world.get(idTop, Position);
+      const posBot = world.get(idBot, Position);
+      const sprTop = world.get(idTop, Sprite);
+      const sprBot = world.get(idBot, Sprite);
+      if (!posTop || !posBot || !sprTop || !sprBot) return;
+
+      // Live-image transition: once bg.image is non-null, switch both sprites.
+      if (!imageResolved && deps.bg?.image != null) {
+        const img = deps.bg.image;
+        const fullFrame = { name: 'darkPurple', x: 0, y: 0, w: img.width(), h: img.height() };
+        sprTop.image = img;
+        sprTop.frame = fullFrame;
+        sprTop.alpha = 1;
+        sprBot.image = img;
+        sprBot.frame = fullFrame;
+        sprBot.alpha = 1;
+        imageResolved = true;
+      }
+
+      // Camera-sync: keep sprites sized to full viewport.
+      sprTop.width = vw;
+      sprTop.height = vh;
+      sprBot.width = vw;
+      sprBot.height = vh;
+      posTop.x = cx;
+      posBot.x = cx;
+
+      // Scroll downward.
+      posTop.y += scrollSpeed * dt;
+      posBot.y += scrollSpeed * dt;
+
+      // Wrap: absolute, drift-free. Both sprites stay exactly vh apart.
+      const cy = vh / 2;
+      if (posTop.y > cy + vh) posTop.y -= 2 * vh;
+      if (posBot.y > cy + vh) posBot.y -= 2 * vh;
+    },
+  };
+}
+
 export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController {
   const { world, atlas, camera } = deps;
 
   const numId = Number(zoneId.slice(1)) as ZoneBgId;
-  const def = ZONE_BG_DEFS[numId];
+  const def: (typeof ZONE_BG_DEFS)[ZoneBgId] = ZONE_BG_DEFS[numId];
   if (!def) throw new Error(`createZoneBg: unknown zoneId ${zoneId}`);
+
+  // Image-kind dispatch: no shader work needed.
+  if (def.kind === 'image') {
+    return createZoneImageBg(deps, def.scrollSpeed);
+  }
 
   const frame = getFrame(atlas.sheet, 'tile-fire');
   if (!frame) throw new Error('createZoneBg: tile-fire frame not found in atlas');
@@ -141,9 +235,6 @@ export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController
 
   let scrollOffset = 0;
 
-  // Use camera dimensions if already available; fall back to the passed play-area
-  // bounds (deps.viewportWidth/Height) as the initial best-guess. tick() corrects
-  // to the true canvas size on the first frame where the layout has fired.
   const initW = camera.viewportWidth > 0 ? camera.viewportWidth : deps.viewportWidth;
   const initH = camera.viewportHeight > 0 ? camera.viewportHeight : deps.viewportHeight;
   const initCx = initW / 2;
@@ -183,12 +274,6 @@ export function createZoneBg(zoneId: string, deps: ZoneBgDeps): ZoneBgController
     tick(dt: number) {
       scrollOffset += def.scrollSpeed * dt;
 
-      // Resolve true canvas dimensions. The camera's viewportWidth/Height
-      // reflect the actual device canvas once React Native layout has fired;
-      // the play-area bounds (passed at spawn) subtract the safe-area inset
-      // and default to 360×640 before layout. Using camera dimensions here
-      // ensures the BG entities grow to fill the full canvas rather than the
-      // reduced play-area band.
       const vw = camera.viewportWidth > 0 ? camera.viewportWidth : deps.viewportWidth;
       const vh = camera.viewportHeight > 0 ? camera.viewportHeight : deps.viewportHeight;
       const cx = vw / 2;

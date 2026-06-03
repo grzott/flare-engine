@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { THEME_SPEC } from '../src/visual-spec/theme';
-import type { ZoneBgKindId } from '../src/visual-spec/types';
+import type { ZoneBgDef, ZoneBgKindId } from '../src/visual-spec/types';
 import { ZONE_BG_DEFS } from '../src/visual-spec/zone-bg';
 
 const ZONE_IDS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -11,6 +11,7 @@ const VALID_KINDS: readonly ZoneBgKindId[] = [
   'moon-crater',
   'cave-interior',
   'mountain-hills',
+  'image',
 ];
 
 describe('ZONE_BG_DEFS — completeness', () => {
@@ -59,7 +60,11 @@ describe('ZONE_BG_DEFS — kind exhaustiveness', () => {
     expect(ZONE_IDS.some((id) => ZONE_BG_DEFS[id].kind === 'mountain-hills')).toBe(true);
   });
 
-  test('every entry kind is in the canonical 6-value list', () => {
+  test("at least one entry uses 'image'", () => {
+    expect(ZONE_IDS.some((id) => ZONE_BG_DEFS[id].kind === 'image')).toBe(true);
+  });
+
+  test('every entry kind is in the canonical 7-value list', () => {
     const violations: string[] = [];
     for (const id of ZONE_IDS) {
       if (!VALID_KINDS.includes(ZONE_BG_DEFS[id].kind)) {
@@ -70,11 +75,12 @@ describe('ZONE_BG_DEFS — kind exhaustiveness', () => {
   });
 });
 
-describe('ZONE_BG_DEFS — token resolution', () => {
-  test('all primaryToken and secondaryToken values resolve in THEME_SPEC.colors', () => {
+describe('ZONE_BG_DEFS — token resolution (shader zones only)', () => {
+  test('all shader-kind primaryToken and secondaryToken values resolve in THEME_SPEC.colors', () => {
     const violations: string[] = [];
     for (const id of ZONE_IDS) {
-      const def = ZONE_BG_DEFS[id];
+      const def: ZoneBgDef = ZONE_BG_DEFS[id];
+      if (def.kind === 'image') continue;
       const primary = THEME_SPEC.colors[def.primaryToken];
       const secondary = THEME_SPEC.colors[def.secondaryToken];
       if (typeof primary !== 'string' || primary.length === 0) {
@@ -94,74 +100,101 @@ describe('ZONE_BG_DEFS — field ranges', () => {
     expect(violations).toEqual([]);
   });
 
-  test('all entries have density > 0', () => {
-    const violations = ZONE_IDS.filter((id) => ZONE_BG_DEFS[id].density <= 0);
+  test('all shader-kind entries have density > 0', () => {
+    const violations: number[] = [];
+    for (const id of ZONE_IDS) {
+      const def: ZoneBgDef = ZONE_BG_DEFS[id];
+      if (def.kind === 'image') continue;
+      if (def.density <= 0) violations.push(id);
+    }
     expect(violations).toEqual([]);
   });
 });
 
 describe('ZONE_BG_DEFS — per-zone exact-value pins', () => {
-  test('Z1 Dachy Krakowa', () => {
-    expect(ZONE_BG_DEFS[1].kind).toBe('roofs-city');
-    expect(ZONE_BG_DEFS[1].primaryToken).toBe('terracotta');
-    expect(ZONE_BG_DEFS[1].secondaryToken).toBe('rust');
-    expect(ZONE_BG_DEFS[1].scrollSpeed).toBe(18);
-    expect(ZONE_BG_DEFS[1].density).toBe(7);
+  test('Z1 Dachy Krakowa — image kind, scrollSpeed 18, no shader tokens', () => {
+    const def: ZoneBgDef = ZONE_BG_DEFS[1];
+    expect(def.kind).toBe('image');
+    expect(def.scrollSpeed).toBe(18);
+    expect('primaryToken' in def).toBe(false);
+    expect('secondaryToken' in def).toBe(false);
+    expect('density' in def).toBe(false);
   });
 
   test('Z2 Puszcza Mazowiecka', () => {
-    expect(ZONE_BG_DEFS[2].kind).toBe('forest-canopy');
-    expect(ZONE_BG_DEFS[2].primaryToken).toBe('moss');
-    expect(ZONE_BG_DEFS[2].secondaryToken).toBe('leafGreen');
-    expect(ZONE_BG_DEFS[2].scrollSpeed).toBe(12);
-    expect(ZONE_BG_DEFS[2].density).toBe(6);
+    const def: ZoneBgDef = ZONE_BG_DEFS[2];
+    expect(def.kind).toBe('forest-canopy');
+    if (def.kind === 'forest-canopy') {
+      expect(def.primaryToken).toBe('moss');
+      expect(def.secondaryToken).toBe('leafGreen');
+      expect(def.density).toBe(6);
+    }
+    expect(def.scrollSpeed).toBe(12);
   });
 
   test('Z3 Wisła', () => {
-    expect(ZONE_BG_DEFS[3].kind).toBe('river-wave');
-    expect(ZONE_BG_DEFS[3].primaryToken).toBe('vistulaBlue');
-    expect(ZONE_BG_DEFS[3].secondaryToken).toBe('foamBlue');
-    expect(ZONE_BG_DEFS[3].scrollSpeed).toBe(22);
-    expect(ZONE_BG_DEFS[3].density).toBe(2.5);
+    const def: ZoneBgDef = ZONE_BG_DEFS[3];
+    expect(def.kind).toBe('river-wave');
+    if (def.kind === 'river-wave') {
+      expect(def.primaryToken).toBe('vistulaBlue');
+      expect(def.secondaryToken).toBe('foamBlue');
+      expect(def.density).toBe(2.5);
+    }
+    expect(def.scrollSpeed).toBe(22);
   });
 
   test('Z4 Łęczyckie Błota', () => {
-    expect(ZONE_BG_DEFS[4].kind).toBe('forest-canopy');
-    expect(ZONE_BG_DEFS[4].primaryToken).toBe('bogGreen');
-    expect(ZONE_BG_DEFS[4].secondaryToken).toBe('waterTeal');
-    expect(ZONE_BG_DEFS[4].scrollSpeed).toBe(10);
-    expect(ZONE_BG_DEFS[4].density).toBe(4);
+    const def: ZoneBgDef = ZONE_BG_DEFS[4];
+    expect(def.kind).toBe('forest-canopy');
+    if (def.kind === 'forest-canopy') {
+      expect(def.primaryToken).toBe('bogGreen');
+      expect(def.secondaryToken).toBe('waterTeal');
+      expect(def.density).toBe(4);
+    }
+    expect(def.scrollSpeed).toBe(10);
   });
 
   test('Z5 Łysa Góra', () => {
-    expect(ZONE_BG_DEFS[5].kind).toBe('mountain-hills');
-    expect(ZONE_BG_DEFS[5].primaryToken).toBe('crimsonDeep');
-    expect(ZONE_BG_DEFS[5].secondaryToken).toBe('inkBlack');
-    expect(ZONE_BG_DEFS[5].scrollSpeed).toBe(16);
-    expect(ZONE_BG_DEFS[5].density).toBe(1.8);
+    const def: ZoneBgDef = ZONE_BG_DEFS[5];
+    expect(def.kind).toBe('mountain-hills');
+    if (def.kind === 'mountain-hills') {
+      expect(def.primaryToken).toBe('crimsonDeep');
+      expect(def.secondaryToken).toBe('inkBlack');
+      expect(def.density).toBe(1.8);
+    }
+    expect(def.scrollSpeed).toBe(16);
   });
 
   test('Z6 Katakumby Warszawskie', () => {
-    expect(ZONE_BG_DEFS[6].kind).toBe('cave-interior');
-    expect(ZONE_BG_DEFS[6].primaryToken).toBe('katakumbyDark');
-    expect(ZONE_BG_DEFS[6].secondaryToken).toBe('goldDeep');
-    expect(ZONE_BG_DEFS[6].scrollSpeed).toBe(8);
-    expect(ZONE_BG_DEFS[6].density).toBe(10);
+    const def: ZoneBgDef = ZONE_BG_DEFS[6];
+    expect(def.kind).toBe('cave-interior');
+    if (def.kind === 'cave-interior') {
+      expect(def.primaryToken).toBe('katakumbyDark');
+      expect(def.secondaryToken).toBe('goldDeep');
+      expect(def.density).toBe(10);
+    }
+    expect(def.scrollSpeed).toBe(8);
   });
 
   test('Z7 Karczma "Rzym"', () => {
-    expect(ZONE_BG_DEFS[7].kind).toBe('roofs-city');
-    expect(ZONE_BG_DEFS[7].primaryToken).toBe('rust');
-    expect(ZONE_BG_DEFS[7].secondaryToken).toBe('pitchBrown');
-    expect(ZONE_BG_DEFS[7].scrollSpeed).toBe(15);
-    expect(ZONE_BG_DEFS[7].density).toBe(5);
+    const def: ZoneBgDef = ZONE_BG_DEFS[7];
+    expect(def.kind).toBe('roofs-city');
+    if (def.kind === 'roofs-city') {
+      expect(def.primaryToken).toBe('rust');
+      expect(def.secondaryToken).toBe('pitchBrown');
+      expect(def.density).toBe(5);
+    }
+    expect(def.scrollSpeed).toBe(15);
   });
 
   test('Z8 Księżyc', () => {
-    expect(ZONE_BG_DEFS[8].kind).toBe('moon-crater');
-    expect(ZONE_BG_DEFS[8].primaryToken).toBe('bone');
-    expect(ZONE_BG_DEFS[8].secondaryToken).toBe('lunarInk');
-    expect(ZONE_BG_DEFS[8].scrollSpeed).toBe(6);
-    expect(ZONE_BG_DEFS[8].density).toBe(5);
+    const def: ZoneBgDef = ZONE_BG_DEFS[8];
+    expect(def.kind).toBe('moon-crater');
+    if (def.kind === 'moon-crater') {
+      expect(def.primaryToken).toBe('bone');
+      expect(def.secondaryToken).toBe('lunarInk');
+      expect(def.density).toBe(5);
+    }
+    expect(def.scrollSpeed).toBe(6);
   });
 });

@@ -617,13 +617,14 @@ export type ZoneBgKindId =
   | 'river-wave'
   | 'moon-crater'
   | 'cave-interior'
-  | 'mountain-hills';
+  | 'mountain-hills'
+  | 'image';
 
 export type ZoneFxKindId = 'rain' | 'sun-shaft' | 'dark-vignette' | 'clouds';
 
-export interface ZoneBgDef {
+export interface ZoneBgShaderDef {
   readonly zoneId: ZoneId;
-  readonly kind: ZoneBgKindId;
+  readonly kind: Exclude<ZoneBgKindId, 'image'>;
   readonly primaryToken: ColorTokenId;
   readonly secondaryToken: ColorTokenId;
   readonly scrollSpeed: number;
@@ -638,6 +639,14 @@ export interface ZoneBgDef {
    */
   readonly density: number;
 }
+
+export interface ZoneBgImageDef {
+  readonly zoneId: ZoneId;
+  readonly kind: 'image';
+  readonly scrollSpeed: number;
+}
+
+export type ZoneBgDef = ZoneBgShaderDef | ZoneBgImageDef;
 
 export interface ZoneFxDef {
   readonly zoneId: ZoneId;

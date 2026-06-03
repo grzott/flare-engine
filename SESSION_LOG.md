@@ -6187,3 +6187,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 162 — 2026-06-03 (scope: game)
+
+**Goal:** KG6 — Game: zone-1 image background via a new 'image' BG kind
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/create-zone-bg.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-bg.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-bg-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-bg.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

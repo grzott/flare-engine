@@ -288,7 +288,8 @@ describe('visual-spec — schema canary', () => {
   // Bumped (shadow-rim-cut): RimLightDef interface removed — dead lighting stack cut.
   // Bumped (R2-weatherColor): ZoneFxDef gained optional weatherColor field
   // Bumped (rain-rewrite): ZoneFxDef gained optional density + streakLen
-  const SCHEMA_CANARY = 'c17818fbcfa79b622848ad48e4f70f5e366be4dcc61a69cd38c8966b79892b2b';
+  // Bumped (KG6): 'image' added to ZoneBgKindId + ZoneBgDef image variant (ZoneBgShaderDef | ZoneBgImageDef discriminated union)
+  const SCHEMA_CANARY = '895deeeeca9c39cc2f64b7c72462b71b45d9465daf3707c87cb255be7dded4bb';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

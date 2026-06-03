@@ -243,21 +243,26 @@ export function spawnBullet(
   const { world, coll, atlas } = ctx;
   const id = world.spawn();
   const isPlayer = ownerLayer === Layer.player;
-  const name = specId !== undefined ? String(specId) : isPlayer ? 'piorun-bullet' : 'enemy-bullet';
   const mask = isPlayer ? Mask.playerBullet : Mask.enemyBullet;
   const layer = isPlayer ? Layer.playerBullet : Layer.enemyBullet;
-  const f = frame(atlas.sheet, name);
+  let s: ResolvedSprite;
+  if (specId !== undefined) {
+    const f = frame(atlas.sheet, String(specId));
+    s = { image: atlas.image, frame: f };
+  } else {
+    s = resolveSprite(ctx, isPlayer ? 'piorun-bullet' : 'enemy-bullet');
+  }
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: vx, y: vy });
   world.add(id, Sprite, {
-    image: atlas.image,
-    frame: f,
+    image: s.image,
+    frame: s.frame,
     z: 6,
     anchor: CENTER_ANCHOR,
   });
   world.add(id, Bullet, { damage: 1, ownerLayer });
   world.add(id, Lifetime, { remaining: 3 });
-  coll.add(id, AABB(f.w, f.h), x, y, true, layer, mask);
+  coll.add(id, AABB(s.frame.w, s.frame.h), x, y, true, layer, mask);
   return id;
 }
 

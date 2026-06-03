@@ -61,7 +61,7 @@ describe('spawn-bullet-by-id', () => {
     expect(() => spawnBullet(ctx, 100, 200, 0, -400, Layer.player, specId)).not.toThrow();
   });
 
-  test('spawnBullet without specId defaults to piorun-bullet for player layer', () => {
+  test('spawnBullet without specId resolves piorun-bullet key for player layer (shape-atlas fallback)', () => {
     const { world } = createTestWorld();
     const ctx = makeCtxWithFrames(world, ['piorun-bullet']);
     expect(() => spawnBullet(ctx, 100, 200, 0, -400, Layer.player)).not.toThrow();

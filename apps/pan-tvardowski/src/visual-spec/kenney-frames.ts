@@ -15,6 +15,8 @@ export const KENNEY_FRAME_MAP: ReadonlyMap<string, string> = new Map([
   ['skrzat', 'enemyBlack1'],
   ['latawiec', 'enemyBlack2'],
   ['smok-krzemionkowski', 'ufoRed'],
+  ['piorun-bullet', 'laserBlue01'],
+  ['enemy-bullet', 'laserRed01'],
   ['pickup-iskry', 'powerupRed_bolt'],
   ['pickup-piorun', 'powerupYellow_bolt'],
   ['pickup-sol-swiecona', 'powerupBlue_shield'],

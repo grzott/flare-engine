@@ -8,8 +8,6 @@ import {
   updatePeriodicTween,
   updateTween,
 } from '@flare-engine/animation';
-import type { SpriteFrame } from '@flare-engine/assets';
-import { getFrame } from '@flare-engine/assets';
 import type { PerfRecorderHandle } from '@flare-engine/debug';
 import { createPerfRecorder } from '@flare-engine/debug';
 import type { GameContextValue, Scene } from '@flare-engine/engine';
@@ -62,6 +60,7 @@ import {
   recordSubShapeDraws,
   resetFpsRing,
 } from '../fx/budget';
+import { bulletPulseAlpha } from '../fx/bullet-pulse';
 import { resetCataclysmGate, triggerExplosion, triggerSpiralCollapse } from '../fx/explosions';
 import { type PanPostFxController, createPanTvardowskiPostFx } from '../fx/postfx';
 import {
@@ -170,11 +169,12 @@ const SHIP_SUB_SHAPES: Record<string, number> = {
   zwierciadlo: 4,
 };
 
-// Bullet flicker cadence state — module-level to survive scene re-entry.
-// Phase alternates at 8 Hz (125 ms period). Reset is intentionally not done
-// on zone start: a mid-sequence phase is imperceptible to the player.
+// Bullet pulse accumulator — module-level continuous time counter (seconds).
+// Drives the smooth alpha-pulse sine wave applied to all bullets each frame.
+// Not reset on zone start: a mid-phase offset is imperceptible.
 let bulletFlickerAccum = 0;
-let bulletFlickerPhase = 0;
+
+export { bulletPulseAlpha } from '../fx/bullet-pulse';
 
 export interface AudioRef {
   current: AudioHandles | null;
@@ -267,9 +267,6 @@ interface PlayState {
   slowDownTween: Tween;
   /** Session #173: Tier-V cataclysm recovery ramp — 0.3→1.0 over 0.4 s (easeOutCubic). */
   recoveryTween: Tween;
-  /** Session #151: pre-looked-up enemy-bullet sprite frames for zero-alloc flicker swap. */
-  bulletFrameA: SpriteFrame;
-  bulletFrameB: SpriteFrame;
 }
 
 export function createPlayScene(deps: PlaySceneDeps): () => Scene {
@@ -345,16 +342,6 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         sigilTween: periodicTween(0.4, 1.0, 2.4),
         slowDownTween: { ...tween(1.0, 0.3, 0.8, easeInCubic), done: true },
         recoveryTween: { ...tween(0.3, 1.0, 0.4, easeOutCubic), done: true },
-        bulletFrameA: (() => {
-          const f = getFrame(atlas.sheet, 'enemy-bullet');
-          if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet"');
-          return f;
-        })(),
-        bulletFrameB: (() => {
-          const f = getFrame(atlas.sheet, 'enemy-bullet-b');
-          if (!f) throw new Error('pan-tvardowski: missing sprite frame "enemy-bullet-b"');
-          return f;
-        })(),
       };
 
       const handlePair = (pair: { entityA: number; entityB: number }): void => {
@@ -1030,23 +1017,17 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           },
         });
 
-        // Bullet flicker — 8 Hz phase alternation (§5 hazard-edge recipe).
-        // Advance accumulator unconditionally; swap enemy-bullet sprite frames.
+        // Bullet alpha pulse — smooth sine wave; alpha-only so colliders are unaffected.
+        // Pulse scalars are computed once per frame from the module-level accumulator.
         bulletFlickerAccum += dt;
-        if (bulletFlickerAccum >= 0.125) {
-          bulletFlickerAccum -= 0.125;
-          bulletFlickerPhase ^= 1;
-        }
-        const targetFrame = gameState.settings.reducedMotion
-          ? s.bulletFrameA
-          : bulletFlickerPhase === 0
-            ? s.bulletFrameA
-            : s.bulletFrameB;
+        const _reducedMotion = gameState.settings.reducedMotion;
+        const _playerPulse = bulletPulseAlpha(bulletFlickerAccum, true, _reducedMotion);
+        const _enemyPulse = bulletPulseAlpha(bulletFlickerAccum, false, _reducedMotion);
         for (const bid of s.bulletQuery) {
           const bd = ctx.world.get(bid, Bullet);
-          if (!bd || bd.ownerLayer === Layer.player) continue;
+          if (!bd) continue;
           const sp = ctx.world.get(bid, Sprite);
-          if (sp) sp.frame = targetFrame;
+          if (sp) sp.alpha = bd.ownerLayer === Layer.player ? _playerPulse : _enemyPulse;
         }
 
         s.zoneBg?.tick(dt);

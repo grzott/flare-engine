@@ -87,8 +87,16 @@ describe('KENNEY_FRAME_MAP — completeness', () => {
     }
   });
 
-  test('map has exactly 14 entries (1 player + 2 enemies + 1 boss + 10 pickups)', () => {
-    expect(KENNEY_FRAME_MAP.size).toBe(14);
+  test('piorun-bullet maps to laserBlue01', () => {
+    expect(KENNEY_FRAME_MAP.get('piorun-bullet')).toBe('laserBlue01');
+  });
+
+  test('enemy-bullet maps to laserRed01', () => {
+    expect(KENNEY_FRAME_MAP.get('enemy-bullet')).toBe('laserRed01');
+  });
+
+  test('map has exactly 16 entries (1 player + 2 enemies + 1 boss + 2 bullets + 10 pickups)', () => {
+    expect(KENNEY_FRAME_MAP.size).toBe(16);
   });
 
   test('all zone-1 pickup spawn keys are covered', () => {

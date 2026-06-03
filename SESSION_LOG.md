@@ -6132,3 +6132,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 160 — 2026-06-03 (scope: game)
+
+**Goal:** KG4 — animated bullets + engine color convention
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/bullet-pulse.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/src/visual-spec/kenney-frames.ts`
+- `apps/pan-tvardowski/tests/atlas-bullet-wire.test.ts`
+- `apps/pan-tvardowski/tests/bullet-pulse.test.ts`
+- `apps/pan-tvardowski/tests/kenney-frames.test.ts`
+- `apps/pan-tvardowski/tests/spawn-bullet.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

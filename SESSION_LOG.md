@@ -6090,3 +6090,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 158 — 2026-06-03 (scope: game)
+
+**Goal:** KG2 — texture-packer/image loader + dual-atlas handle + thin-slice proof
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/assets/index.ts`
+- `apps/pan-tvardowski/src/assets/sprites-loader.ts`
+- `apps/pan-tvardowski/src/bg/create-zone-bg.ts`
+- `apps/pan-tvardowski/src/scene-registry.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/tests/sprites-loader.test.ts`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

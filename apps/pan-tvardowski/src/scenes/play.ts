@@ -22,6 +22,7 @@ import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import type { PostFxRenderHook } from '@flare-engine/react';
 import { Sprite } from '@flare-engine/render';
 import { applyShake, shouldAllowSlowMo, sigilOpacity } from '../a11y/reduced-motion';
+import type { BgImageHandle, KenneyAtlasHandle } from '../assets/sprites-loader';
 import type { AudioHandles } from '../audio/init';
 import { playSfx, setZoneMusic } from '../audio/init';
 import { type ZoneBgController, createZoneBg } from '../bg/create-zone-bg';
@@ -210,6 +211,12 @@ export interface PlaySceneDeps {
    *  and entity cull. The canvas stays full-bleed — only gameplay logic is
    *  reduced. Defaults to () => 0 when absent. */
   getBottomInset?: () => number;
+  /** Kenney zone-1 atlas handle — null when PNG not yet loaded (KG2). KG3 uses
+   *  this for frame lookup with shape-atlas fallback. */
+  kenney?: KenneyAtlasHandle | null;
+  /** Kenney background image handle — null when PNG not yet loaded (KG2).
+   *  KG6 uses this to render the zone-1 image background. */
+  bg?: BgImageHandle | null;
 }
 
 interface PlayState {
@@ -303,7 +310,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       const state: PlayState = {
         zone,
         coll,
-        spawnCtx: { world: ctx.world, coll, atlas },
+        spawnCtx: { world: ctx.world, coll, atlas, kenney: deps.kenney ?? null },
         spawner: createSpawnerState(),
         schedule: zone.buildSchedule(deps.seed ?? Date.now() & 0xffffffff),
         spawnEvents: [],
@@ -462,6 +469,8 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
       s.zoneBg = createZoneBg(zoneId, {
         world: ctx.world,
         atlas,
+        kenney: deps.kenney ?? null,
+        bg: deps.bg ?? null,
         viewportWidth: s.bounds.width,
         viewportHeight: s.bounds.height,
         camera: ctx.camera,

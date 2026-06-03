@@ -4,6 +4,7 @@ import { Position, Velocity } from '@flare-engine/ecs';
 import { AABB, type CollisionWorld } from '@flare-engine/physics';
 import { Sprite } from '@flare-engine/render';
 import type { SkImage } from '@shopify/react-native-skia';
+import type { KenneyAtlasHandle } from './assets/sprites-loader';
 import {
   Boss,
   type BossPattern,
@@ -35,6 +36,9 @@ export interface SpawnCtx {
   world: World;
   coll: CollisionWorld;
   atlas: AtlasHandle;
+  /** Kenney zone-1 atlas — null until the PNG resolves via useImage. KG3 uses
+   *  this for frame lookup with shape-atlas fallback. */
+  kenney?: KenneyAtlasHandle | null;
 }
 
 /** Shared anchor reference — every entity pivots around its centre so that

@@ -12,6 +12,7 @@ import {
   roofsCity,
 } from '@flare-engine/render';
 import type { AnySpriteEffect } from '@flare-engine/render';
+import type { BgImageHandle, KenneyAtlasHandle } from '../assets/sprites-loader';
 import type { AtlasHandle } from '../spawn';
 import { THEME_SPEC } from '../visual-spec/theme';
 import { ZONE_BG_DEFS } from '../visual-spec/zone-bg';
@@ -39,6 +40,12 @@ export interface ZoneBgDeps {
    * camera.viewportWidth/Height is the actual canvas size. Without this sync
    * the BG only covers the 2/3-top band on real devices. */
   camera: ZoneBgCamera;
+  /** Kenney zone-1 atlas — optional, null until PNG resolves. KG6 uses this
+   *  for the 'image' BG kind. */
+  kenney?: KenneyAtlasHandle | null;
+  /** Kenney background image handle — optional, null until PNG resolves. KG6
+   *  uses this to render the zone-1 image background. */
+  bg?: BgImageHandle | null;
 }
 
 export interface ZoneBgController {

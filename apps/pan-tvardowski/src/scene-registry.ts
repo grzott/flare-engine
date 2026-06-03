@@ -6,7 +6,8 @@ import type { LocalizationManager } from '@flare-engine/localization';
 import { easeOutCubic } from '@flare-engine/math';
 import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
 import { Skia } from '@shopify/react-native-skia';
-import { SPRITES_MANIFEST, loadSpriteAtlas } from './assets';
+import { SPRITES_MANIFEST, loadGameAtlases, loadSpriteAtlas } from './assets';
+import type { ImageResolver } from './assets';
 import type { AudioHandles } from './audio/init';
 import { initAudio } from './audio/init';
 import type { createDialogueController } from './dialogue';
@@ -38,6 +39,13 @@ export interface SceneRegistryDeps {
   /** Returns the current safe-area bottom inset in logical pixels. Forwarded
    *  into createPlayScene so orientation changes are reflected per-frame. */
   getBottomInset?: () => number;
+  /**
+   * Image resolver for texture-packer and image manifest entries (KG2).
+   * Device path: wires useImage results keyed by entry.key.
+   * Absent (or omitted): falls back to null for all kenney/bg handles so the
+   * shape atlas is used as sole fallback.
+   */
+  getImage?: ImageResolver;
 }
 
 export function applyVolumes(audio: AudioHandles | null): void {
@@ -59,8 +67,15 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
     saveStore,
     entitlementStore,
     getBottomInset,
+    getImage,
   } = deps;
-  const atlas = loadSpriteAtlas(Skia, SPRITES_MANIFEST);
+
+  // When getImage is provided, build the full multi-atlas set (shape + kenney + bg).
+  // Otherwise fall back to the legacy single-entry path so existing call-sites
+  // that predate KG2 continue to compile and run unchanged.
+  const atlases = getImage ? loadGameAtlases(Skia, SPRITES_MANIFEST, getImage) : null;
+  const atlas = atlases?.shape ?? loadSpriteAtlas(Skia, SPRITES_MANIFEST);
+
   // PostFx chain runs against Skia. Visible compositing requires the GameView
   // SkCanvas bridge to land in a future engine session; until then the chain
   // still tracks intensities for triggerHitFlash() etc.
@@ -107,6 +122,8 @@ export function buildSceneRegistry(ctx: GameContextValue, deps: SceneRegistryDep
     createPlayScene({
       ctx,
       atlas,
+      kenney: atlases?.kenney ?? null,
+      bg: atlases?.bg ?? null,
       save: saveStore,
       audio: audioRef,
       skia: skiaPostFx,

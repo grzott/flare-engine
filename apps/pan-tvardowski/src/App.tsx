@@ -18,13 +18,15 @@ import { AppLifecycle, GameView, VirtualButton, VirtualJoystick } from '@flare-e
 import type { CrashPayload } from '@flare-engine/errors';
 import { ErrorBoundary, createCrashPayload } from '@flare-engine/errors';
 import { NoopIAPProvider } from '@flare-engine/iap';
+import { useImage } from '@shopify/react-native-skia';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { ImageResolver } from './assets';
 import { disposeAudio, getAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
 import { createNativeSource, createPanTvardowskiDeepLinks } from './deep-links/router';
@@ -94,6 +96,9 @@ interface BootstrapDeps {
   saveStore: ReturnType<typeof useAppProviders>['saveStore'];
   entitlementStore: ReturnType<typeof useAppProviders>['entitlementStore'];
   getBottomInset: () => number;
+  /** Stable closure that reads the current useImage values for each manifest
+   *  entry. Refs are updated via useEffect as images load. */
+  getImage: ImageResolver;
 }
 
 function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
@@ -106,6 +111,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
     saveStore,
     entitlementStore,
     getBottomInset,
+    getImage,
   } = deps;
 
   buildSceneRegistry(ctx, {
@@ -116,6 +122,7 @@ function bootstrap(deps: BootstrapDeps): RuntimeDisposer {
     saveStore,
     entitlementStore,
     getBottomInset,
+    getImage,
   });
 
   const offUpdate = ctx.loop.onUpdate.add((dt) => {
@@ -206,6 +213,37 @@ function AppRoot(): React.ReactElement {
   if (fontError) {
     void crashTransport.report(createCrashPayload(fontError, { source: 'expo-font' }));
   }
+
+  // Kenney atlas images — loaded async by RN-Skia's bundled-asset loader.
+  // Null on first render; transitions to SkImage once the PNG is decoded.
+  // useImage is the idiomatic RN-Skia hook for bundled assets (handles
+  // dev/release/platform resolution + caching automatically).
+  const kenneyAtlasImage = useImage(require('../assets/kenney/zone1.png'));
+  const kenneyBgImage = useImage(require('../assets/kenney/darkPurple.png'));
+
+  // Stable refs so the getImage closure captures a mutable cell rather than
+  // a stale render's value. Updated by useEffect whenever the image arrives.
+  const kenneyAtlasImageRef = useRef(kenneyAtlasImage);
+  const kenneyBgImageRef = useRef(kenneyBgImage);
+
+  useEffect(() => {
+    kenneyAtlasImageRef.current = kenneyAtlasImage;
+  }, [kenneyAtlasImage]);
+  useEffect(() => {
+    kenneyBgImageRef.current = kenneyBgImage;
+  }, [kenneyBgImage]);
+
+  // Stable image resolver — closes over the refs (not their values), so each
+  // atlas handle's live-image getter reads the current useImage result on every
+  // access, picking up the async PNG decode after bootstrap. Empty deps: refs
+  // are stable, so the closure never needs recreating.
+  const getImage = useMemo<ImageResolver>(() => {
+    return (entry) => {
+      if (entry.key === 'kenney-zone1') return kenneyAtlasImageRef.current;
+      if (entry.key === 'kenney-bg') return kenneyBgImageRef.current;
+      return null;
+    };
+  }, []);
 
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
@@ -467,6 +505,7 @@ function AppRoot(): React.ReactElement {
               saveStore,
               entitlementStore,
               getBottomInset: () => insets.bottom,
+              getImage,
             });
           }}
         >

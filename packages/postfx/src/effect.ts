@@ -68,6 +68,8 @@ export interface WeatherRainUniforms {
   speed: number;
   scrollOffsetY: number;
   color?: readonly [number, number, number];
+  density?: number;
+  streakLen?: number;
 }
 
 export interface WeatherSunShaftUniforms {
@@ -103,6 +105,8 @@ export interface CompositeUniforms {
   weatherScrollX: number;
   weatherScrollY: number;
   weatherColor: readonly [number, number, number];
+  weatherDensity: number;
+  weatherStreakLen: number;
 }
 
 export type EffectUniforms =
@@ -231,6 +235,8 @@ export function createWeatherRain(
       speed: uniforms.speed ?? 0,
       scrollOffsetY: uniforms.scrollOffsetY ?? 0,
       color: uniforms.color ?? [1.0, 1.0, 1.0],
+      density: uniforms.density ?? 0.5,
+      streakLen: uniforms.streakLen ?? 0.15,
     },
   };
 }
@@ -306,6 +312,8 @@ export function createPostFxComposite(
       weatherScrollX: uniforms.weatherScrollX ?? 0,
       weatherScrollY: uniforms.weatherScrollY ?? 0,
       weatherColor: uniforms.weatherColor ?? [1.0, 1.0, 1.0],
+      weatherDensity: uniforms.weatherDensity ?? 0.5,
+      weatherStreakLen: uniforms.weatherStreakLen ?? 0.15,
     },
   };
 }

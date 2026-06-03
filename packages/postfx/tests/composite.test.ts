@@ -81,11 +81,11 @@ describe('createPostFxComposite overrides', () => {
 // ── 3. packUniforms layout pin ────────────────────────────────────────────────
 
 describe('packUniforms composite layout', () => {
-  test('produces exactly 22 floats', () => {
+  test('produces exactly 24 floats', () => {
     const { skia } = createMockSkia();
     const rt = createPostFxRuntime(skia);
     const e = createPostFxComposite();
-    expect(rt.packUniforms(e, 800, 600).length).toBe(22);
+    expect(rt.packUniforms(e, 800, 600).length).toBe(24);
   });
 
   test('resolution slots 0–1', () => {
@@ -114,8 +114,10 @@ describe('packUniforms composite layout', () => {
       weatherIntensity: 0.8,
       weatherDirection: 30,
       weatherScrollX: 55,
-      weatherScrollY: 77,
+      weatherScrollY: 0.75,
       weatherColor: [0.1, 0.2, 0.3],
+      weatherDensity: 0.6,
+      weatherStreakLen: 0.2,
     });
     const p = rt.packUniforms(e, 320, 240);
     expect(p[0]).toBe(320); // resolution.x
@@ -136,10 +138,12 @@ describe('packUniforms composite layout', () => {
     expect(p[15]).toBeCloseTo(0.8); // weatherIntensity
     expect(p[16]).toBeCloseTo(30); // weatherDirection
     expect(p[17]).toBeCloseTo(55); // weatherScrollX
-    expect(p[18]).toBeCloseTo(77); // weatherScrollY
+    expect(p[18]).toBeCloseTo(0.75); // weatherScrollY (normalized [0,1) phase)
     expect(p[19]).toBeCloseTo(0.1); // weatherColor.r
     expect(p[20]).toBeCloseTo(0.2); // weatherColor.g
     expect(p[21]).toBeCloseTo(0.3); // weatherColor.b
+    expect(p[22]).toBeCloseTo(0.6); // weatherDensity
+    expect(p[23]).toBeCloseTo(0.2); // weatherStreakLen
   });
 
   test('weatherColor default packs as [1,1,1]', () => {
@@ -149,6 +153,20 @@ describe('packUniforms composite layout', () => {
     expect(p[19]).toBe(1.0);
     expect(p[20]).toBe(1.0);
     expect(p[21]).toBe(1.0);
+  });
+
+  test('weatherDensity default = 0.5 at index 22', () => {
+    const { skia } = createMockSkia();
+    const rt = createPostFxRuntime(skia);
+    const p = rt.packUniforms(createPostFxComposite(), 1, 1);
+    expect(p[22]).toBeCloseTo(0.5);
+  });
+
+  test('weatherStreakLen default = 0.15 at index 23', () => {
+    const { skia } = createMockSkia();
+    const rt = createPostFxRuntime(skia);
+    const p = rt.packUniforms(createPostFxComposite(), 1, 1);
+    expect(p[23]).toBeCloseTo(0.15);
   });
 
   test('crtEnabled false packs as 0.0', () => {
@@ -162,7 +180,7 @@ describe('packUniforms composite layout', () => {
 // ── 4. buildPass integration ──────────────────────────────────────────────────
 
 describe('buildPass composite', () => {
-  test('produces a CompiledPass with correct kind, 22-float uniforms, and empty children', () => {
+  test('produces a CompiledPass with correct kind, 24-float uniforms, and empty children', () => {
     const { skia } = createMockSkia();
     const rt = createPostFxRuntime(skia);
     const chain = new EffectChain();
@@ -173,7 +191,7 @@ describe('buildPass composite', () => {
     if (!pass) throw new Error('no pass');
     expect(pass.id).toBe('comp');
     expect(pass.kind).toBe('composite');
-    expect(pass.uniforms.length).toBe(22);
+    expect(pass.uniforms.length).toBe(24);
     expect(pass.children.length).toBe(0);
   });
 });
@@ -240,6 +258,13 @@ describe('globalIntensity scales composite intensity slots', () => {
     expect(p[10]).toBe(0);
     expect(p[15]).toBe(0);
   });
+
+  test('weatherDensity [22] and weatherStreakLen [23] are NOT scaled by globalIntensity', () => {
+    const p = buildAt(0.5, { weatherDensity: 0.5, weatherStreakLen: 0.15 });
+    if (!p) throw new Error('no pass');
+    expect(p[22]).toBeCloseTo(0.5); // density unchanged
+    expect(p[23]).toBeCloseTo(0.15); // streakLen unchanged
+  });
 });
 
 // ── 6. EffectKind exhaustiveness pin ─────────────────────────────────────────
@@ -302,26 +327,45 @@ describe('COMPOSITE_SKSL source', () => {
     expect(COMPOSITE_SKSL).toContain('uniform float3 weatherColor');
   });
 
-  test('rain branch does not contain baked tint literals', () => {
-    expect(COMPOSITE_SKSL).not.toContain('rain*0.5');
-    expect(COMPOSITE_SKSL).not.toContain('rain*0.55');
-    expect(COMPOSITE_SKSL).not.toContain('rain*0.65');
+  test('contains new density and streakLen uniform declarations', () => {
+    expect(COMPOSITE_SKSL).toContain('uniform float weatherDensity');
+    expect(COMPOSITE_SKSL).toContain('uniform float weatherStreakLen');
   });
 
-  test('rain branch contains hash-bucketing (floor + 0.04)', () => {
+  test('rain branch: falling sawtooth uses fract over fall-axis term', () => {
+    expect(COMPOSITE_SKSL).toContain('fract(fallAxis');
+  });
+
+  test('rain branch: dropout uses hash-based density compare', () => {
+    expect(COMPOSITE_SKSL).toContain('colHash < weatherDensity');
+  });
+
+  test('rain branch: alpha-over blend uses mix(', () => {
+    expect(COMPOSITE_SKSL).toContain('mix(c, half3(weatherColor)');
+  });
+
+  test('rain branch: UV rotation present', () => {
+    expect(COMPOSITE_SKSL).toContain('perpAxis');
+    expect(COMPOSITE_SKSL).toContain('fallAxis');
+  });
+
+  test('rain branch: 2-layer max( combine', () => {
+    expect(COMPOSITE_SKSL).toContain('coverage = max(coverage,');
+  });
+
+  test('rain branch: does NOT contain old whole-column blink pattern', () => {
+    expect(COMPOSITE_SKSL).not.toContain('* 300.0');
+  });
+
+  test('rain branch: does NOT contain old additive blend', () => {
+    expect(COMPOSITE_SKSL).not.toContain('c += half3(weatherColor) * rain');
+  });
+
+  test('rain branch: does NOT contain refraction tap src.eval(coord +', () => {
+    expect(COMPOSITE_SKSL).not.toContain('src.eval(coord +');
+  });
+
+  test('rain branch contains hash-bucketing (floor)', () => {
     expect(COMPOSITE_SKSL).toContain('floor');
-    expect(COMPOSITE_SKSL).toContain('0.04');
-  });
-
-  test('rain branch contains lifecycle mod', () => {
-    expect(COMPOSITE_SKSL).toContain('mod(scrolled');
-  });
-
-  test('rain branch contains far octave freq 0.07', () => {
-    expect(COMPOSITE_SKSL).toContain('0.07');
-  });
-
-  test('rain branch contains refraction tap src.eval(coord +', () => {
-    expect(COMPOSITE_SKSL).toContain('src.eval(coord +');
   });
 });

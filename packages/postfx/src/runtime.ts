@@ -214,6 +214,8 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
         col[0],
         col[1],
         col[2],
+        u.density ?? 0.5,
+        u.streakLen ?? 0.15,
       ]);
     }
     case 'weather-sun-shaft':
@@ -223,7 +225,7 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
     case 'weather-clouds':
       return new Float32Array([width, height, u.intensity, u.scrollOffsetX]);
     case 'composite':
-      // Packed in uniform-declaration order (22 floats); see COMPOSITE_SKSL header comment.
+      // Packed in uniform-declaration order (24 floats); see COMPOSITE_SKSL header comment.
       return new Float32Array([
         width,
         height,
@@ -247,6 +249,8 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
         u.weatherColor[0],
         u.weatherColor[1],
         u.weatherColor[2],
+        u.weatherDensity,
+        u.weatherStreakLen,
       ]);
   }
 }

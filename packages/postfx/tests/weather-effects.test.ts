@@ -172,12 +172,46 @@ describe('SkSL shader source content', () => {
     expect(WEATHER_RAIN_SKSL).toContain('uniform float3 color');
   });
 
-  test('WEATHER_RAIN_SKSL contains hash bucketing (floor)', () => {
-    expect(WEATHER_RAIN_SKSL).toContain('floor');
+  test('WEATHER_RAIN_SKSL contains density and streakLen uniform declarations', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('uniform float density');
+    expect(WEATHER_RAIN_SKSL).toContain('uniform float streakLen');
   });
 
-  test('WEATHER_RAIN_SKSL contains refraction tap src.eval(coord +', () => {
-    expect(WEATHER_RAIN_SKSL).toContain('src.eval(coord +');
+  test('WEATHER_RAIN_SKSL: falling sawtooth uses fract over fall-axis term', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('fract(fallAxis');
+  });
+
+  test('WEATHER_RAIN_SKSL: dropout uses hash-based density compare', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('colHash < density');
+  });
+
+  test('WEATHER_RAIN_SKSL: alpha-over blend uses mix(', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('mix(scene.rgb, half3(color)');
+  });
+
+  test('WEATHER_RAIN_SKSL: UV rotation present (perpAxis/fallAxis)', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('perpAxis');
+    expect(WEATHER_RAIN_SKSL).toContain('fallAxis');
+  });
+
+  test('WEATHER_RAIN_SKSL: 2-layer max( combine', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('coverage = max(coverage,');
+  });
+
+  test('WEATHER_RAIN_SKSL: does NOT contain old whole-column blink pattern', () => {
+    expect(WEATHER_RAIN_SKSL).not.toContain('* 300.0');
+  });
+
+  test('WEATHER_RAIN_SKSL: does NOT contain old additive blend', () => {
+    expect(WEATHER_RAIN_SKSL).not.toContain('scene.rgb + half3(color)');
+  });
+
+  test('WEATHER_RAIN_SKSL: does NOT contain refraction tap src.eval(coord +', () => {
+    expect(WEATHER_RAIN_SKSL).not.toContain('src.eval(coord +');
+  });
+
+  test('WEATHER_RAIN_SKSL contains hash bucketing (floor)', () => {
+    expect(WEATHER_RAIN_SKSL).toContain('floor');
   });
 
   test('WEATHER_SUN_SHAFT_SKSL contains expected uniform names and entry point', () => {
@@ -207,9 +241,9 @@ describe('packUniforms layout', () => {
   const { skia } = createMockSkia();
   const rt = createPostFxRuntime(skia);
 
-  test('weather-rain: length = 8', () => {
+  test('weather-rain: length = 10', () => {
     const packed = rt.packUniforms(createWeatherRain(), 800, 600);
-    expect(packed.length).toBe(8);
+    expect(packed.length).toBe(10);
   });
 
   test('weather-rain: intensity at index 2, direction at 3, scrollOffsetY at 4', () => {
@@ -241,6 +275,34 @@ describe('packUniforms layout', () => {
     expect(packed[5]).toBe(1.0);
     expect(packed[6]).toBe(1.0);
     expect(packed[7]).toBe(1.0);
+  });
+
+  test('weather-rain: density at index 8', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherRain('r', { density: 0.7 }), 800, 600);
+    expect(packed[8]).toBeCloseTo(0.7, 5);
+  });
+
+  test('weather-rain: streakLen at index 9', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherRain('r', { streakLen: 0.25 }), 800, 600);
+    expect(packed[9]).toBeCloseTo(0.25, 5);
+  });
+
+  test('weather-rain: density default = 0.5 at index 8', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherRain(), 800, 600);
+    expect(packed[8]).toBeCloseTo(0.5, 5);
+  });
+
+  test('weather-rain: streakLen default = 0.15 at index 9', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherRain(), 800, 600);
+    expect(packed[9]).toBeCloseTo(0.15, 5);
   });
 
   test('weather-sun-shaft: length = 4', () => {
@@ -349,6 +411,17 @@ describe('globalIntensity scales weather effect intensity', () => {
     expect(pass[0]?.uniforms[5]).toBe(1.0);
     expect(pass[0]?.uniforms[6]).toBe(1.0);
     expect(pass[0]?.uniforms[7]).toBe(1.0);
+  });
+
+  test('weather-rain: density [8] and streakLen [9] are NOT scaled by globalIntensity', () => {
+    const { skia } = createMockSkia();
+    const rt = createPostFxRuntime(skia);
+    const chain = new EffectChain();
+    chain.add(createWeatherRain('r', { intensity: 1.0, density: 0.5, streakLen: 0.15 }));
+    chain.globalIntensity = 0.5;
+    const pass = rt.buildPass(chain, 800, 600);
+    expect(pass[0]?.uniforms[8]).toBeCloseTo(0.5, 5);
+    expect(pass[0]?.uniforms[9]).toBeCloseTo(0.15, 5);
   });
 
   test('weather-sun-shaft: intensity halved at globalIntensity=0.5', () => {

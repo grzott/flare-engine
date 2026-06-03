@@ -8,6 +8,9 @@ export const ZONE_FX_DEFS = {
     intensity: 0.55,
     direction: 15,
     speed: 180,
+    weatherColor: [0.75, 0.82, 0.9],
+    density: 0.45,
+    streakLen: 0.12,
   },
   2: {
     zoneId: 2,
@@ -22,6 +25,9 @@ export const ZONE_FX_DEFS = {
     intensity: 0.7,
     direction: 5,
     speed: 220,
+    weatherColor: [0.62, 0.78, 0.88],
+    density: 0.7,
+    streakLen: 0.2,
   },
   4: {
     zoneId: 4,

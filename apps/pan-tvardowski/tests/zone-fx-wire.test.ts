@@ -78,11 +78,12 @@ describe('zone-fx-wire: weatherKind + weatherIntensity on composite', () => {
 });
 
 describe('zone-fx-wire: tick advances scroll accumulators', () => {
-  test('rain (Z1, speed=180): update(0.016) advances weatherScrollY by ~2.88', () => {
+  test('rain (Z1, speed=180): update(0.016) advances weatherScrollY by normalized phase (speed*dt*SCROLL_K)', () => {
+    const SCROLL_K = 1 / 40;
     const fx = createPanTvardowskiPostFx(null);
     fx.setZoneFxDef(ZONE_FX_DEFS[1]);
     fx.update(0.016);
-    expect(getComposite(fx).weatherScrollY).toBeCloseTo(180 * 0.016, 5);
+    expect(getComposite(fx).weatherScrollY).toBeCloseTo((180 * 0.016 * SCROLL_K) % 1.0, 5);
   });
 
   test('clouds (Z7, speed=60 direction=10): update(0.016) advances weatherScrollX by ~speed*dt*cos(dir)', () => {
@@ -133,6 +134,33 @@ describe('zone-fx-wire: dark-vignette does not advance scroll', () => {
   });
 });
 
+describe('zone-fx-wire: weatherColor passthrough', () => {
+  test('Z1 (rain): u.weatherColor equals [0.75, 0.82, 0.90]', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[1]);
+    expect(getComposite(fx).weatherColor).toEqual([0.75, 0.82, 0.9]);
+  });
+
+  test('Z3 (rain): u.weatherColor equals [0.62, 0.78, 0.88]', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[3]);
+    expect(getComposite(fx).weatherColor).toEqual([0.62, 0.78, 0.88]);
+  });
+
+  test('Z2 (sun-shaft, non-rain): u.weatherColor equals [1.0, 1.0, 1.0]', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[2]);
+    expect(getComposite(fx).weatherColor).toEqual([1.0, 1.0, 1.0]);
+  });
+
+  test('Z1 then undefined: u.weatherColor resets to [1.0, 1.0, 1.0]', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[1]);
+    fx.setZoneFxDef(undefined);
+    expect(getComposite(fx).weatherColor).toEqual([1.0, 1.0, 1.0]);
+  });
+});
+
 describe('zone-fx-wire: new cases', () => {
   test('setZoneFxDef(undefined) sets weatherKind=0 and weatherIntensity=0', () => {
     const fx = createPanTvardowskiPostFx(null);
@@ -149,5 +177,62 @@ describe('zone-fx-wire: new cases', () => {
     expect(getComposite(fx).chromaAmount).toBeGreaterThan(0);
     fx.update(0.3);
     expect(getComposite(fx).chromaAmount).toBe(0);
+  });
+});
+
+describe('zone-fx-wire: weatherDensity + weatherStreakLen passthrough', () => {
+  test('Z1 (rain, density=0.45 streakLen=0.12): u.weatherDensity and u.weatherStreakLen pinned', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[1]);
+    const u = getComposite(fx);
+    expect(u.weatherDensity).toBe(0.45);
+    expect(u.weatherStreakLen).toBe(0.12);
+  });
+
+  test('Z3 (rain, density=0.7 streakLen=0.2): u.weatherDensity and u.weatherStreakLen pinned', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[3]);
+    const u = getComposite(fx);
+    expect(u.weatherDensity).toBe(0.7);
+    expect(u.weatherStreakLen).toBe(0.2);
+  });
+
+  test('Z2 (sun-shaft, no density/streakLen): u.weatherDensity=0.5, u.weatherStreakLen=0.15 (defaults)', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[2]);
+    const u = getComposite(fx);
+    expect(u.weatherDensity).toBe(0.5);
+    expect(u.weatherStreakLen).toBe(0.15);
+  });
+
+  test('Z1 then undefined: density/streakLen reset to defaults 0.5/0.15', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[1]);
+    fx.setZoneFxDef(undefined);
+    const u = getComposite(fx);
+    expect(u.weatherDensity).toBe(0.5);
+    expect(u.weatherStreakLen).toBe(0.15);
+  });
+});
+
+describe('zone-fx-wire: scroll wrap stays in [0, 1)', () => {
+  test('rain (Z1, speed=180): after many ticks, weatherScrollY is always in [0, 1)', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[1]);
+    // 100 ticks of dt=0.1s: raw accumulator without wrap = 180 * 100 * 0.1 = 1800 >> 1.0
+    for (let i = 0; i < 100; i++) fx.update(0.1);
+    const y = getComposite(fx).weatherScrollY;
+    expect(y).toBeGreaterThanOrEqual(0);
+    expect(y).toBeLessThan(1.0);
+  });
+
+  test('rain (Z3, speed=220): large dt wraps weatherScrollY into [0, 1)', () => {
+    const fx = createPanTvardowskiPostFx(null);
+    fx.setZoneFxDef(ZONE_FX_DEFS[3]);
+    // single tick of dt=10s: raw accumulator without wrap = 220 * 10 = 2200 >> 1.0
+    fx.update(10);
+    const y = getComposite(fx).weatherScrollY;
+    expect(y).toBeGreaterThanOrEqual(0);
+    expect(y).toBeLessThan(1.0);
   });
 });

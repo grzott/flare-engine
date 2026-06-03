@@ -22,6 +22,9 @@ export interface PanPostFxController extends PostFxController {
   setZoneFxDef(def: ZoneFxDef | undefined): void;
 }
 
+// px/s → phase/s tuning knob: speed * dt * SCROLL_K maps real px/s onto [0,1) phase/s
+const SCROLL_K = 1 / 40;
+
 // weatherKind integer mapping
 const WEATHER_KIND: Record<ZoneFxDef['kind'], 1 | 2 | 3 | 4> = {
   rain: 1,
@@ -52,6 +55,8 @@ export function createPanTvardowskiPostFx(
     weatherDirection: 0,
     weatherScrollX: 0,
     weatherScrollY: 0,
+    weatherDensity: 0.5,
+    weatherStreakLen: 0.15,
   });
 
   const base = createPostFxController({
@@ -86,6 +91,10 @@ export function createPanTvardowskiPostFx(
       if (def === undefined) {
         u.weatherKind = 0;
         u.weatherIntensity = 0;
+        u.weatherColor = [1.0, 1.0, 1.0];
+        u.weatherDensity = 0.5;
+        u.weatherStreakLen = 0.15;
+        u.weatherScrollY = 0;
         activeZoneFxDef = null;
         zoneFxScrollOffsetY = 0;
         zoneFxScrollOffsetX = 0;
@@ -94,6 +103,9 @@ export function createPanTvardowskiPostFx(
       u.weatherKind = WEATHER_KIND[def.kind];
       u.weatherIntensity = def.intensity;
       u.weatherDirection = def.direction;
+      u.weatherColor = def.weatherColor ?? [1.0, 1.0, 1.0];
+      u.weatherDensity = def.density ?? 0.5;
+      u.weatherStreakLen = def.streakLen ?? 0.15;
       u.weatherScrollX = 0;
       u.weatherScrollY = 0;
       zoneFxScrollOffsetY = 0;
@@ -156,7 +168,7 @@ export function createPanTvardowskiPostFx(
       if (activeZoneFxDef !== null) {
         const def = activeZoneFxDef;
         if (def.kind === 'rain') {
-          zoneFxScrollOffsetY += def.speed * dt;
+          zoneFxScrollOffsetY = (zoneFxScrollOffsetY + def.speed * dt * SCROLL_K) % 1.0;
           u.weatherScrollY = zoneFxScrollOffsetY;
         } else if (def.kind === 'clouds') {
           const rad = (def.direction * Math.PI) / 180;

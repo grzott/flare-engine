@@ -649,6 +649,15 @@ export interface ZoneFxDef {
    */
   readonly direction: number;
   readonly speed: number;
+  /**
+   * Rain tint multiplier packed as [R, G, B] in [0, 1]. Absent → uniform
+   * defaults to [1, 1, 1] (neutral white). Only rain zones supply this.
+   */
+  readonly weatherColor?: readonly [number, number, number];
+  /** Fraction of columns carrying a drop, 0..1. Absent → uniform default 0.5. */
+  readonly density?: number;
+  /** Streak length as lit fraction of each repeat period, 0..1. Absent → uniform default 0.15. */
+  readonly streakLen?: number;
 }
 
 // ---- Background, parallax, ambience (folios XII / XIIB) --------------------

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ZoneFxKindId } from '../src/visual-spec/types';
+import type { ZoneFxDef, ZoneFxKindId } from '../src/visual-spec/types';
 import { ZONE_FX_DEFS } from '../src/visual-spec/zone-fx';
 
 const ZONE_IDS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -74,6 +74,83 @@ describe('ZONE_FX_DEFS — field ranges', () => {
   test('speed >= 0 for all entries', () => {
     const violations = ZONE_IDS.filter((id) => ZONE_FX_DEFS[id].speed < 0);
     expect(violations).toEqual([]);
+  });
+});
+
+describe('ZONE_FX_DEFS — density + streakLen fields', () => {
+  test('density is in [0, 1] for all zones that supply it', () => {
+    const violations: string[] = [];
+    for (const id of ZONE_IDS) {
+      const def: ZoneFxDef = ZONE_FX_DEFS[id];
+      const v = def.density;
+      if (v === undefined) continue;
+      if (v < 0 || v > 1) violations.push(`Z${id}.density = ${v}`);
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test('streakLen is in (0, 1] for all zones that supply it', () => {
+    const violations: string[] = [];
+    for (const id of ZONE_IDS) {
+      const def: ZoneFxDef = ZONE_FX_DEFS[id];
+      const v = def.streakLen;
+      if (v === undefined) continue;
+      if (v <= 0 || v > 1) violations.push(`Z${id}.streakLen = ${v}`);
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test('Z1 exact pins: density=0.45, streakLen=0.12', () => {
+    const def: ZoneFxDef = ZONE_FX_DEFS[1];
+    expect(def.density).toBe(0.45);
+    expect(def.streakLen).toBe(0.12);
+  });
+
+  test('Z3 exact pins: density=0.7, streakLen=0.2', () => {
+    const def: ZoneFxDef = ZONE_FX_DEFS[3];
+    expect(def.density).toBe(0.7);
+    expect(def.streakLen).toBe(0.2);
+  });
+
+  test('non-rain zones have density === undefined and streakLen === undefined', () => {
+    const nonRainIds = ZONE_IDS.filter((id) => ZONE_FX_DEFS[id].kind !== 'rain');
+    for (const id of nonRainIds) {
+      const def: ZoneFxDef = ZONE_FX_DEFS[id];
+      expect(def.density, `Z${id}.density`).toBeUndefined();
+      expect(def.streakLen, `Z${id}.streakLen`).toBeUndefined();
+    }
+  });
+});
+
+describe('ZONE_FX_DEFS — weatherColor field', () => {
+  test('weatherColor components are in [0, 1] for all zones that supply it', () => {
+    const violations: string[] = [];
+    for (const id of ZONE_IDS) {
+      const def: ZoneFxDef = ZONE_FX_DEFS[id];
+      const wc = def.weatherColor;
+      if (wc === undefined) continue;
+      for (let ch = 0; ch < 3; ch++) {
+        const v = wc[ch as 0 | 1 | 2];
+        if (v < 0 || v > 1) violations.push(`Z${id}.weatherColor[${ch}] = ${v}`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test('Z1 weatherColor exact pin [0.75, 0.82, 0.90]', () => {
+    expect(ZONE_FX_DEFS[1].weatherColor).toEqual([0.75, 0.82, 0.9]);
+  });
+
+  test('Z3 weatherColor exact pin [0.62, 0.78, 0.88]', () => {
+    expect(ZONE_FX_DEFS[3].weatherColor).toEqual([0.62, 0.78, 0.88]);
+  });
+
+  test('non-rain zones have weatherColor === undefined', () => {
+    const nonRainIds = ZONE_IDS.filter((id) => ZONE_FX_DEFS[id].kind !== 'rain');
+    for (const id of nonRainIds) {
+      const def: ZoneFxDef = ZONE_FX_DEFS[id];
+      expect(def.weatherColor, `Z${id}`).toBeUndefined();
+    }
   });
 });
 

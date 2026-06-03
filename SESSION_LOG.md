@@ -6017,3 +6017,31 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 155 — 2026-06-03 (scope: mixed)
+
+**Goal:** rain rewrite — 2D falling-streak model (engine) + scroll-wrap/per-zone wire (game)
+
+**Touched files**
+- `apps/pan-tvardowski/src/fx/postfx.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-fx.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-fx-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-fx-wire.test.ts`
+- `docs/design/api-specs.md`
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/tests/composite.test.ts`
+- `packages/postfx/tests/weather-effects.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

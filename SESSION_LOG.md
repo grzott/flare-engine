@@ -6155,3 +6155,35 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 161 — 2026-06-03 (scope: mixed)
+
+**Goal:** KG5 exhaust flames + engine per-sprite rotation
+
+**Touched files**
+- `apps/pan-tvardowski/src/components.ts`
+- `apps/pan-tvardowski/src/fx/exhaust-frame.ts`
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/src/systems/cleanup.ts`
+- `apps/pan-tvardowski/src/systems/exhaust.ts`
+- `apps/pan-tvardowski/tests/exhaust-frame.test.ts`
+- `apps/pan-tvardowski/tests/exhaust-system.test.ts`
+- `apps/pan-tvardowski/tests/spiral-collapse.test.ts`
+- `docs/design/api-specs.md`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/render/src/render-system.ts`
+- `packages/render/src/sprite-batch.ts`
+- `packages/render/tests/render-system.test.ts`
+- `packages/render/tests/sprite-batch.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

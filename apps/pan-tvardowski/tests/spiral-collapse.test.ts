@@ -80,6 +80,7 @@ describe('SpiralCollapse per-frame visual update', () => {
       shipQuery: world.query(SpiralCollapse), // empty — no Ship entities
       lifetimeQuery: world.query(SpiralCollapse), // empty — no Lifetime entities
       spiralCollapseQuery: world.query(SpiralCollapse),
+      exhaustQuery: world.query(SpiralCollapse), // empty — no Exhaust entities
       bounds: { width: 360, height: 640 },
       onEnemyKilled: () => {},
       onPlayerDown: () => {},

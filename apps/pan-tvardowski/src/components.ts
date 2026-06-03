@@ -188,6 +188,15 @@ export const Pickup = defineComponent<PickupData>('Pickup', () => ({
   effect: { kind: 'weapon-swap', weapon: 'iskry' as WeaponSpecId },
 }));
 
+export interface ExhaustData {
+  ownerId: number;
+  isPlayer: boolean;
+}
+export const Exhaust = defineComponent<ExhaustData>('Exhaust', () => ({
+  ownerId: -1,
+  isPlayer: false,
+}));
+
 export interface SpiralCollapseData {
   originX: number;
   originY: number;

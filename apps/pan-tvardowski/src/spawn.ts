@@ -12,6 +12,7 @@ import {
   Bullet,
   Enemy,
   type EnemyPattern,
+  Exhaust,
   Hp,
   Lifetime,
   Miniboss,
@@ -26,6 +27,7 @@ import {
   ENEMY_SPECS,
 } from './config/gameplay';
 import { Layer, Mask } from './layers';
+import { EXHAUST_ROTATION_ENEMY, EXHAUST_ROTATION_PLAYER } from './systems/exhaust';
 import { KENNEY_FRAME_MAP } from './visual-spec/kenney-frames';
 import type { BulletSpecId, PickupDef } from './visual-spec/types';
 
@@ -78,6 +80,36 @@ function resolveSprite(ctx: SpawnCtx, name: string): ResolvedSprite {
   return { image: ctx.atlas.image, frame: frame(ctx.atlas.sheet, name) };
 }
 
+/**
+ * Spawns a paired exhaust flame entity for a hull.
+ *
+ * Kenney-null-safe: uses shape-atlas placeholder frame + alpha=0 when the
+ * kenney atlas is not yet live (updateExhaust keeps alpha=0 in that state).
+ * No collider — flame is visual-only. Z placed below the hull (z-1) so it
+ * renders behind the ship.
+ */
+export function spawnExhaustFlame(
+  ctx: SpawnCtx,
+  ownerId: number,
+  x: number,
+  y: number,
+  isPlayer: boolean,
+): void {
+  const { world } = ctx;
+  const id = world.spawn();
+  const placeholderFrame = frame(ctx.atlas.sheet, 'piorun-bullet');
+  world.add(id, Position, { x, y });
+  world.add(id, Sprite, {
+    image: ctx.atlas.image,
+    frame: placeholderFrame,
+    z: isPlayer ? 9 : 7,
+    anchor: CENTER_ANCHOR,
+    alpha: 0,
+    rotation: isPlayer ? EXHAUST_ROTATION_PLAYER : EXHAUST_ROTATION_ENEMY,
+  });
+  world.add(id, Exhaust, { ownerId, isPlayer });
+}
+
 export function spawnPlayer(ctx: SpawnCtx, x: number, y: number): number {
   const { world, coll } = ctx;
   const id = world.spawn();
@@ -93,6 +125,7 @@ export function spawnPlayer(ctx: SpawnCtx, x: number, y: number): number {
   world.add(id, Ship, { fireRate: 0.18, cooldown: 0 });
   world.add(id, Hp, { current: 100, max: 100 });
   coll.add(id, AABB(s.frame.w * 0.6, s.frame.h * 0.6), x, y, false, Layer.player, Mask.player);
+  spawnExhaustFlame(ctx, id, x, y, true);
   return id;
 }
 
@@ -139,6 +172,7 @@ export function spawnEnemy(
     Layer.enemy,
     Mask.enemy,
   );
+  spawnExhaustFlame(ctx, id, x, y, false);
   return id;
 }
 
@@ -183,6 +217,7 @@ export function spawnBoss(
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(id, AABB(s.frame.w * scale, s.frame.h * scale), x, y, false, Layer.enemy, Mask.enemy);
+  spawnExhaustFlame(ctx, id, x, y, false);
   return id;
 }
 
@@ -228,6 +263,7 @@ export function spawnMiniboss(
     Layer.enemy,
     Mask.enemy,
   );
+  spawnExhaustFlame(ctx, id, x, y, false);
   return id;
 }
 

@@ -3,7 +3,7 @@ import { Position } from '@flare-engine/ecs';
 import { easeInCubic, lerp } from '@flare-engine/math';
 import type { CollisionWorld } from '@flare-engine/physics';
 import { Sprite } from '@flare-engine/render';
-import { Enemy, type EnemyPattern, Hp, Lifetime, SpiralCollapse } from '../components';
+import { Enemy, type EnemyPattern, Exhaust, Hp, Lifetime, SpiralCollapse } from '../components';
 import { ENEMY_SPECS, OFFSCREEN_PAD } from '../config/gameplay';
 import { destroyEntity } from './entity-ops';
 
@@ -18,6 +18,7 @@ export interface CleanupDeps {
   shipQuery: Query;
   lifetimeQuery: Query;
   spiralCollapseQuery: Query;
+  exhaustQuery: Query;
   bounds: { width: number; height: number };
   onEnemyKilled: (score: number, x: number, y: number, pattern: EnemyPattern) => void;
   onPlayerDown: () => void;
@@ -110,6 +111,14 @@ export function cleanup(world: World, dt: number, deps: CleanupDeps): void {
     if (!hp) continue;
     if (hp.current <= 0) {
       deps.onPlayerDown();
+      destroyEntity(world, deps.coll, id);
+    }
+  }
+
+  for (const id of deps.exhaustQuery) {
+    const exhaust = world.get(id, Exhaust);
+    if (!exhaust) continue;
+    if (world.get(exhaust.ownerId, Position) === undefined) {
       destroyEntity(world, deps.coll, id);
     }
   }

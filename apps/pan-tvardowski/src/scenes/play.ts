@@ -28,6 +28,7 @@ import {
   Boss,
   Bullet,
   Enemy,
+  Exhaust,
   Lifetime,
   Miniboss,
   MirrorTwin,
@@ -99,6 +100,7 @@ import {
   bombButtonState,
   createRunStats,
   gameState,
+  joystickState,
   notifyStateChanged,
   resetBombButtonFrame,
 } from '../state';
@@ -109,6 +111,7 @@ import { cleanup } from '../systems/cleanup';
 import { resolveCollision } from '../systems/collision';
 import { updateEnemyAI } from '../systems/enemy-ai';
 import { destroyEntity } from '../systems/entity-ops';
+import { updateExhaust } from '../systems/exhaust';
 import { integrate } from '../systems/integrate';
 import {
   despawnMirrorTwin,
@@ -173,6 +176,10 @@ const SHIP_SUB_SHAPES: Record<string, number> = {
 // Drives the smooth alpha-pulse sine wave applied to all bullets each frame.
 // Not reset on zone start: a mid-phase offset is imperceptible.
 let bulletFlickerAccum = 0;
+
+// Exhaust flame accumulator — parallel to bulletFlickerAccum.
+// Drives the fire00..19 flipbook index and the sine alpha pulse for all flame entities.
+let exhaustFlickerAccum = 0;
 
 export { bulletPulseAlpha } from '../fx/bullet-pulse';
 
@@ -244,6 +251,7 @@ interface PlayState {
   lifetimeQuery: ReturnType<GameContextValue['world']['query']>;
   mirrorTwinQuery: ReturnType<GameContextValue['world']['query']>;
   spiralCollapseQuery: ReturnType<GameContextValue['world']['query']>;
+  exhaustQuery: ReturnType<GameContextValue['world']['query']>;
   bounds: { width: number; height: number };
   pendingShake: boolean;
   viewportReady: boolean;
@@ -329,6 +337,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
         lifetimeQuery: ctx.world.query(Lifetime),
         mirrorTwinQuery: ctx.world.query(MirrorTwin),
         spiralCollapseQuery: ctx.world.query(SpiralCollapse),
+        exhaustQuery: ctx.world.query(Exhaust),
         bounds: { width: 360, height: 640 },
         pendingShake: false,
         viewportReady: false,
@@ -944,6 +953,7 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           shipQuery: s.shipQuery,
           lifetimeQuery: s.lifetimeQuery,
           spiralCollapseQuery: s.spiralCollapseQuery,
+          exhaustQuery: s.exhaustQuery,
           bounds: s.bounds,
           onEliteDeath: (entityId, x, y) => {
             return triggerSpiralCollapse(
@@ -1029,6 +1039,16 @@ export function createPlayScene(deps: PlaySceneDeps): () => Scene {
           const sp = ctx.world.get(bid, Sprite);
           if (sp) sp.alpha = bd.ownerLayer === Layer.player ? _playerPulse : _enemyPulse;
         }
+
+        // Exhaust flame flipbook + alpha pulse.
+        exhaustFlickerAccum += dt;
+        updateExhaust(ctx.world, {
+          exhaustQuery: s.exhaustQuery,
+          kenney: deps.kenney ?? null,
+          accum: exhaustFlickerAccum,
+          playerVisible: joystickState.active,
+          reducedMotion: _reducedMotion,
+        });
 
         s.zoneBg?.tick(dt);
 

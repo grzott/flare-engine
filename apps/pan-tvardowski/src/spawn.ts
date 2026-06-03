@@ -1,4 +1,5 @@
-import { type SpriteSheet, getFrame } from '@flare-engine/assets';
+import { type SpriteFrame, type SpriteSheet, getFrame } from '@flare-engine/assets';
+import type { SkImageLike } from '@flare-engine/assets';
 import type { World } from '@flare-engine/ecs';
 import { Position, Velocity } from '@flare-engine/ecs';
 import { AABB, type CollisionWorld } from '@flare-engine/physics';
@@ -25,6 +26,7 @@ import {
   ENEMY_SPECS,
 } from './config/gameplay';
 import { Layer, Mask } from './layers';
+import { KENNEY_FRAME_MAP } from './visual-spec/kenney-frames';
 import type { BulletSpecId, PickupDef } from './visual-spec/types';
 
 export interface AtlasHandle {
@@ -41,6 +43,11 @@ export interface SpawnCtx {
   kenney?: KenneyAtlasHandle | null;
 }
 
+interface ResolvedSprite {
+  image: SkImageLike;
+  frame: SpriteFrame;
+}
+
 /** Shared anchor reference — every entity pivots around its centre so that
  *  Position, physics AABBs and visuals line up (shmup convention). */
 const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
@@ -51,21 +58,41 @@ function frame(sheet: SpriteSheet, name: string) {
   return f;
 }
 
+/**
+ * KG3: resolve the best-available sprite for `name`.
+ *
+ * If `ctx.kenney` is non-null, its image is live, and `KENNEY_FRAME_MAP` maps
+ * `name` to a frame present in the Kenney sheet, return the Kenney image+frame.
+ * Otherwise fall through to the shape atlas (zones 2–8 always take this path).
+ */
+function resolveSprite(ctx: SpawnCtx, name: string): ResolvedSprite {
+  if (ctx.kenney !== null && ctx.kenney !== undefined && ctx.kenney.image !== null) {
+    const kenneyFrameName = KENNEY_FRAME_MAP.get(name);
+    if (kenneyFrameName !== undefined) {
+      const kenneyFrame = getFrame(ctx.kenney.sheet, kenneyFrameName);
+      if (kenneyFrame !== undefined) {
+        return { image: ctx.kenney.image, frame: kenneyFrame };
+      }
+    }
+  }
+  return { image: ctx.atlas.image, frame: frame(ctx.atlas.sheet, name) };
+}
+
 export function spawnPlayer(ctx: SpawnCtx, x: number, y: number): number {
-  const { world, coll, atlas } = ctx;
+  const { world, coll } = ctx;
   const id = world.spawn();
-  const f = frame(atlas.sheet, 'kogut-zloty');
+  const s = resolveSprite(ctx, 'kogut-zloty');
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Sprite, {
-    image: atlas.image,
-    frame: f,
+    image: s.image,
+    frame: s.frame,
     z: 10,
     anchor: CENTER_ANCHOR,
   });
   world.add(id, Ship, { fireRate: 0.18, cooldown: 0 });
   world.add(id, Hp, { current: 100, max: 100 });
-  coll.add(id, AABB(f.w * 0.6, f.h * 0.6), x, y, false, Layer.player, Mask.player);
+  coll.add(id, AABB(s.frame.w * 0.6, s.frame.h * 0.6), x, y, false, Layer.player, Mask.player);
   return id;
 }
 
@@ -76,15 +103,15 @@ export function spawnEnemy(
   y: number,
   seed: number,
 ): number {
-  const { world, coll, atlas } = ctx;
+  const { world, coll } = ctx;
   const spec = ENEMY_SPECS[pattern];
   const id = world.spawn();
-  const f = frame(atlas.sheet, spec.frame);
+  const s = resolveSprite(ctx, spec.frame);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Sprite, {
-    image: atlas.image,
-    frame: f,
+    image: s.image,
+    frame: s.frame,
     z: 8,
     anchor: CENTER_ANCHOR,
   });
@@ -105,7 +132,7 @@ export function spawnEnemy(
   world.add(id, Hp, { current: spec.hp, max: spec.hp });
   coll.add(
     id,
-    AABB(f.w * COLLIDER_SCALE_ENEMY, f.h * COLLIDER_SCALE_ENEMY),
+    AABB(s.frame.w * COLLIDER_SCALE_ENEMY, s.frame.h * COLLIDER_SCALE_ENEMY),
     x,
     y,
     false,
@@ -124,15 +151,15 @@ export function spawnBoss(
   /** Per-entity AABB scale override. Defaults to COLLIDER_SCALE_BOSS (0.9). */
   colliderScale?: number,
 ): number {
-  const { world, coll, atlas } = ctx;
+  const { world, coll } = ctx;
   const scale = colliderScale ?? COLLIDER_SCALE_BOSS;
   const id = world.spawn();
-  const f = frame(atlas.sheet, pattern);
+  const s = resolveSprite(ctx, pattern);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Sprite, {
-    image: atlas.image,
-    frame: f,
+    image: s.image,
+    frame: s.frame,
     z: 9,
     anchor: CENTER_ANCHOR,
   });
@@ -155,7 +182,7 @@ export function spawnBoss(
     shatterT: 0,
   });
   world.add(id, Hp, { current: hpMax, max: hpMax });
-  coll.add(id, AABB(f.w * scale, f.h * scale), x, y, false, Layer.enemy, Mask.enemy);
+  coll.add(id, AABB(s.frame.w * scale, s.frame.h * scale), x, y, false, Layer.enemy, Mask.enemy);
   return id;
 }
 
@@ -166,14 +193,14 @@ export function spawnMiniboss(
   y: number,
   hpMax: number,
 ): number {
-  const { world, coll, atlas } = ctx;
+  const { world, coll } = ctx;
   const id = world.spawn();
-  const f = frame(atlas.sheet, pattern);
+  const s = resolveSprite(ctx, pattern);
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Sprite, {
-    image: atlas.image,
-    frame: f,
+    image: s.image,
+    frame: s.frame,
     z: 9,
     anchor: CENTER_ANCHOR,
   });
@@ -194,7 +221,7 @@ export function spawnMiniboss(
   world.add(id, Hp, { current: hpMax, max: hpMax });
   coll.add(
     id,
-    AABB(f.w * COLLIDER_SCALE_MINIBOSS, f.h * COLLIDER_SCALE_MINIBOSS),
+    AABB(s.frame.w * COLLIDER_SCALE_MINIBOSS, s.frame.h * COLLIDER_SCALE_MINIBOSS),
     x,
     y,
     false,
@@ -235,20 +262,19 @@ export function spawnBullet(
 }
 
 export function spawnPickup(ctx: SpawnCtx, def: PickupDef, x: number, y: number): number {
-  const { world, coll, atlas } = ctx;
+  const { world, coll } = ctx;
   const id = world.spawn();
-  const frameName = String(def.id);
-  const f = frame(atlas.sheet, frameName);
+  const s = resolveSprite(ctx, String(def.id));
   world.add(id, Position, { x, y });
   world.add(id, Velocity, { x: 0, y: 0 });
   world.add(id, Sprite, {
-    image: atlas.image,
-    frame: f,
+    image: s.image,
+    frame: s.frame,
     z: 5,
     anchor: CENTER_ANCHOR,
   });
   world.add(id, Pickup, { pickupId: def.id, effect: def.effect });
   world.add(id, Lifetime, { remaining: 12 });
-  coll.add(id, AABB(f.w, f.h), x, y, true, Layer.pickup, Mask.pickup);
+  coll.add(id, AABB(s.frame.w, s.frame.h), x, y, true, Layer.pickup, Mask.pickup);
   return id;
 }

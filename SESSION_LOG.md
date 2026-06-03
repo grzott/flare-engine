@@ -6114,3 +6114,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 159 — 2026-06-03 (scope: game)
+
+**Goal:** KG3 — zone-1 entity→Kenney-frame mapping
+
+**Touched files**
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/src/visual-spec/kenney-frames.ts`
+- `apps/pan-tvardowski/tests/kenney-frames.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

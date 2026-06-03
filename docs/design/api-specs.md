@@ -137,6 +137,7 @@ Auto-suspends on app background, resumes on foreground.
 | `SpriteFrame`  | `{ name, x, y, w, h }` — one frame in an atlas.                                              |
 | `createProceduralAtlas(Skia, frames, opts?)` | Builds an `SkImage` + `SpriteSheet` from `{ name, w, h, color }[]`. Row-packs by `maxWidth`, honors `padding`. Narrow `SkiaAtlasModuleLike` is injected by the caller so `@flare-engine/assets` stays runtime-agnostic. |
 | `SkImageLike`                               | Structural interface: `width(): number; height(): number; readPixels(): Float32Array \| Uint8Array \| null`. `readPixels` enables pixel read-back for CPU-side logic (e.g. collision maps, lighting lookups). |
+| `decodeImage(Skia, bytes)` | Decodes a `Uint8Array` of raw image bytes into an `SkImageLike` via `Skia.Data.fromBytes` + `Skia.Image.MakeImageFromEncoded`. Returns `null` on failure, never throws. Narrow `SkiaImageDecodeModuleLike` is injected so the package stays runtime-agnostic. |
 
 Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not here.
 

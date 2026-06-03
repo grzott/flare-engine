@@ -20,6 +20,12 @@ export {
 } from './asset-manager.js';
 
 export {
+  type SkDataLike,
+  type SkiaImageDecodeModuleLike,
+  decodeImage,
+} from './decode-image.js';
+
+export {
   type ProceduralFrameSpec,
   type ProceduralAtlasOptions,
   type ProceduralAtlas,

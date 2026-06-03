@@ -6045,3 +6045,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 156 — 2026-06-03 (scope: engine)
+
+**Goal:** KENG1 — PNG bytes → SkImage decode in @flare-engine/assets
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/assets/src/decode-image.ts`
+- `packages/assets/src/index.ts`
+- `packages/assets/tests/decode-image.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

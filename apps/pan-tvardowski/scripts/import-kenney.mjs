@@ -24,6 +24,7 @@ const SS_POWERUPS = join(SS, 'Power-ups');
 const SS_BG = join(KENNEY_SRC, '2D assets', 'Space Shooter Remastered', 'Backgrounds');
 const SS_LICENSE = join(KENNEY_SRC, '2D assets', 'Space Shooter Remastered');
 const UI_ICONS = join(KENNEY_SRC, 'UI assets', 'Mobile Controls', 'Sprites', 'Icons', 'Default');
+const UI_ICONS_LG = join(KENNEY_SRC, 'UI assets', 'Mobile Controls', 'Sprites', 'Icons', 'Large (2\xd7)');
 const UI_STYLEA = join(KENNEY_SRC, 'UI assets', 'Mobile Controls', 'Sprites', 'Style A', 'Default');
 const UI_LICENSE = join(KENNEY_SRC, 'UI assets', 'Mobile Controls');
 // Tank Pack — third source pack (explosion particle dot).
@@ -111,9 +112,10 @@ const ATLAS_FILES = [
   [SS_POWERUPS, 'bolt_gold.png'],
   [SS_POWERUPS, 'star_gold.png'],
   [SS_POWERUPS, 'shield_gold.png'],
-  // UI icons (2)
+  // UI icons (3)
   [UI_ICONS, 'icon_pause.png'],
   [UI_ICONS, 'icon_fire.png'],
+  [UI_ICONS_LG, 'icon_cog.png'],
   // UI buttons/joystick (3)
   [UI_STYLEA, 'button_circle.png'],
   [UI_STYLEA, 'joystick_circle_pad_a.png'],

@@ -27,6 +27,7 @@
     "bench:local": "bash ../../scripts/perf/bench-local.sh --app pan-tvardowski",
     "import:kenney": "bun run scripts/import-kenney.mjs",
     "pack:kenney": "bun run scripts/pack-kenney.mjs",
+    "copy:kenney-controls": "bun run scripts/copy-kenney-controls.mjs",
     "eas-build-post-install": "cd ../.. && bun install && bun run build"
   },
   "license": "SEE LICENSE IN LICENSE",

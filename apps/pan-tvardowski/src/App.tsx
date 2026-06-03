@@ -8,6 +8,7 @@ import {
   SourceSans3_600SemiBold,
   SourceSans3_700Bold,
 } from '@expo-google-fonts/source-sans-3';
+import { parseTexturePackerHash } from '@flare-engine/assets';
 import { DevtoolsHUD, DevtoolsProvider } from '@flare-engine/devtools';
 import type {
   GameContextValue,
@@ -18,14 +19,24 @@ import { AppLifecycle, GameView, VirtualButton, VirtualJoystick } from '@flare-e
 import type { CrashPayload } from '@flare-engine/errors';
 import { ErrorBoundary, createCrashPayload } from '@flare-engine/errors';
 import { NoopIAPProvider } from '@flare-engine/iap';
-import { useImage } from '@shopify/react-native-skia';
+import { Canvas, Group, Image as SkiaImage, useImage } from '@shopify/react-native-skia';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  AppState,
+  Image,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import zone1Json from '../assets/kenney/zone1.json';
 import type { ImageResolver } from './assets';
 import { disposeAudio, getAudio } from './audio/init';
 import { Boss, Bullet, Enemy } from './components';
@@ -80,6 +91,25 @@ if (Platform.OS === 'android') {
 }
 
 const GATED_ZONES = new Set<string>(['z4', 'z5', 'z6', 'z7', 'z8']);
+
+// Kenney controls — Large (2×) standalone PNGs bundled for Metro.
+// Placed in assets/kenney-controls/ (separate from kenney-src/ so the atlas
+// packer never picks them up). Required at module level so Metro can statically
+// analyse the paths and include them in the bundle.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const IMG_BUTTON_CIRCLE = require('../assets/kenney-controls/button_circle.png') as number;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const IMG_JOYSTICK_PAD = require('../assets/kenney-controls/joystick_circle_pad_a.png') as number;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const IMG_JOYSTICK_NUB = require('../assets/kenney-controls/joystick_circle_nub_a.png') as number;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const IMG_ICON_FIRE = require('../assets/kenney-controls/icon_fire.png') as number;
+
+// Parse the kenney atlas sheet once at module load to extract the icon_cog
+// frame rect. Static — no runtime dependency on Skia or image decode.
+const _zone1Sheet = parseTexturePackerHash(zone1Json);
+const _cogFrameIdx = _zone1Sheet.frameMap.get('icon_cog');
+const COG_FRAME = _cogFrameIdx !== undefined ? _zone1Sheet.frames[_cogFrameIdx] : null;
 
 function isGatedZone(zone: ZoneId): boolean {
   return GATED_ZONES.has(zone);
@@ -244,6 +274,30 @@ function AppRoot(): React.ReactElement {
       return null;
     };
   }, []);
+
+  // Pause icon — RN-Skia Canvas rendering the icon_cog atlas sub-rect.
+  // While kenneyAtlasImage is null (pre-decode) or COG_FRAME is unavailable,
+  // returns undefined so <Hud> falls back to the '||' text label.
+  const pauseIcon = useMemo((): React.ReactNode | undefined => {
+    if (!kenneyAtlasImage || !COG_FRAME) return undefined;
+    const { x: fx, y: fy, w: fw, h: fh } = COG_FRAME;
+    const imgW = kenneyAtlasImage.width();
+    const imgH = kenneyAtlasImage.height();
+    return (
+      <Canvas style={{ width: fw, height: fh }}>
+        <Group clip={{ x: 0, y: 0, width: fw, height: fh }}>
+          <SkiaImage
+            image={kenneyAtlasImage}
+            x={-fx}
+            y={-fy}
+            width={imgW}
+            height={imgH}
+            fit="fill"
+          />
+        </Group>
+      </Canvas>
+    );
+  }, [kenneyAtlasImage]);
 
   const ctxRef = useMemo<{ current: GameContextValue | null }>(() => ({ current: null }), []);
   const disposerRef = useMemo<{ current: RuntimeDisposer | null }>(() => ({ current: null }), []);
@@ -441,6 +495,29 @@ function AppRoot(): React.ReactElement {
       });
   }, [ctx]);
 
+  // Joystick skin nodes — stable (no changing deps).
+  const joystickBase = useMemo(
+    () => <Image source={IMG_JOYSTICK_PAD} style={{ width: 128, height: 128 }} />,
+    [],
+  );
+  const joystickThumb = useMemo(
+    () => <Image source={IMG_JOYSTICK_NUB} style={{ width: 64, height: 64 }} />,
+    [],
+  );
+
+  // Bomb button skin — button_circle bg + icon_fire overlay, both standalone PNGs.
+  // Standalone path chosen for C: the button is a plain RN View; keeping both
+  // layers as RN <Image> nodes avoids mixing a Skia Canvas into the button tree.
+  const bombChildren = useMemo(
+    () => (
+      <>
+        <Image source={IMG_BUTTON_CIRCLE} style={styles.bombBg} />
+        <Image source={IMG_ICON_FIRE} style={styles.bombIcon} />
+      </>
+    ),
+    [],
+  );
+
   // `controlsTick` is a manual bump counter — `gameState` is a mutable
   // singleton, so reading `gameState.settings.controls.*` alone does not
   // trigger re-computation; bumping `controlsTick` in the settings-scene
@@ -511,12 +588,20 @@ function AppRoot(): React.ReactElement {
         >
           {currentScene === 'play' && (
             <>
-              <VirtualJoystick onStateChange={onJoystick} style={joystickStyle} />
-              <VirtualButton onStateChange={onBomb} style={bombStyle} />
+              <VirtualJoystick
+                onStateChange={onJoystick}
+                style={joystickStyle}
+                config={{ maxRadius: 64 }}
+                base={joystickBase}
+                thumb={joystickThumb}
+              />
+              <VirtualButton onStateChange={onBomb} style={bombStyle}>
+                {bombChildren}
+              </VirtualButton>
             </>
           )}
         </GameView>
-        <Hud localization={localization} actions={actions} insets={insets} />
+        <Hud localization={localization} actions={actions} insets={insets} pauseIcon={pauseIcon} />
         <BootOverlay localization={localization} appVersion="0.1.0" />
         <MenuOverlay
           localization={localization}
@@ -609,13 +694,25 @@ const styles = StyleSheet.create({
   crashButtonText: { color: THEME_SPEC.colors.white, fontSize: 15, fontWeight: '600' },
   joystick: {
     position: 'absolute',
-    width: 120,
-    height: 120,
+    width: 128,
+    height: 128,
   },
   bombBtn: {
     position: 'absolute',
-    width: 72,
-    height: 72,
+    width: 128,
+    height: 128,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bombBg: {
+    position: 'absolute',
+    width: 128,
+    height: 128,
+  },
+  bombIcon: {
+    width: 64,
+    height: 64,
   },
   benchDoneSentinel: {
     position: 'absolute',

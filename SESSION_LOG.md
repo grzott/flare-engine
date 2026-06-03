@@ -6256,3 +6256,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 165 — 2026-06-03 (scope: game)
+
+**Goal:** KG8 — Game: skin HUD pause + on-screen controls with Mobile Controls
+
+**Touched files**
+- `apps/pan-tvardowski/assets/kenney-controls/`
+- `apps/pan-tvardowski/assets/kenney-src/icon_cog.png`
+- `apps/pan-tvardowski/assets/kenney/zone1.json`
+- `apps/pan-tvardowski/assets/kenney/zone1.png`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/copy-kenney-controls.mjs`
+- `apps/pan-tvardowski/scripts/import-kenney.mjs`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/tests/kg8-atlas-icon-cog.test.ts`
+- `apps/pan-tvardowski/tests/kg8-kenney-controls.test.ts`
+- `apps/pan-tvardowski/tests/kg8-pause-icon.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

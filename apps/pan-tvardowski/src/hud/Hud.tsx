@@ -66,9 +66,12 @@ export interface HudProps {
   /** Safe-area insets from the hosting `<SafeAreaProvider>`. Optional so
    *  the HUD can still render in tests that don't install the provider. */
   insets?: HudInsets;
+  /** Custom node rendered inside the pause Pressable in place of the default
+   *  '||' text label. When absent the text fallback is used unchanged. */
+  pauseIcon?: React.ReactNode;
 }
 
-export function Hud({ localization, actions, insets }: HudProps): React.ReactElement {
+export function Hud({ localization, actions, insets, pauseIcon }: HudProps): React.ReactElement {
   const [s, setS] = useState<GameState>(() => cloneState());
   const pauseOverlayOpacity = useRef(new Animated.Value(0));
   const [pauseMounted, setPauseMounted] = useState(false);
@@ -264,7 +267,7 @@ export function Hud({ localization, actions, insets }: HudProps): React.ReactEle
           </View>
           {!s.dialogue ? (
             <Pressable style={pauseBtnStyle} onPress={() => setPaused(true)}>
-              <Text style={pauseStyles.pauseBtnLabel}>{'||'}</Text>
+              {pauseIcon ?? <Text style={pauseStyles.pauseBtnLabel}>{'||'}</Text>}
             </Pressable>
           ) : null}
           {s.bossActive && s.bossHpMax > 0 ? (

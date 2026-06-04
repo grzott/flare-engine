@@ -281,17 +281,19 @@ function AppRoot(): React.ReactElement {
   const pauseIcon = useMemo((): React.ReactNode | undefined => {
     if (!kenneyAtlasImage || !COG_FRAME) return undefined;
     const { x: fx, y: fy, w: fw, h: fh } = COG_FRAME;
+    const displayW = Math.round(fw * 0.5);
+    const displayH = Math.round(fh * 0.5);
     const imgW = kenneyAtlasImage.width();
     const imgH = kenneyAtlasImage.height();
     return (
-      <Canvas style={{ width: fw, height: fh }}>
-        <Group clip={{ x: 0, y: 0, width: fw, height: fh }}>
+      <Canvas style={{ width: displayW, height: displayH }}>
+        <Group clip={{ x: 0, y: 0, width: displayW, height: displayH }}>
           <SkiaImage
             image={kenneyAtlasImage}
-            x={-fx}
-            y={-fy}
-            width={imgW}
-            height={imgH}
+            x={-fx * 0.5}
+            y={-fy * 0.5}
+            width={imgW * 0.5}
+            height={imgH * 0.5}
             fit="fill"
           />
         </Group>
@@ -699,20 +701,20 @@ const styles = StyleSheet.create({
   },
   bombBtn: {
     position: 'absolute',
-    width: 128,
-    height: 128,
+    width: 64,
+    height: 64,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   bombBg: {
     position: 'absolute',
-    width: 128,
-    height: 128,
-  },
-  bombIcon: {
     width: 64,
     height: 64,
+  },
+  bombIcon: {
+    width: 32,
+    height: 32,
   },
   benchDoneSentinel: {
     position: 'absolute',

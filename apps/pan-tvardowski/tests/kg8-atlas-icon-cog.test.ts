@@ -21,7 +21,7 @@ function isSymlinkError(e: unknown): boolean {
 }
 
 describe('KG8 — icon_cog atlas frame', () => {
-  test('zone1.json has exactly 80 frames (KG7=79 + KG8 icon_cog)', () => {
+  test('zone1.json has exactly 89 frames (KG7=79 + KG8 icon_cog + Fix-2 regularExplosion00..08)', () => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const zone1Json = require('../assets/kenney/zone1.json') as unknown;
@@ -32,7 +32,7 @@ describe('KG8 — icon_cog atlas frame', () => {
         };
       };
       const sheet = parseTexturePackerHash(zone1Json);
-      expect(sheet.frames.length).toBe(80);
+      expect(sheet.frames.length).toBe(89);
     } catch (e) {
       if (!isSymlinkError(e)) throw e;
     }

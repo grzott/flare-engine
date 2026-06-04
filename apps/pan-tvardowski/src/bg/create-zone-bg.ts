@@ -189,9 +189,11 @@ function createZoneImageBg(deps: ZoneBgDeps, scrollSpeed: number): ZoneBgControl
         sprTop.image = img;
         sprTop.frame = fullFrame;
         sprTop.alpha = 1;
+        sprTop.stretch = true;
         sprBot.image = img;
         sprBot.frame = fullFrame;
         sprBot.alpha = 1;
+        sprBot.stretch = true;
         imageResolved = true;
       }
 

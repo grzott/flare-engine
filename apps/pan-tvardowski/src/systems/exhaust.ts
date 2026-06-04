@@ -10,7 +10,7 @@ import {
   exhaustFrameIndex,
   exhaustPulseAlpha,
 } from '../fx/exhaust-frame';
-
+import { KENNEY_SPRITE_SCALE } from '../visual-spec/kenney-frames';
 /**
  * Kenney fire00..19 native orientation: plume points UPWARD (sprite is portrait
  * 16×40, tip at top, base at bottom in image-space, Y-down).
@@ -24,8 +24,12 @@ import {
 export const EXHAUST_ROTATION_PLAYER = Math.PI;
 export const EXHAUST_ROTATION_ENEMY = 0;
 
-/** Y-offset (logical pixels) from hull center to flame center. */
-export const EXHAUST_OFFSET_Y = 22;
+/** Half-height (logical pixels) of the exhaust flame sprite at KENNEY_SPRITE_SCALE. */
+export const EXHAUST_FLAME_HALF_HEIGHT = 10;
+/** Gap (logical pixels) between hull edge and flame edge. */
+export const EXHAUST_MARGIN = 2;
+/** Fallback half-height when the owner Sprite has no height value. */
+export const DEFAULT_OWNER_HALF_HEIGHT = 19;
 
 /** Pre-built frame-name array — no per-frame string allocation. */
 const FIRE_FRAME_NAMES: readonly string[] = [
@@ -78,7 +82,7 @@ export function updateExhaust(world: World, deps: ExhaustDeps): void {
     const pos = world.get(id, Position);
     if (pos) {
       pos.x = parentPos.x;
-      pos.y = exhaust.isPlayer ? parentPos.y + EXHAUST_OFFSET_Y : parentPos.y - EXHAUST_OFFSET_Y;
+      pos.y = exhaust.isPlayer ? parentPos.y + exhaust.offsetY : parentPos.y - exhaust.offsetY;
     }
 
     const sprite = world.get(id, Sprite);
@@ -106,6 +110,8 @@ export function updateExhaust(world: World, deps: ExhaustDeps): void {
       if (f !== undefined) {
         sprite.image = kenney!.image!;
         sprite.frame = f;
+        sprite.width = f.w * KENNEY_SPRITE_SCALE;
+        sprite.height = f.h * KENNEY_SPRITE_SCALE;
       }
     }
   }

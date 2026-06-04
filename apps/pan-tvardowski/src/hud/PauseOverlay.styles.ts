@@ -71,8 +71,10 @@ export const rawStyles = {
   },
   pauseBtn: {
     position: 'absolute' as const,
-    paddingHorizontal: THEME_SPEC.spacing.lg,
-    paddingVertical: THEME_SPEC.spacing.sm,
+    width: 48,
+    height: 48,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: 'rgba(0, 0, 0, 0.45)' as const,
     borderRadius: THEME_SPEC.spacing.panelBorderRadius,
   },

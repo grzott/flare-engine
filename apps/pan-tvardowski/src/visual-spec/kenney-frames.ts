@@ -1,4 +1,12 @@
 /**
+ * Uniform scale applied to every sprite that resolves through the Kenney atlas.
+ * Kenney frames are native 192×192 (ships) or similar — much larger than the
+ * procedural shapes. 0.5 brings them into parity with the old shape-atlas sizes.
+ * Zones 2–8 (shape atlas) always use scale 1.
+ */
+export const KENNEY_SPRITE_SCALE = 0.5;
+
+/**
  * KG3: zone-1-only entity → Kenney frame name map.
  *
  * Keyed by the string used at the spawn call site:

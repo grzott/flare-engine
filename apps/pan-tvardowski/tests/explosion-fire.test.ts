@@ -51,6 +51,11 @@ function makeKenneySheet() {
     sheet.frames.push({ name, x: i * 20, y: 0, w: 16, h: 40 });
     sheet.frameMap.set(name, sheet.frames.length - 1);
   }
+  for (let i = 0; i < 9; i++) {
+    const name = `regularExplosion${String(i).padStart(2, '0')}`;
+    sheet.frames.push({ name, x: i * 192, y: 100, w: 192, h: 192 });
+    sheet.frameMap.set(name, sheet.frames.length - 1);
+  }
   return sheet;
 }
 
@@ -157,7 +162,7 @@ describe('explosion-fire — updateExplosionFire frame advance', () => {
     _resetCapsForTest();
   });
 
-  test('frame name advances from fire00 → fire01 after one frame period', () => {
+  test('frame name advances from regularExplosion00 → regularExplosion01 after one frame period', () => {
     try {
       const { world } = createTestWorld();
       const atlas = makeShapeAtlas();
@@ -169,19 +174,19 @@ describe('explosion-fire — updateExplosionFire frame advance', () => {
 
       const explosionFireQuery = world.query(ExplosionFire);
 
-      // At elapsed=0 frame should be fire00
+      // At elapsed=0 frame should be regularExplosion00
       updateExplosionFire(world, { explosionFireQuery, kenney, dt: 0 });
       for (const id of explosionFireQuery) {
         const sp = world.get(id, Sprite);
-        expect(sp?.frame.name).toBe('fire00');
+        expect(sp?.frame.name).toBe('regularExplosion00');
       }
 
-      // Advance by 1/EXPLOSION_FIRE_HZ → frame index 1 = fire01
+      // Advance by 1/EXPLOSION_FIRE_HZ → frame index 1 = regularExplosion01
       const frameDt = 1 / EXPLOSION_FIRE_HZ;
       updateExplosionFire(world, { explosionFireQuery, kenney, dt: frameDt });
       for (const id of explosionFireQuery) {
         const sp = world.get(id, Sprite);
-        expect(sp?.frame.name).toBe('fire01');
+        expect(sp?.frame.name).toBe('regularExplosion01');
       }
     } catch (e) {
       if (!isSymlinkError(e)) throw e;
@@ -240,7 +245,7 @@ describe('explosion-fire — particle-dot vs particle-spark routing', () => {
     _resetCapsForTest();
   });
 
-  test('dot particles use kenney image + particle-dot frame when kenney live + zone-1', () => {
+  test('kenney live + zone-1: 1 ExplosionFire fireball, 0 dot particles', () => {
     try {
       const { world } = createTestWorld();
       const atlas = makeShapeAtlas();
@@ -250,27 +255,20 @@ describe('explosion-fire — particle-dot vs particle-spark routing', () => {
 
       triggerExplosion(world, atlas, null, null, false, 100, 100, 'pop', 'z1', undefined, kenney);
 
-      // Collect non-ExplosionFire sprites (the dot particles)
-      let dotCount = 0;
-      let dotImageMatches = 0;
-      let dotFrameMatches = 0;
       const fireQuery = world.query(ExplosionFire);
       const fireIds = new Set<number>();
       for (const id of fireQuery) fireIds.add(id);
+      expect(fireIds.size).toBe(1);
 
-      // Use the fact that particle entities have Lifetime but no ExplosionFire
+      // No non-fire Lifetime entities (dot loop is suppressed when kenneyLive)
       const lifetimeQuery = world.query(Lifetime);
+      let dotCount = 0;
       for (const id of lifetimeQuery) {
         if (fireIds.has(id)) continue;
         const sp = world.get(id, Sprite);
-        if (!sp) continue;
-        dotCount++;
-        if (sp.image === kenneyImage) dotImageMatches++;
-        if (sp.frame.name === 'particle-dot') dotFrameMatches++;
+        if (sp) dotCount++;
       }
-      expect(dotCount).toBeGreaterThan(0);
-      expect(dotImageMatches).toBe(dotCount);
-      expect(dotFrameMatches).toBe(dotCount);
+      expect(dotCount).toBe(0);
     } catch (e) {
       if (!isSymlinkError(e)) throw e;
     }

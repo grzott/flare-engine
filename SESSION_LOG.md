@@ -6283,3 +6283,59 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 166 — 2026-06-04 (scope: mixed)
+
+**Goal:** device-verify fixes: KENG2 bg cover, entity/HUD sizing, kenney explosion, exhaust, bullet rotation, joystick knob
+
+**Touched files**
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion00.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion01.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion02.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion03.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion04.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion05.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion06.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion07.png`
+- `apps/pan-tvardowski/assets/kenney-src/regularExplosion08.png`
+- `apps/pan-tvardowski/assets/kenney/License-ExplosionPack.txt`
+- `apps/pan-tvardowski/assets/kenney/zone1.json`
+- `apps/pan-tvardowski/assets/kenney/zone1.png`
+- `apps/pan-tvardowski/scripts/import-kenney.mjs`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/bg/create-zone-bg.ts`
+- `apps/pan-tvardowski/src/components.ts`
+- `apps/pan-tvardowski/src/fx/bullet-rotation.ts`
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/src/hud/PauseOverlay.styles.ts`
+- `apps/pan-tvardowski/src/spawn.ts`
+- `apps/pan-tvardowski/src/systems/exhaust.ts`
+- `apps/pan-tvardowski/src/systems/explosion-fire.ts`
+- `apps/pan-tvardowski/src/visual-spec/kenney-frames.ts`
+- `apps/pan-tvardowski/tests/bullet-rotation.test.ts`
+- `apps/pan-tvardowski/tests/exhaust-system.test.ts`
+- `apps/pan-tvardowski/tests/explosion-fire-frames.test.ts`
+- `apps/pan-tvardowski/tests/explosion-fire.test.ts`
+- `apps/pan-tvardowski/tests/kenney-sprite-scale.test.ts`
+- `apps/pan-tvardowski/tests/kg8-atlas-icon-cog.test.ts`
+- `apps/pan-tvardowski/tests/player-fire-rate.test.ts`
+- `apps/pan-tvardowski/tests/spawn-bullet.test.ts`
+- `apps/pan-tvardowski/tests/zone-bg.test.ts`
+- `docs/design/api-specs.md`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/src/virtual-joystick.tsx`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/react/tests/virtual-controls.test.ts`
+- `packages/react/tests/virtual-joystick-knob.test.ts`
+- `packages/render/src/render-system.ts`
+- `packages/render/src/sprite-batch.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

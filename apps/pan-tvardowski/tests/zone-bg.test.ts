@@ -405,6 +405,82 @@ describe('z1 image BG — null→live transition', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Block 6b — z1 image BG: stretch flag
+// ---------------------------------------------------------------------------
+
+describe('z1 image BG — stretch flag', () => {
+  test('sentinel sprites (pre-decode) have no stretch / stretch falsy', () => {
+    const { world } = spawnBg('z1', buildCamera(), { bg: null });
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite.stretch).toBeFalsy();
+    }
+  });
+
+  test('after image resolves both sprites have stretch === true', () => {
+    const mockImage = makeMockImage(256, 256);
+    let currentImage: SkImageLike | null = null;
+
+    const world = new World();
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: buildCamera(),
+      bg: {
+        get image() {
+          return currentImage;
+        },
+        frame: { name: 'bg', x: 0, y: 0, w: 0, h: 0 },
+      },
+    });
+
+    currentImage = mockImage;
+    controller.tick(0.016);
+
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite.stretch).toBe(true);
+    }
+  });
+
+  test('image transition: stretch true co-lands with alpha 1 and full frame dims', () => {
+    const mockImage = makeMockImage(256, 256);
+    let currentImage: SkImageLike | null = null;
+
+    const world = new World();
+    const controller = createZoneBg('z1', {
+      world,
+      atlas: buildAtlas(),
+      viewportWidth: VW,
+      viewportHeight: VH,
+      camera: buildCamera(),
+      bg: {
+        get image() {
+          return currentImage;
+        },
+        frame: { name: 'bg', x: 0, y: 0, w: 0, h: 0 },
+      },
+    });
+
+    currentImage = mockImage;
+    controller.tick(0.016);
+
+    const ids = [...world.query(Position)];
+    for (const id of ids) {
+      const sprite = world.get(id, Sprite)!;
+      expect(sprite.alpha).toBe(1);
+      expect(sprite.frame.w).toBe(256);
+      expect(sprite.frame.h).toBe(256);
+      expect(sprite.stretch).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Block 7 — z1 image BG: scroll advances
 // ---------------------------------------------------------------------------
 

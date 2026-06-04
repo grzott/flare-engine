@@ -257,9 +257,6 @@ function _spawnParticles(
     kenney.image !== null &&
     KENNEY_FX_ZONES.has(zoneNum);
 
-  const dotFrame = kenneyLive ? getFrame(kenney!.sheet, 'particle-dot') : null;
-  const dotImage = kenneyLive ? kenney!.image : null;
-
   // Seed the LCG reproducibly from position so identical spawns are consistent.
   _lcgS = (x * 31 + y * 17) | 0 || 1;
 
@@ -267,37 +264,29 @@ function _spawnParticles(
   const smokeRatio = def.smokeRatio ?? 0;
   const lifeBase = def.lifeMs / 1000;
 
-  for (let i = 0; i < count; i++) {
-    const r01 = _lcgNext();
-    const r02 = _lcgNext();
-    const a = r01 * Math.PI * 2;
-    const sp = 60 + r02 * 160;
+  if (!kenneyLive) {
+    for (let i = 0; i < count; i++) {
+      const r01 = _lcgNext();
+      const r02 = _lcgNext();
+      const a = r01 * Math.PI * 2;
+      const sp = 60 + r02 * 160;
 
-    const useSmokeFrame = smokeFrame !== null && smokeFrame !== undefined && r01 < smokeRatio;
-    // Dot particles: kenney particle-dot when live, else shape-atlas particle-spark.
-    const frame =
-      dotFrame !== null && dotFrame !== undefined && !useSmokeFrame
-        ? dotFrame
-        : useSmokeFrame && smokeFrame
-          ? smokeFrame
-          : sparkFrame;
-    const image =
-      dotFrame !== null && dotFrame !== undefined && !useSmokeFrame && dotImage !== null
-        ? dotImage
-        : atlas.image;
+      const useSmokeFrame = smokeFrame !== null && smokeFrame !== undefined && r01 < smokeRatio;
+      const frame = useSmokeFrame && smokeFrame ? smokeFrame : sparkFrame;
 
-    const id = world.spawn();
-    world.add(id, Position, { x, y });
-    world.add(id, Velocity, { x: Math.cos(a) * sp, y: Math.sin(a) * sp });
-    world.add(id, Sprite, { image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
-    world.add(id, Lifetime, { remaining: lifeBase * (0.7 + r01 * 0.6) });
+      const id = world.spawn();
+      world.add(id, Position, { x, y });
+      world.add(id, Velocity, { x: Math.cos(a) * sp, y: Math.sin(a) * sp });
+      world.add(id, Sprite, { image: atlas.image, frame, z: PARTICLE_Z, anchor: CENTER_ANCHOR });
+      world.add(id, Lifetime, { remaining: lifeBase * (0.7 + r01 * 0.6) });
+    }
   }
 
-  // KG7: spawn a central fire-flipbook entity for kenney zones.
-  // This entity stays at the explosion centre and animates through fire00..19
+  // KG7 (Fix-2): spawn a central regularExplosion flipbook entity for kenney zones.
+  // This entity stays at the explosion centre and animates through regularExplosion00..08
   // for the full explosion lifetime. Driven by updateExplosionFire in play.ts.
   if (kenneyLive) {
-    const fireFrame = getFrame(kenney!.sheet, 'fire00');
+    const fireFrame = getFrame(kenney!.sheet, 'regularExplosion00');
     if (fireFrame) {
       const fireId = world.spawn();
       world.add(fireId, Position, { x, y });

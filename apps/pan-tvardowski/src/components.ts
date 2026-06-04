@@ -6,7 +6,7 @@ export interface ShipData {
   cooldown: number;
 }
 export const Ship = defineComponent<ShipData>('Ship', () => ({
-  fireRate: 0.22,
+  fireRate: 0.3,
   cooldown: 0,
 }));
 
@@ -191,10 +191,12 @@ export const Pickup = defineComponent<PickupData>('Pickup', () => ({
 export interface ExhaustData {
   ownerId: number;
   isPlayer: boolean;
+  offsetY: number;
 }
 export const Exhaust = defineComponent<ExhaustData>('Exhaust', () => ({
   ownerId: -1,
   isPlayer: false,
+  offsetY: 0,
 }));
 
 /**

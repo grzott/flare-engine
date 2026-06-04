@@ -35,6 +35,76 @@ function makeSpriteSheet(frameNames: string[]) {
   return sheet;
 }
 
+describe('spawnBullet — rotation', () => {
+  test('player bullet fired upward (0,-v) → rotation ≈ 0', () => {
+    try {
+      const { world } = createTestWorld();
+      const coll = new CollisionWorld();
+      const shapeSheet = makeSpriteSheet(['piorun-bullet', 'enemy-bullet']);
+      const kenneySheet = makeSpriteSheet(['laserBlue01', 'laserRed01']);
+      const ctx: SpawnCtx = {
+        world,
+        coll,
+        atlas: { image: {} as never, sheet: shapeSheet },
+        kenney: { image: {} as never, sheet: kenneySheet },
+      };
+
+      const id = spawnBullet(ctx, 50, 100, 0, -520, Layer.player);
+      const sp = world.get(id, Sprite);
+      expect(sp).toBeDefined();
+      expect(sp!.rotation).toBeCloseTo(0, 10);
+    } catch (e) {
+      if (!isSymlinkError(e)) throw e;
+    }
+  });
+
+  test('enemy bullet fired sideways (150, 0) → rotation ≈ π/2', () => {
+    try {
+      const { world } = createTestWorld();
+      const coll = new CollisionWorld();
+      const shapeSheet = makeSpriteSheet(['piorun-bullet', 'enemy-bullet']);
+      const kenneySheet = makeSpriteSheet(['laserBlue01', 'laserRed01']);
+      const ctx: SpawnCtx = {
+        world,
+        coll,
+        atlas: { image: {} as never, sheet: shapeSheet },
+        kenney: { image: {} as never, sheet: kenneySheet },
+      };
+
+      const id = spawnBullet(ctx, 100, 50, 150, 0, Layer.enemy);
+      const sp = world.get(id, Sprite);
+      expect(sp).toBeDefined();
+      expect(sp!.rotation).toBeCloseTo(Math.PI / 2, 10);
+    } catch (e) {
+      if (!isSymlinkError(e)) throw e;
+    }
+  });
+
+  test('specId bullet still gets rotation', () => {
+    try {
+      const { world } = createTestWorld();
+      const coll = new CollisionWorld();
+      const shapeSheet = makeSpriteSheet(['piorun-bullet', 'enemy-bullet', 'piorun-burst']);
+      const kenneySheet = makeSpriteSheet(['laserBlue01', 'laserRed01']);
+      const ctx: SpawnCtx = {
+        world,
+        coll,
+        atlas: { image: {} as never, sheet: shapeSheet },
+        kenney: { image: {} as never, sheet: kenneySheet },
+      };
+
+      const id = spawnBullet(ctx, 50, 100, 0, -200, Layer.player, 'piorun-burst' as BulletSpecId);
+      const sp = world.get(id, Sprite);
+      expect(sp).toBeDefined();
+      expect(sp!.image).toBe(ctx.atlas.image);
+      expect(sp!.frame.name).toBe('piorun-burst');
+      expect(sp!.rotation).toBeCloseTo(0, 10);
+    } catch (e) {
+      if (!isSymlinkError(e)) throw e;
+    }
+  });
+});
+
 describe('spawnBullet — frame resolution', () => {
   test('player bullet → kenney image + laserBlue01 when kenney atlas is live', () => {
     try {

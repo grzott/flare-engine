@@ -43,6 +43,17 @@ export interface SpriteData {
    *  Applied about the sprite's anchor point. Non-uniform scale combined with
    *  rotation is unsupported — scale is inferred uniformly from dstW/srcW. */
   rotation?: number;
+  /**
+   * When true, draw via `drawImageRect` so `width` and `height` are honored
+   * independently (non-uniform scale). Use for background tiles or any sprite
+   * that must fill a non-square destination rect exactly.
+   *
+   * Default (absent/false): drawn via the batched `drawAtlas` uniform-scale
+   * path. Stretched sprites are NOT batched with regular sprites.
+   *
+   * Rotation is unsupported in stretch mode — combine only with `rotation = 0`.
+   */
+  stretch?: boolean;
 }
 
 /** Cached entry for sorting. Reused each frame to avoid allocs. */
@@ -123,6 +134,7 @@ export function createRenderSystem(
         anchor ? anchor.y : 0,
         sprite.alpha ?? 1,
         sprite.rotation ?? 0,
+        sprite.stretch ?? false,
       );
     }
   };

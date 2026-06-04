@@ -84,6 +84,13 @@ interface MockCanvas {
     /** Snapshot of paint.alphaf at the moment drawAtlas was called. */
     paintAlphaf: number;
   }>;
+  drawImageRectCalls: Array<{
+    image: unknown;
+    src: MockRect;
+    dst: MockRect;
+    paint: MockPaint;
+    paintAlphaf: number;
+  }>;
   clearCalls: Float32Array[];
   scaleCalls: Array<{ sx: number; sy: number }>;
 }
@@ -99,7 +106,7 @@ let finishCalls = 0;
 let beginRecordingBoundsArgs: Array<{ x: number; y: number; width: number; height: number }> = [];
 
 function createMockCanvas(): MockCanvas {
-  return { drawAtlasCalls: [], clearCalls: [], scaleCalls: [] };
+  return { drawAtlasCalls: [], drawImageRectCalls: [], clearCalls: [], scaleCalls: [] };
 }
 
 function makeMockSkia(): SkiaModuleLike {
@@ -181,6 +188,7 @@ function makeMockSkia(): SkiaModuleLike {
               dsts: readonly unknown[],
               paint: MockPaint,
             ): void;
+            drawImageRect(image: unknown, src: unknown, dst: unknown, paint: MockPaint): void;
           } = {
             ...createMockCanvas(),
             save: () => 0,
@@ -221,6 +229,17 @@ function makeMockSkia(): SkiaModuleLike {
                 image,
                 srcs: srcSnap,
                 dsts: dstSnap,
+                paint,
+                paintAlphaf: (paint as MockPaint).alphaf,
+              });
+            },
+            drawImageRect(image, src, dst, paint) {
+              const s = src as MockRect;
+              const d = dst as MockRect;
+              this.drawImageRectCalls.push({
+                image,
+                src: { x: s.x, y: s.y, width: s.width, height: s.height, setXYWH: () => {} },
+                dst: { x: d.x, y: d.y, width: d.width, height: d.height, setXYWH: () => {} },
                 paint,
                 paintAlphaf: (paint as MockPaint).alphaf,
               });
@@ -1695,5 +1714,81 @@ describe('createSkiaFrameRenderer — per-sprite rotation round-trip', () => {
     expect(xfExplicit.ssin).toBeCloseTo(xfOmitted.ssin);
     expect(xfExplicit.tx).toBeCloseTo(xfOmitted.tx);
     expect(xfExplicit.ty).toBeCloseTo(xfOmitted.ty);
+  });
+});
+
+describe('createSkiaFrameRenderer — stretch (drawImageRect) path', () => {
+  it('non-uniform proof: stretch command produces drawImageRect dst with independent W and H', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcX: 0,
+        srcY: 0,
+        srcW: 2,
+        srcH: 2,
+        dstX: 0,
+        dstY: 0,
+        dstW: 4,
+        dstH: 8,
+        stretch: true,
+      }),
+    ]);
+    expect(currentMockCanvas?.drawImageRectCalls).toHaveLength(1);
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(0);
+    const call = currentMockCanvas?.drawImageRectCalls[0];
+    // dst width and height must be honored independently — not squared to the src aspect.
+    expect(call?.dst.width).toBe(4);
+    expect(call?.dst.height).toBe(8);
+    expect(call?.dst.width).not.toBe(call?.dst.height);
+  });
+
+  it('default path unchanged: command without stretch routes through drawAtlas', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 32,
+        srcH: 32,
+        dstX: 0,
+        dstY: 0,
+        dstW: 64,
+        dstH: 64,
+        stretch: false,
+      }),
+    ]);
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(1);
+    expect(currentMockCanvas?.drawImageRectCalls).toHaveLength(0);
+  });
+
+  it('stretch honors alpha and anchor: 0.5 anchor centers dst on position', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    // Position (200, 300) with anchor (0.5, 0.5) and dst size 100×200.
+    // SpriteBatch.draw() bakes anchor into dstX/dstY:
+    //   dstX = pos.x - anchorX * dstW = 200 - 0.5*100 = 150
+    //   dstY = pos.y - anchorY * dstH = 300 - 0.5*200 = 200
+    bridge.drawAtlas(mockImage(), [
+      cmd({
+        srcW: 10,
+        srcH: 10,
+        dstX: 150,
+        dstY: 200,
+        dstW: 100,
+        dstH: 200,
+        alpha: 0.75,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        stretch: true,
+      }),
+    ]);
+    const call = currentMockCanvas?.drawImageRectCalls[0];
+    // dst rect top-left = (150, 200), size = (100, 200)
+    expect(call?.dst.x).toBe(150);
+    expect(call?.dst.y).toBe(200);
+    expect(call?.dst.width).toBe(100);
+    expect(call?.dst.height).toBe(200);
+    // alpha applied to paint
+    expect(call?.paintAlphaf).toBe(0.75);
   });
 });

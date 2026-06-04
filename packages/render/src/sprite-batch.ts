@@ -32,6 +32,20 @@ export interface SpriteDrawCommand {
   anchorX: number;
   /** Anchor Y fraction stored for the bridge rotation path. Range [0, 1]. */
   anchorY: number;
+  /**
+   * When true, the sprite is drawn via `drawImageRect` so `dstW` and `dstH`
+   * are honored independently (non-uniform scale). A 256×256 source image
+   * will fill an arbitrary W×H destination rect.
+   *
+   * Default (false/absent): drawn via the batched `drawAtlas` path (uniform
+   * scale — dstW/srcW drives both axes). Stretched sprites are NOT batched
+   * with regular sprites; each is an independent `drawImageRect` call.
+   *
+   * Rotation is unsupported in stretch mode — the RSXform similarity-transform
+   * limit does not apply, but the bridge draws a plain axis-aligned rect.
+   * Combine with a zero rotation only.
+   */
+  stretch: boolean;
 }
 
 /** Internal grouping bucket — one per unique (texture, effect, alpha) triple. */
@@ -85,6 +99,7 @@ export class SpriteBatch {
     anchorY = 0,
     alpha = 1,
     rotation = 0,
+    stretch = false,
   ): void {
     const cmd = this._acquire();
     const w = dstW ?? frame.w;
@@ -103,6 +118,7 @@ export class SpriteBatch {
     cmd.rotation = rotation;
     cmd.anchorX = anchorX;
     cmd.anchorY = anchorY;
+    cmd.stretch = stretch;
     this._commands.push(cmd);
   }
 
@@ -125,6 +141,7 @@ export class SpriteBatch {
     anchorY = 0,
     alpha = 1,
     rotation = 0,
+    stretch = false,
   ): void {
     const cmd = this._acquire();
     cmd.image = image;
@@ -141,6 +158,7 @@ export class SpriteBatch {
     cmd.rotation = rotation;
     cmd.anchorX = anchorX;
     cmd.anchorY = anchorY;
+    cmd.stretch = stretch;
     this._commands.push(cmd);
   }
 
@@ -230,6 +248,7 @@ export class SpriteBatch {
       rotation: 0,
       anchorX: 0,
       anchorY: 0,
+      stretch: false,
     };
   }
 }

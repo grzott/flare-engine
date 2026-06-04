@@ -330,6 +330,14 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   const srcRects: SkHostRect[] = [];
   const xforms: SkRSXform[] = [];
 
+  // Separate rect pools for the stretch (drawImageRect) path.
+  // Grow-only, reach steady state after the first frame with N stretch sprites.
+  const stretchSrcRects: SkHostRect[] = [];
+  const stretchDstRects: SkHostRect[] = [];
+
+  // Pre-allocated paint for stretch draws. Allocated once on first stretch call.
+  let stretchPaint: SkPaint | null = null;
+
   // Reused SkColor (Float32Array) buffer for clear() — ARGB int is unpacked
   // into this slot once per frame, not per call-site.
   const clearColor: SkColor = new Float32Array(4);
@@ -410,6 +418,13 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     while (srcRects.length < n) {
       srcRects.push(Skia.XYWHRect(0, 0, 0, 0));
       xforms.push(Skia.RSXform(1, 0, 0, 0));
+    }
+  }
+
+  function ensureStretchPoolCapacity(n: number): void {
+    while (stretchSrcRects.length < n) {
+      stretchSrcRects.push(Skia.XYWHRect(0, 0, 0, 0));
+      stretchDstRects.push(Skia.XYWHRect(0, 0, 0, 0));
     }
   }
 
@@ -799,6 +814,27 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
           current.drawRect(rect, paint);
         }
         paint.setAlphaf(1);
+        return;
+      }
+
+      // Stretch path — non-uniform scale via drawImageRect. Each command with
+      // stretch=true is an independent call so dstW and dstH are both honored
+      // regardless of the src aspect ratio.
+      // Rotation is unsupported in stretch mode (axis-aligned rect only).
+      if (commands[0]?.stretch) {
+        if (stretchPaint === null) stretchPaint = Skia.Paint();
+        ensureStretchPoolCapacity(n);
+        stretchPaint.setAlphaf(alpha);
+        for (let i = 0; i < n; i++) {
+          const cmd = commands[i] as SpriteDrawCommand;
+          // ensureStretchPoolCapacity(n) guarantees index i exists.
+          const srcR = stretchSrcRects[i]!;
+          const dstR = stretchDstRects[i]!;
+          srcR.setXYWH(cmd.srcX, cmd.srcY, cmd.srcW, cmd.srcH);
+          dstR.setXYWH(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
+          current.drawImageRect(skImage, srcR, dstR, stretchPaint);
+        }
+        stretchPaint.setAlphaf(1);
         return;
       }
 

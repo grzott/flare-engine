@@ -6,7 +6,7 @@ import {
   updateJoystick,
 } from '@flare-engine/input';
 import type React from 'react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, ViewStyle } from 'react-native';
 
@@ -40,6 +40,7 @@ export function VirtualJoystick({
 }: VirtualJoystickProps): React.ReactElement {
   const stateRef = useRef<VirtualJoystickState>(createJoystickState());
   const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   const handleLayout = useCallback(
     (e: { nativeEvent: { layout: { width: number; height: number } } }) => {
@@ -54,6 +55,8 @@ export function VirtualJoystick({
       const { w, h } = sizeRef.current;
       updateJoystick(stateRef.current, w / 2, h / 2, locationX, locationY, config);
       onStateChange?.(stateRef.current);
+      const { x, y } = stateRef.current.offset;
+      setKnob((prev) => (prev.x === x && prev.y === y ? prev : { x, y }));
     },
     [config, onStateChange],
   );
@@ -61,16 +64,16 @@ export function VirtualJoystick({
   const handleRelease = useCallback(() => {
     releaseJoystick(stateRef.current);
     onStateChange?.(stateRef.current);
+    setKnob((prev) => (prev.x === 0 && prev.y === 0 ? prev : { x: 0, y: 0 }));
   }, [onStateChange]);
 
   const maxRadius = config?.maxRadius ?? 50;
-  const knobX = stateRef.current.offset.x;
-  const knobY = stateRef.current.offset.y;
 
   return (
     <View
       style={[
-        ...(base ? [] : [styles.base]),
+        styles.center,
+        ...(base ? [] : [styles.baseBg]),
         {
           width: maxRadius * 2,
           height: maxRadius * 2,
@@ -93,14 +96,14 @@ export function VirtualJoystick({
       ) : null}
       {thumb ? (
         <View
-          style={{ transform: [{ translateX: knobX }, { translateY: knobY }] }}
+          style={{ transform: [{ translateX: knob.x }, { translateY: knob.y }] }}
           pointerEvents="none"
         >
           {thumb}
         </View>
       ) : (
         <View
-          style={[styles.knob, { transform: [{ translateX: knobX }, { translateY: knobY }] }]}
+          style={[styles.knob, { transform: [{ translateX: knob.x }, { translateY: knob.y }] }]}
         />
       )}
     </View>
@@ -112,10 +115,12 @@ function returnTrue(): boolean {
 }
 
 const styles = StyleSheet.create({
-  base: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  center: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  baseBg: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   knob: {
     width: 40,

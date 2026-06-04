@@ -179,6 +179,45 @@ describe('VirtualJoystick', () => {
     expect(sizedCalls.length).toBeGreaterThan(0);
   });
 
+  // --- centering always applied regardless of base skin ---
+
+  function flattenStyle(style: unknown): Record<string, unknown>[] {
+    if (style === null || style === undefined) return [];
+    if (Array.isArray(style)) return style.flatMap(flattenStyle);
+    if (typeof style === 'object') return [style as Record<string, unknown>];
+    return [];
+  }
+
+  function findOuterContainer(maxRadius = 50): JsxCall | undefined {
+    return jsxCalls.find((c) => {
+      const flat = flattenStyle(c.props.style);
+      return flat.some(
+        (s) =>
+          s.width === maxRadius * 2 && s.height === maxRadius * 2 && s.borderRadius === maxRadius,
+      );
+    });
+  }
+
+  it('with base skin — outer container still has alignItems:center and justifyContent:center', () => {
+    const customBase = { type: 'Image', props: {}, key: null };
+    render({ base: customBase });
+    const container = findOuterContainer();
+    expect(container).toBeDefined();
+    const flat = flattenStyle(container!.props.style);
+    expect(flat.some((s) => s.alignItems === 'center')).toBe(true);
+    expect(flat.some((s) => s.justifyContent === 'center')).toBe(true);
+  });
+
+  it('without base skin — outer container has alignItems:center, justifyContent:center, and default background', () => {
+    render({});
+    const container = findOuterContainer();
+    expect(container).toBeDefined();
+    const flat = flattenStyle(container!.props.style);
+    expect(flat.some((s) => s.alignItems === 'center')).toBe(true);
+    expect(flat.some((s) => s.justifyContent === 'center')).toBe(true);
+    expect(flat.some((s) => s.backgroundColor === 'rgba(255,255,255,0.2)')).toBe(true);
+  });
+
   // --- knob transform at rest ---
 
   it('knob transform contains translateX/translateY at rest, with and without thumb', () => {

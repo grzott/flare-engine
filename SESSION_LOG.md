@@ -6359,3 +6359,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 168 — 2026-06-05 (scope: game)
+
+**Goal:** KG9 — Game: deep Kenney color audit → canonical OKLCH palette SoT
+
+**Touched files**
+- `apps/pan-tvardowski/docs/kenney-palette.md`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/audit-kenney-palette.ts`
+- `apps/pan-tvardowski/src/visual-spec/index.ts`
+- `apps/pan-tvardowski/src/visual-spec/kenney-palette.ts`
+- `apps/pan-tvardowski/tests/kenney-palette.test.ts`
+- `bun.lock`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

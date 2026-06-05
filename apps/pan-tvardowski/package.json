@@ -28,7 +28,8 @@
     "import:kenney": "bun run scripts/import-kenney.mjs",
     "pack:kenney": "bun run scripts/pack-kenney.mjs",
     "copy:kenney-controls": "bun run scripts/copy-kenney-controls.mjs",
-    "eas-build-post-install": "cd ../.. && bun install && bun run build"
+    "eas-build-post-install": "cd ../.. && bun install && bun run build",
+    "audit:kenney-palette": "bun run scripts/audit-kenney-palette.ts"
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
@@ -80,6 +81,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@flare-engine/cli": "workspace:*",
-    "@types/react": "~19.2.0"
+    "@types/react": "~19.2.0",
+    "sharp": "^0.34.5"
   }
 }

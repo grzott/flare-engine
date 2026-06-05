@@ -6339,3 +6339,23 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 167 — 2026-06-04 (scope: engine)
+
+**Goal:** KENG3 — Engine: OKLab/OKLCH + WCAG color math in @flare-engine/math
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `packages/math/src/color.ts`
+- `packages/math/src/index.ts`
+- `packages/math/tests/color.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

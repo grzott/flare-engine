@@ -16,7 +16,7 @@ export { Rect } from './rect.js';
 export { Circle } from './circle.js';
 export { Transform2D } from './transform2d.js';
 export { Mat3 } from './mat3.js';
-export { Color } from './color.js';
+export { Color, type Oklab, type Oklch } from './color.js';
 export {
   type EasingFn,
   linear,

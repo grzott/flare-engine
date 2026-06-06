@@ -3,7 +3,7 @@ import type { BulletSpecId, WeaponDef, WeaponSpecId } from './types';
 const wid = (s: string) => s as WeaponSpecId;
 const bid = (s: string) => s as BulletSpecId;
 
-// fireRate = Math.round(1000 / cooldownMs); source: config/gameplay.ts WEAPON_PROJECTILE_SPECS
+// fireRate/damage are L1 base-tier literals (build plan §10 / folio XIIID).
 export const WEAPON_DEFS: readonly WeaponDef[] = [
   {
     id: wid('iskry'),

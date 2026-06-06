@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { WEAPON_PROJECTILE_SPECS } from '../src/config/gameplay';
 import type { WeaponId } from '../src/config/gameplay';
 import { LOCALIZATION_KEYS } from '../src/localization/keys';
 import { BULLET_DEFS } from '../src/visual-spec/bullets';
@@ -19,17 +18,6 @@ describe('weapon bullet visual catalogue — BULLET_DEFS', () => {
     for (const def of BULLET_DEFS) {
       expect(def.intensity, String(def.id)).toBeGreaterThan(0);
       expect(def.fill, String(def.id)).toMatch(/^#[0-9A-Fa-f]{6}$/);
-    }
-  });
-});
-
-describe('WEAPON_PROJECTILE_SPECS — M1', () => {
-  test('all WeaponIds present in WEAPON_PROJECTILE_SPECS', () => {
-    for (const id of WEAPON_IDS) {
-      const spec = WEAPON_PROJECTILE_SPECS[id];
-      expect(spec).toBeDefined();
-      expect(spec.damagePerBullet).toBeGreaterThan(0);
-      expect(spec.cooldownMs).toBeGreaterThan(0);
     }
   });
 });

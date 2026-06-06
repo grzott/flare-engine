@@ -272,38 +272,9 @@ export const LUCYPER_SHATTER_CYCLE = 3.2;
 /** Seconds before the Zone-8 boss (Lucyper Księżycowy) enters (§5 length = 6:30). */
 export const ZONE8_BOSS_T = 340;
 
-// ---- Weapon specs (folio XIIID) ---------------------------------------------
+// ---- Weapon ids ----
 
 export type WeaponId = 'iskry' | 'piorun' | 'sol-swiecona' | 'znak-pentagramu';
-
-export interface WeaponSpec {
-  readonly damagePerBullet: number;
-  readonly cooldownMs: number;
-  readonly particlePreset: 'spark' | 'lightning' | 'holy' | 'sigil';
-}
-
-/**
- * Per-weapon gameplay constants keyed by weapon id. All values are L1 (base
- * tier) numbers; damage/cooldown scaling for L2/L3 is applied by the weapon
- * system at runtime. Source: folio XIIID + build plan §10.
- */
-export const WEAPON_PROJECTILE_SPECS: Record<WeaponId, WeaponSpec> = {
-  iskry: { damagePerBullet: 10, cooldownMs: 120, particlePreset: 'spark' },
-  piorun: { damagePerBullet: 18, cooldownMs: 400, particlePreset: 'lightning' },
-  'sol-swiecona': { damagePerBullet: 25, cooldownMs: 900, particlePreset: 'holy' },
-  'znak-pentagramu': { damagePerBullet: 22, cooldownMs: 600, particlePreset: 'sigil' },
-};
-
-/**
- * Zone indices (1-based) at which each weapon unlocks L2 and L3 tiers.
- * Per build plan §10: L2 unlocks at zone 3, L3 at zone 6 (all weapons).
- */
-export const WEAPON_UNLOCK_ZONE: Record<WeaponId, { readonly l2: number; readonly l3: number }> = {
-  iskry: { l2: 3, l3: 6 },
-  piorun: { l2: 3, l3: 6 },
-  'sol-swiecona': { l2: 3, l3: 6 },
-  'znak-pentagramu': { l2: 3, l3: 6 },
-};
 
 // ---- Collider scale factors (AABB vs sprite frame) --------------------------
 // These are geometry constants, not balance — they don't affect game feel

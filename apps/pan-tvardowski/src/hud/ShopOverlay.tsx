@@ -1,15 +1,16 @@
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
-import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { Button, Label, Panel } from '@flare-engine/ui';
 import { ShopPanel } from '@flare-engine/ui-shop';
 import type { ShopItemCopy, ShopPanelStrings } from '@flare-engine/ui-shop';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PT_CATALOG, SKU_FULL_GAME, SKU_SUPPORTER_PACK } from '../iap/catalog';
-import { type GameState, gameState, stateChanged } from '../state';
 import { THEME_SPEC, TYPOGRAPHY, UI_COLORS } from '../visual-spec/theme';
+import { HudPanelScaffold } from './HudPanelScaffold';
 import { rawStyles } from './ShopOverlay.styles';
+import { cloneGameState, useHudState } from './useHudState';
 
 const styles = StyleSheet.create(rawStyles);
 
@@ -42,15 +43,6 @@ export interface ShopOverlayProps {
   entitlementStore: EntitlementStore;
   actions: ShopOverlayActions;
   isNoopProvider?: boolean;
-}
-
-function cloneState(): GameState {
-  return {
-    ...gameState,
-    settings: { ...gameState.settings, controls: { ...gameState.settings.controls } },
-    runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
-    zoneBanner: { ...gameState.zoneBanner },
-  };
 }
 
 const SHOP_COPY: Record<string, ShopItemCopy> = {
@@ -129,12 +121,7 @@ export function ShopOverlay({
   actions,
   isNoopProvider = false,
 }: ShopOverlayProps): React.ReactElement | null {
-  const [s, setS] = useState<GameState>(() => cloneState());
-
-  useEffect(() => {
-    const off = stateChanged.add(() => setS(cloneState()));
-    return () => off();
-  }, []);
+  const s = useHudState(cloneGameState);
 
   const t = useMemo(() => (key: string) => localization.t(key), [localization]);
 
@@ -142,31 +129,29 @@ export function ShopOverlay({
 
   return (
     <View style={styles.root}>
-      <ThemeProvider theme={darkTheme}>
-        <FocusProvider>
-          <View style={styles.content}>
-            {isNoopProvider ? (
-              <Panel padding="lg" radius="lg" style={styles.panel}>
-                <Label variant="xl" tone="accent" style={{ marginBottom: THEME_SPEC.spacing.lg }}>
-                  {t('shop.heading')}
-                </Label>
-                <PlaceholderShopCards t={t} />
-              </Panel>
-            ) : (
-              <ShopPanel
-                catalog={PT_CATALOG}
-                entitlementStore={entitlementStore}
-                copy={SHOP_COPY}
-                strings={SHOP_STRINGS}
-                localize={t}
-              />
-            )}
-            <View style={styles.backRow}>
-              <Button label={t('shop.back')} variant="ghost" onPress={actions.goMenu} />
-            </View>
+      <HudPanelScaffold>
+        <View style={styles.content}>
+          {isNoopProvider ? (
+            <Panel padding="lg" radius="lg" style={styles.panel}>
+              <Label variant="xl" tone="accent" style={{ marginBottom: THEME_SPEC.spacing.lg }}>
+                {t('shop.heading')}
+              </Label>
+              <PlaceholderShopCards t={t} />
+            </Panel>
+          ) : (
+            <ShopPanel
+              catalog={PT_CATALOG}
+              entitlementStore={entitlementStore}
+              copy={SHOP_COPY}
+              strings={SHOP_STRINGS}
+              localize={t}
+            />
+          )}
+          <View style={styles.backRow}>
+            <Button label={t('shop.back')} variant="ghost" onPress={actions.goMenu} />
           </View>
-        </FocusProvider>
-      </ThemeProvider>
+        </View>
+      </HudPanelScaffold>
     </View>
   );
 }

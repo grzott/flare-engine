@@ -1,14 +1,15 @@
 import type { LocalizationManager } from '@flare-engine/localization';
-import { DialoguePanel, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { DialoguePanel } from '@flare-engine/ui';
 import type React from 'react';
-import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PORTRAITS_MANIFEST, resolvePortraitViaManifest } from '../assets';
 import type { DialogueController } from '../dialogue';
-import { type DialogueHudState, gameState, stateChanged } from '../state';
+import { gameState } from '../state';
 import { hexToArgb } from '../util/hex';
 import { THEME_SPEC } from '../visual-spec/theme';
 import { rawStyles } from './DialogueOverlay.styles';
+import { HudPanelScaffold } from './HudPanelScaffold';
+import { useHudState } from './useHudState';
 
 const styles = StyleSheet.create(rawStyles);
 
@@ -27,19 +28,14 @@ export function DialogueOverlay({
   localization,
   controller,
 }: DialogueOverlayProps): React.ReactElement | null {
-  const [line, setLine] = useState<DialogueHudState | null>(gameState.dialogue);
-
-  useEffect(() => {
-    const off = stateChanged.add(() => setLine(gameState.dialogue));
-    return () => off();
-  }, []);
+  const line = useHudState(() => gameState.dialogue);
 
   if (!line) return null;
 
   const shapes = resolvePortraitViaManifest(PORTRAITS_MANIFEST, line.portraitKey ?? '');
 
   return (
-    <ThemeProvider theme={darkTheme}>
+    <HudPanelScaffold focus={false}>
       <View style={styles.root}>
         <DialoguePanel
           speaker={localization.t(line.speakerKey)}
@@ -64,6 +60,6 @@ export function DialogueOverlay({
           style={styles.panel}
         />
       </View>
-    </ThemeProvider>
+    </HudPanelScaffold>
   );
 }

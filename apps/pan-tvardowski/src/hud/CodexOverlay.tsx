@@ -1,14 +1,16 @@
 import type { LocalizationManager } from '@flare-engine/localization';
-import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { Button, Label, Panel } from '@flare-engine/ui';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { CODEX_ENTRIES } from '../codex';
 import { findBossExtra } from '../codex/boss-entries';
 import type { SaveStore } from '../save/store';
 import { filterCodexEntries } from '../scenes/codex-shards';
-import { type GameState, gameState, stateChanged } from '../state';
+import { gameState } from '../state';
 import { rawStyles } from './CodexOverlay.styles';
+import { HudPanelScaffold } from './HudPanelScaffold';
+import { cloneGameState, useHudState } from './useHudState';
 
 const styles = StyleSheet.create(rawStyles);
 
@@ -22,32 +24,16 @@ export interface CodexOverlayProps {
   actions: CodexOverlayActions;
 }
 
-function cloneState(): GameState {
-  return {
-    ...gameState,
-    settings: { ...gameState.settings, controls: { ...gameState.settings.controls } },
-    runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
-    zoneBanner: { ...gameState.zoneBanner },
-  };
-}
-
 export function CodexOverlay(props: CodexOverlayProps): React.ReactElement | null {
-  const [s, setS] = useState<GameState>(() => cloneState());
-
-  useEffect(() => {
-    const off = stateChanged.add(() => setS(cloneState()));
-    return () => off();
-  }, []);
+  const s = useHudState(cloneGameState);
 
   if (s.currentScene !== 'codex-shards') return null;
 
   return (
     <View style={styles.root}>
-      <ThemeProvider theme={darkTheme}>
-        <FocusProvider>
-          <CodexView {...props} />
-        </FocusProvider>
-      </ThemeProvider>
+      <HudPanelScaffold>
+        <CodexView {...props} />
+      </HudPanelScaffold>
     </View>
   );
 }

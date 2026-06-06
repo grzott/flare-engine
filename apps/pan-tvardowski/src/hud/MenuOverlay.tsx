@@ -1,9 +1,9 @@
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
-import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { Button, Label, Panel } from '@flare-engine/ui';
 import { RestorePurchasesButton } from '@flare-engine/ui-shop';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ZONES } from '../config/zones';
 import { gameEvents } from '../events';
@@ -14,9 +14,11 @@ import type { SaveStore } from '../save/store';
 import { type GameState, gameState, stateChanged } from '../state';
 import type { FireButtonSide, JoystickSide } from '../state';
 import { THEME_SPEC } from '../visual-spec/theme';
+import { HudPanelScaffold } from './HudPanelScaffold';
 import { rawStyles } from './MenuOverlay.styles';
 import { PrivacyOverlay } from './PrivacyOverlay';
 import { CREDITS_SECTIONS } from './credits-sections';
+import { cloneGameState, useHudState } from './useHudState';
 
 const ZONE_ORDER: readonly ZoneId[] = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7', 'z8'];
 
@@ -51,22 +53,8 @@ export interface MenuOverlayProps {
   entitlementStore?: EntitlementStore;
 }
 
-function cloneState(): GameState {
-  return {
-    ...gameState,
-    settings: { ...gameState.settings, controls: { ...gameState.settings.controls } },
-    runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
-    zoneBanner: { ...gameState.zoneBanner },
-  };
-}
-
 export function MenuOverlay(props: MenuOverlayProps): React.ReactElement | null {
-  const [s, setS] = useState<GameState>(() => cloneState());
-
-  useEffect(() => {
-    const off = stateChanged.add(() => setS(cloneState()));
-    return () => off();
-  }, []);
+  const s = useHudState(cloneGameState);
 
   const scene = s.currentScene;
   const show =
@@ -75,14 +63,12 @@ export function MenuOverlay(props: MenuOverlayProps): React.ReactElement | null 
 
   return (
     <View style={styles.root}>
-      <ThemeProvider theme={darkTheme}>
-        <FocusProvider>
-          {scene === 'menu' ? <MenuView {...props} /> : null}
-          {scene === 'save-select' ? <SaveSelectView {...props} /> : null}
-          {scene === 'settings' ? <SettingsView {...props} settings={s.settings} /> : null}
-          {scene === 'credits' ? <CreditsView {...props} /> : null}
-        </FocusProvider>
-      </ThemeProvider>
+      <HudPanelScaffold>
+        {scene === 'menu' ? <MenuView {...props} /> : null}
+        {scene === 'save-select' ? <SaveSelectView {...props} /> : null}
+        {scene === 'settings' ? <SettingsView {...props} settings={s.settings} /> : null}
+        {scene === 'credits' ? <CreditsView {...props} /> : null}
+      </HudPanelScaffold>
     </View>
   );
 }

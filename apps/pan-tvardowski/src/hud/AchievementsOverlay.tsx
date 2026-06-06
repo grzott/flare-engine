@@ -1,12 +1,13 @@
 import type { LocalizationManager } from '@flare-engine/localization';
-import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { Button, Label, Panel } from '@flare-engine/ui';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { SaveStore } from '../save/store';
 import { ACHIEVEMENT_ENTRIES, filterAchievements } from '../scenes/achievements';
-import { type GameState, gameState, stateChanged } from '../state';
 import { rawStyles } from './AchievementsOverlay.styles';
+import { HudPanelScaffold } from './HudPanelScaffold';
+import { cloneGameState, useHudState } from './useHudState';
 
 const styles = StyleSheet.create(rawStyles);
 
@@ -20,32 +21,16 @@ export interface AchievementsOverlayProps {
   actions: AchievementsOverlayActions;
 }
 
-function cloneState(): GameState {
-  return {
-    ...gameState,
-    settings: { ...gameState.settings, controls: { ...gameState.settings.controls } },
-    runStats: { ...gameState.runStats, kills: { ...gameState.runStats.kills } },
-    zoneBanner: { ...gameState.zoneBanner },
-  };
-}
-
 export function AchievementsOverlay(props: AchievementsOverlayProps): React.ReactElement | null {
-  const [s, setS] = useState<GameState>(() => cloneState());
-
-  useEffect(() => {
-    const off = stateChanged.add(() => setS(cloneState()));
-    return () => off();
-  }, []);
+  const s = useHudState(cloneGameState);
 
   if (s.currentScene !== 'achievements') return null;
 
   return (
     <View style={styles.root}>
-      <ThemeProvider theme={darkTheme}>
-        <FocusProvider>
-          <AchievementsView {...props} />
-        </FocusProvider>
-      </ThemeProvider>
+      <HudPanelScaffold>
+        <AchievementsView {...props} />
+      </HudPanelScaffold>
     </View>
   );
 }

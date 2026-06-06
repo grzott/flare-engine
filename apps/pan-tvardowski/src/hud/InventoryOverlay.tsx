@@ -1,14 +1,16 @@
 import type { LocalizationManager } from '@flare-engine/localization';
-import { Button, FocusProvider, Label, Panel, ThemeProvider, darkTheme } from '@flare-engine/ui';
+import { Button, Label, Panel } from '@flare-engine/ui';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { CODEX_ENTRIES } from '../codex';
 import type { SaveStore } from '../save/store';
-import { type GameState, gameState, notifyStateChanged, stateChanged } from '../state';
+import { type GameState, gameState, notifyStateChanged } from '../state';
+import { HudPanelScaffold } from './HudPanelScaffold';
 import { rawStyles } from './InventoryOverlay.styles';
 import { ACHIEVEMENTS } from './achievements-list';
 import type { InventoryTab } from './inventory-tab';
+import { useHudState } from './useHudState';
 
 const styles = StyleSheet.create(rawStyles);
 
@@ -22,7 +24,7 @@ export interface InventoryOverlayProps {
   actions: InventoryOverlayActions;
 }
 
-function cloneState(): GameState {
+function cloneInventoryState(): GameState {
   return {
     ...gameState,
     settings: { ...gameState.settings, controls: { ...gameState.settings.controls } },
@@ -33,29 +35,22 @@ function cloneState(): GameState {
 }
 
 export function InventoryOverlay(props: InventoryOverlayProps): React.ReactElement | null {
-  const [s, setS] = useState<GameState>(() => cloneState());
-
-  useEffect(() => {
-    const off = stateChanged.add(() => setS(cloneState()));
-    return () => off();
-  }, []);
+  const s = useHudState(cloneInventoryState);
 
   if (s.currentScene !== 'inventory') return null;
 
   return (
     <View style={styles.root}>
-      <ThemeProvider theme={darkTheme}>
-        <FocusProvider>
-          <InventoryView
-            {...props}
-            activeTab={s.inventoryActiveTab}
-            onTabChange={(tab: InventoryTab) => {
-              gameState.inventoryActiveTab = tab;
-              notifyStateChanged();
-            }}
-          />
-        </FocusProvider>
-      </ThemeProvider>
+      <HudPanelScaffold>
+        <InventoryView
+          {...props}
+          activeTab={s.inventoryActiveTab}
+          onTabChange={(tab: InventoryTab) => {
+            gameState.inventoryActiveTab = tab;
+            notifyStateChanged();
+          }}
+        />
+      </HudPanelScaffold>
     </View>
   );
 }

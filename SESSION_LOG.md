@@ -6416,3 +6416,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 170 — 2026-06-06 (scope: game)
+
+**Goal:** iOS1 — prepare iOS bench wiring (skip:true)
+
+**Touched files**
+- `.github/workflows/perf-bench.yml`
+- `apps/pan-tvardowski/eas.json`
+- `apps/pan-tvardowski/tests/devices.test.ts`
+- `docs/perf/protocol.md`
+- `docs/plans/todo.md`
+- `scripts/perf/bench-cloud.sh`
+- `scripts/perf/devices.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -6,12 +6,12 @@
 #
 # Usage:
 #   BENCH_APK_PATH=build.apk TESTINGBOT_KEY=... TESTINGBOT_SECRET=... \
-#     bash scripts/perf/bench-cloud.sh [--app <name>] [--scenario <id>|all] [--tier mid-gate|headroom|all]
+#     bash scripts/perf/bench-cloud.sh [--app <name>] [--scenario <id>|all] [--tier mid-gate|headroom|low|all]
 #
 # Flags (all optional):
 #   --app <name>         App directory under apps/ (default: pan-tvardowski)
 #   --scenario <id>|all  Perf scenario file stem, e.g. "boot" or "all" (default: all)
-#   --tier mid-gate|headroom|all  Device tier filter (default: mid-gate)
+#   --tier mid-gate|headroom|low|all  Device tier filter (default: mid-gate)
 #   --download-artifacts all|failures-only
 #                        Control TestingBot artifact download (default: failures-only).
 #                        Use "all" during E8 baseline capture and first Tier-A landing.
@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown flag: $1" >&2
-      echo "Usage: bench-cloud.sh [--app <name>] [--scenario <id>|all] [--tier mid-gate|headroom|all] [--download-artifacts all|failures-only]" >&2
+      echo "Usage: bench-cloud.sh [--app <name>] [--scenario <id>|all] [--tier mid-gate|headroom|low|all] [--download-artifacts all|failures-only]" >&2
       exit 1
       ;;
   esac

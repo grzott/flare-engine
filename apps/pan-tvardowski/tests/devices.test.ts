@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import rawDevices from '../../../scripts/perf/devices.json' with { type: 'json' };
 
 type Platform = 'android' | 'ios';
-type Tier = 'mid-gate' | 'headroom';
+type Tier = 'mid-gate' | 'headroom' | 'low';
 
 interface DeviceEntry {
   id: string;
@@ -16,7 +16,7 @@ interface DeviceEntry {
 }
 
 const VALID_PLATFORMS: ReadonlySet<string> = new Set(['android', 'ios']);
-const VALID_TIERS: ReadonlySet<string> = new Set(['mid-gate', 'headroom']);
+const VALID_TIERS: ReadonlySet<string> = new Set(['mid-gate', 'headroom', 'low']);
 
 const devices = rawDevices as DeviceEntry[];
 
@@ -46,7 +46,7 @@ describe('scripts/perf/devices.json', () => {
     }
   });
 
-  test('tier is one of mid-gate | headroom for every entry', () => {
+  test('tier is one of mid-gate | headroom | low for every entry', () => {
     for (const d of devices) {
       expect(VALID_TIERS.has(d.tier)).toBe(true);
     }
@@ -97,12 +97,42 @@ describe('scripts/perf/devices.json', () => {
     expect(pixel6.platform).toBe('android');
   });
 
-  test('all iOS entries are skip:true', () => {
+  test('exactly 3 iOS devices, all skip:true with a #137 skipReason', () => {
     const iosDevices = devices.filter((d) => d.platform === 'ios');
-    expect(iosDevices.length).toBeGreaterThan(0);
+    expect(iosDevices.length).toBe(3);
     for (const d of iosDevices) {
       expect(d.skip).toBe(true);
+      expect(typeof d.skipReason).toBe('string');
+      expect((d.skipReason as string).includes('#137')).toBe(true);
     }
+  });
+
+  test('iPhone SE (2022) is present, skip:true, tier low', () => {
+    const se3 = devices.find((d) => d.id === 'iphone-se-3');
+    expect(se3).not.toBeUndefined();
+    if (se3 === undefined) throw new Error('iphone-se-3 not found');
+    expect(se3.skip).toBe(true);
+    expect(se3.tier).toBe('low');
+    expect(se3.platform).toBe('ios');
+    expect(se3.name).toBe('iPhone SE (2022)');
+  });
+
+  test('iPhone 15 is present, skip:true, tier mid-gate', () => {
+    const iphone15 = devices.find((d) => d.id === 'iphone-15');
+    expect(iphone15).not.toBeUndefined();
+    if (iphone15 === undefined) throw new Error('iphone-15 not found');
+    expect(iphone15.skip).toBe(true);
+    expect(iphone15.tier).toBe('mid-gate');
+    expect(iphone15.platform).toBe('ios');
+  });
+
+  test('iPhone 17 Pro is present, skip:true, tier headroom', () => {
+    const iphone17pro = devices.find((d) => d.id === 'iphone-17-pro');
+    expect(iphone17pro).not.toBeUndefined();
+    if (iphone17pro === undefined) throw new Error('iphone-17-pro not found');
+    expect(iphone17pro.skip).toBe(true);
+    expect(iphone17pro.tier).toBe('headroom');
+    expect(iphone17pro.platform).toBe('ios');
   });
 
   test('local-avd is present, local:true, and not skipped', () => {

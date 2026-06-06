@@ -47,6 +47,16 @@
     "skipReason": "iOS real-device gate deferred; tracked in #137"
   },
   {
+    "id": "iphone-se-3",
+    "name": "iPhone SE (2022)",
+    "platform": "ios",
+    "osVersion": "18.0",
+    "tier": "low",
+    "local": false,
+    "skip": true,
+    "skipReason": "iOS real-device gate deferred; tracked in #137"
+  },
+  {
     "id": "local-avd",
     "name": "local-avd",
     "platform": "android",

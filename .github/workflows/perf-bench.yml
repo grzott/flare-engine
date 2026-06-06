@@ -8,8 +8,11 @@ on:
       bench_apk_url:
         description: 'URL or path of bench APK (overrides vars.BENCH_APK_URL)'
         required: false
+      bench_ipa_url:
+        description: 'URL or path of bench IPA (overrides vars.BENCH_IPA_URL)'
+        required: false
       tier:
-        description: 'Device tier: mid-gate | headroom | all'
+        description: 'Device tier: mid-gate | headroom | low | all'
         required: false
         default: 'mid-gate'
       scenario:
@@ -68,12 +71,26 @@ jobs:
           echo "apk_path=$(pwd)/bench.apk" >> "$GITHUB_OUTPUT"
         shell: bash
 
+      - name: Download bench IPA
+        id: download-ipa
+        run: |
+          IPA_URL="${{ inputs.bench_ipa_url || vars.BENCH_IPA_URL }}"
+          if [[ -z "$IPA_URL" ]]; then
+            echo "No IPA URL — iOS devices are skip:true, nothing to download"
+            echo "ipa_path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          curl -fsSL "$IPA_URL" -o bench.ipa
+          echo "ipa_path=$(pwd)/bench.ipa" >> "$GITHUB_OUTPUT"
+        shell: bash
+
       - name: Run perf bench
         id: run
         env:
           TESTINGBOT_KEY: ${{ secrets.TESTINGBOT_KEY }}
           TESTINGBOT_SECRET: ${{ secrets.TESTINGBOT_SECRET }}
           BENCH_APK_PATH: ${{ steps.download-apk.outputs.apk_path }}
+          BENCH_IPA_PATH: ${{ steps.download-ipa.outputs.ipa_path }}
         run: |
           TIER="${{ inputs.tier || 'mid-gate' }}"
           SCENARIO="${{ inputs.scenario || 'all' }}"

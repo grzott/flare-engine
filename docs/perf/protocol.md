@@ -117,6 +117,21 @@ scenario has known legitimate variance.
 
 ---
 
+## Activating iOS bench (when #137 lands)
+
+1. Enroll in the Apple Developer Program ($99/yr).
+2. Configure iOS credentials via `eas credentials` (managed/remote is the default) — EAS auto-provisions the distribution certificate and provisioning profile. No manual UDID enrollment; TestingBot re-signs uploaded IPAs automatically.
+3. Build the bench IPA: `eas build --profile bench --platform ios` (the profile carries `EXPO_PUBLIC_BENCH_MODE=1`).
+4. Host the `.ipa` at a CI-reachable URL and set the repo variable `vars.BENCH_IPA_URL` in GitHub → Settings → Variables → Repository variables (or pass the `bench_ipa_url` workflow_dispatch input at trigger time).
+5. In `scripts/perf/devices.json`, flip the target iOS device `skip:true` → `false` and remove its `skipReason` field (the `skip:false → no skipReason` test enforces this pair).
+6. Update `apps/pan-tvardowski/tests/devices.test.ts`: relax the `exactly 3 iOS devices, all skip:true` assertion to match the new active set (count and per-device assertions).
+7. Add a per-device threshold entry to `.perf-baseline.json` — the regression gate is per-device and the new device needs its own baseline row (an empty object is valid on the first run; populate after the first result lands).
+8. Run via workflow_dispatch (`tier: low`) or `bash scripts/perf/bench-cloud.sh --tier low` with `BENCH_IPA_PATH` set.
+
+Before the first run, confirm the exact TestingBot device catalog string and supported iOS version against testingbot.com/test-on-iphone; the `name` field in `devices.json` must match TestingBot's catalog string exactly. TestingBot auto-re-signs IPAs (`resigningEnabled` defaults to true).
+
+---
+
 ## Rolling baseline window
 
 `regression-check.ts` computes the 7-day rolling median of `p95` values for

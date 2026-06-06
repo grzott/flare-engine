@@ -6438,3 +6438,23 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 171 — 2026-06-06 (scope: game)
+
+**Goal:** CL1 — Delete dead code
+
+**Touched files**
+- `apps/pan-tvardowski/src/config/gameplay.ts`
+- `apps/pan-tvardowski/src/visual-spec/weapons.ts`
+- `apps/pan-tvardowski/tests/weapon-specs.test.ts`
+- `apps/pan-tvardowski/tests/weapon-unlock.test.ts`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

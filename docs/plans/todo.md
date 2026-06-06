@@ -4,13 +4,40 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 ## Active
 
-_All near-term arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54 device-verified 2026-06-06) + iOS bench wiring (iOS1 #170). **iOS is wire-ready** — flipping it live is gated on an Apple Developer account (#137); the one-time activation steps are in [docs/perf/protocol.md](../perf/protocol.md) "Activating iOS bench". No named builder arc remains — next is an owner pick from **Future tracks** below._
+_Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook in [protocol.md](../perf/protocol.md))._
+
+### Arc PT-EXTRACT — deep cleanup → move Pan Tvardowski to its own repo
+
+Goal: PT becomes its own GitHub repo; flare-engine keeps only the engine packages + the `create-flare-app` CLI base game and references PT as the store showcase (3 free / 5 paid). **Cleanup first (in-monorepo, pure refactor, all 1413 tests stay green), then extract.** Engine consumption after split = **private/restricted npm packages** at `0.1.0` (owner buys paid npm plan; PT pulls `@flare-engine/*@^0.1.0` via authenticated `.npmrc`). Full plan + 7-agent audit (2026-06-06) at `~/.claude/plans/audit-deeply-ios-configuration-vectorized-gizmo.md`. All CL rows: route **game-builder**, zero `packages/**`, **no behavior change**, full gate green.
+
+**Phase 1 — cleanup (ordered by value÷risk):**
+
+- **CL2 — Boss fire-pattern helpers (top DRY).** Extract `fireRadial` / `fireAimedFan` / summon-loop into `systems/boss/shared.ts`, apply across all 8 boss files + `miniboss.ts`; dedup `clearEnemyBullets` (defined ×2); add `isEntityInvulnerable` (used ×3). ~150 LOC out. Bullet spawns must be byte-identical (deterministic per-pattern tests).
+- **CL3 — Spawner config-table.** `buildZone1..8Schedule` (8 near-identical fns) → one generic builder + `ZONE_SCHEDULE_DEFS`. **Balance-frozen — schedules byte-identical**; snapshot current output, lock with the `zoneN-spawner` deterministic tests. 266→~120 LOC. *(Highest balance-drift risk — gate hard.)*
+- **CL4 — Shared HUD primitives.** 5× `cloneState()` → `useHudState(selector)` hook; 6× `ThemeProvider+FocusProvider` → `<HudPanelScaffold>`; ×5 subscription boilerplate folded into the hook.
+- **CL5 — Service-layer DRY.** `save/store.ts` ×10 persist calls → `persist()` helper; new `util/clamp.ts`; deep-links router zone-map table + reuse engine URL parsing.
+- **CL6 — Split `scenes/play.ts` (1232).** Pure extraction → play-state / play-setup / play-update (the 640-line `onUpdate`) / play-hud-sync / play-postfx-coordinator / play-benchmark.
+- **CL7 — Split `App.tsx` (747).** → App / AppRoot / bootstrap.ts / ControlsController. Also derive `GATED_ZONES` from `config/zones.ts` `requiresEntitlement` (single source for the 3-free/5-paid split).
+- **CL8 — Split `visual-spec/types.ts` (841).** → 7 type modules + a `types.ts` barrel re-export (no consumer import changes); dedup `ScreenSection`/`OverlaySection`.
+- **CL9 — Split `hud/MenuOverlay.tsx` (529).** Routing wrapper + MenuView/SaveSelectView/SettingsView/CreditsView; `useSettingsHandlers` hook.
+- **CL10 — Split `systems/miniboss.ts` (483) + behavior registry (OCP).** miniboss/{fsm,behaviors,shared}; `MINIBOSS_BEHAVIORS[pattern]` replaces the 57-line if/else ladder (mirrors `boss/fsm.ts`).
+- **CL11 — Split remaining GOD files.** `shape-atlas.ts` buildFrames → per-entity builders; `bg/create-zone-bg.ts` → factory-registry + image + sprite controllers (+ cache `buildEffect`); `fx/explosions.ts` → degrader + particle-factory + pool + dispatcher.
+
+**Phase 2 — extract (after CL lands). Owner-gated prereqs: paid npm plan + `@flare-engine` org; new GitHub repo; new EAS project; store listings + RevenueCat SKU.**
+
+- **SP1 — Publish engine to npm (private/restricted, 0.1.0).** Remove `private:true` from every `packages/*/package.json`; `publishConfig.access:"restricted"`; `.changeset/config.json` access→`restricted`; changeset version→0.1.0; **dry-run** then `changeset publish`. (One-way — throwaway-tag test first.)
+- **SP2 — Stand up the PT repo.** `git subtree split -P apps/pan-tvardowski` (history preserved) → new repo root; standalone config (package.json with `@flare-engine/*@^0.1.0`, `.npmrc`+`NPM_TOKEN`, tsconfig, metro w/o workspace watchFolders, babel, eas.json new project id, biome, husky, turbo, .changeset). Source imports unchanged.
+- **SP3 — PT CI + standalone verify.** `.github/workflows` (lint/typecheck/test/build w/ `NPM_TOKEN`; EAS submit on tag); `bun install && build && test && expo start` green against the published engine.
+- **SP4 — Slim flare-engine + cross-ref.** Remove `apps/pan-tvardowski`; root workspaces→`["packages/*","benchmarks"]`; README "Pan Tvardowski" section + store/GitHub links; `create-flare-app` README "See Also → PT"; update `docs/plans/*`.
+- **SP5 — Cross-repo compat guard.** Nightly flare-engine CI checks out PT + runs its tests against the latest engine.
+
+_Cleanup deferred (not in targeted scope — revisit after extraction): ISP segregation of the fat `BossDeps` (13 optional callbacks) + `PlaySceneDeps` prop-bags; DIP injection of boss tuning + bg effect factories; lifting game-agnostic utilities (save type-guards, `audio/synth`, `a11y/reduced-motion`) into `@flare-engine/*`._
 
 _(Prior arcs closed: Postfx tail (shadow-rim cut #152 + high-DPI scene texture #153, A54-verified 2026-06-01) at session 2026-05-31; Presentation polish BG/FX (B1→B3→B4→B5) at session 2026-05-30; Tier-E perf benchmark arc (8 rows, E1–E8) at session #146; 100% visual-spec single-source-of-truth at session #137.)_
 
 ## Deferred (needs a balance pass, not a refactor)
 
-- **PT — WEAPON_DEFS + BULLET_DEFS damage to runtime.** Investigated session #136, **reverted, deferred**. The row's premise was false: `WEAPON_PROJECTILE_SPECS` in [config/gameplay.ts](../../apps/pan-tvardowski/src/config/gameplay.ts) (incl. `damagePerBullet`, `cooldownMs`, `BALANCE_FROZEN_AT`) is **unwired dead data** — its only references are its own definition; it has zero combat consumers. The actual shipped balance is hardcoded: every player bullet does `damage: 1` ([spawn.ts:227](../../apps/pan-tvardowski/src/spawn.ts#L227), applied at [collision.ts:41](../../apps/pan-tvardowski/src/systems/collision.ts#L41) `hp.current -= bullet.damage`), and fire cadence is `ship.fireRate = 0.18` ([spawn.ts:62](../../apps/pan-tvardowski/src/spawn.ts#L62)), never reset from any spec. `WEAPON_DEFS` values (damage 10/18/25/22, iskry cooldown 120ms) match the **dead** spec table, not live play — so wiring them to the runtime is a **~10× damage + ~1.5× fire-rate buff**, not a provably-equivalent refactor. There is no zero-drift path that also makes `WEAPON_DEFS` a meaningful source of truth (the only zero-drift authoring is all-damage=1 / iskry-cooldown=180, which makes the table trivial). Reopen only as part of an explicit balance/retune pass with enemy-HP rescaling and on-device playtest — out of scope for the visual-spec arc.
+- **PT — WEAPON_DEFS + BULLET_DEFS damage to runtime.** Investigated session #136, **reverted, deferred**. The row's premise was false: the old `WEAPON_PROJECTILE_SPECS` spec table in `config/gameplay.ts` (`damagePerBullet`/`cooldownMs`) was **unwired dead data** with zero combat consumers — confirmed and deleted in CL1 (#171). The actual shipped balance is hardcoded: every player bullet does `damage: 1` ([spawn.ts:227](../../apps/pan-tvardowski/src/spawn.ts#L227), applied at [collision.ts:41](../../apps/pan-tvardowski/src/systems/collision.ts#L41) `hp.current -= bullet.damage`), and fire cadence is `ship.fireRate = 0.18` ([spawn.ts:62](../../apps/pan-tvardowski/src/spawn.ts#L62)), never reset from any spec. `WEAPON_DEFS` values (damage 10/18/25/22, iskry cooldown 120ms) match that removed spec table, not live play — so wiring them to the runtime is a **~10× damage + ~1.5× fire-rate buff**, not a provably-equivalent refactor. There is no zero-drift path that also makes `WEAPON_DEFS` a meaningful source of truth (the only zero-drift authoring is all-damage=1 / iskry-cooldown=180, which makes the table trivial). Reopen only as part of an explicit balance/retune pass with enemy-HP rescaling and on-device playtest — out of scope for the visual-spec arc.
 
 ## Future tracks
 

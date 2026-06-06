@@ -8,6 +8,7 @@ import { hexToArgb } from '../../util/hex';
 
 import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
+import { fireAimedFan, fireRadial } from '../fire-helpers';
 import { BOSS_HALF_W } from './shared';
 import type { BossCtx, PhaseScript } from './types';
 
@@ -52,21 +53,7 @@ export const bazyliszekScript: PhaseScript = {
   fire2Cooldown: _t.fire2CooldownSec,
   fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
-    const pos = c.world.get(c.id, Position);
-    if (!pos) return;
-    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-    const baseAngle = Math.atan2(aim.y, aim.x);
-    for (let i = -1; i <= 1; i++) {
-      const a = baseAngle + i * 0.12;
-      spawnBullet(
-        c.deps.spawnCtx,
-        pos.x,
-        pos.y + BULLET_SPAWN_OFFSET.boss,
-        Math.cos(a) * BULLET_SPEED.boss,
-        Math.sin(a) * BULLET_SPEED.boss,
-        Layer.enemy,
-      );
-    }
+    fireAimedFan(c, 3, 0.12);
   },
   fire2(c) {
     const pos = c.world.get(c.id, Position);
@@ -83,22 +70,7 @@ export const bazyliszekScript: PhaseScript = {
     c.deps.onSpawnPuddle?.(pos.x, pos.y + BULLET_SPAWN_OFFSET.boss + 20);
   },
   fire3(c) {
-    const pos = c.world.get(c.id, Position);
-    const b = c.world.get(c.id, Boss);
-    if (!pos || !b) return;
-    const rays = 10;
-    const spin = b.t * 1.35;
-    for (let i = 0; i < rays; i++) {
-      const a = spin + (i / rays) * Math.PI * 2;
-      spawnBullet(
-        c.deps.spawnCtx,
-        pos.x,
-        pos.y,
-        Math.cos(a) * BULLET_SPEED.boss * 0.9,
-        Math.sin(a) * BULLET_SPEED.boss * 0.9,
-        Layer.enemy,
-      );
-    }
+    fireRadial(c, 10, 1.35, 0.9);
   },
   onPhase1Enter(c) {
     c.deps.onPaletteShift?.('phase1', ARGB_P1);

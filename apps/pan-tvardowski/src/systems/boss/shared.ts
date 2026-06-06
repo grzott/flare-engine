@@ -1,8 +1,8 @@
 import { Position, Velocity } from '@flare-engine/ecs';
-import { Boss, Bullet } from '../../components';
-import { Layer } from '../../layers';
-import { destroyEntity } from '../entity-ops';
+import { Boss } from '../../components';
 import type { BossCtx } from './types';
+
+export { clearEnemyBullets } from '../fire-helpers';
 
 export const BOSS_HALF_W = 52;
 export const PHASE2_HP_RATIO = 0.5;
@@ -24,15 +24,4 @@ export function sweepMove(c: BossCtx, speed: number): void {
     pos.x = c.deps.bounds.width - BOSS_HALF_W;
     vel.x = -Math.abs(vel.x);
   }
-}
-
-/** Clear every live enemy-bullet — used between phase transitions. */
-export function clearEnemyBullets(c: BossCtx): void {
-  const toDrop: number[] = [];
-  const q = c.world.query(Bullet);
-  for (const bid of q) {
-    const b = c.world.get(bid, Bullet);
-    if (b && b.ownerLayer === Layer.enemy) toDrop.push(bid);
-  }
-  for (const id of toDrop) destroyEntity(c.world, c.deps.spawnCtx.coll, id);
 }

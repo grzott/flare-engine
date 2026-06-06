@@ -2,7 +2,6 @@ import { FSM, Position, Velocity } from '@flare-engine/ecs';
 import type { Query, World } from '@flare-engine/engine';
 import { Vec2 as V, type Vec2, clamp } from '@flare-engine/math';
 import {
-  Bullet,
   Hp,
   type LeszyForm,
   Miniboss,
@@ -20,12 +19,13 @@ import { Layer } from '../layers';
 import { type SpawnCtx, spawnBullet } from '../spawn';
 import { BOSS_LAYOUT_DEFS } from '../visual-spec/boss-layouts';
 import { MINIBOSS_TUNING_DEFS } from '../visual-spec/boss-tuning';
+import { destroyEntity } from './entity-ops';
+import { clearEnemyBullets, fireAimedFan } from './fire-helpers';
 
 const _rokita = MINIBOSS_TUNING_DEFS.rokita;
 const _leszy = MINIBOSS_TUNING_DEFS.leszy;
 const _nocnyLowca = MINIBOSS_TUNING_DEFS['nocny-lowca'];
 const _madej = MINIBOSS_TUNING_DEFS.madej;
-import { destroyEntity } from './entity-ops';
 
 const DYING_INTERVAL = 0.16;
 const DYING_TOTAL = 10;
@@ -147,20 +147,7 @@ function leszyFire(c: MinibossCtx): number {
   const ox = pos.x;
   const oy = pos.y + BULLET_SPAWN_OFFSET.boss;
   if (m.form === 'deer') {
-    // Ram: fast aimed single + two flanking shots ±8°.
-    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-    const baseAngle = Math.atan2(aim.y, aim.x);
-    for (let i = -1; i <= 1; i++) {
-      const a = baseAngle + i * 0.14;
-      spawnBullet(
-        c.deps.spawnCtx,
-        ox,
-        oy,
-        Math.cos(a) * BULLET_SPEED.boss,
-        Math.sin(a) * BULLET_SPEED.boss,
-        Layer.enemy,
-      );
-    }
+    fireAimedFan(c, 3, 0.14);
     return _leszy.fireCooldownDeerSec;
   }
   if (m.form === 'bear') {
@@ -212,22 +199,8 @@ function nocnyLowcaFire(c: MinibossCtx): number {
 
 /** Madej: aimed heavy shot paired with a spike-lane drop on fixed cadence. */
 function madejFire(c: MinibossCtx): number {
-  const pos = c.world.get(c.id, Position);
   const cd = _madej.kind === 'simple' ? _madej.fireCooldownSec : 1.1;
-  if (!pos) return cd;
-  V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-  const base = Math.atan2(aim.y, aim.x);
-  for (let i = -1; i <= 1; i++) {
-    const a = base + i * 0.22;
-    spawnBullet(
-      c.deps.spawnCtx,
-      pos.x,
-      pos.y + BULLET_SPAWN_OFFSET.boss,
-      Math.cos(a) * BULLET_SPEED.boss,
-      Math.sin(a) * BULLET_SPEED.boss,
-      Layer.enemy,
-    );
-  }
+  fireAimedFan(c, 3, 0.22);
   return cd;
 }
 
@@ -268,16 +241,6 @@ function summonHounds(c: MinibossCtx): void {
     c.deps.onSpawnHound(spawnX, spawnY);
   }
   m.hounds = NOCNY_LOWCA_HOUND_COUNT;
-}
-
-function clearEnemyBullets(c: MinibossCtx): void {
-  const toDrop: number[] = [];
-  const q = c.world.query(Bullet);
-  for (const bid of q) {
-    const b = c.world.get(bid, Bullet);
-    if (b && b.ownerLayer === Layer.enemy) toDrop.push(bid);
-  }
-  for (const id of toDrop) destroyEntity(c.world, c.deps.spawnCtx.coll, id);
 }
 
 function buildMinibossFsm(context: MinibossCtx): FSM<MinibossCtx> {

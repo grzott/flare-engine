@@ -1,5 +1,4 @@
 import { Position } from '@flare-engine/ecs';
-import { Vec2 as V, type Vec2 } from '@flare-engine/math';
 import { Boss } from '../../components';
 import { BORUTA_SUMMON_COUNT, BULLET_SPAWN_OFFSET, BULLET_SPEED } from '../../config/gameplay';
 import { Layer } from '../../layers';
@@ -9,14 +8,13 @@ import { BOSS_LAYOUT_DEFS } from '../../visual-spec/boss-layouts';
 
 import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
+import { fireAimedFan } from '../fire-helpers';
 import type { BossCtx, PhaseScript } from './types';
 
 const _t = BOSS_TUNING_DEFS.boruta;
 
 const ARGB_P1 = hexToArgb(THEME_SPEC.colors.hazardOrange);
 const ARGB_P2 = hexToArgb(THEME_SPEC.colors.crimson);
-
-const aim: Vec2 = { x: 0, y: 0 };
 
 const BORUTA_LAYOUT = BOSS_LAYOUT_DEFS.find((d) => d.id === 'boruta');
 const BORUTA_BIES_SUMMON = BORUTA_LAYOUT?.summons?.[0];
@@ -79,19 +77,7 @@ export const borutaScript: PhaseScript = {
   fire2(c) {
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
-    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-    const baseAngle = Math.atan2(aim.y, aim.x);
-    for (let i = -1; i <= 1; i++) {
-      const a = baseAngle + i * 0.24;
-      spawnBullet(
-        c.deps.spawnCtx,
-        pos.x,
-        pos.y + BULLET_SPAWN_OFFSET.boss,
-        Math.cos(a) * BULLET_SPEED.boss,
-        Math.sin(a) * BULLET_SPEED.boss,
-        Layer.enemy,
-      );
-    }
+    fireAimedFan(c, 3, 0.24);
     spawnBullet(
       c.deps.spawnCtx,
       pos.x,

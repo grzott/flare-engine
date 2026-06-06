@@ -8,7 +8,8 @@ import { hexToArgb } from '../../util/hex';
 
 import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
-import type { BossCtx, PhaseScript } from './types';
+import { fireAimedFan, fireRadial } from '../fire-helpers';
+import type { PhaseScript } from './types';
 
 const _t = BOSS_TUNING_DEFS['lucyper-ksiezycowy'];
 
@@ -28,43 +29,6 @@ const SHATTER_CYCLE: BossPattern[] = [
   'bazyliszek-warszawski',
   'mefistofeles',
 ];
-
-function fireRadial(c: BossCtx, rays: number, speedMul = 1): void {
-  const pos = c.world.get(c.id, Position);
-  const b = c.world.get(c.id, Boss);
-  if (!pos || !b) return;
-  const spin = b.t * 1.1;
-  for (let i = 0; i < rays; i++) {
-    const a = spin + (i / rays) * Math.PI * 2;
-    spawnBullet(
-      c.deps.spawnCtx,
-      pos.x,
-      pos.y,
-      Math.cos(a) * BULLET_SPEED.boss * speedMul,
-      Math.sin(a) * BULLET_SPEED.boss * speedMul,
-      Layer.enemy,
-    );
-  }
-}
-
-function fireAimedFan(c: BossCtx, count: number, spread: number, speedMul = 1): void {
-  const pos = c.world.get(c.id, Position);
-  if (!pos) return;
-  V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-  const base = Math.atan2(aim.y, aim.x);
-  const half = (count - 1) / 2;
-  for (let i = 0; i < count; i++) {
-    const a = base + (i - half) * spread;
-    spawnBullet(
-      c.deps.spawnCtx,
-      pos.x,
-      pos.y + BULLET_SPAWN_OFFSET.boss,
-      Math.cos(a) * BULLET_SPEED.boss * speedMul,
-      Math.sin(a) * BULLET_SPEED.boss * speedMul,
-      Layer.enemy,
-    );
-  }
-}
 
 /**
  * Lucyper Księżycowy — Zone 8 final boss (build plan §9, three phases).
@@ -89,7 +53,7 @@ export const lucyperScript: PhaseScript = {
   fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
     // Cosmic rain: 10-way radial + center anchor.
-    fireRadial(c, 10);
+    fireRadial(c, 10, 1.1);
     const pos = c.world.get(c.id, Position);
     if (!pos) return;
     V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
@@ -114,7 +78,7 @@ export const lucyperScript: PhaseScript = {
     const pattern = SHATTER_CYCLE[idx] ?? 'smok-krzemionkowski';
     switch (pattern) {
       case 'smok-krzemionkowski':
-        fireRadial(c, 6);
+        fireRadial(c, 6, 1.1);
         break;
       case 'borowy-krol':
         fireAimedFan(c, 5, 0.18);
@@ -136,13 +100,13 @@ export const lucyperScript: PhaseScript = {
         break;
       }
       case 'boruta':
-        fireRadial(c, 4, 0.85);
+        fireRadial(c, 4, 1.1, 0.85);
         break;
       case 'baba-jaga':
-        fireRadial(c, 12, 0.9);
+        fireRadial(c, 12, 1.1, 0.9);
         break;
       case 'bazyliszek-warszawski':
-        fireRadial(c, 10, 0.9);
+        fireRadial(c, 10, 1.1, 0.9);
         break;
       case 'mefistofeles':
         fireAimedFan(c, 3, 0.2);

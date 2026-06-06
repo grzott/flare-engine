@@ -8,6 +8,7 @@ import { hexToArgb } from '../../util/hex';
 
 import { BOSS_TUNING_DEFS } from '../../visual-spec/boss-tuning';
 import { THEME_SPEC } from '../../visual-spec/theme';
+import { fireAimedFan } from '../fire-helpers';
 import type { PhaseScript } from './types';
 
 const _t = BOSS_TUNING_DEFS.mefistofeles;
@@ -36,22 +37,7 @@ export const mefistofelesScript: PhaseScript = {
   fire2Cooldown: _t.fire2CooldownSec,
   fire3Cooldown: _t.fire3CooldownSec,
   fire1(c) {
-    // 3-fan of aimed contract scrolls.
-    const pos = c.world.get(c.id, Position);
-    if (!pos) return;
-    V.normalizeOut(c.deps.playerX - pos.x, c.deps.playerY - pos.y, BULLET_SPEED.boss, aim);
-    const base = Math.atan2(aim.y, aim.x);
-    for (let i = -1; i <= 1; i++) {
-      const a = base + i * 0.2;
-      spawnBullet(
-        c.deps.spawnCtx,
-        pos.x,
-        pos.y + BULLET_SPAWN_OFFSET.boss,
-        Math.cos(a) * BULLET_SPEED.boss,
-        Math.sin(a) * BULLET_SPEED.boss,
-        Layer.enemy,
-      );
-    }
+    fireAimedFan(c, 3, 0.2);
   },
   fire2(c) {
     // Two horn-shots ±0.3 rad from aim line.

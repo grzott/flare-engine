@@ -6483,3 +6483,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 173 — 2026-06-06 (scope: game)
+
+**Goal:** CL3 — Spawner config-table
+
+**Touched files**
+- `apps/pan-tvardowski/src/systems/spawner.ts`
+- `apps/pan-tvardowski/tests/snapshots/`
+- `apps/pan-tvardowski/tests/zone-schedules-golden.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

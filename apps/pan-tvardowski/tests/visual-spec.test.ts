@@ -289,7 +289,8 @@ describe('visual-spec — schema canary', () => {
   // Bumped (R2-weatherColor): ZoneFxDef gained optional weatherColor field
   // Bumped (rain-rewrite): ZoneFxDef gained optional density + streakLen
   // Bumped (KG6): 'image' added to ZoneBgKindId + ZoneBgDef image variant (ZoneBgShaderDef | ZoneBgImageDef discriminated union)
-  const SCHEMA_CANARY = '895deeeeca9c39cc2f64b7c72462b71b45d9465daf3707c87cb255be7dded4bb';
+  // Bumped (KG10): 4 new ColorTokenId entries added (violetDeepest, violetStrong, violetAbyss, violetMedium) — additive per schema stability protocol.
+  const SCHEMA_CANARY = 'b9c0a5f83c2029779cf29901b6c795cd48aa58a4145551f8cca15d1ac9595661';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
     const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');

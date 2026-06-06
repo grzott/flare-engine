@@ -135,16 +135,16 @@ describe('zone-fx-wire: dark-vignette does not advance scroll', () => {
 });
 
 describe('zone-fx-wire: weatherColor passthrough', () => {
-  test('Z1 (rain): u.weatherColor equals [0.75, 0.82, 0.90]', () => {
+  test('Z1 (rain): u.weatherColor equals [0.80, 0.76, 0.90]', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.setZoneFxDef(ZONE_FX_DEFS[1]);
-    expect(getComposite(fx).weatherColor).toEqual([0.75, 0.82, 0.9]);
+    expect(getComposite(fx).weatherColor).toEqual([0.8, 0.76, 0.9]);
   });
 
-  test('Z3 (rain): u.weatherColor equals [0.62, 0.78, 0.88]', () => {
+  test('Z3 (rain): u.weatherColor equals [0.72, 0.68, 0.85]', () => {
     const fx = createPanTvardowskiPostFx(null);
     fx.setZoneFxDef(ZONE_FX_DEFS[3]);
-    expect(getComposite(fx).weatherColor).toEqual([0.62, 0.78, 0.88]);
+    expect(getComposite(fx).weatherColor).toEqual([0.72, 0.68, 0.85]);
   });
 
   test('Z2 (sun-shaft, non-rain): u.weatherColor equals [1.0, 1.0, 1.0]', () => {

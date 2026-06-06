@@ -798,7 +798,11 @@ export type ColorTokenId =
   | 'parchmentLight'
   | 'ashGrey'
   | 'crashButtonBg'
-  | 'pureBlack';
+  | 'pureBlack'
+  | 'violetDeepest'
+  | 'violetStrong'
+  | 'violetAbyss'
+  | 'violetMedium';
 
 export interface TypographyValue {
   readonly fontFamily: string;

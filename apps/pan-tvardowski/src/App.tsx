@@ -249,19 +249,32 @@ function AppRoot(): React.ReactElement {
   // useImage is the idiomatic RN-Skia hook for bundled assets (handles
   // dev/release/platform resolution + caching automatically).
   const kenneyAtlasImage = useImage(require('../assets/kenney/zone1.png'));
+  const kenneyAtlasCbImage = useImage(require('../assets/kenney/zone1-cb.png'));
   const kenneyBgImage = useImage(require('../assets/kenney/darkPurple.png'));
 
   // Stable refs so the getImage closure captures a mutable cell rather than
   // a stale render's value. Updated by useEffect whenever the image arrives.
   const kenneyAtlasImageRef = useRef(kenneyAtlasImage);
+  const kenneyAtlasCbImageRef = useRef(kenneyAtlasCbImage);
   const kenneyBgImageRef = useRef(kenneyBgImage);
+  // Stable ref to current settings so getImage can read colorBlindMode without
+  // recreating the closure on every settings change.
+  const settingsRef = useRef(gameState.settings);
 
   useEffect(() => {
     kenneyAtlasImageRef.current = kenneyAtlasImage;
   }, [kenneyAtlasImage]);
   useEffect(() => {
+    kenneyAtlasCbImageRef.current = kenneyAtlasCbImage;
+  }, [kenneyAtlasCbImage]);
+  useEffect(() => {
     kenneyBgImageRef.current = kenneyBgImage;
   }, [kenneyBgImage]);
+  // Keep settingsRef current whenever settings change (controlsTick bump is the
+  // trigger — persistSettings calls setControlsTick which re-renders AppRoot).
+  useEffect(() => {
+    settingsRef.current = gameState.settings;
+  });
 
   // Stable image resolver — closes over the refs (not their values), so each
   // atlas handle's live-image getter reads the current useImage result on every
@@ -269,7 +282,13 @@ function AppRoot(): React.ReactElement {
   // are stable, so the closure never needs recreating.
   const getImage = useMemo<ImageResolver>(() => {
     return (entry) => {
-      if (entry.key === 'kenney-zone1') return kenneyAtlasImageRef.current;
+      if (entry.key === 'kenney-zone1') {
+        if (settingsRef.current.colorBlindMode) {
+          const cb = kenneyAtlasCbImageRef.current;
+          if (cb !== null) return cb;
+        }
+        return kenneyAtlasImageRef.current;
+      }
       if (entry.key === 'kenney-bg') return kenneyBgImageRef.current;
       return null;
     };

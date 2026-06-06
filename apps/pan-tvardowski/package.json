@@ -26,7 +26,10 @@
     "bench:cloud": "bash ../../scripts/perf/bench-cloud.sh --app pan-tvardowski",
     "bench:local": "bash ../../scripts/perf/bench-local.sh --app pan-tvardowski",
     "import:kenney": "bun run scripts/import-kenney.mjs",
+    "recolor:kenney": "bun run scripts/recolor-kenney.mjs",
+    "recolor:kenney-cb": "bun run scripts/recolor-kenney.mjs --cb",
     "pack:kenney": "bun run scripts/pack-kenney.mjs",
+    "pack:kenney-cb": "bun run scripts/pack-kenney.mjs --cb",
     "copy:kenney-controls": "bun run scripts/copy-kenney-controls.mjs",
     "eas-build-post-install": "cd ../.. && bun install && bun run build",
     "audit:kenney-palette": "bun run scripts/audit-kenney-palette.ts"

@@ -137,12 +137,12 @@ describe('ZONE_FX_DEFS — weatherColor field', () => {
     expect(violations).toEqual([]);
   });
 
-  test('Z1 weatherColor exact pin [0.75, 0.82, 0.90]', () => {
-    expect(ZONE_FX_DEFS[1].weatherColor).toEqual([0.75, 0.82, 0.9]);
+  test('Z1 weatherColor exact pin [0.80, 0.76, 0.90]', () => {
+    expect(ZONE_FX_DEFS[1].weatherColor).toEqual([0.8, 0.76, 0.9]);
   });
 
-  test('Z3 weatherColor exact pin [0.62, 0.78, 0.88]', () => {
-    expect(ZONE_FX_DEFS[3].weatherColor).toEqual([0.62, 0.78, 0.88]);
+  test('Z3 weatherColor exact pin [0.72, 0.68, 0.85]', () => {
+    expect(ZONE_FX_DEFS[3].weatherColor).toEqual([0.72, 0.68, 0.85]);
   });
 
   test('non-rain zones have weatherColor === undefined', () => {

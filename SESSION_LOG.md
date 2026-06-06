@@ -6381,3 +6381,38 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 169 — 2026-06-05 (scope: game)
+
+**Goal:** KG10 — Game: recolor + harmonize everything (PNG/uniform swap only)
+
+**Touched files**
+- `apps/pan-tvardowski/.gitignore`
+- `apps/pan-tvardowski/assets/kenney/zone1-cb.json`
+- `apps/pan-tvardowski/assets/kenney/zone1-cb.png`
+- `apps/pan-tvardowski/assets/kenney/zone1.png`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/audit-kenney-palette.ts`
+- `apps/pan-tvardowski/scripts/pack-kenney.mjs`
+- `apps/pan-tvardowski/scripts/recolor-kenney.mjs`
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/visual-spec/kenney-palette.ts`
+- `apps/pan-tvardowski/src/visual-spec/ships.ts`
+- `apps/pan-tvardowski/src/visual-spec/theme.ts`
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-fx.ts`
+- `apps/pan-tvardowski/tests/contrast-zones.test.ts`
+- `apps/pan-tvardowski/tests/recolor-math.test.ts`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+- `apps/pan-tvardowski/tests/vs-theme.test.ts`
+- `apps/pan-tvardowski/tests/zone-fx-spec.test.ts`
+- `apps/pan-tvardowski/tests/zone-fx-wire.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

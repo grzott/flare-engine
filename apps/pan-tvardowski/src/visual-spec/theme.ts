@@ -84,6 +84,10 @@ export const THEME_SPEC: ThemeSpec = {
     ashGrey: '#A89B8C',
     crashButtonBg: '#8A2F2F',
     pureBlack: '#000000',
+    violetDeepest: '#4A1270',
+    violetStrong: '#6A28A8',
+    violetAbyss: '#2A0840',
+    violetMedium: '#7020B8',
   } satisfies Record<ColorTokenId, `#${string}`>,
 
   typography: {

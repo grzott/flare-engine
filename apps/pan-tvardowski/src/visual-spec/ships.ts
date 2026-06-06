@@ -236,12 +236,12 @@ export const SHIP_DEFS: readonly ShipDef[] = [
   {
     id: 'boruta',
     hullPreset: 'trapeze',
-    hullColor: '#4A1270',
+    hullColor: c.violetDeepest,
     weaponCount: 2,
     weaponRatio: '1:12',
     weaponColor: c.violetMid,
-    engineColor: '#4A1270',
-    exhaustColor: '#4A1270',
+    engineColor: c.violetDeepest,
+    exhaustColor: c.violetDeepest,
     glow: 'hazard',
     hullStroke: c.violetMid,
     hullStrokeWidth: 2,
@@ -249,7 +249,7 @@ export const SHIP_DEFS: readonly ShipDef[] = [
   {
     id: 'baba-jaga',
     hullPreset: 'half-circle',
-    hullColor: '#6A28A8',
+    hullColor: c.violetStrong,
     weaponCount: 2,
     weaponRatio: '1:12',
     weaponColor: c.violetDark,
@@ -260,7 +260,7 @@ export const SHIP_DEFS: readonly ShipDef[] = [
   {
     id: 'bazyliszek-warszawski',
     hullPreset: 'eighth-moon',
-    hullColor: '#9D3DFF',
+    hullColor: c.purpleBright,
     weaponCount: 2,
     weaponRatio: '1:12',
     weaponColor: c.violetMid,
@@ -271,7 +271,7 @@ export const SHIP_DEFS: readonly ShipDef[] = [
   {
     id: 'mefistofeles',
     hullPreset: 'donut',
-    hullColor: '#2A0840',
+    hullColor: c.violetAbyss,
     weaponCount: 2,
     weaponRatio: '1:12',
     weaponColor: c.violetMid,
@@ -282,7 +282,7 @@ export const SHIP_DEFS: readonly ShipDef[] = [
   {
     id: 'lucyper-ksiezycowy',
     hullPreset: 'half-donut',
-    hullColor: '#7020B8',
+    hullColor: c.violetMedium,
     weaponCount: 2,
     weaponRatio: '1:12',
     weaponColor: c.violetMid,

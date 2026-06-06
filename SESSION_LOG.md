@@ -6458,3 +6458,28 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 172 — 2026-06-06 (scope: game)
+
+**Goal:** CL2 — Boss fire-pattern helpers
+
+**Touched files**
+- `apps/pan-tvardowski/src/systems/boss/baba-jaga.ts`
+- `apps/pan-tvardowski/src/systems/boss/bazyliszek.ts`
+- `apps/pan-tvardowski/src/systems/boss/borowy.ts`
+- `apps/pan-tvardowski/src/systems/boss/boruta.ts`
+- `apps/pan-tvardowski/src/systems/boss/lucyper.ts`
+- `apps/pan-tvardowski/src/systems/boss/mefistofeles.ts`
+- `apps/pan-tvardowski/src/systems/boss/shared.ts`
+- `apps/pan-tvardowski/src/systems/fire-helpers.ts`
+- `apps/pan-tvardowski/src/systems/miniboss.ts`
+- `apps/pan-tvardowski/tests/boss-fire-helpers.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

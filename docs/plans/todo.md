@@ -12,7 +12,6 @@ Goal: PT becomes its own GitHub repo; flare-engine keeps only the engine package
 
 **Phase 1 — cleanup (ordered by value÷risk):**
 
-- **CL2 — Boss fire-pattern helpers (top DRY).** Extract `fireRadial` / `fireAimedFan` / summon-loop into `systems/boss/shared.ts`, apply across all 8 boss files + `miniboss.ts`; dedup `clearEnemyBullets` (defined ×2); add `isEntityInvulnerable` (used ×3). ~150 LOC out. Bullet spawns must be byte-identical (deterministic per-pattern tests).
 - **CL3 — Spawner config-table.** `buildZone1..8Schedule` (8 near-identical fns) → one generic builder + `ZONE_SCHEDULE_DEFS`. **Balance-frozen — schedules byte-identical**; snapshot current output, lock with the `zoneN-spawner` deterministic tests. 266→~120 LOC. *(Highest balance-drift risk — gate hard.)*
 - **CL4 — Shared HUD primitives.** 5× `cloneState()` → `useHudState(selector)` hook; 6× `ThemeProvider+FocusProvider` → `<HudPanelScaffold>`; ×5 subscription boilerplate folded into the hook.
 - **CL5 — Service-layer DRY.** `save/store.ts` ×10 persist calls → `persist()` helper; new `util/clamp.ts`; deep-links router zone-map table + reuse engine URL parsing.

@@ -12,7 +12,6 @@ Goal: PT becomes its own GitHub repo; flare-engine keeps only the engine package
 
 **Phase 1 — cleanup (ordered by value÷risk):**
 
-- **CL4 — Shared HUD primitives.** 5× `cloneState()` → `useHudState(selector)` hook; 6× `ThemeProvider+FocusProvider` → `<HudPanelScaffold>`; ×5 subscription boilerplate folded into the hook.
 - **CL5 — Service-layer DRY.** `save/store.ts` ×10 persist calls → `persist()` helper; new `util/clamp.ts`; deep-links router zone-map table + reuse engine URL parsing.
 - **CL6 — Split `scenes/play.ts` (1232).** Pure extraction → play-state / play-setup / play-update (the 640-line `onUpdate`) / play-hud-sync / play-postfx-coordinator / play-benchmark.
 - **CL7 — Split `App.tsx` (747).** → App / AppRoot / bootstrap.ts / ControlsController. Also derive `GATED_ZONES` from `config/zones.ts` `requiresEntitlement` (single source for the 3-free/5-paid split).
@@ -29,7 +28,7 @@ Goal: PT becomes its own GitHub repo; flare-engine keeps only the engine package
 - **SP4 — Slim flare-engine + cross-ref.** Remove `apps/pan-tvardowski`; root workspaces→`["packages/*","benchmarks"]`; README "Pan Tvardowski" section + store/GitHub links; `create-flare-app` README "See Also → PT"; update `docs/plans/*`.
 - **SP5 — Cross-repo compat guard.** Nightly flare-engine CI checks out PT + runs its tests against the latest engine.
 
-_Cleanup deferred (not in targeted scope — revisit after extraction): ISP segregation of the fat `BossDeps` (13 optional callbacks) + `PlaySceneDeps` prop-bags; DIP injection of boss tuning + bg effect factories; lifting game-agnostic utilities (save type-guards, `audio/synth`, `a11y/reduced-motion`) into `@flare-engine/*`._
+_Cleanup deferred (not in targeted scope — revisit after extraction): ISP segregation of the fat `BossDeps` (13 optional callbacks) + `PlaySceneDeps` prop-bags; DIP injection of boss tuning + bg effect factories; lifting game-agnostic utilities (save type-guards, `audio/synth`, `a11y/reduced-motion`) into `@flare-engine/*`; `Hud.tsx`'s side-effecting subscription (clears `redFlash`/`comboHit` one-frame flags) kept bespoke, out of `useHudState` (CL4 #174)._
 
 _(Prior arcs closed: Postfx tail (shadow-rim cut #152 + high-DPI scene texture #153, A54-verified 2026-06-01) at session 2026-05-31; Presentation polish BG/FX (B1→B3→B4→B5) at session 2026-05-30; Tier-E perf benchmark arc (8 rows, E1–E8) at session #146; 100% visual-spec single-source-of-truth at session #137.)_
 

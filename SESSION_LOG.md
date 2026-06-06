@@ -6501,3 +6501,28 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 174 — 2026-06-06 (scope: game)
+
+**Goal:** CL4 — Shared HUD primitives
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/AchievementsOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/BootOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/CodexOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/DialogueOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/HudPanelScaffold.tsx`
+- `apps/pan-tvardowski/src/hud/InventoryOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/ShopOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/useHudState.ts`
+- `apps/pan-tvardowski/tests/hud-primitives.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

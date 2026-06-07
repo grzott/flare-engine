@@ -1,3 +1,4 @@
+import { clamp } from '@flare-engine/math';
 import { type StorageAdapter, createMemoryAdapter, createMmkvAdapter } from '@flare-engine/storage';
 import type { ZoneId } from '../events';
 import { isBenchSaveMuted } from '../perf/bench-mode';
@@ -64,7 +65,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     state = file;
     gameState.settings = file.settings;
     if (file.activeSlot !== null) {
-      gameState.activeSlot = Math.max(0, Math.min(2, file.activeSlot)) as 0 | 1 | 2;
+      gameState.activeSlot = clamp(file.activeSlot, 0, 2) as 0 | 1 | 2;
     }
   }
 
@@ -82,10 +83,14 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     };
   }
 
+  async function persist(): Promise<void> {
+    await a.set(KEY, JSON.stringify(state));
+  }
+
   async function write(): Promise<void> {
     if (isBenchSaveMuted()) return;
     state = snapshot();
-    await a.set(KEY, JSON.stringify(state));
+    await persist();
   }
 
   return {
@@ -96,19 +101,19 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     },
     persist: write,
     async selectSlot(index) {
-      const clamped = Math.max(0, Math.min(2, index)) as 0 | 1 | 2;
+      const clamped = clamp(index, 0, 2) as 0 | 1 | 2;
       state = { ...state, activeSlot: clamped };
       gameState.activeSlot = clamped;
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     async createSlot(index) {
-      const clamped = Math.max(0, Math.min(2, index)) as 0 | 1 | 2;
+      const clamped = clamp(index, 0, 2) as 0 | 1 | 2;
       const slots = state.slots.slice();
       slots[clamped] = createSlot(clamped);
       state = { ...state, slots, activeSlot: clamped };
       gameState.activeSlot = clamped;
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     async commitRun(score, victory, zoneReached) {
@@ -117,7 +122,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       const current = slots[idx] ?? createSlot(idx);
       slots[idx] = mergeRun(current, score, victory, zoneReached ?? current.zoneReached);
       state = { ...state, slots, activeSlot: idx };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     getSlot(index) {
@@ -133,7 +138,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async markIntroSeen() {
       if (state.introSeen) return;
       state = { ...state, introSeen: true };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     codexUnlocked() {
@@ -142,7 +147,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async unlockCodexEntry(id) {
       if (state.codexUnlocked.includes(id)) return;
       state = { ...state, codexUnlocked: [...state.codexUnlocked, id] };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     entitlements() {
@@ -151,7 +156,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async grantEntitlement(key) {
       if (state.entitlements.includes(key)) return;
       state = { ...state, entitlements: [...state.entitlements, key] };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     zoneStats(zoneId) {
@@ -165,7 +170,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
       const current = slots[idx] ?? createSlot(idx);
       slots[idx] = mergeZoneOutcome(current, zoneId, outcome);
       state = { ...state, slots };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     unlockedAchievements() {
@@ -174,7 +179,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     async unlockAchievement(id) {
       if (state.unlockedAchievements.includes(id)) return;
       state = { ...state, unlockedAchievements: [...state.unlockedAchievements, id] };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
     privacy() {
@@ -182,7 +187,7 @@ export function createSaveStore(adapter?: StorageAdapter): SaveStore {
     },
     async setPrivacy(p) {
       state = { ...state, privacy: p };
-      await a.set(KEY, JSON.stringify(state));
+      await persist();
       notifyStateChanged();
     },
   };

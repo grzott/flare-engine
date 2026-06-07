@@ -1,4 +1,5 @@
 import type { LocalizationManager } from '@flare-engine/localization';
+import { clamp } from '@flare-engine/math';
 import { LinearGradient } from 'expo-linear-gradient';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -239,7 +240,7 @@ export function Hud({ localization, actions, insets, pauseIcon }: HudProps): Rea
                 end={{ x: 1, y: 0 }}
                 style={[
                   styles.hpBarFill,
-                  { width: `${Math.max(0, Math.min(1, s.playerHp / s.playerHpMax)) * 100}%` },
+                  { width: `${clamp(s.playerHp / s.playerHpMax, 0, 1) * 100}%` },
                 ]}
               />
             </View>
@@ -282,7 +283,7 @@ export function Hud({ localization, actions, insets, pauseIcon }: HudProps): Rea
                   style={[
                     styles.bossBarFill,
                     {
-                      width: `${Math.max(0, Math.min(1, s.bossHp / s.bossHpMax)) * 100}%`,
+                      width: `${clamp(s.bossHp / s.bossHpMax, 0, 1) * 100}%`,
                     },
                   ]}
                 />
@@ -304,7 +305,7 @@ export function Hud({ localization, actions, insets, pauseIcon }: HudProps): Rea
                   style={[
                     styles.minibossBarFill,
                     {
-                      width: `${Math.max(0, Math.min(1, s.minibossHp / s.minibossHpMax)) * 100}%`,
+                      width: `${clamp(s.minibossHp / s.minibossHpMax, 0, 1) * 100}%`,
                     },
                   ]}
                 />

@@ -1,3 +1,4 @@
+import { clamp } from '@flare-engine/math';
 import { defineMigrationChain, runMigrations } from '@flare-engine/storage';
 import type { ZoneId } from '../events';
 import type { ControlsSettings, FireButtonSide, JoystickSide, Settings } from '../state';
@@ -80,10 +81,7 @@ function parseControls(v: unknown): ControlsSettings {
 }
 
 function clamp01(n: number): number {
-  if (!Number.isFinite(n)) return 1;
-  if (n < 0) return 0;
-  if (n > 1) return 1;
-  return n;
+  return Number.isFinite(n) ? clamp(n, 0, 1) : 1;
 }
 
 export function parseSettings(v: unknown): Settings {
@@ -246,7 +244,7 @@ function structuralParse(o: Record<string, unknown>): SaveFile {
   const rawActiveSlot = o.activeSlot;
   const activeSlot =
     typeof rawActiveSlot === 'number' && Number.isFinite(rawActiveSlot)
-      ? Math.max(0, Math.min(2, Math.floor(rawActiveSlot)))
+      ? clamp(Math.floor(rawActiveSlot), 0, 2)
       : null;
 
   const introSeen = typeof o.introSeen === 'boolean' ? o.introSeen : false;

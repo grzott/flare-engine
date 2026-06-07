@@ -1,5 +1,6 @@
 import type { EntitlementStore } from '@flare-engine/iap';
 import type { LocalizationManager } from '@flare-engine/localization';
+import { clamp } from '@flare-engine/math';
 import { Button, Label, Panel } from '@flare-engine/ui';
 import { RestorePurchasesButton } from '@flare-engine/ui-shop';
 import type React from 'react';
@@ -242,7 +243,7 @@ function SettingsView({
     stateChanged.emit();
   };
   const bumpVolume = (key: 'masterVolume' | 'musicVolume' | 'sfxVolume', delta: number): void => {
-    const next = Math.max(0, Math.min(1, Math.round((settings[key] + delta) * 10) / 10));
+    const next = clamp(Math.round((settings[key] + delta) * 10) / 10, 0, 1);
     gameState.settings[key] = next;
     onVolumesChange({
       master: gameState.settings.masterVolume,

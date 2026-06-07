@@ -3,6 +3,7 @@ import {
   DeepLinkRouter,
   createMemorySource,
   createNativeSource,
+  parseUrl,
 } from '@flare-engine/deep-links';
 import type { DeepLinkSource, LinkingLike } from '@flare-engine/deep-links';
 import type { ZoneId } from '../events';
@@ -50,16 +51,20 @@ export function createPanTvardowskiDeepLinks(
 
   const manager = new DeepLinkManager({ router: zoneRouter, source });
 
+  const ZONE_MAP: Record<string, ZoneId> = {
+    '1': 'z1',
+    '2': 'z2',
+    '3': 'z3',
+    '4': 'z4',
+    '5': 'z5',
+    '6': 'z6',
+    '7': 'z7',
+    '8': 'z8',
+  };
+
   function dispatchUrl(url: string): void {
-    // Determine the URL host so we can separate zone and bench links.
-    // @flare-engine/deep-links parseUrl is internal; replicate the extraction.
-    const schemeIdx = url.indexOf('://');
-    let host = '';
-    if (schemeIdx !== -1) {
-      const afterScheme = url.slice(schemeIdx + 3);
-      const slashIdx = afterScheme.indexOf('/');
-      host = slashIdx === -1 ? afterScheme : afterScheme.slice(0, slashIdx);
-    }
+    const parsed = parseUrl(url);
+    const host = parsed?.host ?? '';
 
     if (host === 'bench') {
       const benchMatch = benchRouter.match(url);
@@ -78,36 +83,9 @@ export function createPanTvardowskiDeepLinks(
       const zoneMatch = zoneRouter.match(url);
       if (zoneMatch?.scene === ZONE_SCENE) {
         const n = String(zoneMatch.params.n ?? '');
-        if (n === '1') {
-          handlers.onZoneRequest('z1');
-          return;
-        }
-        if (n === '2') {
-          handlers.onZoneRequest('z2');
-          return;
-        }
-        if (n === '3') {
-          handlers.onZoneRequest('z3');
-          return;
-        }
-        if (n === '4') {
-          handlers.onZoneRequest('z4');
-          return;
-        }
-        if (n === '5') {
-          handlers.onZoneRequest('z5');
-          return;
-        }
-        if (n === '6') {
-          handlers.onZoneRequest('z6');
-          return;
-        }
-        if (n === '7') {
-          handlers.onZoneRequest('z7');
-          return;
-        }
-        if (n === '8') {
-          handlers.onZoneRequest('z8');
+        const zone = ZONE_MAP[n];
+        if (zone) {
+          handlers.onZoneRequest(zone);
           return;
         }
       }

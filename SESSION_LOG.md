@@ -6547,3 +6547,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 176 — 2026-06-07 (scope: game)
+
+**Goal:** CL6 — Split scenes/play.ts (1232)
+
+**Touched files**
+- `apps/pan-tvardowski/src/scenes/play.ts`
+- `apps/pan-tvardowski/src/scenes/play/`
+- `apps/pan-tvardowski/tests/pause-and-settings-flow.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -6644,3 +6644,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 181 — 2026-06-07 (scope: game)
+
+**Goal:** CL11 — Split remaining GOD files
+
+**Touched files**
+- `apps/pan-tvardowski/src/bg/create-zone-bg.ts`
+- `apps/pan-tvardowski/src/bg/effect-builder.ts`
+- `apps/pan-tvardowski/src/bg/image-bg.ts`
+- `apps/pan-tvardowski/src/bg/sprite-bg.ts`
+- `apps/pan-tvardowski/src/bg/types.ts`
+- `apps/pan-tvardowski/src/fx/explosion-degrader.ts`
+- `apps/pan-tvardowski/src/fx/explosion-particles.ts`
+- `apps/pan-tvardowski/src/fx/explosions.ts`
+- `apps/pan-tvardowski/src/fx/spiral-pool.ts`
+- `apps/pan-tvardowski/src/shape-atlas.ts`
+- `apps/pan-tvardowski/src/shape-atlas/`
+- `apps/pan-tvardowski/tests/shape-atlas-frame-order.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

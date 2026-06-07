@@ -6671,3 +6671,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 182 — 2026-06-07 (scope: game)
+
+**Goal:** Zone-1 polish — player FX, hit/kill shake+explosions, bomb FX, boss HP -50%
+
+**Touched files**
+- `apps/pan-tvardowski/src/config/gameplay.ts`
+- `apps/pan-tvardowski/src/hud/Hud.styles.ts`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/scenes/play/hud-sync.ts`
+- `apps/pan-tvardowski/src/scenes/play/state.ts`
+- `apps/pan-tvardowski/src/scenes/play/types.ts`
+- `apps/pan-tvardowski/src/scenes/play/update.ts`
+- `apps/pan-tvardowski/src/state.ts`
+- `apps/pan-tvardowski/src/systems/bomb.ts`
+- `apps/pan-tvardowski/src/systems/collision.ts`
+- `apps/pan-tvardowski/src/visual-spec/zone-1.ts`
+- `apps/pan-tvardowski/tests/zone1-polish.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

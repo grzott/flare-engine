@@ -6586,3 +6586,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 178 — 2026-06-07 (scope: game)
+
+**Goal:** CL8 — Split visual-spec/types.ts (841)
+
+**Touched files**
+- `apps/pan-tvardowski/src/visual-spec/types.ts`
+- `apps/pan-tvardowski/src/visual-spec/types/`
+- `apps/pan-tvardowski/tests/visual-spec.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

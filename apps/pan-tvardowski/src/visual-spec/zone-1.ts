@@ -44,7 +44,7 @@ export const zone1: ZoneVisualSpec = {
   ],
   boss: {
     id: 'smok-krzemionkowski',
-    hpTotal: 800,
+    hpTotal: 400,
     phases: [
       {
         phase: 1,

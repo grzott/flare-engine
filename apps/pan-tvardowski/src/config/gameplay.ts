@@ -129,8 +129,8 @@ export const BULLET_SPAWN_OFFSET = {
   boss: 36,
 };
 
-/** Smok Krzemionkowski HP per phase (build plan §9). */
-export const SMOK_PHASE_HP = 400;
+/** Smok Krzemionkowski HP per phase (build plan §9). Zone-1 polish: -50%. */
+export const SMOK_PHASE_HP = 200;
 export const SMOK_HP_MAX = SMOK_PHASE_HP * 2;
 
 /** Borowy Król HP per phase (build plan §9). */

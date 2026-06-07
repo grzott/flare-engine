@@ -1,5 +1,23 @@
 import { describe, expect, test } from 'bun:test';
+import { GATED_ZONES } from '../src/iap/zone-gate';
 import { SCENE_KEYS } from '../src/scene-keys';
+
+describe('GATED_ZONES derivation', () => {
+  test('contains exactly z4, z5, z6, z7, z8', () => {
+    expect(GATED_ZONES.has('z4')).toBe(true);
+    expect(GATED_ZONES.has('z5')).toBe(true);
+    expect(GATED_ZONES.has('z6')).toBe(true);
+    expect(GATED_ZONES.has('z7')).toBe(true);
+    expect(GATED_ZONES.has('z8')).toBe(true);
+    expect(GATED_ZONES.size).toBe(5);
+  });
+
+  test('z1, z2, z3 are not members', () => {
+    expect(GATED_ZONES.has('z1')).toBe(false);
+    expect(GATED_ZONES.has('z2')).toBe(false);
+    expect(GATED_ZONES.has('z3')).toBe(false);
+  });
+});
 
 describe('scene-registry', () => {
   test('SCENE_KEYS has length 12 and includes boot, menu, play', () => {

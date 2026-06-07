@@ -6526,3 +6526,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 175 — 2026-06-07 (scope: game)
+
+**Goal:** CL5 — Service-layer DRY
+
+**Touched files**
+- `apps/pan-tvardowski/src/deep-links/router.ts`
+- `apps/pan-tvardowski/src/hud/Hud.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/save/migrate.ts`
+- `apps/pan-tvardowski/src/save/store.ts`
+- `apps/pan-tvardowski/tests/deep-links.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

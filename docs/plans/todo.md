@@ -12,7 +12,6 @@ Goal: PT becomes its own GitHub repo; flare-engine keeps only the engine package
 
 **Phase 1 — cleanup (ordered by value÷risk):**
 
-- **CL5 — Service-layer DRY.** `save/store.ts` ×10 persist calls → `persist()` helper; new `util/clamp.ts`; deep-links router zone-map table + reuse engine URL parsing.
 - **CL6 — Split `scenes/play.ts` (1232).** Pure extraction → play-state / play-setup / play-update (the 640-line `onUpdate`) / play-hud-sync / play-postfx-coordinator / play-benchmark.
 - **CL7 — Split `App.tsx` (747).** → App / AppRoot / bootstrap.ts / ControlsController. Also derive `GATED_ZONES` from `config/zones.ts` `requiresEntitlement` (single source for the 3-free/5-paid split).
 - **CL8 — Split `visual-spec/types.ts` (841).** → 7 type modules + a `types.ts` barrel re-export (no consumer import changes); dedup `ScreenSection`/`OverlaySection`.

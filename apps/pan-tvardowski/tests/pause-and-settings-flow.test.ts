@@ -87,7 +87,10 @@ describe('play.ts pause gate — anti-regression source check', () => {
    * after the dialogue gate, mirroring the dialogue precedent.
    */
   test('scenes/play.ts onUpdate gates on gameState.paused', () => {
-    const playSrc = readFileSync(join(__dirname, '..', 'src', 'scenes', 'play.ts'), 'utf8');
+    const playSrc = readFileSync(
+      join(__dirname, '..', 'src', 'scenes', 'play', 'update.ts'),
+      'utf8',
+    );
     // Dialogue gate must still be the first early-return.
     const dialogueIdx = playSrc.indexOf('if (gameState.dialogue !== null) {');
     expect(dialogueIdx, 'dialogue gate missing in play.ts onUpdate').toBeGreaterThan(0);

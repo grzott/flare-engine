@@ -6565,3 +6565,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 177 — 2026-06-07 (scope: game)
+
+**Goal:** CL7 — Split App.tsx (747)
+
+**Touched files**
+- `apps/pan-tvardowski/src/App.tsx`
+- `apps/pan-tvardowski/src/AppRoot.tsx`
+- `apps/pan-tvardowski/src/ControlsController.tsx`
+- `apps/pan-tvardowski/src/bootstrap.ts`
+- `apps/pan-tvardowski/src/iap/zone-gate.ts`
+- `apps/pan-tvardowski/tests/app-split.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

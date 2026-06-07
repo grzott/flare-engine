@@ -6604,3 +6604,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 179 — 2026-06-07 (scope: game)
+
+**Goal:** CL9 — Split hud/MenuOverlay.tsx (529)
+
+**Touched files**
+- `apps/pan-tvardowski/src/hud/CreditsView.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.tsx`
+- `apps/pan-tvardowski/src/hud/MenuOverlay.types.ts`
+- `apps/pan-tvardowski/src/hud/MenuView.tsx`
+- `apps/pan-tvardowski/src/hud/SaveSelectView.tsx`
+- `apps/pan-tvardowski/src/hud/SettingsView.tsx`
+- `apps/pan-tvardowski/src/hud/useSettingsHandlers.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,4 +1,4 @@
-import { periodicTween, tween } from '@flare-engine/animation';
+import { tween } from '@flare-engine/animation';
 import type { GameContextValue } from '@flare-engine/engine';
 import { Position } from '@flare-engine/engine';
 import { easeInCubic, easeOutBack, easeOutCubic, easeOutExpo } from '@flare-engine/math';
@@ -65,7 +65,7 @@ export function initState(
     exhaustQuery: ctx.world.query(Exhaust),
     explosionFireQuery: ctx.world.query(ExplosionFire),
     bounds: { width: 360, height: 640 },
-    pendingShake: false,
+    pendingShake: null,
     viewportReady: false,
     zoneBg: null,
     lastPlayerHp: PLAYER_HP_MAX,
@@ -74,7 +74,6 @@ export function initState(
     bossBarTween: { ...tween(0, 1, 0.6, easeOutExpo), done: true },
     gameOverTween: { ...tween(0, 1, 1.2, easeInCubic), done: true },
     comboPulseTween: { ...tween(1, 1.18, 0.12, easeOutBack), done: true },
-    sigilTween: periodicTween(0.4, 1.0, 2.4),
     slowDownTween: { ...tween(1.0, 0.3, 0.8, easeInCubic), done: true },
     recoveryTween: { ...tween(0.3, 1.0, 0.4, easeOutCubic), done: true },
   };
@@ -82,8 +81,11 @@ export function initState(
   const handlePair = (pair: { entityA: number; entityB: number }): void => {
     if (state.disposed) return;
     resolveCollision(ctx.world, state.coll, pair.entityA, pair.entityB, {
-      requestShake: () => {
-        state.pendingShake = true;
+      requestShake: (level: 'x1' | 'x2') => {
+        // Take the stronger shake if multiple events fire in one frame.
+        if (state.pendingShake !== 'x2') {
+          state.pendingShake = level;
+        }
         playSfx(audioRef?.current, 'hit');
       },
     });

@@ -1,7 +1,6 @@
-import { updatePeriodicTween, updateTween } from '@flare-engine/animation';
+import { updateTween } from '@flare-engine/animation';
 import type { GameContextValue } from '@flare-engine/engine';
 import { Sprite } from '@flare-engine/render';
-import { sigilOpacity } from '../../a11y/reduced-motion';
 import { Boss } from '../../components';
 import { gameState, notifyStateChanged } from '../../state';
 import { computeBossStatus } from '../../systems/boss';
@@ -42,19 +41,17 @@ export function syncHudState(s: PlayState, ctx: GameContextValue, dt: number): v
     }
   }
 
-  // Sigil pulse: advance periodicTween or write static value under reduce-motion.
+  // Keep player sprite at constant full opacity — no sigil pulse.
   {
-    const reducedMotion = gameState.settings.reducedMotion;
-    let nextSigil: number;
-    if (reducedMotion) {
-      nextSigil = sigilOpacity(true);
-    } else {
-      nextSigil = updatePeriodicTween(s.sigilTween, dt);
-    }
     const playerSprite = ctx.world.get(s.playerId, Sprite);
-    if (playerSprite) playerSprite.alpha = nextSigil;
-    if (Math.abs(gameState.playerSigilOpacity - nextSigil) > 0.005) {
-      gameState.playerSigilOpacity = nextSigil;
+    if (playerSprite) playerSprite.alpha = 1.0;
+  }
+
+  // Publish bomb flash alpha to gameState for white-flash HUD overlay.
+  {
+    const nextFlash = s.flash.alpha * 0.6;
+    if (Math.abs(gameState.bombFlashAlpha - nextFlash) > 0.01) {
+      gameState.bombFlashAlpha = nextFlash;
       notifyStateChanged();
     }
   }

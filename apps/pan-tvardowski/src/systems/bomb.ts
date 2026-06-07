@@ -1,8 +1,7 @@
 import type { Query, World } from '@flare-engine/engine';
 import type { CollisionWorld } from '@flare-engine/physics';
-import { Boss, Enemy, Hp, Miniboss } from '../components';
+import { Boss, Hp, Miniboss } from '../components';
 import { bombButtonState, gameState, notifyStateChanged } from '../state';
-import { destroyEntity } from './entity-ops';
 
 export interface BombFlashState {
   alpha: number;
@@ -35,16 +34,12 @@ export function processBomb(world: World, dt: number, deps: BombDeps): void {
     deps.flash.targetAlpha = 1;
     deps.onFired?.();
 
-    const toDrop: number[] = [];
     for (const id of deps.enemyQuery) {
       const hp = world.get(id, Hp);
-      const e = world.get(id, Enemy);
-      if (!hp || !e) continue;
-      gameState.score += e.scoreValue;
-      gameState.runStats.kills[e.pattern] += 1;
-      toDrop.push(id);
+      if (!hp) continue;
+      // Setting hp to 0 lets cleanup → onEnemyKilled handle score, combo, FX and split.
+      hp.current = 0;
     }
-    for (const id of toDrop) destroyEntity(world, deps.coll, id);
 
     for (const id of deps.bossQuery) {
       const b = world.get(id, Boss);

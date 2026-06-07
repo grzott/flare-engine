@@ -242,10 +242,11 @@ export interface GameState {
    */
   settingsOrigin: 'menu' | 'pause';
   /**
-   * Player sigil opacity driven by `periodicTween(0.4, 1.0, 2.4)` each frame.
-   * Reduced-motion: static 0.7 (dim-70% rule). Default 1.0 at boot / non-play scenes.
+   * Bomb white-flash overlay alpha, 0..0.6 range (peak 0.6).
+   * Published from hud-sync each frame the flash is non-zero.
+   * HUD renders a full-screen white overlay at this opacity.
    */
-  playerSigilOpacity: number;
+  bombFlashAlpha: number;
 }
 
 export const gameState: GameState = {
@@ -291,7 +292,7 @@ export const gameState: GameState = {
   gameOverOpacity: 0,
   paused: false,
   settingsOrigin: 'menu',
-  playerSigilOpacity: 1.0,
+  bombFlashAlpha: 0,
 };
 
 export const stateChanged = new Signal<void>();
@@ -356,7 +357,7 @@ export function resetGameState(): void {
   gameState.gameOverOpacity = 0;
   gameState.paused = false;
   gameState.settingsOrigin = 'menu';
-  gameState.playerSigilOpacity = 1.0;
+  gameState.bombFlashAlpha = 0;
   joystickState.dx = 0;
   joystickState.dy = 0;
   joystickState.active = false;

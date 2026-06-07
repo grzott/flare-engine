@@ -1,4 +1,4 @@
-import type { PeriodicTween, Tween } from '@flare-engine/animation';
+import type { Tween } from '@flare-engine/animation';
 import type { GameContextValue } from '@flare-engine/engine';
 import type { CollisionWorld } from '@flare-engine/physics';
 import type { ZoneBgController } from '../../bg/create-zone-bg';
@@ -74,7 +74,8 @@ export interface PlayState {
   exhaustQuery: ReturnType<GameContextValue['world']['query']>;
   explosionFireQuery: ReturnType<GameContextValue['world']['query']>;
   bounds: { width: number; height: number };
-  pendingShake: boolean;
+  /** Pending shake level for this frame. null = none; 'x1' = bullet hit (6, 0.2); 'x2' = ship collision or bomb (12, 0.4). Stronger wins. */
+  pendingShake: 'x1' | 'x2' | null;
   viewportReady: boolean;
   zoneBg: ZoneBgController | null;
   /** Previous-frame playerHp — used to detect damage and flash postfx. */
@@ -90,8 +91,6 @@ export interface PlayState {
   gameOverTween: Tween;
   /** Folio XIV M1 item 5: combo-pulse tween (easeOutBack 120 ms). */
   comboPulseTween: Tween;
-  /** Session #172: player sigil opacity tween — sineInOut 2.4 s period, 0.4..1.0. */
-  sigilTween: PeriodicTween;
   /** Session #173: Tier-V cataclysm slow-mo ramp — 1.0→0.3 over 0.8 s (easeInCubic). */
   slowDownTween: Tween;
   /** Session #173: Tier-V cataclysm recovery ramp — 0.3→1.0 over 0.4 s (easeOutCubic). */

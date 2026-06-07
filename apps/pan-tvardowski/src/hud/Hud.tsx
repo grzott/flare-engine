@@ -384,6 +384,9 @@ export function Hud({ localization, actions, insets, pauseIcon }: HudProps): Rea
         </Pressable>
       ) : null}
       {s.redFlash ? <View style={styles.redFlashOverlay} /> : null}
+      {s.bombFlashAlpha > 0 ? (
+        <View style={[styles.whiteFlashOverlay, { opacity: s.bombFlashAlpha }]} />
+      ) : null}
     </View>
   );
 }

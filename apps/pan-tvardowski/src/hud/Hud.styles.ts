@@ -226,6 +226,16 @@ export const rawStyles = {
     pointerEvents: 'none' as const,
     zIndex: 999,
   },
+  whiteFlashOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'white',
+    pointerEvents: 'none' as const,
+    zIndex: 998,
+  },
   zoneBannerNumeral: {
     fontFamily: fontFamily.serifItalic,
     fontSize: TYPOGRAPHY.displayM.fontSize,

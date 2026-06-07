@@ -444,7 +444,7 @@ export function playOnUpdate(
     flash: s.flash,
     onFired: () => {
       playSfx(audioRef?.current, 'bomb');
-      postfx.triggerHitFlash(5);
+      applyShake(ctx.camera, 12, 0.4);
     },
   });
   resetBombButtonFrame();
@@ -574,9 +574,14 @@ export function playOnUpdate(
 
   s.zoneBg?.tick(dt);
 
-  if (s.pendingShake) {
-    s.pendingShake = false;
-    applyShake(ctx.camera, 6, 0.2);
+  if (s.pendingShake !== null) {
+    const level = s.pendingShake;
+    s.pendingShake = null;
+    if (level === 'x2') {
+      applyShake(ctx.camera, 12, 0.4);
+    } else {
+      applyShake(ctx.camera, 6, 0.2);
+    }
   }
 
   syncHudState(s, ctx, dt);

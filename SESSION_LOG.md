@@ -6626,3 +6626,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 180 — 2026-06-07 (scope: game)
+
+**Goal:** CL10 — Split systems/miniboss.ts (483) + behavior registry
+
+**Touched files**
+- `apps/pan-tvardowski/src/systems/miniboss.ts`
+- `apps/pan-tvardowski/src/systems/miniboss/`
+- `apps/pan-tvardowski/tests/miniboss-registry.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

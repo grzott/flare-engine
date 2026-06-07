@@ -13,7 +13,7 @@
 
 import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ZONES } from '../src/config/zones';
 import { ZONE_VISUAL_SPECS } from '../src/visual-spec';
@@ -290,12 +290,15 @@ describe('visual-spec — schema canary', () => {
   // Bumped (rain-rewrite): ZoneFxDef gained optional density + streakLen
   // Bumped (KG6): 'image' added to ZoneBgKindId + ZoneBgDef image variant (ZoneBgShaderDef | ZoneBgImageDef discriminated union)
   // Bumped (KG10): 4 new ColorTokenId entries added (violetDeepest, violetStrong, violetAbyss, violetMedium) — additive per schema stability protocol.
-  const SCHEMA_CANARY = 'b9c0a5f83c2029779cf29901b6c795cd48aa58a4145551f8cca15d1ac9595661';
+  // Bumped (CL8): types.ts split into 7 modules under src/visual-spec/types/; canary
+  // now hashes all 7 modules in sorted filename order (same normalization as before).
+  const SCHEMA_CANARY = 'e3db32a911cdcf9e954899b77900b62c21d393d1200557f180750be1c2ef1549';
 
   test('types.ts public surface unchanged (or canary updated deliberately)', () => {
-    const path = join(import.meta.dir, '..', 'src', 'visual-spec', 'types.ts');
-    const src = readFileSync(path, 'utf-8');
-    const normalized = src
+    const typesDir = join(import.meta.dir, '..', 'src', 'visual-spec', 'types');
+    const files = readdirSync(typesDir).sort();
+    const combined = files.map((f) => readFileSync(join(typesDir, f), 'utf-8')).join('');
+    const normalized = combined
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/[^\n]*/g, '')
       .replace(/\s+/g, ' ')
@@ -303,7 +306,7 @@ describe('visual-spec — schema canary', () => {
     const actual = createHash('sha256').update(normalized).digest('hex');
     if (actual !== SCHEMA_CANARY) {
       throw new Error(
-        `Schema canary mismatch — types.ts changed.\n  expected: ${SCHEMA_CANARY}\n  actual:   ${actual}\nIf intentional, follow the deprecation cycle in the plan and update SCHEMA_CANARY.`,
+        `Schema canary mismatch — visual-spec type modules changed.\n  expected: ${SCHEMA_CANARY}\n  actual:   ${actual}\nIf intentional, follow the deprecation cycle in the plan and update SCHEMA_CANARY.`,
       );
     }
     expect(actual).toBe(SCHEMA_CANARY);

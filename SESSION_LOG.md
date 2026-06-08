@@ -6762,3 +6762,111 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 186 — 2026-06-08 (scope: engine)
+
+**Goal:** S4a — stage engine publish metadata (restricted)
+
+**Touched files**
+- `packages/a11y/package.json`
+- `packages/achievements/package.json`
+- `packages/analytics/package.json`
+- `packages/animation/package.json`
+- `packages/assets/package.json`
+- `packages/audio/package.json`
+- `packages/cli/package.json`
+- `packages/core/package.json`
+- `packages/debug/package.json`
+- `packages/deep-links/package.json`
+- `packages/devtools/package.json`
+- `packages/dialogue/package.json`
+- `packages/ecs/package.json`
+- `packages/engine/package.json`
+- `packages/errors/package.json`
+- `packages/events/package.json`
+- `packages/iap-revenuecat/package.json`
+- `packages/iap/package.json`
+- `packages/input/package.json`
+- `packages/leaderboards/package.json`
+- `packages/localization/package.json`
+- `packages/math/package.json`
+- `packages/particles/package.json`
+- `packages/pathfinding/package.json`
+- `packages/physics/package.json`
+- `packages/postfx/package.json`
+- `packages/react/package.json`
+- `packages/render/package.json`
+- `packages/scene/package.json`
+- `packages/shapes/package.json`
+- `packages/share/package.json`
+- `packages/storage/package.json`
+- `packages/testing/package.json`
+- `packages/tilemap/package.json`
+- `packages/ui-shop/package.json`
+- `packages/ui/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 187 — 2026-06-08 (scope: engine)
+
+**Goal:** S4b — stage root publish config (restricted, provenance off)
+
+**Touched files**
+- `.changeset/config.json`
+- `.github/workflows/release.yml`
+- `SESSION_LOG.md`
+- `docs/plans/todo.md`
+- `packages/a11y/package.json`
+- `packages/achievements/package.json`
+- `packages/analytics/package.json`
+- `packages/animation/package.json`
+- `packages/assets/package.json`
+- `packages/audio/package.json`
+- `packages/cli/package.json`
+- `packages/core/package.json`
+- `packages/debug/package.json`
+- `packages/deep-links/package.json`
+- `packages/devtools/package.json`
+- `packages/dialogue/package.json`
+- `packages/ecs/package.json`
+- `packages/engine/package.json`
+- `packages/errors/package.json`
+- `packages/events/package.json`
+- `packages/iap-revenuecat/package.json`
+- `packages/iap/package.json`
+- `packages/input/package.json`
+- `packages/leaderboards/package.json`
+- `packages/localization/package.json`
+- `packages/math/package.json`
+- `packages/particles/package.json`
+- `packages/pathfinding/package.json`
+- `packages/physics/package.json`
+- `packages/postfx/package.json`
+- `packages/react/package.json`
+- `packages/render/package.json`
+- `packages/scene/package.json`
+- `packages/shapes/package.json`
+- `packages/share/package.json`
+- `packages/storage/package.json`
+- `packages/testing/package.json`
+- `packages/tilemap/package.json`
+- `packages/ui-shop/package.json`
+- `packages/ui/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

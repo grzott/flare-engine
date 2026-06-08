@@ -59,6 +59,7 @@
     "@flare-engine/particles": "workspace:*",
     "@flare-engine/physics": "workspace:*",
     "@flare-engine/postfx": "workspace:*",
+    "@flare-engine/react": "workspace:*",
     "@flare-engine/render": "workspace:*",
     "@flare-engine/shapes": "workspace:*",
     "@flare-engine/share": "workspace:*",

@@ -15,17 +15,17 @@ set -euo pipefail
 # Resolve paths from the script location so the script works from any cwd.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_DIR="$(cd "${APP_DIR}/../.." && pwd)"
+REPO_DIR="$(git -C "${APP_DIR}" rev-parse --show-toplevel)"
 
 PROTECTED=(
-  "apps/pan-tvardowski/src/config/gameplay.ts"
-  "apps/pan-tvardowski/src/config/zones.ts"
+  "src/config/gameplay.ts"
+  "src/config/zones.ts"
 )
 
 # Sanity: every protected file must declare BALANCE_FROZEN_AT.
 missing_constant=()
 for rel in "${PROTECTED[@]}"; do
-  abs="${REPO_DIR}/${rel}"
+  abs="${APP_DIR}/${rel}"
   if [[ ! -f "${abs}" ]]; then
     echo "check-balance-freeze: missing protected file: ${rel}" >&2
     exit 2
@@ -50,7 +50,7 @@ fi
 cd "${REPO_DIR}"
 dirty=()
 for rel in "${PROTECTED[@]}"; do
-  if ! git diff --quiet HEAD -- "${rel}" 2>/dev/null; then
+  if ! git diff --quiet HEAD -- "${APP_DIR}/${rel}" 2>/dev/null; then
     dirty+=("${rel}")
   fi
 done

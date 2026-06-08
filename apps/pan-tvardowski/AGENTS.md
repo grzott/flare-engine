@@ -8,9 +8,11 @@ If a presentation-layer feature requires engine support (postfx compositor, scen
 
 ## Visual source of truth
 
-The 21 PNG folios at [`../../docs/references/pan-tvardowski/folios/`](../../docs/references/pan-tvardowski/folios/) are canonical. Read the relevant folio **before** editing presentation-layer code.
+The canonical visual source of truth is [`src/visual-spec/`](src/visual-spec/) — the ~40-file typed TypeScript spec covering palette, typography, shapes, zones, HUD, animations, and more. Read the relevant files there **before** editing presentation-layer code. If this guide and `src/visual-spec/` conflict, `src/visual-spec/` wins.
 
-Folio III (5 brand principles, [`folio-03-brand-principles.png`](../../docs/references/pan-tvardowski/folios/folio-03-brand-principles.png)) overrides taste:
+The 21 PNG folios at [`../../docs/references/pan-tvardowski/folios/`](../../docs/references/pan-tvardowski/folios/) are **historical design decks, not authoritative**. They predate the Kenney placeholder-sprite swap. Do not treat them as the source of truth for any value.
+
+The following 5 brand principles were transcribed from historical folio III and remain valid design intent:
 
 1. Darkness is the canvas (`#0E1A12` ink-black bg).
 2. Crimson is ink, not paint (player trail / sigil / brand mark / final-hit flash only).
@@ -18,7 +20,7 @@ Folio III (5 brand principles, [`folio-03-brand-principles.png`](../../docs/refe
 4. Diacritics are sacred (`ąćęłńóśźż` must render at every size and weight).
 5. 60 fps is the gospel (≤ 1k draws · ≤ 512 particles · ≤ 3 postfx stages).
 
-If folio and code conflict, folio wins unless [`docs/visual-reference.md`](docs/visual-reference.md) documents a deliberate deviation with rationale.
+If this guide and code conflict, [`docs/visual-reference.md`](docs/visual-reference.md) is the arbiter; it documents deliberate deviations with rationale.
 
 ## Visual-spec workflow lock
 

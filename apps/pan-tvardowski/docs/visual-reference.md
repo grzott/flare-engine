@@ -2,9 +2,13 @@
 
 ## §0 — Source of truth
 
-The 21 PNG folios at [`docs/references/pan-tvardowski/folios/`](../../../docs/references/pan-tvardowski/folios/) are the canonical visual source of truth for Pan Tvardowski. **If a value in this doc conflicts with a folio, the folio wins** unless this doc documents a deliberate deviation with a rationale. The CLAUDE.md section "Pan Tvardowski — visual source of truth" mirrors the key pointers from this §0 and must be kept in sync when paths or sessions change.
+The canonical visual source of truth for Pan Tvardowski is [`src/visual-spec/`](../src/visual-spec/) — approximately 40 typed TypeScript files covering palette, typography, shapes, zones, HUD, animations, and more. All presentation-layer data is encoded there. If this doc and `src/visual-spec/` conflict, `src/visual-spec/` wins.
 
-This document is a textual cross-index: each section maps a folio to live code symbols and tracks open migrations.
+The 21 PNG folios at [`docs/references/pan-tvardowski/folios/`](../../../docs/references/pan-tvardowski/folios/) are **retired historical design decks**. They predate the Kenney placeholder-sprite swap and are no longer authoritative. They are kept only as a historical archive in the engine monorepo root and are not carried into the standalone PT repo. Do not treat them as the source of truth for any value.
+
+This document is a textual cross-index: each section maps design intent to live code symbols and tracks open migrations.
+
+Historical folio cross-index (archive reference only — folios are retired):
 
 | Folio | Section | Topic |
 |---|---|---|
@@ -355,7 +359,7 @@ Preset type: `ExplosionTier = 'chip' | 'pop' | 'burst' | 'detonation' | 'catacly
 
 ## §7 — HUD anatomy
 
-Folio reference: [folio-09-hud-play-frame.png](../../../docs/references/pan-tvardowski/folios/folio-09-hud-play-frame.png) — single most important presentation-layer folio.
+Folio reference: [folio-09-hud-play-frame.png](../../../docs/references/pan-tvardowski/folios/folio-09-hud-play-frame.png) (historical).
 
 HUD component: [`src/hud/Hud.tsx`](../src/hud/Hud.tsx).
 Styles: [`src/hud/Hud.styles.ts`](../src/hud/Hud.styles.ts).

@@ -6698,3 +6698,22 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 183 — 2026-06-08 (scope: game)
+
+**Goal:** S1 — PT self-containment
+
+**Touched files**
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/check-balance-freeze.sh`
+- `bun.lock`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

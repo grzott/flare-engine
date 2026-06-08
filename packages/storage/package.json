@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/storage",
   "version": "0.0.0",
-  "private": true,
   "description": "Persistent key/value storage with typed schema, migrations, save slots, and JSON import/export",
   "keywords": ["flare-engine", "storage", "mmkv", "indexeddb", "save-game", "migration"],
   "license": "MIT",
@@ -33,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/assets",
   "version": "0.0.0",
-  "private": true,
   "description": "Asset loading, sprite sheet parsing",
   "keywords": ["flare-engine", "assets", "sprite-sheet", "loader"],
   "license": "MIT",
@@ -40,7 +39,7 @@
     "@shopify/react-native-skia": ">=1.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

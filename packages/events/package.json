@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/events",
   "version": "0.0.0",
-  "private": true,
   "description": "Type-safe EventEmitter and Signal",
   "keywords": ["flare-engine", "events", "signal", "emitter"],
   "license": "MIT",
@@ -33,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

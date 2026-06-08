@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/ecs",
   "version": "0.0.0",
-  "private": true,
   "description": "Entity-Component-System with archetype queries",
   "keywords": ["flare-engine", "ecs", "entity-component-system"],
   "license": "MIT",
@@ -37,7 +36,7 @@
     "@flare-engine/math": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

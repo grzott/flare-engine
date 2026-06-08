@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/a11y",
   "version": "0.0.0",
-  "private": true,
   "description": "Accessibility primitives — reduced motion, contrast tokens",
   "keywords": ["flare-engine", "a11y", "accessibility", "reduced-motion"],
   "license": "MIT",
@@ -33,6 +32,6 @@
   "dependencies": {
     "@flare-engine/events": "workspace:*"
   },
-  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "publishConfig": { "access": "restricted", "registry": "https://registry.npmjs.org/" },
   "sideEffects": false
 }

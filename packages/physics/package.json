@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/physics",
   "version": "0.0.0",
-  "private": true,
   "description": "AABB collision, spatial index, raycasting",
   "keywords": ["flare-engine", "physics", "collision", "aabb", "raycast"],
   "license": "MIT",
@@ -37,7 +36,7 @@
     "@flare-engine/math": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

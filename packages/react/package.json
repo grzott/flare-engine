@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/react",
   "version": "0.0.0",
-  "private": true,
   "description": "GameView, hooks, VirtualJoystick, VirtualButton",
   "keywords": ["flare-engine", "react", "react-native", "game-view", "hooks"],
   "license": "MIT",
@@ -52,7 +51,7 @@
     "react-native-safe-area-context": ">=4.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/render",
   "version": "0.0.0",
-  "private": true,
   "description": "SpriteBatch (Skia Atlas), Camera2D, SpriteEffects",
   "keywords": ["flare-engine", "rendering", "skia", "sprite-batch", "camera"],
   "license": "MIT",
@@ -43,7 +42,7 @@
     "@shopify/react-native-skia": ">=1.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/share",
   "version": "0.0.0",
-  "private": true,
   "description": "Screenshot capture + cross-platform share sheet",
   "keywords": ["flare-engine", "share", "screenshot", "skia"],
   "license": "MIT",
@@ -30,6 +29,6 @@
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit"
   },
-  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "publishConfig": { "access": "restricted", "registry": "https://registry.npmjs.org/" },
   "sideEffects": false
 }

@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/debug",
   "version": "0.0.0",
-  "private": true,
   "description": "Dev overlay, stats, entity inspector, time controls",
   "keywords": ["flare-engine", "debug", "overlay", "stats"],
   "license": "MIT",
@@ -38,7 +37,7 @@
     "@flare-engine/render": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

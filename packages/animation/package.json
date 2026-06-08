@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/animation",
   "version": "0.0.0",
-  "private": true,
   "description": "Sprite animation, tweens, springs, timeline",
   "keywords": ["flare-engine", "animation", "tween", "spring"],
   "license": "MIT",
@@ -37,7 +36,7 @@
     "@flare-engine/math": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

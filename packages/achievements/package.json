@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/achievements",
   "version": "0.0.0",
-  "private": true,
   "description": "Achievements provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "achievements", "provider", "interface"],
   "license": "MIT",
@@ -39,7 +38,7 @@
     "react": ">=18.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

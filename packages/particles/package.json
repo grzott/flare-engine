@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/particles",
   "version": "0.0.0",
-  "private": true,
   "description": "Particle emitter, pool, immediate-mode Skia rendering",
   "keywords": ["flare-engine", "particles", "emitter", "skia"],
   "license": "MIT",
@@ -37,7 +36,7 @@
     "@flare-engine/math": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

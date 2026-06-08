@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/shapes",
   "version": "0.0.0",
-  "private": true,
   "description": "Procedural 2D shape primitives for Skia — atomic primitives + SVG path escape hatch, composable for fast game prototyping",
   "keywords": ["flare-engine", "shapes", "skia", "primitives", "svg", "prototyping"],
   "license": "MIT",
@@ -36,7 +35,7 @@
     "@shopify/react-native-skia": ">=1.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/cli",
   "version": "0.0.0",
-  "private": true,
   "description": "Flare engine CLI — pack-atlas, tiled-to-flare, new app scaffolder",
   "keywords": ["flare-engine", "cli", "atlas", "tiled", "sprite-sheet", "scaffold"],
   "license": "MIT",
@@ -44,7 +43,7 @@
     "node": ">=20"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/testing",
   "version": "0.0.0",
-  "private": true,
   "description": "Deterministic World factory, fake Clock, mock InputManager, and scene snapshot helpers",
   "keywords": ["flare-engine", "testing", "ecs", "fake-clock", "snapshot"],
   "license": "MIT",
@@ -38,7 +37,7 @@
     "@flare-engine/input": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

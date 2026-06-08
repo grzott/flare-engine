@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/iap-revenuecat",
   "version": "0.0.0",
-  "private": true,
   "description": "RevenueCat IAPProvider adapter for @flare-engine/iap",
   "keywords": ["flare-engine", "iap", "revenuecat", "in-app-purchase", "adapter"],
   "license": "MIT",
@@ -41,7 +40,7 @@
     "react-native-purchases": ">=8.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

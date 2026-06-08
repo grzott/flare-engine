@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/postfx",
   "version": "0.0.0",
-  "private": true,
   "description": "Skia RuntimeEffect post-processing: vignette, bloom, CRT, chromatic aberration, grayscale flash",
   "keywords": ["flare-engine", "postfx", "shader", "skia", "vignette", "bloom", "crt"],
   "license": "MIT",
@@ -36,7 +35,7 @@
     "@shopify/react-native-skia": ">=1.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

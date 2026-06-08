@@ -1,7 +1,6 @@
 {
   "name": "@flare-engine/leaderboards",
   "version": "0.0.0",
-  "private": true,
   "description": "Leaderboard provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "leaderboards", "provider", "interface"],
   "license": "MIT",
@@ -39,7 +38,7 @@
     "react": ">=18.0.0"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

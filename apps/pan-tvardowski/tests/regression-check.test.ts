@@ -16,7 +16,7 @@ import {
   parseNdjson,
   resolveThreshold,
   windowRows,
-} from '../../../scripts/perf/regression-check';
+} from '../scripts/perf/regression-check';
 
 // ---------------------------------------------------------------------------
 // parseNdjson

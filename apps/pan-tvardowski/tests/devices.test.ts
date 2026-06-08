@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import rawDevices from '../../../scripts/perf/devices.json' with { type: 'json' };
+import rawDevices from '../scripts/perf/devices.json' with { type: 'json' };
 
 type Platform = 'android' | 'ios';
 type Tier = 'mid-gate' | 'headroom' | 'low';

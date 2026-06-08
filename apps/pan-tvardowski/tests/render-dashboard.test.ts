@@ -6,12 +6,12 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import type { RegressionResult } from '../../../scripts/perf/regression-check';
+import type { RegressionResult } from '../scripts/perf/regression-check';
 import {
   groupByDeviceScenario,
   renderDashboard,
   renderTable,
-} from '../../../scripts/perf/render-dashboard';
+} from '../scripts/perf/render-dashboard';
 
 function makeResult(
   device: string,

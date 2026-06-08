@@ -6717,3 +6717,48 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 184 — 2026-06-08 (scope: game)
+
+**Goal:** S2 — vendor perf assets into the app
+
+**Touched files**
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/perf/`
+- `apps/pan-tvardowski/tests/devices.test.ts`
+- `apps/pan-tvardowski/tests/regression-check.test.ts`
+- `apps/pan-tvardowski/tests/render-dashboard.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 185 — 2026-06-08 (scope: game)
+
+**Goal:** S3 — inline tsconfig base + retire folios as SoT
+
+**Touched files**
+- `SESSION_LOG.md`
+- `apps/pan-tvardowski/AGENTS.md`
+- `apps/pan-tvardowski/docs/visual-reference.md`
+- `apps/pan-tvardowski/package.json`
+- `apps/pan-tvardowski/scripts/perf/`
+- `apps/pan-tvardowski/tests/devices.test.ts`
+- `apps/pan-tvardowski/tests/regression-check.test.ts`
+- `apps/pan-tvardowski/tests/render-dashboard.test.ts`
+- `apps/pan-tvardowski/tsconfig.json`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

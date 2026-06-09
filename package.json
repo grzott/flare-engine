@@ -27,7 +27,7 @@
     "prebuild": "bun run propagate-license",
     "changeset": "changeset",
     "version": "changeset version && bun run scripts/concretize-workspace-deps.ts && bun install",
-    "release": "bun run propagate-license && turbo build --filter=./packages/* && changeset publish",
+    "release": "bun run propagate-license && turbo build --filter='./packages/*' && changeset publish",
     "prepare": "husky",
     "eas-build-post-install": "bun run build"
   },

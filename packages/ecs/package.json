@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/ecs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Entity-Component-System with archetype queries",
   "keywords": ["flare-engine", "ecs", "entity-component-system"],
   "license": "MIT",
@@ -32,8 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "workspace:*",
-    "@flare-engine/math": "workspace:*"
+    "@flare-engine/events": "^0.1.0",
+    "@flare-engine/math": "^0.1.0"
   },
   "publishConfig": {
     "access": "restricted",

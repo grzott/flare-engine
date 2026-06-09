@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/achievements",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Achievements provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "achievements", "provider", "interface"],
   "license": "MIT",

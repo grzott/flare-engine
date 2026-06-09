@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/iap-revenuecat",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "RevenueCat IAPProvider adapter for @flare-engine/iap",
   "keywords": ["flare-engine", "iap", "revenuecat", "in-app-purchase", "adapter"],
   "license": "MIT",
@@ -32,8 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "workspace:*",
-    "@flare-engine/iap": "workspace:*"
+    "@flare-engine/events": "^0.1.0",
+    "@flare-engine/iap": "^0.1.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/input",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "InputManager, VirtualJoystick, gesture handling",
   "keywords": ["flare-engine", "input", "joystick", "gestures"],
   "license": "MIT",
@@ -32,9 +32,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/core": "workspace:*",
-    "@flare-engine/events": "workspace:*",
-    "@flare-engine/math": "workspace:*"
+    "@flare-engine/core": "^0.1.0",
+    "@flare-engine/events": "^0.1.0",
+    "@flare-engine/math": "^0.1.0"
   },
   "peerDependencies": {
     "react-native-gesture-handler": ">=2.0.0"

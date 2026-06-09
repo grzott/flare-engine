@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/iap",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "In-app purchase provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "iap", "in-app-purchase", "provider", "interface"],
   "license": "MIT",
@@ -35,7 +35,7 @@
     "@types/react": "^18.0.0"
   },
   "dependencies": {
-    "@flare-engine/events": "workspace:*"
+    "@flare-engine/events": "^0.1.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/devtools",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Devtools partial — entity inspector, time scrub, pause/step",
   "keywords": ["flare-engine", "devtools", "inspector", "debug"],
   "license": "MIT",
@@ -35,9 +35,9 @@
     "@types/react": "^18.0.0"
   },
   "dependencies": {
-    "@flare-engine/core": "workspace:*",
-    "@flare-engine/ecs": "workspace:*",
-    "@flare-engine/events": "workspace:*"
+    "@flare-engine/core": "^0.1.0",
+    "@flare-engine/ecs": "^0.1.0",
+    "@flare-engine/events": "^0.1.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

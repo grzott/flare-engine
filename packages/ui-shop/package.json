@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/ui-shop",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Reusable ShopPanel, PaywallModal, and RestorePurchasesButton consuming IAPContext + EntitlementStore",
   "keywords": ["flare-engine", "ui", "shop", "iap", "paywall", "react-native"],
   "license": "MIT",
@@ -32,9 +32,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "workspace:*",
-    "@flare-engine/iap": "workspace:*",
-    "@flare-engine/ui": "workspace:*"
+    "@flare-engine/events": "^0.1.0",
+    "@flare-engine/iap": "^0.1.0",
+    "@flare-engine/ui": "^0.1.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

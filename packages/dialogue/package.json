@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/dialogue",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Dialogue graph runtime — lines, choices, conditions, variables, text-over-time reveal",
   "keywords": ["flare-engine", "dialogue", "narrative", "branching", "rpg"],
   "license": "MIT",
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "workspace:*"
+    "@flare-engine/events": "^0.1.0"
   },
   "publishConfig": {
     "access": "restricted",

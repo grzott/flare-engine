@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/debug",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Dev overlay, stats, entity inspector, time controls",
   "keywords": ["flare-engine", "debug", "overlay", "stats"],
   "license": "MIT",
@@ -32,9 +32,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/core": "workspace:*",
-    "@flare-engine/ecs": "workspace:*",
-    "@flare-engine/render": "workspace:*"
+    "@flare-engine/core": "^0.1.0",
+    "@flare-engine/ecs": "^0.1.0",
+    "@flare-engine/render": "^0.1.0"
   },
   "publishConfig": {
     "access": "restricted",

@@ -1,12 +1,14 @@
 {
   "name": "@flare-engine/localization",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "String tables, locale resolution, ICU-style plurals + interpolation",
   "keywords": ["flare-engine", "localization", "i18n", "icu", "plurals"],
   "license": "MIT",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",
-  "bugs": { "url": "https://github.com/grzott/flare-engine/issues" },
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/grzott/flare-engine.git",
@@ -30,8 +32,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "workspace:*"
+    "@flare-engine/events": "^0.1.0"
   },
-  "publishConfig": { "access": "restricted", "registry": "https://registry.npmjs.org/" },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  },
   "sideEffects": false
 }

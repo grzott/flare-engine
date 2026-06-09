@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/render",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "SpriteBatch (Skia Atlas), Camera2D, SpriteEffects",
   "keywords": ["flare-engine", "rendering", "skia", "sprite-batch", "camera"],
   "license": "MIT",
@@ -32,11 +32,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/assets": "workspace:*",
-    "@flare-engine/core": "workspace:*",
-    "@flare-engine/ecs": "workspace:*",
-    "@flare-engine/events": "workspace:*",
-    "@flare-engine/math": "workspace:*"
+    "@flare-engine/assets": "^0.1.0",
+    "@flare-engine/core": "^0.1.0",
+    "@flare-engine/ecs": "^0.1.0",
+    "@flare-engine/events": "^0.1.0",
+    "@flare-engine/math": "^0.1.0"
   },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=1.0.0"

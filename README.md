@@ -22,7 +22,7 @@
 
 ## Architecture
 
-36 packages, strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
+37 packages, strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
 
 ```
 ┌───────────┬────────────────┬──────────────────────────────────────────────────────┐
@@ -35,6 +35,7 @@
 │  2.5      │  Persistence   │  storage  ·  errors  ·  testing  ·  a11y             │
 │           │                │  localization  ·  deep-links  ·  share               │
 │  2        │  Systems       │  render  ·  input  ·  physics  ·  audio  ·  assets   │
+│           │                │  shapes                                              │
 │  1        │  Runtime       │  core  ·  ecs                                        │
 │  0        │  Foundation    │  math  ·  events                                     │
 ├───────────┼────────────────┼──────────────────────────────────────────────────────┤
@@ -61,6 +62,7 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 | `@flare-engine/physics`      | 2     | shipping                 | AABB `CollisionWorld`, spatial index, raycasting                               |
 | `@flare-engine/audio`        | 2     | shipping                 | `AudioManager`, `SFXPool`, music crossfade, channels                           |
 | `@flare-engine/assets`       | 2     | shipping                 | `AssetManager`, TexturePacker/Aseprite parser, procedural atlas                |
+| `@flare-engine/shapes`       | 2     | shipping                 | Procedural 2D shape primitives + SVG path escape hatch — prototype without art |
 | `@flare-engine/storage`      | 2.5   | shipping                 | Typed KV persistence — MMKV / IndexedDB / memory adapters                      |
 | `@flare-engine/errors`       | 2.5   | shipping                 | Error boundary + structured crash payload + pluggable transport                |
 | `@flare-engine/testing`      | 2.5   | shipping                 | Deterministic fake clock, test world, mock input, scene snapshots              |
@@ -80,7 +82,7 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 | `@flare-engine/react`        | 4     | shipping                 | `<GameView>`, hooks, `<VirtualJoystick>`, `<VirtualButton>`, `<LoadingScreen>` |
 | `@flare-engine/engine`       | 4     | shipping                 | `createGame()` convenience + umbrella re-exports                               |
 | `@flare-engine/cli`          | —     | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
-| `@flare-engine/devtools`     | —     | shipping (partial 0.1.0) | Entity inspector + time scrub + pause/step                                     |
+| `@flare-engine/devtools`     | —     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-0.1.0)      |
 | `create-flare-app`           | —     | shipping                 | `npm create flare-app@latest` — blank / topdown / shmup templates              |
 | `@flare-engine/leaderboards` | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
 | `@flare-engine/achievements` | —     | stub (0.1.0)             | Interface + no-op provider; concrete adapters in 0.2.0                         |
@@ -108,11 +110,34 @@ git clone https://github.com/grzott/Pan-Tvardowski
 cd Pan-Tvardowski && bun install && bun run start
 ```
 
-Once 0.1.0 publishes, a fresh project will scaffold via:
+A fresh project scaffolds via (requires registry access until the public launch):
 
 ```bash
 npm create flare-app@latest my-game
 ```
+
+---
+
+## Consuming from npm (restricted)
+
+`@flare-engine/*` packages are published to the public npm registry with **restricted**
+access until the October 2026 OSS launch. Consuming them needs a read-only granular npm
+token for the `@flare-engine` scope (owner-generated; never committed). Point the scope
+at the registry and reference the token via env var:
+
+```ini
+# .npmrc (committed) — token comes from the NPM_TOKEN env var or ~/.npmrc
+@flare-engine:registry=https://registry.npmjs.org/
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+```
+
+Version policy for consumers:
+
+- Depend with `^0.1.0`. Patch releases (0.1.x) are non-breaking and flow in-range.
+- Minor releases (0.2.0) may break; they require an explicit range bump on the consumer
+  side — see the compat-guard caret-ceiling rule in [CONTRIBUTING.md](CONTRIBUTING.md).
+- `leaderboards` / `achievements` / `analytics` are interface-only stubs at 0.1.0
+  (see the Status column above); concrete adapters land at 0.2.0.
 
 ---
 
@@ -141,7 +166,7 @@ Tooling rationale: see the Tooling section of [docs/design/architecture.md](docs
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute
 - [docs/README.md](docs/README.md) — full documentation index
 - [docs/design/](docs/design/) — architecture, API specs, dependencies, ecosystem
-- [docs/plans/build-plan.md](docs/plans/build-plan.md) — roadmap
+- [docs/plans/roadmap.md](docs/plans/roadmap.md) — roadmap
 - [docs/references/](docs/references/) — benchmarks, CanvasKit parity, CLI tooling
 
 ---

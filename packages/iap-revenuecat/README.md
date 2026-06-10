@@ -32,4 +32,4 @@ export function App() {
 
 ## Recipe — env-var-gated lazy load
 
-In production code, wrap the adapter behind an env-var gate so CI / unit tests / dev builds without RevenueCat keys fall back to `NoopIAPProvider` and never touch the SDK. See [.github/skills/flare-tier2-stubs/SKILL.md § Lazy-SDK adapter recipe](../../.github/skills/flare-tier2-stubs/SKILL.md#lazy-sdk-adapter-recipe) for the full pattern; canonical implementation at [apps/pan-tvardowski/src/iap/provider.ts](../../apps/pan-tvardowski/src/iap/provider.ts).
+In production code, wrap the adapter behind an env-var gate so CI / unit tests / dev builds without RevenueCat keys fall back to `NoopIAPProvider` and never touch the SDK. See the [Lazy-SDK adapter recipe](https://github.com/grzott/flare-engine/blob/main/.claude/skills/flare-tier2-stubs/SKILL.md#lazy-sdk-adapter-recipe) for the full pattern; canonical implementation at [Pan Tvardowski's src/iap/provider.ts](https://github.com/grzott/Pan-Tvardowski/blob/main/src/iap/provider.ts).

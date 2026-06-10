@@ -4,7 +4,7 @@ Procedural 2D shape primitives for [react-native-skia](https://shopify.github.io
 
 ## Why
 
-Mobile and indie game prototypes don't need sprite sheets to start. Compose ships, enemies, pickups, and UI shapes from primitives, ship a playable build, and replace shapes with art only after the mechanics lock — exactly the workflow Unity Shapes2D and Defold prototyping threads document. Used in production by [Pan Tvardowski](https://github.com/grzott/flare-engine/tree/main/apps/pan-tvardowski) (29 ships + 10 pickups, all data-only).
+Mobile and indie game prototypes don't need sprite sheets to start. Compose ships, enemies, pickups, and UI shapes from primitives, ship a playable build, and replace shapes with art only after the mechanics lock — exactly the workflow Unity Shapes2D and Defold prototyping threads document. [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) prototyped its full 29-ship roster shape-first this way before swapping in sprite art, and still drives its procedural shape atlas with this package.
 
 ## Install
 

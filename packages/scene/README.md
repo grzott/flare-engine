@@ -23,7 +23,7 @@ manager.register('menu', () => ({
 await manager.go('menu', undefined, fadeTransition(0.3));
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginescene--4kb-gzip) and [skill reference](../../.github/skills/flare-scene/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginescene--4kb-gzip).
 
 ## License
 

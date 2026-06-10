@@ -23,7 +23,7 @@ await manager.init();
 sfx.play('shoot');
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineaudio--4kb-gzip) and [skill reference](../../.github/skills/flare-audio/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineaudio--4kb-gzip).
 
 ## License
 

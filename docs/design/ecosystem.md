@@ -83,7 +83,7 @@ None of these run on React Native. All are web-only.
 | Mobile-native input     | **Yes**           | No           | No           | No           | Partial  |
 | App lifecycle handling  | **Yes**           | No           | No           | No           | No       |
 | iOS + Android           | **Yes**           | Web only     | Web only     | Web only     | Dead     |
-| AI agent skills         | `.github/skills/` | 28 files     | No           | No           | No       |
+| AI agent harness        | `.claude/` (skills + agents + hooks) | No | No        | No           | No       |
 
 ---
 

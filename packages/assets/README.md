@@ -25,7 +25,7 @@ const { image, sheet: atlas } = await createProceduralAtlas(skia, [
 ]);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineassets--6kb-gzip) and [skill reference](../../.github/skills/flare-assets/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineassets--6kb-gzip).
 
 ## License
 

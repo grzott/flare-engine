@@ -22,7 +22,7 @@ const vignettePulse = dampenedMotion(a11y.settings, 0.4); // softens but preserv
 const fg = pickContrast(a11y.settings, 0xff_cc_cc_cc, 0xff_ff_ff_ff);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginea11y--2kb-raw-light) and [skill reference](../../.github/skills/flare-a11y/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginea11y--2kb-raw-light).
 
 ## License
 

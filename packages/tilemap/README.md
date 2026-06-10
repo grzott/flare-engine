@@ -20,7 +20,7 @@ renderer.draw(camera, (batch) => batch.flush(skia.drawAtlas, gameRenderer));
 const colliders = extractColliders(data);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginetilemap--8kb-gzip) and [skill reference](../../.github/skills/flare-tilemap/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginetilemap--8kb-gzip).
 
 ## License
 

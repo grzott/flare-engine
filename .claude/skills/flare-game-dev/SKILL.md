@@ -1,11 +1,11 @@
 ---
 name: flare-game-dev
-description: "Cross-cutting workflow for implementing a milestone in a Flare game app (apps/<game>/). Use when: building a zone/level/scene, adding gameplay entities, wiring HUD, scripting boss fights, executing a milestone from a Flare game build plan. Covers scene bootstrapping, ECS patterns, shape-atlas visuals (no sprite art), zero-alloc bullet loops, localization-first strings, scene-transition cleanup, and the milestone gate sequence. Reusable across any Flare game, not only Pan Tvardowski."
+description: "Cross-cutting workflow for implementing a milestone in a Flare game app (apps/<game>/). Use when: building a zone/level/scene, adding gameplay entities, wiring HUD, scripting boss fights, executing a milestone from a Flare game build plan. Covers scene bootstrapping, ECS patterns, shape-atlas and sprite visuals, zero-alloc bullet loops, localization-first strings, scene-transition cleanup, and the milestone gate sequence. Reusable across any Flare game, not only Pan Tvardowski."
 ---
 
 # Flare Game Development Workflow
 
-Package-level skills in `.github/skills/flare-*/` cover individual engine packages. This skill is the **cross-cutting game-building workflow**: how to take a milestone from a `docs/plans/<game>-build-plan.md` and turn it into shipping gameplay.
+Per-package API contracts live in `docs/design/api-specs.md`. This skill is the **cross-cutting game-building workflow**: how to take a milestone from a game build plan and turn it into shipping gameplay.
 
 ## When to load this skill
 
@@ -21,7 +21,7 @@ Package-level skills in `.github/skills/flare-*/` cover individual engine packag
 ## Milestone execution loop
 
 ```
-1. Read       docs/plans/<game>-build-plan.md §17  → pick lowest incomplete M<n>
+1. Read       the game's plan doc (its todo.md / build plan) → pick the approved row/milestone
 2. Read       engine-coverage row for M<n>          → know which packages you touch
 3. Load       matching flare-* skill(s) on demand
 4. Plan       list files + tests + coverage ticks   → STOP for user approval

@@ -25,7 +25,7 @@ import { ThemeProvider, FocusProvider, Panel, Button, Label, darkTheme } from '@
 </ThemeProvider>
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineui--6kb-gzip-target) and [skill reference](../../.github/skills/flare-ui/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineui--6kb-gzip-target).
 
 ## License
 

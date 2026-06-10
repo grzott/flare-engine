@@ -22,7 +22,7 @@ onHit.add((dmg) => console.log(dmg));
 onHit.emit(10);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineevents--1kb-gzip) and [skill reference](../../.github/skills/flare-events/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineevents--1kb-gzip).
 
 ## License
 

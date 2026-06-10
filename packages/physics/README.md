@@ -21,7 +21,7 @@ world.add(entityA, colliderA.shape, x, y, false, colliderA.layer, colliderA.mask
 world.step();
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginephysics--4kb-aabb) and [skill reference](../../.github/skills/flare-physics/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginephysics--4kb-aabb).
 
 ## License
 

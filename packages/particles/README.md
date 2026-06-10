@@ -23,7 +23,7 @@ const emitter = new ParticleEmitter({
 emitter.update(dt, gravityX, gravityY);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineparticles--4kb-gzip) and [skill reference](../../.github/skills/flare-particles/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineparticles--4kb-gzip).
 
 ## License
 

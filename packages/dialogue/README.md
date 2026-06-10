@@ -27,7 +27,7 @@ const runner = createDialogueRunner(graph, {
 const reveal = createTextReveal('Hello.', { cps: 30 });
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginedialogue--5kb-gzip) and [skill reference](../../.github/skills/flare-dialogue/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginedialogue--5kb-gzip).
 
 ## License
 

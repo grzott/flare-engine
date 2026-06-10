@@ -24,7 +24,7 @@ const passes = runtime.buildPass(chain, width, height);
 // renderer composites passes into the scene
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginepostfx--8kb-raw) and [skill reference](../../.github/skills/flare-postfx/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginepostfx--8kb-raw).
 
 ## License
 

@@ -21,7 +21,7 @@ input.pollGamepads(createWebGamepadSource(navigator));
 input.update();
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineinput--6kb-gzip) and [skill reference](../../.github/skills/flare-input/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineinput--6kb-gzip).
 
 ## License
 

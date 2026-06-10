@@ -29,7 +29,7 @@ function HUD() {
 </GameView>
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginereact--10kb-gzip) and [skill reference](../../.github/skills/flare-react/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginereact--10kb-gzip).
 
 ## License
 

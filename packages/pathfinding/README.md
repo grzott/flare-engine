@@ -23,7 +23,7 @@ const result = findPathJPS(grid, { x: 0, y: 0 }, { x: 30, y: 30 }, {
 if (result.found) console.log(result.cells);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginepathfinding--8kb-gzip) and [skill reference](../../.github/skills/flare-pathfinding/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginepathfinding--8kb-gzip).
 
 ## License
 

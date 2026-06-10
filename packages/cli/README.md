@@ -26,7 +26,7 @@ import { packAtlas, convertTiled } from '@flare-engine/cli';
 await packAtlas({ inputDir: './sprites', outDir: './assets', padding: 2 });
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginecli--15kb-raw-node-only) and [skill reference](../../.github/skills/flare-cli/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginecli--15kb-raw-node-only).
 
 ## License
 

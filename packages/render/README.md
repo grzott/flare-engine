@@ -25,7 +25,7 @@ batch.flush(skia.drawAtlas, renderer);
 renderer.end();
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginerender--10kb-gzip) and [skill reference](../../.github/skills/flare-render/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginerender--10kb-gzip).
 
 ## License
 

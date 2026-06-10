@@ -22,7 +22,7 @@ const b = bullets.acquire();
 bullets.release(b);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginecore--3kb-gzip) and [skill reference](../../.github/skills/flare-core/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginecore--3kb-gzip).
 
 ## License
 

@@ -30,7 +30,7 @@ if (canAccessContent({ requiresEntitlement: 'full_game' }, store)) {
 }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineiap--1kb-raw-interface-only) and [skill reference](../../.github/skills/flare-iap/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineiap--1kb-raw-interface-only).
 
 ## License
 

@@ -22,7 +22,7 @@ const t = tween(0, 100, 0.5, easeOutQuad);
 const value = updateTween(t, dt);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineanimation--5kb-gzip) and [skill reference](../../.github/skills/flare-animation/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineanimation--5kb-gzip).
 
 ## License
 

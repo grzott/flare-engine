@@ -22,7 +22,7 @@ const rng = new SeededRNG(42);
 const t = easeOutQuad(rng.float());
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginemath--5kb-gzip) and [skill reference](../../.github/skills/flare-math/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginemath--5kb-gzip).
 
 ## License
 

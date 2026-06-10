@@ -24,7 +24,7 @@ const game = createGame({
 game.start();
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineengine--2kb-gzip) and [skill reference](../../.github/skills/flare-engine/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineengine--2kb-gzip).
 
 ## License
 

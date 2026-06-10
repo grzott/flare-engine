@@ -30,7 +30,7 @@ const transport = composeTransports(
 </ErrorBoundary>
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineerrors--2kb-raw) and [skill reference](../../.github/skills/flare-errors/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineerrors--2kb-raw).
 
 ## License
 

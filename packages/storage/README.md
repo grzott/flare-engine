@@ -37,7 +37,7 @@ await storage.saveSlot('slot1', { version: 2, zone: 4, inventory: ['key'] });
 const data = await storage.loadSlot('slot1');
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginestorage--4kb-gzip) and [skill reference](../../.github/skills/flare-storage/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginestorage--4kb-gzip).
 
 ## License
 

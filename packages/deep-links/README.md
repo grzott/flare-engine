@@ -25,7 +25,7 @@ manager.start();
 parseUrl('flare://game/zone/4?from=shop');
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginedeep-links--6kb-raw) and [skill reference](../../.github/skills/flare-deep-links/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginedeep-links--6kb-raw).
 
 ## License
 

@@ -23,7 +23,7 @@ lm.t('shop.bought', { count: 3 }); // -> "Kupiono 3 przedmioty"
 lm.onChange.add((locale) => console.log('locale ->', locale));
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginelocalization--7kb-raw) and [skill reference](../../.github/skills/flare-localization/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginelocalization--7kb-raw).
 
 ## License
 

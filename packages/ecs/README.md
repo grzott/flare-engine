@@ -25,7 +25,7 @@ const movers = world.query(Position, Velocity);
 for (const id of movers) { /* ... */ }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineecs--8kb-gzip) and [skill reference](../../.github/skills/flare-ecs/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineecs--8kb-gzip).
 
 ## License
 

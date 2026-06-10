@@ -24,7 +24,7 @@ const share = new ShareManager()
 await share.share({ message: 'Pan Tvardowski!', url: 'https://…', image: shot.bytes });
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineshare--5kb-raw) and [skill reference](../../.github/skills/flare-share/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-engineshare--5kb-raw).
 
 ## License
 

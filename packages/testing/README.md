@@ -25,7 +25,7 @@ const snap = serializeScene(world, [Position]);
 expect(snap.entities[0].components.Position.x).toBe(60);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginetesting--4kb-raw) and [skill reference](../../.github/skills/flare-testing/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginetesting--4kb-raw).
 
 ## License
 

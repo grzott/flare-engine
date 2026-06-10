@@ -26,7 +26,7 @@ const line = fpsWidget.formatLine(stats.snapshot());
 
 Tree-shaken in production via `__DEV__` guard at the call site.
 
-See [API spec](../../docs/design/api-specs.md#flare-enginedebug--3kb-gzip-tree-shaken-in-prod) and [skill reference](../../.github/skills/flare-debug/SKILL.md).
+See [API spec](../../docs/design/api-specs.md#flare-enginedebug--3kb-gzip-tree-shaken-in-prod).
 
 ## License
 

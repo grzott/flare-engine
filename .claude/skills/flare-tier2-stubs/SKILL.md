@@ -78,4 +78,4 @@ Reference implementation: [src/iap/provider.ts in the Pan Tvardowski repo](https
 
 The same shape applies to leaderboards / achievements / analytics — read env vars, return `Noop*Provider` if absent, otherwise return a proxy that lazy-loads the adapter on first call.
 
-Adapters table: [docs/plans/build-plan.md § Tier-2](../../../docs/plans/build-plan.md).
+Adapter rollout plan: [docs/plans/roadmap.md](../../../docs/plans/roadmap.md) (0.2.0 adapter rows).

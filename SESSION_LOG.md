@@ -6870,3 +6870,21 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 188 — 2026-06-10 (scope: engine)
+
+**Goal:** Workspace consolidation + Berek scaffold
+
+**Touched files**
+- `CONTRIBUTING.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Next:** see `docs/plans/todo.md`.
+
+---

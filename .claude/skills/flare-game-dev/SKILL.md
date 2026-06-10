@@ -108,10 +108,10 @@ export function createZone2Scene(): Scene {
 
 ### Pattern: shape atlas (no sprite art)
 
-Pan Tvardowski ships shape-atlas only at 0.1.x. Every entity = composition of primitive Skia shapes. Keep a single `apps/<game>/src/shapes.ts`:
+Pan Tvardowski (github.com/grzott/Pan-Tvardowski) ships shape-atlas only at 0.1.x. Every entity = composition of primitive Skia shapes. Keep a single `apps/<game>/src/shapes.ts`:
 
 ```ts
-// apps/pan-tvardowski/src/shapes.ts
+// apps/<game>/src/shapes.ts
 export type ShapeSpec =
   | { kind: "circle"; r: number; fill: number }
   | { kind: "triangle"; size: number; fill: number }

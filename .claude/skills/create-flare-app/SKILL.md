@@ -20,7 +20,7 @@ Each under `packages/create-flare-app/templates/`:
 
 - `blank` — minimal: `<GameView>` + a single empty scene.
 - `topdown` — top-down movement, tilemap, camera follow.
-- `shmup` — scrolling shoot-em-up starter (minimum vertical-slice; `apps/pan-tvardowski` is the full showcase).
+- `shmup` — scrolling shoot-em-up starter (minimum vertical-slice; [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) is the full showcase).
 
 ## Rules
 

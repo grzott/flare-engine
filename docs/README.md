@@ -22,8 +22,8 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 
 ### plans/
 
-- [build-plan.md](plans/build-plan.md) — Phase-by-phase roadmap through the October 2026 OSS launch.
-- [pan-tvardowski-build-plan.md](plans/pan-tvardowski-build-plan.md) — Design + build plan for the canonical showcase game (Polish-folklore shmup).
+- [roadmap.md](plans/roadmap.md) — Phase-by-phase roadmap through the October 2026 OSS launch.
+- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore shmup), in its own repo since 2026-06-10.
 
 ### references/
 

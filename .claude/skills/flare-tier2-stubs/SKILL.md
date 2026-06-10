@@ -74,7 +74,7 @@ export function createGameIapProvider(): IAPProvider {
 }
 ```
 
-Reference implementation: [apps/pan-tvardowski/src/iap/provider.ts](../../../apps/pan-tvardowski/src/iap/provider.ts) (RevenueCat).
+Reference implementation: [src/iap/provider.ts in the Pan Tvardowski repo](https://github.com/grzott/Pan-Tvardowski/blob/main/src/iap/provider.ts) (RevenueCat).
 
 The same shape applies to leaderboards / achievements / analytics — read env vars, return `Noop*Provider` if absent, otherwise return a proxy that lazy-loads the adapter on first call.
 

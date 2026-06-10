@@ -36,9 +36,9 @@ cd benchmarks
 bun run bench        # writes benchmarks/results/microbench.json
 ```
 
-**Device JSON** — hand-append samples from a device bench scene (the original `apps/demo` source was retired at stage 11.14; `apps/pan-tvardowski` M9.6 will re-introduce an in-game bench scene):
+**Device JSON** — hand-append samples from a device bench scene (the original `apps/demo` source was retired at stage 11.14; the bench scene lives in [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski), now its own repo):
 
-1. Release build on hardware: `cd apps/pan-tvardowski && npx expo run:android --variant release --device`
+1. Release build on hardware (in the PT repo): `bun run android --variant release --device`
 2. Triple-tap the menu title → bench scene runs 3 × 10 s
 3. Copy CSV between `BENCH FPS CSV BEGIN` / `END` markers from logcat (`adb logcat ReactNativeJS:V *:S`)
 4. Append a device entry to [`benchmarks/results/device.json`](../../benchmarks/results/device.json) following the existing schema

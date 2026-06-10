@@ -6,11 +6,11 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ---
 
-## State (2026-05-13)
+## State (2026-06-10)
 
-**Engine:** Feature-complete at 0.1.x. 37 packages shipping. ~2,468 tests green (last verified 2026-05-13, no engine changes since).
-**Pan Tvardowski:** Feature-complete since 2026-04-28 (M0–M9.6 done). 8 zones, 12 enemies, 4 weapons, 3 ships, PL+EN, shape-atlas visuals. 988 PT tests green (through session 132). Manual launch tier deferred.
-**Active focus:** Visual-spec single-source-of-truth arc — 6/10 rows done (through session 132), 4 remaining in `todo.md`.
+**Engine:** Feature-complete at 0.1.x. **Published 2026-06-09: 36 scoped `@flare-engine/*@0.1.0` live on npm, private/restricted** (public flip at OSS launch). 37 package dirs in-repo (36 scoped + `create-flare-app`).
+**Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm at `^0.1.0`. Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
+**Active focus:** Arc PT-EXTRACT close-out (S8/S9) + engine-repo docs/harness polish — see `todo.md`.
 
 ---
 
@@ -49,9 +49,9 @@ OSS launch target: October 2026.
 
 ---
 
-## Pan Tvardowski (the game)
+## Pan Tvardowski (the game — own repo since 2026-06-10)
 
-Canonical end-to-end reference + integration smoke test. Folklore-themed vertical shmup. Free zones 1–3, paid zones 4–8. License: PolyForm Noncommercial 1.0.0.
+Canonical end-to-end reference + integration smoke test, now at [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) consuming `@flare-engine/*@^0.1.0` from npm. Folklore-themed vertical shmup. Free zones 1–3, paid zones 4–8. License: PolyForm Noncommercial 1.0.0. Day-to-day PT work happens in that repo (own `.claude/` harness); this section keeps only the engine-facing summary.
 
 | Element | Count | Notes |
 |---|---|---|
@@ -62,13 +62,13 @@ Canonical end-to-end reference + integration smoke test. Folklore-themed vertica
 | Weapons | 4 | 3 upgrade levels each |
 | Player ships | 3 | Unlocked via progression |
 
-**Visual source of truth:** 21 PNG folios at `docs/references/pan-tvardowski/folios/`. Folio XIIIa (ship-anatomy 3-element rule) and folio III (5 brand principles) override taste. Textual cross-index: `apps/pan-tvardowski/docs/visual-reference.md`.
+**Visual source of truth:** the typed `src/visual-spec/` schema in the PT repo (canonical since 2026-06-08). The 21 PNG folios at `docs/references/pan-tvardowski/folios/` are **retired/historical** — they predate the Kenney sprite swap and stay here only as the design archive.
 
 **Engine-first rule.** Presentation features requiring engine support ship in `packages/**` first; PT-side wire follows. Builders never patch engine gaps with PT-local workarounds.
 
 ### Detailed design
 
-Full zone/enemy/boss/weapon/ship/upgrade/dialogue specs live in folios + `apps/pan-tvardowski/docs/visual-reference.md`. The prior `pan-tvardowski-build-plan.md` (576 lines) is retired — its design data is in the folios, its session history is in `SESSION_LOG.md`.
+Full zone/enemy/boss/weapon/ship/upgrade/dialogue specs live in the PT repo's `src/visual-spec/` + `docs/visual-reference.md`. The prior `pan-tvardowski-build-plan.md` (576 lines) is retired — its session history is in `SESSION_LOG.md`; the retired folios remain the design archive.
 
 ---
 
@@ -79,8 +79,8 @@ Owner-managed, outside the session loop. Nothing here is urgent.
 ### 1. Store accounts (~$124 first year)
 - Google Play developer account ($25 one-time)
 - Apple Developer Program ($99/year)
-- Google Play Console: PT app + internal testing track (procedure in `apps/pan-tvardowski/docs/keystore.md`)
-- App Store Connect: PT app + TestFlight (procedure in `apps/pan-tvardowski/docs/keystore.md`)
+- Google Play Console: PT app + internal testing track (procedure in the PT repo's `docs/keystore.md`)
+- App Store Connect: PT app + TestFlight (procedure in the PT repo's `docs/keystore.md`)
 - Android signing: upload keystore in EAS credentials
 - iOS signing: dist cert + provisioning profile via EAS
 
@@ -98,7 +98,7 @@ Owner-managed, outside the session loop. Nothing here is urgent.
 
 ### 4. Build + smoke
 - Fresh release APK via EAS cloud build (Windows `eas build --local` is broken — use cloud or WSL)
-- TestingBot Pixel 10 (Android) smoke — Maestro flows in `apps/pan-tvardowski/.maestro/`
+- TestingBot Pixel 10 (Android) smoke — Maestro flows in the PT repo's `.maestro/`
 - iPhone 16 Pro (iOS) smoke — gated on Apple Developer account
 
 ### 5. Store assets

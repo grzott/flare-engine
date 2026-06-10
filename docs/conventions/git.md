@@ -9,14 +9,14 @@ Conventional Commits, subject-only, single-line, ≤72 chars, lowercase, no trai
 ```
 
 Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `chore`.
-Scope: package name (e.g. `math`), game name (`pan-tvardowski`), or area (`docs`, `plans`).
+Scope: package name (e.g. `math`), app name (`bench-dashboard`), or area (`docs`, `plans`, `release`).
 
 Examples:
 ```
 feat(math): add Vec2.normalizeOut zero-alloc helper
 test(postfx): cover triggerTimed enable, expiry, retrigger
 docs(api-specs): add createBootTrace under @flare-engine/debug
-refactor(pan-tvardowski): wire budget + postfx to engine APIs
+fix(release): concretize workspace deps to caret versions
 ```
 
 ## Constraints

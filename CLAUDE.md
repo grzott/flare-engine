@@ -7,7 +7,7 @@ Conventions: [AGENTS.md](AGENTS.md). Roadmap: [docs/plans/roadmap.md](docs/plans
 Two builders, no planners. You pick the next row from `todo.md`.
 
 - `engine-builder` — implements `packages/**`. Never touches `apps/**`.
-- `game-builder` — implements `apps/<game>/**`. Never touches `packages/**`. Engine gaps must split into engine-first work in `packages/**` before the game-side wire.
+- `game-builder` — implements `apps/<game>/**`. Never touches `packages/**`. Engine gaps must split into engine-first work in `packages/**` before the game-side wire. **Dormant since 2026-06-10:** Pan Tvardowski moved to [its own repo](https://github.com/grzott/Pan-Tvardowski) (own `.claude/` harness there); no game app lives in this repo. `apps/bench-dashboard` is owner-maintained tooling.
 
 ## Workflow
 

@@ -198,7 +198,7 @@ Grid pathfinding (A\*), Jump-Point Search optimization for uniform-cost grids, a
 
 - Pure-data API: grids and navmeshes are plain objects, no classes. Heuristics are exported as named functions for tree-shake.
 - Path output is a flat `cells: number[]` packed `[x0, y0, x1, y1, ...]` for zero-alloc consumption by ECS systems.
-- Not used by `apps/pan-tvardowski` (shmup) — verified by integration tests in `packages/pathfinding/tests/`.
+- Not used by Pan Tvardowski (shmup) — verified by integration tests in `packages/pathfinding/tests/`.
 
 ---
 
@@ -218,7 +218,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 - Single hard dep: `@flare-engine/events` (`Signal`).
 - `ConditionResolver` and `ActionHandler` are caller-supplied — the package owns no game state.
-- Used by `apps/pan-tvardowski` for the inter-zone dialogue card stack and boss banter.
+- Used by [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) for the inter-zone dialogue card stack and boss banter.
 
 ---
 
@@ -228,7 +228,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 - FPS, entity count, draw calls, atlas usage stats
 - `createFpsWidget(opts?)` — formatter that consumes a `DebugStats` snapshot and exposes a compact one-line summary (`"60 FPS | 16.7ms | e:42 d:8"`) plus a multi-line breakdown. Rendering-agnostic: hosts draw the strings via Skia `canvas.drawText`, an RN `<Text>` overlay, or anything else.
 - `createFrameBudget(opts)` — fps-ring watchdog + per-counter budget tracker. `opts`: `{ limits: FrameBudgetLimits; fpsThreshold?: number (default 55); ringSize?: number (default 180); onWatchdog?: () => void; debug?: boolean (default false) }`. Returns `FrameBudgetHandle`: `recordFrame(dtSec)` (writes into pre-allocated `Float32Array` ring, fires `onWatchdog` once when avg fps drops below threshold), `recordCounters(snapshot)` (copies values into a pre-allocated snapshot object in-place; warns on limit breach when `debug=true`), `getSnapshot()` (returns the same mutable object reference — zero-alloc), `getAvgFps()` (returns 0 until ring is full), `resetFpsRing()` (clears ring and re-arms watchdog). `FrameBudgetLimits` and `FrameBudgetSnapshot` are both `Record<string, number>`. Consumer's `onWatchdog` is opaque — no postfx dependency.
-- `createBootTrace(label?)` — closure-local boot milestone recorder. Default `label` is `'boot-trace'`. Returns `BootTraceHandle`: `mark(name)` (records a named milestone; first call sets t=0 and starts the clock using `performance.now()` with `Date.now()` fallback), `dump()` (returns a log line `[<label>] total=<N>ms <a>-><b>=<N>ms …` matching the format consumed by `apps/pan-tvardowski/scripts/parse-boot-trace.ts`, or `null` if no marks have been recorded), `reset()` (clears all state so the trace can be restarted), `getEntries()` (returns a snapshot copy of `BootEntry[]` — `{ name, t }` — safe to mutate without affecting internal state). `PerfSample` is out of scope. Designed to be engine-only promoted source; PT-side strip ships separately.
+- `createBootTrace(label?)` — closure-local boot milestone recorder. Default `label` is `'boot-trace'`. Returns `BootTraceHandle`: `mark(name)` (records a named milestone; first call sets t=0 and starts the clock using `performance.now()` with `Date.now()` fallback), `dump()` (returns a log line `[<label>] total=<N>ms <a>-><b>=<N>ms …` matching the format consumed by the Pan Tvardowski repo's `scripts/parse-boot-trace.ts`, or `null` if no marks have been recorded), `reset()` (clears all state so the trace can be restarted), `getEntries()` (returns a snapshot copy of `BootEntry[]` — `{ name, t }` — safe to mutate without affecting internal state). `PerfSample` is out of scope. Designed to be engine-only promoted source; PT-side strip ships separately.
 - `createPerfRecorder(opts?)` — scenario-level performance recorder for the benchmark harness. `opts`: `{ label?: string (default 'perf'); ringSize?: number (default 1800, = 30s @ 60fps) }`. Returns `PerfRecorderHandle`: `beginSection(name)` / `endSection(name)` bracket a named timing section — elapsed time is written into a pre-allocated `Float32Array` ring per section (zero-alloc after first call to a new section name); `recordFrame(counters?)` increments `frameCount` and accumulates optional per-frame counter values (min/max/sum, zero-alloc — no allocation per call after the counter key is first seen); `flush() → PerfReport` copies and sorts each section's ring to compute `{ count, min, max, mean, p50, p95, p99 }` (copy-sort on flush, not per frame), returns `PerfReport`; `reset()` clears all rings, counters, and `frameCount` without deallocating. `PerfSectionStats`: `{ name, count, min, max, mean, p50, p95, p99 }`. `PerfCounterStats`: `{ name, count, min, max, sum, mean }`. `PerfReport`: `{ label, durationMs, frameCount, sections: readonly PerfSectionStats[], counters: readonly PerfCounterStats[] }`.
 - `emitPerfReport(report)` — writes a single-line tagged JSON entry `[perf-bench] {...}` to `console.log` for logcat / iOS unified-log capture. The sentinel tag `PERF_BENCH_TAG = '[perf-bench]'` is a named export for grep/parse stability.
 - Pause, step-frame, slow-motion via `timeScale`
@@ -368,7 +368,7 @@ Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, me
 - `FocusManager` is the single source of truth for keyboard / gamepad navigation. Drivers (keyboard listener, gamepad dpad) just call `next` / `prev` / `activate`. Gamepad wiring lands in stage 11.4 without any UI-kit changes.
 - `resolveLayout` is pure and allocation-light (one output array); useful for Skia-rendered HUD that needs deterministic pixel positions outside the React Native flex engine.
 - Component tests are thin (export-check) because bun-test has no RN runtime; the heavy-logic modules (`theme`, `focus`, `layout`) are fully unit-tested.
-- `apps/pan-tvardowski` menus + HUD consume `@flare-engine/ui` end-to-end (M9.1).
+- Pan Tvardowski menus + HUD consume `@flare-engine/ui` end-to-end (M9.1).
 
 ---
 
@@ -555,7 +555,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | `create-flare-app <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
 | Template `blank` | Empty scene, single sprite, `GameView` wired via `@flare-engine/react`. Smallest starting point. |
 | Template `topdown` | Player with 4-direction movement, tilemap + camera follow, one enemy prefab. Exercises `tilemap` + `input` + `ecs`. |
-| Template `shmup` | Auto-fire player, enemy spawner, HUD score — minimum vertical-slice shmup. Exercises `particles` + `audio` + `scene`. For the full-scope showcase, see `apps/pan-tvardowski`. |
+| Template `shmup` | Auto-fire player, enemy spawner, HUD score — minimum vertical-slice shmup. Exercises `particles` + `audio` + `scene`. For the full-scope showcase, see [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski). |
 | `TemplateManifest` | Exported type: `{ id, displayName, description, engines, postInstall? }`. Declared per template so contributor-authored templates can plug in identically. |
 
 **Implementation notes:**

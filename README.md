@@ -11,13 +11,12 @@
 
 ## Status
 
-**Pre-release — 0.1.0 coming October 2026.**
+**0.1.0 published (restricted) 2026-06-09 — public OSS launch coming October 2026.**
 
-- 36 packages implemented and tested (~1,549 tests across engine + reference game, 0 failures)
-- [`apps/pan-tvardowski`](apps/pan-tvardowski) — the canonical end-to-end reference + integration smoke test. Polish-folklore shmup, 8 zones playable, PL+EN; free zones 1–3 replace the retired `apps/demo` as the reference game. Design locked in [docs/plans/pan-tvardowski-build-plan.md](docs/plans/pan-tvardowski-build-plan.md)
-- Phase 11 (OSS launch prep) is in progress — remaining work: landing-page MP4 + store-page links, Docusaurus site, API snapshot lock, governance files, EUIPO trademark filing, RC publish
-- `@flare-engine` npm scope reserved 2026-04-17; packages flip `"private": false` at RC cut
-- Full roadmap: [docs/plans/build-plan.md](docs/plans/build-plan.md)
+- 36 scoped packages live on npm as private/restricted `@flare-engine/*@0.1.0`; they flip public at the OSS launch
+- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). Lives in its own repo since 2026-06-10 and consumes the engine from npm at `^0.1.0` — the proof the engine works as a real dependency, not just a workspace
+- Phase 11 (OSS launch prep) is in progress — remaining work: landing-page MP4 + store-page links, Docusaurus site, API snapshot lock, governance files, EUIPO trademark filing
+- Full roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md)
 
 ---
 
@@ -102,11 +101,11 @@ bun run build
 bun run test
 ```
 
-The reference game runs via Expo:
+The showcase game lives in its own repo and consumes the published packages:
 
 ```bash
-cd apps/pan-tvardowski
-bun run start
+git clone https://github.com/grzott/Pan-Tvardowski
+cd Pan-Tvardowski && bun install && bun run start
 ```
 
 Once 0.1.0 publishes, a fresh project will scaffold via:

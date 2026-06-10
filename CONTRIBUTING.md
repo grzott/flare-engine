@@ -10,18 +10,18 @@ Thanks for your interest in Flare! This is a modular 2D game engine for React Na
 
 ```bash
 bun install          # Install all dependencies
-bun run build        # Build all 34 packages (turbo, dependency-ordered)
+bun run build        # Build all packages (turbo, dependency-ordered)
 bun run test         # Run the full test suite
 ```
 
-First-time setup needs [Bun](https://bun.sh) 1.1+. The reference game additionally needs an Expo-compatible iOS / Android environment — see [apps/pan-tvardowski/README.md](apps/pan-tvardowski) for details.
+First-time setup needs [Bun](https://bun.sh) 1.1+.
 
 ---
 
 ## Ways to Contribute
 
 - **Bug reports.** Open a GitHub Issue with a minimal reproduction — a failing `bun test` snippet or a small standalone repo is ideal.
-- **Feature requests.** Open a Discussion first so we can scope it against the [roadmap](docs/plans/build-plan.md).
+- **Feature requests.** Open a Discussion first so we can scope it against the [roadmap](docs/plans/roadmap.md).
 - **Docs.** Typos, clarifications, new examples — all welcome. Docs live under [docs/](docs/README.md) and in each package's README.
 - **Code.** See the workflow below.
 
@@ -51,8 +51,8 @@ First-time setup needs [Bun](https://bun.sh) 1.1+. The reference game additional
 
 ## Project Layout
 
-- [packages/](packages/) — the `@flare-engine/*` packages (34 total). See [README.md](README.md#packages) for the layer map.
-- [apps/pan-tvardowski/](apps/pan-tvardowski/) — device-verified Expo consumer app; canonical end-to-end reference + integration smoke test.
+- [packages/](packages/) — the 36 `@flare-engine/*` packages + the `create-flare-app` scaffolder. See [README.md](README.md#packages) for the layer map.
+- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — device-verified Expo consumer game in its own repo; canonical end-to-end reference consuming `@flare-engine/*` from npm.
 - [apps/bench-dashboard/](apps/bench-dashboard/) — Next.js visualizer for benchmark results.
 - [benchmarks/](benchmarks/) — perf harness.
 - [docs/](docs/README.md) — design, plans, references.

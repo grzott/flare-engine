@@ -1,8 +1,0 @@
-# KG10 recolor intermediates — regenerable build artifacts, not source.
-# Source of truth: committed assets/kenney-src/ (native pack sprites) +
-# THEME_REMAP in src/visual-spec/kenney-palette.ts. Regenerate with
-#   bun run recolor:kenney        ->  assets/kenney-recolored/
-#   bun run recolor:kenney-cb     ->  assets/kenney-recolored-cb/
-# Only the packed atlases (assets/kenney/zone1*.png + *.json) are committed.
-assets/kenney-recolored/
-assets/kenney-recolored-cb/

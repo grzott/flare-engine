@@ -72,45 +72,11 @@ Full zone/enemy/boss/weapon/ship/upgrade/dialogue specs live in the PT repo's `s
 
 ---
 
-## When ready to ship (manual launch tier)
+## When ready to ship
 
-Owner-managed, outside the session loop. Nothing here is urgent.
-
-### 1. Store accounts (~$124 first year)
-- Google Play developer account ($25 one-time)
-- Apple Developer Program ($99/year)
-- Google Play Console: PT app + internal testing track (procedure in the PT repo's `docs/keystore.md`)
-- App Store Connect: PT app + TestFlight (procedure in the PT repo's `docs/keystore.md`)
-- Android signing: upload keystore in EAS credentials
-- iOS signing: dist cert + provisioning profile via EAS
-
-### 2. IAP products
-- Google Play: `pan_tvardowski.full_game` + `pan_tvardowski.supporter_pack` (both non-consumable) — pricing, localized name/description
-- App Store: matching product IDs + metadata
-
-### 3. Legal
-- Domains: `pantvardowski.com` + `.pl` + `.eu` (~€30)
-- Social handles: `@pantvardowski` on X, YouTube, TikTok
-- EUIPO word mark (Classes 9 + 41, ~€900 DIY)
-- Privacy policy URL on engine site
-- Terms of Service
-- Age rating (IARC + App Store)
-
-### 4. Build + smoke
-- Fresh release APK via EAS cloud build (Windows `eas build --local` is broken — use cloud or WSL)
-- TestingBot Pixel 10 (Android) smoke — Maestro flows in the PT repo's `.maestro/`
-- iPhone 16 Pro (iOS) smoke — gated on Apple Developer account
-
-### 5. Store assets
-- App icon (1024×1024 master, platform variants generated)
-- Google Play: 8 screenshots (1080×1920) per language + feature graphic (1024×500) + 30s trailer
-- App Store: 10 screenshots per device class per language + 30s preview per device class
-- Store-page copy EN + PL (short, long, promo)
-
-### 6. Submit
-- Google Play closed testing → production (14-day-with-12-testers gate)
-- App Store TestFlight → production (budget 2 review rounds)
-- Steam (Tauri wrap) — 0.2.0+
+PT launch checklist (store accounts, IAP products, legal, build + smoke, store assets,
+submission) moved to the PT repo:
+[docs/release-checklist.md](https://github.com/grzott/Pan-Tvardowski/blob/main/docs/release-checklist.md).
 
 ---
 
@@ -147,8 +113,8 @@ What PT produced that was promoted back to engine packages. Genre-agnostic only.
 
 Pick any — or none. None is the default.
 
-1. **Ship PT** — walk the launch-tier checklist above. ~$124 + weekend of submission work.
-2. **Second game** — top-down or deck-builder, separate private repo. Tests engine reusability. Use `bun add github:grzott/flare-engine` for cross-repo dep, no npm $ needed.
+1. **Ship PT** — walk the PT repo's `docs/release-checklist.md`. ~$124 + weekend of submission work.
+2. **Second game** — top-down or deck-builder, separate private repo. Tests engine reusability. Consumes `@flare-engine/*@^0.1.0` from the restricted npm registry (Berek is already scaffolded this way).
 3. **Engine feature** — e.g. 2.5D lighting via SkSL RuntimeEffect (notes in `docs/design/lighting-2-5d.md`), or snapshot-source postfx for scene-texture effects.
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 

@@ -2,7 +2,15 @@
 # /close gate script. Runs lint -> typecheck -> test -> build, appends a block
 # to SESSION_LOG.md, and emits paste-ready commit blocks based on git diff.
 #
-# Usage: bash .claude/hooks/verify.sh "<session goal>" "<scope: engine|game|mixed>"
+# Usage: bash .claude/hooks/verify.sh "<session goal>" "<scope: engine|game|mixed>" ["<frictions>"]
+#
+# The optional 3rd arg is a one-line frictions self-report from the closing
+# agent (corr:N / deny:N / gate:N / fixup:N / drift:N — see /close skill).
+# Defaults to "none".
+#
+# Batch mode: when .claude/.batch-baseline exists (written by /start batch),
+# the block + commit list cover only paths changed since the previous row's
+# close; the baseline refreshes after each append.
 #
 # Exit codes:
 #   0  -> all gates green, SESSION_LOG appended, commit blocks emitted
@@ -13,6 +21,7 @@ set -u
 
 GOAL="${1:-}"
 SCOPE="${2:-}"
+FRICTIONS="${3:-none}"
 
 if [ -z "$GOAL" ] || [ -z "$SCOPE" ]; then
   echo "usage: verify.sh \"<goal>\" \"<engine|game|mixed>\"" >&2
@@ -56,6 +65,13 @@ fi
 # ---- Diff snapshot ---------------------------------------------------------
 
 CHANGED=$(git status --porcelain | awk '{print $2}' | sort -u)
+
+BASELINE_FILE=".claude/.batch-baseline"
+ALL_CHANGED="$CHANGED"
+if [ -f "$BASELINE_FILE" ]; then
+  CHANGED=$(comm -13 <(sort -u "$BASELINE_FILE") <(printf '%s\n' "$ALL_CHANGED"))
+fi
+
 if [ -z "$CHANGED" ]; then
   echo "no changes in working tree — nothing to close"
   exit 1
@@ -84,10 +100,16 @@ N=$((N + 1))
   echo "- test: green"
   [ "$SCOPE" != "game" ] && echo "- build: green"
   echo ""
+  echo "**Frictions:** $FRICTIONS"
+  echo ""
   echo "**Next:** see \`docs/plans/todo.md\`."
   echo ""
   echo "---"
 } >> "$LOG"
+
+if [ -f "$BASELINE_FILE" ]; then
+  printf '%s\n' "$ALL_CHANGED" > "$BASELINE_FILE"
+fi
 
 echo ""
 echo "Appended session #$N block to $LOG."

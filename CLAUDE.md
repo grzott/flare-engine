@@ -1,6 +1,8 @@
 # Flare Engine — Claude Code Guide
 
-Conventions: [AGENTS.md](AGENTS.md). Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Next-up: [docs/plans/todo.md](docs/plans/todo.md). API contract: [docs/design/api-specs.md](docs/design/api-specs.md).
+@AGENTS.md
+
+Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Next-up: [docs/plans/todo.md](docs/plans/todo.md). API contract: [docs/design/api-specs.md](docs/design/api-specs.md).
 
 ## Agents
 
@@ -11,12 +13,12 @@ Two builders, no planners. You pick the next row from `todo.md`.
 
 ## Workflow
 
-1. `/start` — pick top row from `todo.md`, route to builder by scope, present plan, halt for approval.
-2. Implement.
-3. `/close` — `.claude/hooks/verify.sh` runs lint → typecheck → test → build, appends a block to `SESSION_LOG.md`, emits commit blocks. You run the commits.
+1. `/start [N | keyword]` — pick the top row (or top N, max 5) from `todo.md`, route to builder by scope, present all plans, halt ONCE for batch approval.
+2. Implement row by row — per-row gate, per-row commit block (batch state in `.claude/.batch-baseline`).
+3. `/close` — `.claude/hooks/verify.sh` runs lint → typecheck → test → build, appends a block (incl. a frictions self-report) to `SESSION_LOG.md`, emits commit blocks. You run the commits.
+4. `/retro` every ~15 sessions — mines SESSION_LOG frictions into harness recommendations.
 
 ## Boundaries
 
 - Builders never run `git add`/`commit`/`push` (blocked in `.claude/settings.json` + `pre-bash-guard.sh`).
-- Conventional Commits, ≤72-char subject, no body, no Co-Authored-By trailer.
-- One source per fact. No mirror rows. No supersession footnotes. If a plan changes, edit `roadmap.md` or `todo.md` directly.
+- Commit format and the one-source-per-fact rule come from the imported `AGENTS.md`. If a plan changes, edit `roadmap.md` or `todo.md` directly.

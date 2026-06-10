@@ -24,6 +24,9 @@ apps/*/.expo/
 # JetBrains IDE local config
 .idea/
 
+# /start batch state — per-row diff baseline consumed by verify.sh
+.claude/.batch-baseline
+
 # TestingBot credentials — real values never committed; see .env.testingbot.example
 apps/*/.env.testingbot
 

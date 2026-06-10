@@ -109,7 +109,7 @@ On-device FPS samples captured from a device benchmark scene (hidden triple-tap 
 
 ## Gating Phase 10 (C++ acceleration)
 
-Per [build-plan.md](../plans/build-plan.md), C++ acceleration is only started for subsystems where these benchmarks (plus on-device measurements from the demo game) show a concrete bottleneck. Priority order from [native-acceleration.md](../design/native-acceleration.md) remains: particles → ECS hot loop → spatial hash → physics. Numbers above are the JS baseline against which any C++ port must demonstrate speedup.
+Per [roadmap.md](../plans/roadmap.md), C++ acceleration is only started for subsystems where these benchmarks (plus on-device measurements from the showcase game) show a concrete bottleneck. Priority order from [native-acceleration.md](../design/native-acceleration.md) remains: particles → ECS hot loop → spatial hash → physics. Numbers above are the JS baseline against which any C++ port must demonstrate speedup.
 
 ### Decision — 2026-04-22
 

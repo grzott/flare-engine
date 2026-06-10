@@ -1,8 +1,8 @@
 # Build Plan Archive — Phases 0–9
 
-> Archive extracted from [../plans/build-plan.md](../plans/build-plan.md) on 2026-04-24.
+> Archive extracted from the former `docs/plans/build-plan.md` on 2026-04-24.
 > All phases below are ✅ **DONE** (completed 2026-04-16). Kept verbatim for historical reference.
-> Active planning lives in [build-plan.md](../plans/build-plan.md) — Phase 10 onward.
+> Active planning lives in [roadmap.md](../plans/roadmap.md).
 
 ---
 

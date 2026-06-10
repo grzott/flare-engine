@@ -187,7 +187,7 @@ Two modes:
 
 ## Phase 11 — OSS-launch additions
 
-Phase 11 extends the core 16 packages with the horizontal concerns a full-stack, launchable engine needs. Detailed API contracts in [api-specs.md](api-specs.md); roadmap stages in [../plans/build-plan.md](../plans/build-plan.md).
+Phase 11 extends the core 16 packages with the horizontal concerns a full-stack, launchable engine needs. Detailed API contracts in [api-specs.md](api-specs.md); roadmap stages in [../plans/roadmap.md](../plans/roadmap.md).
 
 ### Layer 2.5 — Persistence & reliability
 

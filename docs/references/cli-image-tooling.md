@@ -128,4 +128,4 @@ PNG-only fallback via pngjs + manual compositing. WebP disabled with a warning. 
 | maxrects-packer npm | https://www.npmjs.com/package/maxrects-packer    |
 | jimp npm            | https://www.npmjs.com/package/jimp               |
 | Flare CLI spec      | `docs/design/api-specs.md` (search `pack-atlas`) |
-| Flare build plan    | `docs/plans/build-plan.md` (stage 11.8)          |
+| Flare roadmap       | `docs/plans/roadmap.md` (Phase 11 tooling)       |

@@ -8,7 +8,7 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [design/](design/)         | Canonical design — architecture, API contracts, dependency rationale, ecosystem landscape, native strategy. **Source of truth for the public API surface.** |
 | [plans/](plans/)           | Forward-looking execution plans. The active roadmap lives here; completed phase details move to archival over time.                                         |
-| [references/](references/) | Living reference material: benchmarks, agent playbooks, CanvasKit parity audit, CLI tooling background.                                                     |
+| [references/](references/) | Living reference material: benchmarks, CanvasKit parity audit, CLI tooling background.                                                                       |
 
 ## Files
 
@@ -27,9 +27,6 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 
 ### references/
 
-- [architect-reference.md](references/architect-reference.md) — Audit workflow + anti-pattern checklist for the `@architect` agent.
-- [builder-reference.md](references/builder-reference.md) — Current package status + verification protocol for the `@builder` agent.
-- [researcher-reference.md](references/researcher-reference.md) — Research domains + report format for the `@researcher` agent.
 - [benchmarks.md](references/benchmarks.md) — Microbench + device FPS results (regenerated from `benchmarks/results/`).
 - [canvaskit-parity.md](references/canvaskit-parity.md) — Audit of CanvasKit web parity for every Skia API Flare uses.
 - [cli-image-tooling.md](references/cli-image-tooling.md) — Tooling background for `@flare-engine/cli` (sharp + maxrects-packer decisions).
@@ -38,6 +35,5 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 
 - [AGENTS.md](../AGENTS.md) — conventions, commands, architecture summary (root of the repo).
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — how to contribute.
-- [.github/agents/](../.github/agents/) — custom Copilot agents (`@builder`, `@architect`, `@researcher`).
-- [.github/instructions/](../.github/instructions/) — file-scoped coding rules.
-- [.github/skills/](../.github/skills/) — per-package discovery skills.
+- [.claude/agents/](../.claude/agents/) — builder subagents (`engine-builder`, `game-builder`).
+- [.claude/skills/](../.claude/skills/) — workflow + domain skills (start/close, game-dev, scaffolder, tier-2 stubs).

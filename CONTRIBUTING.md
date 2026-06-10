@@ -2,7 +2,7 @@
 
 Thanks for your interest in Flare! This is a modular 2D game engine for React Native + Web, built on Skia. We welcome bug reports, feature requests, documentation fixes, and code contributions — no contribution is too small.
 
-> **Before 0.1.0 ships (October 2026)** the public API can still move. If you're planning a substantial change, open an issue or discussion first so we can align before you invest the effort.
+> **Before the public OSS launch (October 2026)** the public API can still move. If you're planning a substantial change, open an issue or discussion first so we can align before you invest the effort.
 
 ---
 
@@ -92,7 +92,7 @@ packages/<name>/
 | Tests         | `bun test`. One test file per source file. Cover `NaN`, `Infinity`, zero, negative, edge inputs. |
 | Versioning    | Changesets (SemVer, independent per package).                                                    |
 
-Longer versions live in [AGENTS.md](AGENTS.md) and under [.github/instructions/](.github/instructions/).
+Longer versions live in [AGENTS.md](AGENTS.md).
 
 ---
 

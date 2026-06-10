@@ -6888,3 +6888,80 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 189 — 2026-06-10 (scope: engine)
+
+**Goal:** docs + harness modernization post PT extract
+
+**Touched files**
+- `.claude/agents/game-builder.md`
+- `.claude/commands/close.md`
+- `.claude/commands/start.md`
+- `.claude/hooks/verify.sh`
+- `.claude/settings.json`
+- `.claude/skills/close/`
+- `.claude/skills/flare-game-dev/SKILL.md`
+- `.claude/skills/flare-tier2-stubs/SKILL.md`
+- `.claude/skills/retro/`
+- `.claude/skills/start/`
+- `.gitignore`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `CONTRIBUTING.md`
+- `README.md`
+- `docs/README.md`
+- `docs/design/architecture.md`
+- `docs/design/ecosystem.md`
+- `docs/history/build-plan-archive.md`
+- `docs/plans/roadmap.md`
+- `docs/references/benchmarks.md`
+- `docs/references/cli-image-tooling.md`
+- `docs/references/pan-tvardowski/README.md`
+- `packages/a11y/README.md`
+- `packages/achievements/README.md`
+- `packages/analytics/README.md`
+- `packages/animation/README.md`
+- `packages/assets/README.md`
+- `packages/audio/README.md`
+- `packages/cli/README.md`
+- `packages/core/README.md`
+- `packages/create-flare-app/README.md`
+- `packages/debug/README.md`
+- `packages/deep-links/README.md`
+- `packages/devtools/README.md`
+- `packages/dialogue/README.md`
+- `packages/ecs/README.md`
+- `packages/engine/README.md`
+- `packages/errors/README.md`
+- `packages/events/README.md`
+- `packages/iap-revenuecat/README.md`
+- `packages/iap/README.md`
+- `packages/input/README.md`
+- `packages/leaderboards/README.md`
+- `packages/localization/README.md`
+- `packages/math/README.md`
+- `packages/particles/README.md`
+- `packages/pathfinding/README.md`
+- `packages/physics/README.md`
+- `packages/postfx/README.md`
+- `packages/react/README.md`
+- `packages/render/README.md`
+- `packages/scene/README.md`
+- `packages/shapes/README.md`
+- `packages/share/README.md`
+- `packages/storage/README.md`
+- `packages/testing/README.md`
+- `packages/tilemap/README.md`
+- `packages/ui/README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** deny:1 (PowerShell-via-Bash blocked by classifier; used Glob); gate:1 (PT lint red pre-existing on main — kenney script formatting from ws-paths commit, biome --write fixed)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

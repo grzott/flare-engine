@@ -47,6 +47,12 @@ First-time setup needs [Bun](https://bun.sh) 1.1+.
 7. Commit using Conventional Commits (enforced by commitlint): `feat(math): add Vec2.lerp`.
 8. Push and open a Pull Request. The CI workflow runs the same four checks as step 5.
 
+After a publish, the [Pan Tvardowski repo](https://github.com/grzott/Pan-Tvardowski)'s nightly
+`Engine Compat` workflow is the post-publish drift signal — it floats `@flare-engine/*` to the
+latest in-range versions and runs PT's full gate. **Engine minor bumps (`0.x` → `0.x+1`) fall
+outside PT's caret ranges and silently freeze that guard** — bumping PT's `@flare-engine/*`
+ranges is part of every minor release.
+
 ---
 
 ## Project Layout

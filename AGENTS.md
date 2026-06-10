@@ -42,6 +42,6 @@ bun run lint:fix
 
 ## Conventions
 
-- Conventional Commits: `feat(math): add Vec2.lerp` — ≤72 chars, no body, no emoji
+- Conventional Commits: `feat(math): add Vec2.lerp` — ≤72 chars, no body, no emoji, no Co-Authored-By trailer
 - One source per fact (no mirror rows, no duplicate changelogs)
 - Status: feature-complete at 0.1.x; OSS launch target October 2026

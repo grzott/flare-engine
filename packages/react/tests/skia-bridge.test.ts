@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
 import type {
   CustomShaderEffect,
+  DropShadowEffect,
   FireEffect,
   FlashEffect,
   FogEffect,
@@ -42,13 +43,24 @@ interface MockShader {
   readonly uniforms: readonly number[];
 }
 
+interface MockImageFilter {
+  readonly kind: 'drop-shadow';
+  readonly dx: number;
+  readonly dy: number;
+  readonly sigmaX: number;
+  readonly sigmaY: number;
+  readonly color: Float32Array;
+}
+
 interface MockPaint {
   readonly id: number;
   colorFilter: MockColorFilter | null;
   shader: MockShader | null;
+  imageFilter: MockImageFilter | null;
   alphaf: number;
   setColorFilter(filter: MockColorFilter | null): void;
   setShader(shader: MockShader | null): void;
+  setImageFilter(filter: MockImageFilter | null): void;
   setAlphaf(alpha: number): void;
 }
 
@@ -149,12 +161,16 @@ function makeMockSkia(): SkiaModuleLike {
         id: paintCount,
         colorFilter: null,
         shader: null,
+        imageFilter: null,
         alphaf: 1,
         setColorFilter(filter) {
           this.colorFilter = filter;
         },
         setShader(shader) {
           this.shader = shader;
+        },
+        setImageFilter(filter) {
+          this.imageFilter = filter;
         },
         setAlphaf(alpha) {
           this.alphaf = alpha;
@@ -1092,6 +1108,109 @@ describe('fire effect', () => {
     // Fire paint has shader set; default paint (id=1) has shader=null.
     expect(call?.paint.shader).not.toBeNull();
     expect(call?.paint.id).not.toBe(1);
+  });
+});
+
+let imageFilterMakeCalls = 0;
+function makeMockSkiaWithImageFilter(): SkiaModuleLike {
+  imageFilterMakeCalls = 0;
+  const base = makeMockSkia();
+  return {
+    ...base,
+    ImageFilter: {
+      MakeDropShadow(dx: number, dy: number, sigmaX: number, sigmaY: number, color: Float32Array) {
+        imageFilterMakeCalls++;
+        const f: MockImageFilter = {
+          kind: 'drop-shadow',
+          dx,
+          dy,
+          sigmaX,
+          sigmaY,
+          color: new Float32Array(color),
+        };
+        return f as unknown as ReturnType<
+          NonNullable<SkiaModuleLike['ImageFilter']>['MakeDropShadow']
+        >;
+      },
+    } as unknown as NonNullable<SkiaModuleLike['ImageFilter']>,
+  };
+}
+
+describe('createSkiaFrameRenderer — drop-shadow effect', () => {
+  const shadow = { r: 0, g: 0, b: 0, a: 0.5 } as const;
+
+  it('sets a MakeDropShadow filter carrying offset, blur, and tint+opacity', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithImageFilter());
+    bridge.beginFrame(800, 600);
+    const effect: DropShadowEffect = {
+      type: 'drop-shadow',
+      offsetX: 3,
+      offsetY: 8,
+      blur: 5,
+      color: shadow,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    expect(imageFilterMakeCalls).toBe(1);
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    const filter = call?.paint.imageFilter as MockImageFilter;
+    expect(filter?.kind).toBe('drop-shadow');
+    expect(filter.dx).toBe(3);
+    expect(filter.dy).toBe(8);
+    expect(filter.sigmaX).toBe(5);
+    expect(filter.sigmaY).toBe(5);
+    expect(filter.color[0]).toBeCloseTo(0);
+    expect(filter.color[3]).toBeCloseTo(0.5); // color.a is the shadow opacity
+    expect(call?.paint.id).not.toBe(1); // dedicated drop-shadow paint, not the default
+  });
+
+  it('renders the sprite + shadow in a single drawAtlas pass per batch', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithImageFilter());
+    bridge.beginFrame(800, 600);
+    const effect: DropShadowEffect = {
+      type: 'drop-shadow',
+      offsetX: 0,
+      offsetY: 6,
+      blur: 4,
+      color: shadow,
+    };
+    bridge.drawAtlas(mockImage(), [cmd({ effect }), cmd({ effect })]);
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(1);
+  });
+
+  it('reuses one paint across frames; the filter is rebuilt per draw', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkiaWithImageFilter());
+    const effect: DropShadowEffect = {
+      type: 'drop-shadow',
+      offsetX: 0,
+      offsetY: 6,
+      blur: 4,
+      color: shadow,
+    };
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    const paintsAfterFirst = paintCount;
+    bridge.endFrame();
+    bridge.beginFrame(800, 600);
+    bridge.drawAtlas(mockImage(), [cmd({ effect })]);
+    bridge.endFrame();
+    expect(paintCount).toBe(paintsAfterFirst); // no new paint on the second frame
+    expect(imageFilterMakeCalls).toBe(2); // filter rebuilt each draw
+  });
+
+  it('falls back to the default paint when Skia.ImageFilter is absent', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const effect: DropShadowEffect = {
+      type: 'drop-shadow',
+      offsetX: 0,
+      offsetY: 6,
+      blur: 4,
+      color: shadow,
+    };
+    expect(() => bridge.drawAtlas(mockImage(), [cmd({ effect })])).not.toThrow();
+    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(call?.paint.id).toBe(1); // defaultPaint
+    expect(call?.paint.imageFilter).toBeNull();
   });
 });
 

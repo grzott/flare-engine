@@ -5,6 +5,7 @@ import {
   type CanvasLike,
   type CaveInteriorEffect,
   type CustomShaderEffect,
+  type DropShadowEffect,
   FIRE_SKSL,
   FOG_SKSL,
   FOREST_CANOPY_SKSL,
@@ -34,6 +35,7 @@ import type {
   SkColor,
   SkHostRect,
   SkImage,
+  SkImageFilter,
   SkPaint,
   SkPicture,
   SkPictureRecorder,
@@ -134,6 +136,17 @@ export type SkiaModuleLike = Pick<
   Surface?: {
     Make(width: number, height: number): SkSurfaceLike | null;
     MakeOffscreen?(width: number, height: number): SkSurfaceLike | null;
+  };
+  /** Optional — present on device builds; absent in CPU/test mocks (drop-shadow falls back to the default paint). */
+  ImageFilter?: {
+    MakeDropShadow(
+      dx: number,
+      dy: number,
+      sigmaX: number,
+      sigmaY: number,
+      color: SkColor,
+      input: SkImageFilter | null,
+    ): SkImageFilter;
   };
 };
 
@@ -286,6 +299,7 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   let fogRuntimeEffect: SkRuntimeEffect | null = null;
   let firePaint: SkPaint | null = null;
   let fireRuntimeEffect: SkRuntimeEffect | null = null;
+  let dropShadowPaint: SkPaint | null = null;
 
   // Zone-background shader state — one runtime effect + paint per effect type.
   // Compiled lazily on first use; reused every frame thereafter.
@@ -347,6 +361,7 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
   const tintColor: SkColor = new Float32Array(4);
   const flashColor: SkColor = new Float32Array(4);
   const outlineColor: SkColor = new Float32Array(4);
+  const dropShadowColor: SkColor = new Float32Array(4);
 
   // Grayscale color matrix (4x5 row-major, length 20). The constant entries
   // are written once here; `writeGrayscaleMatrix` only mutates the rgb
@@ -573,6 +588,27 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
     return firePaint;
   }
 
+  function applyDropShadow(effect: DropShadowEffect): SkPaint {
+    // ImageFilter is absent in CPU surfaces / test mocks — fall back to the
+    // unfiltered paint so the sprite still draws (just without its shadow).
+    if (Skia.ImageFilter === undefined) return defaultPaint;
+    if (dropShadowPaint === null) dropShadowPaint = Skia.Paint();
+    // color.a is the shadow opacity; offset + blur + tint all live in the filter,
+    // so the single drawAtlas pass renders the sprite and its shadow together.
+    writeColor(dropShadowColor, effect.color, 1);
+    dropShadowPaint.setImageFilter(
+      Skia.ImageFilter.MakeDropShadow(
+        effect.offsetX,
+        effect.offsetY,
+        effect.blur,
+        effect.blur,
+        dropShadowColor,
+        null,
+      ),
+    );
+    return dropShadowPaint;
+  }
+
   function applyRoofsCity(effect: RoofsCityEffect): SkPaint {
     if (Skia.RuntimeEffect === undefined) return defaultPaint;
     if (roofsCityEffect === null) {
@@ -747,6 +783,8 @@ export function createSkiaFrameRenderer(Skia: SkiaModuleLike): SkiaFrameRenderer
         return applyFog(effect, currentFrameTime);
       case 'fire':
         return applyFire(effect, currentFrameTime);
+      case 'drop-shadow':
+        return applyDropShadow(effect);
       case 'outline':
         // Outline is drawn via a multi-pass path; this branch is only reached
         // if a caller bypasses `drawOutlined`. Return the outline paint so

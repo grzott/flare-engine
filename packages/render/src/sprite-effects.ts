@@ -84,6 +84,24 @@ export interface FireEffect extends SpriteEffect {
   readonly intensity: number;
 }
 
+/**
+ * Drop-shadow effect — a single offset, blurred, tinted copy of the sprite drawn
+ * beneath it for ship / boss grounding. Time-invariant. Applied via a Skia
+ * `ImageFilter.MakeDropShadow` on a reused paint (sprite + shadow in one pass);
+ * the offset, blur, and tint all live in the filter, so no extra draw pass.
+ */
+export interface DropShadowEffect extends SpriteEffect {
+  readonly type: 'drop-shadow';
+  /** Horizontal shadow offset in design px. */
+  readonly offsetX: number;
+  /** Vertical shadow offset in design px; positive = downward (grounding). */
+  readonly offsetY: number;
+  /** Gaussian blur sigma applied to the shadow. 0 = hard edge. */
+  readonly blur: number;
+  /** Shadow color; `a` is the shadow opacity. */
+  readonly color: SpriteColor;
+}
+
 // ---------------------------------------------------------------------------
 // Zone background effects — procedural-silhouette SkSL bg layers
 // ---------------------------------------------------------------------------
@@ -166,6 +184,7 @@ export type AnySpriteEffect =
   | WaterEffect
   | FogEffect
   | FireEffect
+  | DropShadowEffect
   | RoofsCityEffect
   | ForestCanopyEffect
   | RiverWaveEffect
@@ -231,6 +250,23 @@ export function fire(opts: {
     tipColor: opts.tipColor,
     speed: opts.speed ?? 1.0,
     intensity: opts.intensity ?? 0.8,
+  };
+}
+
+/** Create a drop-shadow effect. Defaults to a soft shadow offset downward for
+ *  grounding; `color.a` is the shadow opacity. */
+export function dropShadow(opts: {
+  color: SpriteColor;
+  offsetX?: number;
+  offsetY?: number;
+  blur?: number;
+}): DropShadowEffect {
+  return {
+    type: 'drop-shadow',
+    color: opts.color,
+    offsetX: opts.offsetX ?? 0,
+    offsetY: opts.offsetY ?? 6,
+    blur: opts.blur ?? 4,
   };
 }
 

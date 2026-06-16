@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   custom,
+  dropShadow,
   flash,
   flashIntensity,
   grayscale,
@@ -153,6 +154,43 @@ describe('SpriteEffects', () => {
         }
       }
       expect(matched).toEqual(['tint:0.5', 'flash:0.3', 'grayscale:0.5', 'outline:2', 'custom:2']);
+    });
+  });
+
+  describe('dropShadow', () => {
+    const shadow: SpriteColor = { r: 0, g: 0, b: 0, a: 0.5 };
+
+    it('creates a drop-shadow effect with explicit offset, blur, and color', () => {
+      const e = dropShadow({ color: shadow, offsetX: 2, offsetY: 8, blur: 5 });
+      expect(e.type).toBe('drop-shadow');
+      expect(e.offsetX).toBe(2);
+      expect(e.offsetY).toBe(8);
+      expect(e.blur).toBe(5);
+      expect(e.color).toEqual(shadow);
+    });
+
+    it('defaults to a downward-offset soft shadow for grounding', () => {
+      const e = dropShadow({ color: shadow });
+      expect(e.offsetX).toBe(0);
+      expect(e.offsetY).toBe(6);
+      expect(e.blur).toBe(4);
+    });
+
+    it('updateEffect returns the same reference (time-invariant)', () => {
+      const e = dropShadow({ color: shadow });
+      expect(updateEffect(e, 1)).toBe(e);
+    });
+
+    it('discriminates as drop-shadow in a switch over AnySpriteEffect', () => {
+      const effects: AnySpriteEffect[] = [
+        tint(red, 0.5),
+        dropShadow({ color: shadow, offsetY: 8 }),
+      ];
+      let groundedAt = -1;
+      for (const e of effects) {
+        if (e.type === 'drop-shadow') groundedAt = e.offsetY;
+      }
+      expect(groundedAt).toBe(8);
     });
   });
 });

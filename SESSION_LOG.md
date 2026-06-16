@@ -6965,3 +6965,35 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 190 — 2026-06-16 (scope: engine)
+
+**Goal:** Engine-Haptics + Engine-DropShadowEffect — the two engine-repo deps forward-declared in the Pan Tvardowski Phase-2 queue. New `@flare-engine/haptics` Tier-2 stub (typed interface + NoopProvider + React context + an isEnabled/setEnabled gate) and a `DropShadowEffect` for the render/fx tier (offset + blur + tint, single-pass reused-paint `ImageFilter.MakeDropShadow`). Engine work only; no PT wire.
+
+**Touched files**
+- `packages/haptics/package.json`
+- `packages/haptics/README.md`
+- `packages/haptics/src/provider.ts`
+- `packages/haptics/src/context.ts`
+- `packages/haptics/src/index.ts`
+- `packages/haptics/tests/provider.test.ts`
+- `packages/haptics/tsconfig.json`
+- `packages/haptics/tsup.config.ts`
+- `packages/render/src/sprite-effects.ts`
+- `packages/render/src/index.ts`
+- `packages/render/tests/sprite-effects.test.ts`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `docs/design/api-specs.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 (biome flagged `tests/` formatting on the two new test files — `turbo lint` covers `src/` only; `biome --write` fixed pre-commit). New package auto-discovered by turbo (38→39 build tasks); `@flare-engine/render` resolves to built `dist` (no `paths` alias) so the new `DropShadowEffect` type needs a render build before react typecheck — turbo's `^build` dependsOn handles the order.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

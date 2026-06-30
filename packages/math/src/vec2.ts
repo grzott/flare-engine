@@ -1,4 +1,4 @@
-import { approxEquals } from './scalar.js';
+import { approxEquals, rotateTowards } from './scalar.js';
 
 /** Vec2 plain object type — no class, no GC pressure. */
 export type Vec2 = { x: number; y: number };
@@ -216,5 +216,23 @@ export const Vec2 = {
       return out;
     }
     return { x: v.x * inv, y: v.y * inv };
+  },
+
+  /** Zero-alloc homing steer: rotate velocity (vx,vy) toward direction (dx,dy) by at most maxStep
+   * radians, preserving speed; writes into out. Mandatory out. Byte-identical to hand-rolled
+   * homing-bullet steering (Math.hypot speed + atan2 + branch-form turn + cos/sin * speed). */
+  turnVelocityToward(
+    vx: number,
+    vy: number,
+    dx: number,
+    dy: number,
+    maxStep: number,
+    out: Vec2,
+  ): Vec2 {
+    const speed = Math.hypot(vx, vy);
+    const newAng = rotateTowards(Math.atan2(vy, vx), Math.atan2(dy, dx), maxStep);
+    out.x = Math.cos(newAng) * speed;
+    out.y = Math.sin(newAng) * speed;
+    return out;
   },
 } as const;

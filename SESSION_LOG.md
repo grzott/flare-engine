@@ -7078,3 +7078,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 194 — 2026-06-30 (scope: engine)
+
+**Goal:** feat(math): angleDelta, rotateTowards, turnVelocityToward
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/math/README.md`
+- `packages/math/src/index.ts`
+- `packages/math/src/scalar.ts`
+- `packages/math/src/vec2.ts`
+- `packages/math/tests/angle-parity.test.ts`
+- `packages/math/tests/scalar.test.ts`
+- `packages/math/tests/vec2.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 (vacuous rng.float()=NaN bit-sweep + latent TS2554 in tests, both hidden by src-only typecheck gate; caught by adversarial verify, fixed pre-commit)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

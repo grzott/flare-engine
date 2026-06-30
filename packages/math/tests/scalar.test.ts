@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  angleDelta,
   approxEquals,
   clamp,
   degToRad,
@@ -8,6 +9,7 @@ import {
   map,
   pingPong,
   radToDeg,
+  rotateTowards,
   sign,
   smoothStep,
   wrap,
@@ -105,4 +107,63 @@ describe('sign', () => {
   it('NaN returns 0', () => expect(sign(Number.NaN)).toBe(0));
   it('Infinity', () => expect(sign(Number.POSITIVE_INFINITY)).toBe(1));
   it('-Infinity', () => expect(sign(Number.NEGATIVE_INFINITY)).toBe(-1));
+});
+
+describe('angleDelta', () => {
+  it('returns 0 for equal angles', () => expect(angleDelta(1, 1)).toBe(0));
+  it('small positive delta', () => expect(angleDelta(0.3, 0.1)).toBeCloseTo(0.2));
+  it('small negative delta', () => expect(angleDelta(0.1, 0.3)).toBeCloseTo(-0.2));
+  it('wraps diff just past +PI to small negative', () => {
+    // a - b slightly over PI → wraps down
+    const a = Math.PI + 0.001;
+    const b = 0;
+    const result = angleDelta(a, b);
+    expect(result).toBeCloseTo(-(Math.PI - 0.001));
+    expect(result).toBeLessThan(0);
+    expect(result).toBeGreaterThan(-Math.PI);
+  });
+  it('wraps diff just past -PI to small positive', () => {
+    const a = -(Math.PI + 0.001);
+    const b = 0;
+    const result = angleDelta(a, b);
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeLessThanOrEqual(Math.PI);
+  });
+  it('exact boundary: angleDelta(PI, -PI) stays in (-PI, PI]', () => {
+    const result = angleDelta(Math.PI, -Math.PI);
+    expect(result).toBeGreaterThan(-Math.PI);
+    expect(result).toBeLessThanOrEqual(Math.PI);
+  });
+  it('angleDelta(PI, 0) returns PI exactly (not wrapped)', () => {
+    expect(angleDelta(Math.PI, 0)).toBe(Math.PI);
+  });
+  it('angleDelta(-PI, 0) returns -PI exactly (not wrapped — strict > check means -PI passes through)', () => {
+    expect(angleDelta(-Math.PI, 0)).toBe(-Math.PI);
+  });
+});
+
+describe('rotateTowards', () => {
+  it('undershoot: moves exactly maxStep toward target', () => {
+    const result = rotateTowards(0, 1, 0.3);
+    expect(result).toBeCloseTo(0.3);
+  });
+  it('overshoot: lands on target', () => {
+    const result = rotateTowards(0, 0.5, 2);
+    expect(result).toBeCloseTo(0.5);
+  });
+  it('negative direction: moves toward negative target', () => {
+    const result = rotateTowards(0, -1, 0.4);
+    expect(result).toBeCloseTo(-0.4);
+  });
+  it('maxStep === 0 returns cur unchanged', () => {
+    expect(rotateTowards(1.2, 3.0, 0)).toBe(1.2);
+  });
+  it('wraps through PI boundary correctly', () => {
+    // cur near -PI, target near +PI — shortest path is tiny step
+    const cur = -Math.PI + 0.01;
+    const target = Math.PI - 0.01;
+    const result = rotateTowards(cur, target, 0.1);
+    // diff = angleDelta(target, cur) ≈ -0.02; step clamped to -0.02 (within maxStep)
+    expect(result).toBeCloseTo(cur - 0.02, 5);
+  });
 });

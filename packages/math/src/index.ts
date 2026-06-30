@@ -10,6 +10,8 @@ export {
   pingPong,
   smoothStep,
   sign,
+  angleDelta,
+  rotateTowards,
 } from './scalar.js';
 export { vec2, Vec2 } from './vec2.js';
 export { Rect } from './rect.js';

@@ -256,3 +256,48 @@ describe('Vec2.normalizeOut', () => {
     expect(Number.isFinite(out.y)).toBe(true);
   });
 });
+
+describe('Vec2.turnVelocityToward', () => {
+  it('returns the same out object', () => {
+    const out = vec2();
+    const result = Vec2.turnVelocityToward(1, 0, 0, 1, 0.1, out);
+    expect(result).toBe(out);
+  });
+
+  it('preserves speed within tight tolerance', () => {
+    const out = vec2();
+    Vec2.turnVelocityToward(3, 4, 1, 0, 0.5, out);
+    const speed = Math.hypot(out.x, out.y);
+    expect(Math.abs(speed - 5)).toBeLessThan(1e-10);
+  });
+
+  it('with maxStep >= angular distance, velocity points at target direction', () => {
+    const out = vec2();
+    // velocity pointing right (1,0), target pointing up (0,1), maxStep = PI
+    Vec2.turnVelocityToward(1, 0, 0, 1, Math.PI, out);
+    const ang = Math.atan2(out.y, out.x);
+    expect(Math.abs(ang - Math.PI / 2)).toBeLessThan(1e-10);
+  });
+
+  it('with small maxStep, rotates by exactly maxStep', () => {
+    const speed = 5;
+    const out = vec2();
+    // velocity at angle 0, target at angle PI/2
+    Vec2.turnVelocityToward(speed, 0, 0, speed, 0.1, out);
+    const newAng = Math.atan2(out.y, out.x);
+    expect(Math.abs(newAng - 0.1)).toBeLessThan(1e-10);
+  });
+
+  it('speed 0 writes (0, 0)', () => {
+    const out = vec2();
+    Vec2.turnVelocityToward(0, 0, 1, 0, 0.5, out);
+    expect(out.x).toBe(0);
+    expect(out.y).toBe(0);
+  });
+
+  it('writes into out and does not allocate a new object', () => {
+    const out = vec2(99, 99);
+    Vec2.turnVelocityToward(1, 0, -1, 0, 0.2, out);
+    expect(out.x).not.toBe(99);
+  });
+});

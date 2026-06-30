@@ -71,3 +71,22 @@ export function sign(value: number): number {
   if (Number.isNaN(value)) return 0;
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
+
+/** Shortest signed angle delta a - b, wrapped to [-pi, pi] (closed both ends — strict comparisons
+ * leave exact +/-pi unwrapped). Branch form (single +/-2pi correction)
+ * — byte-identical to hand-rolled aim/homing turn math; do NOT swap for a modulo form (it shifts
+ * results by ULPs at the +/-pi boundary). */
+export function angleDelta(a: number, b: number): number {
+  let diff = a - b;
+  if (diff > Math.PI) diff -= 2 * Math.PI;
+  else if (diff < -Math.PI) diff += 2 * Math.PI;
+  return diff;
+}
+
+/** Rotates angle cur toward target by at most maxStep radians, shortest direction. Returns the new
+ * angle (NOT re-wrapped). Branch-form step clamp — byte-identical to hand-rolled homing steering. */
+export function rotateTowards(cur: number, target: number, maxStep: number): number {
+  const diff = angleDelta(target, cur);
+  const turn = diff > maxStep ? maxStep : diff < -maxStep ? -maxStep : diff;
+  return cur + turn;
+}

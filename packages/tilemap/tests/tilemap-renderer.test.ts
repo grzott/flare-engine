@@ -13,7 +13,7 @@ mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 // with stub Camera2D classes that lack getBoundsInto / setViewport.
 const _realRender = await import('@flare-engine/render');
 mock.module('@flare-engine/render', () => ({ ..._realRender }));
-const { Camera2D } = await import('@flare-engine/render');
+const { Camera2D, SpriteBatch } = await import('@flare-engine/render');
 
 // Dynamically import TilemapRenderer AFTER mocks are restored — tilemap-renderer.ts
 // imports SpriteBatch from '@flare-engine/render' (package name → dist), which
@@ -183,6 +183,92 @@ describe('TilemapRenderer', () => {
     renderer.draw(camera, (batch) => {
       expect(batch.count).toBeLessThan(fullCount);
       expect(batch.count).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('TilemapRenderer.drawInto', () => {
+  test('queues tiles into an external batch, not into renderer.batch', () => {
+    const map = makeMap();
+    const renderer = new TilemapRenderer(map);
+    const image = mockImage();
+    renderer.setTilesetImage('terrain', image);
+
+    const camera = new Camera2D();
+    camera.setViewport(160, 160);
+    camera.x = 80;
+    camera.y = 80;
+
+    const external = new SpriteBatch();
+    renderer.drawInto(camera, external);
+
+    expect(external.count).toBeGreaterThan(0);
+    expect(renderer.batch.count).toBe(0);
+  });
+
+  test('drawInto queues the same tile count as draw()', () => {
+    const map = makeMap();
+    const renderer = new TilemapRenderer(map);
+    const image = mockImage();
+    renderer.setTilesetImage('terrain', image);
+
+    const camera = new Camera2D();
+    camera.setViewport(160, 160);
+    camera.x = 80;
+    camera.y = 80;
+
+    // Count tiles via draw()
+    let drawCount = 0;
+    renderer.draw(camera, (batch) => {
+      drawCount = batch.count;
+    });
+
+    // Count tiles via drawInto() into a fresh batch
+    const external = new SpriteBatch();
+    renderer.drawInto(camera, external);
+
+    expect(external.count).toBe(drawCount);
+  });
+
+  test('drawInto defers flushing to the caller (queues without consuming)', () => {
+    const map = makeMap();
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+
+    const camera = new Camera2D();
+    camera.setViewport(160, 160);
+    camera.x = 80;
+    camera.y = 80;
+
+    const external = new SpriteBatch();
+    renderer.drawInto(camera, external);
+
+    // drawInto must NOT flush: a flush returns commands to the pool and drops the
+    // count to 0. The commands stay queued for the caller to flush once.
+    const queued = external.count;
+    expect(queued).toBeGreaterThan(0);
+
+    // The caller owns the single flush and receives exactly what drawInto queued.
+    let flushedTotal = 0;
+    external.flush((_image, commands) => {
+      flushedTotal += commands.length;
+    });
+    expect(flushedTotal).toBe(queued);
+  });
+
+  test('draw() still passes all existing behavior after delegation refactor', () => {
+    const map = makeMap();
+    (map.layers[0]! as TileLayer).visible = false;
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+
+    const camera = new Camera2D();
+    camera.setViewport(160, 160);
+    camera.x = 80;
+    camera.y = 80;
+
+    renderer.draw(camera, (batch) => {
+      expect(batch.count).toBe(0); // invisible layer → nothing queued
     });
   });
 });

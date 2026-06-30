@@ -33,19 +33,28 @@ export class TilemapRenderer {
   }
 
   /**
-   * Draw visible tile layers using the camera for culling.
-   * Call `flush` on a callback to issue the actual draw calls.
+   * Queue visible tile layers into a caller-owned `batch` using the camera for
+   * culling. Does NOT flush — the caller owns the single flush so tiles z-order
+   * under sprites. Zero-alloc: reuses the internal bounds buffer.
    */
-  draw(camera: Camera2D, flush: (batch: SpriteBatch) => void): void {
+  drawInto(camera: Camera2D, batch: SpriteBatch): void {
     const bounds = camera.getBoundsInto(this._boundsBuf);
     const tw = this.map.tileWidth;
     const th = this.map.tileHeight;
 
     for (const layer of this.map.layers) {
       if (layer.type !== 'tile' || !layer.visible) continue;
-      this._drawTileLayer(layer, bounds.x, bounds.y, bounds.width, bounds.height, tw, th);
+      this._drawTileLayer(layer, bounds.x, bounds.y, bounds.width, bounds.height, tw, th, batch);
     }
+  }
 
+  /**
+   * Draw visible tile layers using the camera for culling.
+   * Call `flush` on a callback to issue the actual draw calls.
+   * Delegates to `drawInto` so culling and queuing logic live in one place.
+   */
+  draw(camera: Camera2D, flush: (batch: SpriteBatch) => void): void {
+    this.drawInto(camera, this.batch);
     flush(this.batch);
   }
 
@@ -57,6 +66,7 @@ export class TilemapRenderer {
     viewH: number,
     tw: number,
     th: number,
+    batch: SpriteBatch,
   ): void {
     const offsetX = layer.offsetX;
     const offsetY = layer.offsetY;
@@ -87,17 +97,7 @@ export class TilemapRenderer {
         const dstX = col * tw + offsetX;
         const dstY = row * th + offsetY;
 
-        this.batch.drawRaw(
-          image,
-          srcX,
-          srcY,
-          tileset.tileWidth,
-          tileset.tileHeight,
-          dstX,
-          dstY,
-          tw,
-          th,
-        );
+        batch.drawRaw(image, srcX, srcY, tileset.tileWidth, tileset.tileHeight, dstX, dstY, tw, th);
       }
     }
   }

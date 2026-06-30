@@ -1,6 +1,6 @@
 # @flare-engine/physics
 
-Built-in AABB / Circle collision detection — `CollisionWorld` with enter/exit signals, `SpatialIndex` brute-force broadphase tuned for <1000 dynamic entities, `raycast` for line-vs-shape queries. Trigger / layer / mask filtering. The planck.js Tier-2 integration is deferred until benchmarks justify it.
+Built-in AABB / Circle collision detection — `CollisionWorld` with enter/exit signals, `SpatialIndex` brute-force broadphase tuned for <1000 dynamic entities, `raycast` for line-vs-shape queries. Trigger / layer / mask filtering. Solid-tile grid movement: `buildSolidGrid` / `isBlockedAABB` / `moveAndSlideInto` (structural `SolidTile` input, no tilemap dep, half-open AABB-vs-tile, axis-separated slide, zero-alloc). The planck.js Tier-2 integration is deferred until benchmarks justify it.
 
 ## Install
 

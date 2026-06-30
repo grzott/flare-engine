@@ -143,6 +143,10 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 | `RaycastTarget`                             | `{ entity, shape, x, y }`                                                                                                                    |
 | `RaycastHit`                                | `{ entity, distance, point: Vec2, normal: Vec2 }`                                                                                            |
 | `SpatialIndex<V>`                           | Brute-force broadphase tuned for <1000 dynamic entities. `insert`, `remove`, `update`, `query(bounds, outBuf)`. **Not an rbush wrapper** — write a grid/quadtree sibling module if you need more scale. |
+| `SolidGrid` / `SolidTile`                   | `SolidTile` is a structural `{ row, col }` input — `TileCollider[]` from `@flare-engine/tilemap` is assignable with no tilemap import. `SolidGrid` carries `{ width, height, tileSize, solid: Set<number> }`. |
+| `buildSolidGrid(width, height, tileSize, tiles)` | Builds a `SolidGrid` from a `readonly SolidTile[]`. Call once per map load; reuse across frames. |
+| `isBlockedAABB(grid, x, y, halfW, halfH)`   | Returns `true` when the AABB centered at `(x, y)` with half-extents `(halfW, halfH)` overlaps a solid tile or leaves the map. Half-open EDGE = 1e-4: a box whose max edge lands exactly on a tile boundary does NOT count as overlapping that tile. |
+| `moveAndSlideInto(grid, x, y, dx, dy, halfW, halfH, out)` | Axis-separated slide: attempts `dx` then `dy` independently; a blocked axis is dropped so diagonal input slides along walls. The dy-check uses the already-updated x. Zero-alloc — writes result into `out: Vec2` and returns it. |
 
 **Tier 2 — planck.js integration: deferred.** `PhysicsWorld`, `RigidBody`, `applyForce`, `applyImpulse` are not implemented. Revisit after Phase 8 benchmarks — only bring it in if AABB proves insufficient.
 
@@ -211,7 +215,7 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 | ----------------- | ----------------------------------------------------------------------------------------------------------- |
 | `parseTiled(json)`     | → `TilemapData`. Orthogonal maps, tile/object layers, properties, collision shapes.                   |
 | `parseLDtk(json)`      | → `TilemapData`. Levels, tile/entity layers, enums.                                                   |
-| `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles, then calls `flush(this.batch)`. |
+| `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles into `this.batch`, then calls `flush(this.batch)` — delegates to `drawInto`. `drawInto(camera, batch)` queues visible tiles into the caller-owned `batch` without flushing — zero-alloc, enables single-flush z-ordering (tiles under sprites). |
 | `extractColliders(data)` | → `TileCollider[]`. Extracts solid tiles → collision shapes for physics.                             |
 
 ### `@flare-engine/pathfinding` (< 8KB gzip)

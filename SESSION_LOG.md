@@ -7144,3 +7144,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 196 — 2026-07-01 (scope: engine)
+
+**Goal:** feat: physics solid-grid + tilemap drawInto (Berek parity)
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/physics/README.md`
+- `packages/physics/src/index.ts`
+- `packages/physics/src/solid-grid.ts`
+- `packages/physics/tests/solid-grid.test.ts`
+- `packages/tilemap/README.md`
+- `packages/tilemap/src/tilemap-renderer.ts`
+- `packages/tilemap/tests/tilemap-renderer.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none — adversarial verify caught 1 tautological test (drawInto asserted draw()'s flush, not drawInto's no-flush), fixed pre-gate; recurring impl-vacuous-test pattern (cf XP4 NaN sweep)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

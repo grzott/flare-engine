@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'bun:test';
-import { Parent, Position, Rotation, Scale, Velocity } from '../src/components.js';
+import {
+  Follower,
+  Lifetime,
+  Parent,
+  Position,
+  Rotation,
+  Scale,
+  Velocity,
+} from '../src/components.js';
 import { World } from '../src/world.js';
 
 describe('built-in components', () => {
@@ -9,11 +17,21 @@ describe('built-in components', () => {
     expect(Rotation.name).toBe('Rotation');
     expect(Scale.name).toBe('Scale');
     expect(Parent.name).toBe('Parent');
+    expect(Lifetime.name).toBe('Lifetime');
+    expect(Follower.name).toBe('Follower');
   });
 
   it('all have unique IDs', () => {
-    const ids = new Set([Position.id, Velocity.id, Rotation.id, Scale.id, Parent.id]);
-    expect(ids.size).toBe(5);
+    const ids = new Set([
+      Position.id,
+      Velocity.id,
+      Rotation.id,
+      Scale.id,
+      Parent.id,
+      Lifetime.id,
+      Follower.id,
+    ]);
+    expect(ids.size).toBe(7);
   });
 
   it('Position defaults to { x: 0, y: 0 }', () => {
@@ -49,6 +67,20 @@ describe('built-in components', () => {
     const e = world.spawn();
     world.add(e, Parent);
     expect(world.get(e, Parent)).toEqual({ entity: 0 });
+  });
+
+  it('Lifetime defaults to { remaining: 0 }', () => {
+    const world = new World();
+    const e = world.spawn();
+    world.add(e, Lifetime);
+    expect(world.get(e, Lifetime)).toEqual({ remaining: 0 });
+  });
+
+  it('Follower defaults to { target: 0, offsetX: 0, offsetY: 0 }', () => {
+    const world = new World();
+    const e = world.spawn();
+    world.add(e, Follower);
+    expect(world.get(e, Follower)).toEqual({ target: 0, offsetX: 0, offsetY: 0 });
   });
 
   it('works together with queries', () => {

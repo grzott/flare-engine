@@ -7052,3 +7052,29 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 193 — 2026-06-30 (scope: engine)
+
+**Goal:** feat(ecs): movement, lifetime, cull, follower systems
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/ecs/README.md`
+- `packages/ecs/src/components.ts`
+- `packages/ecs/src/index.ts`
+- `packages/ecs/src/systems.ts`
+- `packages/ecs/tests/components.test.ts`
+- `packages/ecs/tests/systems.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 (test-import biome line-width; src/-only lint missed it, caught pre-gate by adversarial verify)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

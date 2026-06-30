@@ -29,3 +29,14 @@ export const Scale = defineComponent<Vec2>('Scale', () => ({ x: 1, y: 1 }));
 export const Parent = defineComponent<{ entity: number }>('Parent', () => ({
   entity: 0,
 }));
+
+/** Countdown timer in seconds; entity expires when remaining reaches 0. */
+export const Lifetime = defineComponent<{ remaining: number }>('Lifetime', () => ({
+  remaining: 0,
+}));
+
+/** Pins an entity's position to a target entity plus a fixed offset. */
+export const Follower = defineComponent<{ target: number; offsetX: number; offsetY: number }>(
+  'Follower',
+  () => ({ target: 0, offsetX: 0, offsetY: 0 }),
+);

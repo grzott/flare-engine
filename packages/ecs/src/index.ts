@@ -14,4 +14,13 @@ export type { Prefab } from './prefab.js';
 export { FSM } from './fsm.js';
 export type { State } from './fsm.js';
 
-export { Position, Velocity, Rotation, Scale, Parent } from './components.js';
+export { Position, Velocity, Rotation, Scale, Parent, Lifetime, Follower } from './components.js';
+
+export {
+  createMovementSystem,
+  createLifetimeSystem,
+  createBoundsCullSystem,
+  createFollowerSystem,
+  createOrphanCullSystem,
+} from './systems.js';
+export type { CullBounds } from './systems.js';

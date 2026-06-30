@@ -61,8 +61,16 @@
 | `defineSystem(query, fn)`             | Helper that binds a query to a per-frame update fn. Register with `world.addSystem(sys._worldFn)`.                                       |
 | `definePrefab(name, components)`      | Prefab factory function                                                                                                                  |
 | `FSM`                                 | Lightweight state machine. `onEnter`, `onExit`, `onUpdate`, transitions.                                                                 |
+| `createMovementSystem(world)` | Integrates `Position` by `Velocity * dt`. Zero-alloc. |
+| `createLifetimeSystem(world, onExpire)` | Decrements `Lifetime.remaining`; calls `onExpire(id, world)` (deferred, after read loop) when `remaining <= 0`. Destroy/pool policy is caller-owned. Zero-alloc steady state (grow-only scratch). |
+| `createBoundsCullSystem(world, bounds, onCull)` | Culls entities whose `Position` falls outside `CullBounds`. Reads `bounds` live each frame (mutate to follow camera). Calls `onCull(id, world)` deferred. `CullBounds = { minX, minY, maxX, maxY }`. |
+| `createFollowerSystem(world)` | Pins `Position` of each `Follower` entity to `target.Position + (offsetX, offsetY)`. Silently skips if target is gone or has no `Position`. |
+| `createOrphanCullSystem(world, onOrphan)` | Fires `onOrphan(id, world)` for each `Follower` whose target entity no longer exists. Deferred. Opt-in — separate from follower pin logic. |
+| `CullBounds` (type) | `{ readonly minX: number; readonly minY: number; readonly maxX: number; readonly maxY: number }`. Plain numbers; no physics dep. |
 
-**Built-in components:** Position, Velocity, Rotation, Scale, Parent (from math types).
+**Recommended system priority order:** `createMovementSystem` (0) → `createFollowerSystem` (1) → `createBoundsCullSystem` / `createOrphanCullSystem` (2+). Priority and registration are caller-owned via `world.addSystem(sys._worldFn, priority)`.
+
+**Built-in components:** Position, Velocity, Rotation, Scale, Parent (from math types), Lifetime (countdown seconds), Follower (target + offsetX/offsetY).
 
 **Performance:** Object-per-component storage in a Map per ComponentDef. Archetype bitmask on each entity for O(1) query membership. SoA Float32Array storage is **deferred** — add only if benchmarks show it matters.
 

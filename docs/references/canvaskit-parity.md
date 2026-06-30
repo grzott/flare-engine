@@ -145,6 +145,16 @@ Throwaway branch. Verify each row in the test matrix above with a minimal Canvas
 
 **Proceed with CanvasKit web path.** No API blockers. Performance TBD from spike. Fallback plan (per-sprite rendering or delayed web path) is documented in build plan stage 11.11.
 
+> **XP1 sprite-path resolution (2026-06-30, read-only).** The matrix above is API-_presence_
+> parity. The engine's retained `drawAtlas` sprite path has one _shape_ difference a web backend
+> must bridge: the bridge passes **object-form** `SkRect[]` / `SkRSXform[]` (with `setXYWH`/`set`
+> mutators), whereas CanvasKit's `drawAtlas` wants **flat** `InputFlattenedRectangleArray` /
+> `InputFlattenedRSXFormArray` (4·n floats). `CanvasLike` itself needs **no change** — it is only
+> the `Renderer` transform contract and maps 1:1 to CanvasKit `Canvas`. Full analysis + the A1/A2
+> adapter routes live in the extraction-audit SoT
+> ([§1, XP1 resolution](../plans/extraction-audit-2026-06.md)). **Performance is still the only
+> unverified row** — the Spike Results table below stays empty until a live-browser run.
+
 ---
 
 ## Sources

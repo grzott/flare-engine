@@ -142,6 +142,21 @@ mock.module('@flare-engine/render', () => ({
   CAVE_INTERIOR_SKSL: '',
   MOUNTAIN_HILLS_SKSL: '',
   fire: () => ({ type: 'fire', color: {}, tipColor: {}, speed: 1, intensity: 0.8 }),
+  createFrameRenderer: () => ({
+    canvas: {
+      save: () => 0,
+      restore: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: () => {},
+      clear: () => {},
+    },
+    beginFrame: () => {},
+    drawAtlas: () => {},
+    buildPostFxPasses: () => [],
+    setPostFxBinding: () => {},
+    endFrame: () => null,
+  }),
 }));
 
 mock.module('@flare-engine/audio', () => ({ AudioManager: class {} }));

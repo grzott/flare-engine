@@ -173,9 +173,9 @@ export function GameView({
       ctx.batch.flush(bridge.drawAtlas, ctx.renderer);
       if (onRenderPostFx) onRenderPostFx(ctx, ctx.renderer.canvas, bridge);
       ctx.renderer.end();
-      const pic = bridge.endFrame();
+      const pic = bridge.endFrame() as SkPicture | null;
       if (pic !== null) setPicture(pic);
-      const built = bridge.buildPostFxPasses(null, null, w, h);
+      const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
       setPasses(built);
       canvasRef.current?.redraw();
     });

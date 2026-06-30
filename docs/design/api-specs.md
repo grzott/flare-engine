@@ -86,6 +86,29 @@
 
 **Rendering modes:** Retained (Atlas) for game entities, Immediate (Picture) for particles/effects. Compose in the same Canvas.
 
+### `@flare-engine/render-web` (< 12KB gzip)
+
+CanvasKit-WASM backend for `@flare-engine/render`. Peer-dep `canvaskit-wasm >=0.40.0` (optional — tree-shaken when unused). No `@shopify/react-native-skia` import.
+
+| API | Description |
+| --- | --- |
+| `loadCanvasKit(wasmUrl, onProgress?)` | Singleton loader. Reads wasm binary from `wasmUrl` (absolute URL or filesystem path). Falls back to `node:fs/promises` when `fetch` is absent (Node/Bun test environments). Calls `onProgress(1)` immediately if already loading/complete. Returns `Promise<CanvasKit>`. |
+| `createWebSkiaModule(kit)` | Returns a `FrameRendererModule` backed by CanvasKit. Adapter differences handled internally: `drawAtlas` flattens `RectLike[]`/`RSXformLike[]` to grow-only `Float32Array` scratch buffers (zero-alloc steady state); `rotate` converts radians → degrees; `ColorFilter.MakeBlend` maps numeric mode literals to CK `BlendMode` enum entries; `RSXform` objects carry `scos/ssin/tx/ty` readable fields. Pass to `createFrameRenderer` from `@flare-engine/render`. |
+| `createWebSurface(kit, canvas)` | Returns `CanvasLike \| null`. Creates a WebGL-backed CanvasKit surface for the given `<canvas>` element and wraps its canvas as `CanvasLike`. Returns `null` when WebGL is unavailable. Unpacks packed-ARGB `clear(color: number)` to Float32Array for CK. Pass to `Renderer.setCanvas()`. |
+| `PostFxSurface` | Interface: `width`, `height`, `sceneCanvas()`, `onscreenCanvas()`, `clear(bgRgb)`, `fadeTrail(bgRgb, alpha)`, `composite(globalIntensity)`, `flush()`, `resize(w, h)`, `dispose()`. |
+| `createPostFxSurface(kit, canvas, chain)` | Returns `PostFxSurface \| null`. Creates a pair of offscreen surfaces (scene + ping-pong) plus a WebGL onscreen surface, and runs the caller-supplied `EffectChain` at composite time. Pass a new empty `EffectChain()` for a passthrough surface. |
+
+**Typical web setup:**
+```ts
+const kit = await loadCanvasKit('/assets/canvaskit.wasm');
+const mod = createWebSkiaModule(kit);
+const renderer = createFrameRenderer(mod);   // from @flare-engine/render
+renderer.beginFrame(width, height, time);
+// … draw sprites …
+const pic = renderer.endFrame();
+// replay pic onto a CK surface via drawPicture
+```
+
 ### `@flare-engine/input` (< 6KB gzip)
 
 | API               | Description                                                                       |

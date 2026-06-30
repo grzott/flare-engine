@@ -91,6 +91,7 @@ mock.module('@shopify/react-native-skia', () => ({
       setShader: () => {},
       setAlphaf: () => {},
       setColor: () => {},
+      setImageFilter: () => {},
     }),
     PictureRecorder: () => ({
       beginRecording: (bounds: { width: number; height: number }) => {
@@ -256,6 +257,54 @@ mock.module('@flare-engine/render', () => ({
   },
   Sprite: { id: 1, bit: 2, name: 'Sprite', create: () => ({}) },
   createRenderSystem: () => () => {},
+  createFrameRenderer: (skia: {
+    XYWHRect: (
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+    ) => {
+      setXYWH: (x: number, y: number, w: number, h: number) => void;
+    };
+    PictureRecorder: () => {
+      beginRecording: (b: unknown) => { scale: (sx: number, sy: number) => void };
+      finishRecordingAsPicture: () => unknown;
+    };
+    Paint: () => unknown;
+    RSXform: () => unknown;
+    ColorFilter: unknown;
+  }) => {
+    const recorder = skia.PictureRecorder();
+    const bounds = skia.XYWHRect(0, 0, 0, 0);
+    let cur: { scale: (sx: number, sy: number) => void } | null = null;
+    const canvas = {
+      save: () => 0,
+      restore: () => {},
+      translate: () => {},
+      scale: (sx: number, sy: number) => {
+        cur?.scale(sx, sy);
+      },
+      rotate: () => {},
+      clear: () => {},
+    };
+    return {
+      canvas,
+      beginFrame: (w: number, h: number, _t = 0, pd = 1) => {
+        if (w === 0 || h === 0) return;
+        bounds.setXYWH(0, 0, w * pd, h * pd);
+        cur = recorder.beginRecording(bounds);
+        if (pd !== 1) cur.scale(pd, pd);
+      },
+      drawAtlas: () => {},
+      buildPostFxPasses: () => [],
+      setPostFxBinding: () => {},
+      endFrame: () => {
+        if (cur === null) return null;
+        cur = null;
+        return recorder.finishRecordingAsPicture();
+      },
+    };
+  },
   WATER_SKSL: '',
   FOG_SKSL: '',
   FIRE_SKSL: '',

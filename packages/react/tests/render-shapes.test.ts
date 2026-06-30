@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
+
+// Restore the real createFrameRenderer after game-view.test.ts may have mocked it.
+const realRender = await import('../../render/src/frame-renderer.js');
+mock.module('@flare-engine/render', () => ({ ...realRender }));
+
 import {
   type RenderShapesOpts,
   type ShapeRect,

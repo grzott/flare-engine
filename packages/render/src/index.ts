@@ -70,6 +70,27 @@ export {
 } from './shaders.js';
 
 export {
+  type ColorLike,
+  type RectLike,
+  type RSXformLike,
+  type RuntimeEffectLike,
+  type ColorFilterFactoryLike,
+  type ImageFilterFactoryLike,
+  type RuntimeEffectFactoryLike,
+  type PaintLike,
+  type DrawSurfaceLike,
+  type PictureLike,
+  type PictureRecorderLike,
+  type FrameRendererModule,
+  type FrameRendererCompiledPass,
+  type FrameRendererPostFxRuntime,
+  type FrameRendererPostFxChain,
+  type FrameRendererPostFxDescriptor,
+  type FrameRenderer,
+  createFrameRenderer,
+} from './frame-renderer.js';
+
+export {
   type Glyph,
   type KerningPair,
   type BitmapFont,

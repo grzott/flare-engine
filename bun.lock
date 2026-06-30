@@ -92,8 +92,8 @@
       "name": "@flare-engine/assets",
       "version": "0.1.0",
       "dependencies": {
-        "@flare-engine/core": "workspace:*",
-        "@flare-engine/events": "workspace:*",
+        "@flare-engine/core": "^0.1.0",
+        "@flare-engine/events": "^0.1.0",
       },
       "peerDependencies": {
         "@shopify/react-native-skia": ">=1.0.0",
@@ -125,8 +125,8 @@
       "name": "@flare-engine/core",
       "version": "0.1.0",
       "dependencies": {
-        "@flare-engine/events": "workspace:*",
-        "@flare-engine/math": "workspace:*",
+        "@flare-engine/events": "^0.1.0",
+        "@flare-engine/math": "^0.1.0",
       },
     },
     "packages/create-flare-app": {
@@ -182,8 +182,8 @@
       "name": "@flare-engine/ecs",
       "version": "0.1.0",
       "dependencies": {
-        "@flare-engine/events": "workspace:*",
-        "@flare-engine/math": "workspace:*",
+        "@flare-engine/events": "^0.1.0",
+        "@flare-engine/math": "^0.1.0",
       },
     },
     "packages/engine": {
@@ -231,6 +231,16 @@
     "packages/events": {
       "name": "@flare-engine/events",
       "version": "0.1.0",
+    },
+    "packages/haptics": {
+      "name": "@flare-engine/haptics",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/react": "^18.0.0",
+      },
+      "peerDependencies": {
+        "react": ">=18.0.0",
+      },
     },
     "packages/iap": {
       "name": "@flare-engine/iap",
@@ -347,15 +357,29 @@
       "name": "@flare-engine/render",
       "version": "0.1.0",
       "dependencies": {
-        "@flare-engine/assets": "workspace:*",
-        "@flare-engine/core": "workspace:*",
-        "@flare-engine/ecs": "workspace:*",
-        "@flare-engine/events": "workspace:*",
-        "@flare-engine/math": "workspace:*",
+        "@flare-engine/assets": "^0.1.0",
+        "@flare-engine/core": "^0.1.0",
+        "@flare-engine/ecs": "^0.1.0",
+        "@flare-engine/events": "^0.1.0",
+        "@flare-engine/math": "^0.1.0",
       },
       "peerDependencies": {
         "@shopify/react-native-skia": ">=1.0.0",
       },
+    },
+    "packages/render-web": {
+      "name": "@flare-engine/render-web",
+      "version": "0.1.0",
+      "dependencies": {
+        "@flare-engine/postfx": "workspace:*",
+        "@flare-engine/render": "workspace:*",
+      },
+      "peerDependencies": {
+        "canvaskit-wasm": ">=0.40.0",
+      },
+      "optionalPeers": [
+        "canvaskit-wasm",
+      ],
     },
     "packages/scene": {
       "name": "@flare-engine/scene",
@@ -730,6 +754,8 @@
 
     "@flare-engine/events": ["@flare-engine/events@workspace:packages/events"],
 
+    "@flare-engine/haptics": ["@flare-engine/haptics@workspace:packages/haptics"],
+
     "@flare-engine/iap": ["@flare-engine/iap@workspace:packages/iap"],
 
     "@flare-engine/iap-revenuecat": ["@flare-engine/iap-revenuecat@workspace:packages/iap-revenuecat"],
@@ -753,6 +779,8 @@
     "@flare-engine/react": ["@flare-engine/react@workspace:packages/react"],
 
     "@flare-engine/render": ["@flare-engine/render@workspace:packages/render"],
+
+    "@flare-engine/render-web": ["@flare-engine/render-web@workspace:packages/render-web"],
 
     "@flare-engine/scene": ["@flare-engine/scene@workspace:packages/scene"],
 

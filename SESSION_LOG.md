@@ -6997,3 +6997,58 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 191 — 2026-06-30 (scope: engine)
+
+**Goal:** XP1 render-web parity spike (read-only): go/no-go + CanvasLike delta
+
+**Touched files**
+- `docs/plans/extraction-audit-2026-06.md`
+- `docs/plans/todo.md`
+- `docs/references/canvaskit-parity.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none — docs-only read-only spike; CanvasKit type defs sufficient, no browser needed for functional parity
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 192 — 2026-06-30 (scope: engine)
+
+**Goal:** XP2 @flare-engine/render-web: lift backend-neutral frame-renderer into render, add CanvasKit web backend
+
+**Touched files**
+- `SESSION_LOG.md`
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `docs/plans/extraction-audit-2026-06.md`
+- `docs/plans/todo.md`
+- `docs/references/canvaskit-parity.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/multi-pass-descriptors.test.ts`
+- `packages/react/tests/render-shapes.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/render-web/`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render/src/index.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** planner-builder-disagreement(builder picked self-contained re-impl, owner chose engine-first DRY refactor via escalation); review-caught(shallow conformance test was non-throw not real-pixels; rotate radians->degrees broke backend parity; per-frame Float32Array alloc on stretch/zone-bg paths) — all 3 fixed
+
+**Next:** see `docs/plans/todo.md`.
+
+---

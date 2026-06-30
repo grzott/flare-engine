@@ -1,10 +1,15 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
 import type {
   CompiledPassLike,
   PostFxChainLike,
   PostFxRuntimeLike,
   SkiaModuleLike,
 } from '../src/skia-bridge.js';
+
+// Restore the real createFrameRenderer after game-view.test.ts may have mocked it.
+const realRender = await import('../../render/src/frame-renderer.js');
+mock.module('@flare-engine/render', () => ({ ...realRender }));
+
 import { createSkiaFrameRenderer } from '../src/skia-bridge.js';
 
 // ---------------------------------------------------------------------------

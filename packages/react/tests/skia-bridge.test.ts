@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
 import type {
   CustomShaderEffect,
@@ -12,6 +12,15 @@ import type {
   TintEffect,
   WaterEffect,
 } from '@flare-engine/render';
+
+// Restore the real createFrameRenderer after other test files may have mocked
+// @flare-engine/render with a stub. Last-writer-wins; skia-bridge.test.ts is
+// alphabetically last among tests that mock render, so this wins.
+const realRender = await import('../../render/src/frame-renderer.js');
+mock.module('@flare-engine/render', () => ({
+  ...realRender,
+}));
+
 import { type SkiaModuleLike, createSkiaFrameRenderer } from '../src/skia-bridge.js';
 
 /** Minimal mock Skia objects that record calls so tests can assert call shape. */

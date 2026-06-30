@@ -10,9 +10,9 @@ import { describe, expect, mock, test } from 'bun:test';
 // @flare-engine/ecs after mock.module(), because Bun's ESM live-binding cache
 // keeps the export shape of the previously-cached mock (only { World, Position })
 // and silently drops any new exports returned by the factory.
-const _realCore = await import('../../core/src/index.ts');
+const _realCore = await import('../../core/src/index.js');
 mock.module('@flare-engine/core', () => ({ ..._realCore }));
-const _realEcs = await import('../../ecs/src/index.ts');
+const _realEcs = await import('../../ecs/src/index.js');
 mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 
 const { createTestWorld } = await import('../src/test-world.js');

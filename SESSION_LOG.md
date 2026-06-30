@@ -7105,3 +7105,42 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 195 — 2026-07-01 (scope: engine)
+
+**Goal:** test: clear 56 root-tsc test-file type errors (11 packages)
+
+**Touched files**
+- `docs/plans/todo.md`
+- `packages/deep-links/tests/manager.test.ts`
+- `packages/ecs/tests/systems.test.ts`
+- `packages/ecs/tests/world.test.ts`
+- `packages/iap/tests/entitlements.test.ts`
+- `packages/postfx/tests/timed-trigger.test.ts`
+- `packages/react/tests/game-context.test.ts`
+- `packages/react/tests/render-shapes.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/react/tests/virtual-joystick-knob.test.ts`
+- `packages/render-web/tests/canvaskit-bin.d.ts`
+- `packages/render-web/tests/conformance.test.ts`
+- `packages/render-web/tests/loader.test.ts`
+- `packages/render-web/tests/postfx-surface.test.ts`
+- `packages/render/tests/sprite-alpha.test.ts`
+- `packages/render/tests/sprite-font.test.ts`
+- `packages/share/tests/share.test.ts`
+- `packages/testing/tests/mock-input.test.ts`
+- `packages/testing/tests/scene-snapshot.test.ts`
+- `packages/testing/tests/test-world.test.ts`
+- `packages/tilemap/tests/tilemap-renderer.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:2 (biome tests/ formatting + biome wrapped a typeof-import cast with a trailing comma that tsc accepts but bun's transpiler rejects — typecheck green yet runtime test broke; both fixed pre-commit)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -143,7 +143,7 @@ describe('createLifetimeSystem', () => {
     world.step(0.2);
 
     expect(receivedId).toBe(e);
-    expect(receivedWorld).toBe(world);
+    expect(receivedWorld === world).toBe(true);
   });
 
   it('no-op with zero matching entities', () => {

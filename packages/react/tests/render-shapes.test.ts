@@ -31,6 +31,7 @@ interface MockCanvas extends SkOffscreenCanvasLike {
 interface MockSurface extends SkSurfaceLike {
   canvas: MockCanvas;
   snapshotCount: number;
+  flush(): void;
 }
 
 function makeMockSurface(): MockSurface {
@@ -49,6 +50,7 @@ function makeMockSurface(): MockSurface {
   const surface: MockSurface = {
     canvas,
     snapshotCount: 0,
+    flush() {},
     getCanvas() {
       return canvas;
     },
@@ -186,10 +188,10 @@ describe('renderShapesToImage', () => {
     const calls = mock.paint.setColorCalls;
     expect(calls).toHaveLength(1);
     const c = calls[0] as Float32Array;
-    expect(Math.abs(c[0] - 0x10 / 255)).toBeLessThan(1e-6);
-    expect(Math.abs(c[1] - 0x20 / 255)).toBeLessThan(1e-6);
-    expect(Math.abs(c[2] - 0x30 / 255)).toBeLessThan(1e-6);
-    expect(Math.abs(c[3] - 1.0)).toBeLessThan(1e-6);
+    expect(Math.abs(c[0]! - 0x10 / 255)).toBeLessThan(1e-6);
+    expect(Math.abs(c[1]! - 0x20 / 255)).toBeLessThan(1e-6);
+    expect(Math.abs(c[2]! - 0x30 / 255)).toBeLessThan(1e-6);
+    expect(Math.abs(c[3]! - 1.0)).toBeLessThan(1e-6);
   });
 
   it('fresh surface each call: two calls invoke Surface.Make twice', () => {

@@ -5,7 +5,7 @@ import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 
 function mockImage(): SkImageLike {
-  return { width: () => 64, height: () => 64 };
+  return { width: () => 64, height: () => 64, readPixels: () => null };
 }
 
 function frame(): SpriteFrame {

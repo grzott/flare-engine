@@ -44,7 +44,7 @@ describe('createWebClipboardTransport', () => {
     });
     const res = await t.share({ message: 'score!', url: 'https://f' });
     expect(res.dispatched).toBe(true);
-    expect(written).toBe('score! https://f');
+    expect(written!).toBe('score! https://f');
   });
 
   test('declines when clipboard missing', () => {

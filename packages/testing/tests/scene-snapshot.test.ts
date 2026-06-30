@@ -2,7 +2,8 @@ import { describe, expect, mock, test } from 'bun:test';
 
 // Restore real @flare-engine/ecs before loading scene-snapshot.ts.
 // The react/game-view.test.ts mock strips World to a class with no spawn().
-const _realEcs = await import('../../ecs/src/index.ts');
+type RealEcsModule = typeof import('@flare-engine/ecs');
+const _realEcs = (await import('../../ecs/src/index.js')) as unknown as RealEcsModule;
 mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 
 const { serializeScene, snapshotsEqual } = await import('../src/scene-snapshot.js');

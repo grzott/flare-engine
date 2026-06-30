@@ -12,7 +12,7 @@ const { loadCanvasKit } = await import('../src/loader.js');
 describe('loadCanvasKit', () => {
   it('resolves to the CanvasKit instance', async () => {
     const kit = await loadCanvasKit('/fake/canvaskit.wasm');
-    expect((kit as { _brand: string })._brand).toBe('FakeCanvasKit');
+    expect((kit as unknown as { _brand: string })._brand).toBe('FakeCanvasKit');
   });
 
   it('returns the same promise on repeated calls (singleton gate)', async () => {

@@ -126,7 +126,10 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
     expect(capturedSetKnob).not.toBeNull();
 
     // Apply the functional updater to the initial knob {x:0,y:0}.
-    const updater = capturedSetKnob as (prev: { x: number; y: number }) => { x: number; y: number };
+    const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+      x: number;
+      y: number;
+    };
     const next = updater({ x: 0, y: 0 });
     expect(next.x).toBe(30);
     expect(next.y).toBe(0);
@@ -139,7 +142,10 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
 
     onResponderMove_move(80, 50);
 
-    const updater = capturedSetKnob as (prev: { x: number; y: number }) => { x: number; y: number };
+    const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+      x: number;
+      y: number;
+    };
     const prev = { x: 30, y: 0 };
     expect(updater(prev)).toBe(prev);
   });
@@ -159,7 +165,10 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
     onResponderRelease?.();
 
     expect(capturedSetKnob).not.toBeNull();
-    const updater = capturedSetKnob as (prev: { x: number; y: number }) => { x: number; y: number };
+    const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+      x: number;
+      y: number;
+    };
     const result = updater({ x: 30, y: 0 });
     expect(result.x).toBe(0);
     expect(result.y).toBe(0);
@@ -174,7 +183,10 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
     const onResponderRelease = findProp<() => void>('onResponderRelease');
     onResponderRelease?.();
 
-    const updater = capturedSetKnob as (prev: { x: number; y: number }) => { x: number; y: number };
+    const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+      x: number;
+      y: number;
+    };
     const zero = { x: 0, y: 0 };
     expect(updater(zero)).toBe(zero);
   });
@@ -190,7 +202,10 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
     onResponderGrant?.({ nativeEvent: { locationX: 70, locationY: 50 } });
 
     expect(capturedSetKnob).not.toBeNull();
-    const updater = capturedSetKnob as (prev: { x: number; y: number }) => { x: number; y: number };
+    const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+      x: number;
+      y: number;
+    };
     // center=50,50 → offset.x = 70-50 = 20
     const next = updater({ x: 0, y: 0 });
     expect(next.x).toBe(20);
@@ -209,7 +224,10 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
     onResponderTerminate?.();
 
     expect(capturedSetKnob).not.toBeNull();
-    const updater = capturedSetKnob as (prev: { x: number; y: number }) => { x: number; y: number };
+    const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+      x: number;
+      y: number;
+    };
     const result = updater({ x: 30, y: 0 });
     expect(result.x).toBe(0);
     expect(result.y).toBe(0);

@@ -5,7 +5,7 @@ import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 import { drawText, getKerning, measureText, parseBMFontJSON } from '../src/sprite-font.js';
 
 function mockImage(): SkImageLike {
-  return { width: () => 256, height: () => 256 };
+  return { width: () => 256, height: () => 256, readPixels: () => null };
 }
 
 function makeFontJSON() {

@@ -71,14 +71,14 @@ describe('createWebSource', () => {
 
 describe('createNativeSource', () => {
   test('wires RN Linking-like object', async () => {
-    let handler: ((e: { url: string }) => void) | null = null;
+    const capture: { handler: ((e: { url: string }) => void) | null } = { handler: null };
     let removed = false;
     const linking = {
       async getInitialURL() {
         return 'flare://home';
       },
       addEventListener(_t: 'url', h: (e: { url: string }) => void) {
-        handler = h;
+        capture.handler = h;
         return {
           remove() {
             removed = true;
@@ -90,7 +90,7 @@ describe('createNativeSource', () => {
     expect(await src.getInitialUrl()).toBe('flare://home');
     const seen: string[] = [];
     const unsub = src.subscribe((u) => seen.push(u));
-    handler?.({ url: '/new' });
+    capture.handler?.({ url: '/new' });
     expect(seen).toEqual(['/new']);
     unsub();
     expect(removed).toBe(true);

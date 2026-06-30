@@ -24,14 +24,14 @@ describe('PostFxController.triggerTimed', () => {
     pfx.chain.setEnabled('chrom', false);
     expect(effect?.enabled).toBe(false);
 
-    pfx.triggerTimed('chrom', 200);
+    pfx.triggerTimed!('chrom', 200);
     expect(effect?.enabled).toBe(true);
   });
 
   test('keeps the effect enabled while decayMs has not elapsed', () => {
     const pfx = makeController();
     pfx.chain.setEnabled('chrom', false);
-    pfx.triggerTimed('chrom', 200);
+    pfx.triggerTimed!('chrom', 200);
 
     pfx.update(0.1); // 100 ms elapsed
     expect(pfx.chain.get('chrom')?.enabled).toBe(true);
@@ -46,7 +46,7 @@ describe('PostFxController.triggerTimed', () => {
     pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.02 });
     pfx.chain.setEnabled('chrom', false);
 
-    pfx.triggerTimed('chrom', 200);
+    pfx.triggerTimed!('chrom', 200);
     // Change uniforms after triggering — restore should revert to the snapshot.
     pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.99 });
 
@@ -64,12 +64,12 @@ describe('PostFxController.triggerTimed', () => {
   test('re-trigger before expiry resets the countdown', () => {
     const pfx = makeController();
     pfx.chain.setEnabled('chrom', false);
-    pfx.triggerTimed('chrom', 200);
+    pfx.triggerTimed!('chrom', 200);
 
     pfx.update(0.1); // 100 ms — still active
 
     // Re-trigger: countdown resets to 200 ms from this point.
-    pfx.triggerTimed('chrom', 200);
+    pfx.triggerTimed!('chrom', 200);
 
     pfx.update(0.1); // 100 ms since reset — still active
     expect(pfx.chain.get('chrom')?.enabled).toBe(true);

@@ -224,7 +224,7 @@ describe('World.addSystem/step', () => {
       receivedDt = dt;
     });
     world.step(0.016);
-    expect(receivedWorld).toBe(world);
+    expect(receivedWorld === world).toBe(true);
     expect(receivedDt).toBeCloseTo(0.016);
   });
 

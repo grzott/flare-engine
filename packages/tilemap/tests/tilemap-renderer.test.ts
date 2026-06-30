@@ -5,13 +5,13 @@ import type { TileLayer, TilemapData, TilesetRef } from '../src/tilemap-data.js'
 // `import { defineComponent } from "@flare-engine/ecs"`.  If the ecs cache
 // holds the stripped mock { World, Position } (set by game-view.test.ts),
 // Bun throws SyntaxError when any code path loads @flare-engine/render dist.
-const _realEcs = await import('../../ecs/src/index.ts');
+const _realEcs = await import('@flare-engine/ecs');
 mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 
 // Restore real @flare-engine/render before loading TilemapRenderer.
 // game-view.test.ts and virtual-controls.test.ts mock @flare-engine/render
 // with stub Camera2D classes that lack getBoundsInto / setViewport.
-const _realRender = await import('../../render/src/index.ts');
+const _realRender = await import('@flare-engine/render');
 mock.module('@flare-engine/render', () => ({ ..._realRender }));
 const { Camera2D } = await import('@flare-engine/render');
 
@@ -25,6 +25,7 @@ function mockImage() {
   return {
     width: () => 160,
     height: () => 160,
+    readPixels: (): Uint8Array | null => null,
   };
 }
 

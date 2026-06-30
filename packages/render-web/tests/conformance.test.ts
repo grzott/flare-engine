@@ -10,6 +10,7 @@
  */
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { resolve } from 'node:path';
+import type { SkImageLike } from '@flare-engine/assets';
 import { createFrameRenderer } from '@flare-engine/render';
 import type { SpriteDrawCommand } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
@@ -23,14 +24,9 @@ const WASM_PATH = resolve(
 
 // Dynamically load the CanvasKit JS bundle. The module is CommonJS (Emscripten).
 async function loadCK(): Promise<CanvasKit> {
-  const mod = (await import('../../../node_modules/canvaskit-wasm/bin/full/canvaskit.js')) as {
-    default: (opts: {
-      locateFile: (f: string) => string;
-      wasmBinary: Uint8Array;
-    }) => Promise<CanvasKit>;
-  };
+  const { default: initCK } = await import('canvaskit-wasm/bin/full/canvaskit.js');
   const wasmBinary = new Uint8Array(await Bun.file(WASM_PATH).arrayBuffer());
-  return mod.default({ locateFile: () => WASM_PATH, wasmBinary });
+  return initCK({ locateFile: () => WASM_PATH, wasmBinary });
 }
 
 let kit: CanvasKit;
@@ -147,7 +143,7 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     expect(atlasSurface).not.toBeNull();
     if (!atlasSurface) return;
     atlasSurface.getCanvas().clear(kit.Color4f(1, 0, 0, 1));
-    const atlasImage = atlasSurface.makeImageSnapshot();
+    const atlasImage: SkImageLike = atlasSurface.makeImageSnapshot() as unknown as SkImageLike;
 
     // Record: black background, one 4×4→8×8 red sprite at (0,0).
     renderer.beginFrame(FRAME_W, FRAME_H, 0, 1);
@@ -217,7 +213,9 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     if (typeof (pic as { delete?: () => void }).delete === 'function') {
       (pic as { delete: () => void }).delete();
     }
-    atlasImage.delete();
+    if (typeof (atlasImage as unknown as { delete?: () => void }).delete === 'function') {
+      (atlasImage as unknown as { delete: () => void }).delete();
+    }
     atlasSurface.delete();
     rasterSurface.delete();
   });

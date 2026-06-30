@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import { EffectChain, createBloom } from '@flare-engine/postfx';
-import type { Canvas as CKCanvas, Image as CKImage, CanvasKit, Surface } from 'canvaskit-wasm';
+import type {
+  BlendMode,
+  Canvas as CKCanvas,
+  Image as CKImage,
+  CanvasKit,
+  InputColor,
+  InputRect,
+  Paint,
+  Surface,
+} from 'canvaskit-wasm';
 import { createPostFxSurface } from '../src/postfx-surface.js';
 
 // Minimal CanvasKit mock that supports in-memory CPU-like surface operations.
@@ -11,9 +20,10 @@ function makeMockSurface(calls: { method: string; args?: unknown[] }[]): Surface
     translate: () => {},
     scale: () => {},
     rotate: () => {},
-    clear: (c) => calls.push({ method: 'clear', args: [c] }),
-    drawImage: (img, x, y) => calls.push({ method: 'drawImage', args: [img, x, y] }),
-    drawRect: (r, p) => calls.push({ method: 'drawRect', args: [r, p] }),
+    clear: (c: InputColor) => calls.push({ method: 'clear', args: [c] }),
+    drawImage: (img: CKImage, x: number, y: number) =>
+      calls.push({ method: 'drawImage', args: [img, x, y] }),
+    drawRect: (r: InputRect, p: Paint) => calls.push({ method: 'drawRect', args: [r, p] }),
     concat: () => {},
   } as unknown as CKCanvas;
 

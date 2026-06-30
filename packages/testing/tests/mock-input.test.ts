@@ -9,7 +9,7 @@ import { describe, expect, mock, test } from 'bun:test';
 // then re-register it under the package name before importing mock-input.ts.
 // The factory must return a plain object — Bun's mock.module does not replace
 // an existing cache entry when the factory returns a module namespace object.
-const _realInput = await import('../../input/src/index.ts');
+const _realInput = await import('../../input/src/index.js');
 mock.module('@flare-engine/input', () => ({ ..._realInput }));
 
 const { createMockInputManager } = await import('../src/mock-input.js');

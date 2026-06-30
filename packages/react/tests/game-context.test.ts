@@ -20,7 +20,8 @@ const { GameContext } = await import('../src/game-context.js');
 
 describe('GameContext', () => {
   it('creates context with null default', () => {
-    expect(GameContext._default).toBeNull();
+    const ctx = GameContext as unknown as { _default: unknown };
+    expect(ctx._default).toBeNull();
   });
 
   it('has Provider and Consumer', () => {

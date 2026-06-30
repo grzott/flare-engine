@@ -163,7 +163,7 @@ describe('EntitlementStore', () => {
     const unsub = store.attachProvider(provider);
     expect(listener).not.toBeNull();
 
-    listener?.({ id: 't', productId: 'game.full', purchasedAt: 1 });
+    listener!({ id: 't', productId: 'game.full', purchasedAt: 1 });
     expect(store.isEntitled('full_game')).toBe(true);
 
     unsub();

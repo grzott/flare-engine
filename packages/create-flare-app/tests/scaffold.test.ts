@@ -100,7 +100,10 @@ describe('scaffoldApp', () => {
       });
       expect(r.template).toBe(id);
       const app = await readFile(join(target, 'src', 'App.tsx'), 'utf8');
-      if (id === 'topdown') expect(app).toContain('camera.follow');
+      if (id === 'topdown') {
+        expect(app).toContain('camera.follow');
+        expect(app).toContain('TilemapRenderer');
+      }
       if (id === 'shmup') expect(app).toContain('FIRE_INTERVAL');
     }
   });

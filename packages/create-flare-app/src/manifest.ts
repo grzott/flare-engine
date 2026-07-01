@@ -24,7 +24,7 @@ export const TEMPLATES: Record<string, TemplateManifest> = {
   topdown: {
     id: 'topdown',
     displayName: 'Top-down',
-    description: '4-direction player movement with tilemap + camera follow.',
+    description: 'Analog player movement with tilemap collision + camera follow.',
     engines: { node: '>=20' },
     postInstall: 'bun run start',
   },

@@ -40,3 +40,19 @@ export {
   updatePeriodicTween,
   resetPeriodicTween,
 } from './periodic.js';
+
+export {
+  type StepSequenceStep,
+  type StepSequence,
+  createStepSequence,
+  tickStepSequence,
+  resetStepSequence,
+} from './step-sequence.js';
+
+export {
+  type TimedModifier,
+  createTimedModifier,
+  tickModifier,
+  isModifierActive,
+  applyModifier,
+} from './timed-modifier.js';

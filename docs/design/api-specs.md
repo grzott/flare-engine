@@ -198,6 +198,13 @@ Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not
 | `spring(config)`                       | `{stiffness, damping, mass, target}`. `updateSpring(spring, dt)` → value.                       |
 | `TweenManager`                         | `addTween(mgr, tween)`, `updateTweens(mgr, dt)`. Auto-removes completed.                        |
 | `periodicTween(from, to, period, easing?)` | Oscillating driver that ping-pongs between `from` and `to` indefinitely. Default easing: `easeInOutSine`. Returns `PeriodicTween` state. `updatePeriodicTween(tw, dt)` → current value (wraps elapsed modulo period). `resetPeriodicTween(tw)` zeroes elapsed and restores `value = from`. Period must be > 0. |
+| `createStepSequence(steps)` | Returns `StepSequence { steps, current, elapsed }`. `steps` is `StepSequenceStep[] = { duration: number }[]`; throws if empty or any `duration <= 0`. `current=0, elapsed=0`. |
+| `tickStepSequence(seq, dt)` | Advances `seq.elapsed` by `dt`; drains across steps cyclically with a `while` loop (handles large dt spanning multiple steps); mutates in place (zero-alloc). Returns the new `current` index. Exactly-equal boundary (`elapsed == duration`) advances to the next step. |
+| `resetStepSequence(seq)` | Sets `seq.current = 0` and `seq.elapsed = 0`. |
+| `createTimedModifier<T>(value, duration, combine)` | Returns `TimedModifier<T> { value, combine, remaining }`. Throws if `duration <= 0`. |
+| `tickModifier<T>(mod, dt)` | `mod.remaining -= dt`, clamped to 0. Zero-alloc. |
+| `isModifierActive<T>(mod)` | `mod.remaining > 0`. |
+| `applyModifier<T>(base, mod)` | Returns `combine(base, mod.value)` when active; `base` when expired (identity). Zero-alloc when `T` is `number` and `combine` is pure arithmetic. |
 
 Animation APIs are functional (state object + free functions), not class-based — consistent with ECS/render style and tree-shakeable.
 
@@ -297,6 +304,9 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 | `RenderShapesOpts`      | `{ width, height, clearColor: number, shapes: ReadonlyArray<ShapeRect> }` — options for `renderShapesToImage`. `clearColor` is ARGB-packed. |
 | `renderShapesToImage`   | `(skia: SkiaModuleLike, opts: RenderShapesOpts) => SkImageLike \| null` — renders solid rectangles onto a fresh `MakeSurface` FBO and returns the snapshot. Returns `null` if `MakeSurface` is absent or fails. Surface is not cached. |
 | `PostFxRuntimeLike`     | Structural runtime interface. `supported: boolean` gates activation. Optional `buildPass(chain, w, h): readonly CompiledPassLike[]` — when present, `buildPostFxPasses` maps the results into `PostFxPassDescriptor[]` for the JSX `<Image><RuntimeShader/></Image>` chain in GameView. |
+| `useOverlayFade(visible, durationMs?)` | `visible: boolean`, `durationMs = 300`. Returns opacity `[0,1]` animating toward `visible ? 1 : 0` via rAF. In non-DOM environments (`typeof requestAnimationFrame === 'undefined'`, e.g. Bun tests) snaps instantly to the target — no `setInterval` fallback. Does NOT use `useGame()`/`useGameLoop()`; overlays live outside `<GameView>`. |
+| `useCountUp(target, durationMs?)` | `target: number`, `durationMs = 600`. Animates from the previous `target` to the new `target` using `easeOutCubic` from `@flare-engine/math`. Same rAF + no-rAF-snap pattern as `useOverlayFade`. |
+| `useSignalState<T>(signal, initial)` | `signal: Signal<T>` (from `@flare-engine/events`), `initial: T`. Subscribes via `signal.add(setter)` on mount and unsubscribes on cleanup using the returned disposer. Returns latest emitted value. |
 
 ### `@flare-engine/engine` (< 2KB gzip)
 
@@ -373,12 +383,15 @@ Deterministic test helpers for ECS games. Pure dev-time package — never bundle
 | `MockInputManager`                                   | Extends `@flare-engine/input` `InputManager` with `press(id, x, y)`, `move(id, x, y)`, `release(id)`, `tap(x, y)` for scripted pointer sequences. No native bridges.                           |
 | `serializeScene(world, components)`                  | Snapshots every entity's matching component data into a stable JSON-ish object. Stable key order enables diffing.                                                                             |
 | `snapshotsEqual(a, b)`                               | Deep equality for two scene snapshots. Useful for regression tests that record a known-good state.                                                                                            |
+| `createBenchSession(opts?)` | `opts: { seed?: number }` (default seed = 1). Saves `Math.random`, installs a `SeededRNG(seed)`-backed replacement. Returns `BenchSession { rng, setFlag, getFlag, done, whenDone, end }`. `done()` resolves `whenDone` (idempotent — second call is a no-op, never rejects). `end()` restores `Math.random` (idempotent). Flags stored in a plain `Record<string, boolean>`; `getFlag` returns `false` if unset. **Do not nest sessions.** |
+| `defineSnapshot<S>(schema)` | `schema: SnapshotSchema` — `{ [key: string]: SnapshotProjector }` where `SnapshotProjector = { query: readonly ComponentDef<unknown>[], project(world, id): unknown }`. Returns a `(world: World) => { [K in keyof S]: readonly unknown[] }` snapshot function. For each key: queries matching entity ids, sorts ids for call-to-call stability, maps `project(world, id)`. Acceptable to allocate one array per key per call — not a hot path. |
 
 **Implementation notes:**
 
-- Depends on `@flare-engine/core`, `@flare-engine/ecs`, `@flare-engine/input` (all `workspace:*`, all `external` in tsup).
+- Depends on `@flare-engine/core`, `@flare-engine/ecs`, `@flare-engine/input`, `@flare-engine/math` (all `workspace:*`, all `external` in tsup).
 - `createFakeClock` returns functions compatible with `GameLoop`'s `tick` / `cancelTick` hooks — no monkey-patching required.
 - Reverse usage: `@flare-engine/core` tests may import from `@flare-engine/testing` as a dev-only consumer (turbo's package graph remains acyclic — testing → core runtime, core → testing devDep).
+- `createBenchSession` is the backbone for deterministic bench scenarios and the planned PT agent-QA epic (Tier-1 headless `GameSnapshot` + critic workflow).
 
 ---
 
@@ -635,6 +648,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | `createSnapshotRingBuffer(size, source)` | Pre-allocated ring buffer of snapshots. `source` is `World.serialize` by default, or a user-supplied callback for consumers without ecs integration. |
 | `pause()` / `step()` / `resume()` | Imperative controls on the provider context. Also wired to HUD/panel buttons. |
 | `DevtoolsConfig` | `{ ringSize?: number = 120, captureInterval?: number = 1, enabledOnNative?: boolean = true }`. |
+| `isDevMode()` | Returns `true` when the Metro/bundler `__DEV__` constant is defined and truthy. Safe to call anywhere — uses `typeof __DEV__` (no reference error on undeclared identifier). **Note:** `isDevMode()` is NOT constant-folded by Metro like a bare `__DEV__` reference; use bare `__DEV__` where dead-code elimination matters. Use `isDevMode()` where you need a callable function (e.g. passing to a config object, conditional import guard, test stub). |
 
 **Implementation notes:**
 
@@ -643,6 +657,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 - Ring buffer pre-allocates snapshot objects at construction and reuses them in place — no per-frame allocation.
 - Snapshot source is pluggable: defaults to `World.serialize()` if available, falls back to user callback. API may firm up in 0.2.0.
 - Tests: logic unit tests (ring buffer wrap/rewind, snapshot diff), plus one React Testing Library smoke test on `DevtoolsPanel`.
+- `isDevMode` uses `declare const __DEV__: boolean | undefined` so TypeScript accepts the global without `@ts-ignore`. The `declare` is file-scoped (not ambient-global) — callers on other runtimes (Vite, Jest) set `globalThis.__DEV__` instead.
 
 ---
 

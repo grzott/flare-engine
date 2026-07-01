@@ -117,6 +117,27 @@ describe('createDropTable — isAllowed gate', () => {
     const out = rollDrop(table, 0.5, 0.0, 1.0, pity, {}, () => false);
     expect(out.item).toBe('none');
   });
+
+  it('open chance gate with gated high-pity item picks only from allowed entries', () => {
+    // bomb has high pity (threshold met) but is blocked by isAllowed.
+    // medikit pity is also at threshold but blocked.
+    // ammo is allowed. Chance gate is OPEN (rollChance01=0.0 < chancePerRoll=1.0).
+    const table = createDropTable(TABLE);
+    const pity: Record<MyKind, number> = { medikit: 24, ammo: 0, bomb: 39 };
+    // isAllowed blocks medikit and bomb — only ammo survives the weighted pick.
+    const out = rollDrop(
+      table,
+      0.5, // rollTable01 — lands on ammo (weight 60 dominates)
+      0.0, // rollChance01 < chancePerRoll=1.0 → gate open
+      1.0,
+      pity,
+      THRESHOLDS,
+      (k) => k === 'ammo',
+    );
+    expect(out.item).toBe('ammo');
+    expect(out.item).not.toBe('medikit');
+    expect(out.item).not.toBe('bomb');
+  });
 });
 
 describe('createDropTable — rollInto zero-alloc form', () => {

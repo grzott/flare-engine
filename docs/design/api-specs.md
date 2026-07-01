@@ -620,7 +620,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | --- | --- |
 | `create-flare-app <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
 | Template `blank` | Empty scene, single sprite, `GameView` wired via `@flare-engine/react`. Smallest starting point. |
-| Template `topdown` | Player with 4-direction movement, tilemap + camera follow, one enemy prefab. Exercises `tilemap` + `input` + `ecs`. |
+| Template `topdown` | Player with analog joystick movement, tilemap + tile-collision + camera follow. Exercises `tilemap` + `physics` + `input` + `ecs`. |
 | Template `shmup` | Auto-fire player, enemy spawner, HUD score — minimum vertical-slice shmup. Exercises `particles` + `audio` + `scene`. For the full-scope showcase, see [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski). |
 | `TemplateManifest` | Exported type: `{ id, displayName, description, engines, postInstall? }`. Declared per template so contributor-authored templates can plug in identically. |
 

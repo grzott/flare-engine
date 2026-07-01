@@ -62,6 +62,10 @@ if [ "$SCOPE" != "game" ]; then
   run_gate "build" bun run build
 fi
 
+# Guardrails: dependency/tier graph + changelog (changeset) coverage.
+run_gate "deps"      bun run check:deps
+run_gate "changeset" bun run check:changeset
+
 # ---- Diff snapshot ---------------------------------------------------------
 
 CHANGED=$(git status --porcelain | awk '{print $2}' | sort -u)

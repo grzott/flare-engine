@@ -31,9 +31,6 @@
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@flare-engine/events": "^0.2.0"
-  },
   "peerDependencies": {
     "react-native-audio-api": ">=0.3.0"
   },

@@ -33,9 +33,7 @@
   },
   "dependencies": {
     "@flare-engine/assets": "^0.2.0",
-    "@flare-engine/core": "^0.2.0",
     "@flare-engine/ecs": "^0.2.0",
-    "@flare-engine/events": "^0.2.0",
     "@flare-engine/math": "^0.2.0"
   },
   "peerDependencies": {

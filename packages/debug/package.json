@@ -32,9 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/core": "^0.2.0",
-    "@flare-engine/ecs": "^0.2.0",
-    "@flare-engine/render": "^0.2.0"
+    "@flare-engine/core": "^0.2.0"
   },
   "publishConfig": {
     "access": "restricted",

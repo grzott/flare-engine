@@ -65,7 +65,18 @@ export {
   randomPointInCircle,
   shuffle,
   choose,
+  weightedIndex,
+  weightedIndexBy,
+  weightedPick,
+  hashU32,
+  seededIndex,
 } from './random.js';
+export {
+  cappedBonus,
+  advanceWindowedStreak,
+  windowExpired,
+  remainingInWindow,
+} from './reward.js';
 export {
   pointInRect,
   pointInCircle,

@@ -73,3 +73,77 @@ export function choose<T>(array: readonly T[]): T | undefined {
   if (array.length === 0) return undefined;
   return array[Math.floor(Math.random() * array.length)];
 }
+
+/**
+ * Picks an index from a weight array using a cumulative walk.
+ * `roll01` must be in [0, 1); returns 0 for an empty or all-zero array.
+ */
+export function weightedIndex(weights: readonly number[], roll01: number): number {
+  let total = 0;
+  for (let i = 0; i < weights.length; i++) total += weights[i] ?? 0;
+  if (total <= 0) return 0;
+  const target = roll01 * total;
+  let acc = 0;
+  for (let i = 0; i < weights.length; i++) {
+    acc += weights[i] ?? 0;
+    if (target < acc) return i;
+  }
+  return weights.length - 1;
+}
+
+/**
+ * Picks an index from `items` using a per-item weight accessor.
+ * `roll01` must be in [0, 1); returns 0 for an empty or all-zero-weight array.
+ */
+export function weightedIndexBy<T>(
+  items: readonly T[],
+  weight: (item: T) => number,
+  roll01: number,
+): number {
+  let total = 0;
+  for (let i = 0; i < items.length; i++) total += weight(items[i] as T);
+  if (total <= 0) return 0;
+  const target = roll01 * total;
+  let acc = 0;
+  for (let i = 0; i < items.length; i++) {
+    acc += weight(items[i] as T);
+    if (target < acc) return i;
+  }
+  return items.length - 1;
+}
+
+/**
+ * Picks an item from `items` using a per-item weight accessor.
+ * Returns `undefined` for an empty array; returns the last item on float-edge.
+ */
+export function weightedPick<T>(
+  items: readonly T[],
+  weight: (item: T) => number,
+  roll01: number,
+): T | undefined {
+  if (items.length === 0) return undefined;
+  return items[weightedIndexBy(items, weight, roll01)];
+}
+
+/**
+ * 32-bit avalanche finalizer (lowbias32). Mixes `seed` so that adjacent seeds
+ * decorrelate into different output values. Returns an unsigned 32-bit integer.
+ *
+ * Constants from https://nullprogram.com/blog/2018/07/31/ (lowbias32).
+ */
+export function hashU32(seed: number): number {
+  let h = (seed | 0) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/**
+ * Deterministically maps `seed` to an index in [0, count).
+ * Single-entry pools short-circuit to 0. Uses `hashU32` to decorrelate
+ * adjacent seeds before the modulo.
+ */
+export function seededIndex(seed: number, count: number): number {
+  if (count <= 1) return 0;
+  return hashU32(seed) % count;
+}

@@ -299,6 +299,13 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   const stretchDstRects: RectLike[] = [];
   let stretchPaint: PaintLike | null = null;
 
+  const zoneBgRects: RectLike[] = [];
+
+  let _cachedSrcSlice: RectLike[] | null = null;
+  let _cachedSrcSliceLen = 0;
+  let _cachedXformSlice: RSXformLike[] | null = null;
+  let _cachedXformSliceLen = 0;
+
   const clearColor: Float32Array = new Float32Array(4);
   const tintColor: Float32Array = new Float32Array(4);
   const flashColor: Float32Array = new Float32Array(4);
@@ -361,6 +368,26 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       stretchSrcRects.push(Skia.XYWHRect(0, 0, 0, 0));
       stretchDstRects.push(Skia.XYWHRect(0, 0, 0, 0));
     }
+  }
+
+  function ensureZoneBgPoolCapacity(n: number): void {
+    while (zoneBgRects.length < n) {
+      zoneBgRects.push(Skia.XYWHRect(0, 0, 0, 0));
+    }
+  }
+
+  function getCachedSrcSlice(n: number): RectLike[] {
+    if (_cachedSrcSlice !== null && _cachedSrcSliceLen === n) return _cachedSrcSlice;
+    _cachedSrcSlice = srcRects.length === n ? srcRects : srcRects.slice(0, n);
+    _cachedSrcSliceLen = n;
+    return _cachedSrcSlice;
+  }
+
+  function getCachedXformSlice(n: number): RSXformLike[] {
+    if (_cachedXformSlice !== null && _cachedXformSliceLen === n) return _cachedXformSlice;
+    _cachedXformSlice = xforms.length === n ? xforms : xforms.slice(0, n);
+    _cachedXformSliceLen = n;
+    return _cachedXformSlice;
   }
 
   function fillSrcRects(commands: SpriteDrawCommand[], n: number): void {
@@ -660,17 +687,17 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   ): void {
     const paint = applyOutlinePaint(effect);
     paint.setAlphaf(alpha);
-    const srcs = srcRects.length === n ? srcRects : srcRects.slice(0, n);
+    const srcs = getCachedSrcSlice(n);
     for (let k = 0; k < OUTLINE_OFFSETS.length; k++) {
       const offset = OUTLINE_OFFSETS[k] as readonly [number, number];
       fillXforms(commands, n, offset[0] * effect.width, offset[1] * effect.width);
-      const dsts = xforms.length === n ? xforms : xforms.slice(0, n);
+      const dsts = getCachedXformSlice(n);
       cvs.drawAtlas(image, srcs, dsts, paint);
     }
     paint.setAlphaf(1);
     defaultPaint.setAlphaf(alpha);
     fillXforms(commands, n, 0, 0);
-    const mainDsts = xforms.length === n ? xforms : xforms.slice(0, n);
+    const mainDsts = getCachedXformSlice(n);
     cvs.drawAtlas(image, srcs, mainDsts, defaultPaint);
     defaultPaint.setAlphaf(1);
   }
@@ -742,10 +769,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       ) {
         const paint = resolveEffectPaint(effect);
         paint.setAlphaf(alpha);
+        ensureZoneBgPoolCapacity(n);
         for (let i = 0; i < n; i++) {
           const cmd = commands[i] as SpriteDrawCommand;
-          const rect = Skia.XYWHRect(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
-          current.drawRect(rect, paint);
+          zoneBgRects[i]!.setXYWH(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
+          current.drawRect(zoneBgRects[i]!, paint);
         }
         paint.setAlphaf(1);
         return;
@@ -776,8 +804,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       }
 
       fillXforms(commands, n, 0, 0);
-      const srcs = srcRects.length === n ? srcRects : srcRects.slice(0, n);
-      const dsts = xforms.length === n ? xforms : xforms.slice(0, n);
+      const srcs = getCachedSrcSlice(n);
+      const dsts = getCachedXformSlice(n);
       const paint = effect === undefined ? defaultPaint : resolveEffectPaint(effect);
       paint.setAlphaf(alpha);
       current.drawAtlas(image, srcs, dsts, paint);

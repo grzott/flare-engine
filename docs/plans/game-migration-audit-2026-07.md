@@ -106,3 +106,31 @@ exhaust/shadow/boss-part `Follower` (3 divergent shapes), unlock DAGs, `hud/useO
 `render-web` XP2 row claims `createWebFrameRenderer` is exported; `packages/render-web/src/index.ts`
 exports only `loadCanvasKit`/`createWebSurface`/`createWebSkiaModule`/`createPostFxSurface`. Export it
 or correct the row. Docs/exports only.
+
+---
+
+## Save-subsystem redesign — DONE 2026-07-01 (owner ruling: drop back-compat, wipe is fine)
+
+Owner authorized wiping saves (PT is dev-only; wipe = clear app data), unblocking a clean redesign with
+no migration/legacy-bridge workarounds. Gate green throughout (typecheck 0 / lint 571 / 2048 tests /
+balance clean / locale 505). UNCOMMITTED (git blocked this session).
+
+- **SV1 — dropped the version-migration chain.** `src/save/migrate.ts` (658 lines) → `src/save/parse.ts`
+  (396): deleted the 12-step v1→v13 `MIGRATIONS` chain, the `NAMING_MIGRATION_IDS` folk→semantic remap,
+  `backfillClearedCells`, and `defineMigrationChain`/`runMigrations` (~262 lines of pure back-compat).
+  KEPT the lenient current-shape validators; `fromUnknown` = `structuralParse` only. Deleted
+  `save-migrator.test.ts`; renamed `migrate-helpers.test.ts` → `parse-helpers.test.ts`.
+- **SV2 — adopted `storage.createDocumentStore` in `store.ts`.** `{version,data}` envelope +
+  `__flare_doc_version` + `parse: fromUnknown`; first-run OS seed handled cleanly (detect empty key
+  before load, async-seed after). Legacy raw saves read as non-envelope → reset to default (the intended
+  one-time wipe). Preserved the full ~50-method `SaveStore` interface, so all ~28 consumer tests stayed
+  green. Updated `save.test.ts` (+envelope-format golden), `first-run-os-seed.test.ts` (raw-reset),
+  `settings-roundtrip.test.ts` (field-defaulting via `fromUnknown`).
+- **SV3 — dev save backup/transfer.** `SaveStore.exportSave()`→`store.exportJSON()`,
+  `importSave(json)`→`store.importJSON` + apply. Dev-console handle in `providers.ts` guarded by
+  `isDevMode()`: `__ptSave.export()` / `__ptSave.import(json)` (no clipboard dep — a clipboard button
+  would need `expo-clipboard`). +round-trip test.
+
+Vestigial `SaveFile.version` kept (envelope owns real versioning) — low-churn, trivially droppable.
+Deferred keep-locals unchanged by save-freedom (non-save reasons): drops→createDropTable,
+effectiveShipStats→resolveStats, codex/shards→createCollectibleRegistry.

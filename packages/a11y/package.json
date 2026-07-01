@@ -32,7 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.1.0"
+    "@flare-engine/events": "^0.1.0",
+    "@flare-engine/math": "^0.1.0"
   },
   "publishConfig": {
     "access": "restricted",

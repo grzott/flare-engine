@@ -11,3 +11,13 @@ export {
   type MotionScaleTarget,
   createA11yBridge,
 } from './bridge.js';
+export {
+  contrastRatio,
+  wcagLevel,
+  deltaE,
+  isDistinguishable,
+  auditColors,
+  type WcagLevel,
+  type AuditResult,
+  type AuditOptions,
+} from './audit.js';

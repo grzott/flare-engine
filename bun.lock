@@ -57,7 +57,8 @@
       "name": "@flare-engine/a11y",
       "version": "0.1.0",
       "dependencies": {
-        "@flare-engine/events": "workspace:*",
+        "@flare-engine/events": "^0.1.0",
+        "@flare-engine/math": "^0.1.0",
       },
     },
     "packages/achievements": {

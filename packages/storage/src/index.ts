@@ -11,3 +11,7 @@ export { defineMigrationChain } from './migration-chain.js';
 export type { MigrationStep } from './migration-chain.js';
 export { createStorage } from './storage.js';
 export type { Storage, StorageOptions } from './storage.js';
+export { createDocumentStore } from './document-store.js';
+export type { DocumentStore, DocumentStoreOptions } from './document-store.js';
+export { san } from './sanitize.js';
+export type { Sanitizer } from './sanitize.js';

@@ -326,12 +326,17 @@ Typed, versioned key/value persistence for save games and app settings. Pluggabl
 | `MigrationStep`                       | `{ from: number; to: number; migrate: (old: unknown) => unknown }`. Linear-step variant used by `defineMigrationChain`.                                             |
 | `defineMigrationChain(steps)`         | Convenience wrapper: takes a contiguous array of `MigrationStep` (each `to === next.from`) and produces a `Migration[]` consumable by `runMigrations`. Throws on gaps. See [docs/recipes/save-migrations.md](../recipes/save-migrations.md). |
 | `createStorage({ adapter, schema, version, migrations? })` | Returns a `Storage<T>` with: low-level `get/set/delete`, `saveSlot(name, data)`, `loadSlot(name) → T \| null` (runs migrations then schema), `deleteSlot(name)`, `listSlots() → string[]`, `exportJSON()`, `importJSON(json)` (clears existing keys first). Slots are stored under `slot:<name>`; version envelope is `{ version, data }`. |
+| `createDocumentStore({ adapter, key, version, migrations?, parse, onFirstRun? })` | Single-document versioned store. Inverse of `createStorage`'s N-slot model: one in-memory doc under a caller-supplied `key`. `parse(raw) → T` is the caller-supplied lenient parser (expected to handle `undefined` on first run; must not throw). `onFirstRun(doc) → T` is called on first run (absent key) or silent corrupt-data fallback — return value is saved and returned by `load()`. `load() → Promise<T>` migrates forward then calls `parse`; silent fallback to `parse(undefined)` → `onFirstRun` on unparseable/malformed data. `get() → T` throws if `load()` has not been called. `save(doc) → Promise<void>`. `exportJSON() → string` (same `{ version, data }` envelope as `createStorage`). `importJSON(json) → Promise<T>`. |
+| `san` | Lenient sanitizer namespace. Combinators: `san.string(fallback)` — returns input if string, else fallback; `san.number(fallback)` — returns input if finite number, else fallback; `san.boolean(fallback)`; `san.literal(options, fallback)` — returns input if member of options, else fallback; `san.object(shape)` — applies each field sanitizer independently, drops unknown keys, returns all-defaults for non-object input; `san.array(item)` — transforms every element via item, returns `[]` for non-array; `san.arrayOf(guard)` — drops elements failing the type guard, returns `[]` for non-array; `san.clamped(fallback, min, max)` — returns fallback for non-finite input, else clamps; `san.pipe(sanitizer, transform)` — chains a sanitizer with a post-process transform. All combinators return a `Sanitizer<T> = (input: unknown) => T`. Never throw. |
+| `Sanitizer<T>` | Type: `(input: unknown) => T`. A lenient parser that always returns `T`. |
 
 **Implementation notes:**
 
 - All adapter ops are async so the same API works against sync (MMKV) and async (IndexedDB) backends.
 - `createMmkvAdapter` takes the MMKV instance as an argument — the package does not import `react-native-mmkv` itself, keeping it bun-testable and avoiding a native peer dep at the `@flare-engine/storage` layer.
 - The schema validator covers primitives + object/array/optional/literal/union. Full Zod parity (refinements, transforms, effects) is out of scope; save data is simple enough.
+- `createDocumentStore.parse` is intentionally not a `Schema<T>` — it is caller-owned lenient parsing (no throw contract), pairing with `san.*` combinators. `createStorage` uses `Schema<T>` (strict-throw path).
+- `san.*` is the field-drop / lenient-fallback counterpart to `s.*`. Use `s.*` when the doc must be valid or rejected; use `san.*` when migrating real persisted data that may be partial or stale.
 
 ---
 
@@ -484,12 +489,15 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 | `formatMessage(tpl, values, locale)` | Stateless renderer supporting `{var}` interpolation and `{count, plural, =0 {...} one {# x} other {# xs}}`. `#` = numeric value. |
 | `resolveLocale(requested, available, fallback)` | Case-insensitive BCP-47 matcher: exact → language-only → fallback → first available. |
 | `pluralCategory(locale, n)` | CLDR-inspired classifier for `en`, `pl`, `ru`, `fr`, `ar`, `ja/ko/zh`, etc. Unknown locales fall back to English rules. |
+| `formatTimestamp(ts, locale, options?)` | Format a Unix timestamp (milliseconds) using `Intl.DateTimeFormat`. Returns `options.fallback` (default `''`) for `ts <= 0` or on any `Intl` error (unsupported locale, constrained runtime). `options.dateStyle` defaults to `'short'`. `options.timeStyle` defaults to `'short'` when `options` is omitted; omit `timeStyle` from the options object to get a date-only result. Never throws. Safe on Bun (V8), React Native Hermes (≥ 0.70), and web. |
+| `FormatTimestampOptions` | Type: `{ dateStyle?: 'full' \| 'long' \| 'medium' \| 'short'; timeStyle?: 'full' \| 'long' \| 'medium' \| 'short'; fallback?: string }`. |
 
 **Implementation notes:**
 
 - Single hard dep: `@flare-engine/events` (`Signal`).
 - Plural parser handles top-level branches only — nested `{…, plural, …}` is not supported (not needed for our message catalogue).
 - Malformed placeholders emit the remainder literally instead of throwing — safer during locale hot-reload.
+- `formatTimestamp` produces locale-formatted date/time strings — it does not introduce translatable message keys. No changes to string tables or `keys.ts`.
 
 ---
 
@@ -546,11 +554,20 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 | `motionScale({reducedMotion}, base=1)` | Returns `0` under reduced motion, else `base`. Drop-in multiplier for camera shake / tween intensity. |
 | `dampenedMotion({reducedMotion}, base, factor=0.2)` | Softens but preserves the effect (good for subtle chromatic aberration, vignette pulse). |
 | `pickContrast({contrast}, normal, high)` | Token picker for UI color choices. |
+| `contrastRatio(fg, bg)` | WCAG 2.x contrast ratio between two `Color` values. Order-independent; range [1, 21]. Delegates to `Color.contrastRatio`. |
+| `wcagLevel(ratio, largeText?)` | Classify a contrast ratio: normal text — `ratio >= 7.0` → `'AAA'`, `>= 4.5` → `'AA'`, else `'fail'`; large text (≥ 18pt normal / ≥ 14pt bold, `largeText = true`) — `>= 4.5` → `'AAA'`, `>= 3.0` → `'AA'`, else `'fail'`. Thresholds are inclusive (WCAG "at least"). |
+| `deltaE(a, b)` | OKLab Euclidean distance (ΔE) between two `Color` values. Delegates to `Color.deltaEOk`. Rule of thumb: < 0.05 = imperceptibly similar; > 0.1 = distinguishable. |
+| `isDistinguishable(a, b, threshold?)` | Returns true when `deltaE(a, b) >= threshold` (default 0.1). The threshold is a design-level constant — tune per visual layer. |
+| `auditColors(fg, bg, options?)` | Convenience composite: returns `AuditResult { contrastRatio, wcagLevel, deltaE, distinguishable }`. Options: `{ largeText?, deltaEThreshold? }`. Never throws. |
+| `WcagLevel` | Type: `'fail' \| 'AA' \| 'AAA'`. |
+| `AuditResult` | Type: `{ contrastRatio: number; wcagLevel: WcagLevel; deltaE: number; distinguishable: boolean }`. |
+| `AuditOptions` | Type: `{ largeText?: boolean; deltaEThreshold?: number }`. |
 
 **Implementation notes:**
 
 - No platform wiring; hosts bridge OS prefs (`AccessibilityInfo.isReduceMotionEnabled`, `prefers-reduced-motion`) by calling `update()` on startup.
-- Single hard dep: `@flare-engine/events` (`Signal`).
+- Deps: `@flare-engine/events` (`Signal`) + `@flare-engine/math` (`Color`).
+- `audit.ts` delegates all math to `Color.contrastRatio` and `Color.deltaEOk` — no new math, no Skia dep. ΔE is OKLab (not CIE76/CIE94) because `math.Color` already implements OKLab and it is perceptually uniform.
 
 ---
 

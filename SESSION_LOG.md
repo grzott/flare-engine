@@ -7249,3 +7249,38 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 200 — 2026-07-01 (scope: engine)
+
+**Goal:** XP9 storage createDocumentStore+sanitize, a11y audit, localization formatTimestamp
+
+**Touched files**
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `packages/a11y/README.md`
+- `packages/a11y/package.json`
+- `packages/a11y/src/audit.ts`
+- `packages/a11y/src/index.ts`
+- `packages/a11y/tests/audit.test.ts`
+- `packages/localization/README.md`
+- `packages/localization/src/format-timestamp.ts`
+- `packages/localization/src/index.ts`
+- `packages/localization/tests/format-timestamp.test.ts`
+- `packages/storage/README.md`
+- `packages/storage/src/document-store.ts`
+- `packages/storage/src/index.ts`
+- `packages/storage/src/sanitize.ts`
+- `packages/storage/tests/document-store.test.ts`
+- `packages/storage/tests/sanitize.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:3 — adversarial-verify caught vacuous assertion + untested importJSON-corrupt path + biome-format on untracked tests (src-only gate blindspot)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

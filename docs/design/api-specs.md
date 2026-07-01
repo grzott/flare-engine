@@ -781,7 +781,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ### `@flare-engine/simulation`
 
-Continuous-time physical dynamics: n-body gravity with Plummer softening, velocity-Verlet / leapfrog integrators, and wave-packet ripple pools. Zero engine/DOM imports — pure TS, allocation-free hot paths. No deps at 0.1.0; field/scalar-field and agent/stigmergy land in a follow-up (XP7).
+Continuous-time physical dynamics: n-body gravity with Plummer softening, velocity-Verlet / leapfrog integrators, wave-packet ripple pools, a diffuse/decay scalar field, and Jones-model agent stigmergy. Zero DOM imports — allocation-free hot paths. Depends on `@flare-engine/math` (deterministic `SeededRNG` for the agent model); n-body / integrators / ripples remain dep-free.
 
 #### N-body
 
@@ -811,4 +811,27 @@ Continuous-time physical dynamics: n-body gravity with Plummer softening, veloci
 | `RipplePool` | Interface: `capacity`, `count`. Methods: `emit(x,y,now,amp,speed,wavelength,life)`, `heightAt(x,y,now)→number`, `prune(now)`, `clear()`. |
 
 Each wavefront is an analytic Gaussian-enveloped wave packet (not a raw PDE): unconditionally stable, controllable bandwidth, exact spatial localization. `heightAt` sums contributions from all live fronts; `prune` retires fronts whose `age > life × 5`. `emit` overwrites the oldest slot when all capacity slots are active (never overflows). Spreading attenuation ≈ 1/√r via `ATTEN=320` px scale.
+
+#### Scalar field
+
+| API | Description |
+| --- | --- |
+| `createScalarField(width, height, cell, edge?)` | Returns `ScalarField` backed by two ping-pong `Float32Array`s (zero alloc after construction). `edge` = `'toroidal'` (default, wrapping — tiling fields) or `'clamp'` (edge-clamped — bounded playfields). |
+| `ScalarField` | `w/h/cols/rows/cell`; `sample(x,y)` bilinear; `gradient(x,y,out)` central-difference ∇; `deposit(x,y,amount)` additive splat; `erode(x,y,radiusPx,mul)` radial multiply; `step(diffuseRate,decayRate,maxVal)`; `meanValue(stride)`; `maxValue(stride)`; `localMean(x,y,radiusPx)`; `toRGBA(out,norm,low,mid,hi,knot)`; `resize(w,h)`. |
+
+`step` runs a separable 3×3 box-blur diffuse (ping-pong, lerped by `diffuseRate`) then multiplicative `decayRate`, clamping every cell to `maxVal` (`Infinity` = no clamp — the runaway-source stability guard). Pure diffuse (`decayRate=1`) conserves total mass. `gradient` writes the field slope into `out` — read its negation for chemotaxis / obstacle steering (build a second field as an occupancy map and follow `−gradient`). `toRGBA` packs a palette-binned low→mid→hi→knot ramp with brightness folded into rgb so dim cells add nothing under additive blend.
+
+#### Agent stigmergy
+
+| API | Description |
+| --- | --- |
+| `createStigmergy(field, config, rng)` | Returns `AgentField`: SoA agents that sense a `ScalarField`, turn (Jones 2010), move + deposit — the engine's first emergent-AI primitive. `rng` is a `SeededRNG` → fully deterministic. |
+| `AgentField` | `count`, `px/py/heading: Float32Array` (SoA); `update()` (one sense→rotate→move+wrap→deposit step); `forEachAgent(cb,stride?)`; `resize(w,h)`. |
+| `StigmergyConfig` | `{ count, sensorAngle, sensorDist, rotateAngle, stepSize, depositAmount, chaos, onSense?, onMove? }`. `onSense`/`onMove` are typed per-agent hooks for caller-injected chemotaxis / repulsion — keeps nutrient sources + obstacles out of the engine core. |
+| `senseAt(field,x,y,heading,offset,dist)` | Read the field at one sensor: `offset` rad off the agent heading, `dist` px ahead. |
+| `decideTurn(left,center,right,rand)` | Jones turn decision → `-1 \| 0 \| 1`; `rand ∈ [0,1)` breaks the symmetric "both sides brighter" case. |
+
+Agents are never destroyed (the network is seamless by construction — continuous decay prunes, nothing is reseeded) and wrap or clamp per the field's edge mode. `update()` advances one fixed step (`stepSize` px/step, not px/s); all randomness — initial scatter, `decideTurn` tiebreak, `chaos` heading jitter — routes through the injected `rng` so runs reproduce bit-for-bit.
+
+**2.5D lattice boundary (settled XP7).** The `WarpLattice` in flare-engine-page's spacetime demo is two separable halves. Its **potential-summation half** (`addWells` — sum Plummer-softened point-source potentials into a signed height/force field) is a **`ScalarField` producer** and, if ever lifted, belongs here in `simulation`. Its **perspective project / unproject / pitched-camera half is presentation** and belongs in a **future render-side 2.5D helper** (see [lighting-2-5d.md](lighting-2-5d.md)), never in `simulation`; the starfield lens-deflection map is likewise presentation. Neither half ships in XP7 — no in-engine consumer exists yet; this records the split so a future lift lands in the correct package.
 

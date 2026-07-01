@@ -35,5 +35,8 @@
     "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@flare-engine/math": "workspace:*"
+  }
 }

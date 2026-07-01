@@ -403,6 +403,13 @@
       "name": "@flare-engine/share",
       "version": "0.1.0",
     },
+    "packages/simulation": {
+      "name": "@flare-engine/simulation",
+      "version": "0.1.0",
+      "dependencies": {
+        "@flare-engine/math": "workspace:*",
+      },
+    },
     "packages/storage": {
       "name": "@flare-engine/storage",
       "version": "0.1.0",
@@ -787,6 +794,8 @@
     "@flare-engine/shapes": ["@flare-engine/shapes@workspace:packages/shapes"],
 
     "@flare-engine/share": ["@flare-engine/share@workspace:packages/share"],
+
+    "@flare-engine/simulation": ["@flare-engine/simulation@workspace:packages/simulation"],
 
     "@flare-engine/storage": ["@flare-engine/storage@workspace:packages/storage"],
 

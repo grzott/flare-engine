@@ -7194,3 +7194,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 198 — 2026-07-01 (scope: engine)
+
+**Goal:** simulation scalar field + agent stigmergy (XP7)
+
+**Touched files**
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `packages/simulation/README.md`
+- `packages/simulation/package.json`
+- `packages/simulation/src/agent/`
+- `packages/simulation/src/field/`
+- `packages/simulation/src/index.ts`
+- `packages/simulation/tests/scalar-field.test.ts`
+- `packages/simulation/tests/stigmergy.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

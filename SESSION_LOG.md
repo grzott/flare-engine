@@ -7350,3 +7350,36 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 203 — 2026-07-01 (scope: engine)
+
+**Goal:** 0.2.0 post-release audit + fixes: render-web layer, hot-path allocs, dep/tier guardrail
+
+**Touched files**
+- `SESSION_LOG.md`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render-web/src/postfx-surface.ts`
+- `packages/render-web/tests/postfx-surface.test.ts`
+- `packages/render-web/README.md`
+- `packages/postfx/package.json`
+- `packages/postfx/src/runtime.ts`
+- `packages/simulation/src/field/scalar-field.ts`
+- `packages/simulation/tests/nbody.test.ts`
+- `packages/progression/tests/drop-roll.test.ts`
+- `packages/localization/src/format-timestamp.ts`
+- `packages/testing/src/bench-session.ts`
+- `packages/{assets,audio,debug,devtools,iap-revenuecat,input,render,scene,ui-shop}/package.json` (phantom deps)
+- `scripts/check-deps-tiers.mjs`, `package.json`, `.github/workflows/ci.yml`
+- `README.md`, `AGENTS.md`, `docs/design/{architecture,api-specs,dependencies}.md`, `docs/plans/roadmap.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green (83 tasks)
+- build: green (42 tasks)
+
+**Frictions:** corr:0; deny:2 (git checkout/rm for revert — builder boundary, expected); gate:2 (lint: render-web + testing quote/format); drift:4 (docs agent strayed beyond scope into flare-engine todo.md + a new unrequested game-migration plan + Pan-Tvardowski todo.md + flare-engine-page index.astro — all reverted; reconfirms [[workflow-agents-write-wrong-repo]]). 49-agent read-only audit (37 confirmed / 4 refuted) then 5-agent fix fan-out; downward-only rule verdict: render-web is L4 web-bridge, render-web→postfx is a legal downward edge; new CI dep/tier guardrail enforces it.
+
+**Next:** see `docs/plans/todo.md`. Open decision: 0.2.1 changeset + npm publish (owner-gated).
+
+---

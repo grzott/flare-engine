@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/leaderboards",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Leaderboard provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "leaderboards", "provider", "interface"],
   "license": "MIT",

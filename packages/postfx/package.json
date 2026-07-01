@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/postfx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Skia RuntimeEffect post-processing: vignette, bloom, CRT, chromatic aberration, grayscale flash",
   "keywords": ["flare-engine", "postfx", "shader", "skia", "vignette", "bloom", "crt"],
   "license": "MIT",

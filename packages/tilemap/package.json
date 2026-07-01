@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/tilemap",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tiled/LDtk parser, culled tilemap renderer",
   "keywords": ["flare-engine", "tilemap", "tiled", "ldtk"],
   "license": "MIT",
@@ -32,10 +32,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/assets": "^0.1.0",
-    "@flare-engine/math": "^0.1.0",
-    "@flare-engine/physics": "^0.1.0",
-    "@flare-engine/render": "^0.1.0"
+    "@flare-engine/assets": "^0.2.0",
+    "@flare-engine/math": "^0.2.0",
+    "@flare-engine/physics": "^0.2.0",
+    "@flare-engine/render": "^0.2.0"
   },
   "publishConfig": {
     "access": "restricted",

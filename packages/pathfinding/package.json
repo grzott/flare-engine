@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/pathfinding",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A* grid pathfinding, Jump Point Search, and navmesh for 2D games",
   "keywords": ["flare-engine", "pathfinding", "astar", "jps", "navmesh", "grid"],
   "license": "MIT",
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/math": "^0.1.0"
+    "@flare-engine/math": "^0.2.0"
   },
   "publishConfig": {
     "access": "restricted",

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/animation",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Sprite animation, tweens, springs, timeline",
   "keywords": ["flare-engine", "animation", "tween", "spring"],
   "license": "MIT",
@@ -32,8 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/assets": "^0.1.0",
-    "@flare-engine/math": "^0.1.0"
+    "@flare-engine/assets": "^0.2.0",
+    "@flare-engine/math": "^0.2.0"
   },
   "publishConfig": {
     "access": "restricted",

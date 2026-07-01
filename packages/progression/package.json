@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/progression",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Meta-progression primitives: upgrade tracks, drop-roll with pity, unlock DAG, tier resolution, collectible registry",
   "keywords": ["flare-engine", "progression", "upgrade", "drop", "unlock", "tier"],
   "license": "MIT",
@@ -37,6 +37,6 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@flare-engine/math": "workspace:*"
+    "@flare-engine/math": "^0.2.0"
   }
 }

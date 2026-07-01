@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/audio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AudioManager, SFX pool, music crossfade",
   "keywords": ["flare-engine", "audio", "sfx", "music"],
   "license": "MIT",
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.1.0"
+    "@flare-engine/events": "^0.2.0"
   },
   "peerDependencies": {
     "react-native-audio-api": ">=0.3.0"

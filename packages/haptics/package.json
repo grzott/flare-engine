@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/haptics",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Haptics (tactile feedback) provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "haptics", "provider", "interface"],
   "license": "MIT",

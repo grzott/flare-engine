@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/storage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Persistent key/value storage with typed schema, migrations, save slots, and JSON import/export",
   "keywords": ["flare-engine", "storage", "mmkv", "indexeddb", "save-game", "migration"],
   "license": "MIT",

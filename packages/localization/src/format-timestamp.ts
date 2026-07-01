@@ -4,8 +4,12 @@ export interface FormatTimestampOptions {
   /** Intl.DateTimeFormat date style. Defaults to 'short'. */
   dateStyle?: 'full' | 'long' | 'medium' | 'short';
   /**
-   * Intl.DateTimeFormat time style. Defaults to 'short'.
-   * Omit (or pass undefined) for a date-only result.
+   * Intl.DateTimeFormat time style.
+   *
+   * Applied when explicitly provided here, or when the entire `options`
+   * argument is omitted (defaults to 'short' in that case).
+   * Passing an `options` object that does NOT include `timeStyle` yields a
+   * date-only result — time is suppressed.
    */
   timeStyle?: 'full' | 'long' | 'medium' | 'short';
   /** Returned for ts <= 0 or on any Intl failure. Defaults to ''. */

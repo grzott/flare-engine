@@ -7284,3 +7284,69 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 201 — 2026-07-01 (scope: engine)
+
+**Goal:** XP10 — animation + testing + react + devtools extend
+
+**Touched files**
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `packages/animation/src/index.ts`
+- `packages/animation/src/step-sequence.ts`
+- `packages/animation/src/timed-modifier.ts`
+- `packages/animation/tests/step-sequence.test.ts`
+- `packages/animation/tests/timed-modifier.test.ts`
+- `packages/devtools/src/dev-mode.ts`
+- `packages/devtools/src/index.ts`
+- `packages/devtools/tests/dev-mode.test.ts`
+- `packages/react/package.json`
+- `packages/react/src/index.ts`
+- `packages/react/src/overlay-hooks.ts`
+- `packages/react/tests/overlay-hooks.test.ts`
+- `packages/testing/package.json`
+- `packages/testing/src/bench-session.ts`
+- `packages/testing/src/define-snapshot.ts`
+- `packages/testing/src/index.ts`
+- `packages/testing/tests/bench-session.test.ts`
+- `packages/testing/tests/define-snapshot.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (owner chose @flare-engine/events dep over structural for useSignalState); gate:0 (self-verified green first try); adversarial-verify caught+fixed 2 bugs (useCountUp interrupt-jump, defineSnapshot per-call Query leak) + 1 footgun (bench end() stale-restore) + 1 vacuous hook-test gap
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 202 — 2026-07-01 (scope: engine)
+
+**Goal:** TPL1 — create-flare-app topdown template: wire tilemap
+
+**Touched files**
+- `SESSION_LOG.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/create-flare-app/src/manifest.ts`
+- `packages/create-flare-app/templates/topdown/README.md`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `packages/create-flare-app/templates/topdown/src/App.tsx`
+- `packages/create-flare-app/templates/topdown/src/map.ts`
+- `packages/create-flare-app/templates/topdown/tests/`
+- `packages/create-flare-app/tests/scaffold.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:0 (green throughout); plan under-scoped — workflow completeness critic caught api-specs.md/manifest still dishonest (no-enemy, 4-dir->analog, +physics) + scaffold-hygiene gaps (the row's core charter), fixed in a follow-up pass; 5-lens review + 3-refuter refutation found 0 code defects
+
+**Next:** see `docs/plans/todo.md`.
+
+---

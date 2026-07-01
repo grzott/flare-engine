@@ -330,6 +330,13 @@
         "@shopify/react-native-skia": ">=1.0.0",
       },
     },
+    "packages/progression": {
+      "name": "@flare-engine/progression",
+      "version": "0.1.0",
+      "dependencies": {
+        "@flare-engine/math": "workspace:*",
+      },
+    },
     "packages/react": {
       "name": "@flare-engine/react",
       "version": "0.1.0",
@@ -782,6 +789,8 @@
     "@flare-engine/physics": ["@flare-engine/physics@workspace:packages/physics"],
 
     "@flare-engine/postfx": ["@flare-engine/postfx@workspace:packages/postfx"],
+
+    "@flare-engine/progression": ["@flare-engine/progression@workspace:packages/progression"],
 
     "@flare-engine/react": ["@flare-engine/react@workspace:packages/react"],
 

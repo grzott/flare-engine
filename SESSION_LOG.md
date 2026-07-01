@@ -7221,3 +7221,31 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 199 — 2026-07-01 (scope: engine)
+
+**Goal:** XP8: @flare-engine/progression package + math weighted/hash/reward helpers
+
+**Touched files**
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `packages/math/README.md`
+- `packages/math/src/index.ts`
+- `packages/math/src/random.ts`
+- `packages/math/src/reward.ts`
+- `packages/math/tests/hash.test.ts`
+- `packages/math/tests/reward.test.ts`
+- `packages/math/tests/weighted.test.ts`
+- `packages/progression/`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 deny:0 gate:0 fixup:18 drift:1 — Workflow args passed as JSON string so args.specPath was undefined; implement agents recovered from the audit not the on-disk spec, so final API names deviate from the audit's provisional weightedPickInto/rollDropInto (shipped weightedIndexBy/rollDrop+DropTable.rollInto, code+docs consistent). 6-lens adversarial verify caught 15 blocker/major (real all-gated fizzle bug, zero-alloc drySnapshot regression, PT-provenance leaks in shipped .d.ts) all auto-fixed; +3 test-realness follow-ups (self-parity oracles → external known-answer vectors, tier tie-break gap).
+
+**Next:** see `docs/plans/todo.md`.
+
+---

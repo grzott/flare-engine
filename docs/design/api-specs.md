@@ -20,7 +20,8 @@
 | `Color`                                                       | RGBA. `lerp`, `toHex`, `fromHex`, `toSkColor`, `multiply`, `create`. OKLab/OKLCH: `toOklab`, `fromOklab`, `toOklch`, `fromOklch` (operates in linear sRGB; `fromOklab`/`fromOklch` clamp out-of-gamut results — round-trip exact only in-gamut). WCAG: `relativeLuminance`, `contrastRatio`. Distance: `deltaEOk`, `deltaEOkLab`. Types: `Oklab`, `Oklch`. |
 | `clamp`, `lerp`, `inverseLerp`, `map`, `degToRad`, `radToDeg`, `approxEquals`, `wrap`, `pingPong`, `smoothStep`, `sign`, `angleDelta(a, b)`, `rotateTowards(cur, target, maxStep)` | Scalar utils. `angleDelta` returns shortest signed delta `a - b` wrapped to `[-π, π]` (branch form — exact ±π pass through unwrapped). `rotateTowards` rotates angle `cur` toward `target` by at most `maxStep` radians. Both are byte-identical to hand-rolled homing math. |
 | `easings`                                                     | 32 functions (quad/cubic/quart/quint/sine/expo/circ/back/elastic/bounce In/Out/InOut + linear, step, springIn/Out/InOut). Tree-shakeable named exports. |
-| Random                                                        | `SeededRNG` class. Top-level `randomFloat(min, max)`, `randomInt(min, max)`, `randomVec2InRect(rect)`, `randomPointInCircle(cx, cy, r)`, `shuffle`, `choose` |
+| Random                                                        | `SeededRNG` class. Top-level `randomFloat(min, max)`, `randomInt(min, max)`, `randomVec2InRect(rect)`, `randomPointInCircle(cx, cy, r)`, `shuffle`, `choose`. Weighted: `weightedIndex(weights, roll01)` — cumulative-walk index from weight array; `weightedIndexBy<T>(items, weight, roll01)` — cumulative-walk index via accessor; `weightedPick<T>(items, weight, roll01)` — returns the item (allocating wrapper). Hash/seeded: `hashU32(seed)` — lowbias32 avalanche finalizer (decorrelates adjacent seeds); `seededIndex(seed, count)` — stateless deterministic index in `[0, count)`. All `roll01` inputs expected in `[0, 1)`. |
+| Reward                                                        | Timed-window + capped-bonus scoring math. `cappedBonus(pay, frac, capFrac)` — `floor(pay × min(frac, capFrac))`, 0 for non-positive pay. `advanceWindowedStreak(prev, elapsed, lastT, windowSec)` — increments streak if within window, resets to 1 on gap (`lastT < 0` = no prior event). `windowExpired(elapsed, lastT, windowSec)` — true when window was open and has since lapsed. `remainingInWindow(awarded, capPerWindow)` — non-negative slots remaining in a rate-cap window. All pure, zero-alloc. |
 | Intersection                                                  | `pointInRect`, `pointInCircle`, `rectVsRect`, `rectVsCircle`, `circleVsCircle`, `lineVsRect`, `lineVsCircle`, `rayVsRect`                            |
 
 **Implementation notes:**
@@ -834,4 +835,39 @@ Each wavefront is an analytic Gaussian-enveloped wave packet (not a raw PDE): un
 Agents are never destroyed (the network is seamless by construction — continuous decay prunes, nothing is reseeded) and wrap or clamp per the field's edge mode. `update()` advances one fixed step (`stepSize` px/step, not px/s); all randomness — initial scatter, `decideTurn` tiebreak, `chaos` heading jitter — routes through the injected `rng` so runs reproduce bit-for-bit.
 
 **2.5D lattice boundary (settled XP7).** The `WarpLattice` in flare-engine-page's spacetime demo is two separable halves. Its **potential-summation half** (`addWells` — sum Plummer-softened point-source potentials into a signed height/force field) is a **`ScalarField` producer** and, if ever lifted, belongs here in `simulation`. Its **perspective project / unproject / pitched-camera half is presentation** and belongs in a **future render-side 2.5D helper** (see [lighting-2-5d.md](lighting-2-5d.md)), never in `simulation`; the starfield lens-deflection map is likewise presentation. Neither half ships in XP7 — no in-engine consumer exists yet; this records the split so a future lift lands in the correct package.
+
+---
+
+## Layer 2: Progression (meta-economy primitives)
+
+### `@flare-engine/progression`
+
+Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weighted drop rolling, prerequisite unlock DAG, tier resolution, and collectible-unlock registry. Pure, zero-alloc on hot paths. Depends on `@flare-engine/math` only; no DOM/Skia/RN imports.
+
+| API | Description |
+| --- | --- |
+| `createUpgradeTrack(config)` → `UpgradeTrack` | Returns an upgrade track backed by `UpgradeTrackConfig { base, growth, cap }`. Methods: `price(currentLevel)` → `number` — `round(base × growth^level)`, `Infinity` at/above cap; `canBuy(wallet, currentLevel)` — wallet sufficient and below cap; `buy(wallet, currentLevel)` → `UpgradeBuyResult { ok, wallet, level }` — pure spend, deducts price and increments level; `resolveStats<K>(base, deltas, getLevel)` → `Record<K, number>` — folds per-level deltas into a stat record via a caller-supplied level reader (unit-testable without any save dep). |
+| `UpgradeTrackConfig` | `{ base: number; growth: number; cap: number }`. |
+| `UpgradeBuyResult` | `{ ok: boolean; wallet: number; level: number }`. |
+| `createDropTable<K>(entries)` → `DropTable<K>` | Returns a `DropTable` backed by `DropEntry<K>[] = { item: K, weight: number }[]`. The `weightAt` accessor is allocated once in the factory closure; `rollInto` is zero-alloc. |
+| `DropTable<K>.rollInto(rollTable01, rollChance01, chancePerRoll, pity, thresholds, isAllowed, out)` | Zero-alloc in-place roll. Algorithm: (1) pity override — first entry whose `pity[item] + 1 >= thresholds[item]` fires unconditionally (gated by `isAllowed`); (2) if no pity fires and `rollChance01 >= chancePerRoll`, result = `'none'`; (3) otherwise `weightedIndexBy` picks from the filtered table — if `isAllowed` filters every entry the pool fizzles to `'none'`. Pity counters reset for the dropped item, advance by 1 for all others. Aliasing `out.pity` against `pity` is safe — all inputs are read before any output is written. |
+| `rollDrop<K>(table, rollTable01, rollChance01, chancePerRoll, pity, thresholds, isAllowed?)` → `DropRollOut<K>` | Allocating convenience wrapper around `rollInto`. Use on cold paths and in tests. |
+| `DropEntry<K>` | `{ item: K; weight: number }`. |
+| `DropPity<K>` | `Record<K, number>` — per-item dry-roll counters. |
+| `DropRollOut<K>` | `{ item: K \| 'none'; pity: DropPity<K> }`. |
+| `createUnlockDag(nodes)` → `UnlockDag` | Returns a DAG from `DagNode[] = { id, requires: string[] }[]`. Duplicate ids throw. Methods: `isUnlocked(cleared, id)` — true when all `requires` ids are in `cleared`; `frontier(cleared)` — all nodes whose requirements are satisfied but not yet cleared (stable insertion order); `allUnlocked(cleared)` — all nodes satisfiable by `cleared`. Unknown `requires` ids are not validated — a requirement is satisfied iff it is in `cleared`. |
+| `DagNode` | `{ id: string; requires: readonly string[] }`. |
+| `resolveTier<T>(entries, tally)` → `T \| null` | Returns the tier value of the highest `TierEntry` whose `at` threshold is ≤ `tally`, or `null` when `tally` is below all thresholds. `entries` need not be sorted. |
+| `resolveTierIndex<T>(entries, tally)` → `number` | Same logic; returns the 0-based index of the highest satisfied entry, or `-1`. |
+| `TierEntry<T>` | `{ at: number; tier: T }`. |
+| `createCollectibleRegistry<K>(ids, capstoneId?)` → `CollectibleRegistry<K>` | Immutable unlock-set + capstone. `ids` is the collectible set; `capstoneId` (optional) is auto-unlocked when all ids are collected. Duplicate ids throw. Methods: `unlock(id)` → new registry (idempotent; throws on unknown id; auto-fires capstone on full completion); `partition()` → `{ have: K[], missing: K[] }` (capstone excluded from both lists); `list()` → ids in insertion order. Properties: `all`, `capstoneId`, `unlocked`, `isComplete`, `isCapstone`. |
+| `CollectibleRegistry<K>` | Interface (see above). Returned by `createCollectibleRegistry`. |
+
+**Implementation notes:**
+
+- `UpgradeTrack.resolveStats` uses `Math.max(0, Math.floor(getLevel(key)))` so fractional or negative levels clamp cleanly.
+- `createDropTable` closes over a single `weightAt` accessor (not re-allocated per roll) and a `currentIsAllowed` binding (reassigned before each `weightedIndexBy` call). Biome `biome-ignore lint/style/noVar` comment guards the hoisted var.
+- `resolveTier` / `resolveTierIndex` scan all entries to find the largest satisfied `at` — O(n), no sort required, stable for small tiers (≤10 typical).
+- `CollectibleRegistry` is a persistent (copy-on-write) data structure. Each `unlock` call returns a fresh object; the input is never mutated.
+- Not barrelled into `@flare-engine/engine` (curated, matches XP6/XP7). No changeset (0.1.0, publish owner-gated).
 

@@ -8,7 +8,7 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ## State (2026-06-10)
 
-**Engine:** Feature-complete at 0.1.x. **Published 2026-06-09: 36 scoped `@flare-engine/*@0.1.0` live on npm, private/restricted** (public flip at OSS launch). 40 package dirs in-repo (39 scoped + `create-flare-app`); `@flare-engine/simulation` (XP6) is among those not yet published.
+**Engine:** Feature-complete at 0.1.x. **Published 2026-06-09: 36 scoped `@flare-engine/*@0.1.0` live on npm, private/restricted** (public flip at OSS launch). 41 package dirs in-repo (40 scoped + `create-flare-app`); `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8) are among those not yet published.
 **Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm at `^0.1.0`. Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
 **Active focus:** Arc PT-EXTRACT close-out (S8/S9) + engine-repo docs/harness polish — see `todo.md`.
 
@@ -16,13 +16,13 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ## Engine architecture
 
-40 packages, layered, downward-only deps. Diagram: `docs/design/architecture.md`.
+41 packages, layered, downward-only deps. Diagram: `docs/design/architecture.md`.
 
 | Layer | Packages |
 |---|---|
 | 0 Foundation | math · events |
 | 1 Runtime | core · ecs |
-| 2 Systems | render · shapes · input · physics · audio · assets · simulation |
+| 2 Systems | render · shapes · input · physics · audio · assets · simulation · progression |
 | 2.5 Persistence | storage · errors · testing · localization · deep-links · share · a11y |
 | 3 Features | scene · animation · particles · tilemap · debug · pathfinding · dialogue |
 | 3.5 UI | ui · postfx · ui-shop |

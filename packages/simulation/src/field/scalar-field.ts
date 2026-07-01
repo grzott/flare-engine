@@ -33,9 +33,15 @@ export interface ScalarField {
   maxValue(stride: number): number;
   /** Mean field value in a disc around (x,y). */
   localMean(x: number, y: number, radiusPx: number): number;
-  /** Pack the field into an RGBA byte buffer (length cols*rows*4) with a palette-binned ramp:
-   *  low→mid→hi by value, knot reserved for the brightest cells; brightness folded into rgb
-   *  so dim cells add nothing under additive Plus. `out` is caller-owned and reused. */
+  /**
+   * Pack the field into an RGBA byte buffer (length cols*rows*4) with a palette-binned ramp:
+   * low→mid→hi by value, knot reserved for the brightest cells; brightness folded into rgb
+   * so dim cells add nothing under additive Plus. `out` is caller-owned and reused.
+   *
+   * Palette channels (low/mid/hi/knot) are normalized [0,1] fractions (not byte values).
+   * ScalarField values are assumed non-negative; negative values are clamped to 0 in the
+   * output byte channels.
+   */
   toRGBA(
     out: Uint8Array,
     norm: number,
@@ -197,7 +203,9 @@ export function createScalarField(
 
     maxValue(stride) {
       const s = Math.max(1, Math.floor(stride));
-      let m = 0;
+      const n = Math.ceil(a.length / s);
+      if (n === 0) return 0;
+      let m = Number.NEGATIVE_INFINITY;
       for (let i = 0; i < a.length; i += s) {
         const v = a[i] ?? 0;
         if (v > m) m = v;
@@ -256,9 +264,12 @@ export function createScalarField(
           bl = hb + (kb - hb) * t;
         }
         const o = i << 2;
-        out[o] = (r * v * 255) | 0;
-        out[o + 1] = (g * v * 255) | 0;
-        out[o + 2] = (bl * v * 255) | 0;
+        const rv = r * v * 255;
+        const gv = g * v * 255;
+        const bv = bl * v * 255;
+        out[o] = rv < 0 ? 0 : rv > 255 ? 255 : rv | 0;
+        out[o + 1] = gv < 0 ? 0 : gv > 255 ? 255 : gv | 0;
+        out[o + 2] = bv < 0 ? 0 : bv > 255 ? 255 : bv | 0;
         out[o + 3] = 255;
       }
     },

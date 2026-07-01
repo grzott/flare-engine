@@ -80,24 +80,42 @@ describe('NBodySystem', () => {
 
   test('absorb conserves total mass + momentum and shrinks the count', () => {
     const nb = createNBodySystem(4);
-    nb.add(0, 0, 0, 0, 100); // central (index 0)
-    nb.add(50, 0, 0, 4, 10); // victim
-    nb.add(-80, 0, 0, -2, 20); // bystander
-    const p0x = 100 * 0 + 10 * 0 + 20 * 0;
-    const p0y = 100 * 0 + 10 * 4 + 20 * -2; // total y-momentum before
-    const m0 = 100 + 10 + 20;
+    // Central body at (10, 5), bystander at (-80, 30) — nonzero positions and velocities.
+    nb.add(10, 5, 3, -1, 100); // index 0: central
+    nb.add(50, 20, 7, 4, 10); // index 1: victim to be absorbed
+    nb.add(-80, 30, -2, 2, 20); // index 2: bystander
+
+    // Record pre-absorb total momentum (x and y) and expected merged position.
+    const m0 = 100;
+    const m1 = 10;
+    const m2 = 20;
+    const totalMass = m0 + m1 + m2;
+    const p0x = (nb.vx[0] ?? 0) * m0 + (nb.vx[1] ?? 0) * m1 + (nb.vx[2] ?? 0) * m2;
+    const p0y = (nb.vy[0] ?? 0) * m0 + (nb.vy[1] ?? 0) * m1 + (nb.vy[2] ?? 0) * m2;
+    // Mass-weighted merged position of the two absorbed bodies.
+    const mergedX = ((nb.px[0] ?? 0) * m0 + (nb.px[1] ?? 0) * m1) / (m0 + m1);
+    const mergedY = ((nb.py[0] ?? 0) * m0 + (nb.py[1] ?? 0) * m1) / (m0 + m1);
+
     nb.absorb(0, 1); // central swallows the victim
+
     expect(nb.count).toBe(2);
+
     let mAfter = 0;
+    let pxAfter = 0;
     let pyAfter = 0;
     for (let i = 0; i < nb.count; i++) {
       const m = nb.mass[i] ?? 0;
       mAfter += m;
+      pxAfter += (nb.vx[i] ?? 0) * m;
       pyAfter += (nb.vy[i] ?? 0) * m;
     }
-    expect(mAfter).toBeCloseTo(m0, 5);
-    expect(pyAfter).toBeCloseTo(p0y, 5);
-    expect(p0x).toBe(0);
+    expect(mAfter).toBeCloseTo(totalMass, 5);
+    expect(pxAfter).toBeCloseTo(p0x, 4);
+    expect(pyAfter).toBeCloseTo(p0y, 4);
+
+    // Merged body (index 0) sits at the mass-weighted average of the two absorbed bodies.
+    expect(nb.px[0] ?? 0).toBeCloseTo(mergedX, 4);
+    expect(nb.py[0] ?? 0).toBeCloseTo(mergedY, 4);
   });
 
   test("GR precession (gr>0) keeps a bound orbit's energy bounded over thousands of steps", () => {

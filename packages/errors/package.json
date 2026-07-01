@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/errors",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "React error boundary, structured crash payload, pluggable crash transport",
   "keywords": ["flare-engine", "errors", "error-boundary", "crash-report", "sentry"],
   "license": "MIT",

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/localization",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "String tables, locale resolution, ICU-style plurals + interpolation",
   "keywords": ["flare-engine", "localization", "i18n", "icu", "plurals"],
   "license": "MIT",
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.2.0"
+    "@flare-engine/events": "^0.2.1"
   },
   "publishConfig": {
     "access": "restricted",

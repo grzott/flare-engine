@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/scene",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Scene manager, transitions, lifecycle",
   "keywords": ["flare-engine", "scene", "transitions"],
   "license": "MIT",
@@ -32,9 +32,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/ecs": "^0.2.0",
-    "@flare-engine/math": "^0.2.0",
-    "@flare-engine/render": "^0.2.0"
+    "@flare-engine/ecs": "^0.2.1",
+    "@flare-engine/math": "^0.2.1",
+    "@flare-engine/render": "^0.2.1"
   },
   "publishConfig": {
     "access": "restricted",

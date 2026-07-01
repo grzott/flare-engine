@@ -1,0 +1,21 @@
+# @flare-engine/animation
+
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @flare-engine/assets@0.2.1
+  - @flare-engine/math@0.2.1
+
+## 0.2.0
+
+### Minor Changes
+
+- Add step-sequence cursor and `TimedModifier`.
+
+## 0.1.0
+
+### Minor Changes
+
+- Initial release.

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/math",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Vec2, Rect, Transform, Color, easings, intersection tests",
   "keywords": ["flare-engine", "game-engine", "math", "vec2", "2d"],
   "license": "MIT",

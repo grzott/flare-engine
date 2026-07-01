@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/analytics",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Analytics provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "analytics", "provider", "interface"],
   "license": "MIT",

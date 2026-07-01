@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/assets",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Asset loading, sprite sheet parsing",
   "keywords": ["flare-engine", "assets", "sprite-sheet", "loader"],
   "license": "MIT",
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.2.0"
+    "@flare-engine/events": "^0.2.1"
   },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=1.0.0"

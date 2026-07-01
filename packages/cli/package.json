@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Flare engine CLI — pack-atlas, tiled-to-flare, new app scaffolder",
   "keywords": ["flare-engine", "cli", "atlas", "tiled", "sprite-sheet", "scaffold"],
   "license": "MIT",

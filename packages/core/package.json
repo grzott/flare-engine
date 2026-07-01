@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "GameLoop, Clock, AppLifecycle, Pool, Coroutines",
   "keywords": ["flare-engine", "game-loop", "coroutines", "pool"],
   "license": "MIT",
@@ -32,8 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/math": "^0.2.0",
-    "@flare-engine/events": "^0.2.0"
+    "@flare-engine/math": "^0.2.1",
+    "@flare-engine/events": "^0.2.1"
   },
   "publishConfig": {
     "access": "restricted",

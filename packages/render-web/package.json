@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/render-web",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "CanvasKit-backed web renderer for @flare-engine/render frame-renderer",
   "keywords": ["flare-engine", "rendering", "web", "canvaskit", "wasm"],
   "license": "MIT",
@@ -32,8 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/render": "^0.2.0",
-    "@flare-engine/postfx": "^0.2.0"
+    "@flare-engine/render": "^0.2.1",
+    "@flare-engine/postfx": "^0.2.1"
   },
   "peerDependencies": {
     "canvaskit-wasm": ">=0.40.0"

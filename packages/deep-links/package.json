@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/deep-links",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "URL → scene+params router with web history + native Linking adapters",
   "keywords": ["flare-engine", "deep-links", "router", "url"],
   "license": "MIT",
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.2.0"
+    "@flare-engine/events": "^0.2.1"
   },
   "publishConfig": {
     "access": "restricted",

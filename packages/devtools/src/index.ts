@@ -1,3 +1,4 @@
+export { isDevMode } from './dev-mode.js';
 export {
   createSnapshotRingBuffer,
   type SnapshotRingBuffer,

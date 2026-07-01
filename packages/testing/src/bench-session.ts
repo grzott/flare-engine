@@ -59,6 +59,11 @@ export function createBenchSession(opts: BenchSessionOptions = {}): BenchSession
       // out-of-order end() clobbering a newer session's patch.
       if (Math.random === patched) {
         Math.random = originalRandom;
+      } else {
+        console.warn(
+          "[BenchSession] end() called out of order: Math.random is no longer this session's patch. " +
+            'Sessions must be ended in LIFO order; a seeded Math.random may have leaked into later tests.',
+        );
       }
     },
   };

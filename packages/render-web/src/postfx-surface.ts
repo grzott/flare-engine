@@ -71,11 +71,17 @@ export function createPostFxSurface(
   });
 
   let scene: Surface | null = onscreen.makeSurface(info());
+  if (!scene) console.warn('[render-web] postfx: scene surface null; frame will be blank');
   let pong: Surface | null = onscreen.makeSurface(info());
+  if (!pong) console.warn('[render-web] postfx: pong surface null; no multi-pass');
 
   const fade = new kit.Paint();
   const fx = new kit.Paint();
   const scratch = new Float32Array(4);
+  const rectScratch = new Float32Array(4);
+
+  // Reused single-element children array — avoids allocating [srcShader] per pass.
+  const childrenBuf: unknown[] = [null];
 
   // Build a minimal SkiaPostFxModuleLike shim that routes to CanvasKit's RuntimeEffect.
   const skia: SkiaPostFxModuleLike = {
@@ -85,7 +91,7 @@ export function createPostFxSurface(
         if (!eff) return null;
         return {
           makeShaderWithChildren: (uniforms, children) =>
-            eff.makeShaderWithChildren(Float32Array.from(uniforms), (children ?? []) as Shader[]),
+            eff.makeShaderWithChildren(uniforms as Float32Array, (children ?? []) as Shader[]),
         };
       },
     },
@@ -101,6 +107,10 @@ export function createPostFxSurface(
     }
     let src: import('canvaskit-wasm').Image = img;
     const last = passes.length - 1;
+    rectScratch[0] = 0;
+    rectScratch[1] = 0;
+    rectScratch[2] = w;
+    rectScratch[3] = h;
     for (let i = 0; i < passes.length; i++) {
       const pass = passes[i];
       if (!pass) continue;
@@ -113,11 +123,13 @@ export function createPostFxSurface(
         kit.FilterMode.Linear,
         kit.MipmapMode.None,
       );
-      const shader = pass.shader.makeShaderWithChildren(Array.from(pass.uniforms), [
-        srcShader,
-      ]) as Shader | null;
+      childrenBuf[0] = srcShader;
+      const shader = pass.shader.makeShaderWithChildren(
+        pass.uniforms,
+        childrenBuf,
+      ) as Shader | null;
       fx.setShader(shader);
-      target.getCanvas().drawRect(kit.LTRBRect(0, 0, w, h), fx);
+      target.getCanvas().drawRect(rectScratch, fx);
       fx.setShader(null);
       shader?.delete();
       srcShader.delete();
@@ -152,7 +164,11 @@ export function createPostFxSurface(
       scratch[3] = alpha;
       fade.setColor(scratch);
       fade.setBlendMode(kit.BlendMode.SrcOver);
-      sc.drawRect(kit.LTRBRect(0, 0, w, h), fade);
+      rectScratch[0] = 0;
+      rectScratch[1] = 0;
+      rectScratch[2] = w;
+      rectScratch[3] = h;
+      sc.drawRect(rectScratch, fade);
     },
     composite(globalIntensity) {
       if (!scene) return;
@@ -173,7 +189,9 @@ export function createPostFxSurface(
       scene?.delete();
       pong?.delete();
       scene = onscreen.makeSurface(info());
+      if (!scene) console.warn('[render-web] postfx: scene surface null after resize');
       pong = onscreen.makeSurface(info());
+      if (!pong) console.warn('[render-web] postfx: pong surface null after resize');
     },
     dispose() {
       scene?.delete();

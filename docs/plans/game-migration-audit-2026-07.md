@@ -74,13 +74,27 @@ pieces deferred keep-local (P1-style, discovered non-trivial on read).
 
 ### P2 — DONE 2026-07-01 (see the DONE section above). The `resolveStats` + codex-registry pieces stayed keep-local.
 
-### P3 — LANDMINES (each its own owner-decision design+build)
-- `save/store.ts` → `storage.createDocumentStore`: raw-JSON→envelope **wipes live saves** without a
-  dual-format parse shim.
-- `systems/economy/drops.ts` → `progression.createDropTable`: PT's `{none,weight:6}` row shifts drop
-  shares (engine has no `none` slot) + touches frozen `DROP_TABLE`/`DROP_PITY` + `ALLOW_BALANCE_CHANGE`.
-  The SESSION_LOG "fizzle fix" was an engine-side re-impl defect — PT was already correct.
-- `shop.ts` pricing: math identical but touches frozen `PRICE_BASES` (`ALLOW_BALANCE_CHANGE`).
+### P3 — resolved (2026-07-01)
+
+**Classification correction:** shop + drops were flagged as needing `ALLOW_BALANCE_CHANGE`, but that
+was wrong — they *read* frozen constants (`PRICE_BASES`, `DROP_TABLE`/`DROP_PITY`), they do NOT modify
+`balance.ts`, and the freeze only trips on modification. Neither ever needed the flag.
+
+- **`shop.ts` pricing → `createUpgradeTrack` — DONE (gate green 2059 tests, balance-freeze clean, NO flag).**
+  Mirror of the P2 ship-upgrades swap: per-track `createUpgradeTrack` built from `PRICE_BASES`
+  (cap `MAX_UPGRADE_LEVEL`); `shopPrice`/`canAfford`/`purchase` delegate. Byte-identical below cap
+  (`price→Infinity` at cap is dead — Workshop shows `maxed`). Existing `economy-shop`/`workshop` tests
+  are the parity lock. UNCOMMITTED (git blocked this session).
+- **`drops.ts` → `progression.createDropTable` — KEEP LOCAL (adopting degrades the code).** The engine
+  algorithm is already exactly PT's `rollDrop` (pity→chance→weighted-pick over a `none`-inclusive table),
+  but its `DropPity<K>` is a generic `Record<K,number>` vs PT's domain `{medikitDry,bombDry}` — swapping
+  forces either a pity-shape reshape rippling into run-state/`update.ts`/save, or an allocating per-roll
+  adapter + a spurious `none` pity counter, for ZERO dedup benefit and real pity-order/distribution risk.
+  Proven local code wins. (Distribution is preserved only by keeping `none` as an entry — the adapter not
+  worth building.)
+- **`save/store.ts` → `storage.createDocumentStore` — the one real remaining landmine (save-format, NOT
+  balance).** raw-JSON→`{version,data}` envelope **wipes live saves** without a dual-format parse shim +
+  real-save QA. Owner-decision.
 
 ### Keep-local (verified no-swap)
 `homing.ts` (ULP-fragile, worse API), `dev-mode.ts:isDevMode` (`globalThis` variant is test-safe;

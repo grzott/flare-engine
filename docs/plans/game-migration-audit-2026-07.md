@@ -50,14 +50,29 @@ call sites + config bindings untouched):
   over `math.Color` (which `a11y.audit` also just wraps), and the API shapes differ (hex vs `Color`,
   `fail:boolean` vs `WcagLevel`). Swapping adds indirection without removing logic. Keep local.
 
+### P2 — PT Tier-2 progression swaps (gate green: typecheck 0 / lint 572 / 2059 tests / locale 505 / balance clean)
+Adds `@flare-engine/progression@^0.2.1`. Two byte-identical dedups landed; the `resolveStats` + codex
+pieces deferred keep-local (P1-style, discovered non-trivial on read).
+- `config/ship-upgrades.ts` price/canAfford/buy → per-hull `createUpgradeTrack`
+  (`.price`/`.canBuy`/`.buy`). Byte-identical below cap; `price()` returns `Infinity` at cap (dead —
+  `HangarOverlay` shows `maxed` there). +4 parity tests.
+- `save/migrate.ts` `parseSettings` + `parsePrivacy` → `storage.san.object` (`san.boolean` /
+  `san.clamped` / `san.literal`); every fallback == the matching `defaultSettings`/`defaultControls`
+  field. Removed dead `parseControls`/`clamp01`/`isAssistTier`/`ASSIST_TIERS`. Dynamic-key record +
+  dedup-list parsers kept local (`san.object` fixed-keys; `san.arrayOf` no-dedup).
+
+**Deferred from P2 (keep-local, P1 criterion):**
+- `effectiveShipStats` → `resolveStats`: PT folds 3 tracks into one shared {hp,speed,fireRate};
+  `resolveStats` is single-track — matching it needs chained constant-lambda calls (indirection > win).
+- `codex/shards.ts` → `createCollectibleRegistry`: `shardCodexUnlocksForZoneClear` is a stateless
+  delta-calc over a mixed id list; the registry starts empty, throws on unknown ids, and doesn't model
+  the z8 campaign-complete capstone fallback. `entries.ts` kept local per owner.
+
 ---
 
 ## Forward queue (owner-gated)
 
-### P2 — PT Tier-2 progression (adds `@flare-engine/progression@^0.2.1`)
-`config/ship-upgrades.ts`+`effectiveShipStats` → `createUpgradeTrack`+`resolveStats`; `codex/shards.ts`
-(+`entries.ts`) → `createCollectibleRegistry`; `save/migrate.ts` sanitizers → `storage.san`. Unfrozen
-paths only. Gate with price-parity + codex goldens.
+### P2 — DONE 2026-07-01 (see the DONE section above). The `resolveStats` + codex-registry pieces stayed keep-local.
 
 ### P3 — LANDMINES (each its own owner-decision design+build)
 - `save/store.ts` → `storage.createDocumentStore`: raw-JSON→envelope **wipes live saves** without a

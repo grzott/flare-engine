@@ -5,3 +5,7 @@ export type { CreateTestWorldOptions, TestWorld } from './test-world.js';
 export { MockInputManager, createMockInputManager } from './mock-input.js';
 export { serializeScene, snapshotsEqual } from './scene-snapshot.js';
 export type { SceneSnapshot, SceneSnapshotEntity } from './scene-snapshot.js';
+export { createBenchSession } from './bench-session.js';
+export type { BenchSession, BenchSessionOptions } from './bench-session.js';
+export { defineSnapshot } from './define-snapshot.js';
+export type { SnapshotProjector, SnapshotSchema } from './define-snapshot.js';

@@ -1,6 +1,6 @@
 # Flare Engine — Architecture Reference
 
-> Last updated: 2026-04-28
+> Last updated: 2026-07-01
 
 ---
 
@@ -8,7 +8,7 @@
 
 Flare is a modular, TypeScript-first 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
 
-The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages. Subsequent additions (`haptics`, `devtools`, `render-web`) and XP6's `@flare-engine/simulation` (n-body, Verlet integrators, wave-packet pool) bring the in-repo total to 40 package dirs (39 scoped `@flare-engine/*` + `create-flare-app`).
+The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages. Subsequent additions (`haptics`, `devtools`, `render-web`), XP6's `@flare-engine/simulation` (n-body, Verlet integrators, wave-packet pool), and XP8's `@flare-engine/progression` (upgrade tracks, drop tables, unlock DAG) bring the in-repo total to 41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`). The 0.2.0 lockstep cut published all 40 scoped packages at 0.2.0 (owner-gated).
 
 ---
 
@@ -33,6 +33,7 @@ graph TD
         AUDIO["@flare-engine/audio<br/>SFXPool, Music, Channels"]
         ASSETS["@flare-engine/assets<br/>Loader, SpriteSheet, TilemapData"]
         SIMULATION["@flare-engine/simulation<br/>NBody, Verlet/Leapfrog, RipplePool"]
+        PROGRESSION["@flare-engine/progression<br/>UpgradeTrack, DropTable, UnlockDag"]
     end
 
     subgraph "Layer 3 — Features"
@@ -43,8 +44,13 @@ graph TD
         DEBUG["@flare-engine/debug<br/>Overlay, Stats, Time controls"]
     end
 
+    subgraph "Layer 3.5 — UI & Post-processing"
+        POSTFX["@flare-engine/postfx<br/>RuntimeEffect stack, EffectChain"]
+    end
+
     subgraph "Layer 4 — Integration"
         REACT["@flare-engine/react<br/>Hooks, Components, Skia bindings"]
+        RENDERWEB["@flare-engine/render-web<br/>CanvasKit backend + postfx bridge"]
         ENGINE["@flare-engine/engine<br/>createGame(), umbrella"]
     end
 
@@ -58,6 +64,7 @@ graph TD
     MATH --> PHYSICS
     CORE --> AUDIO
     CORE --> ASSETS
+    MATH --> PROGRESSION
 
     ECS --> SCENE
     RENDER --> SCENE
@@ -69,6 +76,9 @@ graph TD
     RENDER --> REACT
     SCENE --> REACT
     ECS --> REACT
+
+    RENDER --> RENDERWEB
+    POSTFX --> RENDERWEB
 
     REACT --> ENGINE
 ```
@@ -101,6 +111,7 @@ graph TD
 | `@flare-engine/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |
 | `@flare-engine/assets`  | AssetManager, SpriteSheet parser (TexturePacker, Aseprite), loaders, progress           | < 6KB        | —                      |
 | `@flare-engine/simulation` | N-body gravity (Plummer softening), velocity-Verlet / leapfrog integrators, wave-packet ripple pool | < 5KB | 0 |
+| `@flare-engine/progression` | Meta-progression primitives: geometric upgrade tracks, pity-aware weighted drop tables, prerequisite unlock DAG, tier resolution, collectible registry | < 5KB | math |
 
 ### Layer 3 — Feature Modules
 
@@ -114,10 +125,11 @@ graph TD
 
 ### Layer 4 — Integration
 
-| Package                | Purpose                                                                          | Size target |
-| ---------------------- | -------------------------------------------------------------------------------- | ----------- |
-| `@flare-engine/react`  | `<GameView>`, `useGame()`, `useEntity()`, `<VirtualJoystick>`, `<VirtualButton>` | < 10KB      |
-| `@flare-engine/engine` | `createGame()` convenience, re-exports all packages                              | < 2KB       |
+| Package                    | Purpose                                                                          | Size target |
+| -------------------------- | -------------------------------------------------------------------------------- | ----------- |
+| `@flare-engine/react`      | `<GameView>`, `useGame()`, `useEntity()`, `<VirtualJoystick>`, `<VirtualButton>` | < 10KB      |
+| `@flare-engine/render-web` | Web analog of `react`; composes `render` + `postfx` via CanvasKit (`loadCanvasKit`, `createWebSurface`, `createWebSkiaModule`, `createPostFxSurface`) | < 12KB |
+| `@flare-engine/engine`     | `createGame()` convenience, re-exports all packages                              | < 2KB       |
 
 ---
 
@@ -227,7 +239,13 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 
 ### Tier-2 stubs (interface-only at 0.1.0)
 
-`@flare-engine/leaderboards` · `@flare-engine/achievements` · `@flare-engine/iap` · `@flare-engine/analytics` — each exports a typed interface plus a `NoopProvider`. Concrete platform adapters ship as 0.2.0.
+`@flare-engine/leaderboards` · `@flare-engine/achievements` · `@flare-engine/iap` · `@flare-engine/analytics` — each exports a typed interface plus a `NoopProvider`. For `leaderboards` / `achievements` / `analytics` the concrete platform adapters remain **deferred past 0.2.0** — these three ship as interface-only stubs in the 0.2.0 cut (`iap` additionally ships `ProductCatalog` + `EntitlementStore` + content gates, with the concrete RevenueCat adapter in `@flare-engine/iap-revenuecat`).
+
+### Device-feedback interface
+
+| Package                  | Purpose                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `@flare-engine/haptics`  | Typed `HapticsProvider` interface + `NoopHapticsProvider` + React context (`HapticsContext` / `useHaptics`). React peer dep; no bundled native binding. |
 
 ---
 
@@ -236,7 +254,7 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 | Aspect        | Choice                                | Alternative considered  | Why chosen                                                   |
 | ------------- | ------------------------------------- | ----------------------- | ------------------------------------------------------------ |
 | Runtime + PM  | **Bun**                               | Node + pnpm             | Faster install/test, built-in test runner, TypeScript-native |
-| Monorepo      | **Turborepo**                         | Nx, Bun workspaces only | Simple, fast, works with Bun; 36 packages need orchestration |
+| Monorepo      | **Turborepo**                         | Nx, Bun workspaces only | Simple, fast, works with Bun; 41 packages need orchestration |
 | Lint + Format | **Biome**                             | ESLint + Prettier       | Single Rust binary, ~100× faster, lint + format in one tool  |
 | Commits       | **Conventional Commits** (commitlint) | No enforcement          | Clean changelogs, semantic-versioning automation             |
 | Versioning    | **Changesets** (SemVer)               | semantic-release        | Manual control over coordinated multi-package releases       |

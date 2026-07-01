@@ -6,9 +6,9 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ---
 
-## State (2026-06-10)
+## State (2026-07-01)
 
-**Engine:** Feature-complete at 0.1.x. **Published 2026-06-09: 36 scoped `@flare-engine/*@0.1.0` live on npm, private/restricted** (public flip at OSS launch). 41 package dirs in-repo (40 scoped + `create-flare-app`); `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8) are among those not yet published.
+**Engine:** Feature-complete. **0.2.0 lockstep cut: all 40 scoped `@flare-engine/*@0.2.0` on npm, private/restricted** (publish owner-gated; public flip at OSS launch). 41 package dirs in-repo (40 scoped + `create-flare-app`); the new-in-repo packages `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8), plus `haptics` / `render-web`, all ship at 0.2.0.
 **Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm at `^0.1.0`. Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
 **Active focus:** Arc PT-EXTRACT close-out (S8/S9) + engine-repo docs/harness polish — see `todo.md`.
 

@@ -1,6 +1,6 @@
 # Flare Engine
 
-**Flare** is a modular 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). 37 packages across layered tiers; deps flow downward only.
+**Flare** is a modular 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). 41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`) across layered tiers; deps flow downward only.
 
 Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/design/architecture.md](docs/design/architecture.md). API: [docs/design/api-specs.md](docs/design/api-specs.md).
 

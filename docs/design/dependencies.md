@@ -1,6 +1,6 @@
 # Flare Engine — Technology Dependencies
 
-> Last updated: 2026-04-20
+> Last updated: 2026-07-01
 
 ---
 
@@ -15,7 +15,8 @@
 | `react-native-reanimated`      | —       | —     | UI thread worklets for rendering               | `@flare-engine/render`                                                                      |
 | `planck.js`                    | 142K    | —     | Box2D physics (optional tier; deferred)        | `@flare-engine/physics` (optional)                                                          |
 | `react-native-audio-api`       | 37K     | —     | Native C++ audio engine (Software Mansion)     | `@flare-engine/audio`                                                                       |
-| `react`, `react-native`        | —       | —     | Required by every Layer 4 / UI / React package | `@flare-engine/react`, `@flare-engine/ui`, `@flare-engine/errors`, `@flare-engine/devtools` |
+| `canvaskit-wasm`               | —       | —     | Skia CanvasKit-WASM backend for the web (optional — tree-shaken when unused) | `@flare-engine/render-web` (peer `>=0.40.0`)                                   |
+| `react`, `react-native`        | —       | —     | Required by every Layer 4 / UI / React package | `@flare-engine/react`, `@flare-engine/ui`, `@flare-engine/errors`, `@flare-engine/devtools`, `@flare-engine/haptics` |
 
 ### Phase 11 additions
 
@@ -40,6 +41,15 @@
 | Package | DL/week | Role                                   | Used by                 |
 | ------- | ------- | -------------------------------------- | ----------------------- |
 | `rbush` | 4.3M    | R-tree 2D spatial index for broadphase | `@flare-engine/physics` |
+
+### 0.2.0 package dependencies (internal, workspace)
+
+| Package                     | Internal dep      | Peer dep                        |
+| --------------------------- | ----------------- | ------------------------------- |
+| `@flare-engine/simulation`  | `@flare-engine/math` | —                            |
+| `@flare-engine/progression` | `@flare-engine/math` | —                            |
+| `@flare-engine/haptics`     | —                 | `react` (`>=18.0.0`)            |
+| `@flare-engine/render-web`  | `@flare-engine/render`, `@flare-engine/postfx` | `canvaskit-wasm >=0.40.0` (optional) |
 
 ---
 

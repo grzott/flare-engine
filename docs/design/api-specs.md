@@ -2,7 +2,7 @@
 
 > Living document. Update alongside code changes — divergence is a spec bug.
 >
-> Last refreshed against `packages/*/src/index.ts`: **2026-04-28**.
+> Last refreshed against `packages/*/src/index.ts`: **2026-07-01**.
 
 ---
 
@@ -94,29 +94,6 @@
 | `SpriteData`    | ECS component type: `{ image, frame, z, width?, height?, effect?, anchor?, alpha?, rotation?, stretch? }`. `alpha` is a mutable per-instance multiplier in `[0, 1]`, default `1`. Write directly: `sprite.alpha = 0.5`. `rotation` is in radians, CW (Skia Y-down convention), default `0`; rotation is applied about the sprite's anchor point. `stretch` (default `false`) — when `true`, the sprite is drawn via `canvas.drawImageRect(image, srcRect, dstRect, paint)` so `width` and `height` are honored **independently** (non-uniform scale): a 256×256 source fills an arbitrary W×H destination rect. Stretched sprites are NOT batched with regular sprites (each is an independent `drawImageRect` call). `alpha` and `anchor` are fully honored in stretch mode; **rotation is unsupported in stretch mode** (combine only with `rotation = 0` or omitted). The render system threads `stretch` to `SpriteBatch.draw()` — no allocation. `Sprite` is a pre-registered `ComponentDef<SpriteData>` for drop-in use. |
 
 **Rendering modes:** Retained (Atlas) for game entities, Immediate (Picture) for particles/effects. Compose in the same Canvas.
-
-### `@flare-engine/render-web` (< 12KB gzip)
-
-CanvasKit-WASM backend for `@flare-engine/render`. Peer-dep `canvaskit-wasm >=0.40.0` (optional — tree-shaken when unused). No `@shopify/react-native-skia` import.
-
-| API | Description |
-| --- | --- |
-| `loadCanvasKit(wasmUrl, onProgress?)` | Singleton loader. Reads wasm binary from `wasmUrl` (absolute URL or filesystem path). Falls back to `node:fs/promises` when `fetch` is absent (Node/Bun test environments). Calls `onProgress(1)` immediately if already loading/complete. Returns `Promise<CanvasKit>`. |
-| `createWebSkiaModule(kit)` | Returns a `FrameRendererModule` backed by CanvasKit. Adapter differences handled internally: `drawAtlas` flattens `RectLike[]`/`RSXformLike[]` to grow-only `Float32Array` scratch buffers (zero-alloc steady state); `rotate` converts radians → degrees; `ColorFilter.MakeBlend` maps numeric mode literals to CK `BlendMode` enum entries; `RSXform` objects carry `scos/ssin/tx/ty` readable fields. Pass to `createFrameRenderer` from `@flare-engine/render`. |
-| `createWebSurface(kit, canvas)` | Returns `CanvasLike \| null`. Creates a WebGL-backed CanvasKit surface for the given `<canvas>` element and wraps its canvas as `CanvasLike`. Returns `null` when WebGL is unavailable. Unpacks packed-ARGB `clear(color: number)` to Float32Array for CK. Pass to `Renderer.setCanvas()`. |
-| `PostFxSurface` | Interface: `width`, `height`, `sceneCanvas()`, `onscreenCanvas()`, `clear(bgRgb)`, `fadeTrail(bgRgb, alpha)`, `composite(globalIntensity)`, `flush()`, `resize(w, h)`, `dispose()`. |
-| `createPostFxSurface(kit, canvas, chain)` | Returns `PostFxSurface \| null`. Creates a pair of offscreen surfaces (scene + ping-pong) plus a WebGL onscreen surface, and runs the caller-supplied `EffectChain` at composite time. Pass a new empty `EffectChain()` for a passthrough surface. |
-
-**Typical web setup:**
-```ts
-const kit = await loadCanvasKit('/assets/canvaskit.wasm');
-const mod = createWebSkiaModule(kit);
-const renderer = createFrameRenderer(mod);   // from @flare-engine/render
-renderer.beginFrame(width, height, time);
-// … draw sprites …
-const pic = renderer.endFrame();
-// replay pic onto a CK surface via drawPicture
-```
 
 ### `@flare-engine/input` (< 6KB gzip)
 
@@ -307,6 +284,29 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 | `useOverlayFade(visible, durationMs?)` | `visible: boolean`, `durationMs = 300`. Returns opacity `[0,1]` animating toward `visible ? 1 : 0` via rAF. In non-DOM environments (`typeof requestAnimationFrame === 'undefined'`, e.g. Bun tests) snaps instantly to the target — no `setInterval` fallback. Does NOT use `useGame()`/`useGameLoop()`; overlays live outside `<GameView>`. |
 | `useCountUp(target, durationMs?)` | `target: number`, `durationMs = 600`. Animates from the previous `target` to the new `target` using `easeOutCubic` from `@flare-engine/math`. Same rAF + no-rAF-snap pattern as `useOverlayFade`. |
 | `useSignalState<T>(signal, initial)` | `signal: Signal<T>` (from `@flare-engine/events`), `initial: T`. Subscribes via `signal.add(setter)` on mount and unsubscribes on cleanup using the returned disposer. Returns latest emitted value. |
+
+### `@flare-engine/render-web` (< 12KB gzip)
+
+Web-integration bridge — the web analog of `@flare-engine/react`: it composes `render`'s neutral frame-renderer backend with the `postfx` runtime via CanvasKit-WASM. Peer-dep `canvaskit-wasm >=0.40.0` (optional — tree-shaken when unused). No `@shopify/react-native-skia` import. `loadCanvasKit` / `createWebSurface` / `createWebSkiaModule` are the **pure CanvasKit backend** for `@flare-engine/render`; `createPostFxSurface` is the **bridge piece** that additionally composes the `@flare-engine/postfx` runtime (its `render → postfx` edge is a legal downward Layer-4 dependency).
+
+| API | Description |
+| --- | --- |
+| `loadCanvasKit(wasmUrl, onProgress?)` | Singleton loader. Reads wasm binary from `wasmUrl` (absolute URL or filesystem path). Falls back to `node:fs/promises` when `fetch` is absent (Node/Bun test environments). Calls `onProgress(1)` immediately if already loading/complete. Returns `Promise<CanvasKit>`. |
+| `createWebSkiaModule(kit)` | Returns a `FrameRendererModule` backed by CanvasKit. Adapter differences handled internally: `drawAtlas` flattens `RectLike[]`/`RSXformLike[]` to grow-only `Float32Array` scratch buffers (zero-alloc steady state); `rotate` converts radians → degrees; `ColorFilter.MakeBlend` maps numeric mode literals to CK `BlendMode` enum entries; `RSXform` objects carry `scos/ssin/tx/ty` readable fields. Pass to `createFrameRenderer` from `@flare-engine/render`. |
+| `createWebSurface(kit, canvas)` | Returns `CanvasLike \| null`. Creates a WebGL-backed CanvasKit surface for the given `<canvas>` element and wraps its canvas as `CanvasLike`. Returns `null` when WebGL is unavailable. Unpacks packed-ARGB `clear(color: number)` to Float32Array for CK. Pass to `Renderer.setCanvas()`. |
+| `PostFxSurface` | Interface: `width`, `height`, `sceneCanvas()`, `onscreenCanvas()`, `clear(bgRgb)`, `fadeTrail(bgRgb, alpha)`, `composite(globalIntensity)`, `flush()`, `resize(w, h)`, `dispose()`. |
+| `createPostFxSurface(kit, canvas, chain)` | **Bridge piece.** Returns `PostFxSurface \| null`. Creates a pair of offscreen surfaces (scene + ping-pong) plus a WebGL onscreen surface, and runs the caller-supplied `@flare-engine/postfx` `EffectChain` at composite time. Pass a new empty `EffectChain()` for a passthrough surface. |
+
+**Typical web setup:**
+```ts
+const kit = await loadCanvasKit('/assets/canvaskit.wasm');
+const mod = createWebSkiaModule(kit);
+const renderer = createFrameRenderer(mod);   // from @flare-engine/render
+renderer.beginFrame(width, height, time);
+// … draw sprites …
+const pic = renderer.endFrame();
+// replay pic onto a CK surface via drawPicture
+```
 
 ### `@flare-engine/engine` (< 2KB gzip)
 
@@ -901,5 +901,5 @@ Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weig
 - `createDropTable` closes over a single `weightAt` accessor (not re-allocated per roll) and a `currentIsAllowed` binding (reassigned before each `weightedIndexBy` call). Biome `biome-ignore lint/style/noVar` comment guards the hoisted var.
 - `resolveTier` / `resolveTierIndex` scan all entries to find the largest satisfied `at` — O(n), no sort required, stable for small tiers (≤10 typical).
 - `CollectibleRegistry` is a persistent (copy-on-write) data structure. Each `unlock` call returns a fresh object; the input is never mutated.
-- Not barrelled into `@flare-engine/engine` (curated, matches XP6/XP7). No changeset (0.1.0, publish owner-gated).
+- Not barrelled into `@flare-engine/engine` (curated, matches XP6/XP7). Initial 0.2.0 lockstep release, publish owner-gated.
 

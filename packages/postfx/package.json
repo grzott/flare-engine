@@ -34,6 +34,11 @@
   "peerDependencies": {
     "@shopify/react-native-skia": ">=1.0.0"
   },
+  "peerDependenciesMeta": {
+    "@shopify/react-native-skia": {
+      "optional": true
+    }
+  },
   "publishConfig": {
     "access": "restricted",
     "registry": "https://registry.npmjs.org/"

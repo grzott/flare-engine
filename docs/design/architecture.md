@@ -8,7 +8,7 @@
 
 Flare is a modular, TypeScript-first 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
 
-The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages.
+The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages. Subsequent additions (`haptics`, `devtools`, `render-web`) and XP6's `@flare-engine/simulation` (n-body, Verlet integrators, wave-packet pool) bring the in-repo total to 40 package dirs (39 scoped `@flare-engine/*` + `create-flare-app`).
 
 ---
 
@@ -32,6 +32,7 @@ graph TD
         PHYSICS["@flare-engine/physics<br/>AABB, planck.js, SpatialIndex"]
         AUDIO["@flare-engine/audio<br/>SFXPool, Music, Channels"]
         ASSETS["@flare-engine/assets<br/>Loader, SpriteSheet, TilemapData"]
+        SIMULATION["@flare-engine/simulation<br/>NBody, Verlet/Leapfrog, RipplePool"]
     end
 
     subgraph "Layer 3 — Features"
@@ -99,6 +100,7 @@ graph TD
 | `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (rbush), planck.js integration, raycast               | < 4KB (AABB) | planck.js optional     |
 | `@flare-engine/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |
 | `@flare-engine/assets`  | AssetManager, SpriteSheet parser (TexturePacker, Aseprite), loaders, progress           | < 6KB        | —                      |
+| `@flare-engine/simulation` | N-body gravity (Plummer softening), velocity-Verlet / leapfrog integrators, wave-packet ripple pool | < 5KB | 0 |
 
 ### Layer 3 — Feature Modules
 

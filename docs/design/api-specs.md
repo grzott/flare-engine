@@ -775,3 +775,40 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 - No runtime deps. React peer dep only for the context + hook.
 - The enabled gate lets the user's haptics setting and the reduced-motion gate (`@flare-engine/a11y`) live in one place instead of at every call site — when disabled, cue methods are no-ops.
 
+---
+
+## Layer 2: Simulation (continuous-time dynamics)
+
+### `@flare-engine/simulation`
+
+Continuous-time physical dynamics: n-body gravity with Plummer softening, velocity-Verlet / leapfrog integrators, and wave-packet ripple pools. Zero engine/DOM imports — pure TS, allocation-free hot paths. No deps at 0.1.0; field/scalar-field and agent/stigmergy land in a follow-up (XP7).
+
+#### N-body
+
+| API | Description |
+| --- | --- |
+| `createNBodySystem(capacity)` | Returns `NBodySystem` backed by pre-allocated SoA Float32Arrays (zero alloc after construction). |
+| `NBodySystem` | Interface: `capacity`, `count`, `px/py/vx/vy/mass/tag: Float32Array` (SoA state). Methods: `add(x,y,vx,vy,m,tag?)→index\|-1`, `step(dt,g,softening,gr?,rs?)`, `totalEnergy(g,softening,gr?,rs?)`, `centerOfMass(out)`, `translate(dx,dy)`, `absorb(into,victim)`, `closestPair(out)`, `maxMass()`. |
+| `ClosestPair` | `{ i: number; j: number; sep: number }` — out-param for `closestPair`. |
+
+`step` uses velocity-Verlet with Plummer softening (`∝ 1/(r²+ε²)^{3/2}`). Pass `gr>0` for a post-Newtonian 1/r⁴ precession pull on bodies i≥1 toward body 0 (rosette orbits); `rs` is the GR length scale. `totalEnergy` includes the conservative GR potential so energy-bounded tests remain honest when `gr>0`. `absorb` is momentum- and mass-conserving inelastic coalescence with swap-remove (zero alloc). `primed` caches a(t) across steps — adding a body invalidates the cache.
+
+#### Integrators
+
+| API | Description |
+| --- | --- |
+| `AccelFn` | `(count, px, py, vx, vy, ax, ay) => void` — fills `ax[i]/ay[i]` for i in [0,count). Caller owns all arrays. |
+| `leapfrogInto(count, px, py, vx, vy, dt, accel, ax, ay)` | Kick-drift-kick leapfrog (velocity-Verlet-equivalent). Symplectic → bounded energy for conservative forces. Evals `accel` TWICE per step. `ax/ay` are caller scratch. Zero-alloc. |
+| `verletStep(count, px, py, vx, vy, dt, accel, ax, ay, axPrev, ayPrev)` | Velocity-Verlet with cached a(t). On entry `ax/ay` hold a(t); on return they hold a(t+dt) for chaining. ONE accel eval per step. `axPrev/ayPrev` are caller scratch. Zero-alloc. |
+
+`leapfrogInto` is self-contained (no external a(t) cache). `verletStep` is the scheme used internally by `NBodySystem.step` — callers prime `ax/ay` once before the first step then chain calls.
+
+#### Wave-packet pool
+
+| API | Description |
+| --- | --- |
+| `createRipplePool(capacity)` | Returns `RipplePool` backed by pre-allocated Fixed arrays (zero alloc after construction). |
+| `RipplePool` | Interface: `capacity`, `count`. Methods: `emit(x,y,now,amp,speed,wavelength,life)`, `heightAt(x,y,now)→number`, `prune(now)`, `clear()`. |
+
+Each wavefront is an analytic Gaussian-enveloped wave packet (not a raw PDE): unconditionally stable, controllable bandwidth, exact spatial localization. `heightAt` sums contributions from all live fronts; `prune` retires fronts whose `age > life × 5`. `emit` overwrites the oldest slot when all capacity slots are active (never overflows). Spreading attenuation ≈ 1/√r via `ATTEN=320` px scale.
+

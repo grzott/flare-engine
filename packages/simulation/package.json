@@ -1,0 +1,39 @@
+{
+  "name": "@flare-engine/simulation",
+  "version": "0.1.0",
+  "description": "Continuous-time dynamics: n-body gravity, Verlet integration, wave-packet ripples",
+  "keywords": ["flare-engine", "simulation", "nbody", "gravity", "verlet", "wave"],
+  "license": "MIT",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/simulation"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false
+}

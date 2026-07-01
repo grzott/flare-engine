@@ -7171,3 +7171,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 197 — 2026-07-01 (scope: engine)
+
+**Goal:** feat(simulation): scaffold package + nbody/verlet/ripples
+
+**Touched files**
+- `docs/design/api-specs.md`
+- `docs/design/architecture.md`
+- `docs/plans/roadmap.md`
+- `docs/plans/todo.md`
+- `packages/simulation/`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none — verify caught + I fixed a pre-existing pkg-count doc drift (roadmap/architecture said 38 dirs; real 40/39-scoped) + 2 comment nits; the 1 'major' (flare-engine-page dirty) was a false-positive (owner branding WIP)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

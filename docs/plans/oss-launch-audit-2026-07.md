@@ -1,5 +1,10 @@
 # OSS Launch Audit — 2026-07-02 (rev. 2)
 
+> **Superseded 2026-07-03.** The flip is **October 2026** (this doc's "September plan / September flip
+> is achievable / October→September sweep" framing is historical — do not execute the sweep) and the
+> engine relicenses **MIT → Apache-2.0** (this doc's "keep it 100% MIT" is superseded). Moved to
+> `_local/` by OSS-A0 so the staleness is private; kept for market/precedent research only.
+
 Research/audit session, two workflows: 16-agent launch/market audit + 5-agent package-consumption verification across all four consumer programs. Companion: [monetization-strategy-2026-07.md](monetization-strategy-2026-07.md). No code changed.
 
 ## Premise (owner constraints, 2026-07-02)

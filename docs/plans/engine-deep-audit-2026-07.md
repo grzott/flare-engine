@@ -1,5 +1,12 @@
 # Engine Deep Audit — 2026-07-02 (fresh pass)
 
+> **Superseded 2026-07-03 as a queue** by [road-to-oss-2026-09.md](road-to-oss-2026-09.md); this is
+> an evidence ledger only. Two decisions post-date it: the flip is **October 2026** (not September)
+> and the engine relicenses **MIT → Apache-2.0**. Any "September flip" heading and the
+> "October→September date sweep" directive here are historical — do NOT execute them; the road-to-oss
+> doc wins. A 2026-07-03 final audit (road-to-oss §16) added launch-blocker rows on top of this pass;
+> full ledger in `_local/final-audit-2026-07-03.md`.
+
 Research/audit session. One 34-agent workflow: 8 package-group deep readers + 8 adversarial verifiers (every quoted claim re-verified against code at file:line), 3 consumer-repo auditors (Pan-Tvardowski, flare-engine-page, grzott-portfolio), 5 OSS-readiness dimensions, 5 web-research topics + 5 fact-checkers (every version/date re-verified against registries on 2026-07-02). No code changed.
 
 Companion, not derivative: [oss-launch-audit-2026-07.md](oss-launch-audit-2026-07.md) (rev. 2, launch/consumption focus) and [monetization-strategy-2026-07.md](monetization-strategy-2026-07.md). This pass is code-level and ecosystem-fresh. Per-package detail: [package-findings-2026-07.md](package-findings-2026-07.md).

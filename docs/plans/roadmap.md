@@ -9,9 +9,9 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 ## State (2026-07-03)
 
 **Positioning (2026-07-03):** public framing = "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; not "the first RN game engine", not a Unity/Godot/Unreal competitor. Games (Pan Tvardowski, Berek, a planned platformer) are showcases/dogfooding.
-**License (2026-07-03 owner decision):** engine relicenses MIT → Apache-2.0 before the flip (patent grant + §6 name reservation); games licensed separately (PT = PolyForm Noncommercial). Supersedes the "MIT everywhere" line in road-to-oss §0.2.
+**License (2026-07-03 owner decision):** engine relicenses MIT → Apache-2.0 before the flip (patent grant + §6 name reservation); games licensed separately (PT = PolyForm Noncommercial). Owning row: **OSS-E2** (road-to-oss §16) — full scope is 41 per-package LICENSE files + 41 manifests + NOTICE + TRADEMARK.md + prose, not just the root LICENSE. license-compat is clean (zero copyleft). Name collision is LIVE (flarerpg's `flare-engine` shipped v1.15 2026-05).
 
-**Engine:** Feature-complete. **0.2.0 lockstep cut: all 40 scoped `@flare-engine/*@0.2.0` on npm, private/restricted** (publish owner-gated; public flip at OSS launch). 41 package dirs in-repo (40 scoped + `create-flare-app`); the new-in-repo packages `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8), plus `haptics` / `render-web`, all ship at 0.2.0.
+**Engine:** Feature-complete. **0.2.1 lockstep cut: all 40 scoped `@flare-engine/*@0.2.1` on npm, private/restricted** (publish owner-gated; public flip at OSS launch). 41 package dirs in-repo (40 scoped + `create-flare-app`); the new-in-repo packages `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8), plus `haptics` / `render-web`, all ship at 0.2.1.
 **Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm at `^0.1.0`. Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
 **Active focus:** **Road to OSS — the October 2026 public flip.** Single roadmap + full row specs: [road-to-oss-2026-09.md](road-to-oss-2026-09.md). Queue: `todo.md` Arc OSS. Freeze Oct 5 → two-week owner manual-test window Oct 5–18 → flip week Oct 19–23.
 
@@ -26,10 +26,10 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 | 0 Foundation | math · events |
 | 1 Runtime | core · ecs |
 | 2 Systems | render · shapes · input · physics · audio · assets · simulation · progression |
-| 2.5 Persistence | storage · errors · testing · localization · deep-links · share · a11y |
+| 2.5 Persistence | storage · errors · testing · localization · deep-links · share · a11y · haptics |
 | 3 Features | scene · animation · particles · tilemap · debug · pathfinding · dialogue |
 | 3.5 UI | ui · postfx · ui-shop |
-| 4 Integration | react · engine |
+| 4 Integration | react · render-web · engine |
 | Tooling | cli · devtools · create-flare-app |
 | Tier-2 stubs | leaderboards · achievements · iap · analytics |
 | Adapters | iap-revenuecat |

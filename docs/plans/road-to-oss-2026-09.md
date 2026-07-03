@@ -562,11 +562,12 @@ input/react/engine (zero references); safe-area-context imported only by react
 (`game-view.tsx:22`, peer `>=4.0.0` declared only there) while engine re-exports react without
 declaring it; render-web canvaskit `>=0.40.0` already optional.
 
-July-2026 reality: RN-Skia 2.x requires react ≥19 and RN ≥0.78; tested against Skia 2.6.x;
-Expo SDK 57 = RN 0.86 / React 19.2.
+July-2026 reality (fact-checked 2026-07-03): RN-Skia 2.x requires react ≥19 and **RN ≥0.79** (Skia
+≤1.12.4 for RN ≤0.78 — so ≥0.78 + Skia ≥2 is self-contradictory); current Skia 2.6.6; Expo SDK 57
+(shipped 2026-06-30) = RN 0.86 / React 19.2.
 
-- Floors: react `>=19.0.0` (all 12); react-native `>=0.78.0` (all 5 — normalizes the ui-shop
-  outlier); `@shopify/react-native-skia` `>=2.0.0` where kept.
+- Floors: react `>=19.0.0` (all 12); react-native `>=0.79.0` (all 5 — normalizes the ui-shop
+  outlier; corrected from 0.78 per §16); `@shopify/react-native-skia` `>=2.0.0` where kept.
 - Skia peers: **drop** from render and assets (zero imports — move to devDependencies if their tests
   need types); **optional** (peerDependenciesMeta) in shapes with a "types-only" README note; keep
   required in react + engine; postfx stays optional.
@@ -1133,3 +1134,192 @@ Credential specifics, per-hit audit dispositions, and anything business-candid l
 - **Standing rule for every row:** if execution reveals the spec here is wrong, the builder notes
   the deviation in the todo row on completion and this doc gets a one-line correction — never a
   silent divergence (one source per fact).
+
+---
+
+## 16. Final-audit addendum (2026-07-03) — new + amended rows
+
+A 53-agent final deep audit (41 package auditors + cross-cutting + docs/strategy + license lanes)
+ran on 2026-07-03 before the queue was frozen for execution. It **confirmed the direction** (October
++ Apache-2.0 + quiet launch + services model — keep all four) and confirmed most Arc-B rows, but
+surfaced launch-blockers and correctness traps the pre-existing rows do not cover, plus stale facts
+inside existing rows. Full evidence ledger (with reproductions + candid strategy notes):
+`docs/plans/_local/final-audit-2026-07-03.md` (private). The rows below are the actionable delta;
+they slot into Arc B / Arc E and amend C1/D5/M2/B12/B20. Evidence file:line is in the ledger.
+
+### New rows
+
+#### OSS-B21 · create-flare-app: bin crashes at module load (P0 — launch-blocker, 1 session)
+
+**Scope:** `packages/create-flare-app/tsup.config.ts`, `package.json`, tests.
+Reproduced: the shipped `dist/bin.js` (the CJS build `bin` points at) throws at module load on every
+platform — tsup emits `var import_meta = {}` for `scaffold.ts:37`'s `import.meta.url`, so
+`fileURLToPath(undefined)` → `ERR_INVALID_ARG_TYPE` before argument parsing. `npm create flare-app`
+is dead until fixed; `dist/bin.mjs` works. **B13 touches this package (version stamping) but never
+addresses the bin/shims — do B21 in the same session as B13 or immediately after.**
+
+- Add `shims: true` to `tsup.config.ts` (injects the `import.meta.url` shim into the CJS build) OR
+  repoint `bin` at `dist/bin.mjs`. Prefer `shims: true` (keeps a single bin target, fixes the CJS
+  `index.js` require path the deps lane also flagged).
+- Add a test that actually **executes** the built bin (`node dist/bin.js --help` exits 0 with usage
+  text) — not just an import. **F2's verdaccio rehearsal must run the scaffolded bin, not only
+  install it** (add to F2's done-when).
+
+**Done when:** `node packages/create-flare-app/dist/bin.js --help` and `--version` exit 0 on win32 +
+posix; a bin-execution test guards it; F2 runs the bin end-to-end.
+
+#### OSS-B22 · engine-wide: private-game vocabulary scrub in shipping src (P0 — leak/embarrassment, 1 session)
+
+**Scope:** `packages/*/src/**` JSDoc; grep gate added to D4 done-when. **[covers the D.d.ts gap]**
+`git grep` for `Pan Tvardowski|Phase 11|folio|session #` + the private repo URL over shipping source
+hits ~10 `src` files whose JSDoc compiles into published `dist/index.d.ts` (confirmed at
+`packages/assets/dist/index.d.ts:222`): `a11y/src/bridge.ts:10`, `assets/src/procedural-atlas.ts:88`,
+`engine/src/tier2-wiring.ts:10`, `iap/src/catalog.ts:6`, `iap/src/entitlements.ts:8`,
+`postfx/src/controller.ts:9`, `shapes/src/types.ts:159`, `share/src/screenshot-scene.ts:10`,
+`ui/src/dialogue-panel.tsx:41`, `ui/src/main-menu-kit.tsx:36`. B19's scrub is postfx-only; D4 greps
+READMEs+CONTRIBUTING only; F3 is a freeze-time detector, not a scrub.
+
+- Rewrite each JSDoc block to project-neutral language (describe the pattern, not the game); keep the
+  technical content. No `.d.ts` may reference the private game, its repo, or internal phase/session
+  numbers.
+- Add `grep -rE 'Pan.?Tvardowski|Phase 11|folio|session #' packages/*/src` returns zero to **D4's**
+  done-when (alongside the existing README grep). READMEs that link the private repo
+  (achievements/analytics/create-flare-app/iap-revenuecat/leaderboards/shapes/share) are already in
+  D-pass scope — this row owns the `src` JSDoc; the D-passes own the READMEs.
+
+**Done when:** grep over `packages/*/src` for the vocabulary + private-repo URL is clean; rebuilt
+`dist/*.d.ts` carry no private references; D4 done-when gains the src grep.
+
+#### OSS-B23 · input-validation + prototype-safety hardening batch (P1, 1 session)
+
+**Scope:** `packages/animation/src/sprite-animator.ts`, `packages/audio/src/sfx-pool.ts`,
+`packages/core/src/{game-loop.ts,clock.ts,coroutine.ts,app-lifecycle.ts}`,
+`packages/dialogue/src/{graph.ts,runner.ts}`, `packages/localization/src/{manager.ts,format.ts}`,
+tests. A class of unvalidated-input hangs + inherited-key leaks, several **reproduced live**.
+
+- **Hang guards (throw on non-positive):** `sprite-animator.ts:75` (`frameDuration <= 0` infinite
+  loop — match the package's own `periodicTween`/`createStepSequence` which already throw);
+  `sfx-pool.ts:36/77` (`maxPolyphony <= 0` busy-spin — CONFIRMED); `game-loop.ts:46/108`
+  (`fixedDt <= 0` hard hang — validate in ctor AND guard `step()`).
+- **Prototype-safe lookups (`Object.hasOwn` / `Object.create(null)` tables):** `dialogue/graph.ts:98`
+  (`getNode('__proto__')` returns `Object.prototype`, soft-locks the runner — CONFIRMED; also
+  un-blocks B10's `onError` which currently never fires); `dialogue/runner.ts:43` (`{constructor}`
+  leaks the native function into dialogue — CONFIRMED); `localization/manager.ts:70` +
+  `format.ts:64` (`t('constructor')`, `has('constructor')`, `{constructor}` interpolation).
+- **Re-entrancy (fold into B1's counter work if same session):** `core/clock.ts:96` schedule-mutation
+  during `tickSchedules`, `core/coroutine.ts:64` `clear()` inside a running coroutine,
+  `core/app-lifecycle.ts:30` non-idempotent `background()` (second call discards the resume flag →
+  game frozen). These are the same live-index-iteration class as B1/events.
+
+**Done when:** each hang input throws a typed error (no infinite loop) with a known-input test;
+prototype-key tests prove `__proto__`/`constructor`/`toString` return `undefined`/leave-as-is; the
+three core re-entrancy paths have a callback-mutates-during-iteration regression test.
+
+#### OSS-B24 · render: shader-effect + z-order correctness (P1, 1-2 sessions)
+
+**Scope:** `packages/render/src/{frame-renderer.ts,shaders.ts,sprite-batch.ts,camera2d.ts}`,
+`packages/react/src/game-view.tsx`, api-specs, tests. The "same code renders on Web + RN" headline
+depends on these; **spot-check confirmed** the shader + resolution sites.
+
+- **water/fog/fire cannot render on a real backend** (`frame-renderer.ts:483/504/527`): the SkSL
+  declares a child shader (`shaders.ts:85 uniform shader src;`) but the effects call
+  `makeShader(uniforms)` with no children (the `makeShaderWithChildren` path at `:166` is unused),
+  and resolution is hardcoded `waterUniforms[0]=[1]=0` so `coord/resolution` divides by zero. Bind
+  the child correctly (or drop the `uniform shader src` if these are meant to be source-free) and
+  feed real resolution; add a render-web readback test that proves non-zero output.
+- **frame time is hardcoded 0** (`react/game-view.tsx:161` `beginFrame(w,h,0,pd)`): plumb a real
+  time source (GameLoop elapsed) through GameView so time-driven shaders animate; add a prop/config.
+- **z-order lost across buckets** (`sprite-batch.ts:200`): `flush()` draws `(image,effect,alpha)`
+  buckets in first-encounter order, discarding relative z between buckets — contradicts
+  api-specs.md:91/:203. Preserve global z (stable-partition or per-flush z-key) or document the
+  limitation honestly; prefer preserving.
+- **stretch bucket drops effects + mis-sizes** (`sprite-batch.ts:187` + `frame-renderer.ts:782`): add
+  `stretch` to the bucket key; call `resolveEffectPaint` in the stretch branch (today only alpha is
+  honored) — api-specs recommends `custom()` shaders for backgrounds, which are typically stretched.
+- **dead-zone follow double-counts** (`camera2d.ts:229`): fix the math to `relX - dz.x` (currently
+  `2*relX + offsetX - dz.x`); add the missing dead-zone test.
+- `render-web/postfx-surface.ts:184` resize bug (onscreen WebGL surface never recreated) — fold here
+  or into C1 (C1 implements `createWebFrameRenderer` over this surface).
+
+**Done when:** readback test proves water/fog/fire render non-trivially on render-web with animating
+time; z-order test proves cross-texture ordering preserved; stretch-with-effect test; dead-zone
+follow test; api-specs updated to match. **If the calendar is red, the water/fog/fire binding + the
+z-order fix are the launch-critical subset (the headline claim); stretch/dead-zone can slip to 0.3.x.**
+
+#### OSS-E2 · MIT → Apache-2.0 relicense (P0, 1 session, [MT]) — the missing owning row
+
+**Scope:** root `LICENSE`, `NOTICE`, `TRADEMARK.md`, all 41 `packages/*/LICENSE`, all 41
+`packages/*/package.json` + root + `benchmarks/package.json` `"license"`, ~35 package READMEs, root
+`README.md` badge+link, `CONTRIBUTING.md:120`. Contributor history is clean (`git shortlog`: owner +
+3 `github-actions[bot]` version-bump commits — no third-party copyright), so this is a safe
+unilateral relicense. §0.2's stated scope ("swap LICENSE + badge, add NOTICE + TRADEMARK.md") misses
+most of the surface below. license-compat lane is CLEAN (zero copyleft; §16 ledger).
+
+- Root `LICENSE` → Apache-2.0 full text; **all 41 per-package `LICENSE` files** → Apache-2.0 (each is
+  in its package `files` array and ships in the tarball — verified); `"license": "Apache-2.0"` (SPDX)
+  in all 41 manifests + root + benchmarks.
+- Add `NOTICE` (one copyright line — no vendored third-party code exists) at root AND add `NOTICE` to
+  **every package's `files` array** so it ships (Apache-2.0 §4d propagates NOTICE per tarball).
+- `TRADEMARK.md` reserving "Flare Engine" — matters because the name collision is **live** (see the
+  amended §0.3 / §8 note); Apache-2.0 §6 grants no trademark rights.
+- Prose: all ~35 package README MIT sections + root README badge (`:5`) + link (`:181`) +
+  `CONTRIBUTING.md:120` inbound-license clause → Apache-2.0.
+- **Do NOT** stamp a license on `create-flare-app` templates (verified: no `license` field today —
+  scaffolded projects stay unlicensed / user's choice; keep it that way).
+- Skip per-file SPDX headers (pure churn; root + per-package LICENSE + NOTICE is sufficient).
+- Add a one-line note (README/CHANGELOG) that 0.1.0–0.2.1 were published MIT and stay MIT on npm
+  forever; only 0.3.0+ is Apache-2.0.
+- **Cross-row gates:** add `license == "Apache-2.0"` to F2's verdaccio tarball assertion and F3's
+  scan; add an MIT-grep (`grep -rE '\bMIT\b'` over LICENSE/READMEs/manifests returns only intentional
+  hits) to D4's done-when.
+
+**Done when:** every LICENSE (root + 41) is Apache-2.0; every manifest SPDX is Apache-2.0; NOTICE
+ships in all tarballs; no `MIT` in prose except the immutability note; TRADEMARK.md exists; F2/F3/D4
+gates updated. **Run E2 with E1 (both [MT] governance) — one session.**
+
+### Amendments to existing rows
+
+- **OSS-C1 (§5): the RN peer floor is `>=0.79.0`, not `>=0.78.0`.** Fact-checked 2026-07-03:
+  `@shopify/react-native-skia` 2.x requires `react-native >=0.79` (Skia ≤1.12.4 for RN ≤0.78), so a
+  `>=0.78.0` + Skia `>=2.0.0` pairing is self-contradictory. Set the react-native floor to
+  `>=0.79.0` in all 5 packages. (React `>=19.0.0` and Skia `>=2.0.0` are correct.) Confirmed
+  available: current Skia is 2.6.6; **Expo SDK 57 shipped 2026-06-30** = RN 0.86 / React 19.2, so
+  the B14/C1 target stack is real and current before freeze.
+- **OSS-B12 (§4): two additions.** (1) `provider.ts:98/109` `Purchases.getProducts(ids)` passes no
+  product category → react-native-purchases defaults to SUBSCRIPTION, so on Android one-time products
+  return empty (blank catalog, `purchase()` "Product not found"); pass the category (the local type
+  `types.ts:11` already models `type?: string`). (2) `provider.ts:86` `await import('react-native')`
+  with no declared RN peer — declare `react-native >=0.79.0` as a peer (the deps lane flagged this;
+  C1's matrix must add iap-revenuecat as a 6th RN-peer package). Also drop the phantom `react` peer
+  it never imports.
+- **OSS-D5 (§7): expand to a full api-specs re-derivation, not a 5-item spot-fix.** The audit found
+  api-specs sections that **do not compile** against HEAD beyond D5's known list: animation
+  `spring(config)` (`:175`), errors `send`/`createConsoleTransport`/`onError` (`:361-364`), iap
+  EntitlementStore (`:720`, whole section wrong), testing MockInputManager + FakeClock units
+  (`:383`). Re-derive each package's api-specs section from its `src/index.ts` surface; ideally have
+  D1's snippet harness also compile the ` ```ts ` blocks inside api-specs.md (not just READMEs).
+- **OSS-B20 (§4): also rename `ShopPanelProps`** (it collides too, not just `ShopPanel`).
+- **OSS-M2 (§6): de-dup two barrel collisions.** `CompiledShader` (postfx + render) and `SkImageLike`
+  (assets + postfx) both re-export through the engine barrel and clash for umbrella consumers —
+  alias/namespace them during the barrel curation (they're per-package structural duck-types; fix at
+  the barrel, not the packages).
+- **§0.3 (name): the collision is LIVE, not dormant.** flarerpg.org's Flare shipped v1.15 on
+  2026-05-03 and its GitHub repo is literally `github.com/flareteam/flare-engine` (identical repo
+  name). Keep the disambiguation line (rename unwarranted — owner holds domains + npm org) but it
+  should name the identical repo, and TRADEMARK.md (E2) is now worth doing, not optional.
+- **§14 (owner ledger): token rotation timing moved.** Rotating "week of Jul 6" (90-day cap) expires
+  ~Oct 4, before the Oct 5 freeze publish. Rotate in **early August** (current token dies ~Sep 6; a
+  new one then covers freeze + manual window + Oct 20 flip), or pull Trusted Publishing OIDC forward.
+  The private owner-ledger has been updated to October dates (2026-07-03).
+
+### Completed cross-cutting lanes (2026-07-03)
+
+- **license-compat: CLEAN.** 37 external deps, all MIT / Apache-2.0 / BSD-3-Clause; zero copyleft.
+  Apache-2.0 relicense unblocked. (Recommend one `license-checker --production` run at freeze to
+  seal the transitive layer; direct surface is clean.)
+- **api-consistency: consistent surface,** 3 barrel collisions (folded into B20/M2 above) + one
+  `…Opts`→`Options` P2 (0.3.0 breaking window).
+- **deps lane:** `engines` field missing on 39/41 packages; exports maps point ESM consumers at the
+  CJS `.d.ts` (unused `.d.mts` never referenced — nested types conditions fix); stale
+  `packageManager bun@1.2.0`; unused root `maxrects-packer` devDep; 10 packages carry dead
+  `@types/react ^18` letters. All P2 → a single **OSS-C2 packaging-polish** row or fold into C1.

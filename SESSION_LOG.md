@@ -7383,3 +7383,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`. Open decision: 0.2.1 changeset + npm publish (owner-gated).
 
 ---
+
+## Session 204 — 2026-07-03 (scope: docs)
+
+**Goal:** final pre-OSS deep audit (41 packages + docs/strategy + license + sibling repos) — fold findings into the Road-to-OSS queue before execution starts
+
+**Touched files** (docs-only — no `packages/**` / `apps/**`; code gate N/A)
+- `SESSION_LOG.md`
+- `docs/plans/road-to-oss-2026-09.md` (new §16 final-audit addendum: rows B21–B24 + E2, C1/D5/B12/B20/M2 amendments; §5 C1 RN floor 0.78→0.79)
+- `docs/plans/todo.md` (Arc OSS: 5 new pointer rows, amendments, owner-gated token-timing fix)
+- `docs/plans/roadmap.md` (0.2.0→0.2.1, arch table 39→41 +render-web/haptics, license→E2 pointer)
+- `docs/plans/{engine-deep-audit,oss-launch-audit,monetization-strategy}-2026-07.md` (superseded-2026-07-03 headers: October + Apache-2.0)
+- `docs/plans/_local/final-audit-2026-07-03.md` (NEW, private — full evidence ledger, NOT committed)
+- `docs/plans/_local/owner-ledger.md` (October rewrite + token rotation → early Aug, NOT committed)
+- 4 memory files (outside repo): new `final_audit_2026_07_03`, rewrote `road_to_oss_2026_09`, stamped `oss_launch_audit`, `MEMORY.md` index
+
+**Gates**
+- lint / typecheck / test / build: N/A (docs-only session — zero code changes; verify.sh not run)
+
+**Frictions:** corr:0; deny:0; gate:0 (docs-only, code gate N/A); the 53-agent audit workflow hit the monthly spend limit mid-run (41/88 agents errored — verify stage + 8 area lanes), completed by hand on Opus: both P0s reproduced (create-flare-app bin crash, iap-revenuecat category), license/security/sibling-repos/stack-factcheck done directly. Direction verdict: October + Apache-2.0 + quiet launch + services model CONFIRMED. Found 2 launch-blockers the plan missed (B21/B22), an input-validation trap class (B23), render shader/z-order holes (B24), the license switch scoped ~4× too small (E2 = 41 LICENSE files + manifests + NOTICE + prose). license-compat CLEAN (zero copyleft). Name collision LIVE (flarerpg `flare-engine` v1.15). Skia 2.x needs RN ≥0.79 (C1 said 0.78).
+
+**Next:** start Arc OSS — pull B21 + B22 (launch-blockers) to the top; then A0. Full ledger: `docs/plans/_local/final-audit-2026-07-03.md`.
+
+---

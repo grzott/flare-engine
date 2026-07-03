@@ -1,5 +1,10 @@
 # Monetization Strategy — 2026-07-02 (rev. 2)
 
+> **Partially superseded 2026-07-03.** The services-model / no-paid-packages / FUNDING.yml-tip-jar
+> verdict stands. But the license is now **Apache-2.0**, not MIT — every "keep it 100% MIT" / "no
+> dual licensing" line here is superseded by the OSS-E2 relicense (road-to-oss §16). Moved to
+> `_local/` by OSS-A0.
+
 Companion to [oss-launch-audit-2026-07.md](oss-launch-audit-2026-07.md). Reframed after owner clarification: this is a small project by design — self-use first, RN-ecosystem contribution second, adoption welcome but not the business. The owner already makes his living building applications and websites on the engine.
 
 ## The verdict

@@ -1,6 +1,6 @@
 # Flare Engine
 
-**Flare** is a modular 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). 41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`) across layered tiers; deps flow downward only.
+**Flare** is a modular 2D engine for React Native + Web (animation, gamification, interactive UI, and games), built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). 41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`) across layered tiers; deps flow downward only.
 
 Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/design/architecture.md](docs/design/architecture.md). API: [docs/design/api-specs.md](docs/design/api-specs.md).
 
@@ -10,7 +10,7 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 - **Turborepo** monorepo orchestration
 - **Biome** lint + format (never Prettier or ESLint)
 - **tsup** build (dual CJS+ESM, .d.ts)
-- **Changesets** independent SemVer per package
+- **Changesets** lockstep (`fixed`) versioning across `@flare-engine/*`
 - **TypeScript strict**, ES2022, bundler resolution, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`
 
 ## Code style
@@ -44,4 +44,4 @@ bun run lint:fix
 
 - Conventional Commits: `feat(math): add Vec2.lerp` — ≤72 chars, no body, no emoji, no Co-Authored-By trailer
 - One source per fact (no mirror rows, no duplicate changelogs)
-- Status: feature-complete at 0.1.x; OSS launch target October 2026
+- Status: 0.2.1 on npm (restricted); **public OSS flip October 2026** — queue + full specs in [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)

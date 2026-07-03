@@ -15,7 +15,7 @@
 | `react-native-wgpu` — active, but low-level (needs engine layer), requires RN 0.81+ New Arch               | npm, Apr 2026     |
 | `react-native-audio-api` (Software Mansion) — **37K DL/week**, actively maintained Web Audio API for RN    | npm, Apr 2026     |
 
-**Bottom line:** All infrastructure pieces exist. Nobody has assembled them into a game engine. **Flare is the first.**
+**Bottom line:** All infrastructure pieces exist. Flare assembles them into one cross-platform 2D engine — for animation, gamification, interactive UI, and games — running the same code on React Native and the web.
 
 ---
 

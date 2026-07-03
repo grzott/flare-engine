@@ -6,11 +6,14 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ---
 
-## State (2026-07-01)
+## State (2026-07-03)
+
+**Positioning (2026-07-03):** public framing = "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; not "the first RN game engine", not a Unity/Godot/Unreal competitor. Games (Pan Tvardowski, Berek, a planned platformer) are showcases/dogfooding.
+**License (2026-07-03 owner decision):** engine relicenses MIT → Apache-2.0 before the flip (patent grant + §6 name reservation); games licensed separately (PT = PolyForm Noncommercial). Supersedes the "MIT everywhere" line in road-to-oss §0.2.
 
 **Engine:** Feature-complete. **0.2.0 lockstep cut: all 40 scoped `@flare-engine/*@0.2.0` on npm, private/restricted** (publish owner-gated; public flip at OSS launch). 41 package dirs in-repo (40 scoped + `create-flare-app`); the new-in-repo packages `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8), plus `haptics` / `render-web`, all ship at 0.2.0.
 **Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm at `^0.1.0`. Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
-**Active focus:** Arc PT-EXTRACT close-out (S8/S9) + engine-repo docs/harness polish — see `todo.md`.
+**Active focus:** **Road to OSS — the October 2026 public flip.** Single roadmap + full row specs: [road-to-oss-2026-09.md](road-to-oss-2026-09.md). Queue: `todo.md` Arc OSS. Freeze Oct 5 → two-week owner manual-test window Oct 5–18 → flip week Oct 19–23.
 
 ---
 
@@ -39,13 +42,13 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 | 10 | C++ acceleration | Deferred — data-gated, physics first if ever needed |
 | 11.1–11.5, 11.7, 11.10 | Tier-1 + Tier-2 packages | Done |
 | 11.8 | CLI + scaffolder | Done |
-| 11.11 | Landing-page MP4 + store links | Deferred (PT-gated) |
-| 11.12 | Docs site (`apps/site` Docusaurus) | Deferred to pre-launch polish |
-| 11.13 | API lock + RC + governance + trademark | Deferred to pre-launch polish |
+| 11.11 | Landing-page MP4 + store links | Superseded — showcase assets are post-flip rows in [road-to-oss-2026-09.md §13](road-to-oss-2026-09.md) |
+| 11.12 | Docs site (now the sibling `flare-engine-page` repo, Astro Starlight) | In flight — G-lane of [road-to-oss-2026-09.md §10](road-to-oss-2026-09.md) |
+| 11.13 | API lock + governance | Absorbed into road-to-oss Arcs C/D/E (trademark: dormant per §0.3) |
 | 11.14 | Engine extraction from PT | Done (2026-04-24) |
-| 12 | Launch + content | Planned |
+| 12 | **OSS launch** | **ACTIVE — [road-to-oss-2026-09.md](road-to-oss-2026-09.md)** |
 
-OSS launch target: October 2026.
+OSS launch: **October 2026 public flip** (freeze Oct 5, manual window Oct 5–18, flip week Oct 19–23).
 
 ---
 
@@ -116,7 +119,7 @@ Pick any — or none. None is the default.
 1. **Ship PT** — walk the PT repo's `docs/release-checklist.md`. ~$124 + weekend of submission work.
 2. **Second game** — top-down or deck-builder, separate private repo. Tests engine reusability. Consumes `@flare-engine/*@^0.1.0` from the restricted npm registry (Berek is already scaffolded this way).
 3. **Engine feature** — e.g. 2.5D lighting via SkSL RuntimeEffect (notes in `docs/design/lighting-2-5d.md`), or snapshot-source postfx for scene-texture effects.
-4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
+4. **Pre-launch polish** — superseded by [road-to-oss-2026-09.md](road-to-oss-2026-09.md) (the active track).
 
 ---
 

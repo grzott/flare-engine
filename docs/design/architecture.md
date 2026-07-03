@@ -6,7 +6,7 @@
 
 ## Overview
 
-Flare is a modular, TypeScript-first 2D game engine for React Native + Web, built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
+Flare is a modular, TypeScript-first 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
 
 The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages. Subsequent additions (`haptics`, `devtools`, `render-web`), XP6's `@flare-engine/simulation` (n-body, Verlet integrators, wave-packet pool), and XP8's `@flare-engine/progression` (upgrade tracks, drop tables, unlock DAG) bring the in-repo total to 41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`). The 0.2.0 lockstep cut published all 40 scoped packages at 0.2.0 (owner-gated).
 

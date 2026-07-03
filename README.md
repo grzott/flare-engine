@@ -1,11 +1,11 @@
 # Flare Engine
 
-> Modular 2D game engine for React Native + Web, built on Skia
+> Modular 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on Skia
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](./tsconfig.base.json)
 
-**Flare** is the first full-stack 2D game engine built for React Native. Ship the same codebase to iOS, Android, and the browser. Zero-alloc hot paths, archetype ECS, GPU sprite batching, and a device-verified end-to-end loop — all under the `@flare-engine/*` npm scope.
+**Flare** is a modular 2D engine that runs the same TypeScript on iOS, Android, and the browser — for high-performance animation, gamification, interactive UI, and games. Zero-alloc hot paths, hybrid ECS, GPU sprite batching, and a device-verified end-to-end loop, all under the `@flare-engine/*` npm scope. It lives inside your React Native and web apps — not a Unity/Godot/Unreal competitor.
 
 ---
 
@@ -57,7 +57,7 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 | `@flare-engine/math`         | 0     | shipping                 | Vec2, Rect, Transform, Mat3, Color, 42 easings, seeded RNG, intersections      |
 | `@flare-engine/events`       | 0     | shipping                 | Type-safe `EventEmitter` and `Signal`                                          |
 | `@flare-engine/core`         | 1     | shipping                 | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool         |
-| `@flare-engine/ecs`          | 1     | shipping                 | Archetype ECS — `World`, `Query`, systems, prefabs, FSM                        |
+| `@flare-engine/ecs`          | 1     | shipping                 | Hybrid ECS — `World`, `Query`, systems, prefabs, FSM                        |
 | `@flare-engine/render`       | 2     | shipping                 | Skia Atlas `SpriteBatch`, `Camera2D`, sprite effects, BMFont text              |
 | `@flare-engine/input`        | 2     | shipping                 | `InputManager`, pointer/touch, gestures, joystick/button state                 |
 | `@flare-engine/physics`      | 2     | shipping                 | AABB `CollisionWorld`, spatial index, raycasting                               |

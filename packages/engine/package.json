@@ -1,8 +1,8 @@
 {
   "name": "@flare-engine/engine",
   "version": "0.2.1",
-  "description": "Flare game engine — convenience entry point, re-exports all packages",
-  "keywords": ["flare-engine", "game-engine", "2d", "react-native", "skia"],
+  "description": "Flare Engine umbrella — convenience entry point, re-exports all packages",
+  "keywords": ["flare-engine", "2d", "react-native", "web", "skia"],
   "license": "MIT",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

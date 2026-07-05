@@ -1330,9 +1330,9 @@ gates updated. **Run E2 with E1 (both [MT] governance) — one session.**
   2026-05-03 and its GitHub repo is literally `github.com/flareteam/flare-engine` (identical repo
   name). Keep the disambiguation line (rename unwarranted — owner holds domains + npm org) but it
   should name the identical repo, and TRADEMARK.md (E2) is now worth doing, not optional.
-- **§14 (owner ledger): token rotation timing moved.** Rotating "week of Jul 6" (90-day cap) expires
-  ~Oct 4, before the Oct 5 freeze publish. Rotate in **early August** (current token dies ~Sep 6; a
-  new one then covers freeze + manual window + Oct 20 flip), or pull Trusted Publishing OIDC forward.
+- **§14 (owner ledger): token rotation timing moved.** The npm publish-credential rotation was
+  rescheduled so a fresh credential covers the freeze publish + manual window + Oct 20 flip; timing
+  specifics live in the private owner-ledger. Alternatively, pull Trusted Publishing OIDC forward.
   The private owner-ledger has been updated to October dates (2026-07-03).
 
 ### Completed cross-cutting lanes (2026-07-03)

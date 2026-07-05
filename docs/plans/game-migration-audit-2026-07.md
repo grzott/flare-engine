@@ -11,9 +11,9 @@ unchanged. `0.2.1` also reclassified `render-web` to a Layer-4 web bridge + adde
 dep/tier CI guardrail + dropped 12 phantom deps — none of which affect the games.
 
 Prereq wall (now cleared for both games): `^0.1.0` ceilings `<0.2.0`; games bumped to `^0.2.1`.
-Private-registry install needs `NPM_TOKEN` — sourced from `~/.npmrc`'s granular token
-(`export NPM_TOKEN=$(sed -n 's#^//registry.npmjs.org/:_authToken=##p' ~/.npmrc | head -1)`), else
-`bun install` returns 404 on the restricted `@flare-engine/*` packages.
+Private-registry install needs the `NPM_TOKEN` env var set to the restricted-registry auth token
+(owner-provided; specifics kept out of the repo), else `bun install` returns 404 on the restricted
+`@flare-engine/*` packages.
 
 `simulation` + `render-web` have NO game consumer (flare-engine-page only) — not added.
 

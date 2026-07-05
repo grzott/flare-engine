@@ -7406,3 +7406,32 @@ None — audit-only close per row allowance.
 **Next:** start Arc OSS — pull B21 + B22 (launch-blockers) to the top; then A0. Full ledger: `docs/plans/_local/final-audit-2026-07-03.md`.
 
 ---
+
+## Session 205 — 2026-07-05 (scope: engine)
+
+**Goal:** OSS-A0 repo hygiene + private-docs split
+
+**Touched files**
+- `.claude/skills/retro/SKILL.md`
+- `.gitignore`
+- `docs/plans/engine-deep-audit-2026-07.md`
+- `docs/plans/game-migration-audit-2026-07.md`
+- `docs/plans/monetization-strategy-2026-07.md`
+- `docs/plans/oss-launch-audit-2026-07.md`
+- `docs/plans/package-findings-2026-07.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `packages/share/package.json`
+- `packages/testing/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** drift:6 corr:1 — spec line-refs all stale; notes committed-not-untracked (needed staged-deletion); edit-list incomplete vs done-when (game-migration:14 token-extraction, todo:94/123/130, road-to-oss §14, engine-deep-audit:125, self-ref C:\ in A0/B13 rows) — caught by a full-effort 7-agent sweep after user asked to re-check
+
+**Next:** see `docs/plans/todo.md`.
+
+---

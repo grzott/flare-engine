@@ -38,6 +38,11 @@ perf-artifacts/
 apps/*/build-*.apk
 apps/*/build-*.ipa
 
+# Owner-local publish + env credentials — never committed (root-anchored so the
+# apps-level .env.testingbot.example template is never shadowed).
+/.npmrc
+/.env*
+
 # Private planning notes + audit ledgers (business-sensitive; never committed).
 # OSS-A0 formalizes this; added early 2026-07-05 to protect the deep-audit ledger.
 docs/plans/_local/

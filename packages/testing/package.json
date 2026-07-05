@@ -5,7 +5,7 @@
   "keywords": ["flare-engine", "testing", "ecs", "fake-clock", "snapshot"],
   "license": "MIT",
   "author": "Grzegorz Otto",
-  "homepage": "https://github.com/grzott/engine#readme",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
   "bugs": {
     "url": "https://github.com/grzott/flare-engine/issues"
   },

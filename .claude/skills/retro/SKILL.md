@@ -18,9 +18,9 @@ Answer "what do I keep repeating?" from the recorded evidence. Read-only.
 | Source | Path |
 |---|---|
 | Engine session log | `SESSION_LOG.md` (this repo) |
-| PT session log | `c:\_PROG\flare-engine-workspace\Pan-Tvardowski\SESSION_LOG.md` |
-| Engine memory index | `C:\Users\user\.claude\projects\c---PROG-flare-engine-workspace-flare-engine\memory\MEMORY.md` |
-| PT memory index | `C:\Users\user\.claude\projects\c---PROG-flare-engine-workspace-Pan-Tvardowski\memory\MEMORY.md` |
+| PT session log | `../Pan-Tvardowski/SESSION_LOG.md` (sibling repo) |
+| Engine memory index | `~/.claude/projects/c---PROG-flare-engine-workspace-flare-engine/memory/MEMORY.md` |
+| PT memory index | `~/.claude/projects/c---PROG-flare-engine-workspace-Pan-Tvardowski/memory/MEMORY.md` |
 | Allowlists | each repo's `.claude/settings.json` |
 
 PT paths are read via absolute path — works regardless of which repo the session roots in.

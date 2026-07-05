@@ -36,7 +36,8 @@
           "options": { "syntax": "shorthand" }
         },
         "useImportType": "error",
-        "useSingleVarDeclarator": "off"
+        "useSingleVarDeclarator": "off",
+        "noDefaultExport": "error"
       }
     }
   },
@@ -49,5 +50,11 @@
       "*.d.ts",
       "packages/create-flare-app/templates"
     ]
-  }
+  },
+  "overrides": [
+    {
+      "include": ["**/*.config.ts", "apps/**", "app/**"],
+      "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    }
+  ]
 }

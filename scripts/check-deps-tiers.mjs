@@ -29,7 +29,11 @@ const SCOPE = '@flare-engine/';
  */
 const ALLOWLIST = [];
 
-/** Lower number = lower tier. A package may depend only on EQUAL-or-lower tier. */
+/**
+ * Lower number = lower tier. A package may depend only on EQUAL-or-lower tier.
+ * MUST list every scoped @flare-engine/* package — an unmapped scoped package is a
+ * hard error below (it would otherwise silently escape the downward-only tier gate).
+ */
 const LAYER_MAP = {
   math: 0,
   events: 0,
@@ -42,6 +46,15 @@ const LAYER_MAP = {
   assets: 2,
   simulation: 2,
   shapes: 2,
+  progression: 2,
+  storage: 2.5,
+  errors: 2.5,
+  testing: 2.5,
+  localization: 2.5,
+  'deep-links': 2.5,
+  share: 2.5,
+  a11y: 2.5,
+  haptics: 2.5,
   scene: 3,
   animation: 3,
   particles: 3,
@@ -50,7 +63,6 @@ const LAYER_MAP = {
   pathfinding: 3,
   dialogue: 3,
   devtools: 3,
-  progression: 3,
   ui: 3.5,
   postfx: 3.5,
   'ui-shop': 3.5,
@@ -62,6 +74,7 @@ const LAYER_MAP = {
   react: 4,
   engine: 4,
   'render-web': 4,
+  cli: 4,
 };
 
 /** The sanctioned umbrella barrel — skipped for its own equal/upward check. */
@@ -168,10 +181,12 @@ for (const dir of pkgDirs) {
 const phantoms = [];
 const missing = [];
 const upward = [];
+const unmapped = [];
 
 for (const p of packages) {
   const selfShort = basename(p.dir);
   const selfTier = LAYER_MAP[selfShort];
+  const isScoped = typeof p.name === 'string' && p.name.startsWith(SCOPE);
 
   for (const dep of p.declared) {
     if (!p.imported.has(dep) && !isAllowed(p.dir, dep, 'phantom')) {
@@ -188,7 +203,11 @@ for (const p of packages) {
   // Tier rule: engine (umbrella) is exempt from its own equal/upward check, but
   // its declared deps are still validated below via every other package's view.
   if (selfShort === UMBRELLA) continue;
-  if (selfTier === undefined) continue;
+  if (selfTier === undefined) {
+    // A scoped package with no tier would silently escape the downward-only gate.
+    if (isScoped) unmapped.push({ pkg: p.dir, name: p.name });
+    continue;
+  }
   for (const dep of p.declared) {
     const depTier = LAYER_MAP[dep];
     if (depTier === undefined) continue;
@@ -223,6 +242,16 @@ if (upward.length > 0) {
   for (const { pkg, dep, selfTier, depTier } of upward) {
     console.error(
       `  ${pkg} (tier ${selfTier})  ->  ${SCOPE}${dep} (tier ${depTier})  breaks downward-only rule`,
+    );
+  }
+}
+
+if (unmapped.length > 0) {
+  failed = true;
+  console.error(`\nUNMAPPED scoped packages (no LAYER_MAP tier) — ${unmapped.length}:`);
+  for (const { pkg, name } of unmapped) {
+    console.error(
+      `  ${pkg} (${name})  has no LAYER_MAP entry — add its tier so the downward-only rule applies`,
     );
   }
 }

@@ -38,3 +38,7 @@ perf-artifacts/
 apps/*/build-*.apk
 apps/*/build-*.ipa
 
+# Private planning notes + audit ledgers (business-sensitive; never committed).
+# OSS-A0 formalizes this; added early 2026-07-05 to protect the deep-audit ledger.
+docs/plans/_local/
+

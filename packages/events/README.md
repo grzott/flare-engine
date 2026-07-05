@@ -22,6 +22,14 @@ onHit.add((dmg) => console.log(dmg));
 onHit.emit(10);
 ```
 
+## Emit semantics
+
+`emit()` iterates the handler set **live** (no per-emit snapshot — this is a hot path):
+
+- A handler **added** during an emit runs in that **same** emit.
+- A handler **removed** during an emit still runs for that emit (and any nested emit); the removal takes effect once the outermost emit completes.
+- `emit()` is **re-entrant** (a handler may call `emit()` again) and **throw-safe**: a throwing handler propagates to the caller but never wedges deferred removal.
+
 See [API spec](../../docs/design/api-specs.md#flare-engineevents--1kb-gzip).
 
 ## License

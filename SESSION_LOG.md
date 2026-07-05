@@ -7435,3 +7435,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 206 — 2026-07-05 (scope: engine)
+
+**Goal:** OSS-B1 events: emit hardening
+
+**Touched files**
+- `.changeset/oss-b1-events-emit-hardening.md`
+- `packages/events/README.md`
+- `packages/events/src/emitter.ts`
+- `packages/events/src/signal.ts`
+- `packages/events/tests/emitter.test.ts`
+- `packages/events/tests/signal.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** fixup:1 — 3-lens adversarial self-verify caught a pre-existing removeAll(event)-mid-emit cross-event pendingRemove wipe beyond the row's 2-file scope; fixed in-file + regression test; also tightened a re-entrancy doc nit
+
+**Next:** see `docs/plans/todo.md`.
+
+---

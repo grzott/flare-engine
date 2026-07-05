@@ -4,6 +4,12 @@
 July audit corpus; every bug row below was re-verified against HEAD (file:line) on 2026-07-03 by an
 independent 7-agent pass before this plan was written.
 
+> **Filename note:** this file is named `-2026-09` for historical reasons — it predates the
+> September→October schedule move. The plan is an **October** flip throughout (freeze Oct 5, flip
+> Oct 20). Do not rename (≈30 inbound `road-to-oss-2026-09` references); trust the dates in the body.
+> **§17 (bottom) holds the 2026-07-05 deep-audit additions** (rows B25–B31, C2–C4, Arc HYG);
+> evidence ledger: `_local/deep-audit-2026-07-05.md`.
+
 Sources (evidence ledgers, NOT queues — one source per fact):
 [engine-deep-audit-2026-07.md](engine-deep-audit-2026-07.md) (bug ledger + module adjudications),
 [package-findings-2026-07.md](package-findings-2026-07.md) (per-package detail),
@@ -53,7 +59,10 @@ disagree, this doc wins (it post-dates and re-verified them).
 
 **Capacity assumption:** engine gets ~5 agent sessions/week of the owner's four-project split
 (June ran ~45 sessions across repos, so this is the historical norm, not a stretch). The P0+P1 set
-is ~46 rows and **~42–48 sessions** (B8/B14/M1 are two-session rows; B13/C1/M2/M5/D5/F2 run 1–2), so:
+is ~56 rows and **~49–58 sessions** (base P0+P1 ≈46 rows + the 2026-07-05 audit's B25–B31 / C2–C4;
+≥1 session/row is the floor, so the old "42" was arithmetically impossible; B8/B14/M1 are two-session,
+and B13/C1/M2/M5/D5/F2/C3/C4 run 1–2). Against ~5/wk × 13 wk ≈ 65 available it lands by Oct 5 with a
+**thin** margin, not a comfortable one — Arc HYG and most P2 are post-flip unless the calendar runs green. So:
 
 - **~5 sessions/wk is the no-slip path** — P0+P1 lands by Oct 5 (using the table's
   D-starts-during-the-M-tail overlap when needed); the P2 rows (B18, M7–M11) get squeezed in only
@@ -578,7 +587,7 @@ July-2026 reality (fact-checked 2026-07-03): RN-Skia 2.x requires react ≥19 an
   (errors), `react-native-purchases >=8.0.0` (iap-revenuecat), canvaskit-wasm `>=0.40.0` optional
   (rationale: render-web drives CanvasKit's stable drawing subset directly; RN-Skia's exact 0.41.0
   pin governs only RN projects, where RN-Skia itself resolves it — no floor bump needed).
-- **render-web export fold-in (was draft C2):** `createWebFrameRenderer` does NOT exist in source —
+- **render-web export fold-in (owned by C1 — NOT the packaging row; packaging polish is the real OSS-C2, §17):** `createWebFrameRenderer` does NOT exist in source —
   the XP2 todo row's export claim is drift (verified 2026-07-03: zero hits in `packages/render-web/src`).
   **Implement it**: a thin composition mirroring `packages/react`'s `createSkiaFrameRenderer` shape
   — `createWebFrameRenderer(kit, canvas)` = `createFrameRenderer(createWebSkiaModule(kit), createWebSurface(kit, canvas), …)`
@@ -595,7 +604,9 @@ July-2026 reality (fact-checked 2026-07-03): RN-Skia 2.x requires react ≥19 an
   in its lockfile** (the page repo's install pain, fixed at the source).
 
 **Done when:** peer matrix matches the table above exactly; web-only install pulls no RN tree; both
-validation fixtures green; api-specs "Peers" rows updated.
+validation fixtures green; api-specs "Peers" rows updated; **the render-web `postfx-surface.ts:184`
+onscreen-surface resize fix ships here** (C1 owns the surface `createWebFrameRenderer` composes over —
+resolves the §16 "fold here or into C1" ambiguity).
 
 ---
 
@@ -857,9 +868,9 @@ and the `:47` status line were fixed 2026-07-03, as was `roadmap.md`); docs/READ
 
 **Done when:** `bun run check:readme` green across all 41; grep for `October 2026`, `restricted`,
 `.claude/skills`, `Pan-Tvardowski` across READMEs+CONTRIBUTING returns only intentional hits
-(disambiguation/none); every install line is the public form.
+(disambiguation/none); every install line is the public form; **`grep -rE 'Pan.?Tvardowski|Phase 11|folio|session #' packages/*/src` returns zero** (carries B22's src-vocab scrub, §16); **`MIT` appears in shipping files only inside the 0.1–0.2.1 immutability note** (carries E2's MIT-grep, §16).
 
-### OSS-D5 · design-docs honesty (P0, 1-2 sessions, [main-thread] — seam: D5a architecture.md / D5b api-specs.md)
+### OSS-D5 · design-docs honesty (P0, 2-3 sessions per 2026-07-05 audit, [main-thread] — seam: D5a architecture.md / D5b api-specs.md)
 
 **Scope:** `docs/design/architecture.md`, `docs/design/api-specs.md`, `packages/math` easing headers.
 Verified drift: architecture.md presents planck.js (`:32,110,182`), rbush SpatialIndex (`:110,193`)
@@ -875,6 +886,13 @@ reads as current.
   draw/atlas exports — document what IS, including the PT-vocabulary surface as-is; renaming
   `ShipSpec` etc. is a post-flip API-generality item, not a docs edit); verify B4/M4/M5/M6 already
   updated their sections; easing count; sweep any remaining "0.2.0" forward-promises.
+- **Concrete stale api-specs sections found 2026-07-05 (re-derive from each `src/index.ts`):** dialogue
+  `createDialogueRunner` (api-specs:233 — real sig is `createDialogueRunner(options?: { conditions?, actions? })`;
+  graph+variables go to `runner.start`; onLine/onChoice/onEnd/onAction are Signals) and `createTextReveal`
+  (api-specs:235 — no opts; state is `visibleText`/`complete`; `speed`/`punctuationDelay` live on
+  `updateTextReveal`); devtools "Hard deps" (api-specs:655 overstates events + @flare-engine/react —
+  real deps are core+ecs, react/react-native are peers); progression section header tier label. The
+  easing count is **32 (api-specs:22) vs 42 (architecture:94,:121) vs real 35** — set all to 35.
 - `easings.ts:1` header count → 35 (or drop the number — prefer dropping counts from headers).
 - Add two one-line positioning notes to architecture.md's roadmap subsection: networking is
   deliberately out of scope; the convention is factories + plain objects (Layer-3-era classes are
@@ -882,7 +900,9 @@ reads as current.
   API freezes.
 
 **Done when:** grep `planck|rbush|flow.?field` in architecture.md hits only the roadmap subsection;
-shapes documented in both files; a single easing count (35) or none anywhere.
+shapes documented in both files; a single easing count (35) or none anywhere; **D1's snippet harness
+compiles the api-specs `​```ts` fences** (§16 expansion — the stale sections above must compile, not
+just the READMEs), or, if that harness extension slips, the four named sections are re-derived + hand-verified.
 
 ---
 
@@ -1176,8 +1196,10 @@ hits ~10 `src` files whose JSDoc compiles into published `dist/index.d.ts` (conf
 `packages/assets/dist/index.d.ts:222`): `a11y/src/bridge.ts:10`, `assets/src/procedural-atlas.ts:88`,
 `engine/src/tier2-wiring.ts:10`, `iap/src/catalog.ts:6`, `iap/src/entitlements.ts:8`,
 `postfx/src/controller.ts:9`, `shapes/src/types.ts:159`, `share/src/screenshot-scene.ts:10`,
-`ui/src/dialogue-panel.tsx:41`, `ui/src/main-menu-kit.tsx:36`. B19's scrub is postfx-only; D4 greps
-READMEs+CONTRIBUTING only; F3 is a freeze-time detector, not a scrub.
+`ui/src/dialogue-panel.tsx:41`, `ui/src/main-menu-kit.tsx:36`, **`ui/src/shop-panel.tsx:43`** (11th
+file the enumerated list missed — 2026-07-05 audit) **+ `postfx/src/controller.ts:45` `@session #196`
+beyond the `:9` above**. The enumerated list is a floor — **the grep is authoritative; scrub every hit.**
+B19's scrub is postfx-only; D4 greps READMEs+CONTRIBUTING only; F3 is a freeze-time detector, not a scrub.
 
 - Rewrite each JSDoc block to project-neutral language (describe the pattern, not the game); keep the
   technical content. No `.d.ts` may reference the private game, its repo, or internal phase/session
@@ -1238,8 +1260,9 @@ depends on these; **spot-check confirmed** the shader + resolution sites.
   honored) — api-specs recommends `custom()` shaders for backgrounds, which are typically stretched.
 - **dead-zone follow double-counts** (`camera2d.ts:229`): fix the math to `relX - dz.x` (currently
   `2*relX + offsetX - dz.x`); add the missing dead-zone test.
-- `render-web/postfx-surface.ts:184` resize bug (onscreen WebGL surface never recreated) — fold here
-  or into C1 (C1 implements `createWebFrameRenderer` over this surface).
+- `render-web/postfx-surface.ts:184` resize bug (onscreen WebGL surface never recreated) — **owned by
+  C1** (it implements `createWebFrameRenderer` over this surface); added to C1's done-when 2026-07-05,
+  removed from B24's scope so it can't fall between the two rows.
 
 **Done when:** readback test proves water/fog/fire render non-trivially on render-web with animating
 time; z-order test proves cross-texture ordering preserved; stretch-with-effect test; dead-zone
@@ -1322,4 +1345,79 @@ gates updated. **Run E2 with E1 (both [MT] governance) — one session.**
 - **deps lane:** `engines` field missing on 39/41 packages; exports maps point ESM consumers at the
   CJS `.d.ts` (unused `.d.mts` never referenced — nested types conditions fix); stale
   `packageManager bun@1.2.0`; unused root `maxrects-packer` devDep; 10 packages carry dead
-  `@types/react ^18` letters. All P2 → a single **OSS-C2 packaging-polish** row or fold into C1.
+  `@types/react ^18` letters. → the **now-real OSS-C2 packaging-polish row (§17)** (was homeless — no
+  C2 row existed; created 2026-07-05). The ESM-`.d.mts`/exports-condition item is additionally
+  validated by **C3's `publint` + `@arethetypeswrong` gate**; `packageManager` currency → C4, CI
+  `bun-version` pin → C3.
+
+---
+
+## 17. Deep-audit addendum (2026-07-05) — new + amended rows
+
+26-agent audit (plan coherence · SOLID/DRY/KISS/YAGNI · repo/tooling · TS/RN/Skia conformance vs
+current official docs), every finding adversarially re-verified. Full evidence ledger:
+`_local/deep-audit-2026-07-05.md`. **Direction CONFIRMED:** all version floors validate correct
+(Skia 2.x→RN≥0.79/react≥19, Expo 57/RN 0.86/React 19.2, gesture-handler-drop safe, React-19 compat,
+New-Arch mandatory at the target). What follows is only what the queue MISSED.
+
+### New pre-freeze correctness rows (Arc B)
+
+- **OSS-B25 · share + deep-links: platform-adapter correctness (P1).**
+  - share `share.ts:127`: `dispatched: res.action !== 'dismissed'` is wrong — RN returns `'sharedAction'`/`'dismissedAction'`, never the bare `'dismissed'`, so an iOS Cancel reports `dispatched:true`. Fix `=== 'sharedAction'`; the test at `share.test.ts:71` fakes `{action:'dismissed'}` (agrees with the bug) — rewrite it against the real RN constants.
+  - deep-links `sources.ts:42-66`: `createWebSource` adds one shared `onPop` closure per subscriber; DOM dedupes identical `(type,cb,capture)` registrations, so the first `removeEventListener` kills navigation for every remaining subscriber. Fix: ref-count the DOM listener (add on first, remove on empty) or register a distinct per-subscriber closure. `manager.test.ts` only uses one subscriber — add a two-subscriber test.
+  - **Done when:** iOS-cancel returns `dispatched:false` against real constants; two web subscribers both keep firing after one unsubscribes.
+
+- **OSS-B26 · shapes: ShipSpec bounds include weapons + engine (P1).** `bounds.ts:39-40,:69-70`: `singleShapeRadius('ship')`/`boundsR('ship')` use hull only; a weapon `RectSpec` at `ox` beyond the hull radius (or the engine `SquareSpec`) is rasterized into a hull-sized atlas tile and its `draw.ts:108` glow ring clips. Fix: return `max(hullRadius, max_weapons(hypot(ox,oy)+weaponRadius), engineRadius)` in both. **Done when:** a wing-weapon ship's atlas tile + glow ring contain the full silhouette (add a fixture).
+
+- **OSS-B27 · iap-revenuecat: configure-once race (P1).** `provider.ts:82-92`: `configured` flips only after two awaits, so `Promise.all([getProducts(), restore()])` double-calls `Purchases.configure`. Fix: memoize `configurePromise ??= (async () => {…})()` awaited by every entrypoint. **Done when:** two concurrent first calls invoke `configure` exactly once (mock-count test). NOT covered by B12 (which is restore/listener/tx-id/peer).
+
+- **OSS-B28 · ui + ui-shop: focus side-effect + shop refetch (P1; coordinate B15/M1).**
+  - ui `focus.ts:88-95`: `register()` calls `setFocused` as a side effect → on a touch-first engine the first enabled `Button` renders a permanent focus ring with no input; it also picks mount order over sorted `tabIndex` (contradicts `focus.ts:12`). Fix: no focus inside `register()`; leave `focusedId` null until a driver focuses; if an initial focus is wanted, make it explicit opt-in selecting `orderedIds()[0]`.
+  - ui-shop `ShopPanel.tsx:39-53`: `fetched` ref guard makes the fetch run once for the component's life while the effect deps are `[catalog, provider, onError]`; a Noop→concrete IAP provider swap never refetches. Fix: key the fetch to catalog/provider identity (reset products to null on change) or drop those deps and document a mount snapshot.
+  - **Done when:** mounting a `FocusProvider` renders zero focus rings until a driver acts; swapping the provider refetches products. Sequence after B15 (reactive focus) / with M1.
+
+- **OSS-B29 · render: SpriteBatch bucket pooling (P1, hot-path).** `sprite-batch.ts:192-221`: `flush()` (once/frame) re-allocates `{image,effect,alpha,commands:[]}` per unique bucket because `batches.length=0` (:221) discards them; the per-bucket `commands.length=0` loop (:218-220) is dead work. `SpriteDrawCommand`s ARE pooled (`_pool`), buckets aren't — inconsistent, violates the zero-alloc-in-render mandate. Fix: keep `_batches` bucket objects alive, track a live-count, reuse each bucket's `commands` array up to the live count, delete the redundant clear. **Done when:** an effect/alpha-heavy frame allocates zero buckets after warm-up (a counting/`Bun.gc` or instrumented test).
+
+- **OSS-B30 · API-freeze alignment (P1 — frozen after flip; land before H1).**
+  - postfx `effect.ts:209-212`: `createColorGradingLut(uniforms, id)` inverts the `(id='…', uniforms={})` order of all 11 sibling factories. Align to `(id='color-grading-lut', uniforms)`; update README/api-specs.
+  - create-flare-app `manifest.ts:16,41,43`: `TEMPLATES: Record<string, TemplateManifest>` makes `keyof` = `string|number`, so `TemplateId` gives zero narrowing and `isTemplateId` narrows nothing. Fix: `const TEMPLATES = {…} satisfies Record<string, TemplateManifest>` so `keyof` collapses to `'blank'|'topdown'|'shmup'`; `isTemplateId` becomes a real guard both CLIs reuse (with B13/HYG8).
+  - **Done when:** postfx factory signatures are uniform; `TemplateId` is the literal union and `isTemplateId` narrows (type-level test).
+
+- **OSS-B31 · latent web/devtools correctness (P2 — no shipping consumer today).**
+  - render-web `postfx-surface.ts:114-141`: `blit()` never reads `pass.children`, so `color-grading-lut`'s LUT sampler is unbound (native binds it via `skia-bridge`). Wrap each child SkImage via `makeShaderOptions`, append after `srcShader` before `makeShaderWithChildren`; fix the stale `runtime.ts:80` "no extra children" doc. (Overlaps C1's `createWebFrameRenderer`; do whichever runs first, note the other.)
+  - devtools `time-scrubber.ts:57-99`: `resume()` hardcodes `timescale=1`, clobbering an active slow-mo. Fix: save the prior timescale on `pause()` and restore it (mirror `debug` `TimeControl`). The shared pause/step core → HYG7.
+  - **Done when:** a web color-grading-lut pass reads back graded pixels; resuming a 0.5× scrub returns to 0.5×.
+
+### New packaging / CI / toolchain rows (Arc C)
+
+- **OSS-C2 · packaging polish + manifest fixes (P1) [MT].** `engines: {"node": ">=…"}` on all 41 shipping manifests; each `exports["."]` gains an ESM `import.types` → `.d.mts` (or prove `attw`-clean without it under C3); ui-shop `react-native` peer `>=0.74.0`→`>=0.73.0` (matches the `ui` it depends on); `@types/react ^18.0.0`→`^19.0.0` across react/errors/devtools/ui/ui-shop/achievements/analytics/haptics/leaderboards/iap; drop the unused root `maxrects-packer` devDep; fix engine umbrella `description` ("re-exports all packages"→core-set) + add the dropped `react-native-safe-area-context` peer (or drop the redundant re-declared peers). testing/share `homepage` grzott/engine→flare-engine stays with **A0**. Retires the ambiguous "(was draft C2)" alias (done in §5). **Done when:** every manifest has `engines`; the peer/type versions above are consistent; `bun run build` + `check:deps` green.
+
+- **OSS-C3 · CI + guardrail + publish-safety gate (P0) [MT].**
+  - Add `publint` + `@arethetypeswrong/cli` as devDeps; run per publishable package after build in CI (and gate release.yml). This is the current standard gate for hand-authored exports + dual CJS/ESM going public.
+  - Add a **nodenext validation pass**: `tsconfig.publish.json` (`module`/`moduleResolution: nodenext`) run `tsc --noEmit` over `packages/*/src` in CI — dev keeps `bundler` for speed, but this proves the exports map + dual-format resolve for Node/Metro consumers (bundler never checks this; F1 finding).
+  - Resolve the **create-flare-app publish landmine**: it is `private:true` + `version:0.0.0` + `publishConfig.access:"public"` + a `bin` → cannot publish. Decide with B13 (join the fixed group / real version) and add a release preflight: no package with `publishConfig.access:"public"` may be `private`.
+  - ci.yml `push: branches:[main]` trigger (with F1's runbook/CI work — one edit to ci.yml, not two); pin `bun-version: 1.2.0` in ci.yml + release.yml (match `packageManager`); broaden lint to `tests/` + root `scripts/*.mjs` (`.mjs` into lint-staged glob); publish preflight hard-fails on any `workspace:` at pack time (concretize is a no-op today).
+  - **Already landed 2026-07-05 (this row records them):** turbo `globalDependencies` (root config cache-correctness); `check-deps-tiers` LAYER_MAP filled to all 40 scoped + progression→2 + persistence tier 2.5, and an **unmapped-scoped-package hard error** (was `continue` past 9 packages); biome `noDefaultExport: error` (+ `**/*.config.ts`/`apps/**` override) enforcing "named exports only".
+  - **Done when:** CI runs publint+attw+nodenext green; a push to main runs the full gate; no publishable package is `private`; the three landed items are in CI.
+
+- **OSS-C4 · toolchain upgrade (P1) [MT]; owner said "all upgrades now" (2026-07-05).**
+  - Biome `^1.9`→`^2` — run `biome migrate --write` (`organizeImports`→assist model, `files.ignore`→`files.includes` negated globs, schema URL); review the v2 import-organizer behavior change.
+  - tsup→tsdown across all 41 `tsup.config.ts` (Rolldown-based successor; tsup README says "not actively maintained") — gains built-in publint/attw (can subsume part of C3).
+  - TS floor `^5.5`→`^5.9` (evaluate 6.0 GA) + optional `isolatedDeclarations` on published packages for faster/tool-agnostic `.d.ts`.
+  - `bun-types`→`@types/bun` with `"types":["bun"]`, scoped to a **test-only** tsconfig so the shipped-src typecheck carries no Bun ambient globals (RN/Web packages validated against their real runtime); add `moduleDetection:"force"` to `tsconfig.base.json`; bump `packageManager` bun to current.
+  - Document the **New-Architecture requirement** (engine is arch-agnostic pure-TS, but the RN≥0.79 floor still admits old-arch 0.79–0.81; reanimated 4 is New-Arch-only) in the engine README/getting-started.
+  - **Done when:** `bun run lint`/`build`/`test` green on Biome 2 + tsdown; typecheck floor bumped; shipped-src typecheck has no Bun ambient; New-Arch note published.
+
+### Post-flip Arc HYG (SOLID/DRY/KISS/YAGNI cleanup — NOT before the flip)
+
+Verified duplication / dead code / leaky idiom (ledger §6). Correctness-neutral. Rows HYG1–HYG8 are
+listed in `todo.md` below the P2 line; run after the October flip. Representative scope: dedupe
+math collision predicates + the misnamed `spring*`(=Back) easings; `Prefab.spawn` dead `overrides`
+param + honest `AppLifecycle` docstring; six zone-bg effects → descriptor table + shared SkSL
+snippet constants (render/postfx); `fillStrokePath` + shared `argbToFloat4Into` (shapes ×5 sites);
+`nbody`→`verletStep`, Map-keyed `SpatialIndex`, `applyRemapInto`, dead `AudioManager.factory`;
+`_teardownStack`, math `linear` reuse, shared pathfinding `heap.ts`, sync-or-await `ActionHandler`;
+dead version-key writes + `nowMs`/`StatsTracker`/`resolveTier` dedupe + `devtools.enabledOnNative`
+wire-or-drop; shared subsystem-wiring factory (`GameView`/`createGame`), shared CLI parsers,
+`getGrantsForProduct`/`ProductType` dedupe, `createWebSurface` flush/dispose handle. Full per-item
+file:line in the ledger.

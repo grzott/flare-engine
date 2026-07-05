@@ -56,6 +56,34 @@ describe('serializeScene', () => {
     const snap = serializeScene(w, [Pos]);
     expect(() => JSON.stringify(snap)).not.toThrow();
   });
+
+  test('memoizes queries — repeat serializeScene registers no new queries', () => {
+    _resetComponentIds();
+    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
+    const Vel = defineComponent<{ dx: number; dy: number }>('Vel', () => ({ dx: 0, dy: 0 }));
+    const w = new World();
+    const e = w.spawn();
+    w.add(e, Pos, { x: 1, y: 2 });
+
+    // Count how many queries serializeScene registers on this world.
+    const realQuery = w.query.bind(w);
+    let queryCalls = 0;
+    w.query = ((...args: Parameters<typeof realQuery>) => {
+      queryCalls++;
+      return realQuery(...args);
+    }) as typeof w.query;
+
+    serializeScene(w, [Pos, Vel]);
+    const afterFirst = queryCalls;
+    serializeScene(w, [Pos, Vel]);
+    serializeScene(w, [Pos, Vel]);
+
+    // One singleton query per component on the first call, then all cache hits.
+    // The old code registered 3 permanent queries per call (an ALL query + one
+    // per component), so queryCalls would climb to 9.
+    expect(afterFirst).toBe(2);
+    expect(queryCalls).toBe(afterFirst);
+  });
 });
 
 describe('snapshotsEqual', () => {

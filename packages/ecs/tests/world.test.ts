@@ -188,6 +188,109 @@ describe('World.queryBuilder', () => {
   });
 });
 
+describe('World.removeQuery', () => {
+  it('stops a removed query from updating', () => {
+    const Pos = Position();
+    const world = new World();
+    const q = world.query(Pos);
+    const e1 = world.spawn();
+    world.add(e1, Pos);
+    expect(q.count).toBe(1);
+
+    world.removeQuery(q);
+
+    // A matching entity added AFTER removal must not update the query...
+    const e2 = world.spawn();
+    world.add(e2, Pos);
+    expect(q.count).toBe(1);
+    // ...and destroying a tracked entity no longer touches it either.
+    world.destroy(e1);
+    expect(q.count).toBe(1);
+  });
+
+  it('removes a queryBuilder-created query too', () => {
+    const Pos = Position();
+    const Tag = Dead();
+    const world = new World();
+    const q = world.queryBuilder().with(Pos).without(Tag).build();
+    const e = world.spawn();
+    world.add(e, Pos);
+    expect(q.count).toBe(1);
+
+    world.removeQuery(q);
+    const e2 = world.spawn();
+    world.add(e2, Pos);
+    expect(q.count).toBe(1);
+  });
+
+  it('is a no-op for a query not registered on this world', () => {
+    const Pos = Position();
+    const world = new World();
+    const other = new World();
+    world.removeQuery(other.query(Pos)); // should not throw
+  });
+
+  it('is safe when a query removes itself from inside a signal handler', () => {
+    const Pos = Position();
+    const world = new World();
+    const qA = world.query(Pos); // registered first
+    const qB = world.query(Pos); // both match Pos
+    qA.onEntityAdded.add(() => world.removeQuery(qA)); // one-shot self-dispose
+
+    const e = world.spawn();
+    world.add(e, Pos);
+    // qB must still update despite qA splicing itself mid-iteration — the removal
+    // is deferred until the add() notify-loop unwinds.
+    expect(qB.count).toBe(1);
+    expect(qB.has(e)).toBe(true);
+
+    // qA disposed itself; a later matching entity updates qB but not qA.
+    const e2 = world.spawn();
+    world.add(e2, Pos);
+    expect(qA.count).toBe(1);
+    expect(qB.count).toBe(2);
+  });
+});
+
+describe('World.forEachEntity', () => {
+  it('visits every live entity across archetype moves and destroys', () => {
+    const Pos = Position();
+    const Vel = Velocity();
+    const world = new World();
+    const e1 = world.spawn();
+    const e2 = world.spawn();
+    const e3 = world.spawn();
+    world.add(e1, Pos); // archetype move — entity key unchanged
+    world.add(e2, Pos);
+    world.add(e2, Vel);
+    world.remove(e2, Pos); // another archetype move
+    world.destroy(e3);
+
+    const seen: number[] = [];
+    world.forEachEntity((id) => seen.push(id));
+    expect(seen.sort((a, b) => a - b)).toEqual([e1, e2]);
+  });
+
+  it('visits nothing for an empty world', () => {
+    const world = new World();
+    const seen: number[] = [];
+    world.forEachEntity((id) => seen.push(id));
+    expect(seen).toEqual([]);
+  });
+});
+
+describe('World.entityCount', () => {
+  it('tracks the live entity count', () => {
+    const world = new World();
+    expect(world.entityCount).toBe(0);
+    const e1 = world.spawn();
+    world.spawn();
+    expect(world.entityCount).toBe(2);
+    world.destroy(e1);
+    expect(world.entityCount).toBe(1);
+  });
+});
+
 describe('World.addSystem/step', () => {
   it('runs systems on step', () => {
     const world = new World();

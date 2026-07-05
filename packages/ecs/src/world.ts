@@ -12,6 +12,8 @@ export class World {
   private archetypes = new Map<number, number>(); // entityId → bitmask
   private componentStores = new Map<number, Map<number, unknown>>(); // componentId → (entityId → data)
   private queries: Query[] = [];
+  private queryIterDepth = 0;
+  private pendingQueryRemove: Query[] | null = null;
   private systems: {
     fn: (world: World, dt: number) => void;
     priority: number;
@@ -37,9 +39,14 @@ export class World {
 
     this.archetypes.delete(entityId);
 
-    // Notify queries
-    for (const query of this.queries) {
-      query._remove(entityId);
+    // Notify queries (deferring any removeQuery until the loop unwinds)
+    this.queryIterDepth++;
+    try {
+      for (const query of this.queries) {
+        query._remove(entityId);
+      }
+    } finally {
+      this.endQueryIteration();
     }
   }
 
@@ -60,9 +67,14 @@ export class World {
     const newArch = arch | def.bit;
     this.archetypes.set(entityId, newArch);
 
-    // Notify queries
-    for (const query of this.queries) {
-      query._check(entityId, newArch);
+    // Notify queries (deferring any removeQuery until the loop unwinds)
+    this.queryIterDepth++;
+    try {
+      for (const query of this.queries) {
+        query._check(entityId, newArch);
+      }
+    } finally {
+      this.endQueryIteration();
     }
   }
 
@@ -77,9 +89,14 @@ export class World {
     const newArch = arch & ~def.bit;
     this.archetypes.set(entityId, newArch);
 
-    // Notify queries
-    for (const query of this.queries) {
-      query._check(entityId, newArch);
+    // Notify queries (deferring any removeQuery until the loop unwinds)
+    this.queryIterDepth++;
+    try {
+      for (const query of this.queries) {
+        query._check(entityId, newArch);
+      }
+    } finally {
+      this.endQueryIteration();
     }
   }
 
@@ -98,6 +115,24 @@ export class World {
   /** Check if entity exists. */
   exists(entityId: number): boolean {
     return this.archetypes.has(entityId);
+  }
+
+  /** Number of live entities. */
+  get entityCount(): number {
+    return this.archetypes.size;
+  }
+
+  /**
+   * Walk every live entity ID. Iterates the live archetype map directly, with no
+   * array snapshot. Archetype changes (add/remove component) keep the same entity
+   * keys, so iteration is stable across them. Destroying entities inside the
+   * callback is safe, but entities spawned inside it are visited in the same pass
+   * (live Map iteration) — don't spawn from within.
+   */
+  forEachEntity(cb: (entity: number) => void): void {
+    for (const entityId of this.archetypes.keys()) {
+      cb(entityId);
+    }
   }
 
   /**
@@ -126,6 +161,37 @@ export class World {
   /** Create a QueryBuilder for complex queries (with/without). */
   queryBuilder(): QueryBuilder {
     return new _WorldQueryBuilder(this);
+  }
+
+  /**
+   * Dispose a query created by `query()` or `queryBuilder().build()`. Afterwards
+   * the world stops updating it, so it no longer costs spawn/add/remove iteration
+   * time. The query is left inert — drop the reference to let it be collected.
+   *
+   * Safe to call from within a Query signal handler (e.g. a one-shot
+   * `onEntityAdded` that disposes its own query): the removal is deferred until
+   * the in-progress mutation finishes iterating, so no other query is skipped.
+   */
+  removeQuery(q: Query): void {
+    if (this.queryIterDepth > 0) {
+      if (this.pendingQueryRemove === null) this.pendingQueryRemove = [];
+      this.pendingQueryRemove.push(q);
+      return;
+    }
+    const idx = this.queries.indexOf(q);
+    if (idx !== -1) this.queries.splice(idx, 1);
+  }
+
+  /** @internal End a query-notify loop; flush any removeQuery deferred during it. */
+  private endQueryIteration(): void {
+    this.queryIterDepth--;
+    if (this.queryIterDepth === 0 && this.pendingQueryRemove !== null) {
+      for (const q of this.pendingQueryRemove) {
+        const idx = this.queries.indexOf(q);
+        if (idx !== -1) this.queries.splice(idx, 1);
+      }
+      this.pendingQueryRemove.length = 0;
+    }
   }
 
   /** Register a system function. Lower priority runs first. */

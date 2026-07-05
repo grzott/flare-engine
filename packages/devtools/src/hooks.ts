@@ -21,12 +21,7 @@ export interface EntityInspectorView {
 export function useEntityInspector(): EntityInspectorView {
   const { world, selectedEntity, select } = useDevtools();
   const entities: number[] = [];
-  // `World` does not expose an iterator; fall back to scanning the id range.
-  // This is the 0.1.0 partial scope — a cheaper iterator may land in 0.2.0.
-  const max = (world as unknown as { nextId?: number }).nextId ?? 0;
-  for (let id = 1; id < max; id++) {
-    if (world.exists(id)) entities.push(id);
-  }
+  world.forEachEntity((id) => entities.push(id));
   return { selected: selectedEntity, select, entities };
 }
 

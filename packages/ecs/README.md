@@ -1,6 +1,6 @@
 # @flare-engine/ecs
 
-Archetype-bitmask ECS — `World`, `Query` with `onEntityAdded` / `onEntityRemoved` signals, `defineComponent`, `defineSystem`, `definePrefab`, `FSM`. Built-in components: `Position`, `Velocity`, `Rotation`, `Scale`, `Parent`, `Lifetime`, `Follower`. Five system factories: `createMovementSystem`, `createLifetimeSystem`, `createBoundsCullSystem`, `createFollowerSystem`, `createOrphanCullSystem`. Max 32 component types per world.
+Archetype-bitmask ECS — `World` (spawn/destroy, `query` + `removeQuery`, `forEachEntity`, `entityCount`), `Query` with `onEntityAdded` / `onEntityRemoved` signals, `defineComponent`, `defineSystem`, `definePrefab`, `FSM`. Built-in components: `Position`, `Velocity`, `Rotation`, `Scale`, `Parent`, `Lifetime`, `Follower`. Five system factories: `createMovementSystem`, `createLifetimeSystem`, `createBoundsCullSystem`, `createFollowerSystem`, `createOrphanCullSystem`. Max 32 component types total — the component-id bitmask is module-global, shared across all `World` instances.
 
 ## Install
 

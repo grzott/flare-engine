@@ -7459,3 +7459,29 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 207 — 2026-07-05 (scope: engine)
+
+**Goal:** OSS-B2 ecs: query dispose + entity iteration
+
+**Touched files**
+- `.changeset/oss-b2-ecs-query-dispose.md`
+- `packages/devtools/src/hooks.ts`
+- `packages/devtools/tests/hooks.test.ts`
+- `packages/ecs/README.md`
+- `packages/ecs/src/world.ts`
+- `packages/ecs/tests/world.test.ts`
+- `packages/testing/src/scene-snapshot.ts`
+- `packages/testing/tests/scene-snapshot.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** fixup:1 — 3-lens adversarial self-verify caught a removeQuery-from-signal-handler re-entrancy bug (splice during the mutation notify-loop skips other queries) in my first pass; fixed via the B1-style deferral pattern + regression test (empirically confirmed fail-old); also closed a forEachEntity spawn-in-callback doc gap + a misleading disposal comment
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -30,6 +30,27 @@ describe('createWebShareTransport', () => {
     expect(res.via).toBe('web-share');
     expect(captured).toEqual({ title: 't', text: 'm', url: 'u' });
   });
+
+  test('canShare derives the file extension from the screenshot format', () => {
+    let capturedName: string | undefined;
+    const nav = {
+      share: async () => {},
+      canShare: (data: { files?: File[] }) => {
+        capturedName = data.files?.[0]?.name;
+        return true;
+      },
+    };
+    const t = createWebShareTransport(nav, File);
+    const shot = {
+      bytes: new Uint8Array([1]),
+      base64: '',
+      format: 'jpeg' as const,
+      width: 1,
+      height: 1,
+    };
+    expect(t.canShare({ screenshot: shot })).toBe(true);
+    expect(capturedName).toBe('screenshot.jpeg'); // old code hardcoded 'screenshot.png'
+  });
 });
 
 describe('createWebClipboardTransport', () => {

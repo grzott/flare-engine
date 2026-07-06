@@ -55,7 +55,7 @@ export function createWebShareTransport(
       try {
         const f = new fileCtor(
           [payload.screenshot.bytes as unknown as BlobPart],
-          'screenshot.png',
+          `screenshot.${payload.screenshot.format}`,
           {
             type: `image/${payload.screenshot.format}`,
           },

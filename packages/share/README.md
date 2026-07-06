@@ -21,7 +21,9 @@ const share = new ShareManager()
   .register(createWebShareTransport(navigator, File))
   .register(createWebClipboardTransport(navigator));
 
-await share.share({ message: 'Pan Tvardowski!', url: 'https://…', image: shot.bytes });
+if (shot) {
+  await share.share({ message: 'New high score!', url: 'https://example.com', screenshot: shot });
+}
 ```
 
 See [API spec](../../docs/design/api-specs.md#flare-engineshare--5kb-raw).

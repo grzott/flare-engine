@@ -38,7 +38,9 @@ export interface CaptureSource {
   makeImageSnapshot(): SkiaImageLike | null;
 }
 
-const FORMAT_CODES: Record<ImageFormat, number> = { png: 3, jpeg: 2 };
+// Must equal RN-Skia's ImageFormat enum: JPEG=3, PNG=4, WEBP=6
+// (@shopify/react-native-skia 2.4.18). Locked by the contract test in capture.test.ts.
+const FORMAT_CODES: Record<ImageFormat, number> = { png: 4, jpeg: 3 };
 
 export function captureScreenshot(
   source: CaptureSource,

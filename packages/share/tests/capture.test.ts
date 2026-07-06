@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { base64ToBytes, bytesToBase64, captureScreenshot } from '../src/capture.js';
 
 describe('base64 roundtrip', () => {
@@ -83,5 +85,52 @@ describe('captureScreenshot', () => {
       { format: 'jpeg', quality: 60 },
     );
     expect(shot?.format).toBe('jpeg');
+  });
+});
+
+describe('RN-Skia ImageFormat contract', () => {
+  // The numeric code captureScreenshot hands to encodeToBytes for a given format.
+  function codeFor(format: 'png' | 'jpeg'): number {
+    let captured = -1;
+    captureScreenshot(
+      {
+        makeImageSnapshot: () => ({
+          width: () => 1,
+          height: () => 1,
+          encodeToBytes: (fmt?: number) => {
+            captured = fmt ?? -1;
+            return new Uint8Array([0]);
+          },
+        }),
+      },
+      { format },
+    );
+    return captured;
+  }
+
+  test('passes RN-Skia PNG/JPEG codes to encodeToBytes', () => {
+    // RN-Skia ImageFormat: JPEG=3, PNG=4, WEBP=6 (@shopify/react-native-skia 2.4.18).
+    // The old { png: 3, jpeg: 2 } made png emit JPEG bytes and jpeg emit nothing.
+    expect(codeFor('png')).toBe(4);
+    expect(codeFor('jpeg')).toBe(3);
+  });
+
+  test('codes match the installed @shopify/react-native-skia ImageFormat enum', () => {
+    // Read the real dependency's type declaration — a fake encoder can't catch a
+    // wrong mapping. Breaks loudly if the enum or this path changes on a bump.
+    const dts = readFileSync(
+      join(
+        import.meta.dir,
+        '../../../node_modules/@shopify/react-native-skia/lib/typescript/src/skia/types/Image/Image.d.ts',
+      ),
+      'utf8',
+    );
+    const enumVal = (name: string): number => {
+      const m = dts.match(new RegExp(`\\b${name}\\s*=\\s*(\\d+)`));
+      if (!m) throw new Error(`ImageFormat.${name} not found in the installed RN-Skia d.ts`);
+      return Number(m[1]);
+    };
+    expect(codeFor('png')).toBe(enumVal('PNG'));
+    expect(codeFor('jpeg')).toBe(enumVal('JPEG'));
   });
 });

@@ -7485,3 +7485,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 208 — 2026-07-06 (scope: engine)
+
+**Goal:** OSS-B3 share: screenshot format codes
+
+**Touched files**
+- `.changeset/oss-b3-share-format-codes.md`
+- `packages/share/README.md`
+- `packages/share/src/capture.ts`
+- `packages/share/src/share.ts`
+- `packages/share/tests/capture.test.ts`
+- `packages/share/tests/share.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 gate:0 — clean pass; 3-lens adversarial verify confirmed the fix byte-correct vs RN-Skia's enum + all new tests genuinely fail-old, and surfaced an out-of-scope PT-vocab leak in screenshot-scene.ts:10 (deferred to OSS-B22's systematic src scrub)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

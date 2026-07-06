@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { SceneManager } from '../src/scene-manager.js';
 import type { Scene } from '../src/scene.js';
 import { fadeTransition } from '../src/transition.js';
@@ -255,5 +255,274 @@ describe('SceneManager — destroy', () => {
     // Should re-init since it was destroyed
     expect(log).toContain('a:preload');
     expect(log).toContain('a:init');
+  });
+});
+
+describe('SceneManager — restart', () => {
+  it('instant path: go(sameScene) builds fresh World and instance', async () => {
+    const mgr = new SceneManager();
+    const instances: Scene[] = [];
+    mgr.register('game', () => {
+      const s = createTestScene('game', []);
+      instances.push(s);
+      return s;
+    });
+
+    await mgr.go('game');
+    const firstWorld = instances[0]!.world;
+    const e1 = firstWorld.spawn();
+    expect(instances.length).toBe(1);
+
+    await mgr.go('game');
+    expect(instances.length).toBe(2);
+    expect(instances[1]).not.toBe(instances[0]);
+
+    // Fresh World: distinct object, entity counter restarted
+    const secondWorld = instances[1]!.world;
+    expect(secondWorld).not.toBe(firstWorld);
+    const e2 = secondWorld.spawn();
+    // Both worlds start from the same initial ID — proves second world is fresh
+    expect(e2).toBe(e1);
+  });
+
+  it('instant path: restart calls full lifecycle on new instance', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('game', () => createTestScene('game', log));
+
+    await mgr.go('game');
+    log.length = 0;
+    await mgr.go('game');
+
+    expect(log).toEqual(['game:exit', 'game:destroy', 'game:preload', 'game:init', 'game:enter']);
+  });
+
+  it('transition path: go(sameScene) builds fresh instance', async () => {
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    const instances: Scene[] = [];
+    mgr.register('game', () => {
+      const s = createTestScene('game', []);
+      instances.push(s);
+      return s;
+    });
+
+    await mgr.go('game');
+    expect(instances.length).toBe(1);
+
+    // Restart via transition
+    void mgr.go('game');
+    expect(instances.length).toBe(2);
+    expect(instances[1]).not.toBe(instances[0]);
+
+    // Complete the transition
+    mgr.update(1.0); // 'out' done → switch
+    mgr.update(1.0); // 'in' done
+    expect(mgr.current?.name).toBe('game');
+    expect(mgr.current).toBe(instances[1]);
+  });
+
+  it('transition restart: push after restart does not re-init the live instance', async () => {
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    const instances: Scene[] = [];
+    const initCounts: number[] = [];
+
+    mgr.register('game', () => {
+      const idx = instances.length;
+      initCounts.push(0);
+      const s: Scene = {
+        name: 'game',
+        world: null!,
+        camera: null!,
+        onInit() {
+          initCounts[idx] = (initCounts[idx] ?? 0) + 1;
+        },
+      };
+      instances.push(s);
+      return s;
+    });
+
+    // First entry via instant path (no current scene → no transition)
+    await mgr.go('game');
+    expect(initCounts[0]).toBe(1);
+
+    // Restart via transition
+    void mgr.go('game');
+    mgr.update(1.0); // 'out' done → switch; instances[1].onInit fires
+    mgr.update(1.0); // 'in' done
+    expect(initCounts[1]).toBe(1);
+
+    // push(sameScene) must short-circuit via _initIfNeeded — fix keeps it in _initialized
+    await mgr.push('game');
+    expect(initCounts[1]).toBe(1);
+  });
+});
+
+describe('SceneManager — async preload', () => {
+  it('instant path: awaits onPreload before onInit and onEnter', async () => {
+    const log: string[] = [];
+    let resolvePreload!: () => void;
+    const preloadPromise = new Promise<void>((r) => {
+      resolvePreload = r;
+    });
+
+    const mgr = new SceneManager();
+    mgr.register('slow', () => ({
+      name: 'slow',
+      world: null!,
+      camera: null!,
+      onPreload() {
+        log.push('slow:preload');
+        return preloadPromise;
+      },
+      onInit() {
+        log.push('slow:init');
+      },
+      onEnter() {
+        log.push('slow:enter');
+      },
+    }));
+
+    const goPromise = mgr.go('slow');
+    // Preload started but not resolved — init/enter must not have fired
+    expect(log).toEqual(['slow:preload']);
+
+    resolvePreload();
+    await goPromise;
+    expect(log).toEqual(['slow:preload', 'slow:init', 'slow:enter']);
+  });
+
+  it('transition path: awaits onPreload before onInit and onEnter', async () => {
+    const log: string[] = [];
+    let resolvePreload!: () => void;
+    const preloadPromise = new Promise<void>((r) => {
+      resolvePreload = r;
+    });
+
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', () => createTestScene('a', log));
+    mgr.register('b', () => ({
+      name: 'b',
+      world: null!,
+      camera: null!,
+      onPreload() {
+        log.push('b:preload');
+        return preloadPromise;
+      },
+      onInit() {
+        log.push('b:init');
+      },
+      onEnter() {
+        log.push('b:enter');
+      },
+    }));
+
+    await mgr.go('a');
+    log.length = 0;
+
+    // Start transition — preload begins concurrently with fade-out
+    void mgr.go('b');
+    expect(log).toContain('b:preload');
+
+    // Complete 'out' phase — preload not done, should hold
+    mgr.update(1.0);
+    expect(log).not.toContain('b:init');
+    expect(log).not.toContain('b:enter');
+
+    // Resolve preload and let the microtask run
+    resolvePreload();
+    await Promise.resolve();
+
+    // Next update — switch should complete
+    mgr.update(0);
+    expect(log).toContain('b:init');
+    expect(log).toContain('b:enter');
+    // init must precede enter
+    expect(log.indexOf('b:init')).toBeLessThan(log.indexOf('b:enter'));
+  });
+
+  it('transition path: rejecting onPreload unblocks the transition (no hang)', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', () => createTestScene('a', log));
+    mgr.register('b', () => ({
+      name: 'b',
+      world: null!,
+      camera: null!,
+      onPreload(): Promise<void> {
+        return Promise.reject(new Error('asset fail'));
+      },
+      onInit() {
+        log.push('b:init');
+      },
+      onEnter() {
+        log.push('b:enter');
+      },
+    }));
+
+    await mgr.go('a');
+    log.length = 0;
+
+    void mgr.go('b');
+
+    // 'out' done — rejection handler hasn't run yet (microtask queue)
+    mgr.update(1.0);
+    expect(log).not.toContain('b:enter');
+
+    // Let the rejection handler settle
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Switch proceeds despite rejection
+    mgr.update(0);
+    mgr.update(1.0); // 'in' done
+    expect(log).toContain('b:enter');
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.current?.name).toBe('b');
+  });
+});
+
+describe('SceneManager — dev warning', () => {
+  const g = globalThis as unknown as Record<string, unknown>;
+  let originalDev: unknown;
+
+  beforeEach(() => {
+    originalDev = g.__DEV__;
+    g.__DEV__ = true;
+  });
+
+  afterEach(() => {
+    g.__DEV__ = originalDev;
+  });
+
+  it('warns with unknown scene name and registered names', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const mgr = new SceneManager();
+    mgr.register('menu', () => createTestScene('menu', []));
+    mgr.register('play', () => createTestScene('play', []));
+
+    await mgr.go('ghost');
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const msg = warnSpy.mock.calls[0]![0] as string;
+    expect(msg).toContain('ghost');
+    expect(msg).toContain('menu');
+    expect(msg).toContain('play');
+
+    warnSpy.mockRestore();
+  });
+
+  it('does not warn when __DEV__ is false', async () => {
+    g.__DEV__ = false;
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    const mgr = new SceneManager();
+
+    await mgr.go('ghost');
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

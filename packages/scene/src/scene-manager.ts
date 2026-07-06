@@ -4,6 +4,8 @@ import type { Scene, SceneFactory } from './scene.js';
 import type { Transition, TransitionState } from './transition.js';
 import { noneTransition } from './transition.js';
 
+declare const __DEV__: boolean | undefined;
+
 /**
  * SceneManager — manages scene registration, navigation, and a scene stack.
  *
@@ -22,6 +24,7 @@ export class SceneManager {
   private _transitionState: TransitionState | null = null;
   private _pendingScene: Scene | null = null;
   private _pendingData: unknown = undefined;
+  private _preloadResolved = true;
 
   /** The currently active scene (top of stack). */
   get current(): Scene | undefined {
@@ -54,17 +57,52 @@ export class SceneManager {
    * then onPreload → onInit → onEnter on the new scene.
    */
   async go(name: string, data?: unknown): Promise<void> {
-    const scene = this._getOrCreate(name);
-    if (!scene) return;
+    if (!this._factories.has(name)) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn(
+          `[SceneManager] go('${name}'): scene not registered. Registered: ${[...this._factories.keys()].join(', ')}`,
+        );
+      }
+      return;
+    }
 
     if (this._transition.duration > 0 && this.current) {
-      // Animated transition
+      // Animated transition — evict target from cache first so restart
+      // builds a fresh instance with a fresh World/Camera2D.
+      this._scenes.delete(name);
+      this._initialized.delete(name);
+      const scene = this._getOrCreate(name)!;
       this._pendingScene = scene;
       this._pendingData = data;
+
+      // Start preload concurrently with the fade-out.
+      this._initialized.add(scene.name);
+      this._preloadResolved = false;
+      const preload = scene.onPreload?.();
+      if (preload == null) {
+        this._preloadResolved = true;
+      } else {
+        void preload.then(
+          () => {
+            this._preloadResolved = true;
+          },
+          (err) => {
+            this._preloadResolved = true;
+            if (typeof __DEV__ !== 'undefined' && __DEV__) {
+              console.error(
+                `[SceneManager] onPreload('${scene.name}') rejected; entering scene anyway`,
+                err,
+              );
+            }
+          },
+        );
+      }
+
       this._transitionState = this._transition.start('out');
     } else {
-      // Instant transition
+      // Instant transition — destroy first so _getOrCreate builds fresh.
       this._exitAndDestroyCurrent();
+      const scene = this._getOrCreate(name)!;
       await this._activateScene(scene, data);
     }
   }
@@ -191,7 +229,13 @@ export class SceneManager {
 
     if (this._transitionState.done) {
       if (this._transitionState.phase === 'out') {
-        // Phase 'out' done — switch scenes, start 'in' phase
+        // Hold until preload (started concurrently in go()) resolves.
+        if (!this._preloadResolved) {
+          this.current?.onUpdate?.(dt);
+          this.current?.onDraw?.();
+          return;
+        }
+
         const pending = this._pendingScene;
         const data = this._pendingData;
         this._pendingScene = null;
@@ -208,13 +252,10 @@ export class SceneManager {
           }
           this._stack.length = 0;
 
-          // Init and activate pending scene synchronously for transitions
+          // Preload already awaited in go(); call onInit then enter.
           this._scenes.set(pending.name, pending);
-          if (!this._initialized.has(pending.name)) {
-            this._initialized.add(pending.name);
-            pending.onPreload?.();
-            pending.onInit?.();
-          }
+          this._initialized.add(pending.name);
+          pending.onInit?.();
           this._stack.push(pending);
           pending.onEnter?.(data);
         }

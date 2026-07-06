@@ -7535,3 +7535,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 210 — 2026-07-06 (scope: engine)
+
+**Goal:** scene: restart + async preload — first Arc-OSS row of this session (OSS-B5, engine; P0)
+
+**Touched files**
+- `.changeset/oss-b5-scene-restart-async-preload.md`
+- `packages/scene/src/scene-manager.ts`
+- `packages/scene/tests/scene-manager.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green (46/46 scene)
+- build: green
+
+**Frictions:** adversarial review (4-lens find→verify workflow) caught 2 latent bugs the green gate missed, both introduced by this row's own changes: (1) restart-via-transition dropped the scene from `_initialized` (the destroy loop deletes `pending.name` and only `_scenes` was restored) → a later `push(sameScene)` re-runs `onPreload`/`onInit` on the live instance; (2) the transition path's `void preload.then(onFulfilledOnly)` swallowed an `onPreload` rejection into a permanent soft-lock + unhandled rejection. Both fixed (`_initialized.add(pending.name)` at the switch; two-arg `.then` that unblocks + dev-logs on reject) with a regression test each. Harness friction: the per-row gate ran twice (initial + post-fix) and verify.sh appended a SESSION_LOG block each time (210/211) — consolidated to one by hand.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

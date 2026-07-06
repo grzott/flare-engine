@@ -36,10 +36,8 @@ export function createWebSurface(kit: CanvasKit, canvas: HTMLCanvasElement): Can
     restore: () => ck.restore(),
     translate: (x, y) => ck.translate(x, y),
     scale: (sx, sy) => ck.scale(sx, sy),
-    // Forwarded verbatim to match the native bridge (no radians→degrees conversion).
-    // Both RN-Skia and CanvasKit Canvas.rotate take degrees; the engine labels the
-    // param "radians" — a pre-existing dormant mismatch tracked for a cross-backend fix.
-    rotate: (radians, cx, cy) => ck.rotate(radians, cx, cy),
+    // CanvasLike.rotate is degrees (contract); CanvasKit Canvas.rotate takes degrees — pass-through.
+    rotate: (degrees, cx, cy) => ck.rotate(degrees, cx, cy),
     clear: (color) => {
       unpackArgb(clearScratch, color);
       ck.clear(clearScratch);

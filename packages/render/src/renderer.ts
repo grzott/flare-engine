@@ -4,7 +4,8 @@ export interface CanvasLike {
   restore(): void;
   translate(x: number, y: number): void;
   scale(sx: number, sy: number): void;
-  rotate(radians: number, cx: number, cy: number): void;
+  /** Rotate around (cx, cy). Angle in DEGREES — both Skia backends take degrees. */
+  rotate(degrees: number, cx: number, cy: number): void;
   clear(color: number): void;
 }
 
@@ -86,9 +87,10 @@ export class Renderer {
     c.translate(viewportWidth / 2, viewportHeight / 2);
     // Apply zoom
     c.scale(zoom, zoom);
-    // Apply rotation around center
+    // Apply rotation around center. Camera2D.rotation is radians; the CanvasLike
+    // rotate contract is degrees — convert once here (the single camera seam).
     if (rotation !== 0) {
-      c.rotate(-rotation, 0, 0);
+      c.rotate((-rotation * 180) / Math.PI, 0, 0);
     }
     // Offset by camera position
     c.translate(-cameraX, -cameraY);

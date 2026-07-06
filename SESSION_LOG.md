@@ -7509,3 +7509,29 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 209 — 2026-07-06 (scope: engine)
+
+**Goal:** OSS-B4 render: camera-rotation contract
+
+**Touched files**
+- `.changeset/oss-b4-camera-rotation-degrees.md`
+- `docs/design/api-specs.md`
+- `packages/render-web/src/web-skia-module.ts`
+- `packages/render-web/src/web-surface.ts`
+- `packages/render-web/tests/conformance.test.ts`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render/src/renderer.ts`
+- `packages/render/tests/renderer.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 gate:0 — clean pass; 3-lens adversarial verify all-clean (sign/direction correct, exactly one conversion, shapes independent, no consumer encodes old behavior); readback test empirically fail-old (old render dist) / pass-new (rebuilt dist)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

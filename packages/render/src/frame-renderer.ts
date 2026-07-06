@@ -117,8 +117,8 @@ export interface DrawSurfaceLike {
   restore(): void;
   translate(x: number, y: number): void;
   scale(sx: number, sy: number): void;
-  /** rotate(radians, cx, cy) — always in radians. Web shims must convert. */
-  rotate(radians: number, cx: number, cy: number): void;
+  /** rotate(degrees, cx, cy) — DEGREES, forwarded verbatim (both Skia backends take degrees). */
+  rotate(degrees: number, cx: number, cy: number): void;
   clear(color: Float32Array): void;
   drawAtlas(image: unknown, srcRects: RectLike[], dstXforms: RSXformLike[], paint: PaintLike): void;
   drawImageRect(image: unknown, src: RectLike, dst: RectLike, paint: PaintLike): void;
@@ -343,8 +343,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     scale: (sx, sy) => {
       current?.scale(sx, sy);
     },
-    rotate: (radians, cx, cy) => {
-      current?.rotate(radians, cx, cy);
+    rotate: (degrees, cx, cy) => {
+      current?.rotate(degrees, cx, cy);
     },
     clear: (argb) => {
       if (current === null) return;

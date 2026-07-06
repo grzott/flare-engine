@@ -83,10 +83,8 @@ function wrapCKCanvas(
     restore: () => ck.restore(),
     translate: (x, y) => ck.translate(x, y),
     scale: (sx, sy) => ck.scale(sx, sy),
-    // Forwarded verbatim to match the native bridge (no radians→degrees conversion).
-    // Both RN-Skia and CanvasKit Canvas.rotate take degrees; the engine labels the
-    // param "radians" — a pre-existing dormant mismatch tracked for a cross-backend fix.
-    rotate: (radians, cx, cy) => ck.rotate(radians, cx, cy),
+    // DrawSurfaceLike.rotate is degrees (contract); CanvasKit Canvas.rotate takes degrees — pass-through.
+    rotate: (degrees, cx, cy) => ck.rotate(degrees, cx, cy),
     clear: (color) => ck.clear(color),
     drawAtlas(image, srcRects, dstXforms, paint) {
       const n = srcRects.length;

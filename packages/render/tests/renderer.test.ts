@@ -119,4 +119,42 @@ describe('Renderer', () => {
     expect(c.calls[2]).toContain('rotate');
     r.end();
   });
+
+  it('applyCamera converts rotation from radians to degrees', () => {
+    let rotateDeg: number | null = null;
+    const c: CanvasLike = {
+      save: () => 0,
+      restore: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: (deg) => {
+        rotateDeg = deg;
+      },
+      clear: () => {},
+    };
+    const r = new Renderer();
+    r.setCanvas(c);
+    // Camera2D.rotation is radians; the CanvasLike contract is degrees. applyCamera
+    // negates and converts, so π/2 rad → -90 deg (was -1.5708 before the fix).
+    r.applyCamera(0, 0, 1, Math.PI / 2, 800, 600);
+    expect(rotateDeg).toBeCloseTo(-90);
+  });
+
+  it('applyCamera skips rotate when rotation is 0', () => {
+    let rotateCalled = false;
+    const c: CanvasLike = {
+      save: () => 0,
+      restore: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: () => {
+        rotateCalled = true;
+      },
+      clear: () => {},
+    };
+    const r = new Renderer();
+    r.setCanvas(c);
+    r.applyCamera(0, 0, 1, 0, 800, 600);
+    expect(rotateCalled).toBe(false);
+  });
 });

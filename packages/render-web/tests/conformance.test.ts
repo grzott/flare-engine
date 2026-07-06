@@ -11,8 +11,8 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { resolve } from 'node:path';
 import type { SkImageLike } from '@flare-engine/assets';
-import { createFrameRenderer } from '@flare-engine/render';
-import type { SpriteDrawCommand } from '@flare-engine/render';
+import { Renderer, createFrameRenderer } from '@flare-engine/render';
+import type { CanvasLike, SpriteDrawCommand } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { createWebSkiaModule } from '../src/web-skia-module.js';
 
@@ -218,5 +218,69 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     }
     atlasSurface.delete();
     rasterSurface.delete();
+  });
+
+  /**
+   * Camera-rotation contract (degrees). Drives Renderer.applyCamera over a CPU
+   * CanvasKit surface wrapped as a CanvasLike, rotates the camera 90° (π/2), draws
+   * a red bar along camera +x, and reads back pixels. A correct radians→degrees
+   * conversion lands the bar a full 90° away from +x; the old radians-as-degrees
+   * bug (~-1.57°) would leave it near +x.
+   */
+  it('camera rotation renders into the rotated quadrant (degrees contract)', () => {
+    const W = 32;
+    const H = 32;
+    const surface = kit.MakeSurface(W, H);
+    expect(surface).not.toBeNull();
+    if (!surface) return;
+    const ck = surface.getCanvas();
+    ck.clear(kit.Color4f(0, 0, 0, 1)); // black background
+
+    // Wrap the CPU canvas as a CanvasLike (same forwarding as createWebSurface).
+    const canvas: CanvasLike = {
+      save: () => ck.save(),
+      restore: () => ck.restore(),
+      translate: (x, y) => ck.translate(x, y),
+      scale: (sx, sy) => ck.scale(sx, sy),
+      rotate: (deg, cx, cy) => ck.rotate(deg, cx, cy),
+      clear: () => {}, // pre-cleared above
+    };
+
+    // Rotate the camera 90° about the viewport center, zoom 1, camera at origin.
+    const renderer = new Renderer();
+    renderer.setCanvas(canvas);
+    renderer.applyCamera(0, 0, 1, Math.PI / 2, W, H);
+
+    // Red bar along camera-space +x (local x∈[6,14], y∈[-2,2]).
+    const paint = new kit.Paint();
+    paint.setColor(kit.Color4f(1, 0, 0, 1));
+    ck.drawRect(kit.XYWHRect(6, -2, 8, 4), paint);
+    surface.flush();
+
+    const imageInfo = {
+      width: W,
+      height: H,
+      colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul,
+      colorSpace: kit.ColorSpace.SRGB,
+    };
+    const pixels = surface.makeImageSnapshot().readPixels(0, 0, imageInfo) as Uint8Array;
+    const at = (col: number, row: number) => {
+      const i = (row * W + col) * 4;
+      return { r: pixels[i]!, g: pixels[i + 1]!, b: pixels[i + 2]! };
+    };
+
+    // The un-rotated +x location must be black — it is red only if the rotation
+    // were ~0° (the pre-fix radians-as-degrees behavior). Sign-independent.
+    expect(at(26, 16).r).toBeLessThan(60);
+
+    // Rotated a full 90°: the bar lands off the +x axis, at (col≈16, row≈6).
+    const rotated = at(16, 6);
+    expect(rotated.r).toBeGreaterThan(200);
+    expect(rotated.g).toBeLessThan(60);
+    expect(rotated.b).toBeLessThan(60);
+
+    paint.delete();
+    surface.delete();
   });
 });

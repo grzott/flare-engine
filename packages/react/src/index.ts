@@ -28,3 +28,4 @@ export { VirtualButton, type VirtualButtonProps } from './virtual-button.js';
 export { LoadingScreen, type LoadingScreenProps } from './loading-screen.js';
 export { useSafeArea, SafeAreaContext, type SafeArea } from './safe-area.js';
 export { useOverlayFade, useCountUp, useSignalState } from './overlay-hooks.js';
+export { skiaAtlasModule } from './skia-atlas.js';

@@ -168,7 +168,7 @@ describe('scaffoldApp', () => {
         expect(app).toContain('camera.follow');
         expect(app).toContain('TilemapRenderer');
       }
-      if (id === 'shmup') expect(app).toContain('FIRE_INTERVAL');
+      if (id === 'shmup') expect(app).toContain('setupShmup');
     }
   });
 

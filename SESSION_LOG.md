@@ -7774,3 +7774,31 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 219 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B14a — create-flare-app: shmup rebuild + skiaAtlasModule + topdown cast
+
+**Touched files**
+- `.changeset/oss-b14a-react-skia-atlas-module.md`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/shmup/src/App.tsx`
+- `packages/create-flare-app/templates/shmup/src/logic.ts`
+- `packages/create-flare-app/templates/shmup/tests/`
+- `packages/create-flare-app/templates/topdown/src/App.tsx`
+- `packages/create-flare-app/tests/scaffold.test.ts`
+- `packages/react/src/index.ts`
+- `packages/react/src/skia-atlas.ts`
+- `packages/react/tests/skia-atlas.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:8 deny:0 gate:1 fixup:2 drift:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---

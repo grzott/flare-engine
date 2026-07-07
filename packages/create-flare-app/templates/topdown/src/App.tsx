@@ -9,11 +9,9 @@ import {
 } from "@flare-engine/engine";
 import type {
   GameContextValue,
-  SkiaAtlasModuleLike,
   VirtualJoystickState,
 } from "@flare-engine/engine";
-import { GameView, VirtualJoystick } from "@flare-engine/react";
-import { Skia } from "@shopify/react-native-skia";
+import { GameView, VirtualJoystick, skiaAtlasModule } from "@flare-engine/react";
 import type React from "react";
 import { useMemo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
@@ -54,10 +52,7 @@ export function App(): React.ReactElement {
   );
 
   const handleReady = (ctx: GameContextValue): void => {
-    const atlas = createProceduralAtlas(
-      Skia as unknown as SkiaAtlasModuleLike,
-      ATLAS_FRAMES,
-    );
+    const atlas = createProceduralAtlas(skiaAtlasModule, ATLAS_FRAMES);
     const map = loadMap();
 
     const tilemap = new TilemapRenderer(map);

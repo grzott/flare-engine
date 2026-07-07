@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useId } from 'react';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { useFocusManager } from './focus-context.js';
+import { useFocusManager, useFocusedId } from './focus-context.js';
 import { useTheme } from './theme.js';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -28,6 +28,7 @@ export function Button({
 }: ButtonProps): ReactNode {
   const theme = useTheme();
   const manager = useFocusManager();
+  const focusedId = useFocusedId();
   const generated = useId();
   const id = focusId ?? generated;
 
@@ -43,7 +44,7 @@ export function Button({
     });
   }, [manager, id, tabIndex, disabled, onPress]);
 
-  const focused = manager?.getFocused() === id;
+  const focused = focusedId === id;
 
   let bg = theme.colors.surface;
   let fg = theme.colors.text;

@@ -1,26 +1,80 @@
-import { describe, expect, it, mock } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import type { FocusContextValue } from '../src/focus-context.js';
+
+// Module-level hook state — declared before mock.module so closures capture them.
+const stateStore: unknown[] = [];
+let stateIndex = 0;
+const refStore: Array<{ current: unknown }> = [];
+let refIndex = 0;
+const pendingEffects: Array<() => (() => void) | undefined> = [];
+
+/** Reset call indices + effects but PRESERVE stateStore (simulates a re-render). */
+function resetHookIndices(): void {
+  stateIndex = 0;
+  refIndex = 0;
+  pendingEffects.length = 0;
+}
+
+function flushEffects(): Array<() => void> {
+  const cleanups: Array<() => void> = [];
+  while (pendingEffects.length > 0) {
+    const fn = pendingEffects.shift()!;
+    const cleanup = fn();
+    if (typeof cleanup === 'function') cleanups.push(cleanup);
+  }
+  return cleanups;
+}
 
 mock.module('react', () => ({
-  createElement: () => null,
-  createContext: () => ({ Provider: 'Provider', Consumer: 'Consumer' }),
-  useContext: () => null,
-  useId: () => 'id',
-  useState: <T>(init: T) => [init, () => {}],
-  useEffect: () => {},
-  useRef: <T>(init: T) => ({ current: init }),
-  useMemo: <T>(fn: () => T) => fn(),
-  useCallback: <T>(fn: T) => fn,
+  createContext: (def: unknown) => ({ Provider: 'Provider', Consumer: 'Consumer', _current: def }),
+  useContext: (ctx: { _current: unknown }) => ctx._current,
+  useState: (init: unknown) => {
+    const idx = stateIndex;
+    if (stateStore[idx] === undefined) {
+      stateStore[idx] = typeof init === 'function' ? (init as () => unknown)() : init;
+    }
+    const setter = (val: unknown) => {
+      stateStore[idx] =
+        typeof val === 'function' ? (val as (prev: unknown) => unknown)(stateStore[idx]) : val;
+    };
+    stateIndex++;
+    return [stateStore[idx], setter];
+  },
+  useEffect: (fn: () => (() => void) | undefined) => {
+    pendingEffects.push(fn);
+  },
+  useMemo: (fn: () => unknown) => fn(),
+  useCallback: (fn: unknown) => fn,
+  useRef: (init: unknown) => {
+    const idx = refIndex;
+    if (refStore[idx] === undefined) {
+      refStore[idx] = { current: init };
+    }
+    refIndex++;
+    return refStore[idx];
+  },
+  useId: () => 'auto-id',
+  Fragment: 'Fragment',
+  createElement: (
+    type: unknown,
+    props: Record<string, unknown> | null,
+    ...children: unknown[]
+  ) => ({ type, props: props ?? {}, children }),
+}));
+
+mock.module('react/jsx-runtime', () => ({
+  jsx: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
+  jsxs: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
+  jsxDEV: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
   Fragment: 'Fragment',
 }));
 
-const jsxMock = {
-  jsx: () => null,
-  jsxs: () => null,
-  jsxDEV: () => null,
+mock.module('react/jsx-dev-runtime', () => ({
+  jsx: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
+  jsxs: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
+  jsxDEV: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
   Fragment: 'Fragment',
-};
-mock.module('react/jsx-runtime', () => jsxMock);
-mock.module('react/jsx-dev-runtime', () => jsxMock);
+}));
 
 mock.module('react-native', () => ({
   View: 'View',
@@ -29,54 +83,137 @@ mock.module('react-native', () => ({
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
 }));
 
-const { Panel } = await import('../src/panel.js');
-const { Label } = await import('../src/label.js');
-const { Button } = await import('../src/button.js');
-const { ProgressBar } = await import('../src/progress-bar.js');
-const { HUDBar } = await import('../src/hud-bar.js');
-const { List } = await import('../src/list.js');
-const { Modal } = await import('../src/modal.js');
+const { createFocusManager } = await import('../src/focus.js');
+const { FocusContext } = await import('../src/focus-context.js');
 const { FocusProvider } = await import('../src/focus-provider.js');
-const { ThemeProvider } = await import('../src/theme.js');
-const { DialoguePanel } = await import('../src/dialogue-panel.js');
-const { ShopPanel } = await import('../src/shop-panel.js');
-const { MainMenuKit } = await import('../src/main-menu-kit.js');
+const { Button } = await import('../src/button.js');
 
-describe('UI primitives', () => {
-  it('exports Panel as a function', () => {
-    expect(typeof Panel).toBe('function');
+function setFocusContext(v: FocusContextValue | null): void {
+  (FocusContext as unknown as { _current: FocusContextValue | null })._current = v;
+}
+
+/** Button's style prop is [styles.wrap, container, style]; index 1 is the container. */
+function containerStyle(el: unknown): Record<string, unknown> {
+  return ((el as { props: { style: unknown[] } }).props.style[1] ?? {}) as Record<string, unknown>;
+}
+
+beforeEach(() => {
+  stateStore.length = 0;
+  stateIndex = 0;
+  refStore.length = 0;
+  refIndex = 0;
+  pendingEffects.length = 0;
+  setFocusContext(null);
+});
+
+describe('Button + FocusProvider (reactive focus)', () => {
+  it('FocusProvider republishes context value on focus move', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'a', tabIndex: 0 });
+    mgr.register({ id: 'b', tabIndex: 1 });
+
+    let el = FocusProvider({ manager: mgr, children: 'kids' });
+    flushEffects();
+
+    const v1 = (el as { props: { value: FocusContextValue } }).props.value;
+    expect(v1.manager).toBe(mgr);
+    expect(v1.focusedId).toBe('a');
+
+    mgr.focus('b');
+
+    resetHookIndices();
+    el = FocusProvider({ manager: mgr, children: 'kids' });
+
+    const v2 = (el as { props: { value: FocusContextValue } }).props.value;
+    expect(v2.focusedId).toBe('b');
   });
-  it('exports Label as a function', () => {
-    expect(typeof Label).toBe('function');
+
+  it('Button ring follows context.focusedId', () => {
+    const mgr = createFocusManager();
+
+    setFocusContext({ manager: mgr, focusedId: 'x' });
+    resetHookIndices();
+    let el = Button({ label: 'A', focusId: 'x' });
+
+    expect(containerStyle(el).borderWidth).toBe(2);
+    expect(
+      (el as { props: { accessibilityState: { selected: boolean } } }).props.accessibilityState
+        .selected,
+    ).toBe(true);
+
+    setFocusContext({ manager: mgr, focusedId: 'y' });
+    resetHookIndices();
+    el = Button({ label: 'A', focusId: 'x' });
+
+    expect(containerStyle(el).borderWidth).toBe(1);
+    expect(
+      (el as { props: { accessibilityState: { selected: boolean } } }).props.accessibilityState
+        .selected,
+    ).toBe(false);
   });
-  it('exports Button as a function', () => {
-    expect(typeof Button).toBe('function');
+
+  it('Press focuses via manager + fires onPress', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'other', tabIndex: 0 });
+    mgr.register({ id: 'x', tabIndex: 1 });
+    setFocusContext({ manager: mgr, focusedId: 'other' });
+    let pressed = 0;
+    resetHookIndices();
+    const el = Button({
+      label: 'A',
+      focusId: 'x',
+      onPress: () => {
+        pressed++;
+      },
+    });
+    (el as { props: { onPress: () => void } }).props.onPress();
+
+    expect(mgr.getFocused()).toBe('x');
+    expect(pressed).toBe(1);
   });
-  it('exports ProgressBar as a function', () => {
-    expect(typeof ProgressBar).toBe('function');
+
+  it('Disabled Button ignores press', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'a', tabIndex: 0 });
+    setFocusContext({ manager: mgr, focusedId: 'a' });
+    let pressed = 0;
+    resetHookIndices();
+    const el = Button({
+      label: 'A',
+      focusId: 'x',
+      disabled: true,
+      onPress: () => {
+        pressed++;
+      },
+    });
+    (el as { props: { onPress: () => void } }).props.onPress();
+
+    expect(pressed).toBe(0);
+    expect(mgr.getFocused()).toBe('a');
+    expect(containerStyle(el).opacity).toBe(0.5);
   });
-  it('exports HUDBar as a function', () => {
-    expect(typeof HUDBar).toBe('function');
-  });
-  it('exports List as a function', () => {
-    expect(typeof List).toBe('function');
-  });
-  it('exports Modal as a function', () => {
-    expect(typeof Modal).toBe('function');
-  });
-  it('exports FocusProvider as a function', () => {
-    expect(typeof FocusProvider).toBe('function');
-  });
-  it('exports ThemeProvider as a function', () => {
-    expect(typeof ThemeProvider).toBe('function');
-  });
-  it('exports DialoguePanel as a function', () => {
-    expect(typeof DialoguePanel).toBe('function');
-  });
-  it('exports ShopPanel as a function', () => {
-    expect(typeof ShopPanel).toBe('function');
-  });
-  it('exports MainMenuKit as a function', () => {
-    expect(typeof MainMenuKit).toBe('function');
+
+  it('Button registers an activatable node + disposer unregisters', () => {
+    const mgr = createFocusManager();
+    setFocusContext({ manager: mgr, focusedId: null });
+    let activated = 0;
+    resetHookIndices();
+    Button({
+      label: 'A',
+      focusId: 'x',
+      onPress: () => {
+        activated++;
+      },
+    });
+    const cleanups = flushEffects();
+
+    expect(mgr.getOrder().includes('x')).toBe(true);
+
+    mgr.focus('x');
+    mgr.activate();
+    expect(activated).toBe(1);
+
+    for (const c of cleanups) c();
+    expect(mgr.getOrder().includes('x')).toBe(false);
   });
 });

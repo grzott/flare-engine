@@ -7828,3 +7828,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 221 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B15 ui reactive focus
+
+**Touched files**
+- `.changeset/oss-b15-ui-reactive-focus.md`
+- `packages/ui/src/button.tsx`
+- `packages/ui/src/focus-context.ts`
+- `packages/ui/src/focus-provider.tsx`
+- `packages/ui/src/index.ts`
+- `packages/ui/tests/primitives.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -15,7 +15,12 @@ export {
   type FocusManager,
   type FocusNode,
 } from './focus.js';
-export { FocusContext, useFocusManager } from './focus-context.js';
+export {
+  FocusContext,
+  useFocusManager,
+  useFocusedId,
+  type FocusContextValue,
+} from './focus-context.js';
 export { FocusProvider, type FocusProviderProps } from './focus-provider.js';
 export {
   resolveLayout,

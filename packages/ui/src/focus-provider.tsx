@@ -1,5 +1,5 @@
-import { type ReactNode, createElement, useEffect, useState } from 'react';
-import { FocusContext } from './focus-context.js';
+import { type ReactNode, createElement, useEffect, useMemo, useState } from 'react';
+import { FocusContext, type FocusContextValue } from './focus-context.js';
 import { type FocusManager, createFocusManager } from './focus.js';
 
 export interface FocusProviderProps {
@@ -8,19 +8,22 @@ export interface FocusProviderProps {
 }
 
 /**
- * Instantiates a FocusManager (or uses the one provided) and exposes it
- * through `FocusContext`. Also triggers a re-render whenever focus moves,
- * so primitives that read `focusedId` update their focus ring.
+ * Instantiates a FocusManager (or uses the one provided) and publishes
+ * { manager, focusedId } as context state so consumers re-render on focus
+ * moves.
  */
 export function FocusProvider({ manager, children }: FocusProviderProps): ReactNode {
   const [mgr] = useState<FocusManager>(() => manager ?? createFocusManager());
-  const [, force] = useState(0);
+  const [focusedId, setFocusedId] = useState<string | null>(() => mgr.getFocused());
 
   useEffect(() => {
-    return mgr.subscribe(() => {
-      force((n) => n + 1);
+    setFocusedId(mgr.getFocused());
+    return mgr.subscribe((id) => {
+      setFocusedId(id);
     });
   }, [mgr]);
 
-  return createElement(FocusContext.Provider, { value: mgr }, children);
+  const value = useMemo<FocusContextValue>(() => ({ manager: mgr, focusedId }), [mgr, focusedId]);
+
+  return createElement(FocusContext.Provider, { value }, children);
 }

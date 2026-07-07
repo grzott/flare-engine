@@ -187,4 +187,39 @@ describe('CollisionWorld', () => {
     world.step(); // Next step — pair already gone, no extra signals
     expect(ends.length).toBe(0);
   });
+
+  it('re-add keeps exactly one broadphase record', () => {
+    const world = new CollisionWorld();
+    world.add(1, AABB(20, 20), 0, 0);
+    world.add(1, AABB(20, 20), 50, 0); // Same entity id
+    expect(world.size).toBe(1);
+    expect(world.broadphaseSize).toBe(1);
+  });
+
+  it('collisions stay correct after a re-add that moves the entity away', () => {
+    const world = new CollisionWorld();
+    world.add(1, AABB(20, 20), 0, 0);
+    world.add(2, AABB(20, 20), 5, 0); // Overlapping
+
+    const starts: CollisionPair[] = [];
+    const ends: CollisionPair[] = [];
+    world.onCollisionStart.add((p) => starts.push(p));
+    world.onCollisionEnd.add((p) => ends.push(p));
+
+    world.step();
+    expect(starts.length).toBe(1);
+    expect(ends.length).toBe(0);
+
+    // Re-add entity 1 at a non-overlapping position
+    world.add(1, AABB(20, 20), 100, 0);
+
+    world.step();
+    expect(starts.length).toBe(1); // No new starts
+    expect(ends.length).toBe(1); // Old pair ends
+
+    // Confirm no stale phantom on the next step
+    world.step();
+    expect(starts.length).toBe(1);
+    expect(ends.length).toBe(1);
+  });
 });

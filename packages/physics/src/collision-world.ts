@@ -74,9 +74,14 @@ export class CollisionWorld {
     mask = 0xffffffff,
   ): void {
     const entry: CollisionEntry = { entity, shape, x, y, isTrigger, layer, mask };
+    const exists = this.entries.has(entity);
     this.entries.set(entity, entry);
     shapeBoundsInto(shape, x, y, this.boundsBuf);
-    this.spatial.insert(entity, this.boundsBuf);
+    if (exists) {
+      this.spatial.update(entity, this.boundsBuf);
+    } else {
+      this.spatial.insert(entity, this.boundsBuf);
+    }
   }
 
   /** Remove an entity from the world. Emits exit signals for any active pairs. */
@@ -117,6 +122,11 @@ export class CollisionWorld {
   /** Number of entities in the world. */
   get size(): number {
     return this.entries.size;
+  }
+
+  /** Number of broadphase records (one per live entity after add/remove). Diagnostic for broadphase growth. */
+  get broadphaseSize(): number {
+    return this.spatial.size;
   }
 
   /** Run one collision detection step. */

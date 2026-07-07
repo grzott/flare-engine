@@ -53,16 +53,16 @@ export function pointerDown(pointer: Pointer, x: number, y: number): void {
   if (!wasDown) {
     pointer.justPressed = true;
   }
-  pointer.delta.x = x - pointer.position.x;
-  pointer.delta.y = y - pointer.position.y;
+  pointer.delta.x += x - pointer.position.x;
+  pointer.delta.y += y - pointer.position.y;
   pointer.position.x = x;
   pointer.position.y = y;
 }
 
 /** Feed a pointer-move event into the pointer state. */
 export function pointerMove(pointer: Pointer, x: number, y: number): void {
-  pointer.delta.x = x - pointer.position.x;
-  pointer.delta.y = y - pointer.position.y;
+  pointer.delta.x += x - pointer.position.x;
+  pointer.delta.y += y - pointer.position.y;
   pointer.position.x = x;
   pointer.position.y = y;
 }
@@ -71,8 +71,8 @@ export function pointerMove(pointer: Pointer, x: number, y: number): void {
 export function pointerUp(pointer: Pointer, x: number, y: number): void {
   pointer.isDown = false;
   pointer.justReleased = true;
-  pointer.delta.x = x - pointer.position.x;
-  pointer.delta.y = y - pointer.position.y;
+  pointer.delta.x += x - pointer.position.x;
+  pointer.delta.y += y - pointer.position.y;
   pointer.position.x = x;
   pointer.position.y = y;
 }

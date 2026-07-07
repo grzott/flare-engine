@@ -93,4 +93,22 @@ describe('Pointer', () => {
     expect(p.justReleased).toBe(false);
     expect(p.isDown).toBe(false);
   });
+
+  it('multi-move-per-frame sums deltas', () => {
+    const p = createPointer();
+    resetPointerFrame(p);
+    pointerMove(p, 10, 0);
+    pointerMove(p, 15, 0);
+    expect(p.delta.x).toBe(15);
+    expect(p.position.x).toBe(15);
+  });
+
+  it('down and up accumulate delta within a frame', () => {
+    const p = createPointer();
+    resetPointerFrame(p);
+    pointerMove(p, 5, 0);
+    pointerUp(p, 10, 0);
+    expect(p.delta.x).toBe(10);
+    expect(p.isDown).toBe(false);
+  });
 });

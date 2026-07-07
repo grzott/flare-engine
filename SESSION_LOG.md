@@ -7687,3 +7687,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 216 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B11 — physics + input: dup-add + pointer delta
+
+**Touched files**
+- `.changeset/oss-b11-physics-input-dup-add-pointer-delta.md`
+- `packages/input/src/pointer.ts`
+- `packages/input/tests/pointer.test.ts`
+- `packages/physics/src/collision-world.ts`
+- `packages/physics/tests/collision-world.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

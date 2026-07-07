@@ -9,6 +9,7 @@ import type {
 import type {
   RevenueCatConfig,
   RevenueCatCustomerInfo,
+  RevenueCatNonSubscriptionTransaction,
   RevenueCatPurchasesModule,
   RevenueCatStoreProduct,
 } from './types.js';
@@ -38,7 +39,7 @@ function mapProduct(p: RevenueCatStoreProduct): Product {
 function mapRestoreResults(info: RevenueCatCustomerInfo): readonly PurchaseResult[] {
   const results: PurchaseResult[] = [];
 
-  for (const ent of Object.values(info.entitlements?.all ?? {})) {
+  for (const ent of Object.values(info.entitlements?.active ?? {})) {
     results.push({
       status: 'purchased',
       transaction: {
@@ -63,6 +64,17 @@ function mapRestoreResults(info: RevenueCatCustomerInfo): readonly PurchaseResul
   }
 
   return results;
+}
+
+function findPurchaseTx(
+  info: RevenueCatCustomerInfo,
+  productId: string,
+): RevenueCatNonSubscriptionTransaction | undefined {
+  const txs = info.nonSubscriptionTransactions ?? [];
+  for (let i = txs.length - 1; i >= 0; i--) {
+    if (txs[i]!.productIdentifier === productId) return txs[i];
+  }
+  return undefined;
 }
 
 export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider {
@@ -95,9 +107,10 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
     async getProducts(ids: readonly ProductId[]): Promise<readonly Product[]> {
       try {
         const Purchases = await ensureConfigured();
-        const raw = await Purchases.getProducts([...ids]);
+        const raw = await Purchases.getProducts([...ids], config.productCategory);
         return raw.map(mapProduct);
-      } catch {
+      } catch (err) {
+        config.onError?.(err);
         return [];
       }
     },
@@ -106,18 +119,22 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
       // No-throw contract: all paths return PurchaseResult rather than throw.
       try {
         const Purchases = await ensureConfigured();
-        const products = await Purchases.getProducts([id]);
+        const products = await Purchases.getProducts([id], config.productCategory);
         const product = products[0];
         if (!product) {
           return { status: 'failed', error: new Error(`Product not found: ${id}`) };
         }
         const { customerInfo } = await Purchases.purchaseStoreProduct(product);
+        const tx = findPurchaseTx(customerInfo, id);
         return {
           status: 'purchased',
           transaction: {
-            id: customerInfo.originalPurchaseDate ?? String(Date.now()),
+            // Prefer the store's real transaction id; the date fallback is a documented
+            // best-effort only when the SDK surface exposes no transaction id (not a real id).
+            id:
+              tx?.transactionIdentifier ?? customerInfo.originalPurchaseDate ?? String(Date.now()),
             productId: id,
-            purchasedAt: Date.now(),
+            purchasedAt: tx?.purchaseDateMillis ?? Date.now(),
             raw: customerInfo,
           },
         };
@@ -142,20 +159,21 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
         const Purchases = await ensureConfigured();
         const info = await Purchases.restorePurchases();
         return mapRestoreResults(info);
-      } catch {
+      } catch (err) {
+        config.onError?.(err);
         return [];
       }
     },
 
     onTransaction(cb: (tx: Transaction) => void): Unsubscribe {
-      let listener: ((info: RevenueCatCustomerInfo) => void) | null = null;
+      let cancelled = false;
+      let registered: ((info: RevenueCatCustomerInfo) => void) | null = null;
 
       getSDK()
         .then((Purchases) => {
-          listener = (info: RevenueCatCustomerInfo) => {
-            const entitlements = Object.values(info.entitlements?.all ?? {});
-            const ent = entitlements[0];
-            if (ent) {
+          if (cancelled) return; // pre-resolution unsubscribe → never register
+          const listener = (info: RevenueCatCustomerInfo) => {
+            for (const ent of Object.values(info.entitlements?.active ?? {})) {
               cb({
                 id: ent.identifier,
                 productId: ent.productIdentifier,
@@ -164,19 +182,21 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
               });
             }
           };
+          registered = listener;
           Purchases.addCustomerInfoUpdateListener(listener);
         })
         .catch(() => {});
 
       return () => {
-        if (listener !== null) {
-          getSDK()
-            .then((Purchases) => {
-              Purchases.removeCustomerInfoUpdateListener(listener!);
-            })
-            .catch(() => {});
-          listener = null;
-        }
+        cancelled = true;
+        const listener = registered;
+        if (listener === null) return; // not registered yet (suppressed above) or already removed → idempotent
+        registered = null;
+        getSDK()
+          .then((Purchases) => {
+            Purchases.removeCustomerInfoUpdateListener(listener);
+          })
+          .catch(() => {});
       };
     },
   };

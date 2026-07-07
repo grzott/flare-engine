@@ -2,6 +2,11 @@ export interface RevenueCatConfig {
   apiKeyIos: string;
   apiKeyAndroid: string;
   appUserId?: string;
+  /** Passed verbatim as the react-native-purchases getProducts category/type argument
+   *  (e.g. 'subs'/'inapp' or your SDK's PRODUCT_CATEGORY constant). Undefined → SDK default. */
+  productCategory?: string;
+  /** Observe errors that getProducts/restore otherwise swallow into []. */
+  onError?: (err: unknown) => void;
 }
 
 /** Minimal interface for the react-native-purchases SDK methods we call.
@@ -46,6 +51,7 @@ export interface RevenueCatCustomerInfo {
   originalPurchaseDate?: string | null;
   entitlements?: {
     all?: Record<string, RevenueCatEntitlement>;
+    active?: Record<string, RevenueCatEntitlement>;
   };
   nonSubscriptionTransactions?: RevenueCatNonSubscriptionTransaction[];
 }

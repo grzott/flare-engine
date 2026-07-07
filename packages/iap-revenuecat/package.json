@@ -35,7 +35,7 @@
     "@flare-engine/iap": "^0.2.1"
   },
   "peerDependencies": {
-    "react": ">=18.0.0",
+    "react-native": ">=0.79.0",
     "react-native-purchases": ">=8.0.0"
   },
   "publishConfig": {

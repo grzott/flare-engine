@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 // ── RC SDK mock ────────────────────────────────────────────────────────────────
 
 const configureMock = mock(() => {});
-const getProductsMock = mock(async (_ids: string[]) => [
+const getProductsMock = mock(async (_ids: string[], _category?: string) => [
   {
     identifier: 'test_sku',
     title: 'Test SKU',
@@ -25,7 +25,7 @@ const purchaseMock = mock(async (_product: unknown) => ({
 const restoreMock = mock(async () => ({
   originalPurchaseDate: '2024-01-01T00:00:00Z',
   entitlements: {
-    all: {
+    active: {
       sku1_ent: {
         identifier: 'sku1_ent',
         productIdentifier: 'sku1',

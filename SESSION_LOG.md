@@ -7710,3 +7710,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 217 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B12 — iap-revenuecat: money-path fixes
+
+**Touched files**
+- `.changeset/oss-b12-iap-revenuecat-money-path.md`
+- `packages/iap-revenuecat/package.json`
+- `packages/iap-revenuecat/src/provider.ts`
+- `packages/iap-revenuecat/src/types.ts`
+- `packages/iap-revenuecat/tests/integration.test.ts`
+- `packages/iap-revenuecat/tests/provider.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

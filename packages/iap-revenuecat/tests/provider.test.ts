@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const configureMock = mock(() => {});
-const getProductsMock = mock(async (_ids: string[]) => [
+const getProductsMock = mock(async (_ids: string[], _category?: string) => [
   {
     identifier: 'x',
     title: 'X Title',
@@ -16,13 +16,21 @@ const getProductsMock = mock(async (_ids: string[]) => [
 const purchaseMock = mock(async (_product: unknown) => ({
   customerInfo: {
     originalPurchaseDate: '2024-01-01T00:00:00Z',
-    entitlements: { all: {} },
+    entitlements: { all: {}, active: {} },
     nonSubscriptionTransactions: [],
   },
 }));
 const restoreMock = mock(async () => ({
   originalPurchaseDate: null,
   entitlements: {
+    active: {
+      premium: {
+        identifier: 'premium',
+        productIdentifier: 'x',
+        purchaseDateMillis: 1700000000000,
+        expirationDate: null,
+      },
+    },
     all: {
       premium: {
         identifier: 'premium',
@@ -95,7 +103,7 @@ describe('createRevenueCatProvider', () => {
       appUserID: null,
     });
     expect(getProductsMock).toHaveBeenCalledTimes(1);
-    expect(getProductsMock).toHaveBeenCalledWith(['x']);
+    expect(getProductsMock.mock.calls[0]![0]).toEqual(['x']);
 
     expect(products).toHaveLength(1);
     const p = products[0]!;
@@ -158,5 +166,164 @@ describe('createRevenueCatProvider', () => {
     await Promise.resolve();
 
     expect(removeListenerMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('productCategory is passed as second arg to getProducts', async () => {
+    const provider = createRevenueCatProvider({ ...testConfig, productCategory: 'inapp' });
+    await provider.getProducts(['x']);
+    expect(getProductsMock.mock.calls[0]![1]).toBe('inapp');
+  });
+
+  test('expired entitlement is not re-granted on restore', async () => {
+    restoreMock.mockImplementationOnce(async () => ({
+      originalPurchaseDate: null,
+      entitlements: {
+        active: {
+          ent_active: {
+            identifier: 'ent_active',
+            productIdentifier: 'x_active',
+            purchaseDateMillis: 1700000000000,
+            expirationDate: null,
+          },
+        },
+        all: {
+          ent_active: {
+            identifier: 'ent_active',
+            productIdentifier: 'x_active',
+            purchaseDateMillis: 1700000000000,
+            expirationDate: null,
+          },
+          ent_expired: {
+            identifier: 'ent_expired',
+            productIdentifier: 'x_expired',
+            purchaseDateMillis: 1600000000000,
+            expirationDate: '2021-01-01T00:00:00Z',
+          },
+        },
+      },
+      nonSubscriptionTransactions: [],
+    }));
+
+    const provider = createRevenueCatProvider(testConfig);
+    const results = await provider.restore();
+
+    const productIds = results.map((r) => r.transaction?.productId);
+    expect(productIds).toContain('x_active');
+    expect(productIds).not.toContain('x_expired');
+  });
+
+  test('onError is called when getProducts throws', async () => {
+    const onErrorSpy = mock((_err: unknown) => {});
+    getProductsMock.mockImplementationOnce(async () => {
+      throw new Error('SDK error');
+    });
+
+    const provider = createRevenueCatProvider({ ...testConfig, onError: onErrorSpy });
+    const result = await provider.getProducts(['x']);
+
+    expect(result).toEqual([]);
+    expect(onErrorSpy).toHaveBeenCalledTimes(1);
+    expect(onErrorSpy.mock.calls[0]![0]).toBeInstanceOf(Error);
+  });
+
+  test('onError is called when restore throws', async () => {
+    const onErrorSpy = mock((_err: unknown) => {});
+    restoreMock.mockImplementationOnce(async () => {
+      throw new Error('restore error');
+    });
+
+    const provider = createRevenueCatProvider({ ...testConfig, onError: onErrorSpy });
+    const result = await provider.restore();
+
+    expect(result).toEqual([]);
+    expect(onErrorSpy).toHaveBeenCalledTimes(1);
+    expect(onErrorSpy.mock.calls[0]![0]).toBeInstanceOf(Error);
+  });
+
+  test('purchase uses real transactionIdentifier from nonSubscriptionTransactions', async () => {
+    purchaseMock.mockImplementationOnce(async () => ({
+      customerInfo: {
+        originalPurchaseDate: '2024-01-01T00:00:00Z',
+        entitlements: { all: {}, active: {} },
+        nonSubscriptionTransactions: [
+          {
+            transactionIdentifier: 'txn_real_123',
+            productIdentifier: 'x',
+            purchaseDateMillis: 1700000000000,
+          },
+        ],
+      },
+    }));
+
+    const provider = createRevenueCatProvider(testConfig);
+    const result = await provider.purchase('x');
+
+    expect(result.status).toBe('purchased');
+    expect(result.transaction!.id).toBe('txn_real_123');
+    expect(result.transaction!.purchasedAt).toBe(1700000000000);
+  });
+
+  test('unsubscribe before SDK resolves prevents listener registration', async () => {
+    const provider = createRevenueCatProvider(testConfig);
+    const unsub = provider.onTransaction(() => {});
+    unsub(); // synchronously, before any microtasks run
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(addListenerMock).not.toHaveBeenCalled();
+    expect(removeListenerMock).not.toHaveBeenCalled();
+  });
+
+  test('double-unsubscribe is idempotent and removes listener exactly once', async () => {
+    const provider = createRevenueCatProvider(testConfig);
+    const unsub = provider.onTransaction(() => {});
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(addListenerMock).toHaveBeenCalledTimes(1);
+
+    unsub();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    unsub(); // second call: registered is null → early return
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(removeListenerMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('onTransaction listener emits all active entitlements per update', async () => {
+    const received: string[] = [];
+    const provider = createRevenueCatProvider(testConfig);
+    provider.onTransaction((tx) => {
+      received.push(tx.productId);
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const listener = addListenerMock.mock.calls[0]![0] as (info: unknown) => void;
+    listener({
+      entitlements: {
+        active: {
+          ent1: {
+            identifier: 'ent1',
+            productIdentifier: 'prod1',
+            purchaseDateMillis: 1700000000000,
+          },
+          ent2: {
+            identifier: 'ent2',
+            productIdentifier: 'prod2',
+            purchaseDateMillis: 1700000001000,
+          },
+        },
+      },
+    });
+
+    expect(received).toHaveLength(2);
+    expect(received).toContain('prod1');
+    expect(received).toContain('prod2');
   });
 });

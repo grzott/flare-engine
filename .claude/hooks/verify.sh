@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# /close gate script. Runs lint -> typecheck -> test -> build, appends a block
-# to SESSION_LOG.md, and emits paste-ready commit blocks based on git diff.
+# /close gate script. Runs lint -> typecheck -> test -> build, upserts a block
+# to SESSION_LOG.md (a same-day re-run of the same goal replaces that row's
+# block rather than appending a duplicate), and emits paste-ready commit blocks
+# based on git diff.
 #
 # Usage: bash .claude/hooks/verify.sh "<session goal>" "<scope: engine|game|mixed>" ["<frictions>"]
 #
@@ -81,11 +83,35 @@ if [ -z "$CHANGED" ]; then
   exit 1
 fi
 
-# ---- Append SESSION_LOG block ---------------------------------------------
+# ---- Upsert SESSION_LOG block ---------------------------------------------
+#
+# Idempotent per row: re-running the gate for the SAME goal on the SAME day
+# REPLACES that row's trailing block instead of stacking a duplicate (the
+# fix-loop friction — a builder's re-gate must not mint 215/216/217/218). A
+# different goal, or a new day, appends a fresh incremented block.
 
-# Pick next session number by counting existing blocks.
-N=$(grep -c '^## Session ' "$LOG" 2>/dev/null || echo 0)
-N=$((N + 1))
+LAST_HDR=$(grep -n '^## Session ' "$LOG" 2>/dev/null | tail -1)
+REPLACE=0
+if [ -n "$LAST_HDR" ]; then
+  LAST_HDR_LINE=${LAST_HDR%%:*}
+  LAST_GOAL=$(grep -F '**Goal:** ' "$LOG" | tail -1 | sed 's/\*\*Goal:\*\* //')
+  LAST_DATE=$(grep '^## Session ' "$LOG" | tail -1 | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | head -1)
+  LAST_N=$(grep '^## Session ' "$LOG" | tail -1 | sed -E 's/^## Session ([0-9]+).*/\1/')
+  if [ "$LAST_GOAL" = "$GOAL" ] && [ "$LAST_DATE" = "$DATE" ]; then
+    REPLACE=1
+  fi
+fi
+
+if [ "$REPLACE" -eq 1 ]; then
+  N="$LAST_N"
+  # Drop the trailing block (its blank separator + header through EOF),
+  # keeping everything up to the previous block's closing '---'.
+  head -n "$((LAST_HDR_LINE - 2))" "$LOG" > "$LOG.tmp" && mv "$LOG.tmp" "$LOG"
+else
+  # Pick next session number by counting existing blocks.
+  N=$(grep -c '^## Session ' "$LOG" 2>/dev/null || echo 0)
+  N=$((N + 1))
+fi
 
 {
   echo ""
@@ -116,7 +142,11 @@ if [ -f "$BASELINE_FILE" ]; then
 fi
 
 echo ""
-echo "Appended session #$N block to $LOG."
+if [ "$REPLACE" -eq 1 ]; then
+  echo "Upserted session #$N block in $LOG (same-day re-run of same goal — replaced, not duplicated)."
+else
+  echo "Appended session #$N block to $LOG."
+fi
 
 # ---- Emit commit blocks ----------------------------------------------------
 #

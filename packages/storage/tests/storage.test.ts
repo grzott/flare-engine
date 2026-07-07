@@ -126,6 +126,16 @@ describe('createStorage — JSON import/export', () => {
     expect(await restored.get('meta')).toBe('some-metadata');
   });
 
+  test('importJSON with invalid entry leaves prior data untouched', async () => {
+    const adapter = createMemoryAdapter();
+    const storage = createStorage({ adapter, schema: playerSchema, version: 1 });
+    await storage.saveSlot('keep', { name: 'survivor', hp: 42 });
+
+    const corrupt = JSON.stringify({ version: 1, entries: { good: '"val"', bad: 99 } });
+    await expect(storage.importJSON(corrupt)).rejects.toThrow();
+    expect(await storage.loadSlot('keep')).toEqual({ name: 'survivor', hp: 42 });
+  });
+
   test('importJSON clears existing data first', async () => {
     const adapter = createMemoryAdapter();
     const storage = createStorage({ adapter, schema: playerSchema, version: 1 });

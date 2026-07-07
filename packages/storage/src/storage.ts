@@ -129,11 +129,13 @@ export function createStorage<T>(options: StorageOptions<T>): Storage<T> {
         throw new Error('[@flare-engine/storage] invalid import payload');
       }
       const entries = (parsed as { entries: Record<string, unknown> }).entries;
-      await adapter.clear();
       for (const [k, v] of Object.entries(entries)) {
         if (typeof v !== 'string')
           throw new Error(`[@flare-engine/storage] import entry "${k}" is not a string`);
-        await adapter.set(k, v);
+      }
+      await adapter.clear();
+      for (const [k, v] of Object.entries(entries)) {
+        await adapter.set(k, v as string);
       }
     },
   };

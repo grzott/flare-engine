@@ -31,7 +31,15 @@ export function runMigrations(
       throw new Error('[@flare-engine/storage] migration version must be a positive integer');
     if (i > 0 && sorted[i - 1]!.version === m.version)
       throw new Error(`[@flare-engine/storage] duplicate migration version ${m.version}`);
+    if (i > 0 && m.version !== sorted[i - 1]!.version + 1)
+      throw new Error(
+        `[@flare-engine/storage] migration gap between version ${sorted[i - 1]!.version} and ${m.version}`,
+      );
   }
+  if (sorted.length > 0 && sorted[sorted.length - 1]!.version > to)
+    throw new Error(
+      `[@flare-engine/storage] highest migration version ${sorted[sorted.length - 1]!.version} exceeds target ${to}`,
+    );
 
   let current = data;
   for (let i = 0; i < sorted.length; i++) {

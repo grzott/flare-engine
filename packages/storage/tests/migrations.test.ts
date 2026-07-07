@@ -73,4 +73,21 @@ describe('runMigrations', () => {
     const out = runMigrations({ hp: 10 }, 0, 2, migrations);
     expect(out).toEqual({ hp: 10, step: 2 });
   });
+
+  test('throws on version gap in migrations list', () => {
+    const migrations: Migration[] = [
+      { version: 1, migrate: (d) => d },
+      { version: 3, migrate: (d) => d },
+    ];
+    expect(() => runMigrations({}, 0, 3, migrations)).toThrow(/gap/);
+  });
+
+  test('throws when highest migration version exceeds target', () => {
+    const migrations: Migration[] = [
+      { version: 1, migrate: (d) => d },
+      { version: 2, migrate: (d) => d },
+      { version: 3, migrate: (d) => d },
+    ];
+    expect(() => runMigrations({}, 0, 2, migrations)).toThrow(/exceeds/);
+  });
 });

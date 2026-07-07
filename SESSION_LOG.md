@@ -7556,3 +7556,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 211 — 2026-07-07 (scope: engine)
+
+**Goal:** storage: import safety + migration honesty — second Arc-OSS row of this session (OSS-B6, engine; P1)
+
+**Touched files**
+- `.changeset/oss-b6-storage-import-safety.md`
+- `packages/storage/src/migrations.ts`
+- `packages/storage/src/storage.ts`
+- `packages/storage/tests/migrations.test.ts`
+- `packages/storage/tests/storage.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green (storage 101→104)
+- build: green
+
+**Frictions:** none — small, self-contained change; all 6 spec line numbers accurate at HEAD. Adversarial 3-lens review (import atomicity / migration gap+ceiling contract / test rigor) ran clean — zero findings. (Contrast B5 this session, where the same review pass caught 2 latent bugs — the check is worth running every row even when it comes back empty.)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

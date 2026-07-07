@@ -17,12 +17,13 @@ const router = new DeepLinkRouter()
   .register('/zone/:id', 'play')
   .register('/shop', 'shop');
 
-const manager = new DeepLinkManager(router, createNativeSource(Linking));
+const manager = new DeepLinkManager({ router, source: createNativeSource(Linking) });
 manager.onMatch.add((m) => sceneManager.go(m.scene, m.params));
 manager.start();
 
 // or stateless:
-parseUrl('flare://game/zone/4?from=shop');
+parseUrl('flare://zone/4?from=shop');
+// { scheme: 'flare', host: '', segments: ['zone', '4'], query: { from: 'shop' } }
 ```
 
 See [API spec](../../docs/design/api-specs.md#flare-enginedeep-links--6kb-raw).

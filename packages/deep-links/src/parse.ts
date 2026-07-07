@@ -1,14 +1,29 @@
 import type { Params } from './types.js';
 
 /**
- * Parse a `scheme://host/path?query` or `/path?query` URL into its path
- * segments and query params. Returns `null` if the input is malformed.
+ * Parse a URL into its path segments and query params.
  *
- * This is intentionally minimal: it does not validate scheme, does not decode
- * fragments, and ignores username/password.
+ * Host extraction (tri-state `host` field):
+ *   - `http`/`https`: authority (everything before the first `/?#`) → `host`.
+ *   - Any other scheme (`myapp://`, etc.): `host = ''`; the entire post-`://`
+ *     remainder is treated as the path.
+ *   - Relative (schemeless) URL: `host = null`.
+ *
+ * The http authority substring retains userinfo/port as-is
+ * (`https://user:pass@h:8080/p` → `host = 'user:pass@h:8080'`); routing
+ * only uses `segments` + `query`, so `host` is informational only.
+ *
+ * Non-goals: opaque `scheme:` forms without `//` are treated as a relative
+ * path; backslash paths are not normalised (RN Linking semantics, not WHATWG).
  */
 export interface ParsedUrl {
   scheme: string | null;
+  /**
+   * Tri-state:
+   *   - `string` (non-empty): http/https authority (e.g. `'example.com'`).
+   *   - `''` (empty string): custom scheme, authority-less (e.g. `myapp://`).
+   *   - `null`: relative URL with no scheme.
+   */
   host: string | null;
   segments: string[];
   query: Params;
@@ -21,16 +36,24 @@ export function parseUrl(url: string): ParsedUrl | null {
   let host: string | null = null;
 
   const schemeIdx = rest.indexOf('://');
-  if (schemeIdx !== -1) {
+  if (schemeIdx !== -1 && /^[a-zA-Z][a-zA-Z0-9+.-]*$/.test(rest.slice(0, schemeIdx))) {
     scheme = rest.slice(0, schemeIdx);
     rest = rest.slice(schemeIdx + 3);
-    const slashIdx = rest.indexOf('/');
-    if (slashIdx === -1) {
-      host = rest;
-      rest = '/';
+    const lower = scheme.toLowerCase();
+    if (lower === 'http' || lower === 'https') {
+      // Universal link: the authority precedes the first /?# delimiter.
+      const delimIdx = rest.search(/[/?#]/);
+      if (delimIdx === -1) {
+        host = rest;
+        rest = '/';
+      } else {
+        host = rest.slice(0, delimIdx);
+        rest = rest.slice(delimIdx);
+      }
     } else {
-      host = rest.slice(0, slashIdx);
-      rest = rest.slice(slashIdx);
+      // Custom (RN Linking) scheme: no authority — everything after :// is the path.
+      host = '';
+      if (rest.length === 0 || rest[0] !== '/') rest = `/${rest}`;
     }
   }
 

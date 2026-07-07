@@ -51,4 +51,18 @@ describe('DeepLinkRouter', () => {
     const r = new DeepLinkRouter().register('/a/:x', 'a');
     expect(r.match('/a/1/2')).toBeNull();
   });
+
+  test('custom scheme URL routes via segments (host discarded)', () => {
+    const r = new DeepLinkRouter().register('/zone/:id', 'play');
+    const m = r.match('myapp://zone/4');
+    expect(m?.scene).toBe('play');
+    expect(m?.params.id).toBe('4');
+  });
+
+  test('http scheme URL routes via segments (host discarded)', () => {
+    const r = new DeepLinkRouter().register('/zone/:id', 'play');
+    const m = r.match('https://example.com/zone/4');
+    expect(m?.scene).toBe('play');
+    expect(m?.params.id).toBe('4');
+  });
 });

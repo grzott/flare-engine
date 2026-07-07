@@ -7642,3 +7642,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 214 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B9 — deep-links: scheme-URL parsing
+
+**Touched files**
+- `.changeset/oss-b9-deeplinks-scheme-url-parsing.md`
+- `packages/deep-links/README.md`
+- `packages/deep-links/src/parse.ts`
+- `packages/deep-links/tests/parse.test.ts`
+- `packages/deep-links/tests/router.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

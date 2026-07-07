@@ -6,11 +6,11 @@ describe('parseUrl', () => {
     expect(parseUrl('')).toBeNull();
   });
 
-  test('scheme + host + path + query', () => {
+  test('custom scheme: entire post-:// remainder is path', () => {
     const p = parseUrl('flare://open/bench/42?mode=free&debug=1');
     expect(p?.scheme).toBe('flare');
-    expect(p?.host).toBe('open');
-    expect(p?.segments).toEqual(['bench', '42']);
+    expect(p?.host).toBe('');
+    expect(p?.segments).toEqual(['open', 'bench', '42']);
     expect(p?.query).toEqual({ mode: 'free', debug: '1' });
   });
 
@@ -38,9 +38,53 @@ describe('parseUrl', () => {
     expect(p?.query).toEqual({ flag: '' });
   });
 
-  test('scheme://host with no path uses /', () => {
+  test('custom scheme with single segment: host is empty, segment is captured', () => {
     const p = parseUrl('flare://home');
-    expect(p?.host).toBe('home');
+    expect(p?.host).toBe('');
+    expect(p?.segments).toEqual(['home']);
+  });
+
+  test('custom scheme: myapp://zone/4', () => {
+    const p = parseUrl('myapp://zone/4');
+    expect(p?.scheme).toBe('myapp');
+    expect(p?.host).toBe('');
+    expect(p?.segments).toEqual(['zone', '4']);
+  });
+
+  test('http scheme: extracts authority into host', () => {
+    const p = parseUrl('https://example.com/zone/4');
+    expect(p?.scheme).toBe('https');
+    expect(p?.host).toBe('example.com');
+    expect(p?.segments).toEqual(['zone', '4']);
+  });
+
+  test('http scheme: no path yields empty segments', () => {
+    const p = parseUrl('https://example.com');
+    expect(p?.host).toBe('example.com');
     expect(p?.segments).toEqual([]);
+  });
+
+  test('http scheme: query-only URL does not fold query into host', () => {
+    const p = parseUrl('https://example.com?x=1');
+    expect(p?.host).toBe('example.com');
+    expect(p?.segments).toEqual([]);
+    expect(p?.query).toEqual({ x: '1' });
+  });
+
+  test('scheme guard: :// inside query string is not treated as scheme', () => {
+    const p = parseUrl('/redirect?to=http://x.com');
+    expect(p?.scheme).toBeNull();
+    expect(p?.host).toBeNull();
+    expect(p?.segments).toEqual(['redirect']);
+    expect(p?.query).toEqual({ to: 'http://x.com' });
+  });
+
+  test('tri-state: custom scheme yields host=="" and relative yields host===null', () => {
+    const custom = parseUrl('myapp://home');
+    const relative = parseUrl('/shop/x');
+    expect(custom?.host).toBe('');
+    expect(relative?.host).toBeNull();
+    expect(custom?.host).not.toBeNull();
+    expect(relative?.host).not.toBe('');
   });
 });

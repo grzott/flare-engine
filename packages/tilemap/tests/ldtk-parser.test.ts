@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { parseLDtk } from '../src/ldtk-parser.js';
+import { TilemapParseError } from '../src/parse-error.js';
+import { extractColliders } from '../src/tilemap-collider.js';
+import { getTilesetForGid } from '../src/tilemap-data.js';
+import { twoTilesetIntGridLdtk } from './fixtures/two-tileset-intgrid.js';
 
 describe('parseLDtk', () => {
   test('parses a single level', () => {
@@ -72,7 +76,7 @@ describe('parseLDtk', () => {
     expect(layer.type).toBe('tile');
     if (layer.type === 'tile') {
       expect(layer.name).toBe('Ground');
-      // t + 1 for GID convention
+      // firstGid fallback=1 (no matching def), so gid = 1 + t
       expect(layer.tiles[0]).toBe(1); // (0,0) → t=0 → gid=1
       expect(layer.tiles[1]).toBe(2); // (1,0) → t=1 → gid=2
       expect(layer.tiles[10 * 1 + 2]).toBe(3); // (2,1) → t=2 → gid=3
@@ -222,6 +226,92 @@ describe('parseLDtk', () => {
     // Background should come first (bottom), Foreground second (top)
     expect(map.layers[0]!.name).toBe('Background');
     expect(map.layers[1]!.name).toBe('Foreground');
+  });
+});
+
+describe('parseLDtk — two-tileset IntGrid fixture', () => {
+  test('tilesets are assigned deterministic firstGids sorted by uid (ascending)', () => {
+    const maps = parseLDtk(twoTilesetIntGridLdtk);
+    const map = maps[0]!;
+    // uid=1 (TileA) → firstGid=1; uid=7 (TileB) → firstGid=17; Walls → firstGid=33
+    expect(map.tilesets[0]!.name).toBe('TileA');
+    expect(map.tilesets[0]!.firstGid).toBe(1);
+    expect(map.tilesets[1]!.name).toBe('TileB');
+    expect(map.tilesets[1]!.firstGid).toBe(17);
+    // Tilesets must be in ascending firstGid order for getTilesetForGid
+    for (let i = 1; i < map.tilesets.length; i++) {
+      expect(map.tilesets[i]!.firstGid).toBeGreaterThan(map.tilesets[i - 1]!.firstGid);
+    }
+  });
+
+  test('TilesB tile stores correct absolute GID = 20, and firstGids are stable (core regression)', () => {
+    const maps = parseLDtk(twoTilesetIntGridLdtk);
+    const map = maps[0]!;
+    // Deterministic uid-sort guarantees: TileA (uid=1) → firstGid=1, TileB (uid=7) → firstGid=17.
+    // If sort were dropped and uids iterated as [7,1]: TileB gets firstGid=1, TileA gets firstGid=17.
+    // Then TilesB tile t=3 → gid = 1+3 = 4 (wrong), not 20 (correct).
+    // The VALUE assertion on the stored gid is what catches the regression —
+    // getTilesetForGid(gid) alone would self-resolve to TileB regardless of ordering.
+    expect(map.tilesets.find((t) => t.name === 'TileA')!.firstGid).toBe(1);
+    expect(map.tilesets.find((t) => t.name === 'TileB')!.firstGid).toBe(17);
+
+    const tilesBLayer = map.layers.find((l) => l.name === 'TilesB');
+    expect(tilesBLayer?.type).toBe('tile');
+    if (tilesBLayer?.type === 'tile') {
+      const gid = tilesBLayer.tiles[0]!; // tile at (0,0), t=3
+      expect(gid).toBe(20); // 17 + 3; if sort dropped: 1+3=4, failing here
+      expect(getTilesetForGid(map.tilesets, gid)?.name).toBe('TileB');
+    }
+  });
+
+  test('extractColliders returns non-empty list with correct wall count', () => {
+    const maps = parseLDtk(twoTilesetIntGridLdtk);
+    const map = maps[0]!;
+    // intGridCsv=[1,2,0,1,0,2]: 4 non-zero cells → 4 colliders
+    const colliders = extractColliders(map);
+    expect(colliders.length).toBeGreaterThan(0);
+    // Count comes from the Walls IntGrid layer (the only layer with solidTiles set)
+    expect(colliders).toHaveLength(4);
+  });
+
+  test('intGridSolid predicate changes which cells are solid', () => {
+    // Default predicate (v > 0): values 1 and 2 are both solid → 4 colliders
+    const mapsDefault = parseLDtk(twoTilesetIntGridLdtk);
+    const defaultCount = extractColliders(mapsDefault[0]!).length;
+
+    // Custom predicate (v === 2): only value 2 is solid → 2 colliders
+    const mapsCustom = parseLDtk(twoTilesetIntGridLdtk, { intGridSolid: (v) => v === 2 });
+    const customCount = extractColliders(mapsCustom[0]!).length;
+
+    expect(defaultCount).toBe(4);
+    expect(customCount).toBe(2);
+    expect(customCount).toBeLessThan(defaultCount);
+  });
+});
+
+describe('parseLDtk — validation errors', () => {
+  test('throws TilemapParseError for invalid input ({})', () => {
+    expect(() => parseLDtk({})).toThrow(TilemapParseError);
+    try {
+      parseLDtk({});
+    } catch (e) {
+      expect((e as Error).message).toMatch(/LDtk/);
+    }
+  });
+
+  test('throws TilemapParseError for externalLevels: true', () => {
+    const bad = {
+      externalLevels: true,
+      defaultGridSize: 16,
+      defs: { tilesets: [] },
+      levels: [],
+    };
+    expect(() => parseLDtk(bad)).toThrow(TilemapParseError);
+    try {
+      parseLDtk(bad);
+    } catch (e) {
+      expect((e as Error).message).toMatch(/externalLevels/);
+    }
   });
 });
 

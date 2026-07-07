@@ -272,3 +272,95 @@ describe('TilemapRenderer.drawInto', () => {
     });
   });
 });
+
+describe('TilemapRenderer — flip-bit source rect (regression)', () => {
+  // Exercises the `(gid & GID_FLIP_MASK) - tileset.firstGid` mask at tilemap-renderer.ts.
+  // Without the mask: localId = 2147483667 - 17 = 2147483650,
+  //   srcRow = floor(2147483650 / 4) = 536870912, srcY = 536870912 * 16 = 8589934592 (wrong).
+  // With the mask: localId = 19 - 17 = 2, srcRow = 0, srcY = 0 (correct).
+  test('H-flipped tile uses same source rect as unflipped tile', () => {
+    // Real unsigned Tiled H-flip form: 19 + 0x80000000 = 2147483667 (positive float64).
+    // Authored with + (not |) to mirror actual JSON values Tiled exports.
+    const FLIP_H_UINT = 0x80000000; // 2147483648 as float64 Number
+    const flippedGid = 19 + FLIP_H_UINT; // 2147483667
+
+    const terrain: TilesetRef = {
+      firstGid: 1,
+      name: 'terrain',
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 4,
+      tileCount: 16,
+      image: 'terrain.png',
+      imageWidth: 64,
+      imageHeight: 64,
+      tileProperties: new Map(),
+      solidTiles: new Set(),
+    };
+    const props: TilesetRef = {
+      firstGid: 17,
+      name: 'props',
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 4,
+      tileCount: 16,
+      image: 'props.png',
+      imageWidth: 64,
+      imageHeight: 64,
+      tileProperties: new Map(),
+      solidTiles: new Set(),
+    };
+    // Layer: col 0 = unflipped gid 19 (props, local 2), col 1 = H-flipped gid 2147483667.
+    // Both map to localId=2, srcCol=2, srcRow=0 → srcX=32, srcY=0.
+    const layer: TileLayer = {
+      type: 'tile',
+      name: 'ground',
+      width: 2,
+      height: 1,
+      tiles: [19, flippedGid],
+      visible: true,
+      opacity: 1,
+      offsetX: 0,
+      offsetY: 0,
+      properties: {},
+    };
+    const map: TilemapData = {
+      width: 2,
+      height: 1,
+      tileWidth: 16,
+      tileHeight: 16,
+      layers: [layer],
+      tilesets: [terrain, props],
+      properties: {},
+    };
+
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+    const propsImage = mockImage();
+    renderer.setTilesetImage('props', propsImage);
+
+    const camera = new Camera2D();
+    camera.setViewport(64, 32);
+    camera.x = 16;
+    camera.y = 8;
+
+    const external = new SpriteBatch();
+    renderer.drawInto(camera, external);
+
+    const captured: Array<{ srcX: number; srcY: number; dstX: number }> = [];
+    external.flush((_image, commands) => {
+      for (const cmd of commands) {
+        captured.push({ srcX: cmd.srcX, srcY: cmd.srcY, dstX: cmd.dstX });
+      }
+    });
+
+    expect(captured).toHaveLength(2);
+    const unflipped = captured.find((c) => c.dstX === 0)!;
+    const flipped = captured.find((c) => c.dstX === 16)!;
+    expect(unflipped.srcX).toBe(32); // localId=2, col 2 of 4 → 2*16
+    expect(unflipped.srcY).toBe(0); // row 0
+    // Without mask: srcY = floor(2147483650 / 4) * 16 = 8589934592 — fails here
+    expect(flipped.srcX).toBe(32);
+    expect(flipped.srcY).toBe(0);
+  });
+});

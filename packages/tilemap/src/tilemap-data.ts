@@ -1,5 +1,37 @@
 import type { Rect } from '@flare-engine/math';
 
+/** Low 29 bits of a Tiled GID — Tiled stores flip state in the high 3 bits. */
+export const GID_FLIP_MASK = 0x1fffffff;
+
+const FLIP_H = 0x80000000;
+const FLIP_V = 0x40000000;
+const FLIP_D = 0x20000000;
+
+/** Flip state encoded in the high bits of a Tiled GID. */
+export interface TileFlipFlags {
+  horizontal: boolean;
+  vertical: boolean;
+  diagonal: boolean;
+}
+
+/** Strip the Tiled flip bits from a raw GID, returning the real global tile id. */
+export function stripGidFlags(gid: number): number {
+  return gid & GID_FLIP_MASK;
+}
+
+/**
+ * Decode the Tiled flip bits encoded in the high bits of a raw GID.
+ * Note: `gid & 0x80000000` yields a negative Int32 when the bit is set;
+ * compare with `!== 0`, not `> 0`.
+ */
+export function decodeGidFlags(gid: number): TileFlipFlags {
+  return {
+    horizontal: (gid & FLIP_H) !== 0,
+    vertical: (gid & FLIP_V) !== 0,
+    diagonal: (gid & FLIP_D) !== 0,
+  };
+}
+
 /** A single tile in a tilemap grid. */
 export interface TileData {
   /** Global tile ID (0 = empty). */
@@ -138,12 +170,13 @@ export function getTileAt(layer: TileLayer, col: number, row: number): number {
   return layer.tiles[row * layer.width + col] ?? 0;
 }
 
-/** Get the tileset that owns a given GID. */
+/** Get the tileset that owns a given GID. Handles Tiled flip bits in the high bits. */
 export function getTilesetForGid(tilesets: TilesetRef[], gid: number): TilesetRef | undefined {
-  // Tilesets are ordered by firstGid; find the last one where firstGid <= gid
+  const id = gid & GID_FLIP_MASK;
+  // Tilesets are ordered by firstGid; find the last one where firstGid <= id
   let result: TilesetRef | undefined;
   for (const ts of tilesets) {
-    if (ts.firstGid <= gid) {
+    if (ts.firstGid <= id) {
       result = ts;
     } else {
       break;
@@ -152,9 +185,9 @@ export function getTilesetForGid(tilesets: TilesetRef[], gid: number): TilesetRe
   return result;
 }
 
-/** Compute the source rect in a tileset image for a given GID. */
+/** Compute the source rect in a tileset image for a given GID. Strips Tiled flip bits. */
 export function getTileSourceRect(tileset: TilesetRef, gid: number): Rect {
-  const localId = gid - tileset.firstGid;
+  const localId = (gid & GID_FLIP_MASK) - tileset.firstGid;
   const col = localId % tileset.columns;
   const row = Math.floor(localId / tileset.columns);
   return {

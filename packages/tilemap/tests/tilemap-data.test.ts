@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  GID_FLIP_MASK,
   createTilemapData,
+  decodeGidFlags,
   getTileAt,
   getTileSourceRect,
   getTilesetForGid,
+  stripGidFlags,
 } from '../src/tilemap-data.js';
 import type { TileLayer, TilesetRef } from '../src/tilemap-data.js';
 
@@ -88,6 +91,77 @@ describe('tilemap-data', () => {
     // Local ID 7 → col 2, row 1
     const r7 = getTileSourceRect(tileset, 8);
     expect(r7).toEqual({ x: 32, y: 16, width: 16, height: 16 });
+  });
+});
+
+describe('GID flip API', () => {
+  test('GID_FLIP_MASK is 0x1fffffff', () => {
+    expect(GID_FLIP_MASK).toBe(0x1fffffff);
+  });
+
+  test('stripGidFlags strips all high bits', () => {
+    expect(stripGidFlags(19)).toBe(19);
+    // Use arithmetic addition (+) to stay unsigned float64 — the real Tiled on-disk form.
+    expect(stripGidFlags(19 + 0x80000000)).toBe(19); // H-flip: 2147483667
+    expect(stripGidFlags(19 + 0x40000000)).toBe(19); // V-flip: 1073741843
+    expect(stripGidFlags(19 + 0x20000000)).toBe(19); // D-flip:  536870931
+    expect(stripGidFlags(19 + 0x80000000 + 0x40000000 + 0x20000000)).toBe(19); // all: 3758096403
+  });
+
+  test('decodeGidFlags: no flip bits → all false', () => {
+    const f = decodeGidFlags(5);
+    expect(f.horizontal).toBe(false);
+    expect(f.vertical).toBe(false);
+    expect(f.diagonal).toBe(false);
+  });
+
+  test('decodeGidFlags: H-flip bit → horizontal true', () => {
+    // Real unsigned Tiled H-flip value: 2147483667 (positive float64).
+    // JS `& FLIP_H` converts to int32 before testing; !== 0 is correct (never > 0 when bit is set).
+    const f = decodeGidFlags(19 + 0x80000000);
+    expect(f.horizontal).toBe(true);
+    expect(f.vertical).toBe(false);
+    expect(f.diagonal).toBe(false);
+  });
+
+  test('decodeGidFlags: V-flip bit → vertical true', () => {
+    const f = decodeGidFlags(19 + 0x40000000);
+    expect(f.horizontal).toBe(false);
+    expect(f.vertical).toBe(true);
+    expect(f.diagonal).toBe(false);
+  });
+
+  test('decodeGidFlags: D-flip bit → diagonal true', () => {
+    const f = decodeGidFlags(19 + 0x20000000);
+    expect(f.horizontal).toBe(false);
+    expect(f.vertical).toBe(false);
+    expect(f.diagonal).toBe(true);
+  });
+
+  test('decodeGidFlags: all flip bits → all true', () => {
+    const f = decodeGidFlags(19 + 0x80000000 + 0x40000000 + 0x20000000);
+    expect(f.horizontal).toBe(true);
+    expect(f.vertical).toBe(true);
+    expect(f.diagonal).toBe(true);
+  });
+
+  test('getTilesetForGid resolves flipped GID to correct tileset (regression)', () => {
+    // 2147483667 is the real unsigned Tiled value (19 + 0x80000000).
+    // Before B8, getTilesetForGid compared raw (unmasked) GIDs, so any value ≥ 2^31
+    // had id > every firstGid yet still resolved — but negative int32 forms did NOT
+    // (they compared less than firstGid=1). The mask at getTilesetForGid:143 fixes both.
+    const terrain = makeTileset('terrain', 1, 16);
+    const props = makeTileset('props', 17, 16);
+    const flippedGid = 19 + 0x80000000; // 2147483667 — unsigned, as Tiled exports
+    const result = getTilesetForGid([terrain, props], flippedGid);
+    expect(result?.name).toBe('props');
+  });
+
+  test('getTileSourceRect returns same rect for flipped and unflipped GID', () => {
+    const props = makeTileset('props', 17, 16, 16, 16, 4);
+    const rect = getTileSourceRect(props, 19);
+    const rectFlipped = getTileSourceRect(props, 19 + 0x80000000);
+    expect(rectFlipped).toEqual(rect);
   });
 });
 

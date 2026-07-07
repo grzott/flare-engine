@@ -1,7 +1,7 @@
 import { AABB } from '@flare-engine/physics';
 import type { AABBShape } from '@flare-engine/physics';
 import type { TileLayer, TilemapData, TilesetRef } from './tilemap-data.js';
-import { getTilesetForGid } from './tilemap-data.js';
+import { GID_FLIP_MASK, getTilesetForGid } from './tilemap-data.js';
 
 /** A collision body extracted from a solid tile. */
 export interface TileCollider {
@@ -14,7 +14,7 @@ export interface TileCollider {
   col: number;
   /** Grid row. */
   row: number;
-  /** The tile GID. */
+  /** The tile GID (flip bits stripped — AABB is symmetric, downstream lookups want the real id). */
   gid: number;
 }
 
@@ -56,7 +56,7 @@ function extractFromLayer(
       const tileset = getTilesetForGid(tilesets, gid);
       if (!tileset) continue;
 
-      const localId = gid - tileset.firstGid;
+      const localId = (gid & GID_FLIP_MASK) - tileset.firstGid;
       if (!tileset.solidTiles.has(localId)) continue;
 
       out.push({
@@ -65,7 +65,7 @@ function extractFromLayer(
         shape: AABB(tw, th),
         col,
         row,
-        gid,
+        gid: gid & GID_FLIP_MASK,
       });
     }
   }

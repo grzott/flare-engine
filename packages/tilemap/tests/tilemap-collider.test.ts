@@ -142,3 +142,85 @@ describe('extractColliders', () => {
     expect(c1!.gid).toBe(3);
   });
 });
+
+describe('extractColliders — flip-bit regression', () => {
+  // Tileset layout: tileset1 firstGid=1 tileCount=10 (no solids),
+  //                 tileset2 firstGid=11 tileCount=10 (local id 2 = solid → GID 13).
+  // A flipped variant of GID 13 (unsigned: 13 + 0x80000000 = 2147483661) is placed in the layer.
+  // Uses arithmetic addition (+) to represent the real Tiled on-disk form (positive float64).
+
+  function makeFlippedMap(): TilemapData {
+    const ts1: TilesetRef = {
+      firstGid: 1,
+      name: 'terrain',
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 5,
+      tileCount: 10,
+      image: 'terrain.png',
+      imageWidth: 80,
+      imageHeight: 32,
+      tileProperties: new Map(),
+      solidTiles: new Set(),
+    };
+    const ts2: TilesetRef = {
+      firstGid: 11,
+      name: 'props',
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 5,
+      tileCount: 10,
+      image: 'props.png',
+      imageWidth: 80,
+      imageHeight: 32,
+      tileProperties: new Map(),
+      solidTiles: new Set([2]), // local id 2 is solid → GID 13
+    };
+
+    const flippedGid = 13 + 0x80000000; // H-flipped GID 13 (props, local 2) — real unsigned Tiled value
+    const layer: TileLayer = {
+      type: 'tile',
+      name: 'ground',
+      width: 3,
+      height: 1,
+      tiles: [1, flippedGid, 0], // terrain (not solid), flipped-solid, empty
+      visible: true,
+      opacity: 1,
+      offsetX: 0,
+      offsetY: 0,
+      properties: {},
+    };
+
+    return {
+      width: 3,
+      height: 1,
+      tileWidth: 16,
+      tileHeight: 16,
+      layers: [layer],
+      tilesets: [ts1, ts2],
+      properties: {},
+    };
+  }
+
+  test('flipped solid tile in tileset #2 resolves to tileset #2 (not #1)', () => {
+    const map = makeFlippedMap();
+    const colliders = extractColliders(map);
+    expect(colliders).toHaveLength(1);
+    expect(colliders[0]!.col).toBe(1);
+  });
+
+  test('collider gid is the masked (stripped) gid', () => {
+    const map = makeFlippedMap();
+    const colliders = extractColliders(map);
+    // Stored gid must be the real id (flip bits stripped) so downstream lookups work
+    expect(colliders[0]!.gid).toBe(13);
+  });
+
+  test('collider position is correct for the flipped tile', () => {
+    const map = makeFlippedMap();
+    const colliders = extractColliders(map);
+    // col=1, row=0: center = (1*16 + 8, 0*16 + 8) = (24, 8)
+    expect(colliders[0]!.x).toBe(24);
+    expect(colliders[0]!.y).toBe(8);
+  });
+});

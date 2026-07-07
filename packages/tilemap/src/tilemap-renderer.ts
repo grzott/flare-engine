@@ -3,7 +3,7 @@ import type { Rect } from '@flare-engine/math';
 import type { Camera2D } from '@flare-engine/render';
 import { SpriteBatch } from '@flare-engine/render';
 import type { TileLayer, TilemapData } from './tilemap-data.js';
-import { getTileAt, getTilesetForGid } from './tilemap-data.js';
+import { GID_FLIP_MASK, getTileAt, getTilesetForGid } from './tilemap-data.js';
 
 /**
  * TilemapRenderer — draws a tilemap with viewport culling.
@@ -58,6 +58,9 @@ export class TilemapRenderer {
     flush(this.batch);
   }
 
+  // Flip rendering transforms (horizontal/vertical/diagonal) are a deferred
+  // limitation — render-flip support is post-flip M10. Tileset resolution and
+  // collider extraction are correct for flipped GIDs as of B8.
   private _drawTileLayer(
     layer: TileLayer,
     viewX: number,
@@ -88,8 +91,8 @@ export class TilemapRenderer {
         const image = this._images.get(tileset.name);
         if (!image) continue;
 
-        // Inlined source-rect math — avoids allocating a Rect per tile.
-        const localId = gid - tileset.firstGid;
+        // Inlined source-rect math — strips flip bits, avoids allocating a Rect per tile.
+        const localId = (gid & GID_FLIP_MASK) - tileset.firstGid;
         const srcCol = localId % tileset.columns;
         const srcRow = (localId - srcCol) / tileset.columns;
         const srcX = srcCol * tileset.tileWidth;

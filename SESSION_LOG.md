@@ -7610,3 +7610,35 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 213 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B8 — tilemap: GID flip bits + LDtk pipeline
+
+**Touched files**
+- `.changeset/oss-b8-tilemap-flip-bits-ldtk.md`
+- `packages/tilemap/src/index.ts`
+- `packages/tilemap/src/ldtk-parser.ts`
+- `packages/tilemap/src/parse-error.ts`
+- `packages/tilemap/src/tiled-parser.ts`
+- `packages/tilemap/src/tilemap-collider.ts`
+- `packages/tilemap/src/tilemap-data.ts`
+- `packages/tilemap/src/tilemap-renderer.ts`
+- `packages/tilemap/tests/fixtures/`
+- `packages/tilemap/tests/ldtk-parser.test.ts`
+- `packages/tilemap/tests/tiled-parser.test.ts`
+- `packages/tilemap/tests/tilemap-collider.test.ts`
+- `packages/tilemap/tests/tilemap-data.test.ts`
+- `packages/tilemap/tests/tilemap-renderer.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 (lint: src biome format not auto-run by builder)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

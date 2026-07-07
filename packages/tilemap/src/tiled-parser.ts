@@ -1,3 +1,4 @@
+import { TilemapParseError } from './parse-error.js';
 import type {
   MapLayer,
   MapObject,
@@ -21,7 +22,10 @@ interface TiledTileLayer {
   name: string;
   width: number;
   height: number;
-  data: number[];
+  data: number[] | string;
+  encoding?: string;
+  compression?: string;
+  chunks?: unknown[];
   visible: boolean;
   opacity: number;
   offsetx?: number;
@@ -72,6 +76,7 @@ interface TiledTileset {
   imageheight: number;
   tiles?: TiledTile[];
   properties?: TiledProperty[];
+  source?: string;
 }
 
 interface TiledMapJSON {
@@ -80,6 +85,7 @@ interface TiledMapJSON {
   tilewidth: number;
   tileheight: number;
   orientation: string;
+  infinite?: boolean;
   layers: TiledLayer[];
   tilesets: TiledTileset[];
   properties?: TiledProperty[];
@@ -97,15 +103,35 @@ function parseProperties(props?: TiledProperty[]): Record<string, unknown> {
 
 /**
  * Parse a Tiled .tmj (JSON) map into TilemapData.
- * Supports orthogonal maps with tile layers and object layers.
+ * Supports orthogonal maps with CSV tile layers and object layers.
+ * Throws TilemapParseError for unsupported formats (infinite, non-orthogonal,
+ * external tilesets, base64/compressed/chunked layer data).
  */
 export function parseTiled(json: unknown): TilemapData {
   const data = json as TiledMapJSON;
+
+  if (data.infinite === true) {
+    throw new TilemapParseError(
+      'parseTiled: infinite maps are not supported. In Tiled: Map ▸ Map Properties ▸ set "Infinite" to false, then re-export.',
+    );
+  }
+  if (data.orientation && data.orientation !== 'orthogonal') {
+    throw new TilemapParseError(
+      `parseTiled: orientation "${data.orientation}" is not supported — only orthogonal maps are supported.`,
+    );
+  }
+
   const map = createTilemapData(data.width, data.height, data.tilewidth, data.tileheight);
   map.properties = parseProperties(data.properties);
 
   // Parse tilesets
   for (const ts of data.tilesets) {
+    if (ts.source !== undefined) {
+      throw new TilemapParseError(
+        `parseTiled: external tileset "${ts.source}" is not supported. Embed tilesets on export (Tiled ▸ Map ▸ "Embed tilesets") or use the CLI's --embed-tilesets.`,
+      );
+    }
+
     const tileProperties = new Map<number, Record<string, unknown>>();
     const solidTiles = new Set<number>();
 
@@ -151,13 +177,30 @@ export function parseTiled(json: unknown): TilemapData {
 }
 
 function parseLayer(layer: TiledLayer): MapLayer {
-  if (layer.type === 'tilelayer') {
-    return parseTileLayer(layer);
-  }
-  return parseObjectLayer(layer);
+  if (layer.type === 'tilelayer') return parseTileLayer(layer);
+  if (layer.type === 'objectgroup') return parseObjectLayer(layer);
+  const l = layer as { type: string; name?: string };
+  throw new TilemapParseError(
+    `parseTiled: layer "${l.name ?? ''}" has unsupported type "${l.type}". Only tilelayer and objectgroup are supported — flatten group layers and remove image layers before export.`,
+  );
 }
 
 function parseTileLayer(layer: TiledTileLayer): TileLayer {
+  if (
+    (layer.encoding !== undefined && layer.encoding !== 'csv') ||
+    layer.compression !== undefined ||
+    layer.chunks !== undefined
+  ) {
+    throw new TilemapParseError(
+      'parseTiled: base64/compressed/chunked (infinite) layer data is not supported. In Tiled export options set Tile Layer Format to "CSV".',
+    );
+  }
+  if (typeof layer.data === 'string') {
+    throw new TilemapParseError(
+      'parseTiled: base64/compressed/chunked (infinite) layer data is not supported. In Tiled export options set Tile Layer Format to "CSV".',
+    );
+  }
+  // layer.data is number[] here — flip bits in raw GIDs are preserved by slice()
   return {
     type: 'tile',
     name: layer.name,

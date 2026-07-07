@@ -189,3 +189,45 @@ describe('GameLoop with custom tick', () => {
     loop.stop();
   });
 });
+
+describe('GameLoop.alpha', () => {
+  it('returns 0 when no fixedDt configured (guard tested with nonzero residual)', () => {
+    const loop = new GameLoop();
+    // 0.5/60 leaves a nonzero accumulator; unguarded getter would return 0.5, guarded returns 0
+    loop.step(0.5 / 60);
+    expect(loop.alpha).toBe(0);
+  });
+
+  it('returns exact residual fraction after fixed steps drain', () => {
+    const fixedDt = 1 / 60;
+    const loop = new GameLoop({ fixedDt });
+    // 2.5 fixed steps worth: 2 drain, 0.5 remains
+    loop.step(2.5 / 60);
+    expect(loop.alpha).toBeCloseTo(0.5, 10);
+  });
+
+  it('returns 0 after a full step with no remainder', () => {
+    const fixedDt = 1 / 60;
+    const loop = new GameLoop({ fixedDt });
+    loop.step(2 / 60); // exactly 2 fixed steps, accumulator drains to 0
+    expect(loop.alpha).toBeCloseTo(0, 10);
+  });
+
+  it('accumulates across steps', () => {
+    const fixedDt = 1 / 60;
+    const loop = new GameLoop({ fixedDt });
+    loop.step(0.5 / 60); // 0.5 fixedDt in accumulator
+    expect(loop.alpha).toBeCloseTo(0.5, 10);
+    loop.step(0.5 / 60); // total 1.0 fixedDt — one step fires, accumulator → 0
+    expect(loop.alpha).toBeCloseTo(0, 10);
+  });
+
+  it('is in [0, 1) during active fixed-step simulation', () => {
+    const loop = new GameLoop({ fixedDt: 1 / 60 });
+    for (let i = 1; i <= 10; i++) {
+      loop.step(i * 0.007); // varied dt
+      expect(loop.alpha).toBeGreaterThanOrEqual(0);
+      expect(loop.alpha).toBeLessThan(1);
+    }
+  });
+});

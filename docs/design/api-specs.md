@@ -45,12 +45,14 @@
 
 | API                | Description                                                                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GameLoop`         | `start()`, `stop()`, `pause()`, `resume()`. Signals: `onUpdate(dt)`, `onFixedUpdate(fixedDt)`, `onLateUpdate(dt)`, `onPreRender()`, `onPostRender()` |
+| `GameLoop`         | `start()`, `stop()`, `pause()`, `resume()`. Signals: `onUpdate(dt)`, `onFixedUpdate(fixedDt)`, `onLateUpdate(dt)`, `onPreRender()`, `onPostRender()`. `get alpha(): number` — post-step residual fraction in `[0, 1)` for physics interpolation; 0 when no fixed step configured. |
 | `Clock`            | `elapsed`, `dt`, `fixedDt`, `fps`, `timescale`, `frame`. `schedule(delay, cb)`, `repeat(interval, cb)`                                               |
 | `AppLifecycle`     | `onBackground`, `onForeground`, `onMemoryWarning` signals. `background()` / `foreground()` / `memoryWarning()` methods for the host to invoke. Dt capping on resume is owned by `GameLoop.resume()`. |
 | `ScreenManager`    | Design resolution, scale modes: `FIT` (letterbox), `FILL` (crop), `STRETCH`. `resize(w, h, pixelRatio?)`, `setSafeAreaInsets(t, r, b, l)`. Exposes `safeArea: Rect`. |
 | `CoroutineManager` | Generator-based. `yield number` = wait seconds (scaled time), `yield undefined` = wait 1 frame, `yield Promise` = wait async.                        |
-| `Pool<T>`          | `acquire()`, `release(obj)`, `prewarm(count)`. Generic object pool.                                                                                  |
+| `Pool<T>`          | `acquire()`, `release(obj)`, `prewarm(count)`. Generic object pool. Optional `capacity` ctor option (via `PoolOptions`) — enforced ONLY by `tryAcquire(): T \| null` (returns null at cap, zero allocation); `acquire()` is always uncapped. Dev-mode double-release guard (throws when `__DEV__` is true). `live` getter = currently out-of-pool count. |
+
+**Physics interpolation.** Read `loop.alpha` in an `onPreRender` callback to lerp between the previous and current physics positions for smooth visuals at any display refresh rate. `alpha` is 0 when the loop was not constructed with a `fixedDt` option.
 
 ### `@flare-engine/ecs` (< 8KB gzip)
 
@@ -189,8 +191,8 @@ Animation APIs are functional (state object + free functions), not class-based �
 
 | API               | Description                                                                                                                                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ParticleEmitter` | Config: rate, lifetime, speed, direction, spread, gravity, start/end color/size/alpha, texture                                                      |
-| `ParticlePool`    | Pre-allocated. No GC during gameplay. `acquire()`, `update(dt, gx, gy)`, `getSize(p)`, `getAlpha(p)`, `getColor(p)` (shared buffer), `getColorInto(p, out)` (caller buffer). |
+| `ParticleEmitter` | `new ParticleEmitter(config, opts?)` — `EmitterOptions`: `maxParticles?` (hard cap, overrides `config.maxParticles`; default 256), `seed?` (LCG seed; default 1). Config: rate, lifetime, speed, direction, spread, gravity, start/end color/size/alpha. `reseed(seed)` restarts the deterministic random sequence. `maxParticles` is the enforced pool cap — `burst()` and `update()` stop spawning at cap, zero allocation past cap. |
+| `ParticlePool`    | Pre-allocated. No GC during gameplay. `acquire()`, `tryAcquire(): Particle \| null` (returns null at cap), `update(dt, gx, gy)`, `getSize(p)`, `getAlpha(p)`, `getColor(p)` (shared buffer), `getColorInto(p, out)` (caller buffer). |
 
 Uses immediate mode (PictureRecorder) at the draw layer — this package owns particle data and lifecycle, not rendering. Target: 200-500 particles at 60fps.
 

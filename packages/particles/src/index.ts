@@ -5,5 +5,6 @@ export {
 
 export {
   type EmitterConfig,
+  type EmitterOptions,
   ParticleEmitter,
 } from './particle-emitter.js';

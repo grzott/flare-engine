@@ -35,6 +35,7 @@ export class GameLoop {
   private maxDt: number;
   private rafId = 0;
   private lastTime = 0;
+  private _hasFixedDt = false;
 
   /** External tick function — set this for testing or custom scheduling. */
   tick: ((callback: (time: number) => void) => number) | undefined;
@@ -45,6 +46,7 @@ export class GameLoop {
     this.maxDt = config?.maxDt ?? 0.25;
     if (config?.fixedDt !== undefined) {
       this.clock.fixedDt = config.fixedDt;
+      this._hasFixedDt = true;
     }
   }
 
@@ -90,6 +92,21 @@ export class GameLoop {
   /** Whether the loop is paused. */
   get isPaused(): boolean {
     return this.paused;
+  }
+
+  /**
+   * Post-step residual fraction for physics interpolation.
+   *
+   * After fixed updates drain the accumulator, `alpha` is the fraction of a
+   * fixed step that has elapsed since the last fixed tick — always in [0, 1).
+   * Read in `onPreRender` to lerp between the previous and current physics
+   * state for smooth visuals at any display refresh rate.
+   *
+   * Returns 0 when no fixed step was configured (i.e. `fixedDt` was not
+   * passed to the constructor).
+   */
+  get alpha(): number {
+    return this._hasFixedDt ? this.accumulator / this.clock.fixedDt : 0;
   }
 
   /** Process a single frame. Exposed for testing. */

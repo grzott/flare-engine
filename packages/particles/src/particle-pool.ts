@@ -91,7 +91,7 @@ export class ParticlePool {
   private _active: Particle[] = [];
 
   constructor(capacity = 256) {
-    this._pool = new Pool(createParticle, resetParticle);
+    this._pool = new Pool(createParticle, resetParticle, { capacity });
     this._pool.prewarm(capacity);
   }
 
@@ -108,6 +108,18 @@ export class ParticlePool {
   /** Acquire a particle from the pool. */
   acquire(): Particle {
     const p = this._pool.acquire();
+    p.active = true;
+    this._active.push(p);
+    return p;
+  }
+
+  /**
+   * Acquire a particle only if the pool is below capacity.
+   * Returns null at cap — no allocation occurs.
+   */
+  tryAcquire(): Particle | null {
+    const p = this._pool.tryAcquire();
+    if (!p) return null;
     p.active = true;
     this._active.push(p);
     return p;

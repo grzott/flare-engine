@@ -34,8 +34,23 @@ export interface EmitterConfig {
   /** Angular velocity range (radians/second). */
   angularVelocity?: number;
   angularVelocityMax?: number;
-  /** Maximum active particles. */
+  /** Maximum active particles (used as pool capacity default when no opts.maxParticles given). */
   maxParticles?: number;
+}
+
+/** Construction options for ParticleEmitter. */
+export interface EmitterOptions {
+  /**
+   * Hard cap on simultaneously active particles.
+   * Overrides config.maxParticles when provided.
+   * Defaults to config.maxParticles ?? 256.
+   */
+  maxParticles?: number;
+  /**
+   * Initial LCG seed for deterministic particle randomness.
+   * Defaults to 1. Call reseed() at any time to restart the sequence.
+   */
+  seed?: number;
 }
 
 /**
@@ -56,37 +71,48 @@ export class ParticleEmitter {
   emitting = true;
 
   private _emitAccumulator = 0;
-  private _seed = 1;
+  private _seed = 0;
 
-  constructor(config: EmitterConfig, maxParticles?: number) {
+  constructor(config: EmitterConfig, opts?: EmitterOptions) {
     this.config = config;
-    this.pool = new ParticlePool(maxParticles ?? config.maxParticles ?? 256);
+    const cap = opts?.maxParticles ?? config.maxParticles ?? 256;
+    this.pool = new ParticlePool(cap);
+    this._setSeed(opts?.seed ?? 1);
+  }
+
+  /** Reset the LCG seed — restarts the particle random sequence from this seed. */
+  reseed(seed: number): void {
+    this._setSeed(seed);
+  }
+
+  /** Normalize s into the valid Park-Miller domain [1, 2147483646]. */
+  private _setSeed(s: number): void {
+    let n = Number.isFinite(s) ? Math.floor(s) % 2147483647 : 0;
+    if (n < 0) n += 2147483647;
+    if (n === 0) n = 1;
+    this._seed = n;
   }
 
   /** Update the emitter: emit new particles and update existing ones. */
   update(dt: number): void {
-    // Emit new particles
     if (this.emitting) {
       this._emitAccumulator += dt * this.config.rate;
       while (this._emitAccumulator >= 1) {
         this._emitAccumulator -= 1;
-        if (this.config.maxParticles && this.pool.activeCount >= this.config.maxParticles) {
+        if (!this._emitOne()) {
           this._emitAccumulator = 0;
           break;
         }
-        this._emitOne();
       }
     }
 
-    // Update all particles
     this.pool.update(dt, this.config.gravityX ?? 0, this.config.gravityY ?? 0);
   }
 
   /** Emit a burst of particles. */
   burst(count: number): void {
     for (let i = 0; i < count; i++) {
-      if (this.config.maxParticles && this.pool.activeCount >= this.config.maxParticles) break;
-      this._emitOne();
+      if (!this._emitOne()) break;
     }
   }
 
@@ -108,34 +134,31 @@ export class ParticleEmitter {
     return min + this._random() * (max - min);
   }
 
-  private _emitOne(): void {
-    const c = this.config;
-    const p: Particle = this.pool.acquire();
+  /** Emit one particle. Returns false when the pool is at cap — caller should stop. */
+  private _emitOne(): boolean {
+    const p: Particle | null = this.pool.tryAcquire();
+    if (!p) return false;
 
-    // Position at emitter origin
+    const c = this.config;
+
     p.x = this.x;
     p.y = this.y;
 
-    // Random angle within spread
     const angle = c.direction + this._randomRange(-c.spread, c.spread);
     const speed = c.speedMax ? this._randomRange(c.speed, c.speedMax) : c.speed;
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
 
-    // Lifetime
     const lifetime = c.lifetimeMax ? this._randomRange(c.lifetime, c.lifetimeMax) : c.lifetime;
     p.life = lifetime;
     p.maxLife = lifetime;
 
-    // Size
     p.startSize = c.startSize ?? 4;
     p.endSize = c.endSize ?? 0;
 
-    // Alpha
     p.startAlpha = c.startAlpha ?? 1;
     p.endAlpha = c.endAlpha ?? 0;
 
-    // Colors
     if (c.startColor) {
       p.startR = c.startColor.r;
       p.startG = c.startColor.g;
@@ -147,11 +170,12 @@ export class ParticleEmitter {
       p.endB = c.endColor.b;
     }
 
-    // Angular velocity
     if (c.angularVelocity !== undefined) {
       p.angularVelocity = c.angularVelocityMax
         ? this._randomRange(c.angularVelocity, c.angularVelocityMax)
         : c.angularVelocity;
     }
+
+    return true;
   }
 }

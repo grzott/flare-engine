@@ -18,7 +18,7 @@ function steadyStateEmitter(active: number): ParticleEmitter {
       endAlpha: 0,
       maxParticles: active,
     },
-    active,
+    { maxParticles: active },
   );
   em.burst(active);
   em.emitting = false;
@@ -40,7 +40,7 @@ function streamingEmitter(cap: number): ParticleEmitter {
       endAlpha: 0,
       maxParticles: cap,
     },
-    cap,
+    { maxParticles: cap },
   );
   for (let i = 0; i < 120; i++) em.update(DT);
   return em;

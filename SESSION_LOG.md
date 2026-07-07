@@ -7579,3 +7579,34 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 212 — 2026-07-07 (scope: engine)
+
+**Goal:** core + particles: loop alpha, pool caps, seeds — third Arc-OSS row of this session (OSS-B7, engine; P1)
+
+**Touched files**
+- `.changeset/oss-b7-core-particles-alpha-pool-caps-seeds.md`
+- `benchmarks/src/integration.bench.ts`
+- `benchmarks/src/particles.bench.ts`
+- `docs/design/api-specs.md`
+- `packages/core/src/game-loop.ts`
+- `packages/core/src/index.ts`
+- `packages/core/src/pool.ts`
+- `packages/core/tests/game-loop.test.ts`
+- `packages/core/tests/pool.test.ts`
+- `packages/particles/src/index.ts`
+- `packages/particles/src/particle-emitter.ts`
+- `packages/particles/src/particle-pool.ts`
+- `packages/particles/tests/particle-emitter.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green (core 73→88, particles 15→36)
+- build: green
+
+**Frictions:** breaking `ParticleEmitter` ctor → options-bag (owner-sanctioned pre-OSS; also updated 2 benchmark call sites the plan missed — typecheck caught them). Adversarial 4-lens review (16 agents) caught 2 in-scope bugs the green gate missed: (1) Park-Miller LCG seed degeneracy — `{seed:0}`/`reseed(0)`/`2147483647`/negative seeds silently produce a dead or out-of-range RNG (the row's own injectable-seed feature); fixed with a `_setSeed` normalizer into [1, 2147483646] that leaves valid seeds byte-identical, +3 tests. (2) the no-`fixedDt` alpha test didn't discriminate the `_hasFixedDt` guard (passed even if reverted); strengthened to `step(0.5/60)`. Review also surfaced `fixedDt<=0` (NaN alpha + infinite `step()` loop) and negative-`timescale` alpha<0 — both **deferred to OSS-B23**, which already explicitly owns the `game-loop.ts:46/108 fixedDt<=0` hang (validate-in-ctor + guard-step); silently fixing here would conflict with B23's throw decision. The `Pool.clear()`/`_live` "lockout" claim was refuted (documented contract + `ParticlePool.clear()` releases per-particle). Note: verify.sh ran twice (initial + post-fix) → two SESSION_LOG blocks (212/213) consolidated by hand.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

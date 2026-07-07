@@ -82,7 +82,7 @@ function buildState(entityCount: number): IntegrationState {
       endAlpha: 0,
       maxParticles: PARTICLE_COUNT,
     },
-    PARTICLE_COUNT,
+    { maxParticles: PARTICLE_COUNT },
   );
   emitter.burst(PARTICLE_COUNT);
   emitter.emitting = false;

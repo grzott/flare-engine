@@ -11,3 +11,4 @@ export type {
   CoroutineGenerator,
 } from './coroutine.js';
 export { Pool } from './pool.js';
+export type { PoolOptions } from './pool.js';

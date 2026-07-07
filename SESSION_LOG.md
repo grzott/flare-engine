@@ -7802,3 +7802,29 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 220 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B14b — create-flare-app: blank sprite + Expo 57 pins + template-typecheck gate
+
+**Touched files**
+- `packages/create-flare-app/README.md`
+- `packages/create-flare-app/package.json`
+- `packages/create-flare-app/templates-typecheck-shims.d.ts`
+- `packages/create-flare-app/templates/blank/package.json`
+- `packages/create-flare-app/templates/blank/src/App.tsx`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `packages/create-flare-app/tsconfig.templates.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 deny:0 gate:0 fixup:1 drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

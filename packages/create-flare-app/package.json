@@ -33,7 +33,7 @@
     "build": "tsup",
     "test": "bun test",
     "lint": "biome check src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.templates.json"
   },
   "dependencies": {
     "commander": "^13.1.0"

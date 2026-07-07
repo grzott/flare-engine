@@ -1,6 +1,6 @@
 # create-flare-app
 
-One-shot project scaffolder. Resolved by `npm create flare-app@latest <name>` per npm convention (unscoped name). Produces a runnable Expo + Flare app with a minimal scene + HUD in under 5 minutes on a clean machine. Three templates: `blank` (empty scene), `topdown` (4-direction movement + tilemap), `shmup` (auto-fire + spawner + HUD).
+One-shot project scaffolder. Resolved by `npm create flare-app@latest <name>` per npm convention (unscoped name). Produces a runnable Expo + Flare app with a minimal scene + HUD in under 5 minutes on a clean machine. Three templates: `blank` (single centered sprite — smallest starting point), `topdown` (4-direction movement + tilemap), `shmup` (auto-fire + spawner + HUD).
 
 ## Install
 

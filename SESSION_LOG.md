@@ -7665,3 +7665,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 215 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B10 — dialogue: dangling ids + cycles
+
+**Touched files**
+- `.changeset/oss-b10-dialogue-dangling-ids-cycles.md`
+- `packages/dialogue/src/index.ts`
+- `packages/dialogue/src/runner.ts`
+- `packages/dialogue/tests/runner.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** verify.sh appends a SESSION_LOG block on every invocation, so the fix-loop's 4 gate re-runs left 4 duplicate blocks (215–218, three self-listing `SESSION_LOG.md`); collapsed to one. Row itself gate-clean.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

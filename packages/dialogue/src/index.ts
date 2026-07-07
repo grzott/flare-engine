@@ -13,6 +13,8 @@ export {
 } from './graph.js';
 
 export {
+  type DialogueErrorCode,
+  DialogueError,
   type ConditionResolver,
   type ActionHandler,
   type VariableBag,

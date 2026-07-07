@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { type DialogueNode, createDialogueGraph } from '../src/graph.js';
-import { createDialogueRunner, interpolate } from '../src/runner.js';
+import { DialogueError, createDialogueRunner, interpolate } from '../src/runner.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -330,5 +330,72 @@ describe('createDialogueRunner', () => {
     runner.start(graph);
     runner.advance();
     expect(keys).toEqual(['portrait:rokita', undefined]);
+  });
+});
+
+describe('DialogueError diagnostics', () => {
+  function danglingGraph(graphId: string): ReturnType<typeof createDialogueGraph> {
+    const nodes: Record<string, DialogueNode> = {
+      start: { kind: 'line', speaker: 'A', text: 'Hi', next: 'ghost' },
+    };
+    return createDialogueGraph(graphId, 'start', nodes);
+  }
+
+  test('onError observes dangling id', () => {
+    const graph = danglingGraph('dangle');
+    let received: DialogueError | null = null;
+    const runner = createDialogueRunner({
+      onError: (err) => {
+        received = err;
+      },
+    });
+
+    runner.start(graph);
+    runner.advance(); // next → 'ghost' → not found
+
+    expect(received).toBeInstanceOf(DialogueError);
+    expect(received!.code).toBe('missing-node');
+    expect(received!.missingId).toBe('ghost');
+    expect(received!.nodeId).toBe('start');
+    expect(runner.state).toBe('ended');
+  });
+
+  test('default logs console.warn on dangling id', () => {
+    const graph = danglingGraph('dangle2');
+    const runner = createDialogueRunner(); // no onError
+
+    const warn = spyOn(console, 'warn').mockImplementation(() => {});
+    runner.start(graph);
+    runner.advance();
+
+    expect(warn.mock.calls.length).toBeGreaterThan(0);
+    const firstArg = warn.mock.calls[0]?.[0];
+    expect(String(firstArg)).toContain('ghost');
+    warn.mockRestore();
+
+    expect(runner.state).toBe('ended');
+  });
+
+  test('cycle throws typed DialogueError not RangeError', () => {
+    const nodes: Record<string, DialogueNode> = {
+      a: { kind: 'branch', arms: [{ condition: 'always', next: 'b' }], fallback: null },
+      b: { kind: 'branch', arms: [{ condition: 'always', next: 'a' }], fallback: null },
+    };
+    const graph = createDialogueGraph('cycle_test', 'a', nodes);
+
+    expect(() => {
+      createDialogueRunner({ conditions: () => true }).start(graph);
+    }).toThrow(DialogueError);
+
+    let thrown: unknown;
+    try {
+      createDialogueRunner({ conditions: () => true }).start(graph);
+    } catch (e) {
+      thrown = e;
+    }
+
+    expect(thrown).toBeInstanceOf(DialogueError);
+    expect((thrown as DialogueError).code).toBe('cycle');
+    expect(thrown instanceof RangeError).toBe(false);
   });
 });

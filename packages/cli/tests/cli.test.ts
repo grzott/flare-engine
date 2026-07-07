@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { buildProgram } from '../src/cli.js';
+import { version } from '../package.json';
+import { buildProgram, createAppSpawnSpec, isValidAppName } from '../src/cli.js';
 
 describe('buildProgram', () => {
   test('registers pack-atlas, tiled-to-flare, and new commands', () => {
@@ -21,5 +22,33 @@ describe('buildProgram', () => {
     const cmd = program.commands.find((c) => c.name() === 'new');
     const flags = cmd?.options.map((o) => o.long).sort();
     expect(flags).toEqual(['--package-manager', '--template']);
+  });
+
+  test('version matches package.json', () => {
+    expect(buildProgram().version()).toBe(version);
+  });
+});
+
+describe('createAppSpawnSpec', () => {
+  test('win32 → shell:true, cmd is npx', () => {
+    expect(createAppSpawnSpec('win32')).toEqual({ cmd: 'npx', shell: true });
+  });
+
+  test('linux → shell:false, cmd is npx', () => {
+    expect(createAppSpawnSpec('linux')).toEqual({ cmd: 'npx', shell: false });
+  });
+});
+
+describe('isValidAppName', () => {
+  test('accepts valid names', () => {
+    expect(isValidAppName('my-app')).toBe(true);
+    expect(isValidAppName('MyApp')).toBe(true);
+    expect(isValidAppName('@scope/pkg')).toBe(true);
+  });
+
+  test('rejects injection characters', () => {
+    expect(isValidAppName('a; rm -rf /')).toBe(false);
+    expect(isValidAppName('a b')).toBe(false);
+    expect(isValidAppName('a&b')).toBe(false);
   });
 });

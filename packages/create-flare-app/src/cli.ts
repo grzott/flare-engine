@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { version } from '../package.json';
 import { TEMPLATES } from './manifest.js';
 import { scaffoldApp } from './scaffold.js';
 
@@ -22,7 +23,7 @@ export function buildProgram(): Command {
   program
     .name('create-flare-app')
     .description('Scaffold a new Flare engine app')
-    .version('0.0.0')
+    .version(version)
     .argument('<name>', 'directory name / package name for the new app')
     .option('-t, --template <name>', 'template (blank|topdown|shmup)', parseTemplateArg, 'blank')
     .option('-p, --package-manager <pm>', 'package manager (bun|npm|pnpm)', parsePmArg)

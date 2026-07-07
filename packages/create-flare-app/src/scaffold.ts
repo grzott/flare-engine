@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
-import { cp, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { version } from '../package.json';
 import { TEMPLATES, type TemplateId, isTemplateId } from './manifest.js';
 
 /** Options for `scaffoldApp`. */
@@ -16,7 +17,7 @@ export interface ScaffoldOptions {
   packageManager?: 'bun' | 'npm' | 'pnpm';
   /** Skip `install` after copying (default: false). */
   skipInstall?: boolean;
-  /** Pinned Flare version for template `__FLARE_VERSION__` token (default: `^0.0.0`). */
+  /** Pinned Flare version for template {{FLARE_VERSION}} token (default: current package version prefixed with ^). */
   flareVersion?: string;
   /** Override templates root — used by tests. */
   templatesDir?: string;
@@ -36,6 +37,13 @@ export interface ScaffoldResult {
 
 const FILENAME = fileURLToPath(import.meta.url);
 const DEFAULT_TEMPLATES_DIR = resolve(dirname(FILENAME), '..', 'templates');
+
+const VALID_APP_NAME = /^[a-z0-9@/_-]+$/i;
+
+/** Returns true when the name is safe to use as an app name and shell argument. */
+export function isValidAppName(name: string): boolean {
+  return VALID_APP_NAME.test(name);
+}
 
 /** Detect the package manager from `--package-manager` > `npm_config_user_agent` > `bun`. */
 export function detectPackageManager(explicit: string | undefined): 'bun' | 'npm' | 'pnpm' {
@@ -93,14 +101,21 @@ async function walkFiles(dir: string, base: string, out: string[]): Promise<void
   }
 }
 
+/** Returns the spawn configuration for the given package manager on the given platform. */
+export function installSpawnSpec(
+  pm: 'bun' | 'npm' | 'pnpm',
+  platform: NodeJS.Platform,
+): { cmd: string; shell: boolean } {
+  return { cmd: pm, shell: platform === 'win32' };
+}
+
 function runInstall(pm: 'bun' | 'npm' | 'pnpm', cwd: string): Promise<number> {
   return new Promise((resolvePromise) => {
-    const isWin = process.platform === 'win32';
-    const cmd = isWin ? `${pm}.cmd` : pm;
+    const { cmd, shell } = installSpawnSpec(pm, process.platform);
     const child = spawn(cmd, ['install'], {
       cwd,
       stdio: 'inherit',
-      shell: false,
+      shell,
     });
     child.on('exit', (code) => resolvePromise(code ?? 1));
     child.on('error', () => resolvePromise(1));
@@ -113,6 +128,9 @@ function runInstall(pm: 'bun' | 'npm' | 'pnpm', cwd: string): Promise<number> {
  * and is non-empty.
  */
 export async function scaffoldApp(opts: ScaffoldOptions): Promise<ScaffoldResult> {
+  if (!isValidAppName(opts.name)) {
+    throw new Error(`[create-flare-app] invalid app name: ${opts.name}`);
+  }
   const templateId = opts.template ?? 'blank';
   if (!isTemplateId(templateId)) {
     throw new Error(`[create-flare-app] unknown template: ${templateId}`);
@@ -144,9 +162,14 @@ export async function scaffoldApp(opts: ScaffoldOptions): Promise<ScaffoldResult
 
   await cp(src, target, { recursive: true });
 
+  const gi = join(target, 'gitignore');
+  if (await pathExists(gi)) {
+    await rename(gi, join(target, '.gitignore'));
+  }
+
   const tokens: Record<string, string> = {
     '{{APP_NAME}}': opts.name,
-    '{{FLARE_VERSION}}': opts.flareVersion ?? '^0.0.0',
+    '{{FLARE_VERSION}}': opts.flareVersion ?? `^${version}`,
     '{{TEMPLATE_ID}}': templateId,
   };
 

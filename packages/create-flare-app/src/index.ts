@@ -10,6 +10,8 @@ export {
   type ScaffoldResult,
   scaffoldApp,
   detectPackageManager,
+  installSpawnSpec,
+  isValidAppName,
 } from './scaffold.js';
 
 export { buildProgram } from './cli.js';

@@ -84,6 +84,16 @@ describe('convertTiled', () => {
     expect(written.layers.length).toBe(2);
   });
 
+  test('default out path is <dir>/<basename>.flare.json', async () => {
+    const dir = await tmp();
+    const inPath = join(dir, 'map.tmj');
+    await writeFile(inPath, JSON.stringify(BASE_TMJ));
+
+    const r = await convertTiled({ input: inPath });
+    expect(r.outPath).toBe(join(dir, 'map.flare.json'));
+    await readFile(r.outPath, 'utf8');
+  });
+
   test('flattens group layers', async () => {
     const dir = await tmp();
     const inPath = join(dir, 'grouped.tmj');
@@ -139,6 +149,24 @@ describe('convertTiled', () => {
     expect(r.tilesets[0]?.name).toBe('external');
     expect(r.tilesets[0]?.tilewidth).toBe(32);
     expect(r.tilesets[0]?.firstgid).toBe(1);
+  });
+
+  test('--no-embed-tilesets preserves source reference', async () => {
+    const dir = await tmp();
+    const inPath = join(dir, 'map.tmj');
+    await writeFile(
+      inPath,
+      JSON.stringify({
+        ...BASE_TMJ,
+        tilesets: [{ firstgid: 1, source: 'external.json' }],
+      }),
+    );
+    const r = await convertTiled({
+      input: inPath,
+      out: join(dir, 'out.json'),
+      embedTilesets: false,
+    });
+    expect(r.tilesets[0]?.source).toBe('external.json');
   });
 
   test('drops image/editor-only layers', async () => {

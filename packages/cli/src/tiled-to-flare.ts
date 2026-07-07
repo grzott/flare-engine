@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import type {
   FlareLayer,
   FlareMap,
@@ -98,6 +98,7 @@ async function resolveTileset(
     image: data.image ?? '',
     imagewidth: data.imagewidth ?? 0,
     imageheight: data.imageheight ?? 0,
+    ...(ref.source && !embed ? { source: ref.source } : {}),
   };
 }
 
@@ -164,7 +165,7 @@ export async function convertTiled(opts: TiledConvertOptions): Promise<TiledResu
   const inputPath = absPath(opts.input, process.cwd());
   const outPath = opts.out
     ? absPath(opts.out, process.cwd())
-    : join(dirname(inputPath), `${inputPath.replace(/\.tmj$|\.json$/i, '')}.flare.json`);
+    : join(dirname(inputPath), `${basename(inputPath).replace(/\.(tmj|json)$/i, '')}.flare.json`);
   const embed = opts.embedTilesets !== false;
 
   const raw = await readFile(inputPath, 'utf8');

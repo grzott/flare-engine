@@ -2,8 +2,14 @@ import { describe, expect, test } from 'bun:test';
 import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { version } from '../package.json';
 import { TEMPLATES, isTemplateId } from '../src/manifest.js';
-import { detectPackageManager, scaffoldApp } from '../src/scaffold.js';
+import {
+  detectPackageManager,
+  installSpawnSpec,
+  isValidAppName,
+  scaffoldApp,
+} from '../src/scaffold.js';
 
 const TEMPLATES_DIR = join(__dirname, '..', 'templates');
 
@@ -56,6 +62,35 @@ describe('detectPackageManager', () => {
   });
 });
 
+describe('isValidAppName', () => {
+  test('accepts valid names', () => {
+    expect(isValidAppName('my-app')).toBe(true);
+    expect(isValidAppName('MyApp123')).toBe(true);
+    expect(isValidAppName('@scope/name')).toBe(true);
+    expect(isValidAppName('a_b-c')).toBe(true);
+  });
+
+  test('rejects names with shell-injection characters', () => {
+    expect(isValidAppName('bad name; rm -rf')).toBe(false);
+    expect(isValidAppName('a b')).toBe(false);
+    expect(isValidAppName('a&b')).toBe(false);
+    expect(isValidAppName('a|b')).toBe(false);
+  });
+});
+
+describe('installSpawnSpec', () => {
+  test('win32 → shell:true, cmd is the pm name', () => {
+    expect(installSpawnSpec('bun', 'win32')).toEqual({ cmd: 'bun', shell: true });
+    expect(installSpawnSpec('npm', 'win32')).toEqual({ cmd: 'npm', shell: true });
+    expect(installSpawnSpec('pnpm', 'win32')).toEqual({ cmd: 'pnpm', shell: true });
+  });
+
+  test('linux → shell:false, cmd is the pm name', () => {
+    expect(installSpawnSpec('bun', 'linux')).toEqual({ cmd: 'bun', shell: false });
+    expect(installSpawnSpec('npm', 'linux')).toEqual({ cmd: 'npm', shell: false });
+  });
+});
+
 describe('scaffoldApp', () => {
   test('scaffolds the blank template with token replacement', async () => {
     const base = await tmp();
@@ -73,18 +108,47 @@ describe('scaffoldApp', () => {
     expect(r.template).toBe('blank');
     expect(r.installed).toBe(false);
 
-    const pkg = JSON.parse(await readFile(join(target, 'package.json'), 'utf8'));
+    const pkgRaw = await readFile(join(target, 'package.json'), 'utf8');
+    const pkg = JSON.parse(pkgRaw);
     expect(pkg.name).toBe('my-app');
     expect(pkg.dependencies['@flare-engine/engine']).toBe('^1.2.3');
+    expect(pkgRaw).not.toContain('{{FLARE_VERSION}}');
 
     const readme = await readFile(join(target, 'README.md'), 'utf8');
     expect(readme).toContain('# my-app');
     expect(readme).toContain('`blank` template');
-    expect(readme).not.toContain('__APP_NAME__');
-    expect(readme).not.toContain('__TEMPLATE_ID__');
+    expect(readme).not.toContain('{{APP_NAME}}');
+    expect(readme).not.toContain('{{TEMPLATE_ID}}');
 
     const app = await readFile(join(target, 'src', 'App.tsx'), 'utf8');
     expect(app.length).toBeGreaterThan(0);
+  });
+
+  test('uses live package version when flareVersion is omitted', async () => {
+    const base = await tmp();
+    const target = join(base, 'live-version');
+    await scaffoldApp({
+      name: 'live-version',
+      template: 'blank',
+      targetDir: target,
+      skipInstall: true,
+      templatesDir: TEMPLATES_DIR,
+    });
+    const pkg = JSON.parse(await readFile(join(target, 'package.json'), 'utf8'));
+    expect(pkg.dependencies['@flare-engine/engine']).toBe(`^${version}`);
+  });
+
+  test('rejects an injection-y app name', async () => {
+    const base = await tmp();
+    await expect(
+      scaffoldApp({
+        name: 'bad name; rm -rf',
+        template: 'blank',
+        targetDir: join(base, 'x'),
+        skipInstall: true,
+        templatesDir: TEMPLATES_DIR,
+      }),
+    ).rejects.toThrow(/invalid app name/);
   });
 
   test('scaffolds topdown and shmup templates', async () => {
@@ -124,7 +188,6 @@ describe('scaffoldApp', () => {
   test('throws when target dir is non-empty', async () => {
     const base = await tmp();
     const target = join(base, 'existing');
-    // first scaffold populates the dir
     await scaffoldApp({
       name: 'existing',
       template: 'blank',

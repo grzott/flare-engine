@@ -63,6 +63,8 @@ export interface FlareTileset {
   image: string;
   imagewidth: number;
   imageheight: number;
+  /** External tileset path, preserved when embedTilesets is false. */
+  source?: string;
 }
 
 /** Normalized Flare tile layer. */

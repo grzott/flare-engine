@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { Command } from 'commander';
+import { version } from '../package.json';
 import { packAtlas } from './pack-atlas.js';
 import { convertTiled } from './tiled-to-flare.js';
 
@@ -30,10 +31,22 @@ function parsePmArg(value: string): 'bun' | 'npm' | 'pnpm' {
   return value;
 }
 
+const VALID_APP_NAME = /^[a-z0-9@/_-]+$/i;
+
+/** Returns true when the name is safe to use as an app name and shell argument. */
+export function isValidAppName(name: string): boolean {
+  return VALID_APP_NAME.test(name);
+}
+
+/** Returns the spawn configuration for `npx create-flare-app` on the given platform. */
+export function createAppSpawnSpec(platform: NodeJS.Platform): { cmd: string; shell: boolean } {
+  return { cmd: 'npx', shell: platform === 'win32' };
+}
+
 /** Build the `flare` CLI program. Exposed for tests. */
 export function buildProgram(): Command {
   const program = new Command();
-  program.name('flare').description('Flare engine CLI').version('0.0.0');
+  program.name('flare').description('Flare engine CLI').version(version);
 
   program
     .command('pack-atlas <input>')
@@ -79,6 +92,7 @@ export function buildProgram(): Command {
     .option('-t, --template <name>', 'template (blank|topdown|shmup)', parseTemplateArg, 'blank')
     .option('-p, --package-manager <pm>', 'package manager (bun|npm|pnpm)', parsePmArg)
     .action(async (name: string, opts) => {
+      if (!VALID_APP_NAME.test(name)) throw new Error(`invalid app name: ${name}`);
       const args = [name, '--template', opts.template];
       if (opts.packageManager) args.push('--package-manager', opts.packageManager);
       const code = await runCreateFlareApp(args);
@@ -90,11 +104,10 @@ export function buildProgram(): Command {
 
 function runCreateFlareApp(args: string[]): Promise<number> {
   return new Promise((resolvePromise) => {
-    const isWin = process.platform === 'win32';
-    const cmd = isWin ? 'npx.cmd' : 'npx';
+    const { cmd, shell } = createAppSpawnSpec(process.platform);
     const child = spawn(cmd, ['create-flare-app', ...args], {
       stdio: 'inherit',
-      shell: false,
+      shell,
     });
     child.on('exit', (code) => resolvePromise(code ?? 1));
     child.on('error', () => resolvePromise(1));

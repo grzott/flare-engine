@@ -7734,3 +7734,43 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 218 — 2026-07-07 (scope: engine)
+
+**Goal:** OSS-B13 + B21 — cli + create-flare-app: mechanics + CJS bin load fix
+
+**Touched files**
+- `.changeset/config.json`
+- `.changeset/oss-b13-cli-create-flare-app-mechanics.md`
+- `packages/cli/src/cli.ts`
+- `packages/cli/src/tiled-to-flare.ts`
+- `packages/cli/src/types.ts`
+- `packages/cli/tests/cli.test.ts`
+- `packages/cli/tests/tiled-to-flare.test.ts`
+- `packages/create-flare-app/package.json`
+- `packages/create-flare-app/src/cli.ts`
+- `packages/create-flare-app/src/index.ts`
+- `packages/create-flare-app/src/scaffold.ts`
+- `packages/create-flare-app/templates/blank/.gitignore`
+- `packages/create-flare-app/templates/blank/gitignore`
+- `packages/create-flare-app/templates/shmup/.gitignore`
+- `packages/create-flare-app/templates/shmup/gitignore`
+- `packages/create-flare-app/templates/topdown/.gitignore`
+- `packages/create-flare-app/templates/topdown/gitignore`
+- `packages/create-flare-app/tests/bin.test.ts`
+- `packages/create-flare-app/tests/cli.test.ts`
+- `packages/create-flare-app/tests/pack.test.ts`
+- `packages/create-flare-app/tests/scaffold.test.ts`
+- `packages/create-flare-app/tsup.config.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 deny:1 gate:0 fixup:1 drift:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---

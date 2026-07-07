@@ -6,5 +6,6 @@ export default defineConfig({
   dts: { entry: { index: 'src/index.ts' } },
   clean: true,
   sourcemap: true,
+  shims: true,
   external: ['commander'],
 });

@@ -4,6 +4,7 @@ import {
   createBloom,
   createChromaticAberration,
   createCrt,
+  createGodRays,
   createGrayscaleFlash,
   createVignette,
 } from '../src/effect.js';
@@ -220,7 +221,7 @@ describe('createPostFxRuntime', () => {
       expect(warnSpy).toHaveBeenCalledTimes(1);
     });
 
-    test('logs info once when compile succeeds and getUniformFloatCount is available', () => {
+    test('logs info once when compile succeeds and getUniformFloatCount is available (verbose:true)', () => {
       const stubEffect: SkiaRuntimeEffectLike = {
         makeShaderWithChildren: () => ({}),
         getUniformFloatCount: () => 19,
@@ -228,7 +229,7 @@ describe('createPostFxRuntime', () => {
       const countSkia: SkiaPostFxModuleLike = {
         RuntimeEffect: { Make: () => stubEffect },
       };
-      const rt = createPostFxRuntime(countSkia);
+      const rt = createPostFxRuntime(countSkia, { verbose: true });
       rt.compile('composite');
       expect(infoSpy).toHaveBeenCalledTimes(1);
       const msg: string = (infoSpy.mock.calls[0] as string[])[0] ?? '';
@@ -236,6 +237,54 @@ describe('createPostFxRuntime', () => {
       expect(msg).toContain('getUniformFloatCount=19');
       rt.compile('composite');
       expect(infoSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test('does NOT log info by default even when getUniformFloatCount is present', () => {
+      const stubEffect: SkiaRuntimeEffectLike = {
+        makeShaderWithChildren: () => ({}),
+        getUniformFloatCount: () => 7,
+      };
+      const countSkia: SkiaPostFxModuleLike = {
+        RuntimeEffect: { Make: () => stubEffect },
+      };
+      const rt = createPostFxRuntime(countSkia);
+      rt.compile('vignette');
+      expect(infoSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('array-uniform truncation regression', () => {
+    test('god-rays: buildPass.uniforms is Float32Array of length 12 (what the renderer passes to makeShaderWithChildren)', () => {
+      let capturedUniforms: unknown;
+      const capturingEffect: SkiaRuntimeEffectLike = {
+        makeShaderWithChildren: (u) => {
+          capturedUniforms = u;
+          return {};
+        },
+      };
+      const capturingSkia: SkiaPostFxModuleLike = {
+        RuntimeEffect: { Make: () => capturingEffect },
+      };
+      const rt = createPostFxRuntime(capturingSkia);
+      const chain = new EffectChain();
+      chain.add(createGodRays('gr'));
+      const passes = rt.buildPass(chain, 800, 600);
+      expect(passes.length).toBe(1);
+      const pass = passes[0];
+      if (!pass) throw new Error('no pass');
+      // Simulate the renderer: pass.shader.makeShaderWithChildren(pass.uniforms)
+      pass.shader.makeShaderWithChildren(pass.uniforms);
+      expect(capturedUniforms).toBeInstanceOf(Float32Array);
+      expect((capturedUniforms as Float32Array).length).toBe(12);
+    });
+
+    test('packUniforms for god-rays returns Float32Array of length 12', () => {
+      const { skia } = createMockSkia();
+      const rt = createPostFxRuntime(skia);
+      const gr = createGodRays('gr');
+      const packed = rt.packUniforms(gr, 800, 600);
+      expect(packed).toBeInstanceOf(Float32Array);
+      expect(packed.length).toBe(12);
     });
   });
 });

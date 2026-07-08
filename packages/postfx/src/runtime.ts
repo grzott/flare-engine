@@ -35,7 +35,7 @@ export interface SkImageLike {
 const EMPTY_CHILDREN: readonly SkImageLike[] = Object.freeze([]);
 
 export interface SkiaRuntimeEffectLike {
-  makeShaderWithChildren(uniforms: ArrayLike<number>, children?: unknown[]): unknown | null;
+  makeShaderWithChildren(uniforms: Float32Array, children?: unknown[]): unknown | null;
   /** Optional diagnostic — total float count expected by makeShaderWithChildren. */
   getUniformFloatCount?(): number;
 }
@@ -103,7 +103,10 @@ const SKSL_SOURCE: Record<EffectKind, string> = {
  * absent or lacks `RuntimeEffect.Make`, returns a runtime with
  * `supported: false` — callers should fall through to a passthrough pipeline.
  */
-export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRuntime {
+export function createPostFxRuntime(
+  skia: SkiaPostFxModuleLike | null,
+  opts?: { verbose?: boolean },
+): PostFxRuntime {
   const cache = new Map<EffectKind, CompiledShader>();
   const _loggedCompileFailures = new Set<EffectKind>();
   const _loggedCompileSuccesses = new Set<EffectKind>();
@@ -127,7 +130,7 @@ export function createPostFxRuntime(skia: SkiaPostFxModuleLike | null): PostFxRu
       }
       if (!_loggedCompileSuccesses.has(kind)) {
         _loggedCompileSuccesses.add(kind);
-        if (typeof effect.getUniformFloatCount === 'function') {
+        if (opts?.verbose === true && typeof effect.getUniformFloatCount === 'function') {
           console.info(
             `[postfx] compiled "${kind}" — getUniformFloatCount=${effect.getUniformFloatCount()}`,
           );
@@ -201,8 +204,8 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
     }
     case 'color-grading-lut':
       return new Float32Array([u.intensity]);
-    // Weather kinds: TS interfaces are wider than the packed SkSL inputs (speed/direction
-    // for clouds, speed for rain are B5-passthrough fields; the shader doesn't consume them).
+    // Weather kinds: direction is packed and consumed by both rain and clouds shaders.
+    // speed was removed from WeatherRainUniforms and WeatherCloudsUniforms.
     case 'weather-rain': {
       const col = u.color ?? [1.0, 1.0, 1.0];
       return new Float32Array([
@@ -223,7 +226,8 @@ function packUniforms(u: EffectUniforms, width: number, height: number): Float32
     case 'weather-dark-vignette':
       return new Float32Array([width, height, u.intensity]);
     case 'weather-clouds':
-      return new Float32Array([width, height, u.intensity, u.scrollOffsetX]);
+      // Packed in uniform-declaration order: resolution.xy, intensity, scrollOffsetX, direction.
+      return new Float32Array([width, height, u.intensity, u.scrollOffsetX, u.direction]);
     case 'composite':
       // Packed in uniform-declaration order (24 floats); see COMPOSITE_SKSL header comment.
       return new Float32Array([

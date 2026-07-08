@@ -115,17 +115,15 @@ describe('createWeatherClouds defaults', () => {
 // ── 2. Factory overrides ─────────────────────────────────────────────────────
 
 describe('factory overrides', () => {
-  test('weather-rain — intensity, direction, speed, scrollOffsetY', () => {
+  test('weather-rain — intensity, direction, scrollOffsetY', () => {
     const e = createWeatherRain('r', {
       intensity: 0.8,
       direction: 15,
-      speed: 200,
       scrollOffsetY: 42,
     });
     if (e.uniforms.kind !== 'weather-rain') throw new Error('wrong kind');
     expect(e.uniforms.intensity).toBe(0.8);
     expect(e.uniforms.direction).toBe(15);
-    expect(e.uniforms.speed).toBe(200);
     expect(e.uniforms.scrollOffsetY).toBe(42);
   });
 
@@ -142,17 +140,15 @@ describe('factory overrides', () => {
     expect(e.uniforms.intensity).toBe(0.9);
   });
 
-  test('weather-clouds — intensity, direction, speed, scrollOffsetX', () => {
+  test('weather-clouds — intensity, direction, scrollOffsetX', () => {
     const e = createWeatherClouds('c', {
       intensity: 0.6,
       direction: 30,
-      speed: 50,
       scrollOffsetX: 100,
     });
     if (e.uniforms.kind !== 'weather-clouds') throw new Error('wrong kind');
     expect(e.uniforms.intensity).toBe(0.6);
     expect(e.uniforms.direction).toBe(30);
-    expect(e.uniforms.speed).toBe(50);
     expect(e.uniforms.scrollOffsetX).toBe(100);
   });
 });
@@ -231,6 +227,7 @@ describe('SkSL shader source content', () => {
     expect(WEATHER_CLOUDS_SKSL).toContain('uniform shader src');
     expect(WEATHER_CLOUDS_SKSL).toContain('uniform float intensity');
     expect(WEATHER_CLOUDS_SKSL).toContain('uniform float scrollOffsetX');
+    expect(WEATHER_CLOUDS_SKSL).toContain('uniform float direction');
     expect(WEATHER_CLOUDS_SKSL).toContain('half4 main');
   });
 });
@@ -334,14 +331,14 @@ describe('packUniforms layout', () => {
     expect(packed[2]).toBeCloseTo(0.9, 5);
   });
 
-  test('weather-clouds: length = 4', () => {
+  test('weather-clouds: length = 5', () => {
     const packed = rt.packUniforms(createWeatherClouds(), 800, 600);
-    expect(packed.length).toBe(4);
+    expect(packed.length).toBe(5);
   });
 
-  test('weather-clouds: intensity at index 2, scrollOffsetX at 3', () => {
+  test('weather-clouds: intensity at index 2, scrollOffsetX at 3, direction at 4', () => {
     const packed = rt.packUniforms(
-      createWeatherClouds('c', { intensity: 0.6, scrollOffsetX: 123 }),
+      createWeatherClouds('c', { intensity: 0.6, scrollOffsetX: 123, direction: 45 }),
       800,
       600,
     );
@@ -349,6 +346,24 @@ describe('packUniforms layout', () => {
     expect(packed[1]).toBe(600);
     expect(packed[2]).toBeCloseTo(0.6, 5);
     expect(packed[3]).toBeCloseTo(123, 5);
+    expect(packed[4]).toBeCloseTo(45, 5);
+  });
+
+  test('weather-clouds: direction default = 0 at index 4', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed = rt2.packUniforms(createWeatherClouds(), 800, 600);
+    expect(packed[4]).toBe(0);
+  });
+
+  test('weather-clouds: direction is observable — two values yield different packed output', () => {
+    const { skia: skia2 } = createMockSkia();
+    const rt2 = createPostFxRuntime(skia2);
+    const packed0 = rt2.packUniforms(createWeatherClouds('c', { direction: 0 }), 800, 600);
+    const packed90 = rt2.packUniforms(createWeatherClouds('c', { direction: 90 }), 800, 600);
+    expect(packed0[4]).toBeCloseTo(0, 5);
+    expect(packed90[4]).toBeCloseTo(90, 5);
+    expect(packed0[4]).not.toBe(packed90[4]);
   });
 });
 

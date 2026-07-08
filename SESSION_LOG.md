@@ -7899,3 +7899,28 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 224 — 2026-07-08 (scope: engine)
+
+**Goal:** OSS-B19 — postfx: correctness slivers + surface scrub
+
+**Touched files**
+- `.changeset/oss-b19-postfx-correctness-surface-scrub.md`
+- `packages/postfx/src/controller.ts`
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/postfx/src/shaders.ts`
+- `packages/postfx/tests/runtime.test.ts`
+- `packages/postfx/tests/weather-effects.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

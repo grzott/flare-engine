@@ -1,13 +1,12 @@
 /**
- * PostFxController — a small bridge that owns an EffectChain + PostFxRuntime
+ * PostFxController — a reusable bridge that owns an EffectChain + PostFxRuntime
  * and adds two game-common conveniences:
  *
  *   - hit-flash: spike a grayscale-flash effect to 1 and auto-decay it.
  *   - motion scale: forward a single scalar to `EffectChain.setGlobalIntensity`
  *     so a11y reduced-motion can null the whole stack at once.
  *
- * Extracted from Pan Tvardowski per Phase 11.14. Shape-compatible with the
- * PT `createPanTvardowskiPostFx` controller — games can swap implementations.
+ * Games can instantiate multiple controllers and swap implementations freely.
  */
 
 import { EffectChain } from './chain.js';
@@ -42,7 +41,7 @@ export interface PostFxController {
    * snapshot on expiry. Re-triggering before expiry resets the countdown.
    * No-op if `effectId` is not in the chain.
    */
-  /** Optional pending PT wire-up in session #196. */
+  /** Optional — enable an effect for `decayMs` ms then restore its pre-trigger uniforms. No-op if id is not in the chain. */
   triggerTimed?(effectId: string, decayMs: number): void;
   /** Advance auto-decaying effects (flash + timed triggers). */
   update(dt: number): void;

@@ -236,6 +236,7 @@ uniform shader src;
 uniform float2 resolution;
 uniform float intensity;
 uniform float scrollOffsetX;
+uniform float direction;
 
 float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
 float vnoise(float2 p) {
@@ -249,7 +250,13 @@ float fbm(float2 p) { return vnoise(p) * 0.6 + vnoise(p * 2.3) * 0.4; }
 half4 main(float2 coord) {
   half4 scene = src.eval(coord);
   float2 uv = coord / resolution;
-  float2 cloudUv = float2(uv.x + scrollOffsetX / resolution.x, uv.y * 0.5);
+  // direction=0 → pure horizontal scroll (cos=1, sin=0), matching the pre-direction default.
+  float rad = direction * 3.14159 / 180.0;
+  float2 scrollDir = float2(cos(rad), sin(rad));
+  float2 cloudUv = float2(
+    uv.x + scrollOffsetX * scrollDir.x / resolution.x,
+    uv.y * 0.5 + scrollOffsetX * scrollDir.y / resolution.y
+  );
   float cloud = fbm(cloudUv * 3.0);
   float heightFade = smoothstep(0.6, 0.2, uv.y);
   float alpha = cloud * heightFade * intensity * 0.5;

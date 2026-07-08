@@ -65,7 +65,6 @@ export interface ColorGradingLutUniforms {
 export interface WeatherRainUniforms {
   intensity: number;
   direction: number;
-  speed: number;
   scrollOffsetY: number;
   color?: readonly [number, number, number];
   density?: number;
@@ -84,7 +83,6 @@ export interface WeatherDarkVignetteUniforms {
 export interface WeatherCloudsUniforms {
   intensity: number;
   direction: number;
-  speed: number;
   scrollOffsetX: number;
 }
 
@@ -232,7 +230,6 @@ export function createWeatherRain(
       kind: 'weather-rain',
       intensity: uniforms.intensity ?? 0.5,
       direction: uniforms.direction ?? 0,
-      speed: uniforms.speed ?? 0,
       scrollOffsetY: uniforms.scrollOffsetY ?? 0,
       color: uniforms.color ?? [1.0, 1.0, 1.0],
       density: uniforms.density ?? 0.5,
@@ -281,7 +278,6 @@ export function createWeatherClouds(
       kind: 'weather-clouds',
       intensity: uniforms.intensity ?? 0.5,
       direction: uniforms.direction ?? 0,
-      speed: uniforms.speed ?? 0,
       scrollOffsetX: uniforms.scrollOffsetX ?? 0,
     },
   };

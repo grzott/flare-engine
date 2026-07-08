@@ -55,7 +55,7 @@ export class Music {
     this.currentGain = gain;
     this.currentName = name;
 
-    (source as { onended: (() => void) | null }).onended = () => {
+    source.onended = () => {
       if (this.currentSource === source) {
         this.currentSource = null;
         this.currentGain = null;
@@ -111,7 +111,7 @@ export class Music {
     this.currentGain = gain;
     this.currentName = name;
 
-    (source as { onended: (() => void) | null }).onended = () => {
+    source.onended = () => {
       if (this.currentSource === source) {
         this.currentSource = null;
         this.currentGain = null;

@@ -4,7 +4,7 @@ import type { AudioBufferLike, AudioContextLike, GainNodeLike } from './audio-ma
 export interface PlaySFXOptions {
   /** Playback volume (0-1). Default: 1. */
   volume?: number;
-  /** Playback rate. Default: 1. */
+  /** Playback rate multiplier. Default: 1. Applied only when the audio node exposes a `playbackRate` param. */
   rate?: number;
   /** Whether to loop. Default: false. */
   loop?: boolean;
@@ -83,6 +83,12 @@ export class SFXPool {
     source.buffer = buffer;
     source.loop = opts?.loop ?? false;
 
+    // Apply playback rate when the injected node exposes the param (Web Audio shape).
+    const rateParam = source.playbackRate;
+    if (rateParam && opts?.rate !== undefined) {
+      rateParam.value = opts.rate;
+    }
+
     // Create a per-source gain for volume control
     const gain = this.ctx.createGain();
     gain.gain.value = opts?.volume ?? 1;
@@ -104,7 +110,7 @@ export class SFXPool {
     this.active.push(entry);
 
     // Clean up when playback ends
-    (source as { onended: (() => void) | null }).onended = () => {
+    source.onended = () => {
       const idx = this.active.indexOf(entry);
       if (idx !== -1) {
         this.active.splice(idx, 1);

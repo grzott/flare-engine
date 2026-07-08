@@ -7873,3 +7873,29 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 223 — 2026-07-08 (scope: engine)
+
+**Goal:** OSS-B17 — audio: dead rate + false auto-suspend (P1)
+
+**Touched files**
+- `.changeset/oss-b17-audio-rate-suspend.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/audio/README.md`
+- `packages/audio/src/audio-manager.ts`
+- `packages/audio/src/music.ts`
+- `packages/audio/src/sfx-pool.ts`
+- `packages/audio/tests/sfx-pool.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green (34 audio)
+- build: green
+
+**Frictions:** corr:0 deny:0 gate:0 fixup:0 drift:1 (spec tagged audio-manager.ts docs-only, but the source-node interface lives there); 4-lens review = 0 confirmed; added rate:0 test + owner-authorized music.ts cast cleanup (fully closes ledger onended item)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

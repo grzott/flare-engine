@@ -135,11 +135,11 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 | API            | Description                                                                                |
 | -------------- | ------------------------------------------------------------------------------------------ |
 | `AudioManager` | `init()`, `suspend()`, `resume()`. Manages AudioContext.                                   |
-| `SFXPool`      | Pre-decoded buffers. `play(name, opts?)`. Polyphony management (max N, oldest killed).     |
+| `SFXPool`      | Pre-decoded buffers. `play(name, { volume?, rate?, loop? })`. `rate` applies only when the injected node exposes a `playbackRate` param. Polyphony management (max N, oldest killed).     |
 | `Music`        | `play`, `stop`, `crossfadeTo`. One track at a time, loops by default.                      |
 | `createChannels(ctx)` | Factory returning a `Channel` map keyed by `ChannelName` (`master`, `sfx`, `music`). Gains 0.0–1.0. In-memory only — MMKV persistence is deferred. |
 
-Auto-suspends on app background, resumes on foreground.
+Lifecycle is manual — the package wires no automatic listener. Call `AudioManager.suspend()`/`resume()` from your own `AppState` (native) or `visibilitychange` (web) handler.
 
 ### `@flare-engine/assets` (< 6KB gzip)
 

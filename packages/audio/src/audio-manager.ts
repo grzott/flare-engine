@@ -29,11 +29,16 @@ export interface AudioBufferLike {
 export interface AudioBufferSourceNodeLike {
   buffer: AudioBufferLike | null;
   loop: boolean;
+  /**
+   * Playback-rate param (Web Audio shape). Optional — not every injected node
+   * exposes it; `SFXPool.play`'s `rate` option is a no-op when this is absent.
+   */
+  readonly playbackRate?: { value: number };
   connect(dest: GainNodeLike | AudioDestinationNodeLike): void;
   disconnect(): void;
   start(when?: number): void;
   stop(when?: number): void;
-  readonly onended: ((this: AudioBufferSourceNodeLike, ev: unknown) => void) | null;
+  onended: ((this: AudioBufferSourceNodeLike, ev: unknown) => void) | null;
 }
 
 export interface AudioContextLike {
@@ -81,14 +86,14 @@ export class AudioManager {
     this.ctx = factory();
   }
 
-  /** Suspend audio (e.g. on app background). */
+  /** Suspend audio. Call from your own background handler — no automatic wiring. */
   async suspend(): Promise<void> {
     if (this.ctx?.state === 'running') {
       await this.ctx.suspend();
     }
   }
 
-  /** Resume audio (e.g. on app foreground). */
+  /** Resume audio. Call from your own foreground handler — no automatic wiring. */
   async resume(): Promise<void> {
     if (this.ctx?.state === 'suspended') {
       await this.ctx.resume();

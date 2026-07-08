@@ -163,4 +163,110 @@ describe('SFXPool', () => {
     expect(capturedGainValue).toBe(0.5);
     expect(capturedLoop).toBe(true);
   });
+
+  it('applies rate when the node exposes a playbackRate param', () => {
+    const rateParam = { value: 1 };
+    const ctx: AudioContextLike = {
+      state: 'running',
+      currentTime: 0,
+      destination: { channelCount: 2 },
+      createGain: mockGainNode,
+      createBufferSource() {
+        return {
+          buffer: null,
+          loop: false,
+          playbackRate: rateParam,
+          connect() {},
+          disconnect() {},
+          start() {},
+          stop() {},
+          onended: null,
+        };
+      },
+      async resume() {},
+      async suspend() {},
+      async close() {},
+    };
+
+    const pool = new SFXPool();
+    pool.connect(ctx, mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a', { rate: 1.5 });
+
+    expect(rateParam.value).toBe(1.5);
+  });
+
+  it('applies rate: 0 (guard is undefined-based, not falsy-based)', () => {
+    const rateParam = { value: 1 };
+    const ctx: AudioContextLike = {
+      state: 'running',
+      currentTime: 0,
+      destination: { channelCount: 2 },
+      createGain: mockGainNode,
+      createBufferSource() {
+        return {
+          buffer: null,
+          loop: false,
+          playbackRate: rateParam,
+          connect() {},
+          disconnect() {},
+          start() {},
+          stop() {},
+          onended: null,
+        };
+      },
+      async resume() {},
+      async suspend() {},
+      async close() {},
+    };
+
+    const pool = new SFXPool();
+    pool.connect(ctx, mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a', { rate: 0 });
+
+    expect(rateParam.value).toBe(0);
+  });
+
+  it('leaves playbackRate untouched when rate is omitted', () => {
+    const rateParam = { value: 1 };
+    const ctx: AudioContextLike = {
+      state: 'running',
+      currentTime: 0,
+      destination: { channelCount: 2 },
+      createGain: mockGainNode,
+      createBufferSource() {
+        return {
+          buffer: null,
+          loop: false,
+          playbackRate: rateParam,
+          connect() {},
+          disconnect() {},
+          start() {},
+          stop() {},
+          onended: null,
+        };
+      },
+      async resume() {},
+      async suspend() {},
+      async close() {},
+    };
+
+    const pool = new SFXPool();
+    pool.connect(ctx, mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a', { volume: 0.5 });
+
+    expect(rateParam.value).toBe(1);
+  });
+
+  it('ignores rate when the node lacks a playbackRate param (no throw)', () => {
+    // mockAudioContext's nodes expose no playbackRate.
+    const pool = new SFXPool();
+    pool.connect(mockAudioContext(), mockGainNode());
+    pool.register('a', mockBuffer());
+
+    expect(() => pool.play('a', { rate: 2 })).not.toThrow();
+    expect(pool.activeCount).toBe(1);
+  });
 });

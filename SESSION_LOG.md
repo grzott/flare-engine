@@ -8105,3 +8105,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 231 — 2026-07-08 (scope: engine)
+
+**Goal:** iap-revenuecat: configure-once race (OSS-B27)
+
+**Touched files**
+- `.changeset/oss-b27-iap-revenuecat-configure-once-race.md`
+- `packages/iap-revenuecat/src/provider.ts`
+- `packages/iap-revenuecat/tests/provider.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** verify.sh biome lints `src/` only, not `tests/` — the new test's long `Promise.all` line was format-clean to the gate but would have been unstaged by husky lint-staged at commit; caught by a pre-gate `biome check` on the changed test and wrapped multi-line. Same class as the B26 friction; a `tests/`-inclusive gate lint would close it.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

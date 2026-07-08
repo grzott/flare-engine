@@ -8084,3 +8084,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 230 — 2026-07-08 (scope: engine)
+
+**Goal:** OSS-B26 — shapes: ShipSpec bounds include weapons + engine
+
+**Touched files**
+- `.changeset/oss-b26-shapes-ship-bounds-weapons-engine.md`
+- `packages/shapes/src/bounds.ts`
+- `packages/shapes/tests/bounds.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 deny:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---

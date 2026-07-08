@@ -224,16 +224,18 @@ export class Camera2D {
         const relX = target.x - this.x;
         const relY = target.y - this.y;
 
-        // Only move if target is outside dead zone
+        // Only move if target is outside dead zone.
+        // Each branch moves the camera by exactly the excess beyond the boundary,
+        // including the look-ahead offset. relX appears once — old code double-counted it.
         if (relX < dz.x) {
-          this.x += (goalX - this.x - (dz.x - relX)) * (1 - smoothing ** dt);
+          this.x += (relX + offsetX - dz.x) * (1 - smoothing ** dt);
         } else if (relX > dz.x + dz.width) {
-          this.x += (goalX - this.x + (relX - dz.x - dz.width)) * (1 - smoothing ** dt);
+          this.x += (relX + offsetX - dz.x - dz.width) * (1 - smoothing ** dt);
         }
         if (relY < dz.y) {
-          this.y += (goalY - this.y - (dz.y - relY)) * (1 - smoothing ** dt);
+          this.y += (relY + offsetY - dz.y) * (1 - smoothing ** dt);
         } else if (relY > dz.y + dz.height) {
-          this.y += (goalY - this.y + (relY - dz.y - dz.height)) * (1 - smoothing ** dt);
+          this.y += (relY + offsetY - dz.y - dz.height) * (1 - smoothing ** dt);
         }
       } else {
         // Exponential smoothing

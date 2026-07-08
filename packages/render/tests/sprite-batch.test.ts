@@ -271,7 +271,9 @@ describe('SpriteBatch', () => {
       expect(calls[0]?.count).toBe(3);
     });
 
-    it('same image + different effects = separate batches', () => {
+    it('interleaved effects produce 3 consecutive runs (z-order preserved, not merged)', () => {
+      // fxA, fxB, fxA are not consecutive → 3 separate drawAtlas calls in order.
+      // Old global-bucket code merged non-consecutive fxA into one call (broke z-order).
       const batch = new SpriteBatch();
       const img = mockImage('a');
       const fxA = tint(red, 0.5);
@@ -280,34 +282,33 @@ describe('SpriteBatch', () => {
       batch.draw(img, frame(0, 0, 16, 16), 20, 0, undefined, undefined, fxB);
       batch.draw(img, frame(0, 0, 16, 16), 40, 0, undefined, undefined, fxA);
 
-      const batches: { effect: unknown; count: number }[] = [];
+      const runs: unknown[] = [];
       batch.flush((_image, commands) => {
-        batches.push({ effect: commands[0]?.effect, count: commands.length });
+        runs.push(commands[0]?.effect);
       });
-      expect(batches).toHaveLength(2);
-      const aBatch = batches.find((b) => b.effect === fxA);
-      const bBatch = batches.find((b) => b.effect === fxB);
-      expect(aBatch?.count).toBe(2);
-      expect(bBatch?.count).toBe(1);
+      expect(runs).toHaveLength(3);
+      expect(runs[0]).toBe(fxA);
+      expect(runs[1]).toBe(fxB);
+      expect(runs[2]).toBe(fxA);
     });
 
-    it('sprites without effects batch together, separate from effected ones', () => {
+    it('interleaved no-effect sprites produce 3 consecutive runs in insertion order', () => {
+      // no-fx, fx, no-fx are not consecutive → 3 runs. Old code merged the two no-fx into one.
       const batch = new SpriteBatch();
       const img = mockImage('a');
       const fx = tint(red, 0.5);
-      batch.draw(img, frame(0, 0, 16, 16), 0, 0); // no effect
+      batch.draw(img, frame(0, 0, 16, 16), 0, 0);
       batch.draw(img, frame(0, 0, 16, 16), 20, 0, undefined, undefined, fx);
-      batch.draw(img, frame(0, 0, 16, 16), 40, 0); // no effect
+      batch.draw(img, frame(0, 0, 16, 16), 40, 0);
 
-      const batches: { effect: unknown; count: number }[] = [];
+      const runs: unknown[] = [];
       batch.flush((_image, commands) => {
-        batches.push({ effect: commands[0]?.effect, count: commands.length });
+        runs.push(commands[0]?.effect);
       });
-      expect(batches).toHaveLength(2);
-      const plain = batches.find((b) => b.effect === undefined);
-      const withFx = batches.find((b) => b.effect === fx);
-      expect(plain?.count).toBe(2);
-      expect(withFx?.count).toBe(1);
+      expect(runs).toHaveLength(3);
+      expect(runs[0]).toBeUndefined();
+      expect(runs[1]).toBe(fx);
+      expect(runs[2]).toBeUndefined();
     });
 
     it('different images with the same effect do not cross-batch', () => {
@@ -324,5 +325,92 @@ describe('SpriteBatch', () => {
       });
       expect(batches).toHaveLength(2);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Z-order preservation (consecutive-run grouping)
+// ---------------------------------------------------------------------------
+
+describe('SpriteBatch — z-order / consecutive-run flush', () => {
+  it('interleaved textures produce 3 ordered drawAtlas calls, not 2', () => {
+    // tex1(z=1), tex2(z=2), tex1(z=3) — must draw in that order.
+    // Old global-bucket code drew tex1 batch then tex2 batch, breaking z-order.
+    const batch = new SpriteBatch();
+    const tex1 = mockImage('tex1');
+    const tex2 = mockImage('tex2');
+    batch.draw(tex1, frame(0, 0, 16, 16), 0, 0);
+    batch.draw(tex2, frame(0, 0, 16, 16), 0, 0);
+    batch.draw(tex1, frame(0, 0, 16, 16), 32, 0);
+
+    const order: string[] = [];
+    batch.flush((img) => {
+      order.push((img as { id: string }).id);
+    });
+
+    expect(order).toHaveLength(3);
+    expect(order[0]).toBe('tex1');
+    expect(order[1]).toBe('tex2');
+    expect(order[2]).toBe('tex1');
+  });
+
+  it('consecutive same-texture sprites still batch into one call', () => {
+    const batch = new SpriteBatch();
+    const tex1 = mockImage('tex1');
+    const tex2 = mockImage('tex2');
+    batch.draw(tex1, frame(0, 0, 16, 16), 0, 0);
+    batch.draw(tex1, frame(0, 0, 16, 16), 16, 0);
+    batch.draw(tex2, frame(0, 0, 16, 16), 0, 0);
+
+    const calls: { id: string; count: number }[] = [];
+    batch.flush((img, commands) => {
+      calls.push({ id: (img as { id: string }).id, count: commands.length });
+    });
+
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.id).toBe('tex1');
+    expect(calls[0]?.count).toBe(2);
+    expect(calls[1]?.id).toBe('tex2');
+    expect(calls[1]?.count).toBe(1);
+  });
+
+  it('stretch=true and stretch=false with same key form separate runs', () => {
+    const batch = new SpriteBatch();
+    const img = mockImage('img');
+    batch.draw(img, frame(0, 0, 32, 32), 0, 0, undefined, undefined, undefined, 0, 0, 1, 0, false);
+    batch.draw(img, frame(0, 0, 32, 32), 40, 0, undefined, undefined, undefined, 0, 0, 1, 0, true);
+
+    const runs: boolean[] = [];
+    batch.flush((_image, commands) => {
+      runs.push(commands[0]?.stretch ?? false);
+    });
+
+    expect(runs).toHaveLength(2);
+    expect(runs[0]).toBe(false);
+    expect(runs[1]).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dead-zone follow
+// ---------------------------------------------------------------------------
+
+describe('SpriteBatch — draw order follows insertion order (regression)', () => {
+  it('four interleaved textures arrive in insertion sequence', () => {
+    const batch = new SpriteBatch();
+    const a = mockImage('a');
+    const b = mockImage('b');
+    // Simulate z-sorted sequence: a(z=1), b(z=2), a(z=3), b(z=4)
+    batch.draw(a, frame(0, 0, 8, 8), 0, 0);
+    batch.draw(b, frame(0, 0, 8, 8), 8, 0);
+    batch.draw(a, frame(0, 0, 8, 8), 16, 0);
+    batch.draw(b, frame(0, 0, 8, 8), 24, 0);
+
+    const order: string[] = [];
+    batch.flush((img) => {
+      order.push((img as { id: string }).id);
+    });
+
+    expect(order).toEqual(['a', 'b', 'a', 'b']);
   });
 });

@@ -87,6 +87,7 @@ mock.module('@flare-engine/core', () => ({
   GameLoop: class {
     onPreRender = { add: () => () => {} };
     onLateUpdate = { add: () => () => {} };
+    clock = { elapsed: 0 };
     start = () => {};
     stop = () => {};
   },

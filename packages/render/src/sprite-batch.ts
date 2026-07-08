@@ -48,11 +48,12 @@ export interface SpriteDrawCommand {
   stretch: boolean;
 }
 
-/** Internal grouping bucket — one per unique (texture, effect, alpha) triple. */
+/** Internal run-bucket — one reused across all runs per flush. */
 interface Batch {
   image: SkImageLike;
   effect: AnySpriteEffect | undefined;
   alpha: number;
+  stretch: boolean;
   commands: SpriteDrawCommand[];
 }
 
@@ -63,8 +64,10 @@ interface Batch {
  * Usage:
  * 1. Call `draw()` for each sprite, optionally passing an effect
  * 2. Call `flush()` with an atlas draw callback to execute all batched draws
- * 3. Batching groups by texture identity, then by effect identity — so
- *    sharing an effect instance across sprites maximizes batch size
+ * 3. Batching groups consecutive commands by `(image, effect, alpha, stretch)`
+ *    identity, preserving global insertion (z-sorted) order. Sharing an effect
+ *    reference and the same alpha across consecutive entities maximizes batch
+ *    size while keeping sprites in correct draw order.
  *
  * The actual Skia Atlas draw call is delegated to a callback so this module
  * remains testable without Skia.
@@ -163,12 +166,15 @@ export class SpriteBatch {
   }
 
   /**
-   * Flush all queued commands, grouped by (texture, effect, alpha) identity.
+   * Flush all queued commands in insertion order, grouping maximal consecutive
+   * runs that share the same `(image, effect, alpha, stretch)` key into a
+   * single `drawAtlas` call. This preserves global z-order (the caller is
+   * responsible for queuing in z-sorted order) while still batching runs of
+   * same-key sprites for efficiency.
    *
-   * @param drawAtlas Callback invoked once per batch. Receives
-   *   `(image, commands)` — all commands in a batch share the same texture,
-   *   the same effect (readable from `commands[0].effect`), and the same
-   *   alpha (readable from `commands[0].alpha`).
+   * @param drawAtlas Callback invoked once per run. Receives
+   *   `(image, commands)` — all commands in a run share the same key and are
+   *   contiguous in the original insertion order.
    * @param renderer Optional renderer to record stats.
    */
   flush(
@@ -177,33 +183,45 @@ export class SpriteBatch {
   ): void {
     if (this._commands.length === 0) return;
 
-    // Group by (image, effect, alpha) via linear scan. Typical frames have
-    // few unique batches, so O(n·k) is effectively O(n).
-    const batches = this._batches;
-    for (const cmd of this._commands) {
-      let batch: Batch | undefined;
-      for (let i = 0; i < batches.length; i++) {
-        const b = batches[i]!;
-        if (b.image === cmd.image && b.effect === cmd.effect && b.alpha === cmd.alpha) {
-          batch = b;
-          break;
-        }
-      }
-      if (!batch) {
-        batch = { image: cmd.image, effect: cmd.effect, alpha: cmd.alpha, commands: [] };
-        batches.push(batch);
-      }
-      batch.commands.push(cmd);
+    // Ensure one reusable run-bucket exists (allocated once, never in steady state).
+    let run = this._batches[0];
+    if (run === undefined) {
+      run = { image: null!, effect: undefined, alpha: 1, stretch: false, commands: [] };
+      this._batches[0] = run;
     }
 
-    // Draw each batch.
-    for (let i = 0; i < batches.length; i++) {
-      const batch = batches[i]!;
-      drawAtlas(batch.image, batch.commands);
+    // Walk commands in insertion order. Emit a drawAtlas call whenever the
+    // run key changes, then reset the run bucket for the next run.
+    for (const cmd of this._commands) {
+      if (
+        run.commands.length > 0 &&
+        (cmd.image !== run.image ||
+          cmd.effect !== run.effect ||
+          cmd.alpha !== run.alpha ||
+          cmd.stretch !== run.stretch)
+      ) {
+        drawAtlas(run.image, run.commands);
+        if (renderer) {
+          renderer.recordDrawCall();
+          renderer.recordBatch();
+        }
+        run.commands.length = 0;
+      }
+      run.image = cmd.image;
+      run.effect = cmd.effect;
+      run.alpha = cmd.alpha;
+      run.stretch = cmd.stretch;
+      run.commands.push(cmd);
+    }
+
+    // Flush the final run.
+    if (run.commands.length > 0) {
+      drawAtlas(run.image, run.commands);
       if (renderer) {
         renderer.recordDrawCall();
         renderer.recordBatch();
       }
+      run.commands.length = 0;
     }
 
     // Return commands to pool. Field values remain on the command until
@@ -213,12 +231,6 @@ export class SpriteBatch {
       this._pool.push(cmd);
     }
     this._commands.length = 0;
-
-    // Release batch buckets (reuse the outer array, drop inner arrays).
-    for (let i = 0; i < batches.length; i++) {
-      batches[i]!.commands.length = 0;
-    }
-    batches.length = 0;
   }
 
   /** Clear all queued commands without drawing. */

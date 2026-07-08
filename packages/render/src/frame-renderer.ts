@@ -320,6 +320,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   const fireUniforms: number[] = new Array(11).fill(0);
 
   let currentFrameTime = 0;
+  let currentSpriteW = 0;
+  let currentSpriteH = 0;
   let current: DrawSurfaceLike | null = null;
 
   let _boundRuntime: FrameRendererPostFxRuntime | null = null;
@@ -469,8 +471,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       waterRuntimeEffect = compiled;
     }
     if (waterPaint === null) waterPaint = Skia.Paint();
-    waterUniforms[0] = 0;
-    waterUniforms[1] = 0;
+    waterUniforms[0] = currentSpriteW;
+    waterUniforms[1] = currentSpriteH;
     waterUniforms[2] = effect.color.r;
     waterUniforms[3] = effect.color.g;
     waterUniforms[4] = effect.color.b;
@@ -492,8 +494,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       fogRuntimeEffect = compiled;
     }
     if (fogPaint === null) fogPaint = Skia.Paint();
-    fogUniforms[0] = 0;
-    fogUniforms[1] = 0;
+    fogUniforms[0] = currentSpriteW;
+    fogUniforms[1] = currentSpriteH;
     fogUniforms[2] = effect.color.r;
     fogUniforms[3] = effect.color.g;
     fogUniforms[4] = effect.color.b;
@@ -513,8 +515,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       fireRuntimeEffect = compiled;
     }
     if (firePaint === null) firePaint = Skia.Paint();
-    fireUniforms[0] = 0;
-    fireUniforms[1] = 0;
+    fireUniforms[0] = currentSpriteW;
+    fireUniforms[1] = currentSpriteH;
     fireUniforms[2] = effect.color.r;
     fireUniforms[3] = effect.color.g;
     fireUniforms[4] = effect.color.b;
@@ -758,6 +760,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
 
       const effect = commands[0]?.effect;
       const alpha = commands[0]?.alpha ?? 1;
+      currentSpriteW = commands[0]?.dstW ?? 0;
+      currentSpriteH = commands[0]?.dstH ?? 0;
 
       if (
         effect?.type === 'roofs-city' ||
@@ -780,18 +784,24 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       }
 
       if (commands[0]?.stretch) {
-        if (stretchPaint === null) stretchPaint = Skia.Paint();
         ensureStretchPoolCapacity(n);
-        stretchPaint.setAlphaf(alpha);
+        if (stretchPaint === null) stretchPaint = Skia.Paint();
+        const sp = stretchPaint;
+        // outline requires two passes (SRC_IN silhouette + source) which is
+        // incompatible with the single-drawImageRect stretch path; fall back
+        // to alpha-only like the pre-effect baseline.
+        const sPaint =
+          effect === undefined || effect.type === 'outline' ? sp : resolveEffectPaint(effect);
+        sPaint.setAlphaf(alpha);
         for (let i = 0; i < n; i++) {
           const cmd = commands[i] as SpriteDrawCommand;
           const srcR = stretchSrcRects[i]!;
           const dstR = stretchDstRects[i]!;
           srcR.setXYWH(cmd.srcX, cmd.srcY, cmd.srcW, cmd.srcH);
           dstR.setXYWH(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
-          current.drawImageRect(image, srcR, dstR, stretchPaint);
+          current.drawImageRect(image, srcR, dstR, sPaint);
         }
-        stretchPaint.setAlphaf(1);
+        sPaint.setAlphaf(1);
         return;
       }
 

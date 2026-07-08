@@ -8024,3 +8024,40 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 228 — 2026-07-08 (scope: engine)
+
+**Goal:** render: shader-effect + z-order correctness
+
+**Touched files**
+- `SESSION_LOG.md`
+- `docs/design/api-specs.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/render-web/tests/conformance.test.ts`
+- `packages/render/src/camera2d.ts`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render/src/shaders.ts`
+- `packages/render/src/sprite-batch.ts`
+- `packages/render/tests/camera2d.test.ts`
+- `packages/render/tests/fire-effect.test.ts`
+- `packages/render/tests/fog-effect.test.ts`
+- `packages/render/tests/sprite-alpha.test.ts`
+- `packages/render/tests/sprite-batch.test.ts`
+- `packages/render/tests/stretch-effect.test.ts`
+- `packages/render/tests/water-effect.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** 1. CanvasKit CPU drawAtlas does not execute RuntimeEffect shaders — animation pixel-diff test redesigned as makeShader spy; conformance smoke test rescoped with honest docstring. 2. Dead wave1/wave2 locals in WATER_SKSL caught in adversarial review. 3. outline+stretch regression required local var to avoid Biome multi-line ternary formatting.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

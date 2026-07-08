@@ -1264,10 +1264,16 @@ depends on these; **spot-check confirmed** the shader + resolution sites.
   C1** (it implements `createWebFrameRenderer` over this surface); added to C1's done-when 2026-07-05,
   removed from B24's scope so it can't fall between the two rows.
 
-**Done when:** readback test proves water/fog/fire render non-trivially on render-web with animating
-time; z-order test proves cross-texture ordering preserved; stretch-with-effect test; dead-zone
-follow test; api-specs updated to match. **If the calendar is red, the water/fog/fire binding + the
-z-order fix are the launch-critical subset (the headline claim); stretch/dead-zone can slip to 0.3.x.**
+**Done when:** water/fog/fire correctness proven by real-CanvasKit `makeShader` uniform spies
+(resolution slots [0]/[1] = sprite `dstW`/`dstH`; time slot advances across `beginFrame`) for all
+three effects, plus a non-throwing end-to-end smoke readback — **pixel-level shader execution is NOT
+observable on CPU CanvasKit** (software `drawAtlas` does not rasterize `RuntimeEffect`; verified
+2026-07-08 by driving the effect with a discriminating atlas color and reading back the raw atlas,
+not shader output), so GPU-visual validation of the three effects is deferred to the owner manual-test
+window; z-order test proves cross-texture ordering preserved; stretch-with-effect test drives a
+`stretch:true`+effect command through the frame-renderer (not just the batch key); dead-zone follow
+test; api-specs updated to match. **If the calendar is red, the water/fog/fire binding + the z-order
+fix are the launch-critical subset (the headline claim); stretch/dead-zone can slip to 0.3.x.**
 
 #### OSS-E2 · MIT → Apache-2.0 relicense (P0, 1 session, [MT]) — the missing owning row
 

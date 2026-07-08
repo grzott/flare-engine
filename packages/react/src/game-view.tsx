@@ -164,7 +164,7 @@ export function GameView({
     const unsubscribePre = ctx.loop.onPreRender.add(() => {
       const w = ctx.camera.viewportWidth;
       const h = ctx.camera.viewportHeight;
-      bridge.beginFrame(w, h, 0, pd);
+      bridge.beginFrame(w, h, ctx.loop.clock.elapsed, pd);
       ctx.renderer.begin(clearColor);
       ctx.renderer.applyCamera(
         ctx.camera.effectiveX,

@@ -978,8 +978,8 @@ describe('createSkiaFrameRenderer — fog effect', () => {
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
     const uniforms = currentMockFogEffect?.makeShaderCalls[0];
     expect(uniforms).toHaveLength(9);
-    expect(uniforms?.[0]).toBe(0);
-    expect(uniforms?.[1]).toBe(0);
+    expect(uniforms?.[0]).toBe(32); // resolution.x = dstW
+    expect(uniforms?.[1]).toBe(32); // resolution.y = dstH
     expect(uniforms?.[2]).toBeCloseTo(0.2);
     expect(uniforms?.[3]).toBeCloseTo(0.4);
     expect(uniforms?.[4]).toBeCloseTo(0.6);
@@ -1083,9 +1083,9 @@ describe('fire effect', () => {
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
     const uniforms = currentMockFireEffect?.makeShaderCalls[0];
     expect(uniforms).toHaveLength(11);
-    // [0,1] = resolution (zeroed — callers fill via drawAtlas)
-    expect(uniforms?.[0]).toBe(0);
-    expect(uniforms?.[1]).toBe(0);
+    // [0,1] = resolution (dstW/H from drawAtlas — set to 32 by cmd() default)
+    expect(uniforms?.[0]).toBe(32);
+    expect(uniforms?.[1]).toBe(32);
     // [2..4] = color.rgb
     expect(uniforms?.[2]).toBeCloseTo(0.2);
     expect(uniforms?.[3]).toBeCloseTo(0.4);

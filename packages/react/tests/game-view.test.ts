@@ -75,6 +75,7 @@ mock.module('react-native-safe-area-context', () => ({
 let _usePictureAsTextureArgs: Array<{ width: number; height: number }> = [];
 let _beginRecordingBounds: Array<{ width: number; height: number }> = [];
 let _beginFramePdArgs: number[] = [];
+const _beginFrameTimeArgs: number[] = [];
 
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
@@ -160,6 +161,7 @@ class MockLoop {
   onPreRender = makeSignal<void>();
   onLateUpdate = makeSignal<number>();
   onUpdate = makeSignal<number>();
+  clock = { elapsed: 0 };
   start = () => {
     this._started = true;
   };
@@ -308,7 +310,8 @@ mock.module('@flare-engine/render', () => ({
     };
     return {
       canvas,
-      beginFrame: (w: number, h: number, _t = 0, pd = 1) => {
+      beginFrame: (w: number, h: number, t = 0, pd = 1) => {
+        _beginFrameTimeArgs.push(t);
         if (w === 0 || h === 0) return;
         bounds.setXYWH(0, 0, w * pd, h * pd);
         cur = recorder.beginRecording(bounds);
@@ -401,6 +404,7 @@ beforeEach(() => {
   _buildPasses = () => [];
   _setPassesCount = 0;
   _lastPasses = null;
+  _beginFrameTimeArgs.length = 0;
 });
 
 describe('GameView', () => {
@@ -788,6 +792,46 @@ describe('GameView — postfx pass gate (per-frame churn)', () => {
     children = [imgA, {}]; // length changed
     tick(); // : 3
     expect(_setPassesCount).toBe(3);
+    unmountAll();
+  });
+});
+
+describe('GameView — frame time forwarded to beginFrame', () => {
+  it('beginFrame receives clock.elapsed not hardcoded 0', () => {
+    mount();
+    const loop = _loopInstance!;
+
+    // With viewport non-zero (camera provides dimensions).
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    _beginFrameTimeArgs.length = 0;
+
+    loop.clock.elapsed = 3.14;
+    loop.onPreRender._handler?.();
+
+    expect(_beginFrameTimeArgs.length).toBeGreaterThan(0);
+    expect(_beginFrameTimeArgs[0]).toBe(3.14);
+    unmountAll();
+  });
+
+  it('beginFrame time updates as clock advances across ticks', () => {
+    mount();
+    const loop = _loopInstance!;
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    _beginFrameTimeArgs.length = 0;
+
+    loop.clock.elapsed = 1.0;
+    loop.onPreRender._handler?.();
+    loop.clock.elapsed = 2.0;
+    loop.onPreRender._handler?.();
+
+    expect(_beginFrameTimeArgs[0]).toBe(1.0);
+    expect(_beginFrameTimeArgs[1]).toBe(2.0);
     unmountAll();
   });
 });

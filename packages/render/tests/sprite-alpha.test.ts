@@ -84,23 +84,22 @@ describe('SpriteBatch alpha passthrough', () => {
     expect(commands[0]?.alpha).toBe(0.25);
   });
 
-  it('sprites with same image+effect but different alphas are in separate batches', () => {
+  it('interleaved alphas produce consecutive runs in insertion order (z-order preserved, no global merge)', () => {
     const batch = new SpriteBatch();
     const img = mockImage();
     batch.draw(img, frame(), 0, 0, undefined, undefined, undefined, 0, 0, 1.0);
     batch.draw(img, frame(), 10, 0, undefined, undefined, undefined, 0, 0, 0.5);
     batch.draw(img, frame(), 20, 0, undefined, undefined, undefined, 0, 0, 1.0);
 
-    const batches: { alpha: number; count: number }[] = [];
+    const runs: { alpha: number; count: number }[] = [];
     batch.flush((_, cmds) => {
-      batches.push({ alpha: cmds[0]?.alpha ?? -1, count: cmds.length });
+      runs.push({ alpha: cmds[0]?.alpha ?? -1, count: cmds.length });
     });
 
-    expect(batches).toHaveLength(2);
-    const fullBatch = batches.find((b) => b.alpha === 1.0);
-    const halfBatch = batches.find((b) => b.alpha === 0.5);
-    expect(fullBatch?.count).toBe(2);
-    expect(halfBatch?.count).toBe(1);
+    expect(runs).toHaveLength(3);
+    expect(runs[0]).toEqual({ alpha: 1.0, count: 1 });
+    expect(runs[1]).toEqual({ alpha: 0.5, count: 1 });
+    expect(runs[2]).toEqual({ alpha: 1.0, count: 1 });
   });
 
   it('sprites with same image+effect+alpha batch together', () => {

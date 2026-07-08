@@ -306,3 +306,64 @@ describe('Camera2D', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Dead-zone follow math
+// ---------------------------------------------------------------------------
+
+describe('Camera2D — dead-zone follow', () => {
+  // Use smoothing=0.001 and dt=1000 so (smoothing ** dt) ≈ 0, factor ≈ 1.
+  // Camera jumps exactly the excess beyond the dead-zone boundary in one update.
+  const INSTANT = 1000;
+  const SNAP = 0.001;
+
+  it('target outside left edge moves camera by exact excess, not double', () => {
+    // deadZone.x = -3: left boundary is camera.x - 3
+    // target at camera.x - 5 → excess = 2 units left of left boundary
+    // Expected camera move: -(5 - 3) = -2 (camera.x becomes -2)
+    const cam = new Camera2D();
+    cam.setViewport(200, 100);
+    cam.x = 0;
+    const target = { x: -5, y: 0 };
+    cam.follow(target, { smoothing: SNAP, deadZone: { x: -3, y: -10, width: 6, height: 20 } });
+    cam.update(INSTANT);
+    expect(cam.x).toBeCloseTo(-2, 5);
+  });
+
+  it('target outside right edge moves camera by exact excess, not double', () => {
+    // deadZone right boundary at camera.x + dz.x + dz.width = 0 + (-3) + 6 = 3
+    // target at x=7 → excess = 7 - 3 = 4 right of right boundary
+    // Expected camera move: +4 (camera.x becomes 4)
+    const cam = new Camera2D();
+    cam.setViewport(200, 100);
+    cam.x = 0;
+    const target = { x: 7, y: 0 };
+    cam.follow(target, { smoothing: SNAP, deadZone: { x: -3, y: -10, width: 6, height: 20 } });
+    cam.update(INSTANT);
+    expect(cam.x).toBeCloseTo(4, 5);
+  });
+
+  it('target inside dead zone does not move camera', () => {
+    const cam = new Camera2D();
+    cam.setViewport(200, 100);
+    cam.x = 0;
+    cam.y = 0;
+    const target = { x: 1, y: 1 };
+    cam.follow(target, { smoothing: SNAP, deadZone: { x: -5, y: -5, width: 10, height: 10 } });
+    cam.update(INSTANT);
+    expect(cam.x).toBe(0);
+    expect(cam.y).toBe(0);
+  });
+
+  it('target outside bottom edge moves camera by exact excess', () => {
+    // dz.y = -3, dz.height = 6 → bottom boundary at camera.y + 3
+    // target at y=8 → excess = 8 - 3 = 5
+    const cam = new Camera2D();
+    cam.setViewport(200, 100);
+    cam.y = 0;
+    const target = { x: 0, y: 8 };
+    cam.follow(target, { smoothing: SNAP, deadZone: { x: -10, y: -3, width: 20, height: 6 } });
+    cam.update(INSTANT);
+    expect(cam.y).toBeCloseTo(5, 5);
+  });
+});

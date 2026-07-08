@@ -95,5 +95,5 @@ export function createDialogueGraph(
 }
 
 export function getNode(graph: DialogueGraph, nodeId: string): DialogueNode | undefined {
-  return graph.nodes[nodeId];
+  return Object.hasOwn(graph.nodes, nodeId) ? graph.nodes[nodeId] : undefined;
 }

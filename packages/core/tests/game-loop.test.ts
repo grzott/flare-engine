@@ -231,3 +231,25 @@ describe('GameLoop.alpha', () => {
     }
   });
 });
+
+describe('GameLoop input validation', () => {
+  it('constructor throws if fixedDt is 0', () => {
+    expect(() => new GameLoop({ fixedDt: 0 })).toThrow('GameLoop: fixedDt must be > 0');
+  });
+
+  it('constructor throws if fixedDt is negative', () => {
+    expect(() => new GameLoop({ fixedDt: -1 })).toThrow('GameLoop: fixedDt must be > 0');
+  });
+
+  it('step() throws if clock.fixedDt is mutated to 0', () => {
+    const loop = new GameLoop({ fixedDt: 1 / 60 });
+    loop.clock.fixedDt = 0;
+    expect(() => loop.step(0.016)).toThrow('GameLoop: fixedDt must be > 0');
+  });
+
+  it('step() throws if clock.fixedDt is mutated to negative', () => {
+    const loop = new GameLoop({ fixedDt: 1 / 60 });
+    loop.clock.fixedDt = -1;
+    expect(() => loop.step(0.016)).toThrow('GameLoop: fixedDt must be > 0');
+  });
+});

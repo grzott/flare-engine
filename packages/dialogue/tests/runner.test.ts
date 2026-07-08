@@ -399,3 +399,37 @@ describe('DialogueError diagnostics', () => {
     expect(thrown instanceof RangeError).toBe(false);
   });
 });
+
+describe('interpolate prototype safety', () => {
+  test('does not leak constructor from prototype', () => {
+    expect(interpolate('{constructor}', {})).toBe('{constructor}');
+  });
+
+  test('does not leak toString from prototype', () => {
+    expect(interpolate('{toString}', {})).toBe('{toString}');
+  });
+
+  test('supports explicit own property named constructor', () => {
+    expect(interpolate('{constructor}', { constructor: 'Aeron' })).toBe('Aeron');
+  });
+});
+
+describe('runner prototype safety', () => {
+  test('runner ends cleanly when a node id resolves to a prototype key', () => {
+    const nodes: Record<string, DialogueNode> = {
+      start: { kind: 'line', speaker: 'A', text: 'Hi', next: '__proto__' },
+    };
+    const graph = createDialogueGraph('proto_test', 'start', nodes);
+    let errorReceived: DialogueError | null = null;
+    const runner = createDialogueRunner({
+      onError: (err) => {
+        errorReceived = err;
+      },
+    });
+    runner.start(graph);
+    runner.advance();
+    expect(runner.state).toBe('ended');
+    expect(errorReceived).toBeInstanceOf(DialogueError);
+    expect((errorReceived as DialogueError).code).toBe('missing-node');
+  });
+});

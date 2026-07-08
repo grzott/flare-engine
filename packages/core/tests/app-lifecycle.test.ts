@@ -87,3 +87,31 @@ describe('AppLifecycle.memoryWarning', () => {
     expect(fired).toBe(true);
   });
 });
+
+describe('AppLifecycle idempotency', () => {
+  it('second background() call is a no-op — foreground() still resumes', () => {
+    const loop = createLoop();
+    const lifecycle = new AppLifecycle(loop);
+    loop.start();
+    lifecycle.background();
+    expect(loop.isPaused).toBe(true);
+    lifecycle.background(); // second call — must not overwrite wasRunning flag
+    lifecycle.foreground();
+    expect(loop.isPaused).toBe(false);
+    loop.stop();
+  });
+
+  it('onBackground fires only on the first background() call', () => {
+    const loop = createLoop();
+    const lifecycle = new AppLifecycle(loop);
+    loop.start();
+    let count = 0;
+    lifecycle.onBackground.add(() => {
+      count++;
+    });
+    lifecycle.background();
+    lifecycle.background();
+    expect(count).toBe(1);
+    loop.stop();
+  });
+});

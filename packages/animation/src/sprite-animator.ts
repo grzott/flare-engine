@@ -69,6 +69,7 @@ export function updateAnimator(state: SpriteAnimatorState, dt: number): SpriteFr
 
   const seq = state.sheet.animations.get(state.currentAnimation);
   if (!seq || seq.frameIndices.length === 0) return null;
+  if (seq.frameDuration <= 0) throw new Error('updateAnimator: frameDuration must be > 0');
 
   state.elapsed += dt;
 

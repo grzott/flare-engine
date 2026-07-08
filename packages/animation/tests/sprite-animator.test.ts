@@ -134,4 +134,26 @@ describe('SpriteAnimator', () => {
     const state = createSpriteAnimator(makeSheet());
     expect(updateAnimator(state, 0.1)).toBeNull();
   });
+
+  it('throws when frameDuration is 0', () => {
+    const frames = [{ name: 'f0', x: 0, y: 0, w: 32, h: 32 }];
+    const animations = new Map([
+      ['bad', { name: 'bad', frameIndices: [0], frameDuration: 0, loop: true }],
+    ]);
+    const sheet: SpriteSheet = { frames, frameMap: new Map([['f0', 0]]), animations };
+    const state = createSpriteAnimator(sheet);
+    playAnimation(state, 'bad');
+    expect(() => updateAnimator(state, 0.016)).toThrow('updateAnimator: frameDuration must be > 0');
+  });
+
+  it('throws when frameDuration is negative', () => {
+    const frames = [{ name: 'f0', x: 0, y: 0, w: 32, h: 32 }];
+    const animations = new Map([
+      ['bad', { name: 'bad', frameIndices: [0], frameDuration: -1, loop: true }],
+    ]);
+    const sheet: SpriteSheet = { frames, frameMap: new Map([['f0', 0]]), animations };
+    const state = createSpriteAnimator(sheet);
+    playAnimation(state, 'bad');
+    expect(() => updateAnimator(state, 0.016)).toThrow('updateAnimator: frameDuration must be > 0');
+  });
 });

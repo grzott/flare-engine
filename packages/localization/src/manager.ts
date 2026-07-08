@@ -59,15 +59,21 @@ export class LocalizationManager {
   }
 
   has(key: string): boolean {
+    const active = this._tables[this._locale];
+    const fallback = this._tables[this._fallback];
     return (
-      this._tables[this._locale]?.[key] !== undefined ||
-      this._tables[this._fallback]?.[key] !== undefined
+      (active !== undefined && Object.hasOwn(active, key)) ||
+      (fallback !== undefined && Object.hasOwn(fallback, key))
     );
   }
 
   t(key: string, values?: MessageValues): string {
+    const active = this._tables[this._locale];
+    const fallback = this._tables[this._fallback];
     const template =
-      this._tables[this._locale]?.[key] ?? this._tables[this._fallback]?.[key] ?? key;
+      (active !== undefined && Object.hasOwn(active, key) ? active[key] : undefined) ??
+      (fallback !== undefined && Object.hasOwn(fallback, key) ? fallback[key] : undefined) ??
+      key;
     return formatMessage(template, values, this._locale);
   }
 }

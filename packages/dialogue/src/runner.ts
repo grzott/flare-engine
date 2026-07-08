@@ -67,7 +67,7 @@ export type DialogueRunnerState = 'idle' | 'running' | 'waiting-choice' | 'ended
 
 export function interpolate(template: string, vars: VariableBag): string {
   return template.replace(/\{(\w+)\}/g, (_match, key: string) => {
-    const val = vars[key];
+    const val = Object.hasOwn(vars, key) ? vars[key] : undefined;
     return val !== undefined ? String(val) : `{${key}}`;
   });
 }

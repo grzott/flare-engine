@@ -45,6 +45,7 @@ export class GameLoop {
   constructor(config?: GameLoopConfig) {
     this.maxDt = config?.maxDt ?? 0.25;
     if (config?.fixedDt !== undefined) {
+      if (config.fixedDt <= 0) throw new Error('GameLoop: fixedDt must be > 0');
       this.clock.fixedDt = config.fixedDt;
       this._hasFixedDt = true;
     }
@@ -119,6 +120,7 @@ export class GameLoop {
 
     const dt = this.clock.dt;
     const fixedDt = this.clock.fixedDt;
+    if (fixedDt <= 0) throw new Error('GameLoop: fixedDt must be > 0');
 
     // Fixed update accumulator
     this.accumulator += dt;

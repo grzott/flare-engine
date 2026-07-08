@@ -61,19 +61,21 @@ function renderPlaceholder(inner: string, values: MessageValues, locale: LocaleC
   // Split only on the top-level commas into at most 3 parts: name, type, body.
   const commaIdx = topLevelComma(inner);
   if (commaIdx === -1) {
-    return stringifyValue(values[inner.trim()]);
+    const k = inner.trim();
+    return stringifyValue(Object.hasOwn(values, k) ? values[k] : undefined);
   }
   const name = inner.slice(0, commaIdx).trim();
   const rest = inner.slice(commaIdx + 1).trim();
   const secondComma = topLevelComma(rest);
-  if (secondComma === -1) return stringifyValue(values[name]);
+  if (secondComma === -1)
+    return stringifyValue(Object.hasOwn(values, name) ? values[name] : undefined);
   const type = rest.slice(0, secondComma).trim();
   const body = rest.slice(secondComma + 1).trim();
   if (type !== 'plural') {
     // Unknown formatter — fall back to raw substitution.
-    return stringifyValue(values[name]);
+    return stringifyValue(Object.hasOwn(values, name) ? values[name] : undefined);
   }
-  const raw = values[name];
+  const raw = Object.hasOwn(values, name) ? values[name] : undefined;
   const n = typeof raw === 'number' ? raw : Number(raw);
   const category = Number.isFinite(n) ? pluralCategory(locale, n) : 'other';
   const branches = parsePluralBranches(body);

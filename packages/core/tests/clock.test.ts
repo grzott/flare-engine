@@ -154,3 +154,42 @@ describe('Clock.reset', () => {
     expect(fired).toBe(false);
   });
 });
+
+describe('Clock re-entrancy', () => {
+  it('schedule added inside a callback does not fire in the same tick', () => {
+    const clock = new Clock();
+    let secondFired = false;
+    clock.schedule(0.01, () => {
+      clock.schedule(0.01, () => {
+        secondFired = true;
+      });
+    });
+    clock.update(0.1);
+    expect(secondFired).toBe(false);
+    clock.update(0.1);
+    expect(secondFired).toBe(true);
+  });
+
+  it('cancelling another schedule inside a callback does not double-fire the current one', () => {
+    const clock = new Clock();
+    let aCount = 0;
+    let bCount = 0;
+    // A and B both fire in the same tick. B's callback cancels A.
+    // With backward iteration, B (higher index) fires first.
+    const cancelA = clock.schedule(0.01, () => {
+      aCount++;
+    });
+    clock.schedule(0.01, () => {
+      bCount++;
+      cancelA();
+    });
+    clock.update(0.1);
+    // B fired once; A was cancelled by B before A could fire (B has higher index, fires first).
+    expect(bCount).toBe(1);
+    expect(aCount).toBe(0);
+    // Neither fires again next tick.
+    clock.update(0.1);
+    expect(bCount).toBe(1);
+    expect(aCount).toBe(0);
+  });
+});

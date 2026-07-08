@@ -34,6 +34,7 @@ export class SFXPool {
   private maxPolyphony: number;
 
   constructor(maxPolyphony = 16) {
+    if (maxPolyphony <= 0) throw new Error('SFXPool: maxPolyphony must be > 0');
     this.maxPolyphony = maxPolyphony;
   }
 

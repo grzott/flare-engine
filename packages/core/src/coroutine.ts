@@ -61,7 +61,8 @@ export class CoroutineManager {
   /** Update all running coroutines. Call once per frame with scaled dt. */
   update(dt: number): void {
     for (let i = this.coroutines.length - 1; i >= 0; i--) {
-      const state = this.coroutines[i]!;
+      const state = this.coroutines[i];
+      if (state === undefined) continue;
       if (state.done) {
         this.coroutines.splice(i, 1);
         continue;

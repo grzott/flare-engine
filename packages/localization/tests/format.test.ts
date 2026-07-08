@@ -50,4 +50,16 @@ describe('formatMessage', () => {
   test('unknown formatter falls back to raw var substitution', () => {
     expect(formatMessage('{n, number, usd}', { n: 5 }, 'en')).toBe('5');
   });
+
+  test('constructor interpolation does not leak native function', () => {
+    expect(formatMessage('{constructor}', {}, 'en')).toBe('');
+  });
+
+  test('toString interpolation does not leak native function', () => {
+    expect(formatMessage('{toString}', {}, 'en')).toBe('');
+  });
+
+  test('explicit own property named constructor interpolates correctly', () => {
+    expect(formatMessage('{constructor}', { constructor: 'hello' }, 'en')).toBe('hello');
+  });
 });

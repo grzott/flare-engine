@@ -269,4 +269,12 @@ describe('SFXPool', () => {
     expect(() => pool.play('a', { rate: 2 })).not.toThrow();
     expect(pool.activeCount).toBe(1);
   });
+
+  it('throws when maxPolyphony is 0', () => {
+    expect(() => new SFXPool(0)).toThrow('SFXPool: maxPolyphony must be > 0');
+  });
+
+  it('throws when maxPolyphony is negative', () => {
+    expect(() => new SFXPool(-1)).toThrow('SFXPool: maxPolyphony must be > 0');
+  });
 });

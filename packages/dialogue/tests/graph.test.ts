@@ -29,6 +29,18 @@ describe('getNode', () => {
   test('returns undefined for missing node', () => {
     expect(getNode(graph, 'missing')).toBeUndefined();
   });
+
+  test('returns undefined for __proto__ (prototype-safe)', () => {
+    expect(getNode(graph, '__proto__')).toBeUndefined();
+  });
+
+  test('returns undefined for constructor (prototype-safe)', () => {
+    expect(getNode(graph, 'constructor')).toBeUndefined();
+  });
+
+  test('returns undefined for toString (prototype-safe)', () => {
+    expect(getNode(graph, 'toString')).toBeUndefined();
+  });
 });
 
 describe('node type discriminants', () => {

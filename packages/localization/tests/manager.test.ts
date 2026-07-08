@@ -76,4 +76,18 @@ describe('LocalizationManager', () => {
     expect(m.has('b')).toBe(true);
     expect(m.has('c')).toBe(false);
   });
+
+  test('has() returns false for prototype-inherited keys', () => {
+    const m = new LocalizationManager({ tables, initialLocale: 'en', fallbackLocale: 'en' });
+    expect(m.has('constructor')).toBe(false);
+    expect(m.has('__proto__')).toBe(false);
+    expect(m.has('toString')).toBe(false);
+  });
+
+  test('t() returns key fallback for prototype-inherited keys, not native code', () => {
+    const m = new LocalizationManager({ tables, initialLocale: 'en', fallbackLocale: 'en' });
+    expect(m.t('constructor')).toBe('constructor');
+    expect(m.t('__proto__')).toBe('__proto__');
+    expect(m.t('toString')).toBe('toString');
+  });
 });

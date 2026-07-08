@@ -86,14 +86,16 @@ export class Clock {
 
   private tickSchedules(dt: number): void {
     for (let i = this.schedules.length - 1; i >= 0; i--) {
-      const entry = this.schedules[i]!;
+      const entry = this.schedules[i];
+      if (entry === undefined) continue;
       entry.remaining -= dt;
       if (entry.remaining <= 0) {
         entry.callback();
         if (entry.interval > 0) {
           entry.remaining += entry.interval;
         } else {
-          this.schedules.splice(i, 1);
+          const idx = this.schedules.indexOf(entry);
+          if (idx !== -1) this.schedules.splice(idx, 1);
         }
       }
     }

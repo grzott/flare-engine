@@ -221,3 +221,30 @@ describe('multiple coroutines', () => {
     expect(log).toEqual(['a1', 'b1', 'b2', 'a2']);
   });
 });
+
+describe('CoroutineManager re-entrancy', () => {
+  it('clear() called inside a running coroutine does not throw', () => {
+    const mgr = new CoroutineManager();
+    // A yields once (start advances past that), then calls clear() during update()
+    mgr.start(
+      (function* () {
+        yield undefined;
+        mgr.clear();
+      })(),
+    );
+    mgr.start(
+      (function* () {
+        yield undefined;
+      })(),
+    );
+    mgr.start(
+      (function* () {
+        yield undefined;
+      })(),
+    );
+    // All 3 coroutines are now paused at their first yield.
+    // update() will advance them; A's body calls clear() mid-iteration.
+    expect(() => mgr.update(0)).not.toThrow();
+    expect(mgr.count).toBe(0);
+  });
+});

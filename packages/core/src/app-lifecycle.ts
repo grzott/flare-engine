@@ -20,6 +20,7 @@ export class AppLifecycle {
 
   private loop: GameLoop;
   private wasRunningBeforeBackground = false;
+  private _inBackground = false;
 
   constructor(loop: GameLoop) {
     this.loop = loop;
@@ -27,6 +28,8 @@ export class AppLifecycle {
 
   /** Call when app goes to background. */
   background(): void {
+    if (this._inBackground) return;
+    this._inBackground = true;
     this.wasRunningBeforeBackground = this.loop.isRunning && !this.loop.isPaused;
     if (this.wasRunningBeforeBackground) {
       this.loop.pause();
@@ -36,6 +39,7 @@ export class AppLifecycle {
 
   /** Call when app returns to foreground. */
   foreground(): void {
+    this._inBackground = false;
     if (this.wasRunningBeforeBackground) {
       this.loop.resume();
     }

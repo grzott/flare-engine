@@ -6,6 +6,14 @@ const _effectCleanups: Array<() => void> = [];
 // Override viewport initial state for high-DPI tests. Set before mount(), reset in beforeEach.
 let _viewportOverride: { w: number; h: number } | null = null;
 
+// Controllable postfx-pass source — the mocked bridge.buildPostFxPasses returns
+// _buildPasses() each frame, so a test can vary the chain between onPreRender ticks.
+let _buildPasses: () => readonly unknown[] = () => [];
+// Counts invocations of the passes-state setter (the per-frame gate under test)
+// and captures the value handed to it, so tests assert WHAT propagates, not only WHEN.
+let _setPassesCount = 0;
+let _lastPasses: unknown = null;
+
 // Mock all external deps before import
 mock.module('react', () => ({
   createElement: () => null,
@@ -28,6 +36,17 @@ mock.module('react', () => ({
       'h' in (init as object)
     ) {
       return [_viewportOverride, () => {}];
+    }
+    // The passes state is the only useState seeded with an array (EMPTY_PASSES);
+    // count its setter's invocations so tests can assert the per-frame gate.
+    if (Array.isArray(init)) {
+      return [
+        init,
+        (val: unknown) => {
+          _setPassesCount++;
+          _lastPasses = val;
+        },
+      ];
     }
     return [typeof init === 'function' ? (init as () => unknown)() : init, () => {}];
   },
@@ -296,7 +315,7 @@ mock.module('@flare-engine/render', () => ({
         if (pd !== 1) cur.scale(pd, pd);
       },
       drawAtlas: () => {},
-      buildPostFxPasses: () => [],
+      buildPostFxPasses: () => _buildPasses(),
       setPostFxBinding: () => {},
       endFrame: () => {
         if (cur === null) return null;
@@ -379,6 +398,9 @@ beforeEach(() => {
   _usePictureAsTextureArgs = [];
   _beginRecordingBounds = [];
   _beginFramePdArgs = [];
+  _buildPasses = () => [];
+  _setPassesCount = 0;
+  _lastPasses = null;
 });
 
 describe('GameView', () => {
@@ -570,6 +592,202 @@ describe('GameView — high-DPI scene texture', () => {
     // The game-view mock intentionally omits it; importing it would throw.
     // We verify indirectly: mounting must not throw even though 'Picture' is absent from mock.
     expect(() => mount()).not.toThrow();
+    unmountAll();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Per-frame postfx pass churn — the setPasses gate.
+// Frames are driven by invoking the onPreRender handler directly; each tick
+// pulls a fresh chain from _buildPasses. _setPassesCount records how many times
+// the passes-state setter is actually invoked, so an unchanged/empty chain must
+// leave it at zero after the first push.
+// ---------------------------------------------------------------------------
+
+interface TestPass {
+  id: string;
+  source: object;
+  uniforms: Record<string, number | readonly number[]>;
+  children: readonly unknown[];
+}
+
+function makePass(
+  id: string,
+  source: object,
+  uniforms: Record<string, number | readonly number[]> = {},
+  children: readonly unknown[] = [],
+): TestPass {
+  return { id, source, uniforms, children };
+}
+
+function tick(): void {
+  _loopInstance!.onPreRender._handler?.();
+}
+
+describe('GameView — postfx pass gate (per-frame churn)', () => {
+  it('unchanged non-empty chain: setPasses fires once across frames (fail-old: fired every frame)', () => {
+    const shader = {};
+    // Fresh array + fresh pass/uniform objects each frame — proves the gate is
+    // structural, not reference identity.
+    _buildPasses = () => [makePass('flash', shader, { intensity: 1 })];
+    mount();
+    tick();
+    tick();
+    tick();
+    expect(_setPassesCount).toBe(1);
+    unmountAll();
+  });
+
+  it('empty chain: setPasses never fires (fail-old: fired every frame with a fresh [])', () => {
+    _buildPasses = () => [];
+    mount();
+    tick();
+    tick();
+    tick();
+    expect(_setPassesCount).toBe(0);
+    unmountAll();
+  });
+
+  it('changed uniform with constant id+source propagates (hit-flash decay guard)', () => {
+    // Same pass id + same shader ref, only the intensity uniform animates —
+    // exactly the flash-decay / timed-trigger shape. An id+source-only signature
+    // would freeze here (count stuck at 1); uniforms must be part of the gate.
+    const shader = {};
+    let intensity = 1;
+    _buildPasses = () => [makePass('flash', shader, { intensity })];
+    mount();
+    tick(); // empty -> [flash@1] : 1
+    intensity = 0.5;
+    tick(); // uniform changed : 2
+    intensity = 0;
+    tick(); // uniform changed : 3
+    expect(_setPassesCount).toBe(3);
+    unmountAll();
+  });
+
+  it('changed vector uniform propagates; a structurally identical vector does not', () => {
+    const shader = {};
+    let color: readonly number[] = [1, 0, 0];
+    _buildPasses = () => [makePass('vignette', shader, { color })];
+    mount();
+    tick(); // empty -> [vignette] : 1
+    color = [1, 0, 0]; // new array ref, identical elements
+    tick(); // no change : 1
+    color = [0, 1, 0]; // one element differs
+    tick(); // change : 2
+    expect(_setPassesCount).toBe(2);
+    unmountAll();
+  });
+
+  it('changed shader source ref propagates (shader recompile)', () => {
+    let shader: object = {};
+    _buildPasses = () => [makePass('x', shader, { a: 1 })];
+    mount();
+    tick(); // 1
+    shader = {}; // new compiled-effect ref, same id + uniforms
+    tick(); // 2
+    expect(_setPassesCount).toBe(2);
+    unmountAll();
+  });
+
+  it('changed pass id propagates', () => {
+    const shader = {};
+    let id = 'a';
+    _buildPasses = () => [makePass(id, shader, {})];
+    mount();
+    tick(); // 1
+    id = 'b';
+    tick(); // 2
+    expect(_setPassesCount).toBe(2);
+    unmountAll();
+  });
+
+  it('length transitions both directions propagate; steady stretches are silent (fail-old: 5 fires)', () => {
+    const shader = {};
+    let has = false;
+    _buildPasses = () => (has ? [makePass('x', shader, { a: 1 })] : []);
+    mount();
+    tick(); // empty -> empty : 0
+    has = true;
+    tick(); // empty -> [x] : 1
+    tick(); // [x] -> [x] : 1
+    has = false;
+    tick(); // [x] -> empty : 2
+    tick(); // empty -> empty : 2
+    expect(_setPassesCount).toBe(2);
+    unmountAll();
+  });
+
+  it('a second pass appended (length grows) propagates', () => {
+    const a = {};
+    const b = {};
+    let two = false;
+    _buildPasses = () =>
+      two ? [makePass('a', a, {}), makePass('b', b, {})] : [makePass('a', a, {})];
+    mount();
+    tick(); // 1
+    two = true;
+    tick(); // length 1 -> 2 : 2
+    tick(); // unchanged : 2
+    expect(_setPassesCount).toBe(2);
+    unmountAll();
+  });
+
+  it('propagates the actual built chain (not a stale or empty value) — payload, not just timing', () => {
+    // Guards a value-level regression that keeps the count identical but pushes
+    // the wrong array (e.g. setPasses(EMPTY_PASSES) instead of the built chain).
+    const shader = {};
+    let intensity = 1;
+    _buildPasses = () => [makePass('flash', shader, { intensity })];
+    mount();
+    tick();
+    const first = _lastPasses as readonly TestPass[];
+    expect(first).toHaveLength(1);
+    expect(first[0]?.id).toBe('flash');
+    expect(first[0]?.source).toBe(shader);
+    expect(first[0]?.uniforms.intensity).toBe(1);
+    intensity = 0.5;
+    tick();
+    expect((_lastPasses as readonly TestPass[])[0]?.uniforms.intensity).toBe(0.5);
+    unmountAll();
+  });
+
+  it('collapses an empty chain to one stable reference (not a fresh [] each frame)', () => {
+    // The collapse frame must push the shared EMPTY_PASSES constant, so two
+    // independent clears push the *same* reference — a fresh [] would differ.
+    const shader = {};
+    let has = true;
+    _buildPasses = () => (has ? [makePass('x', shader, {})] : []);
+    mount();
+    tick(); // -> [x]
+    has = false;
+    tick(); // -> empty
+    const firstEmpty = _lastPasses;
+    expect(firstEmpty).toHaveLength(0);
+    has = true;
+    tick(); // -> [x]
+    has = false;
+    tick(); // -> empty again
+    expect(_lastPasses).toBe(firstEmpty);
+    unmountAll();
+  });
+
+  it('child-image list is part of the signature: identical is silent, changed ref or length fires', () => {
+    // Exercises sameChildren in all three branches. A sameChildren that ignores
+    // refs (or always returns true) would miss the ref/length changes below.
+    const shader = {};
+    const imgA = {};
+    let children: readonly unknown[] = [imgA];
+    _buildPasses = () => [makePass('lut', shader, { a: 1 }, children)];
+    mount();
+    tick(); // empty -> [lut] : 1
+    children = [imgA]; // new array ref, identical member
+    tick(); // : 1
+    children = [{}]; // member ref changed
+    tick(); // : 2
+    children = [imgA, {}]; // length changed
+    tick(); // : 3
+    expect(_setPassesCount).toBe(3);
     unmountAll();
   });
 });

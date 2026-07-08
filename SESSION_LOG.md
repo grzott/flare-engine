@@ -7852,3 +7852,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 222 — 2026-07-08 (scope: engine)
+
+**Goal:** perf(react): gate GameView postfx passes per-frame
+
+**Touched files**
+- `.changeset/oss-b16-react-gameview-passes-gate.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/tests/game-view.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

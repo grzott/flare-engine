@@ -16,7 +16,7 @@ import {
   usePictureAsTexture,
 } from '@shopify/react-native-skia';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PixelRatio, StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -111,7 +111,7 @@ export function GameView({
   const resolvedSafeArea: SafeArea = safeArea ?? insets;
   const canvasRef = useCanvasRef();
   const [picture, setPicture] = useState<SkPicture | null>(null);
-  const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>([]);
+  const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>(EMPTY_PASSES);
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
   const pd = PixelRatio.get();
   const sceneSize = useMemo(
@@ -150,6 +150,12 @@ export function GameView({
     const spriteQuery = ctx.world.query(Position, Sprite);
     const renderSystem = createRenderSystem(ctx.world, spriteQuery, Position, Sprite, ctx.batch);
 
+    // Last passes signature pushed to state; gates setPasses so an unchanged
+    // (or empty) chain does not churn a fresh array + RuntimeShader tree every
+    // frame. Seeded to the same EMPTY_PASSES the state holds, so an empty chain
+    // never triggers a re-render from passes.
+    let prevBuilt: readonly PostFxPassDescriptor[] = EMPTY_PASSES;
+
     const unsubscribeLate = ctx.loop.onLateUpdate.add((dt) => {
       ctx.camera.update(dt);
       ctx.input.update();
@@ -176,7 +182,10 @@ export function GameView({
       const pic = bridge.endFrame() as SkPicture | null;
       if (pic !== null) setPicture(pic);
       const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
-      setPasses(built);
+      if (!samePasses(prevBuilt, built)) {
+        prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
+        setPasses(prevBuilt);
+      }
       canvasRef.current?.redraw();
     });
 
@@ -189,27 +198,45 @@ export function GameView({
     };
   }, []);
 
-  const handleLayout = (event: LayoutChangeEvent): void => {
-    const { width, height } = event.nativeEvent.layout;
-    ctx.camera.setViewport(width, height);
-    setViewportSize({ w: width, h: height });
-  };
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent): void => {
+      const { width, height } = event.nativeEvent.layout;
+      ctx.camera.setViewport(width, height);
+      setViewportSize({ w: width, h: height });
+    },
+    [ctx],
+  );
 
-  const onGrant = (e: GestureResponderEvent): void => {
-    ctx.input.onPointerDown(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
-  };
-  const onMove = (e: GestureResponderEvent): void => {
-    ctx.input.onPointerMove(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
-  };
-  const onRelease = (e: GestureResponderEvent): void => {
-    ctx.input.onPointerUp(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
-  };
+  const onGrant = useCallback(
+    (e: GestureResponderEvent): void => {
+      ctx.input.onPointerDown(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
+    },
+    [ctx],
+  );
+  const onMove = useCallback(
+    (e: GestureResponderEvent): void => {
+      ctx.input.onPointerMove(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
+    },
+    [ctx],
+  );
+  const onRelease = useCallback(
+    (e: GestureResponderEvent): void => {
+      ctx.input.onPointerUp(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
+    },
+    [ctx],
+  );
+
+  const containerStyle = useMemo(() => [styles.container, style], [style]);
+  const passElements = useMemo(
+    () => passes.map((p) => <RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />),
+    [passes],
+  );
 
   return (
     <SafeAreaContext.Provider value={resolvedSafeArea}>
       <GameContext.Provider value={ctx}>
         <View
-          style={[styles.container, style]}
+          style={containerStyle}
           onLayout={handleLayout}
           onStartShouldSetResponder={returnTrue}
           onResponderGrant={onGrant}
@@ -232,9 +259,7 @@ export function GameView({
                 height={viewportSize.h}
                 fit="cover"
               >
-                {passes.map((p) => (
-                  <RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />
-                ))}
+                {passElements}
               </Image>
             )}
           </Canvas>
@@ -246,6 +271,65 @@ export function GameView({
 }
 
 function returnTrue(): boolean {
+  return true;
+}
+
+/** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses
+ *  to this so the `passes` state never changes for a postfx-free GameView. */
+const EMPTY_PASSES: readonly PostFxPassDescriptor[] = [];
+
+/**
+ * Shallow structural equality of two pass lists. The signature is length +
+ * per-pass `id` + shader ref + child-image refs + uniform values. Uniforms are
+ * compared (not just `id`/`source`) because animating effects — the hit-flash
+ * decay and timed triggers — keep a constant `id`/`source` while only their
+ * uniform values change frame to frame; excluding them would freeze those
+ * animations. Cost is trivial: postfx chains hold a handful of scalar/short-vec
+ * uniforms.
+ */
+function samePasses(
+  a: readonly PostFxPassDescriptor[],
+  b: readonly PostFxPassDescriptor[],
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const pa = a[i];
+    const pb = b[i];
+    if (pa === undefined || pb === undefined) return false;
+    if (pa.id !== pb.id || pa.source !== pb.source) return false;
+    if (!sameChildren(pa.children, pb.children)) return false;
+    if (!sameUniforms(pa.uniforms, pb.uniforms)) return false;
+  }
+  return true;
+}
+
+function sameChildren(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function sameUniforms(
+  a: PostFxPassDescriptor['uniforms'],
+  b: PostFxPassDescriptor['uniforms'],
+): boolean {
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  for (const key of aKeys) {
+    const va = a[key];
+    const vb = b[key];
+    if (va === undefined || vb === undefined) return false;
+    if (typeof va === 'number') {
+      if (va !== vb) return false;
+    } else {
+      if (typeof vb === 'number' || va.length !== vb.length) return false;
+      for (let i = 0; i < va.length; i++) {
+        if (va[i] !== vb[i]) return false;
+      }
+    }
+  }
   return true;
 }
 

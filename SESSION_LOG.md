@@ -7924,3 +7924,33 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 225 — 2026-07-08 (scope: engine)
+
+**Goal:** ui-shop ShopScreen rename + purchase-flow backdrop guard
+
+**Touched files**
+- `.changeset/oss-b20-ui-shop-shopscreen-rename.md`
+- `docs/design/api-specs.md`
+- `README.md` (root — package-table truthing)
+- `packages/ui-shop/README.md`
+- `packages/ui-shop/src/PaywallModal.tsx`
+- `packages/ui-shop/src/ShopPanel.tsx`
+- `packages/ui-shop/src/ShopScreen.tsx`
+- `packages/ui-shop/src/index.ts`
+- `packages/ui-shop/tests/PaywallModal.test.ts`
+- `packages/ui-shop/tests/ShopPanel.test.ts`
+- `packages/ui-shop/tests/ShopScreen.test.ts`
+- `packages/ui-shop/tests/integration.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** drift:1 (builder added the gate-required `.changeset` I had omitted from the plan — the plan template should always include it; caught + corrected its `major`→`minor` bump before the `fixed` lockstep group could force a 1.0.0 release. `check:changeset` gates coverage, not bump level.)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

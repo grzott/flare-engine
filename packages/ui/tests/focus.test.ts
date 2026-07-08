@@ -7,13 +7,31 @@ describe('FocusManager', () => {
     mgr = createFocusManager();
   });
 
-  test('auto-focuses the first registered node', () => {
+  test('register() does not focus — focus stays null until a driver acts', () => {
     mgr.register({ id: 'a', tabIndex: 0 });
-    expect(mgr.getFocused()).toBe('a');
+    expect(mgr.getFocused()).toBe(null);
+    mgr.register({ id: 'b', tabIndex: 1 });
+    expect(mgr.getFocused()).toBe(null);
   });
 
-  test('does not auto-focus disabled nodes', () => {
+  test('focusFirst() focuses the tab-order first node, not registration order', () => {
+    mgr.register({ id: 'a', tabIndex: 1 });
+    mgr.register({ id: 'b', tabIndex: 0 });
+    mgr.focusFirst();
+    expect(mgr.getFocused()).toBe('b');
+  });
+
+  test('focusFirst() skips disabled nodes', () => {
     mgr.register({ id: 'a', tabIndex: 0, disabled: true });
+    mgr.register({ id: 'b', tabIndex: 1 });
+    mgr.focusFirst();
+    expect(mgr.getFocused()).toBe('b');
+  });
+
+  test('focusFirst() on an empty manager is a no-op (stays null, never undefined)', () => {
+    // Discriminates a focusFirst that returns order[0] without the `?? null` guard:
+    // that would set focusedId to undefined, which is not === null.
+    mgr.focusFirst();
     expect(mgr.getFocused()).toBe(null);
   });
 
@@ -22,7 +40,6 @@ describe('FocusManager', () => {
     mgr.register({ id: 'b', tabIndex: 0 });
     mgr.register({ id: 'c', tabIndex: 0 });
     expect(mgr.getOrder()).toEqual(['b', 'c', 'a']);
-    // a was registered first → was auto-focused; re-check
     mgr.focus('b');
     mgr.next();
     expect(mgr.getFocused()).toBe('c');
@@ -37,11 +54,12 @@ describe('FocusManager', () => {
   test('activate() calls onActivate of focused node', () => {
     let hit = 0;
     mgr.register({ id: 'a', tabIndex: 0, onActivate: () => hit++ });
+    mgr.focusFirst();
     mgr.activate();
     expect(hit).toBe(1);
   });
 
-  test('onFocus / onBlur fire on focus transitions', () => {
+  test('onFocus / onBlur fire on focus transitions (never on registration)', () => {
     const log: string[] = [];
     mgr.register({
       id: 'a',
@@ -55,6 +73,9 @@ describe('FocusManager', () => {
       onFocus: () => log.push('focus-b'),
       onBlur: () => log.push('blur-b'),
     });
+    // Registration alone fires nothing.
+    expect(log).toEqual([]);
+    mgr.focus('a');
     expect(log).toEqual(['focus-a']);
     mgr.focus('b');
     expect(log).toEqual(['focus-a', 'blur-a', 'focus-b']);
@@ -62,11 +83,13 @@ describe('FocusManager', () => {
     expect(log).toEqual(['focus-a', 'blur-a', 'focus-b', 'blur-b']);
   });
 
-  test('subscribe is called on every focus change', () => {
+  test('subscribe is called on every focus change, not on registration', () => {
     const calls: (string | null)[] = [];
     mgr.subscribe((id) => calls.push(id));
     mgr.register({ id: 'a', tabIndex: 0 });
     mgr.register({ id: 'b', tabIndex: 1 });
+    expect(calls).toEqual([]);
+    mgr.next();
     mgr.next();
     expect(calls).toEqual(['a', 'b']);
   });
@@ -74,6 +97,15 @@ describe('FocusManager', () => {
   test('unregistering the focused node shifts focus to the next one', () => {
     mgr.register({ id: 'a', tabIndex: 0 });
     mgr.register({ id: 'b', tabIndex: 1 });
+    mgr.focus('a');
+    mgr.unregister('a');
+    expect(mgr.getFocused()).toBe('b');
+  });
+
+  test('unregistering a non-focused node leaves focus untouched', () => {
+    mgr.register({ id: 'a', tabIndex: 0 });
+    mgr.register({ id: 'b', tabIndex: 1 });
+    mgr.focus('b');
     mgr.unregister('a');
     expect(mgr.getFocused()).toBe('b');
   });
@@ -87,6 +119,7 @@ describe('FocusManager', () => {
   test('focus(id) is ignored for disabled nodes', () => {
     mgr.register({ id: 'a', tabIndex: 0 });
     mgr.register({ id: 'b', tabIndex: 1, disabled: true });
+    mgr.focus('a');
     mgr.focus('b');
     expect(mgr.getFocused()).toBe('a');
   });

@@ -7,6 +7,11 @@ const effects: Array<() => (() => void) | undefined> = [];
 let stateQueue: unknown[] = [];
 let stateIdx = 0;
 const setters: Array<{ mock: { calls: unknown[][] } }> = [];
+// Persistent ref store keyed by call order — real useRef survives re-renders, so a
+// re-render (e.g. provider swap) must see the SAME ref. A fresh {current} each render
+// would silently mask a persisting-ref bug like ShopScreen's old `fetched` guard.
+const refStore: Array<{ current: unknown }> = [];
+let refIdx = 0;
 
 mock.module('react', () => ({
   useState: (init: unknown) => {
@@ -19,7 +24,11 @@ mock.module('react', () => ({
   useEffect: (fn: () => (() => void) | undefined) => {
     effects.push(fn);
   },
-  useRef: (init: unknown) => ({ current: init }),
+  useRef: (init: unknown) => {
+    const i = refIdx++;
+    if (refStore[i] === undefined) refStore[i] = { current: init };
+    return refStore[i];
+  },
   useContext: () => null,
   createContext: () => ({ Provider: 'Provider', Consumer: 'Consumer' }),
   Fragment: 'Fragment',
@@ -62,8 +71,41 @@ const fakeProvider: IAPProvider = {
   },
 };
 
+// A second, distinct provider to simulate a Noop→concrete swap.
+const secondGetProductsMock = mock(async (_ids: readonly string[]) => [
+  { id: 'game.full', title: 'Full Game', priceDisplay: '$4.99' },
+]);
+const secondProvider: IAPProvider = {
+  getProducts: secondGetProductsMock as unknown as IAPProvider['getProducts'],
+  purchase: purchaseMock as unknown as IAPProvider['purchase'],
+  async restore() {
+    return [];
+  },
+  onTransaction() {
+    return () => {};
+  },
+};
+
+// A provider whose fetch rejects, to exercise the onError latest-ref path.
+const failGetProductsMock = mock(async (_ids: readonly string[]): Promise<never> => {
+  throw new Error('fetch failed');
+});
+const failingProvider: IAPProvider = {
+  getProducts: failGetProductsMock as unknown as IAPProvider['getProducts'],
+  purchase: purchaseMock as unknown as IAPProvider['purchase'],
+  async restore() {
+    return [];
+  },
+  onTransaction() {
+    return () => {};
+  },
+};
+
+// Swappable so a test can change the provider identity between renders.
+let currentProvider: IAPProvider = fakeProvider;
+
 mock.module('@flare-engine/iap', () => ({
-  useIAP: () => fakeProvider,
+  useIAP: () => currentProvider,
   IAPContext: { Provider: 'Provider' },
   createProductCatalog,
   createEntitlementStore,
@@ -118,11 +160,16 @@ describe('ShopScreen', () => {
   beforeEach(() => {
     stateQueue = [];
     stateIdx = 0;
+    refStore.length = 0;
+    refIdx = 0;
     jsxLog.length = 0;
     effects.length = 0;
     setters.length = 0;
     getProductsMock.mockClear();
+    secondGetProductsMock.mockClear();
+    failGetProductsMock.mockClear();
     purchaseMock.mockClear();
+    currentProvider = fakeProvider;
   });
 
   test('calls provider.getProducts exactly once on mount', async () => {
@@ -138,6 +185,58 @@ describe('ShopScreen', () => {
 
     expect(getProductsMock).toHaveBeenCalledTimes(1);
     expect(getProductsMock).toHaveBeenCalledWith(['game.full', 'game.cosmetic']);
+  });
+
+  test('swapping the IAP provider refetches products and resets to loading', async () => {
+    const store = createEntitlementStore(catalog);
+
+    // First mount with provider #1 → fetch A. effects[0] is the fetch effect.
+    currentProvider = fakeProvider;
+    stateIdx = 0;
+    refIdx = 0;
+    effects.length = 0;
+    setters.length = 0;
+    ShopScreen({ catalog, entitlementStore: store, copy, strings, localize });
+    const cleanup1 = effects[0]?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(getProductsMock).toHaveBeenCalledTimes(1);
+    expect(secondGetProductsMock).not.toHaveBeenCalled();
+
+    // Provider identity changes → re-render (refs persist) + run the new fetch effect.
+    if (typeof cleanup1 === 'function') cleanup1();
+    currentProvider = secondProvider;
+    stateIdx = 0;
+    refIdx = 0;
+    effects.length = 0;
+    setters.length = 0;
+    ShopScreen({ catalog, entitlementStore: store, copy, strings, localize });
+    effects[0]?.();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Refetched from the new provider, and reset products (setter #0) to null first.
+    expect(secondGetProductsMock).toHaveBeenCalledTimes(1);
+    expect(getProductsMock).toHaveBeenCalledTimes(1); // provider #1 not called again
+    expect(setters[0]?.mock.calls[0]?.[0]).toBe(null);
+  });
+
+  test('fetch failure is surfaced through the latest onError ref', async () => {
+    const store = createEntitlementStore(catalog);
+    const onErrorSpy = mock((_e: Error) => {});
+    currentProvider = failingProvider;
+    stateIdx = 0;
+    refIdx = 0;
+    effects.length = 0;
+    setters.length = 0;
+    ShopScreen({ catalog, entitlementStore: store, copy, strings, localize, onError: onErrorSpy });
+    effects[0]?.();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(failGetProductsMock).toHaveBeenCalledTimes(1);
+    expect(onErrorSpy).toHaveBeenCalledTimes(1);
+    expect(onErrorSpy.mock.calls[0]?.[0]).toBeInstanceOf(Error);
   });
 
   test('owned product gets disabled ghost Button; available product gets primary Button', () => {

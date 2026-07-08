@@ -111,6 +111,7 @@ describe('Button + FocusProvider (reactive focus)', () => {
     const mgr = createFocusManager();
     mgr.register({ id: 'a', tabIndex: 0 });
     mgr.register({ id: 'b', tabIndex: 1 });
+    mgr.focusFirst(); // explicit (register no longer auto-focuses)
 
     let el = FocusProvider({ manager: mgr, children: 'kids' });
     flushEffects();
@@ -126,6 +127,37 @@ describe('Button + FocusProvider (reactive focus)', () => {
 
     const v2 = (el as { props: { value: FocusContextValue } }).props.value;
     expect(v2.focusedId).toBe('b');
+  });
+
+  it('FocusProvider without autoFocus leaves focus null (no ring until a driver acts)', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'a', tabIndex: 0 });
+    mgr.register({ id: 'b', tabIndex: 1 });
+
+    const el = FocusProvider({ manager: mgr, children: 'kids' });
+    flushEffects();
+
+    expect(mgr.getFocused()).toBe(null);
+    const v = (el as { props: { value: FocusContextValue } }).props.value;
+    expect(v.focusedId).toBe(null);
+  });
+
+  it('FocusProvider autoFocus focuses the tab-order first node after children register', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'a', tabIndex: 1 });
+    mgr.register({ id: 'b', tabIndex: 0 });
+
+    FocusProvider({ manager: mgr, autoFocus: true, children: 'kids' });
+    flushEffects();
+
+    // tab-order first (b, tabIndex 0), not registration order (a).
+    expect(mgr.getFocused()).toBe('b');
+
+    // The focus change is published to context on the next render.
+    resetHookIndices();
+    const el = FocusProvider({ manager: mgr, autoFocus: true, children: 'kids' });
+    const v = (el as { props: { value: FocusContextValue } }).props.value;
+    expect(v.focusedId).toBe('b');
   });
 
   it('Button ring follows context.focusedId', () => {
@@ -175,6 +207,7 @@ describe('Button + FocusProvider (reactive focus)', () => {
   it('Disabled Button ignores press', () => {
     const mgr = createFocusManager();
     mgr.register({ id: 'a', tabIndex: 0 });
+    mgr.focus('a'); // register no longer auto-focuses
     setFocusContext({ manager: mgr, focusedId: 'a' });
     let pressed = 0;
     resetHookIndices();

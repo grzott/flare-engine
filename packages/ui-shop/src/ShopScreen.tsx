@@ -12,6 +12,13 @@ import { View } from 'react-native';
 import type { LocalizeFn, ShopItemCopy, ShopPanelStrings } from './types.js';
 
 export interface ShopScreenProps {
+  /**
+   * Product catalog. Its identity (and the ambient IAP provider's) keys the
+   * product fetch: a change refetches and resets to the loading state — that is
+   * how a Noop→concrete provider swap picks up real products. Pass a stable
+   * reference (a memoized/singleton catalog), not a value rebuilt every render,
+   * or the fetch will re-run on each parent render.
+   */
   readonly catalog: ProductCatalog;
   readonly entitlementStore: EntitlementStore;
   readonly copy: Record<ProductId, ShopItemCopy>;
@@ -36,21 +43,34 @@ export function ShopScreen({
   const [inFlight, setInFlight] = useState<ProductId | null>(null);
   // Bumped on every EntitlementStore change to trigger re-render.
   const [entitlementTick, setEntitlementTick] = useState(0);
-  const fetched = useRef(false);
+  // Latest-ref for onError so a fresh inline callback identity cannot re-trigger
+  // the fetch effect (which is keyed to catalog/provider identity only).
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
+  // Refetch whenever the catalog or the IAP provider identity changes (e.g. a
+  // Noop→concrete provider swap), resetting to the loading state; a cancelled
+  // flag drops a stale in-flight response from the previous provider.
   useEffect(() => {
-    if (fetched.current) return;
-    fetched.current = true;
+    let cancelled = false;
+    setProducts(null);
+    setLoadError(null);
     const ids = catalog.entries.map((e) => e.productId);
     provider
       .getProducts(ids)
-      .then(setProducts)
+      .then((p) => {
+        if (!cancelled) setProducts(p);
+      })
       .catch((err: unknown) => {
+        if (cancelled) return;
         const e = err instanceof Error ? err : new Error(String(err));
         setLoadError(e);
-        onError?.(e);
+        onErrorRef.current?.(e);
       });
-  }, [catalog, provider, onError]);
+    return () => {
+      cancelled = true;
+    };
+  }, [catalog, provider]);
 
   useEffect(() => {
     return entitlementStore.onChange.add(() => {

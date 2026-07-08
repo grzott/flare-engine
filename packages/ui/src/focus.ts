@@ -25,6 +25,8 @@ export interface FocusManager {
   register(node: FocusNode): () => void;
   unregister(id: string): void;
   focus(id: string): void;
+  /** Explicit opt-in initial focus: focuses the first node in tab order (or clears if empty). */
+  focusFirst(): void;
   blur(): void;
   next(): void;
   prev(): void;
@@ -87,12 +89,11 @@ export function createFocusManager(): FocusManager {
 
   return {
     register(node) {
+      // No focus side-effect: on a touch-first engine an auto-focused first
+      // registrant paints a permanent focus ring with no input. Focus stays null
+      // until a driver (keyboard/gamepad) or an explicit focusFirst() acts.
       const entry: Entry = { ...node, seq: seqCounter++ };
       nodes.set(node.id, entry);
-      if (focusedId === null && !node.disabled) {
-        // Auto-focus first registered interactive node.
-        setFocused(node.id);
-      }
       return () => {
         this.unregister(node.id);
       };
@@ -109,6 +110,10 @@ export function createFocusManager(): FocusManager {
       const entry = nodes.get(id);
       if (!entry || entry.disabled) return;
       setFocused(id);
+    },
+    focusFirst() {
+      const order = orderedIds();
+      setFocused(order[0] ?? null);
     },
     blur() {
       setFocused(null);

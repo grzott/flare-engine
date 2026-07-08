@@ -2,8 +2,15 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { EntitlementStore, IAPProvider, PurchaseResult } from '@flare-engine/iap';
 import { createEntitlementStore, createProductCatalog } from '@flare-engine/iap';
 
+let stateQueue: unknown[] = [];
+let stateIdx = 0;
+
 mock.module('react', () => ({
-  useState: (init: unknown) => [init, () => {}],
+  useState: (init: unknown) => {
+    const i = stateIdx++;
+    const v = i < stateQueue.length ? stateQueue[i] : init;
+    return [v, () => {}];
+  },
   useEffect: () => {},
   useRef: (init: unknown) => ({ current: init }),
   useContext: () => null,
@@ -11,21 +18,21 @@ mock.module('react', () => ({
   Fragment: 'Fragment',
 }));
 
-const jsxCallLog: string[] = [];
+const jsxLog: Array<{ type: unknown; props: Record<string, unknown> }> = [];
 mock.module('react/jsx-runtime', () => ({
-  jsx: (type: unknown) => {
-    jsxCallLog.push(String(type));
+  jsx: (type: unknown, props: Record<string, unknown>) => {
+    jsxLog.push({ type, props });
     return null;
   },
-  jsxs: (type: unknown) => {
-    jsxCallLog.push(String(type));
+  jsxs: (type: unknown, props: Record<string, unknown>) => {
+    jsxLog.push({ type, props });
     return null;
   },
   Fragment: 'Fragment',
 }));
 mock.module('react/jsx-dev-runtime', () => ({
-  jsxDEV: (type: unknown) => {
-    jsxCallLog.push(String(type));
+  jsxDEV: (type: unknown, props: Record<string, unknown>) => {
+    jsxLog.push({ type, props });
     return null;
   },
   Fragment: 'Fragment',
@@ -84,6 +91,9 @@ const localize = (k: string) => k;
 
 describe('PaywallModal', () => {
   beforeEach(() => {
+    stateQueue = [];
+    stateIdx = 0;
+    jsxLog.length = 0;
     activeProvider = {
       async getProducts() {
         return [];
@@ -114,22 +124,68 @@ describe('PaywallModal', () => {
       onDismiss: () => {},
     };
 
-    jsxCallLog.length = 0;
+    stateIdx = 0;
+    jsxLog.length = 0;
     const hidden = PaywallModal({ ...base, visible: false });
     expect(hidden).toBeNull();
-    // Early return — jsx never invoked
-    expect(jsxCallLog).toHaveLength(0);
+    expect(jsxLog).toHaveLength(0);
 
-    jsxCallLog.length = 0;
+    stateIdx = 0;
+    jsxLog.length = 0;
     PaywallModal({ ...base, visible: true });
-    // Modal + inner elements rendered — jsx invoked at least once
-    expect(jsxCallLog.length).toBeGreaterThan(0);
+    expect(jsxLog.length).toBeGreaterThan(0);
+  });
+
+  test('backdrop press is a no-op while a purchase is in flight', () => {
+    const store = createEntitlementStore(catalog);
+    const onDismiss = mock(() => {});
+
+    stateQueue = [true, null]; // purchasing=true, purchaseError=null
+    stateIdx = 0;
+    jsxLog.length = 0;
+
+    PaywallModal({
+      visible: true,
+      productId: 'game.full',
+      entitlementKey: 'full_game',
+      entitlementStore: store,
+      strings,
+      localize,
+      onDismiss,
+    });
+
+    const modalEntry = jsxLog.find((e) => e.type === 'Modal');
+    expect(modalEntry?.props.onBackdropPress).toBeUndefined();
+  });
+
+  test('backdrop press calls onDismiss when not purchasing', () => {
+    const store = createEntitlementStore(catalog);
+    const onDismiss = mock(() => {});
+
+    stateQueue = [false, null]; // purchasing=false, purchaseError=null
+    stateIdx = 0;
+    jsxLog.length = 0;
+
+    PaywallModal({
+      visible: true,
+      productId: 'game.full',
+      entitlementKey: 'full_game',
+      entitlementStore: store,
+      strings,
+      localize,
+      onDismiss,
+    });
+
+    const modalEntry = jsxLog.find((e) => e.type === 'Modal');
+    expect(modalEntry?.props.onBackdropPress).toBe(onDismiss);
   });
 
   test('dismiss button calls onDismiss; parent owns visibility', () => {
     const store = createEntitlementStore(catalog);
     const onDismiss = mock(() => {});
 
+    stateIdx = 0;
+    jsxLog.length = 0;
     PaywallModal({
       visible: true,
       productId: 'game.full',

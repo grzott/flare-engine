@@ -14,7 +14,7 @@ bun add @flare-engine/ui-shop @flare-engine/iap @flare-engine/ui
 
 ```tsx
 import { IAPContext, createEntitlementStore, createProductCatalog } from '@flare-engine/iap';
-import { ShopPanel, PaywallModal, RestorePurchasesButton } from '@flare-engine/ui-shop';
+import { ShopScreen, PaywallModal, RestorePurchasesButton } from '@flare-engine/ui-shop';
 import type { ShopPanelStrings, PaywallStrings, RestoreStrings } from '@flare-engine/ui-shop';
 
 const catalog = createProductCatalog([
@@ -38,7 +38,7 @@ const restoreStrings: RestoreStrings = {
 
 // Wrap with IAPContext.Provider supplying a concrete adapter (e.g. createRevenueCatProvider)
 <IAPContext.Provider value={provider}>
-  <ShopPanel
+  <ShopScreen
     catalog={catalog}
     entitlementStore={store}
     copy={{ 'game.full': { titleKey: 'p.full.title', descriptionKey: 'p.full.desc', ctaKey: 'p.full.cta', ownedLabelKey: 'p.full.owned' } }}

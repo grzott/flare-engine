@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { LocalizeFn, ShopItemCopy, ShopPanelStrings } from './types.js';
 
-export interface ShopPanelProps {
+export interface ShopScreenProps {
   readonly catalog: ProductCatalog;
   readonly entitlementStore: EntitlementStore;
   readonly copy: Record<ProductId, ShopItemCopy>;
@@ -21,7 +21,7 @@ export interface ShopPanelProps {
   readonly onError?: (error: Error) => void;
 }
 
-export function ShopPanel({
+export function ShopScreen({
   catalog,
   entitlementStore,
   copy,
@@ -29,7 +29,7 @@ export function ShopPanel({
   localize,
   onPurchase,
   onError,
-}: ShopPanelProps): React.ReactNode {
+}: ShopScreenProps): React.ReactNode {
   const provider = useIAP();
   const [products, setProducts] = useState<readonly Product[] | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);

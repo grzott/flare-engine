@@ -93,7 +93,7 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 | `@flare-engine/iap`          | —     | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
 | `@flare-engine/analytics`    | —     | stub                     | Interface + no-op provider; concrete adapters deferred past 0.2.0             |
 | `@flare-engine/iap-revenuecat` | —   | shipping                 | Concrete RevenueCat `IAPProvider` adapter (lazy `react-native-purchases`)      |
-| `@flare-engine/ui-shop`      | 3.5   | shipping                 | `ShopPanel` + `PaywallModal` + `RestorePurchasesButton` consuming `IAPContext` |
+| `@flare-engine/ui-shop`      | 3.5   | shipping                 | `ShopScreen` + `PaywallModal` + `RestorePurchasesButton` consuming `IAPContext` |
 | `@flare-engine/haptics`      | —     | shipping                 | `HapticsProvider` interface + `NoopHapticsProvider` + React context            |
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).

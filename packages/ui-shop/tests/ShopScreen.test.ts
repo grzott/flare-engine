@@ -2,11 +2,20 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { EntitlementStore, IAPProvider, PurchaseResult } from '@flare-engine/iap';
 import { createEntitlementStore, createProductCatalog } from '@flare-engine/iap';
 
-// Capture useEffect callbacks so we can trigger mount effects manually.
 const effects: Array<() => (() => void) | undefined> = [];
 
+let stateQueue: unknown[] = [];
+let stateIdx = 0;
+const setters: Array<{ mock: { calls: unknown[][] } }> = [];
+
 mock.module('react', () => ({
-  useState: (init: unknown) => [init, () => {}],
+  useState: (init: unknown) => {
+    const i = stateIdx++;
+    const v = i < stateQueue.length ? stateQueue[i] : init;
+    const setter = mock((_: unknown) => {});
+    setters[i] = setter;
+    return [v, setter];
+  },
   useEffect: (fn: () => (() => void) | undefined) => {
     effects.push(fn);
   },
@@ -16,15 +25,13 @@ mock.module('react', () => ({
   Fragment: 'Fragment',
 }));
 
-mock.module('react/jsx-runtime', () => ({
-  jsx: () => null,
-  jsxs: () => null,
-  Fragment: 'Fragment',
-}));
-mock.module('react/jsx-dev-runtime', () => ({
-  jsxDEV: () => null,
-  Fragment: 'Fragment',
-}));
+const jsxLog: Array<{ type: unknown; props: Record<string, unknown> }> = [];
+const record = (type: unknown, props: Record<string, unknown>) => {
+  jsxLog.push({ type, props });
+  return null;
+};
+mock.module('react/jsx-runtime', () => ({ jsx: record, jsxs: record, Fragment: 'Fragment' }));
+mock.module('react/jsx-dev-runtime', () => ({ jsxDEV: record, Fragment: 'Fragment' }));
 
 mock.module('react-native', () => ({
   View: 'View',
@@ -69,7 +76,7 @@ mock.module('@flare-engine/ui', () => ({
   Modal: 'Modal',
 }));
 
-const { ShopPanel } = await import('../src/ShopPanel.js');
+const { ShopScreen } = await import('../src/ShopScreen.js');
 
 const catalog = createProductCatalog([
   { productId: 'game.full', grants: ['full_game'] },
@@ -102,16 +109,27 @@ const copy = {
 
 const localize = (k: string) => k;
 
-describe('ShopPanel', () => {
+const fakeProducts = [
+  { id: 'game.full', title: 'Full Game', priceDisplay: '$4.99' },
+  { id: 'game.cosmetic', title: 'Cosmetic', priceDisplay: '$0.99' },
+];
+
+describe('ShopScreen', () => {
   beforeEach(() => {
+    stateQueue = [];
+    stateIdx = 0;
+    jsxLog.length = 0;
     effects.length = 0;
+    setters.length = 0;
     getProductsMock.mockClear();
     purchaseMock.mockClear();
   });
 
   test('calls provider.getProducts exactly once on mount', async () => {
     const store = createEntitlementStore(catalog);
-    ShopPanel({ catalog, entitlementStore: store, copy, strings, localize });
+    stateIdx = 0;
+    jsxLog.length = 0;
+    ShopScreen({ catalog, entitlementStore: store, copy, strings, localize });
 
     for (const eff of effects) eff();
 
@@ -122,59 +140,67 @@ describe('ShopPanel', () => {
     expect(getProductsMock).toHaveBeenCalledWith(['game.full', 'game.cosmetic']);
   });
 
-  test('splits products into owned and available sections per entitlementStore', () => {
+  test('owned product gets disabled ghost Button; available product gets primary Button', () => {
     const store = createEntitlementStore(catalog, { initial: ['full_game'] });
 
-    expect(store.isEntitled('full_game')).toBe(true);
-    expect(store.isEntitled('palette.alt')).toBe(false);
+    stateQueue = [fakeProducts, null, null, 0];
+    stateIdx = 0;
+    jsxLog.length = 0;
 
-    const owned = catalog.entries.filter((e) => e.grants.some((k) => store.isEntitled(k)));
-    const available = catalog.entries.filter((e) => !e.grants.some((k) => store.isEntitled(k)));
+    ShopScreen({ catalog, entitlementStore: store, copy, strings, localize });
 
-    expect(owned.map((e) => e.productId)).toEqual(['game.full']);
-    expect(available.map((e) => e.productId)).toEqual(['game.cosmetic']);
+    const buttons = jsxLog.filter((e) => e.type === 'Button');
+    const ownedBtns = buttons.filter((e) => e.props.disabled === true);
+    const availBtns = buttons.filter(
+      (e) => e.props.variant === 'primary' && e.props.disabled !== true,
+    );
+
+    expect(ownedBtns).toHaveLength(1);
+    expect(availBtns).toHaveLength(1);
+    expect(ownedBtns[0]?.props.label).toBe('owned.full');
+    expect(ownedBtns[0]?.props.variant).toBe('ghost');
+    expect(availBtns[0]?.props.label).toBe('cta.cos');
   });
 
-  test('CTA click: purchase → grantProduct on purchased status → onPurchase callback', async () => {
+  test('CTA onPress: purchase → grantProduct on purchased status', async () => {
     const store = createEntitlementStore(catalog);
     const grantSpy = mock((id: string) => store.grantProduct(id));
     const patchedStore: EntitlementStore = { ...store, grantProduct: grantSpy };
-    const onPurchase = mock((_id: string, _result: PurchaseResult) => {});
 
-    ShopPanel({ catalog, entitlementStore: patchedStore, copy, strings, localize, onPurchase });
+    stateQueue = [fakeProducts, null, null, 0];
+    stateIdx = 0;
+    jsxLog.length = 0;
 
-    const result = await fakeProvider.purchase('game.full');
-    if (result.status === 'purchased') {
-      patchedStore.grantProduct('game.full');
-    }
-    onPurchase('game.full', result);
+    ShopScreen({ catalog, entitlementStore: patchedStore, copy, strings, localize });
 
-    expect(purchaseMock).toHaveBeenCalledWith('game.full');
-    expect(grantSpy).toHaveBeenCalledWith('game.full');
-    expect(store.isEntitled('full_game')).toBe(true);
-    expect(onPurchase).toHaveBeenCalledTimes(1);
+    const cosBtn = jsxLog.find((e) => e.type === 'Button' && e.props.label === 'cta.cos');
+    expect(typeof cosBtn?.props.onPress).toBe('function');
+
+    (cosBtn?.props.onPress as () => void)();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(purchaseMock).toHaveBeenCalledWith('game.cosmetic');
+    expect(grantSpy).toHaveBeenCalledWith('game.cosmetic');
+    expect(store.isEntitled('palette.alt')).toBe(true);
   });
 
-  test('re-renders when entitlementStore.onChange fires: product moves available → owned', () => {
+  test('entitlementStore.onChange subscription triggers entitlementTick setter', () => {
     const store = createEntitlementStore(catalog);
-    let changeCount = 0;
-    const unsub = store.onChange.add(() => {
-      changeCount++;
-    });
+    stateIdx = 0;
+    jsxLog.length = 0;
 
-    let owned = catalog.entries.filter((e) => e.grants.some((k) => store.isEntitled(k)));
-    let available = catalog.entries.filter((e) => !e.grants.some((k) => store.isEntitled(k)));
-    expect(owned).toHaveLength(0);
-    expect(available).toHaveLength(2);
+    ShopScreen({ catalog, entitlementStore: store, copy, strings, localize });
+
+    // effects[1] is the onChange subscription effect
+    const cleanup = effects[1]?.();
 
     store.grantProduct('game.full');
-    expect(changeCount).toBe(1);
 
-    owned = catalog.entries.filter((e) => e.grants.some((k) => store.isEntitled(k)));
-    available = catalog.entries.filter((e) => !e.grants.some((k) => store.isEntitled(k)));
-    expect(owned.map((e) => e.productId)).toContain('game.full');
-    expect(available.map((e) => e.productId)).not.toContain('game.full');
+    expect(setters[3]?.mock.calls).toHaveLength(1);
 
-    unsub();
+    if (typeof cleanup === 'function') cleanup();
   });
 });

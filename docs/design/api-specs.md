@@ -750,12 +750,12 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ### `@flare-engine/ui-shop` (< 6 KB raw, smart shop primitives)
 
-**Responsibility.** Reusable React Native shop UI primitives. Three components: `ShopPanel` (smart, fetches products + tracks entitlements), `PaywallModal` (single-product soft-dismissible modal), and `RestorePurchasesButton` (one-tap restore + entitlement re-grant). Apps pass catalog data and localized copy via props; the engine handles the purchase loop, loading states, error banners, and entitlement reactivity. No i18n framework dependency — all text goes through a host-supplied `LocalizeFn`.
+**Responsibility.** Reusable React Native shop UI primitives. Three components: `ShopScreen` (smart, fetches products + tracks entitlements), `PaywallModal` (single-product soft-dismissible modal), and `RestorePurchasesButton` (one-tap restore + entitlement re-grant). Apps pass catalog data and localized copy via props; the engine handles the purchase loop, loading states, error banners, and entitlement reactivity. No i18n framework dependency — all text goes through a host-supplied `LocalizeFn`.
 
 | API | Description |
 | --- | --- |
-| `<ShopPanel>` | Smart component. Reads `IAPContext` via `useIAP()`. Fetches products on mount; splits them into owned / available sections based on `EntitlementStore`. Calls `entitlementStore.grantProduct(id)` on confirmed purchase. |
-| `ShopPanelProps` | `{ catalog, entitlementStore, copy, strings, localize, onPurchase?, onError? }`. |
+| `<ShopScreen>` | Smart component. Reads `IAPContext` via `useIAP()`. Fetches products on mount; splits them into owned / available sections based on `EntitlementStore`. Calls `entitlementStore.grantProduct(id)` on confirmed purchase. |
+| `ShopScreenProps` | `{ catalog, entitlementStore, copy, strings, localize, onPurchase?, onError? }`. |
 | `<PaywallModal>` | Soft-dismissible single-product modal. `visible` owned by parent — modal never hides itself except on successful purchase. Calls `entitlementStore.grant(entitlementKey)` + `onPurchased` + `onDismiss` on success. |
 | `PaywallModalProps` | `{ visible, productId, entitlementKey, entitlementStore, strings, localize, onDismiss, onPurchased?, onError? }`. |
 | `<RestorePurchasesButton>` | Calls `provider.restore()` and `entitlementStore.grantProduct` for each purchased result. Shows success / empty / error banner inline. |

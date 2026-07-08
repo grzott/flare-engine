@@ -57,7 +57,7 @@ const catalog = createProductCatalog([
 describe('ui-shop integration', () => {
   beforeEach(() => {});
 
-  test('Noop → ShopPanel purchase → grantProduct re-render: product moves available → owned', async () => {
+  test('Noop → ShopScreen purchase → grantProduct re-render: product moves available → owned', async () => {
     const entitlementStore = createEntitlementStore(catalog);
 
     let changeCount = 0;
@@ -86,7 +86,7 @@ describe('ui-shop integration', () => {
     expect(owned).toHaveLength(0);
     expect(available).toHaveLength(2);
 
-    // Simulate the ShopPanel.handlePurchase flow.
+    // Simulate the ShopScreen.handlePurchase flow.
     const result = await provider.purchase('test_sku');
     expect(purchaseSpy).toHaveBeenCalledWith('test_sku');
     expect(result.status).toBe('purchased');

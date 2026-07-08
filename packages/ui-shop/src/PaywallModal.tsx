@@ -68,7 +68,7 @@ export function PaywallModal({
   }
 
   return (
-    <Modal visible={visible} onBackdropPress={onDismiss}>
+    <Modal visible={visible} onBackdropPress={purchasing ? undefined : onDismiss}>
       <Label variant="lg">{localize(strings.headingKey)}</Label>
       <Label variant="sm" tone="muted">
         {localize(strings.bodyKey)}

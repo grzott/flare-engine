@@ -1,4 +1,4 @@
-export { ShopPanel, type ShopPanelProps } from './ShopPanel.js';
+export { ShopScreen, type ShopScreenProps } from './ShopScreen.js';
 export { PaywallModal, type PaywallModalProps } from './PaywallModal.js';
 export {
   RestorePurchasesButton,

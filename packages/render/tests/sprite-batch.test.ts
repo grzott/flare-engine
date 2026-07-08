@@ -414,3 +414,73 @@ describe('SpriteBatch — draw order follows insertion order (regression)', () =
     expect(order).toEqual(['a', 'b', 'a', 'b']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bucket pooling — zero-alloc guard (OSS-B29)
+//
+// The B24 streaming refactor replaced the old multi-bucket-per-key allocator
+// with a single reused run-bucket. This locks that invariant: an effect /
+// alpha / texture-interleaved frame (many distinct runs — the worst case for
+// the old per-key allocator) must never grow the internal bucket pool or
+// re-allocate the bucket or its `commands` array after warm-up. Pre-B24 code
+// grew `_batches` to one entry per run and discarded it each flush, so these
+// assertions would fail against it.
+// ---------------------------------------------------------------------------
+
+describe('SpriteBatch — bucket pooling (zero-alloc)', () => {
+  const red: SpriteColor = { r: 1, g: 0, b: 0, a: 1 };
+
+  function internals(batch: SpriteBatch): { _batches: { commands: SpriteDrawCommand[] }[] } {
+    return batch as unknown as { _batches: { commands: SpriteDrawCommand[] }[] };
+  }
+
+  // Eight sprites where no two consecutive share (image, effect, alpha) → the
+  // flush forms eight distinct runs, exercising the mid-loop run reset.
+  function queueHeavyFrame(batch: SpriteBatch): void {
+    const imgA = mockImage('a');
+    const imgB = mockImage('b');
+    const fxA = tint(red, 0.5);
+    const fxB = grayscale(0.8);
+    const f = frame(0, 0, 16, 16);
+    batch.draw(imgA, f, 0, 0, undefined, undefined, fxA, 0, 0, 1);
+    batch.draw(imgB, f, 0, 0, undefined, undefined, fxB, 0, 0, 0.5);
+    batch.draw(imgA, f, 0, 0, undefined, undefined, undefined, 0, 0, 0.5);
+    batch.draw(imgB, f, 0, 0, undefined, undefined, fxA, 0, 0, 1);
+    batch.draw(imgA, f, 0, 0, undefined, undefined, fxB, 0, 0, 1);
+    batch.draw(imgB, f, 0, 0, undefined, undefined, undefined, 0, 0, 1);
+    batch.draw(imgA, f, 0, 0, undefined, undefined, fxA, 0, 0, 0.5);
+    batch.draw(imgB, f, 0, 0, undefined, undefined, fxB, 0, 0, 1);
+  }
+
+  it('an effect/alpha-heavy frame really forms 8 runs from 1 bucket', () => {
+    const batch = new SpriteBatch();
+    let runs = 0;
+    queueHeavyFrame(batch);
+    batch.flush(() => {
+      runs++;
+    });
+    expect(runs).toBe(8); // sanity — the worst case genuinely fans into 8 runs
+    expect(internals(batch)._batches).toHaveLength(1);
+  });
+
+  it('allocates zero new buckets after warm-up across many frames', () => {
+    const batch = new SpriteBatch();
+    queueHeavyFrame(batch);
+    batch.flush(() => {}); // warm-up allocates the single bucket
+
+    const bucket = internals(batch)._batches[0];
+    const commandsArray = bucket?.commands;
+    expect(bucket).toBeDefined();
+    expect(commandsArray).toBeDefined();
+
+    for (let i = 0; i < 100; i++) {
+      queueHeavyFrame(batch);
+      batch.flush(() => {});
+      // Pool never grows; bucket + its commands array keep their identity —
+      // proof that no bucket or inner array is re-allocated per frame.
+      expect(internals(batch)._batches).toHaveLength(1);
+      expect(internals(batch)._batches[0]).toBe(bucket);
+      expect(internals(batch)._batches[0]?.commands).toBe(commandsArray);
+    }
+  });
+});

@@ -8151,3 +8151,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 233 — 2026-07-08 (scope: engine)
+
+**Goal:** render: SpriteBatch bucket pooling (OSS-B29)
+
+**Touched files**
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `packages/render/tests/sprite-batch.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** drift:1 (§17 B29 premise superseded by B24 streaming refactor — code already zero-alloc; delivered instrumented guard test, not the specced multi-bucket pool)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

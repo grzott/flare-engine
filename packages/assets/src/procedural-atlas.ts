@@ -85,14 +85,13 @@ export interface SkiaAtlasModuleLike {
  * - engine tests / benchmarks that need a valid `SkImage` without
  *   shipping any binary asset.
  *
- * **Canonical placeholder-atlas example (Phase 11.14):** Pan Tvardowski
- * (github.com/grzott/Pan-Tvardowski) ships a full "shape atlas" that draws
- * every enemy / miniboss / boss / ship / pickup as composed primitives onto
- * an offscreen Skia surface, then wraps the result in a `SpriteSheet` — see
- * `src/shape-atlas.ts` in that repo.
- * That pattern (declarative `ShapeSpec` → `Skia` draw calls → `SpriteSheet`
+ * **Canonical placeholder-atlas pattern:** a game can ship a full "shape
+ * atlas" that draws every entity (enemies, bosses, ships, pickups) as
+ * composed primitives onto an offscreen Skia surface, then wraps the result
+ * in a `SpriteSheet`.
+ * That pattern (declarative shape spec → Skia draw calls → `SpriteSheet`
  * with one named frame per shape) is the recommended way to build a
- * manifest-swappable placeholder atlas: when final art lands, drop the
+ * manifest-swappable placeholder atlas: when final art lands, swap the
  * shape draw-calls for `parseTexturePackerHash(jsonText)` with no other
  * code changes.
  */

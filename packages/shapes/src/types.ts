@@ -156,12 +156,12 @@ export interface SquareSpec extends BaseSpec {
 }
 
 /**
- * Composite ship spec per the folio XIIIa 3-element rule:
+ * Composite ship spec — a 3-element rule:
  * hull + N rect weapons + 1 square engine.
  *
- * Pan-Tvardowski's `visual-spec/ShipDef` will eventually replace direct use
- * of `ShipSpec` with hull-preset references; for now this remains the
- * rendering composite consumed by `drawShip`.
+ * A higher-level `ShipDef` (hull-preset references) may eventually replace
+ * direct use of `ShipSpec`; for now this remains the rendering composite
+ * consumed by `drawShip`.
  */
 export interface ShipSpec extends BaseSpec {
   readonly kind: 'ship';

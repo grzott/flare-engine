@@ -7,8 +7,8 @@
  * structural interfaces — any provider that exposes `track` / `submitScore` /
  * `unlock` in the expected shape plugs in, including the shipped NoopProviders.
  *
- * Extracted from Pan Tvardowski per Phase 11.14. IAP is not wired here —
- * the IAP adapter is subscribed to directly via `EntitlementStore.attachProvider`.
+ * IAP is not wired here — the IAP adapter is subscribed to directly via
+ * `EntitlementStore.attachProvider`.
  */
 
 export interface Tier2AnalyticsLike {

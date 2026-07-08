@@ -38,8 +38,7 @@ export interface DialoguePanelProps {
  * — subscribe to `runner.onLine` and pass `speakerPortraitKey` → your
  * portrait resolver → `portrait` here.
  *
- * Extracted from Pan Tvardowski per Phase 11.14 (M9.4). Portrait resolution
- * is caller-owned so the UI kit stays asset-agnostic.
+ * Portrait resolution is caller-owned so the UI kit stays asset-agnostic.
  */
 export function DialoguePanel({
   speaker,

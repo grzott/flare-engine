@@ -5,8 +5,8 @@
  * Purchases / restores feed grants through `grantProduct(productId)` via the
  * catalog. `attachProvider(iap)` auto-subscribes to transactions.
  *
- * Extracted from Pan Tvardowski per Phase 11.14. Zero-alloc on the hot path
- * (`isEntitled`); the signal only fires on grant/revoke.
+ * Zero-alloc on the hot path (`isEntitled`); the signal only fires on
+ * grant/revoke.
  */
 
 import { Signal } from '@flare-engine/events';

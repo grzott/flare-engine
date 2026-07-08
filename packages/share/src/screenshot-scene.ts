@@ -7,9 +7,8 @@
  * `setup` hook runs before each capture — games use it to stage the camera,
  * mute HUD, pause the sim, etc.
  *
- * Extracted from Pan Tvardowski per Phase 11.14 (M9.6). Pure orchestration:
- * the pixel push is owned by the engine renderer; this module only decides
- * when and at what size to call `makeImageSnapshot`.
+ * Pure orchestration: the pixel push is owned by the engine renderer; this
+ * module only decides when and at what size to call `makeImageSnapshot`.
  */
 
 import {

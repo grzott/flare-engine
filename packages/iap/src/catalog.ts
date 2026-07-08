@@ -3,8 +3,7 @@
  * entitlement keys the game checks at runtime.
  *
  * Games that ship with gated content define a catalog once; the engine
- * treats a missing catalog as "all free". Extracted from Pan Tvardowski
- * per Phase 11.14.
+ * treats a missing catalog as "all free".
  */
 
 import type { ProductId } from './provider.js';

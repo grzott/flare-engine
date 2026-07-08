@@ -40,8 +40,8 @@ export interface ShopPanelProps {
  * List-style shop panel. Caller builds the `items` array by joining a
  * `ProductCatalog` with the `Product[]` returned by `IAPProvider.getProducts`.
  *
- * Extracted from Pan Tvardowski per Phase 11.14 (M9.3). Price strings and
- * ownership copy are caller-provided so the UI kit stays localization-free.
+ * Price strings and ownership copy are caller-provided so the UI kit stays
+ * localization-free.
  */
 export function ShopPanel({
   items,

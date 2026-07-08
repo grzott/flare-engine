@@ -33,9 +33,8 @@ export interface MainMenuKitProps {
  * Title-screen kit: headline, optional subtitle, vertical button list,
  * optional footer slot. All strings are caller-supplied (localized upstream).
  *
- * Extracted from Pan Tvardowski per Phase 11.14 (M9.1). Save-slot / settings
- * / credits panels are built on top of this kit by the consumer; the kit
- * itself is a pure title-menu primitive.
+ * Save-slot / settings / credits panels are built on top of this kit by the
+ * consumer; the kit itself is a pure title-menu primitive.
  */
 export function MainMenuKit({
   title,

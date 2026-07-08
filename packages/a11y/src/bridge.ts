@@ -7,8 +7,7 @@
  * `AccessibilityInfo.isReduceMotionEnabled()`) into the manager; the bridge
  * forwards the derived motion scale to every attached target.
  *
- * Extracted from Pan Tvardowski per Phase 11.14. Duck-typed on the target
- * side so `@flare-engine/a11y` stays dependency-free.
+ * Duck-typed on the target side so `@flare-engine/a11y` stays dependency-free.
  */
 
 import { motionScale } from './helpers.js';

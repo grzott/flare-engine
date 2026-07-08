@@ -8061,3 +8061,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 229 — 2026-07-08 (scope: engine)
+
+**Goal:** OSS-B25 — share + deep-links: platform-adapter correctness
+
+**Touched files**
+- `.changeset/oss-b25-share-deeplinks-adapter-correctness.md`
+- `packages/deep-links/src/sources.ts`
+- `packages/deep-links/tests/manager.test.ts`
+- `packages/share/src/share.ts`
+- `packages/share/tests/share.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

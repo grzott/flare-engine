@@ -8126,3 +8126,28 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 232 — 2026-07-08 (scope: engine)
+
+**Goal:** ui + ui-shop: focus side-effect + shop refetch (OSS-B28)
+
+**Touched files**
+- `.changeset/oss-b28-ui-shop-focus-refetch.md`
+- `packages/ui-shop/src/ShopScreen.tsx`
+- `packages/ui-shop/tests/ShopScreen.test.ts`
+- `packages/ui/src/focus-provider.tsx`
+- `packages/ui/src/focus.ts`
+- `packages/ui/tests/focus.test.ts`
+- `packages/ui/tests/primitives.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** the ui-shop test harness mocked `useRef` as `(init) => ({ current: init })` — a FRESH ref every render, which silently masks any persisting-ref bug (exactly ShopScreen's old once-for-life `fetched` guard). The refetch test written against that harness passed on the OLD buggy src too (non-discriminating). Fixed by upgrading the mock to a persistent `refStore`+`refIdx` (reset in beforeEach and before each mount), mirroring the react-package harness; the refetch test then correctly fails on the pre-fix src. Lesson: a hand-rolled React hook mock must persist refs across simulated re-renders or multi-render tests are theater. Related: [[packages_react_test_mock_pollution]].
+
+**Next:** see `docs/plans/todo.md`.
+
+---

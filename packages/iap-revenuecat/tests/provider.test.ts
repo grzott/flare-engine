@@ -115,6 +115,62 @@ describe('createRevenueCatProvider', () => {
     expect(p.type).toBe('consumable');
   });
 
+  test('concurrent first getProducts+restore call configure exactly once', async () => {
+    const provider = createRevenueCatProvider(testConfig);
+    const [products, restored] = await Promise.all([
+      provider.getProducts(['x']),
+      provider.restore(),
+    ]);
+
+    expect(configureMock).toHaveBeenCalledTimes(1);
+    expect(products).toHaveLength(1);
+    expect(restored.map((r) => r.transaction?.productId)).toContain('x');
+  });
+
+  test('a failed configure is retried on the next call, not permanently poisoned', async () => {
+    configureMock.mockImplementationOnce(() => {
+      throw new Error('configure failed');
+    });
+    const onErrorSpy = mock((_err: unknown) => {});
+
+    const provider = createRevenueCatProvider({ ...testConfig, onError: onErrorSpy });
+
+    // First call: configure throws → no-throw contract surfaces [] via onError.
+    const first = await provider.getProducts(['x']);
+    expect(first).toEqual([]);
+    expect(onErrorSpy).toHaveBeenCalledTimes(1);
+    expect(configureMock).toHaveBeenCalledTimes(1);
+
+    // Second call: memo was cleared → configure runs again and succeeds.
+    const second = await provider.getProducts(['x']);
+    expect(second).toHaveLength(1);
+    expect(configureMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('concurrent first callers share one rejected configure, then retry succeeds', async () => {
+    configureMock.mockImplementationOnce(() => {
+      throw new Error('configure failed');
+    });
+    const onErrorSpy = mock((_err: unknown) => {});
+    const provider = createRevenueCatProvider({ ...testConfig, onError: onErrorSpy });
+
+    // Both entrypoints share the one rejected configurePromise: no unhandled rejection,
+    // each surfaces [] via its own onError, and configure ran exactly once for the pair.
+    const [products, restored] = await Promise.all([
+      provider.getProducts(['x']),
+      provider.restore(),
+    ]);
+    expect(products).toEqual([]);
+    expect(restored).toEqual([]);
+    expect(configureMock).toHaveBeenCalledTimes(1);
+    expect(onErrorSpy).toHaveBeenCalledTimes(2);
+
+    // The shared failure cleared the memo exactly once → a later call retries and succeeds.
+    const retry = await provider.getProducts(['x']);
+    expect(retry).toHaveLength(1);
+    expect(configureMock).toHaveBeenCalledTimes(2);
+  });
+
   test('purchase returns { status: purchased, transaction } on success', async () => {
     const provider = createRevenueCatProvider(testConfig);
     const result = await provider.purchase('x');

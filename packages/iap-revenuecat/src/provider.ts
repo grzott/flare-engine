@@ -80,7 +80,11 @@ function findPurchaseTx(
 export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider {
   // Per-instance cache so multiple providers are independent (and tests are isolated).
   let sdkCache: RevenueCatPurchasesModule | null = null;
-  let configured = false;
+  // Memoize the whole configure sequence, not a post-await boolean: a boolean flips
+  // only after two awaits, so concurrent first callers (e.g. Promise.all([getProducts,
+  // restore])) all pass the guard and double-call Purchases.configure (which RevenueCat
+  // rejects). A shared promise makes configure run exactly once for all in-flight callers.
+  let configurePromise: Promise<RevenueCatPurchasesModule> | null = null;
 
   // Lazy-import keeps react-native-purchases off the module graph on platforms
   // (e.g., web) where it is not installed or not needed.
@@ -92,15 +96,27 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
   }
 
   async function ensureConfigured(): Promise<RevenueCatPurchasesModule> {
-    const Purchases = await getSDK();
-    if (!configured) {
-      // react-native is also lazy-loaded so this module never hard-loads on web.
-      const rn = await import('react-native');
-      const apiKey = rn.Platform.OS === 'ios' ? config.apiKeyIos : config.apiKeyAndroid;
-      Purchases.configure({ apiKey, appUserID: config.appUserId ?? null });
-      configured = true;
+    if (configurePromise === null) {
+      configurePromise = (async () => {
+        const Purchases = await getSDK();
+        // react-native is also lazy-loaded so this module never hard-loads on web.
+        const rn = await import('react-native');
+        const apiKey = rn.Platform.OS === 'ios' ? config.apiKeyIos : config.apiKeyAndroid;
+        Purchases.configure({ apiKey, appUserID: config.appUserId ?? null });
+        return Purchases;
+      })();
     }
-    return Purchases;
+    const pending = configurePromise;
+    try {
+      return await pending;
+    } catch (err) {
+      // A failed configure must not poison every future call: clear the memo so a later
+      // call retries (mirrors the old flag, which stayed false when configure threw).
+      // Compare-and-clear: only null OUR attempt — a later caller may already have
+      // installed a fresh promise, which must not be wiped out from under it.
+      if (configurePromise === pending) configurePromise = null;
+      throw err;
+    }
   }
 
   return {

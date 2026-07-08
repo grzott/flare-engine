@@ -7983,3 +7983,44 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 227 — 2026-07-08 (scope: engine)
+
+**Goal:** input-validation + prototype-safety hardening batch
+
+**Touched files**
+- `.changeset/oss-b23-input-validation-prototype-safety.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `packages/animation/src/sprite-animator.ts`
+- `packages/animation/tests/sprite-animator.test.ts`
+- `packages/audio/src/sfx-pool.ts`
+- `packages/audio/tests/sfx-pool.test.ts`
+- `packages/core/src/app-lifecycle.ts`
+- `packages/core/src/clock.ts`
+- `packages/core/src/coroutine.ts`
+- `packages/core/src/game-loop.ts`
+- `packages/core/tests/app-lifecycle.test.ts`
+- `packages/core/tests/clock.test.ts`
+- `packages/core/tests/coroutine.test.ts`
+- `packages/core/tests/game-loop.test.ts`
+- `packages/dialogue/src/graph.ts`
+- `packages/dialogue/src/runner.ts`
+- `packages/dialogue/tests/graph.test.ts`
+- `packages/dialogue/tests/runner.test.ts`
+- `packages/localization/src/format.ts`
+- `packages/localization/src/manager.ts`
+- `packages/localization/tests/format.test.ts`
+- `packages/localization/tests/manager.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

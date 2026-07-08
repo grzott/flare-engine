@@ -44,7 +44,7 @@ describe('singleShapeRadius — atomic primitive bounds', () => {
   test('path uses the boundsR hint', () => {
     expect(singleShapeRadius({ kind: 'path', d: 'M 0 0 L 100 100', boundsR: 142 })).toBe(142);
   });
-  test('ship delegates to its hull', () => {
+  test('ship uses hull radius when hull dominates weapons + engine', () => {
     expect(
       singleShapeRadius({
         kind: 'ship',
@@ -53,6 +53,33 @@ describe('singleShapeRadius — atomic primitive bounds', () => {
         engine: { kind: 'square', size: 20 },
       }),
     ).toBe(33);
+  });
+
+  test('ship glow radius grows to contain wing weapons', () => {
+    const r = singleShapeRadius({
+      kind: 'ship',
+      hull: { kind: 'triangle', size: 20 },
+      weapons: [
+        { kind: 'rect', w: 6, h: 14, ox: -30, oy: 5 },
+        { kind: 'rect', w: 6, h: 14, ox: 30, oy: 5 },
+      ],
+      engine: { kind: 'square', size: 12, oy: 22 },
+    });
+    // far weapon reach = hypot(30,5) + max(6,14)*0.6 = 30.413812... + 8.4 = 38.813812...
+    expect(r).toBeCloseTo(38.8138, 3);
+    expect(r).toBeGreaterThan(20); // regression guard: hull-only radius is 20
+  });
+
+  test('ship glow radius grows to contain an offset engine', () => {
+    const r = singleShapeRadius({
+      kind: 'ship',
+      hull: { kind: 'circle', r: 8 },
+      weapons: [],
+      engine: { kind: 'square', size: 10, oy: 40 },
+    });
+    // engine reach = hypot(0,40) + 10*0.6 = 40 + 6 = 46
+    expect(r).toBe(46);
+    expect(r).toBeGreaterThan(8); // regression guard: hull-only radius is 8
   });
 });
 
@@ -88,7 +115,7 @@ describe('shapeBoundsRadius — composition bounds', () => {
     expect(shapeBoundsRadius([])).toBe(4);
   });
 
-  test('ship uses hull radius via shapeBoundsRadius recursion', () => {
+  test('ship tile uses hull radius when hull dominates', () => {
     const ship: ShapeSpec = {
       kind: 'ship',
       hull: { kind: 'circle', r: 25 },
@@ -96,5 +123,29 @@ describe('shapeBoundsRadius — composition bounds', () => {
       engine: { kind: 'square', size: 20 },
     };
     expect(shapeBoundsRadius([ship])).toBe(29); // 25 + 2 margin from inner + 2 outer margin
+  });
+
+  test('ship tile grows to contain wing weapons', () => {
+    const wingShip: ShapeSpec = {
+      kind: 'ship',
+      hull: { kind: 'triangle', size: 20 },
+      weapons: [
+        { kind: 'rect', w: 6, h: 14, ox: -30, oy: 5 },
+        { kind: 'rect', w: 6, h: 14, ox: 30, oy: 5 },
+      ],
+      engine: { kind: 'square', size: 12, oy: 22 },
+    };
+    const hullOnlyShip: ShapeSpec = {
+      kind: 'ship',
+      hull: { kind: 'triangle', size: 20 },
+      weapons: [],
+      engine: { kind: 'square', size: 12, oy: 22 },
+    };
+    const withWeapons = shapeBoundsRadius([wingShip]);
+    const withoutWeapons = shapeBoundsRadius([hullOnlyShip]);
+    // weapon reach = hypot(30,5) + 14*0.75 + 2 = 30.413812... + 10.5 + 2 = 42.913812...
+    // outer margin +2 → 44.913812...
+    expect(withWeapons).toBeCloseTo(44.9138, 3);
+    expect(withWeapons).toBeGreaterThan(withoutWeapons); // weapons widen the tile
   });
 });

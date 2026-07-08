@@ -36,8 +36,20 @@ export function singleShapeRadius(spec: ShapeSpec): number {
       return Math.max(spec.topW, spec.botW, spec.h) * 0.6;
     case 'path':
       return spec.boundsR;
-    case 'ship':
-      return singleShapeRadius(spec.hull);
+    case 'ship': {
+      const { hull, weapons, engine } = spec;
+      let max = Math.hypot(hull.ox ?? 0, hull.oy ?? 0) + singleShapeRadius(hull);
+      for (let i = 0; i < weapons.length; i++) {
+        const w = weapons[i];
+        if (w === undefined) continue;
+        const reach = Math.hypot(w.ox ?? 0, w.oy ?? 0) + singleShapeRadius(w);
+        if (reach > max) max = reach;
+      }
+      // engine mirrors a w=h=size rect (see drawSquare); 0.6 is the rect face factor used by the 'rect' case above
+      const engineReach = Math.hypot(engine.ox ?? 0, engine.oy ?? 0) + engine.size * 0.6;
+      if (engineReach > max) max = engineReach;
+      return max;
+    }
   }
 }
 
@@ -67,7 +79,17 @@ function boundsR(spec: ShapeSpec): number {
     case 'trapezoid':
       return Math.max(spec.topW, spec.botW, spec.h) * 0.75;
     case 'ship':
-      return shapeBoundsRadius([spec.hull]);
+      return shapeBoundsRadius([
+        spec.hull,
+        ...spec.weapons,
+        {
+          kind: 'rect',
+          w: spec.engine.size,
+          h: spec.engine.size,
+          ox: spec.engine.ox,
+          oy: spec.engine.oy,
+        },
+      ]);
     default:
       return singleShapeRadius(spec);
   }

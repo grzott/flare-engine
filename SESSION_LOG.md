@@ -7954,3 +7954,32 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 226 — 2026-07-08 (scope: engine)
+
+**Goal:** OSS-B22 — engine-wide: private-vocab scrub in shipping src
+
+**Touched files**
+- `.changeset/oss-b22-private-vocab-scrub-src.md`
+- `packages/a11y/src/bridge.ts`
+- `packages/assets/src/procedural-atlas.ts`
+- `packages/engine/src/tier2-wiring.ts`
+- `packages/iap/src/catalog.ts`
+- `packages/iap/src/entitlements.ts`
+- `packages/shapes/src/types.ts`
+- `packages/share/src/screenshot-scene.ts`
+- `packages/ui/src/dialogue-panel.tsx`
+- `packages/ui/src/main-menu-kit.tsx`
+- `packages/ui/src/shop-panel.tsx`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -67,6 +67,72 @@ describe('createWebSource', () => {
     unsub();
     expect(listeners.popstate?.length ?? 0).toBe(0);
   });
+
+  // DOM-faithful window: addEventListener dedupes identical (type, listener)
+  // pairs and removeEventListener drops the single registration, matching the
+  // real browser (the mock above intentionally allows duplicates).
+  function makeDomFaithfulWindow(initialHref: string) {
+    const buckets = new Map<string, Set<() => void>>();
+    const win = {
+      location: { href: initialHref },
+      addEventListener: (t: string, l: () => void) => {
+        const bucket = buckets.get(t) ?? new Set<() => void>();
+        bucket.add(l);
+        buckets.set(t, bucket);
+      },
+      removeEventListener: (t: string, l: () => void) => {
+        buckets.get(t)?.delete(l);
+      },
+    };
+    const firePopstate = () => {
+      for (const fn of [...(buckets.get('popstate') ?? [])]) fn();
+    };
+    return { win, firePopstate };
+  }
+
+  test('one unsubscribe keeps popstate live for the remaining subscriber', () => {
+    const { win, firePopstate } = makeDomFaithfulWindow('/init');
+    const src = createWebSource(win);
+    const a: string[] = [];
+    const b: string[] = [];
+    const unsubA = src.subscribe((u) => a.push(u));
+    src.subscribe((u) => b.push(u));
+
+    win.location.href = '/one';
+    firePopstate();
+    expect(a).toEqual(['/one']);
+    expect(b).toEqual(['/one']);
+
+    unsubA();
+    win.location.href = '/two';
+    firePopstate();
+    // A stopped; B must keep receiving (the shared-listener bug dropped B too).
+    expect(a).toEqual(['/one']);
+    expect(b).toEqual(['/one', '/two']);
+  });
+
+  test('a subscribe during popstate dispatch does not receive that dispatch', () => {
+    const { win, firePopstate } = makeDomFaithfulWindow('/init');
+    const src = createWebSource(win);
+    const seen: string[] = [];
+    let addedLate = false;
+    src.subscribe((u) => {
+      seen.push(`early:${u}`);
+      if (!addedLate) {
+        addedLate = true;
+        src.subscribe((u2) => seen.push(`late:${u2}`));
+      }
+    });
+
+    win.location.href = '/x';
+    firePopstate();
+    // late handler was added mid-dispatch — it must not see '/x'.
+    expect(seen).toEqual(['early:/x']);
+
+    win.location.href = '/y';
+    firePopstate();
+    expect(seen).toEqual(['early:/x', 'early:/y', 'late:/y']);
+  });
 });
 
 describe('createNativeSource', () => {

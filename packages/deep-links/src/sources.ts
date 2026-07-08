@@ -45,7 +45,9 @@ export function createWebSource(win: WebWindowLike): DeepLinkSource & {
   const listeners = new Set<(url: string) => void>();
   const onPop = (): void => {
     const href = win.location.href;
-    for (const l of listeners) l(href);
+    // Snapshot: a handler that (un)subscribes during dispatch must not change
+    // who receives this dispatch.
+    for (const l of [...listeners]) l(href);
   };
   return {
     getInitialUrl() {
@@ -53,14 +55,18 @@ export function createWebSource(win: WebWindowLike): DeepLinkSource & {
     },
     subscribe(handler) {
       listeners.add(handler);
-      win.addEventListener('popstate', onPop);
+      // `onPop` is one shared closure, so the DOM dedupes identical
+      // (type, listener, capture) registrations — ref-count the DOM listener
+      // (add on first subscriber, remove on last) so one unsubscribe can't
+      // kill navigation for the remaining subscribers.
+      if (listeners.size === 1) win.addEventListener('popstate', onPop);
       return () => {
         listeners.delete(handler);
-        win.removeEventListener('popstate', onPop);
+        if (listeners.size === 0) win.removeEventListener('popstate', onPop);
       };
     },
     notify(url: string) {
-      for (const l of listeners) l(url);
+      for (const l of [...listeners]) l(url);
     },
   };
 }

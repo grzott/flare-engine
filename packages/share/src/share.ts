@@ -124,7 +124,9 @@ export function createNativeShareTransport(rnShare: NativeShareLike): ShareTrans
       if (payload.message !== undefined) content.message = payload.message;
       if (payload.url !== undefined) content.url = payload.url;
       const res = await rnShare.share(content);
-      return { dispatched: res.action !== 'dismissed', via: 'native' };
+      // RN Share resolves to Share.sharedAction ('sharedAction') or
+      // Share.dismissedAction ('dismissedAction') — never a bare 'dismissed'.
+      return { dispatched: res.action === 'sharedAction', via: 'native' };
     },
   };
 }

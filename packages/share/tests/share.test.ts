@@ -86,10 +86,13 @@ describe('createNativeShareTransport', () => {
     expect(res.via).toBe('native');
   });
 
-  test('reports undispatched on dismissed', async () => {
+  test('reports undispatched on the real RN dismissedAction (iOS cancel)', async () => {
+    // RN returns Share.dismissedAction === 'dismissedAction' on iOS cancel,
+    // never a bare 'dismissed' — the old `!== 'dismissed'` check misreported
+    // this as dispatched:true.
     const t = createNativeShareTransport({
       async share() {
-        return { action: 'dismissed' };
+        return { action: 'dismissedAction' };
       },
     });
     const res = await t.share({ title: 'x' });

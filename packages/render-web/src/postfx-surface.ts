@@ -56,8 +56,8 @@ export function createPostFxSurface(
 ): PostFxSurface | null {
   const onscreenOrNull = kit.MakeWebGLCanvasSurface(canvas);
   if (!onscreenOrNull) return null;
-  // Capture as non-null so closures below can reference it without re-narrowing.
-  const onscreen: import('canvaskit-wasm').Surface = onscreenOrNull;
+  // let so resize() can rebind when the canvas backing store changes size.
+  let onscreen: import('canvaskit-wasm').Surface = onscreenOrNull;
 
   let w = Math.max(1, canvas.width);
   let h = Math.max(1, canvas.height);
@@ -210,6 +210,18 @@ export function createPostFxSurface(
       h = Math.max(1, Math.floor(nextH));
       canvas.width = w;
       canvas.height = h;
+      // Recreate the on-screen surface: MakeWebGLCanvasSurface binds to the
+      // canvas backing store at creation time, so the old surface still refers
+      // to the pre-resize dimensions after canvas.width/height are updated.
+      const nextOnscreen = kit.MakeWebGLCanvasSurface(canvas);
+      if (nextOnscreen) {
+        onscreen.delete();
+        onscreen = nextOnscreen;
+      } else {
+        console.warn(
+          '[render-web] postfx: MakeWebGLCanvasSurface returned null on resize; keeping previous surface',
+        );
+      }
       scene?.delete();
       pong?.delete();
       scene = onscreen.makeSurface(info());

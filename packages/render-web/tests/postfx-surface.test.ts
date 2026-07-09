@@ -157,6 +157,69 @@ describe('createPostFxSurface', () => {
     const surface = createPostFxSurface(kit, canvas, new EffectChain());
     expect(surface!.sceneCanvas()).not.toBeNull();
   });
+
+  it('resize recreates the onscreen surface and deletes the previous one', () => {
+    let mkWebGLCallCount = 0;
+    let initialOnscreenDeleted = false;
+
+    function makeTrackedOnscreen(onDelete: () => void): Surface {
+      const s: Surface = {
+        getCanvas: () =>
+          ({
+            clear: () => {},
+            drawImage: () => {},
+            drawRect: () => {},
+          }) as unknown as CKCanvas,
+        flush: () => {},
+        delete: onDelete,
+        makeImageSnapshot: () =>
+          ({
+            makeShaderOptions: () => ({ delete: () => {} }),
+            delete: () => {},
+          }) as unknown as CKImage,
+        makeSurface: () => makeTrackedOnscreen(() => {}),
+      } as unknown as Surface;
+      return s;
+    }
+
+    const kit = {
+      MakeWebGLCanvasSurface: (_canvas: unknown) => {
+        mkWebGLCallCount++;
+        const isFirst = mkWebGLCallCount === 1;
+        return makeTrackedOnscreen(() => {
+          if (isFirst) initialOnscreenDeleted = true;
+        });
+      },
+      ColorType: { RGBA_8888: 0 },
+      AlphaType: { Premul: 1 },
+      ColorSpace: { SRGB: null },
+      BlendMode: { SrcOver: {} as BlendMode },
+      TileMode: { Clamp: 0 },
+      FilterMode: { Linear: 0 },
+      MipmapMode: { None: 0 },
+      Paint: class {
+        setColor() {}
+        setBlendMode() {}
+        setShader() {}
+        delete() {}
+      },
+      RuntimeEffect: { Make: () => null },
+      Color4f: (r: number, g: number, b: number, a: number) => new Float32Array([r, g, b, a]),
+      LTRBRect: (l: number, t: number, r: number, b: number) => new Float32Array([l, t, r, b]),
+    } as unknown as CanvasKit;
+
+    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const surface = createPostFxSurface(kit, canvas, new EffectChain())!;
+    expect(surface).not.toBeNull();
+    expect(mkWebGLCallCount).toBe(1);
+
+    surface.resize(200, 150);
+
+    // resize() must call MakeWebGLCanvasSurface a second time (once per resize)
+    expect(mkWebGLCallCount).toBe(2);
+    // The previous onscreen surface must be deleted so its backing store is freed
+    expect(initialOnscreenDeleted).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

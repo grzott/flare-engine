@@ -12,6 +12,8 @@ Mobile and indie game prototypes don't need sprite sheets to start. Compose ship
 bun add @flare-engine/shapes @shopify/react-native-skia
 ```
 
+`@shopify/react-native-skia` is an **optional, type-only peer** — `src/draw.ts` imports it via `import type` only (for the injected `Skia` / `canvas` / `paint` handles), so it never enters the runtime bundle. Skip it entirely on web/CanvasKit; add it only where you actually render on native Skia.
+
 ## Usage
 
 ```ts

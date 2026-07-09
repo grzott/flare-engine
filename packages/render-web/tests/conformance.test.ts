@@ -15,6 +15,7 @@ import { Renderer, createFrameRenderer } from '@flare-engine/render';
 import type { CanvasLike, SpriteDrawCommand } from '@flare-engine/render';
 import { water } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
+import { createWebFrameRenderer } from '../src/web-frame-renderer.js';
 import { createWebSkiaModule } from '../src/web-skia-module.js';
 
 // Path to the CanvasKit wasm binary (full build, no WebGL required).
@@ -211,6 +212,90 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     expect(outsideB).toBeLessThan(10);
 
     // Cleanup.
+    if (typeof (pic as { delete?: () => void }).delete === 'function') {
+      (pic as { delete: () => void }).delete();
+    }
+    if (typeof (atlasImage as unknown as { delete?: () => void }).delete === 'function') {
+      (atlasImage as unknown as { delete: () => void }).delete();
+    }
+    atlasSurface.delete();
+    rasterSurface.delete();
+  });
+
+  /**
+   * Factory smoke test: drives a full frame through `createWebFrameRenderer(kit)`
+   * directly (NOT via the manual createFrameRenderer(createWebSkiaModule(...)) path)
+   * to confirm the factory is correctly wired end-to-end.
+   *
+   * A 4×4 solid-red atlas sprite is scaled 2× to 8×8 at position (0,0) on a
+   * 32×32 black canvas. After rasterizing the picture via readPixels:
+   *   pixel (2, 2)   — inside sprite  → R≈255, G≈0, B≈0
+   *   pixel (30, 30) — outside sprite → R≈0,   G≈0, B≈0
+   */
+  it('createWebFrameRenderer produces correct pixels end-to-end', () => {
+    const FRAME_W = 32;
+    const FRAME_H = 32;
+
+    const atlasSurface = kit.MakeSurface(4, 4);
+    expect(atlasSurface).not.toBeNull();
+    if (!atlasSurface) return;
+    atlasSurface.getCanvas().clear(kit.Color4f(1, 0, 0, 1));
+    const atlasImage: SkImageLike = atlasSurface.makeImageSnapshot() as unknown as SkImageLike;
+
+    const renderer = createWebFrameRenderer(kit);
+    renderer.beginFrame(FRAME_W, FRAME_H, 0, 1);
+
+    const cmd: SpriteDrawCommand = {
+      image: atlasImage,
+      srcX: 0,
+      srcY: 0,
+      srcW: 4,
+      srcH: 4,
+      dstX: 0,
+      dstY: 0,
+      dstW: 8,
+      dstH: 8,
+      rotation: 0,
+      alpha: 1,
+      anchorX: 0,
+      anchorY: 0,
+      effect: undefined,
+      stretch: false,
+    };
+
+    renderer.drawAtlas(atlasImage, [cmd]);
+    const pic = renderer.endFrame();
+    expect(pic).not.toBeNull();
+    if (!pic) return;
+
+    const rasterSurface = kit.MakeSurface(FRAME_W, FRAME_H);
+    expect(rasterSurface).not.toBeNull();
+    if (!rasterSurface) return;
+    const rc = rasterSurface.getCanvas();
+    rc.clear(kit.Color4f(0, 0, 0, 1));
+    rc.drawPicture(pic as Parameters<typeof rc.drawPicture>[0]);
+    rasterSurface.flush();
+
+    const imageInfo = {
+      width: FRAME_W,
+      height: FRAME_H,
+      colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul,
+      colorSpace: kit.ColorSpace.SRGB,
+    };
+    const pixels = rasterSurface.makeImageSnapshot().readPixels(0, 0, imageInfo) as Uint8Array;
+    expect(pixels).not.toBeNull();
+
+    const insideIdx = (2 * FRAME_W + 2) * 4;
+    expect(pixels[insideIdx]!).toBeGreaterThan(200);
+    expect(pixels[insideIdx + 1]!).toBeLessThan(50);
+    expect(pixels[insideIdx + 2]!).toBeLessThan(50);
+
+    const outsideIdx = (30 * FRAME_W + 30) * 4;
+    expect(pixels[outsideIdx]!).toBeLessThan(10);
+    expect(pixels[outsideIdx + 1]!).toBeLessThan(10);
+    expect(pixels[outsideIdx + 2]!).toBeLessThan(10);
+
     if (typeof (pic as { delete?: () => void }).delete === 'function') {
       (pic as { delete: () => void }).delete();
     }

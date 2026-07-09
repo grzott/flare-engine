@@ -295,6 +295,7 @@ Web-integration bridge — the web analog of `@flare-engine/react`: it composes 
 | --- | --- |
 | `loadCanvasKit(wasmUrl, onProgress?)` | Singleton loader. Reads wasm binary from `wasmUrl` (absolute URL or filesystem path). Falls back to `node:fs/promises` when `fetch` is absent (Node/Bun test environments). Calls `onProgress(1)` immediately if already loading/complete. Returns `Promise<CanvasKit>`. |
 | `createWebSkiaModule(kit)` | Returns a `FrameRendererModule` backed by CanvasKit. Adapter differences handled internally: `drawAtlas` flattens `RectLike[]`/`RSXformLike[]` to grow-only `Float32Array` scratch buffers (zero-alloc steady state); `rotate` takes degrees (the `CanvasLike`/`DrawSurfaceLike` contract) and forwards verbatim to CanvasKit — `render`'s camera seam converts radians → degrees once; `ColorFilter.MakeBlend` maps numeric mode literals to CK `BlendMode` enum entries; `RSXform` objects carry `scos/ssin/tx/ty` readable fields. Pass to `createFrameRenderer` from `@flare-engine/render`. |
+| `createWebFrameRenderer(kit)` | `createWebFrameRenderer(kit: CanvasKit): FrameRenderer`. The web/CanvasKit analog of `@flare-engine/react`'s `createSkiaFrameRenderer` — a thin composition `createFrameRenderer(createWebSkiaModule(kit))` (from `@flare-engine/render`), so the frame-renderer body stays backend-neutral and shared with native. Presentation (replaying `endFrame()` onto a CK surface + flushing) is the consumer's job — pair with `createWebSurface` or `createPostFxSurface`. |
 | `createWebSurface(kit, canvas)` | Returns `CanvasLike \| null`. Creates a WebGL-backed CanvasKit surface for the given `<canvas>` element and wraps its canvas as `CanvasLike`. Returns `null` when WebGL is unavailable. Unpacks packed-ARGB `clear(color: number)` to Float32Array for CK. Pass to `Renderer.setCanvas()`. |
 | `PostFxSurface` | Interface: `width`, `height`, `sceneCanvas()`, `onscreenCanvas()`, `clear(bgRgb)`, `fadeTrail(bgRgb, alpha)`, `composite(globalIntensity)`, `flush()`, `resize(w, h)`, `dispose()`. |
 | `createPostFxSurface(kit, canvas, chain)` | **Bridge piece.** Returns `PostFxSurface \| null`. Creates a pair of offscreen surfaces (scene + ping-pong) plus a WebGL onscreen surface, and runs the caller-supplied `@flare-engine/postfx` `EffectChain` at composite time. Pass a new empty `EffectChain()` for a passthrough surface. |
@@ -368,7 +369,7 @@ React error boundary + structured crash payloads for the OSS launch reliability 
 
 **Implementation notes:**
 
-- React is a **peer dependency** — package declares `react >= 18` and lists it as `external` in `tsup.config.ts`.
+- React is a **peer dependency** — package declares `react >= 19` and lists it as `external` in `tsup.config.ts`.
 - Component is a class (required for `componentDidCatch` / `getDerivedStateFromError`). All other exports are plain functions.
 - Tests instantiate the class directly and stub `setState`; no DOM/JSDOM required.
 
@@ -478,7 +479,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 **Implementation notes:**
 
-- Skia is a **peer dependency** (`@shopify/react-native-skia`). Runtime uses an injected `SkiaPostFxModuleLike` so the orchestration is fully testable without a GPU.
+- Skia is an **optional peer dependency** (`@shopify/react-native-skia >=2.0.0`). Runtime uses an injected `SkiaPostFxModuleLike` so the orchestration is fully testable without a GPU.
 - `supported` reports whether `Skia.RuntimeEffect.Make` exists; callers fall through to a no-op pipeline when unsupported (explicit fallback path).
 - Uniform layouts are per-kind Float32Arrays (see `packUniforms`); resolution is passed via `(width, height)` for shaders that need it.
 - `runtime.apply` is the compositor entry point (added #161). The injected `SkiaPostFxModuleLike` gains an optional `Paint?(): SkiaPaintLike` factory; when absent `apply` is a no-op (backwards-compatible with all existing consumers of `buildPass`).
@@ -769,7 +770,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 **Implementation notes:**
 
 - Deps: `@flare-engine/iap` (interface + catalog + entitlements), `@flare-engine/ui` (Panel / Button / Label / Modal primitives), `@flare-engine/events` (Signal via EntitlementStore.onChange).
-- Peer deps: `react >=18`, `react-native >=0.74`.
+- Peer deps: `react >=19`, `react-native >=0.79`.
 - `EntitlementStore.onChange` subscription drives re-render after purchase; no manual `getProducts` refresh is needed.
 - Localizer-as-prop pattern keeps all text in the app layer — engine emits zero strings.
 - `PaywallModal` does not toggle `visible` itself. Parent-owns-visibility avoids double-close races with navigation stacks.

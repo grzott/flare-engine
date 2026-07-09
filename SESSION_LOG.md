@@ -8196,3 +8196,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 235 — 2026-07-09 (scope: engine)
+
+**Goal:** latent web/devtools correctness: LUT child binding + resume timescale (OSS-B31)
+
+**Touched files**
+- `.changeset/oss-b31-web-devtools-correctness.md`
+- `packages/devtools/src/time-scrubber.ts`
+- `packages/devtools/tests/time-scrubber.test.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/render-web/src/postfx-surface.ts`
+- `packages/render-web/tests/postfx-surface.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** drift:1 (spec stale path: 'no extra children' doc is packages/postfx/src/runtime.ts:74-82 not render-web/src/runtime.ts:80 — that file does not exist; both bugs latent-not-live, framed as latent gaps; done-when confirmed CPU-testable, unlike B24's drawAtlas)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

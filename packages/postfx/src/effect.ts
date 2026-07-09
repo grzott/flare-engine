@@ -205,8 +205,8 @@ export function createGodRays(id = 'god-rays', uniforms: Partial<GodRaysUniforms
 }
 
 export function createColorGradingLut(
+  id: string,
   uniforms: { lut: SkImageLike; intensity?: number },
-  id = 'color-grading-lut',
 ): Effect {
   return {
     id,

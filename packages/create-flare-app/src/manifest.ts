@@ -13,7 +13,7 @@ export interface TemplateManifest {
 }
 
 /** Built-in templates shipped inside `create-flare-app`. */
-export const TEMPLATES: Record<string, TemplateManifest> = {
+export const TEMPLATES = {
   blank: {
     id: 'blank',
     displayName: 'Blank',
@@ -36,7 +36,7 @@ export const TEMPLATES: Record<string, TemplateManifest> = {
     engines: { node: '>=20' },
     postInstall: 'bun run start',
   },
-};
+} satisfies Record<string, TemplateManifest>;
 
 export type TemplateId = keyof typeof TEMPLATES;
 

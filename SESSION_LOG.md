@@ -8172,3 +8172,27 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 234 — 2026-07-08 (scope: engine)
+
+**Goal:** API-freeze alignment: postfx factory order + create-flare-app satisfies (OSS-B30)
+
+**Touched files**
+- `.changeset/oss-b30-api-freeze-alignment.md`
+- `docs/design/api-specs.md`
+- `packages/create-flare-app/src/manifest.ts`
+- `packages/create-flare-app/tests/scaffold.test.ts`
+- `packages/postfx/src/effect.ts`
+- `packages/postfx/tests/color-grading-lut.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** drift:1 (spec's (id,uniforms) reorder collided with a documented prior decision at SESSION_LOG:3721 + Biome useDefaultParameterLast; owner picked Option A id-required. Spec's 'both CLIs reuse the guard' was aspirational, not reflected in code — left out of scope)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

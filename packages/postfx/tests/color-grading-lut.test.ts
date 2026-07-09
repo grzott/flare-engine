@@ -18,8 +18,8 @@ function createMockSkia(): SkiaPostFxModuleLike {
 }
 
 describe('color-grading-lut effect', () => {
-  test('createColorGradingLut default factory', () => {
-    const e = createColorGradingLut({ lut: mockLutImage });
+  test('createColorGradingLut sets id and defaults intensity', () => {
+    const e = createColorGradingLut('color-grading-lut', { lut: mockLutImage });
     expect(e.id).toBe('color-grading-lut');
     expect(e.enabled).toBe(true);
     expect(e.uniforms.kind).toBe('color-grading-lut');
@@ -29,7 +29,7 @@ describe('color-grading-lut effect', () => {
   });
 
   test('createColorGradingLut respects intensity override', () => {
-    const e = createColorGradingLut({ lut: mockLutImage, intensity: 0.5 });
+    const e = createColorGradingLut('color-grading-lut', { lut: mockLutImage, intensity: 0.5 });
     if (e.uniforms.kind === 'color-grading-lut') {
       expect(e.uniforms.intensity).toBe(0.5);
     }
@@ -38,7 +38,7 @@ describe('color-grading-lut effect', () => {
   test('packUniforms layout — single float', () => {
     const skia = createMockSkia();
     const rt = createPostFxRuntime(skia);
-    const e = createColorGradingLut({ lut: mockLutImage });
+    const e = createColorGradingLut('color-grading-lut', { lut: mockLutImage });
     const packed = rt.packUniforms(e, 800, 600);
     expect(packed.length).toBe(1);
     expect(packed[0]).toBe(1.0);
@@ -48,7 +48,7 @@ describe('color-grading-lut effect', () => {
     const skia = createMockSkia();
     const rt = createPostFxRuntime(skia);
     const chain = new EffectChain();
-    chain.add(createColorGradingLut({ lut: mockLutImage, intensity: 1.0 }, 'lut'));
+    chain.add(createColorGradingLut('lut', { lut: mockLutImage, intensity: 1.0 }));
     chain.globalIntensity = 0.5;
     const passes = rt.buildPass(chain, 800, 600);
     expect(passes[0]?.uniforms[0]).toBeCloseTo(0.5, 5);
@@ -59,7 +59,7 @@ describe('color-grading-lut effect', () => {
     const skia = createMockSkia();
     const rt = createPostFxRuntime(skia);
     const chain = new EffectChain();
-    chain.add(createColorGradingLut({ lut: mockImg }, 'lut'));
+    chain.add(createColorGradingLut('lut', { lut: mockImg }));
     const passes = rt.buildPass(chain, 800, 600);
     expect(passes[0]?.children.length).toBe(1);
     expect(passes[0]?.children[0]).toBe(mockImg);
@@ -70,7 +70,7 @@ describe('color-grading-lut effect', () => {
     const rt = createPostFxRuntime(skia);
     const chain = new EffectChain();
     chain.add(createVignette('v'));
-    chain.add(createColorGradingLut({ lut: mockLutImage }, 'lut'));
+    chain.add(createColorGradingLut('lut', { lut: mockLutImage }));
     const passes = rt.buildPass(chain, 800, 600);
     expect(passes.length).toBe(2);
     const vignette = passes[0];

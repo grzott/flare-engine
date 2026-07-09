@@ -3,7 +3,7 @@ import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { version } from '../package.json';
-import { TEMPLATES, isTemplateId } from '../src/manifest.js';
+import { TEMPLATES, type TemplateId, isTemplateId } from '../src/manifest.js';
 import {
   detectPackageManager,
   installSpawnSpec,
@@ -27,6 +27,33 @@ describe('manifest', () => {
     expect(isTemplateId('topdown')).toBe(true);
     expect(isTemplateId('shmup')).toBe(true);
     expect(isTemplateId('unknown')).toBe(false);
+  });
+
+  test('TemplateId is exactly the literal union (compile-time)', () => {
+    // With `TEMPLATES satisfies Record<…>`, `keyof typeof TEMPLATES` collapses
+    // to the literal union. Were TEMPLATES annotated `Record<string, …>` again,
+    // TemplateId would widen to `string | number` and `Equal<…>` would be
+    // `false`, failing this assignment under root tsc.
+    type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+      ? true
+      : false;
+    const isLiteralUnion: Equal<TemplateId, 'blank' | 'topdown' | 'shmup'> = true;
+    expect(isLiteralUnion).toBe(true);
+  });
+
+  test('isTemplateId narrows a plain string to a real template key', () => {
+    const raw = 'topdown' as string;
+    if (isTemplateId(raw)) {
+      // Compile-time: `raw` is now `TemplateId`, so it indexes the concrete
+      // TEMPLATES object (no `| undefined`) and is assignable to the union —
+      // both fail typecheck if the guard stops narrowing (TemplateId widens).
+      const manifest = TEMPLATES[raw];
+      const asUnion: 'blank' | 'topdown' | 'shmup' = raw;
+      expect(manifest.id).toBe('topdown');
+      expect(asUnion).toBe('topdown');
+    } else {
+      throw new Error('expected "topdown" to be a template id');
+    }
   });
 });
 

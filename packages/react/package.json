@@ -19,9 +19,14 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
@@ -32,7 +37,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0"
+    "@types/react": "^19.0.0"
   },
   "dependencies": {
     "@flare-engine/assets": "^0.2.1",
@@ -50,6 +55,9 @@
     "react-native": ">=0.79.0",
     "@shopify/react-native-skia": ">=2.0.0",
     "react-native-safe-area-context": ">=4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "publishConfig": {
     "access": "restricted",

@@ -1,7 +1,7 @@
 {
   "name": "@flare-engine/engine",
   "version": "0.2.1",
-  "description": "Flare Engine umbrella — convenience entry point, re-exports all packages",
+  "description": "Flare Engine umbrella — convenience entry point re-exporting the core runtime and React packages",
   "keywords": ["flare-engine", "2d", "react-native", "web", "skia"],
   "license": "MIT",
   "author": "Grzegorz Otto",
@@ -19,9 +19,14 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
@@ -54,6 +59,9 @@
     "@shopify/react-native-skia": ">=2.0.0",
     "react-native-safe-area-context": ">=4.0.0",
     "react-native-audio-api": ">=0.3.0"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "publishConfig": {
     "access": "restricted",

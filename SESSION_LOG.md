@@ -8325,3 +8325,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 238 — 2026-07-09 (scope: engine)
+
+**Goal:** ci: publint + attw + nodenext + publish-safety gate (OSS-C3)
+
+**Touched files**
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
+- `.gitignore`
+- `bun.lock`
+- `package.json`
+- `scripts/check-exports.mjs`
+- `scripts/check-nodenext.mjs`
+- `scripts/check-publish-safety.mjs`
+- `scripts/nodenext-probe/`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 deny:4 gate:1 fixup:1 drift:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -27,6 +27,10 @@ apps/*/.expo/
 # /start batch state — per-row diff baseline consumed by verify.sh
 .claude/.batch-baseline
 
+# nodenext exports-map probe — regenerated from the live package list by
+# scripts/check-nodenext.mjs on every run; never committed.
+scripts/nodenext-probe/probe.generated.mts
+
 # TestingBot credentials — real values never committed; see .env.testingbot.example
 apps/*/.env.testingbot
 

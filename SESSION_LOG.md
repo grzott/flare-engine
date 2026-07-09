@@ -8220,3 +8220,46 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 236 — 2026-07-09 (scope: engine)
+
+**Goal:** OSS-C1: peer bump + skia decoupling + render-web createWebFrameRenderer export + postfx resize fix
+
+**Touched files**
+- `.changeset/oss-c1-peer-bump-skia-decouple-render-web-export.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/achievements/package.json`
+- `packages/analytics/package.json`
+- `packages/assets/package.json`
+- `packages/devtools/package.json`
+- `packages/engine/package.json`
+- `packages/errors/package.json`
+- `packages/haptics/package.json`
+- `packages/iap/package.json`
+- `packages/input/package.json`
+- `packages/leaderboards/package.json`
+- `packages/postfx/package.json`
+- `packages/react/package.json`
+- `packages/render-web/src/index.ts`
+- `packages/render-web/src/postfx-surface.ts`
+- `packages/render-web/src/web-frame-renderer.ts`
+- `packages/render-web/tests/conformance.test.ts`
+- `packages/render-web/tests/postfx-surface.test.ts`
+- `packages/render/package.json`
+- `packages/shapes/README.md`
+- `packages/shapes/package.json`
+- `packages/ui-shop/package.json`
+- `packages/ui/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:2 fixup:2 gate:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---

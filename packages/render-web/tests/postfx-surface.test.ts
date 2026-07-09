@@ -1,13 +1,16 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { resolve } from 'node:path';
 import {
+  COLOR_GRADING_LUT_SKSL,
   EffectChain,
   GRAYSCALE_FLASH_SKSL,
   VIGNETTE_SKSL,
   createBloom,
+  createColorGradingLut,
   createGrayscaleFlash,
   createVignette,
 } from '@flare-engine/postfx';
+import type { SkImageLike } from '@flare-engine/postfx';
 import type {
   BlendMode,
   Canvas as CKCanvas,
@@ -263,10 +266,12 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
     deletedShaders: string[];
     deletedSrcShaders: string[];
     deletedSnapshots: string[];
+    childrenCounts: number[];
   } {
     const deletedShaders: string[] = [];
     const deletedSrcShaders: string[] = [];
     const deletedSnapshots: string[] = [];
+    const childrenCounts: number[] = [];
     let shaderIdx = 0;
     let snapshotIdx = 0;
 
@@ -318,7 +323,10 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
 
     // The fake RuntimeEffect always compiles and produces a tracked shader
     const fakeEffect = {
-      makeShaderWithChildren: (_uniforms: ArrayLike<number>, _children: unknown[]) => {
+      makeShaderWithChildren: (_uniforms: ArrayLike<number>, children: unknown[]) => {
+        // Record how many non-null child shaders each pass binds — for the LUT
+        // effect this must be 2 ([srcShader, lutShader]); pre-fix blit bound 1.
+        childrenCounts.push(children.filter((c) => c != null).length);
         const label = `shader-${++shaderIdx}`;
         return makeTrackedShader(label);
       },
@@ -346,7 +354,7 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
       LTRBRect: (l: number, t: number, r: number, b: number) => new Float32Array([l, t, r, b]),
     } as unknown as CanvasKit;
 
-    return { kit, deletedShaders, deletedSrcShaders, deletedSnapshots };
+    return { kit, deletedShaders, deletedSrcShaders, deletedSnapshots, childrenCounts };
   }
 
   it('single-pass: shader and srcShader are deleted after composite', () => {
@@ -390,6 +398,42 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
     const surface = createPostFxSurface(kit, canvas, chain)!;
     surface.composite(1);
     expect(() => surface.dispose()).not.toThrow();
+  });
+
+  it('color-grading-lut pass binds the LUT as a second child and frees it', () => {
+    const { kit, childrenCounts } = makeRuntimeSupportedKit();
+    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const deletedLut: string[] = [];
+    const lutImage = {
+      makeShaderOptions: () => ({ delete: () => deletedLut.push('lut') }),
+    } as unknown as SkImageLike;
+    const chain = new EffectChain();
+    chain.add(createColorGradingLut('grade', { lut: lutImage }));
+    const surface = createPostFxSurface(kit, canvas, chain)!;
+
+    surface.composite(1);
+
+    // The LUT pass must bind [srcShader, lutShader]; pre-fix blit passed only
+    // [srcShader] so this was [1], leaving the LUT sampler unbound.
+    expect(childrenCounts).toEqual([2]);
+    // The wrapped LUT child shader is freed each pass (no GPU-handle leak);
+    // the underlying LUT SkImage is caller-owned and must NOT be deleted here.
+    expect(deletedLut).toEqual(['lut']);
+  });
+
+  it('non-LUT effects still bind exactly one child (src only)', () => {
+    const { kit, childrenCounts } = makeRuntimeSupportedKit();
+    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const chain = new EffectChain();
+    chain.add(createVignette('v'));
+    chain.add(createGrayscaleFlash('g'));
+    const surface = createPostFxSurface(kit, canvas, chain)!;
+
+    surface.composite(1);
+
+    // Two non-LUT passes, each bound with the frozen EMPTY_CHILDREN sentinel →
+    // src only. Proves the in-place childrenBuf resize doesn't leak a stale LUT.
+    expect(childrenCounts).toEqual([1, 1]);
   });
 });
 
@@ -547,5 +591,105 @@ describe('real CanvasKit CPU: shader compilation and pixel output', () => {
     dst.delete();
     srcImg.delete();
     src.delete();
+  });
+
+  it('color-grading-lut binds src+lut and grades a red source toward the LUT', () => {
+    // The two-child (src + lut) LUT shape — the exact case blit() now binds.
+    if (!ck?.MakeSurface || !ck.RuntimeEffect || !ck.MakeImage) return;
+    const red = ck.MakeSurface(4, 4);
+    if (!red) return;
+    red.getCanvas().clear(ck.Color4f(1, 0, 0, 1));
+    const srcImg = red.makeImageSnapshot();
+
+    // All-blue 64³ LUT (4096×64 RGBA) — grades every input color to blue, so
+    // the graded output is unambiguous regardless of LUT lookup coordinates.
+    const lutW = 4096;
+    const lutH = 64;
+    const bytes = new Uint8Array(lutW * lutH * 4);
+    for (let px = 0; px < lutW * lutH; px++) {
+      bytes[px * 4 + 2] = 255; // B
+      bytes[px * 4 + 3] = 255; // A
+    }
+    const lutImg = ck.MakeImage(
+      {
+        width: lutW,
+        height: lutH,
+        colorType: ck.ColorType.RGBA_8888,
+        alphaType: ck.AlphaType.Unpremul,
+        colorSpace: ck.ColorSpace.SRGB,
+      },
+      bytes,
+      lutW * 4,
+    );
+    const effect = ck.RuntimeEffect.Make(COLOR_GRADING_LUT_SKSL);
+    if (!effect || !lutImg) {
+      lutImg?.delete();
+      srcImg.delete();
+      red.delete();
+      return;
+    }
+
+    const srcShader = srcImg.makeShaderOptions(
+      ck.TileMode.Clamp,
+      ck.TileMode.Clamp,
+      ck.FilterMode.Linear,
+      ck.MipmapMode.None,
+    );
+    const lutShader = lutImg.makeShaderOptions(
+      ck.TileMode.Clamp,
+      ck.TileMode.Clamp,
+      ck.FilterMode.Linear,
+      ck.MipmapMode.None,
+    );
+    // Child order mirrors the SkSL declaration: src (index 0), lut (index 1);
+    // uniforms = [intensity] (packUniforms yields a single float).
+    const shader = effect.makeShaderWithChildren(new Float32Array([1.0]), [srcShader, lutShader]);
+    expect(shader).not.toBeNull();
+
+    const dst = ck.MakeSurface(4, 4);
+    if (!dst || !shader) {
+      srcShader.delete();
+      lutShader.delete();
+      lutImg.delete();
+      srcImg.delete();
+      red.delete();
+      return;
+    }
+
+    const paint = new ck.Paint();
+    paint.setShader(shader as Parameters<typeof paint.setShader>[0]);
+    dst.getCanvas().drawRect(ck.LTRBRect(0, 0, 4, 4), paint);
+    dst.flush();
+    paint.delete();
+    (shader as { delete?(): void }).delete?.();
+    srcShader.delete();
+    lutShader.delete();
+
+    const dstSnap = dst.makeImageSnapshot();
+    const info = {
+      width: 4,
+      height: 4,
+      colorType: ck.ColorType.RGBA_8888,
+      alphaType: ck.AlphaType.Unpremul,
+      colorSpace: ck.ColorSpace.SRGB,
+    };
+    const pixels = dstSnap.readPixels(0, 0, info) as Uint8Array | null;
+    expect(pixels).not.toBeNull();
+    if (pixels) {
+      // Red (255,0,0) graded through an all-blue LUT at full intensity → blue.
+      const idx = (2 * 4 + 2) * 4;
+      const r = pixels[idx]!;
+      const g = pixels[idx + 1]!;
+      const b = pixels[idx + 2]!;
+      expect(b).toBeGreaterThan(200);
+      expect(r).toBeLessThan(60);
+      expect(g).toBeLessThan(60);
+    }
+
+    dstSnap.delete();
+    dst.delete();
+    lutImg.delete();
+    srcImg.delete();
+    red.delete();
   });
 });

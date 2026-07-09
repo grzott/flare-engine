@@ -80,7 +80,8 @@ export function createPostFxSurface(
   const scratch = new Float32Array(4);
   const rectScratch = new Float32Array(4);
 
-  // Reused single-element children array — avoids allocating [srcShader] per pass.
+  // Reused children array — resized in place per pass (src + any extra sampler
+  // children) so no shader-children array is allocated in the composite loop.
   const childrenBuf: unknown[] = [null];
 
   // Build a minimal SkiaPostFxModuleLike shim that routes to CanvasKit's RuntimeEffect.
@@ -123,7 +124,25 @@ export function createPostFxSurface(
         kit.FilterMode.Linear,
         kit.MipmapMode.None,
       );
+      // src is child 0; Convention-A extra sampler children (pass.children,
+      // which EXCLUDES src — e.g. the color-grading-lut LUT image) follow in
+      // SkSL declaration order (src=0, lut=1), each wrapped as a shader. The
+      // reused childrenBuf is re-sized in place (no `new`) and its slots are
+      // nulled after the pass, so a LUT child cannot leak into a later or
+      // non-LUT pass.
+      const childCount = 1 + pass.children.length;
+      childrenBuf.length = childCount;
       childrenBuf[0] = srcShader;
+      for (let c = 0; c < pass.children.length; c++) {
+        const childImg = pass.children[c];
+        if (!childImg) continue;
+        childrenBuf[c + 1] = (childImg as import('canvaskit-wasm').Image).makeShaderOptions(
+          kit.TileMode.Clamp,
+          kit.TileMode.Clamp,
+          kit.FilterMode.Linear,
+          kit.MipmapMode.None,
+        );
+      }
       const shader = pass.shader.makeShaderWithChildren(
         pass.uniforms,
         childrenBuf,
@@ -132,7 +151,12 @@ export function createPostFxSurface(
       target.getCanvas().drawRect(rectScratch, fx);
       fx.setShader(null);
       shader?.delete();
-      srcShader.delete();
+      // Delete the shaders we wrapped this pass (src + any extra children).
+      // Do NOT delete the underlying pass.children SkImages — caller-owned.
+      for (let c = 0; c < childCount; c++) {
+        (childrenBuf[c] as Shader | null)?.delete();
+        childrenBuf[c] = null;
+      }
       target.flush();
       if (!toScreen) {
         if (src !== img) src.delete();

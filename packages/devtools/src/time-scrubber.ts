@@ -26,6 +26,8 @@ export class TimeScrubber<T> {
   private readonly restore: RestoreCallback<T> | undefined;
   private _stepRequested = false;
   private _scrubFrames = 0;
+  /** Timescale captured at `pause()`, restored by `resume()`. Defaults to 1. */
+  private _savedTimescale = 1;
 
   constructor(options: TimeScrubberOptions<T>) {
     this.loop = options.loop;
@@ -48,14 +50,21 @@ export class TimeScrubber<T> {
     return this._scrubFrames;
   }
 
-  /** Pause the loop (timescale → 0). */
+  /** Pause the loop (timescale → 0), remembering the running speed.
+   *  The `!== 0` guard means a double pause (e.g. `rewind()` calls `pause()`
+   *  while already paused) keeps the first saved value instead of storing 0. */
   pause(): void {
+    if (this.loop.clock.timescale !== 0) {
+      this._savedTimescale = this.loop.clock.timescale;
+    }
     this.loop.clock.timescale = 0;
   }
 
-  /** Resume the loop at normal speed and clear any scrub state. */
+  /** Resume the loop at its pre-pause speed and clear any scrub state.
+   *  Restores the timescale captured at `pause()` (defaults to 1 if never
+   *  paused), so resuming an active slow-mo returns to that rate, not 1×. */
   resume(): void {
-    this.loop.clock.timescale = 1;
+    this.loop.clock.timescale = this._savedTimescale;
     this._scrubFrames = 0;
     this._stepRequested = false;
   }

@@ -76,9 +76,12 @@ export interface CompiledPass {
    *
    * The renderer binds the implicit scene texture as `children[0]` at draw
    * time. This array holds any *additional* `uniform shader` slots declared
-   * beyond `src` (e.g. a noise texture, an LUT). For every built-in effect
-   * today there are no extra children, so this is always the frozen
-   * `EMPTY_CHILDREN` sentinel — enabling zero-alloc sharing across passes.
+   * beyond `src` (e.g. a noise texture, an LUT). Every built-in effect
+   * *except* `color-grading-lut` has no extra children, so this is the frozen
+   * `EMPTY_CHILDREN` sentinel — enabling zero-alloc sharing across those
+   * passes. `color-grading-lut` yields exactly one extra child — the LUT
+   * `SkImage` (`effect.uniforms.lut`) — bound as the shader's second
+   * `uniform shader` (index 1) after the implicit `src` (index 0).
    */
   children: readonly SkImageLike[];
 }

@@ -109,4 +109,42 @@ describe('TimeScrubber', () => {
     expect(scrub.rewind(Number.NaN)).toBeNull();
     expect(scrub.rewind(Number.POSITIVE_INFINITY)).toBeNull();
   });
+
+  test('resume restores an active slow-motion timescale (not 1)', () => {
+    const loop = makeLoop();
+    const buffer = createSnapshotRingBuffer(4, () => 1);
+    const scrub = new TimeScrubber({ loop: asLoop(loop), buffer });
+    loop.clock.timescale = 0.5; // slow-mo active before pausing
+    scrub.pause();
+    expect(loop.clock.timescale).toBe(0);
+    scrub.resume();
+    // Pre-fix resume() hardcoded 1 → this would be 1, clobbering the slow-mo.
+    expect(loop.clock.timescale).toBe(0.5);
+  });
+
+  test('double pause keeps the saved speed (does not freeze on resume)', () => {
+    const loop = makeLoop();
+    const buffer = createSnapshotRingBuffer(4, () => 1);
+    const scrub = new TimeScrubber({ loop: asLoop(loop), buffer });
+    loop.clock.timescale = 0.5;
+    scrub.pause(); // saves 0.5, timescale → 0
+    scrub.pause(); // already 0 → guard skips saving 0
+    scrub.resume();
+    // Without the `!== 0` guard the second pause would save 0 and freeze here.
+    expect(loop.clock.timescale).toBe(0.5);
+  });
+
+  test('rewind then resume returns to the pre-rewind slow-motion speed', () => {
+    const loop = makeLoop();
+    let n = 0;
+    const buffer = createSnapshotRingBuffer<number>(4, () => ++n);
+    buffer.capture();
+    buffer.capture();
+    const scrub = new TimeScrubber<number>({ loop: asLoop(loop), buffer });
+    loop.clock.timescale = 0.5;
+    scrub.rewind(1); // calls pause() internally → saves 0.5
+    expect(loop.clock.timescale).toBe(0);
+    scrub.resume();
+    expect(loop.clock.timescale).toBe(0.5);
+  });
 });

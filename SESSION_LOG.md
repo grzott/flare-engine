@@ -9006,3 +9006,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 242 — 2026-07-10 (scope: engine)
+
+**Goal:** OSS-M2 engine headless entry + barrel honesty
+
+**Touched files**
+- `.changeset/oss-m2-engine-headless-barrel.md`
+- `SESSION_LOG.md`
+- `docs/design/api-specs.md`
+- `packages/engine/README.md`
+- `packages/engine/package.json`
+- `packages/engine/src/headless.ts`
+- `packages/engine/src/index.ts`
+- `packages/engine/tests/headless.test.ts`
+- `packages/engine/tsdown.config.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 organizeImports+noAssignInExpressions on new files (biome --write applied); guard was near-tautology (only walked index.ts, not impl files) — replaced with flat scan over all src/ files with block-comment stripping; root tsc invalid ReturnType annotation on one line
+
+**Next:** see `docs/plans/todo.md`.
+
+---

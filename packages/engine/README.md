@@ -2,7 +2,10 @@
 
 Convenience integration layer — `createGame(config)` is a pure factory that constructs `World` + `Camera2D` + `Renderer` + `SpriteBatch` + `InputManager` + `AudioManager` + `AssetManager` + `SceneManager` + `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare-engine/react`.
 
-The package also re-exports all 15 lower `@flare-engine/*` packages as a convenience umbrella. This is the one place tree-shaking is deliberately sacrificed for DX.
+The package ships two entry points:
+
+- **`.` (default)** — full curated barrel: 14 headless packages + `@flare-engine/postfx` + curated `@flare-engine/react` exports. Pulls in React Native at module scope. `CompiledShader` and `SkImageLike` from postfx are aliased as `PostFxCompiledShader` and `PostFxSkImageLike` to avoid clashing with the render/assets versions. React's `GameConfig` is re-exported as `GameViewConfig` to avoid clashing with `createGame`'s own `GameConfig`.
+- **`./headless`** — RN-free subset: the same 14 headless packages (math, events, core, ecs, render, input, physics, audio, assets, scene, animation, particles, tilemap, debug) plus `createGame` and tier2-wiring. No `@flare-engine/react`, no `@flare-engine/postfx`. Safe for web-only and Node consumers.
 
 `createTier2Wiring` glues optional `AchievementsProvider` / `LeaderboardsProvider` / `AnalyticsProvider` instances to a Tier-2 event source via declarative rules.
 
@@ -12,15 +15,21 @@ The package also re-exports all 15 lower `@flare-engine/*` packages as a conveni
 bun add @flare-engine/engine
 ```
 
-## Usage
+## Usage — full stack (React Native + Web)
 
 ```ts
 import { createGame } from '@flare-engine/engine';
 
-const game = createGame({
-  designResolution: { width: 1080, height: 1920 },
-  fixedDt: 1 / 60,
-});
+const game = createGame({ fixedDt: 1 / 60 });
+game.start();
+```
+
+## Usage — headless (web-only / Node / tests)
+
+```ts
+import { createGame, World, GameLoop } from '@flare-engine/engine/headless';
+
+const game = createGame({ fixedDt: 1 / 60 });
 game.start();
 ```
 

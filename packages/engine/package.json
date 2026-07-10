@@ -1,7 +1,7 @@
 {
   "name": "@flare-engine/engine",
   "version": "0.2.1",
-  "description": "Flare Engine umbrella — convenience entry point re-exporting the core runtime and React packages",
+  "description": "Flare Engine umbrella — curated barrel (14 headless packages + postfx + react); ./headless subpath for web-only and Node consumers",
   "keywords": ["flare-engine", "2d", "react-native", "web", "skia"],
   "license": "MIT",
   "author": "Grzegorz Otto",
@@ -27,6 +27,16 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./headless": {
+      "import": {
+        "types": "./dist/headless.d.mts",
+        "default": "./dist/headless.mjs"
+      },
+      "require": {
+        "types": "./dist/headless.d.ts",
+        "default": "./dist/headless.js"
+      }
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
@@ -51,6 +61,7 @@
     "@flare-engine/particles": "^0.2.1",
     "@flare-engine/tilemap": "^0.2.1",
     "@flare-engine/debug": "^0.2.1",
+    "@flare-engine/postfx": "^0.2.1",
     "@flare-engine/react": "^0.2.1"
   },
   "peerDependencies": {

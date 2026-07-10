@@ -315,7 +315,10 @@ const pic = renderer.endFrame();
 
 `createGame(config) → GameInstance` — pure factory. Constructs `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`, `AudioManager`, `AssetManager`, `SceneManager`, `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare-engine/react`.
 
-`src/index.ts` also re-exports all 15 lower `@flare-engine/*` packages (`math`, `events`, `core`, `ecs`, `render`, `input`, `physics`, `audio`, `assets`, `scene`, `animation`, `particles`, `tilemap`, `debug`, `react`) as a convenience umbrella. This is the one place tree-shaking is deliberately sacrificed for DX — every other package follows the named-export, no-barrel rule.
+Two entry points:
+
+- **`.` (default barrel)** — curated re-exports of 14 headless packages + `@flare-engine/postfx` + a curated subset of `@flare-engine/react`. Pulls React Native into scope; intended for RN + Web full-stack consumers. Barrel collisions resolved by aliasing: `CompiledShader` from postfx → `PostFxCompiledShader`; `SkImageLike` from postfx → `PostFxSkImageLike`; `GameConfig` from react → `GameViewConfig` (engine's own `createGame` `GameConfig` keeps the name).
+- **`./headless`** — RN-free subset: the 14 headless packages (`math`, `events`, `core`, `ecs`, `render`, `input`, `physics`, `audio`, `assets`, `scene`, `animation`, `particles`, `tilemap`, `debug`) plus `createGame`/`GameConfig`/`GameInstance` and tier2-wiring. No `@flare-engine/react`, no `@flare-engine/postfx`. Safe for web-only, Node, and test consumers. `import { World, GameLoop, createGame } from '@flare-engine/engine/headless'`
 
 Tier-2 wiring API: `createTier2Wiring(options)` glues optional `AchievementsProvider` / `LeaderboardsProvider` / `AnalyticsProvider` instances to a Tier2 event source via declarative `Tier2Rule[]` rules — `AchievementRule`, `AnalyticsRule`, `LeaderboardRule`. Used by games to record events without each scene knowing which providers are active.
 

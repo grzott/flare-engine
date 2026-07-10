@@ -15,6 +15,12 @@ export {
   useFocusedId,
   useFocusManager,
 } from './focus-context.js';
+export {
+  createFocusKeyboardDriver,
+  type FocusKeyboardDriver,
+  type FocusKeyboardDriverOptions,
+  type FocusKeySource,
+} from './focus-keyboard-driver.js';
 export { FocusProvider, type FocusProviderProps } from './focus-provider.js';
 export { HUDBar, type HUDBarKind, type HUDBarProps } from './hud-bar.js';
 export {

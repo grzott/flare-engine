@@ -27,6 +27,18 @@ export {
 } from './gestures.js';
 export { InputManager } from './input-manager.js';
 export {
+  attachKeyboardListeners,
+  createKeyboard,
+  isActionDown,
+  type KeyBindings,
+  type KeyboardEventLike,
+  type KeyboardEventTargetLike,
+  type KeyboardState,
+  resetKeyboardFrame,
+  wasActionPressed,
+  wasActionReleased,
+} from './keyboard.js';
+export {
   createPointer,
   type Pointer,
   pointerDown,

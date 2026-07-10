@@ -5,6 +5,7 @@ import {
   updateGamepadFromSnapshot,
 } from './gamepad.js';
 import type { GamepadSource } from './gamepad-source.js';
+import { createKeyboard, type KeyboardState, resetKeyboardFrame } from './keyboard.js';
 import {
   createPointer,
   type Pointer,
@@ -27,6 +28,9 @@ export class InputManager {
   /** Primary pointer (first touch or mouse). */
   readonly pointer: Pointer = createPointer();
 
+  /** Buffered keyboard state. Feed via `attachKeyboardListeners` (web) or `keyboard.keyDown`/`keyUp` (mobile/RN). */
+  readonly keyboard: KeyboardState = createKeyboard();
+
   /** All active touch points. */
   readonly touches: TouchPoint[] = [];
 
@@ -38,6 +42,7 @@ export class InputManager {
   /** Call once per frame to reset per-frame flags. */
   update(): void {
     resetPointerFrame(this.pointer);
+    resetKeyboardFrame(this.keyboard);
     for (let i = 0; i < this._gamepads.length; i++) {
       const pad = this._gamepads[i];
       if (pad) resetGamepadFrame(pad);

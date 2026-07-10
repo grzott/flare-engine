@@ -68,4 +68,15 @@ describe('InputManager', () => {
     input.onPointerUp(999, 0, 0); // Should not throw
     expect(input.touches).toHaveLength(0);
   });
+
+  it('update resets keyboard per-frame flags', () => {
+    const input = new InputManager();
+    input.keyboard.keyDown('Enter');
+    expect(input.keyboard.wasPressed('Enter')).toBe(true);
+
+    input.update();
+    expect(input.keyboard.wasPressed('Enter')).toBe(false);
+    // isDown persists across the frame boundary
+    expect(input.keyboard.isDown('Enter')).toBe(true);
+  });
 });

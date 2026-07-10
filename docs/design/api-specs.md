@@ -101,7 +101,7 @@
 
 | API               | Description                                                                       |
 | ----------------- | --------------------------------------------------------------------------------- |
-| `InputManager`    | `pointer` (primary touch), `touches[]`, `update()` per frame.                     |
+| `InputManager`    | `pointer` (primary touch), `touches[]`, `keyboard` (buffered key edges), `update()` per frame. |
 | `Pointer`         | `position: Vec2`, `isDown`, `justPressed`, `justReleased`, `delta: Vec2`          |
 | `GestureDetector` | Signals: `onTap`, `onSwipe`, `onPinch`, `onLongPress`.                            |
 | `VirtualJoystick` | Data functions only: `createJoystickState`, `updateJoystick`, `releaseJoystick`. `deadZone`, `maxRadius`, `direction: Vec2`, `magnitude`. RN component lives in `@flare-engine/react`. |
@@ -410,6 +410,7 @@ Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, me
 | `ThemeProvider` / `useTheme()`                                  | React context to inject a theme into the subtree. `useTheme()` always returns a theme (`darkTheme` by default).                                                                                        |
 | `createFocusManager()` / `FocusManager`                         | Pure logic. `register(node) → dispose`, `unregister`, `focus(id)`, `blur`, `next` / `prev`, `activate` (fires focused node's `onActivate`), `getFocused`, `getOrder`, `subscribe(listener) → dispose`.  |
 | `FocusProvider` / `useFocusManager()`                           | Supplies a shared `FocusManager` through context and re-renders consumers on every focus change.                                                                                                       |
+| `createFocusKeyboardDriver(manager, keys, opts?)`               | Poll-based keyboard driver. `keys` is structural `{ wasPressed(code): boolean }` — no `@flare-engine/input` dep; `createKeyboard()` is assignable. Defaults: `next` = ArrowDown/ArrowRight/Tab, `prev` = ArrowUp/ArrowLeft, `activate` = Enter/Space. Call `driver.update()` once per frame; drives the reactive `FocusManager` path. |
 | `resolveLayout(container, children)`                            | Pure flex-like resolver. Inputs: `{ width, height, direction: 'row' \| 'column', gap?, padding?, justifyContent?, alignItems? }` + per-child `{ basis?, grow?, crossSize? }`. Returns `LayoutRect[]`. |
 | `Panel`                                                         | Themed container. Variants: `surface` \| `elevated`. Padding + radius tokens.                                                                                                                          |
 | `Label`                                                         | Themed `<Text>`. Variants: `xs…xl`. Tones: `default`, `muted`, `accent`, `danger`, `success`, `warning`. Optional `mono`.                                                                              |
@@ -422,7 +423,7 @@ Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, me
 **Implementation notes:**
 
 - React + React Native are **peer deps**; the package itself only ships theme tokens, focus logic, layout math, and thin view wrappers.
-- `FocusManager` is the single source of truth for keyboard / gamepad navigation. Drivers (keyboard listener, gamepad dpad) just call `next` / `prev` / `activate`. Gamepad wiring lands in stage 11.4 without any UI-kit changes.
+- `FocusManager` is the single source of truth for keyboard / gamepad navigation. `createFocusKeyboardDriver` ships the keyboard driver (arrows/Tab/Enter/Space); gamepad wiring lands in stage 11.4 without any UI-kit changes.
 - `resolveLayout` is pure and allocation-light (one output array); useful for Skia-rendered HUD that needs deterministic pixel positions outside the React Native flex engine.
 - Component tests are thin (export-check) because bun-test has no RN runtime; the heavy-logic modules (`theme`, `focus`, `layout`) are fully unit-tested.
 - Pan Tvardowski menus + HUD consume `@flare-engine/ui` end-to-end (M9.1).
@@ -450,6 +451,27 @@ Extends the existing input package with poll-based gamepad state, a platform-agn
 - Dead zones rescale `[deadZone, 1] → [0, 1]` so inputs remain smooth past the threshold.
 - `GamepadSource` is the seam for the native backend — ship `createWebGamepadSource` now; `react-native-gamepad` adapter lands alongside the demo wiring.
 - `RemapStore` is intentionally a two-method subset of `StorageAdapter`; consumers pass their already-constructed storage adapter.
+
+---
+
+### `@flare-engine/input` — keyboard (OSS-M1a)
+
+Adds buffered keyboard state with per-frame edge flags, a platform-neutral injection API, and an action binding resolver.
+
+| API | Description |
+| --- | --- |
+| `KeyboardState` / `createKeyboard()` | Per-code buffered state: `isDown`, `wasPressed`, `wasReleased` edge flags. `keyDown(code)` / `keyUp(code)` are the **platform-neutral injection points** — web feeds them via `attachKeyboardListeners`; mobile/RN feeds them from a hardware-keyboard native module or an on-screen source. OS auto-repeat is de-edged by `pressButton`'s `if(!isPressed)` guard. |
+| `resetKeyboardFrame(kb)` | Free-function parity with `resetPointerFrame`; clears per-frame edge flags. `InputManager.update()` calls this automatically. |
+| `attachKeyboardListeners(kb, target)` | Web turnkey adapter. `target` is structural `{ addEventListener, removeEventListener }` — no DOM-types dep; pass `window` on web. Registers `keydown`, `keyup`, and `blur` handlers; `blur` calls `kb.clear()` (stuck-key guard). Returns a detach fn. Does NOT call `preventDefault` — real game loops attach their own page-level listener for that. |
+| `KeyBindings` | `Readonly<Record<string, readonly string[]>>`. Action → `KeyboardEvent.code` array map. Multiple codes OR-reduce (any bound key triggers the action). |
+| `isActionDown` / `wasActionPressed` / `wasActionReleased` | Action resolvers over a `KeyBindings` map. `wasActionReleased` fires only when the last held bound key lifts (any bound key still held → false). These are the keyboard analog of gamepad navigation; `applyRemap` / `RemapTable` remain gamepad-only. |
+| `InputManager.keyboard` | `readonly KeyboardState` — `update()` calls `resetKeyboardFrame` automatically each frame. |
+
+**Implementation notes:**
+
+- Edge buffering reuses `VirtualButtonState` + `pressButton` / `releaseButton` / `resetButtonFrame` per code slot. Slots are lazy-allocated on first `keyDown`; subsequent calls are zero-alloc.
+- `clear()` calls `releaseButton` over all slots (no-op for unheld keys via the `if(isPressed)` guard) — mirrors the gamepad-disconnect path so consumers see keys go up on blur.
+- Key binding is a caller-owned `KeyBindings` object; `applyRemap` / `RemapTable` remain gamepad-only — the two surfaces are intentionally separate.
 
 ---
 

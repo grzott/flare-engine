@@ -8973,3 +8973,36 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 241 — 2026-07-10 (scope: engine)
+
+**Goal:** OSS-M1 — keyboard input (`packages/input`) + focus keyboard driver (`packages/ui`)
+
+**Touched files**
+- `.changeset/oss-m1-keyboard-focus-driver.md`
+- `docs/design/api-specs.md`
+- `packages/input/README.md`
+- `packages/input/src/index.ts`
+- `packages/input/src/input-manager.ts`
+- `packages/input/src/keyboard.ts`
+- `packages/input/tests/input-manager.test.ts`
+- `packages/input/tests/keyboard.test.ts`
+- `packages/ui/README.md`
+- `packages/ui/src/focus-keyboard-driver.ts`
+- `packages/ui/src/index.ts`
+- `packages/ui/tests/focus-keyboard-driver.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green (+ root `tsc` on new test files)
+- test: green (input 72, ui 45)
+- build: green
+- biome (changed tests): green
+
+**Notes:** `createKeyboard` state + `KeyBindings` resolver are platform-neutral (mobile + web) — `keyDown`/`keyUp` are the injection points, web ships the turnkey `attachKeyboardListeners`. `remap.ts` untouched (owner-ratified: keyboard binding is a separate `KeyBindings` surface, not a gamepad-permutation edit). `packages/ui` takes no `@flare-engine/input` dep (structural `FocusKeySource`). Planned, implemented, and reviewed via multi-agent workflows; adversarial 4-lens diff review found production code clean (correctness / zero-alloc / RN-safety = 0 findings) and closed 2 confirmed test-coverage gaps (earlier-index `wasActionReleased` veto — mutation-proven; `activate`-does-not-notify).
+
+**Frictions:** deny:1 gate:2 drift:2 — deny:1 initial single-agent plan replaced by a full-effort workflow; gate:2 builder biome-format + TS CFA-narrowing fix-iterations (M1b); drift:2 spec §6 named `remap.ts`/`applyRemap` but the gamepad index-permutation can't express key→action binding (ratified separate `KeyBindings` surface) + §2 "no per-row changeset" contradicts on-disk practice/gate/memory (ratified one minor changeset). Also: `verify.sh` run as the per-row gate auto-appended one SESSION_LOG block per sub-seam (241/242) with an inaccurate touched-file list for the first — consolidated here.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

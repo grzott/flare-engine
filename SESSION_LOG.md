@@ -9088,3 +9088,39 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 245 — 2026-07-10 (scope: engine)
+
+**Goal:** OSS-M5 — tier-2 local providers
+
+**Touched files**
+- `.changeset/oss-m5-tier2-local-providers.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/achievements/README.md`
+- `packages/achievements/src/index.ts`
+- `packages/achievements/src/memory.ts`
+- `packages/achievements/tests/memory.test.ts`
+- `packages/analytics/README.md`
+- `packages/analytics/src/index.ts`
+- `packages/analytics/src/memory.ts`
+- `packages/analytics/src/provider.ts`
+- `packages/analytics/tests/memory.test.ts`
+- `packages/iap-revenuecat/README.md`
+- `packages/iap/src/provider.ts`
+- `packages/leaderboards/README.md`
+- `packages/leaderboards/src/index.ts`
+- `packages/leaderboards/src/memory.ts`
+- `packages/leaderboards/tests/memory.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 (biome format: analytics union + test); verify-phase caught 3 tier-2 READMEs missed by workflow impl-prompts, fixed pre-gate main-thread
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,13 +1,26 @@
 /** Free-form event properties — adapters serialize as needed. */
 export type AnalyticsProps = Record<string, unknown>;
 
-/** A single tracked event. */
-export interface AnalyticsEvent {
-  name: string;
-  props?: AnalyticsProps;
-  /** Unix ms when the event was produced. */
-  timestamp: number;
-}
+/** A captured analytics event — the discriminated union the memory/console providers record. */
+export type AnalyticsEvent =
+  | {
+      readonly type: 'track';
+      readonly name: string;
+      readonly props?: AnalyticsProps;
+      readonly timestamp: number;
+    }
+  | {
+      readonly type: 'identify';
+      readonly userId: string;
+      readonly traits?: AnalyticsProps;
+      readonly timestamp: number;
+    }
+  | {
+      readonly type: 'screen';
+      readonly name: string;
+      readonly props?: AnalyticsProps;
+      readonly timestamp: number;
+    };
 
 /**
  * Analytics provider interface. Consumers supply a concrete adapter (PostHog,

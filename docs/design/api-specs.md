@@ -716,51 +716,59 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 ---
 
-## Layer 6: Platform Integrations (Tier-2 stubs, 0.1.0 interface-only)
+## Layer 6: Platform Integrations (Tier-2)
 
-Each package ships the provider interface + a default `Noop*Provider` + a React context + a `use*()` hook + payload types. **No concrete platform adapters at 0.1.0** — consumers wire their own adapter at the app boundary. Concrete providers land in 0.2.0 per the roadmap tables below.
+Each package ships the provider interface + a default `Noop*Provider` + a React context + a `use*()` hook + payload types. Each package now **also** ships a local/in-memory provider (plus a storage/console variant where useful) so games can test and develop against real semantics without a platform SDK. **Concrete PLATFORM adapters** (Game Center, Google Play Games, Steam, PostHog, Amplitude, Segment, Firebase, App Store StoreKit, Google Play Billing) are **post-launch** — consumers wire their own adapter at the app boundary until then. IAP is the exception: it additionally ships a concrete RevenueCat adapter today (`@flare-engine/iap-revenuecat`).
 
 ---
 
-### `@flare-engine/leaderboards` (< 1KB raw, interface-only)
+### `@flare-engine/leaderboards` (< 1KB raw)
 
-**Responsibility.** Leaderboard submission + query interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: Game Center, Google Play Games, Steam.
+**Responsibility.** Leaderboard submission + query interface, plus an in-memory provider for tests and dev. Consumer-supplied adapter at 0.1.0; platform adapters (Game Center, Google Play Games, Steam) are post-launch.
 
 | API | Description |
 | --- | --- |
 | `LeaderboardsProvider` | Interface: `submitScore(id, score, meta?)`, `getTopN(id, n)`, `getPlayerRank(id)`. All async, return typed promises. |
 | `NoopLeaderboardsProvider` | Default export. Returns empty arrays / `null` rank. Resolves submissions silently. |
+| `createMemoryLeaderboards(opts?)` | In-memory `LeaderboardsProvider` for tests/dev. Submissions record under a single local player (`opts.playerId` default `'local'` / `opts.displayName` default `'Player'`); `opts.seed` pre-populates competitor rows per board. `submitScore` keeps the local player's **best** (max) score — a strictly higher score replaces score + meta, a lower-or-equal one is ignored. Ranking is DESCENDING by score, ties broken by ascending insertion order, with sequential 1-based ranks (no shared ranks). `getTopN` returns up to `n` entries (`n <= 0` or unknown board → `[]`); `getPlayerRank` returns the local player's rank or `null` when absent. |
+| `SeedScore` / `MemoryLeaderboardsOptions` | `SeedScore`: `{ playerId, displayName, score, meta? }` — a pre-seeded competitor row. `MemoryLeaderboardsOptions`: `{ playerId?, displayName?, seed? }` where `seed` is `Readonly<Record<LeaderboardId, readonly SeedScore[]>>`. `MemoryLeaderboards` aliases `LeaderboardsProvider`. |
 | `LeaderboardsContext` / `useLeaderboards()` | React context + hook. `useLeaderboards()` returns the provider or throws if unmounted. |
 | `ScoreEntry` / `LeaderboardId` | Payload + ID types. `ScoreEntry`: `{ playerId, displayName, score, rank, meta? }`. |
 
 **Implementation notes:**
 
 - No runtime deps beyond `@flare-engine/events`. React peer dep only for the context + hook.
-- Interface is intentionally minimal — pagination, time-window filters, and friends-only queries land in 0.2.0 alongside concrete providers.
+- The in-memory board grows unbounded (no eviction) — it exists for tests and local dev, not production leaderboard storage.
+- Interface is intentionally minimal — pagination, time-window filters, and friends-only queries land alongside concrete platform adapters post-launch.
 
 ---
 
-### `@flare-engine/achievements` (< 1KB raw, interface-only)
+### `@flare-engine/achievements` (< 1KB raw)
 
-**Responsibility.** Achievement unlock + query interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: Game Center, Google Play Games, Steam.
+**Responsibility.** Achievement unlock + query interface, plus in-memory and storage-backed providers. Consumer-supplied adapter at 0.1.0; platform adapters (Game Center, Google Play Games, Steam) are post-launch.
 
 | API | Description |
 | --- | --- |
 | `AchievementsProvider` | Interface: `unlock(id, progress?)`, `getState(id)`, `getAll()`. All async. Partial progress (0–1) supported; adapters clamp and persist. |
 | `NoopAchievementsProvider` | Default export. Returns `{ unlocked: false, progress: 0 }` for any id. |
+| `createMemoryAchievements(opts?)` | In-memory `AchievementsProvider`. Contract: progress is clamped to `[0, 1]` and **monotonic** — a requested value `<=` the stored value is ignored (never decreases; non-finite → `0`). `unlock(id)` with no progress = full unlock (target `1`). Unlock **latches**: reaching `1` sets `unlocked: true` and stamps `unlockedAt` once via the injected `now` (default `() => Date.now()`); re-unlocking is a no-op that keeps the original `unlockedAt`. `getState` returns `{ id, unlocked: false, progress: 0 }` for untracked ids; `getAll` returns tracked states in insertion order. |
+| `createStorageAchievements(store, opts?)` | Same contract as the memory provider, persisted through a structural `AchievementsStore`. Hydrates lazily from `store.get(key)` on first call (JSON array of `AchievementState`; parse error or non-array → empty; default key `'flare.achievements'`), persists via `store.set` after every mutation, and serializes writes through a single chained tail promise so concurrent unlocks can't lose an update. |
+| `AchievementsStore` | Structural storage injection: `{ get(key): Promise<string \| null>; set(key, value): Promise<void> }`. |
+| `MemoryAchievementsOptions` / `StorageAchievementsOptions` | `MemoryAchievementsOptions`: `{ now? }`. `StorageAchievementsOptions extends MemoryAchievementsOptions`: adds `{ key? }` (storage key, default `'flare.achievements'`). |
 | `AchievementsContext` / `useAchievements()` | React context + hook. |
 | `AchievementId` / `AchievementState` | Payload types. `AchievementState`: `{ id, unlocked, progress, unlockedAt? }`. |
 
 **Implementation notes:**
 
 - No runtime deps beyond `@flare-engine/events`. React peer dep only.
-- `unlock()` is idempotent by contract — adapters must dedupe; the interface does not enforce this at the type level.
+- `unlock()` is idempotent by contract — the memory/storage providers enforce this via the monotonic + latch rules; the interface does not enforce it at the type level.
+- `AchievementsStore` is structural injection — the storage provider adds no dependency and works with any `{ get, set }` (AsyncStorage, MMKV wrapper, `localStorage` shim, etc.).
 
 ---
 
-### `@flare-engine/iap` (< 1KB raw, interface-only)
+### `@flare-engine/iap` (< 1KB raw)
 
-**Responsibility.** In-app purchase interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: RevenueCat, App Store StoreKit, Google Play Billing.
+**Responsibility.** In-app purchase interface. A concrete RevenueCat adapter ships today (`@flare-engine/iap-revenuecat`, below); App Store StoreKit and Google Play Billing adapters are post-launch.
 
 | API | Description |
 | --- | --- |
@@ -777,7 +785,8 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 **Implementation notes:**
 
 - No runtime deps beyond `@flare-engine/events`. React peer dep only.
-- Receipt validation is adapter-local — the interface does not expose receipt bytes at 0.1.0. May extend in 0.2.0.
+- Receipt validation is adapter-local — the interface does not expose receipt bytes at 0.1.0; may extend post-launch.
+- `Product.priceMicros` is in **micros** — millionths of one unit of `currency` (e.g. $0.99 → `990000`); may be `null` when the store doesn't report a numeric price.
 - The package ships **more than the bare interface**: catalog binding (`ProductCatalog` + helpers), entitlement reactivity (`EntitlementStore`), and content gating (`ContentSpec` + `canAccessContent`) are all part of the 0.1.0 surface so games can wire paywalls without writing the same plumbing per app.
 
 ---
@@ -829,20 +838,24 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/analytics` (< 1KB raw, interface-only)
+### `@flare-engine/analytics` (< 1KB raw)
 
-**Responsibility.** Event tracking interface. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: PostHog, Amplitude, Segment, Firebase Analytics.
+**Responsibility.** Event tracking interface, plus in-memory and console providers. Consumer-supplied adapter at 0.1.0; platform adapters (PostHog, Amplitude, Segment, Firebase Analytics) are post-launch.
 
 | API | Description |
 | --- | --- |
 | `AnalyticsProvider` | Interface: `track(event, props?)`, `identify(userId, traits?)`, `screen(name, props?)`, `flush()`. All return `Promise<void>`. |
 | `NoopAnalyticsProvider` | Default export. Resolves immediately; retains nothing. |
+| `createMemoryAnalytics(opts?)` | In-memory provider backed by a bounded ring buffer. Records the matching `AnalyticsEvent` for each call (drop-oldest once length exceeds `capacity = Math.max(1, opts.capacity ?? 256)`); timestamps from injected `now` (default `() => Date.now()`). Returns `MemoryAnalytics` — an `AnalyticsProvider` plus `getEvents(): readonly AnalyticsEvent[]` (defensive copy, oldest → newest) and `clear()`. `flush()` is a no-op. |
+| `createConsoleAnalytics(opts?)` | Provider that builds the same `AnalyticsEvent` and logs it via the injected `log` (default `console.log`) as `log('[analytics]', event)`. `flush()` is a no-op. |
+| `MemoryAnalyticsOptions` / `ConsoleAnalyticsOptions` | `MemoryAnalyticsOptions`: `{ capacity?, now? }`. `ConsoleAnalyticsOptions`: `{ log?, now? }`. |
 | `AnalyticsContext` / `useAnalytics()` | React context + hook. |
-| `AnalyticsEvent` / `AnalyticsContext` (type) | Payload types. `AnalyticsEvent`: `{ name, props?, timestamp }`. |
+| `AnalyticsEvent` / `AnalyticsContext` (type) | Payload types. `AnalyticsEvent` is a discriminated union on `type`: `{ type: 'track', name, props?, timestamp } \| { type: 'identify', userId, traits?, timestamp } \| { type: 'screen', name, props?, timestamp }`. `props`/`traits` are omitted (absent, not stored as explicit `undefined`) when the arg is not supplied. |
 
 **Implementation notes:**
 
 - No runtime deps beyond `@flare-engine/events`. React peer dep only.
+- The in-memory ring buffer is for tests and dev capture; `getEvents()` returns a copy so callers can't mutate the internal buffer.
 - Batching, sampling, and offline queueing are adapter concerns — the interface is deliberately thin so any analytics SDK can back it.
 
 ---

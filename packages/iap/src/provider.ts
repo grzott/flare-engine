@@ -8,7 +8,10 @@ export interface Product {
   description: string;
   /** Formatted, localized price string ready for display (e.g., "$0.99"). */
   priceDisplay: string;
-  /** Numeric price in minor currency units (cents). May be `null` when unknown. */
+  /**
+   * Numeric price in micros — millionths of one unit of `currency` (e.g. $0.99
+   * -> 990000). May be `null` when the store doesn't report it.
+   */
   priceMicros?: number | null;
   currency?: string;
   type?: 'consumable' | 'non-consumable' | 'subscription';

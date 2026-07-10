@@ -30,6 +30,8 @@ export function App() {
 
 `react-native-purchases` is a **peer dependency** and is never bundled into this package. The SDK is lazy-imported on first use, so platforms without it (e.g. web) are unaffected until `getProducts`, `purchase`, or `restore` is called.
 
-## Recipe — env-var-gated lazy load
+## Env-gated fallback
 
-In production code, wrap the adapter behind an env-var gate so CI / unit tests / dev builds without RevenueCat keys fall back to `NoopIAPProvider` and never touch the SDK. See the [Lazy-SDK adapter recipe](https://github.com/grzott/flare-engine/blob/main/.claude/skills/flare-tier2-stubs/SKILL.md#lazy-sdk-adapter-recipe) for the full pattern; canonical implementation at [Pan Tvardowski's src/iap/provider.ts](https://github.com/grzott/Pan-Tvardowski/blob/main/src/iap/provider.ts).
+In CI or dev builds without RevenueCat keys, select `NoopIAPProvider` from
+`@flare-engine/iap` instead of this adapter behind your own env flag, so nothing
+touches the native SDK until real keys are present.

@@ -1,6 +1,6 @@
 # @flare-engine/analytics
 
-Typed `AnalyticsProvider` interface + `NoopAnalyticsProvider` + React context. Stub-only at 0.1.0; concrete adapters (PostHog, Amplitude, Segment, Firebase) land at 0.2.0.
+Typed `AnalyticsProvider` interface + `NoopAnalyticsProvider` + React context, plus `createMemoryAnalytics` / `createConsoleAnalytics` — local providers for tests and dev. Concrete platform adapters (PostHog, Amplitude, Segment, Firebase) are post-launch; wire your own at the app boundary until then.
 
 ## Install
 
@@ -26,8 +26,30 @@ export function App() {
 }
 ```
 
-`useAnalytics()` returns the provider; call `track(event, props)`, `screen(name)`, `identify(userId, traits)` against the interface — swapping `NoopAnalyticsProvider` for a real adapter at 0.2.0 requires no consumer changes.
+`useAnalytics()` returns the active provider. The `AnalyticsProvider` surface is `track(event, props?)`, `identify(userId, traits?)`, `screen(name, props?)`, and `flush()` — all async. Swapping `NoopAnalyticsProvider` for another provider requires no consumer changes.
 
-## Recipe — env-var-gated lazy load
+## Local providers
 
-When 0.2.0 adapters land (e.g. `@flare-engine/analytics-posthog`), wrap them behind an env-var gate so CI / unit tests / dev builds without API keys fall back to `NoopAnalyticsProvider` and never touch the native SDK. See the [Lazy-SDK adapter recipe](https://github.com/grzott/flare-engine/blob/main/.claude/skills/flare-tier2-stubs/SKILL.md#lazy-sdk-adapter-recipe) for the full pattern; canonical implementation at [Pan Tvardowski's src/iap/provider.ts](https://github.com/grzott/Pan-Tvardowski/blob/main/src/iap/provider.ts) (RevenueCat / IAP — same shape).
+`createMemoryAnalytics(opts?)` captures events into a bounded ring buffer you can inspect — ideal for asserting behavior in tests:
+
+```ts
+import { createMemoryAnalytics } from '@flare-engine/analytics';
+
+const analytics = createMemoryAnalytics({ capacity: 100 });
+await analytics.track('level_start', { zone: 1 });
+await analytics.screen('hud');
+analytics.getEvents();
+// [{ type: 'track', name: 'level_start', props: { zone: 1 }, timestamp },
+//  { type: 'screen', name: 'hud', timestamp }]
+```
+
+- Each call records the matching `AnalyticsEvent` variant. When the buffer is full (`capacity`, default `256`, clamped to `>= 1`) the oldest event is dropped.
+- `getEvents()` returns a defensive copy, oldest → newest; `clear()` empties it. Timestamps come from the injected `now` (default `Date.now`). `flush()` is a no-op.
+
+`createConsoleAnalytics(opts?)` logs each event to an injected sink (default `console.log`) as `log('[analytics]', event)` — a zero-setup provider for local runs.
+
+`AnalyticsEvent` is a discriminated union on `type` (`'track'` / `'identify'` / `'screen'`) — the event shape both local providers record.
+
+## Env-gated fallback
+
+In CI or dev builds without platform credentials, select `NoopAnalyticsProvider` (or a local provider) behind your own env flag so nothing touches a native SDK until real credentials are present.

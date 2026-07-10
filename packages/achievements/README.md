@@ -1,6 +1,6 @@
 # @flare-engine/achievements
 
-Typed `AchievementsProvider` interface + `NoopAchievementsProvider` + React context. Stub-only at 0.1.0; concrete adapters (Game Center, Google Play Games, Steam) land at 0.2.0.
+Typed `AchievementsProvider` interface + `NoopAchievementsProvider` + React context, plus `createMemoryAchievements` / `createStorageAchievements` — local providers with a defined unlock/progress contract, for tests, dev, and single-player games. Concrete platform adapters (Game Center, Google Play Games, Steam) are post-launch; wire your own at the app boundary until then.
 
 ## Install
 
@@ -26,8 +26,30 @@ export function App() {
 }
 ```
 
-`useAchievements()` returns the provider; call `unlock(id)`, `setProgress(id, n)`, etc. against the interface — swapping `NoopAchievementsProvider` for a real adapter at 0.2.0 requires no consumer changes.
+`useAchievements()` returns the active provider. The `AchievementsProvider` surface is `unlock(id, progress?)`, `getState(id)`, and `getAll()` — all async. Progress is a partial `[0, 1]` value; omit it to fully unlock.
 
-## Recipe — env-var-gated lazy load
+## Local providers + the unlock contract
 
-When 0.2.0 adapters land (e.g. `@flare-engine/achievements-gamecenter`), wrap them behind an env-var gate so CI / unit tests / dev builds without API keys fall back to `NoopAchievementsProvider` and never touch the native SDK. See the [Lazy-SDK adapter recipe](https://github.com/grzott/flare-engine/blob/main/.claude/skills/flare-tier2-stubs/SKILL.md#lazy-sdk-adapter-recipe) for the full pattern; canonical implementation at [Pan Tvardowski's src/iap/provider.ts](https://github.com/grzott/Pan-Tvardowski/blob/main/src/iap/provider.ts) (RevenueCat / IAP — same shape).
+`createMemoryAchievements()` keeps state in memory; `createStorageAchievements(store, opts?)` persists it through an injected `{ get, set }` store. Both share the same contract — the semantics adapter authors should preserve:
+
+```ts
+import { createStorageAchievements } from '@flare-engine/achievements';
+
+const achievements = createStorageAchievements(myStore); // { get, set }
+
+await achievements.unlock('first_blood', 0.5); // progress 0.5
+await achievements.unlock('first_blood', 0.2); // ignored — progress stays 0.5
+await achievements.unlock('first_blood');      // full unlock, latches
+await achievements.getState('first_blood');    // { unlocked: true, progress: 1, unlockedAt }
+```
+
+- **Clamped + monotonic:** progress is clamped to `[0, 1]` (non-finite → `0`) and never decreases — a lower requested value is ignored.
+- **`unlock(id)` fully unlocks** (target progress `1`).
+- **Latches:** reaching progress `1` sets `unlocked: true` and stamps `unlockedAt` once (via the injected `now`, default `Date.now`). Re-unlocking is a no-op — the original `unlockedAt` is kept.
+- **Untracked ids** report `{ unlocked: false, progress: 0 }`.
+
+`AchievementsStore` is a structural `{ get(key): Promise<string | null>; set(key, value): Promise<void> }` — the `get`/`set` subset of `@flare-engine/storage`'s `StorageAdapter`, so the storage provider adds no dependency and works with any async KV (AsyncStorage, an MMKV wrapper, a `localStorage` shim, …). It hydrates lazily from `store.get(key)` (default key `'flare.achievements'`), persists after every mutation, and serializes writes so concurrent unlocks can't lose an update.
+
+## Env-gated fallback
+
+In CI or dev builds without platform credentials, select `NoopAchievementsProvider` (or a local provider) behind your own env flag so nothing touches a native SDK until real credentials are present.

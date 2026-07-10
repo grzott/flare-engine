@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { SceneManager } from '../src/scene-manager.js';
 import type { Scene } from '../src/scene.js';
+import { SceneManager } from '../src/scene-manager.js';
 import { fadeTransition } from '../src/transition.js';
 
 function createTestScene(name: string, log: string[]): Scene {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { runMigrations } from '../src/migrations.js';
 import type { Migration } from '../src/migrations.js';
+import { runMigrations } from '../src/migrations.js';
 
 describe('runMigrations', () => {
   test('no-op when from === to', () => {

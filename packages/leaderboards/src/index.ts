@@ -1,7 +1,7 @@
+export { LeaderboardsContext, useLeaderboards } from './context.js';
 export {
-  NoopLeaderboardsProvider,
   type LeaderboardId,
   type LeaderboardsProvider,
+  NoopLeaderboardsProvider,
   type ScoreEntry,
 } from './provider.js';
-export { LeaderboardsContext, useLeaderboards } from './context.js';

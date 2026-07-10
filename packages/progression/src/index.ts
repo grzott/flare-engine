@@ -1,32 +1,29 @@
 export {
-  type UpgradeTrackConfig,
-  type UpgradeBuyResult,
-  type UpgradeTrack,
-  createUpgradeTrack,
-} from './upgrade-track.js';
+  type CollectibleRegistry,
+  createCollectibleRegistry,
+} from './collectible-registry.js';
 
 export {
+  createDropTable,
   type DropEntry,
   type DropPity,
   type DropRollOut,
   type DropTable,
-  createDropTable,
   rollDrop,
 } from './drop-roll.js';
-
 export {
-  type DagNode,
-  type UnlockDag,
-  createUnlockDag,
-} from './unlock-dag.js';
-
-export {
-  type TierEntry,
   resolveTier,
   resolveTierIndex,
+  type TierEntry,
 } from './tier-resolve.js';
-
 export {
-  type CollectibleRegistry,
-  createCollectibleRegistry,
-} from './collectible-registry.js';
+  createUnlockDag,
+  type DagNode,
+  type UnlockDag,
+} from './unlock-dag.js';
+export {
+  createUpgradeTrack,
+  type UpgradeBuyResult,
+  type UpgradeTrack,
+  type UpgradeTrackConfig,
+} from './upgrade-track.js';

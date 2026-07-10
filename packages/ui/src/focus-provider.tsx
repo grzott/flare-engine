@@ -1,6 +1,6 @@
-import { type ReactNode, createElement, useEffect, useMemo, useState } from 'react';
+import { createElement, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { createFocusManager, type FocusManager } from './focus.js';
 import { FocusContext, type FocusContextValue } from './focus-context.js';
-import { type FocusManager, createFocusManager } from './focus.js';
 
 export interface FocusProviderProps {
   manager?: FocusManager;

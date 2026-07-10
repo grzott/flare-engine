@@ -1,17 +1,13 @@
-export { type ClosestPair, type NBodySystem, createNBodySystem } from './integrate/nbody.js';
-
-export { type AccelFn, leapfrogInto, verletStep } from './integrate/verlet.js';
-
-export { type RipplePool, createRipplePool } from './wave/wave-packet-pool.js';
-
-export { type ScalarField, createScalarField } from './field/scalar-field.js';
-
 export {
   type AgentField,
-  type StigmergyConfig,
-  type SenseConfig,
-  SENSE_DEFAULTS,
   createStigmergy,
-  senseAt,
   decideTurn,
+  SENSE_DEFAULTS,
+  type SenseConfig,
+  type StigmergyConfig,
+  senseAt,
 } from './agent/stigmergy.js';
+export { createScalarField, type ScalarField } from './field/scalar-field.js';
+export { type ClosestPair, createNBodySystem, type NBodySystem } from './integrate/nbody.js';
+export { type AccelFn, leapfrogInto, verletStep } from './integrate/verlet.js';
+export { createRipplePool, type RipplePool } from './wave/wave-packet-pool.js';

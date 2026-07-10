@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import type { SkImageLike, SpriteFrame } from '@flare-engine/assets';
 import type { SpriteData } from '../src/render-system.js';
-import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
+import { SpriteBatch } from '../src/sprite-batch.js';
 
 function mockImage(): SkImageLike {
   return { width: () => 64, height: () => 64, readPixels: () => null };

@@ -1,14 +1,14 @@
 import {
-  type VirtualJoystickConfig,
-  type VirtualJoystickState,
   createJoystickState,
   releaseJoystick,
   updateJoystick,
+  type VirtualJoystickConfig,
+  type VirtualJoystickState,
 } from '@flare-engine/input';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 /** Props for the <VirtualJoystick> component. */
 export interface VirtualJoystickProps {

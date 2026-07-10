@@ -1,8 +1,26 @@
 // Engine convenience API
+
+export * from '@flare-engine/animation';
+export * from '@flare-engine/assets';
+export * from '@flare-engine/audio';
+export * from '@flare-engine/core';
+export * from '@flare-engine/debug';
+export * from '@flare-engine/ecs';
+export * from '@flare-engine/events';
+export * from '@flare-engine/input';
+// Re-export all packages
+export * from '@flare-engine/math';
+export * from '@flare-engine/particles';
+export * from '@flare-engine/physics';
+export * from '@flare-engine/react';
+export * from '@flare-engine/render';
+export * from '@flare-engine/scene';
+export * from '@flare-engine/tilemap';
 export { createGame, type GameConfig, type GameInstance } from './engine.js';
 export {
   type AchievementRule,
   type AnalyticsRule,
+  createTier2Wiring,
   type LeaderboardRule,
   type Tier2AchievementsLike,
   type Tier2AnalyticsLike,
@@ -11,22 +29,4 @@ export {
   type Tier2Providers,
   type Tier2Rule,
   type Tier2WiringOptions,
-  createTier2Wiring,
 } from './tier2-wiring.js';
-
-// Re-export all packages
-export * from '@flare-engine/math';
-export * from '@flare-engine/events';
-export * from '@flare-engine/core';
-export * from '@flare-engine/ecs';
-export * from '@flare-engine/render';
-export * from '@flare-engine/input';
-export * from '@flare-engine/physics';
-export * from '@flare-engine/audio';
-export * from '@flare-engine/assets';
-export * from '@flare-engine/scene';
-export * from '@flare-engine/animation';
-export * from '@flare-engine/particles';
-export * from '@flare-engine/tilemap';
-export * from '@flare-engine/debug';
-export * from '@flare-engine/react';

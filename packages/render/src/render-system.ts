@@ -1,7 +1,5 @@
-import type { SkImageLike } from '@flare-engine/assets';
-import type { SpriteFrame } from '@flare-engine/assets';
-import type { World } from '@flare-engine/ecs';
-import type { Query } from '@flare-engine/ecs';
+import type { SkImageLike, SpriteFrame } from '@flare-engine/assets';
+import type { Query, World } from '@flare-engine/ecs';
 import { type ComponentDef, defineComponent } from '@flare-engine/ecs';
 import { sortByDrawOrder } from './draw-order.js';
 import type { SpriteBatch } from './sprite-batch.js';

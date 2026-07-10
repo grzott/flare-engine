@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { AssetManager } from '../src/asset-manager.js';
 import type { AssetLoader, ManifestEntry } from '../src/asset-manager.js';
+import { AssetManager } from '../src/asset-manager.js';
 
 function createMockLoader(): AssetLoader {
   return async (entry: ManifestEntry) => {

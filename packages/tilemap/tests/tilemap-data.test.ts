@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test';
+import type { TileLayer, TilesetRef } from '../src/tilemap-data.js';
 import {
-  GID_FLIP_MASK,
   createTilemapData,
   decodeGidFlags,
+  GID_FLIP_MASK,
   getTileAt,
   getTileSourceRect,
   getTilesetForGid,
   stripGidFlags,
 } from '../src/tilemap-data.js';
-import type { TileLayer, TilesetRef } from '../src/tilemap-data.js';
 
 describe('tilemap-data', () => {
   test('createTilemapData returns empty map', () => {

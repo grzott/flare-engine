@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  type NavMeshPolygon,
   createNavMesh,
   findNavMeshPath,
   findPolygonAt,
+  type NavMeshPolygon,
 } from '../src/navmesh.js';
 
 // ─── Test helpers ────────────────────────────────────────────────

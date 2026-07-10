@@ -1,7 +1,7 @@
+export { AnalyticsContext, useAnalytics } from './context.js';
 export {
-  NoopAnalyticsProvider,
   type AnalyticsEvent,
   type AnalyticsProps,
   type AnalyticsProvider,
+  NoopAnalyticsProvider,
 } from './provider.js';
-export { AnalyticsContext, useAnalytics } from './context.js';

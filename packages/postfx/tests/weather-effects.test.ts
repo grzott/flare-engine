@@ -7,9 +7,9 @@ import {
   createWeatherSunShaft,
 } from '../src/effect.js';
 import {
+  createPostFxRuntime,
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
-  createPostFxRuntime,
 } from '../src/runtime.js';
 import {
   WEATHER_CLOUDS_SKSL,

@@ -1,10 +1,10 @@
 import {
   type CompiledPass,
+  createPostFxRuntime,
   type EffectChain,
   type SkiaPostFxModuleLike,
-  createPostFxRuntime,
 } from '@flare-engine/postfx';
-import type { Canvas as CKCanvas, CanvasKit, Shader, Surface } from 'canvaskit-wasm';
+import type { CanvasKit, Canvas as CKCanvas, Shader, Surface } from 'canvaskit-wasm';
 
 /**
  * A CanvasKit-backed render surface with a parameterized postfx chain.

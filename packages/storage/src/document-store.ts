@@ -1,6 +1,6 @@
 import type { StorageAdapter } from './adapter.js';
-import { runMigrations } from './migrations.js';
 import type { Migration } from './migrations.js';
+import { runMigrations } from './migrations.js';
 
 const VERSION_KEY = '__flare_doc_version';
 

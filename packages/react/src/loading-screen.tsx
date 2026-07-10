@@ -1,6 +1,6 @@
 import type React from 'react';
-import { StyleSheet, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 /** Props for the <LoadingScreen> component. */
 export interface LoadingScreenProps {

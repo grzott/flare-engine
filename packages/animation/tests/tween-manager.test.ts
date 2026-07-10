@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { addTween, clearTweens, createTweenManager, updateTweens } from '../src/tween-manager.js';
 import { chainTween, tween } from '../src/tween.js';
+import { addTween, clearTweens, createTweenManager, updateTweens } from '../src/tween-manager.js';
 
 describe('TweenManager', () => {
   it('starts empty', () => {

@@ -10,7 +10,7 @@ function parseBootTraceLine(
   line: string,
 ): { label: string; totalMs: number; deltas: Record<string, number> } | null {
   const match = BOOT_TRACE_RE.exec(line.trim());
-  if (!match || !match.groups) return null;
+  if (!match?.groups) return null;
   const label = match.groups.label ?? '';
   const totalMs = Number.parseFloat(match.groups.total ?? '');
   if (!Number.isFinite(totalMs)) return null;

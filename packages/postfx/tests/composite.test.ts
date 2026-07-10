@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { EffectChain } from '../src/chain.js';
-import { type CompositeUniforms, type EffectKind, createPostFxComposite } from '../src/effect.js';
+import { type CompositeUniforms, createPostFxComposite, type EffectKind } from '../src/effect.js';
 import {
+  createPostFxRuntime,
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
-  createPostFxRuntime,
 } from '../src/runtime.js';
 import { COMPOSITE_SKSL } from '../src/shaders.js';
 

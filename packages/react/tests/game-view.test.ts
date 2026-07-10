@@ -523,7 +523,7 @@ describe('GameView — PostFxRenderHook', () => {
   });
 
   it('bridge passed to onRenderPostFx exposes setPostFxBinding method', () => {
-    let capturedBridge: unknown = undefined;
+    let capturedBridge: unknown;
     mount({
       config: {
         onRenderPostFx: (_ctx, _canvas, bridge) => {
@@ -539,7 +539,7 @@ describe('GameView — PostFxRenderHook', () => {
   });
 
   it('bridge passed to onRenderPostFx exposes buildPostFxPasses method', () => {
-    let capturedBridge: unknown = undefined;
+    let capturedBridge: unknown;
     mount({
       config: {
         onRenderPostFx: (_ctx, _canvas, bridge) => {

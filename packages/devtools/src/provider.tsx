@@ -2,7 +2,7 @@ import type { GameLoop } from '@flare-engine/core';
 import type { World } from '@flare-engine/ecs';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { type DevtoolsConfig, DevtoolsContext, type DevtoolsContextValue } from './context.js';
-import { type SnapshotSource, createSnapshotRingBuffer } from './ring-buffer.js';
+import { createSnapshotRingBuffer, type SnapshotSource } from './ring-buffer.js';
 import { type RestoreCallback, TimeScrubber } from './time-scrubber.js';
 
 export interface DevtoolsProviderProps<T = unknown> {

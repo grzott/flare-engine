@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { type DialogueNode, createDialogueGraph } from '../src/graph.js';
-import { DialogueError, createDialogueRunner, interpolate } from '../src/runner.js';
+import { createDialogueGraph, type DialogueNode } from '../src/graph.js';
+import { createDialogueRunner, DialogueError, interpolate } from '../src/runner.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 

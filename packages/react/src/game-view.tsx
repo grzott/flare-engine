@@ -1,10 +1,10 @@
-import { AssetManager } from '@flare-engine/assets';
 import type { AssetLoader } from '@flare-engine/assets';
+import { AssetManager } from '@flare-engine/assets';
 import { AudioManager } from '@flare-engine/audio';
 import { GameLoop } from '@flare-engine/core';
 import { Position, World } from '@flare-engine/ecs';
 import { InputManager } from '@flare-engine/input';
-import { Camera2D, Renderer, Sprite, SpriteBatch, createRenderSystem } from '@flare-engine/render';
+import { Camera2D, createRenderSystem, Renderer, Sprite, SpriteBatch } from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
 import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
 import {
@@ -17,12 +17,12 @@ import {
 } from '@shopify/react-native-skia';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PixelRatio, StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
+import { PixelRatio, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
-import { type PostFxPassDescriptor, createSkiaFrameRenderer } from './skia-bridge.js';
+import { createSkiaFrameRenderer, type PostFxPassDescriptor } from './skia-bridge.js';
 
 /** Render hook invoked during the frame — receives the game context and
  *  the active Skia canvas for direct draw calls. Hooks run between

@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { PERF_BENCH_TAG, emitPerfReport } from '../src/perf-output.js';
+import { emitPerfReport, PERF_BENCH_TAG } from '../src/perf-output.js';
 import { createPerfRecorder } from '../src/perf-recorder.js';
 
 describe('createPerfRecorder — percentile correctness', () => {

@@ -26,6 +26,12 @@ game.start();
 
 See [API spec](../../docs/design/api-specs.md#flare-engineengine--2kb-gzip).
 
+## React Native New Architecture
+
+Flare's engine packages are architecture-agnostic pure TypeScript — they run on both the legacy and the New Architecture, so the engine itself imposes no New-Architecture requirement. The `react-native >= 0.79` peer floor still admits old-architecture apps (RN 0.79–0.81 ship the legacy renderer by default).
+
+The requirement comes from your app's *other* native dependencies, not from Flare. Notably, `react-native-reanimated` v4 is New-Architecture-only — if you pin Reanimated 4 (or any other New-Arch-only native module), enable the New Architecture. The Flare engine works either way.
+
 ## License
 
 MIT

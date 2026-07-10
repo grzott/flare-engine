@@ -275,7 +275,7 @@ describe('ShopScreen', () => {
     const cosBtn = jsxLog.find((e) => e.type === 'Button' && e.props.label === 'cta.cos');
     expect(typeof cosBtn?.props.onPress).toBe('function');
 
-    (cosBtn?.props.onPress as () => void)();
+    (cosBtn!.props.onPress as () => void)();
 
     await Promise.resolve();
     await Promise.resolve();

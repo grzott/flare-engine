@@ -1,3 +1,5 @@
+export { packAtlas } from './pack-atlas.js';
+export { convertTiled } from './tiled-to-flare.js';
 export type {
   AtlasFrame,
   AtlasPackerOptions,
@@ -11,6 +13,3 @@ export type {
   TiledConvertOptions,
   TiledResult,
 } from './types.js';
-
-export { packAtlas } from './pack-atlas.js';
-export { convertTiled } from './tiled-to-flare.js';

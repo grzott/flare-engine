@@ -4,7 +4,7 @@
  * tarball built by tsup contains the MIT text. The root is the single source
  * of truth — package-level LICENSE files are overwritten on every run.
  */
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();

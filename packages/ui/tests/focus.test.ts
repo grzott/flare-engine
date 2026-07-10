@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { type FocusManager, createFocusManager } from '../src/focus.js';
+import { createFocusManager, type FocusManager } from '../src/focus.js';
 
 describe('FocusManager', () => {
   let mgr: FocusManager;

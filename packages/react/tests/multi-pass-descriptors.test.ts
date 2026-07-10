@@ -166,8 +166,8 @@ describe('buildPostFxPasses — multi-pass descriptor ordering', () => {
     const passes = [makePass('a', ['v'], [10]), makePass('b', ['v'], [20])];
     const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => passes };
     const result = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
-    expect((result[0]?.uniforms as Record<string, unknown>).v).toBe(10);
-    expect((result[1]?.uniforms as Record<string, unknown>).v).toBe(20);
+    expect((result[0]!.uniforms as Record<string, unknown>).v).toBe(10);
+    expect((result[1]!.uniforms as Record<string, unknown>).v).toBe(20);
   });
 
   it('no offscreen surface allocations — buildPostFxPasses is descriptor-only', () => {

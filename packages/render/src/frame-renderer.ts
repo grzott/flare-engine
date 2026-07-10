@@ -21,6 +21,7 @@ import {
   type FlashEffect,
   type FogEffect,
   type ForestCanopyEffect,
+  flashIntensity,
   type GrayscaleEffect,
   type MoonCraterEffect,
   type MountainHillsEffect,
@@ -30,7 +31,6 @@ import {
   type SpriteColor,
   type TintEffect,
   type WaterEffect,
-  flashIntensity,
 } from './sprite-effects.js';
 
 // ---------------------------------------------------------------------------

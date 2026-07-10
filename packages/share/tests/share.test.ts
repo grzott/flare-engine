@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  ShareManager,
   createNativeShareTransport,
   createWebClipboardTransport,
   createWebShareTransport,
+  ShareManager,
 } from '../src/share.js';
 
 describe('createWebShareTransport', () => {

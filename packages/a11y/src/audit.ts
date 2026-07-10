@@ -1,5 +1,5 @@
-import { Color } from '@flare-engine/math';
 import type { Color as ColorType } from '@flare-engine/math';
+import { Color } from '@flare-engine/math';
 
 /** WCAG 2.x conformance level for a contrast ratio. */
 export type WcagLevel = 'fail' | 'AA' | 'AAA';

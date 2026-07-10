@@ -1,32 +1,31 @@
 export {
-  type Grid,
-  type GridConfig,
-  createGrid,
-  inBounds,
-  isWalkable,
-  getCost,
-  setWalkable,
-  setCost,
-} from './grid.js';
-
-export {
-  type PathResult,
-  type PathOptions,
+  chebyshevDistance,
+  euclideanDistance,
   findPath,
   manhattanDistance,
   octileDistance,
-  chebyshevDistance,
-  euclideanDistance,
+  type PathOptions,
+  type PathResult,
 } from './astar.js';
+export {
+  createGrid,
+  type Grid,
+  type GridConfig,
+  getCost,
+  inBounds,
+  isWalkable,
+  setCost,
+  setWalkable,
+} from './grid.js';
 
-export { type JpsOptions, findPathJPS } from './jps.js';
+export { findPathJPS, type JpsOptions } from './jps.js';
 
 export {
-  type NavMeshPolygon,
-  type Portal,
+  createNavMesh,
+  findNavMeshPath,
+  findPolygonAt,
   type NavMesh,
   type NavMeshPathResult,
-  createNavMesh,
-  findPolygonAt,
-  findNavMeshPath,
+  type NavMeshPolygon,
+  type Portal,
 } from './navmesh.js';

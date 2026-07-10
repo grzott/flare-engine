@@ -1,4 +1,4 @@
-import { type SpriteFrame, type SpriteSheet, createSpriteSheet } from './sprite-sheet.js';
+import { createSpriteSheet, type SpriteFrame, type SpriteSheet } from './sprite-sheet.js';
 import type { SkImageLike } from './texture.js';
 
 /** One entry in a procedural atlas — a named colored rectangle. */

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  type RemapStore,
-  type RemapTable,
   applyRemap,
   createIdentityRemap,
   loadRemap,
+  type RemapStore,
+  type RemapTable,
   saveRemap,
 } from '../src/remap.js';
 

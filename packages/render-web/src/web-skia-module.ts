@@ -6,16 +6,16 @@ import type {
   PaintLike,
   PictureLike,
   PictureRecorderLike,
-  RSXformLike,
   RectLike,
+  RSXformLike,
   RuntimeEffectFactoryLike,
   RuntimeEffectLike,
 } from '@flare-engine/render';
 import type {
+  CanvasKit,
   Canvas as CKCanvas,
   Image as CKImage,
   Paint as CKPaint,
-  CanvasKit,
   ColorFilter,
   ImageFilter,
   RuntimeEffect,

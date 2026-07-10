@@ -10,8 +10,8 @@
  */
 import { describe, expect, it } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
-import { createFrameRenderer } from '../src/frame-renderer.js';
 import type { FrameRendererModule, PaintLike } from '../src/frame-renderer.js';
+import { createFrameRenderer } from '../src/frame-renderer.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 import { outline, water } from '../src/sprite-effects.js';
 

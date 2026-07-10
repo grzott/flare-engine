@@ -101,7 +101,6 @@ describe('Signal.emit', () => {
   it('allows removal during emit', () => {
     const signal = new Signal<void>();
     const calls: number[] = [];
-    // biome-ignore lint/style/useConst: assigned after declaration
     let unsub2: (() => void) | undefined;
     signal.add(() => {
       calls.push(1);

@@ -1,33 +1,26 @@
-export { type DebugStats, StatsTracker } from './stats.js';
-
-export { TimeControl } from './time-control.js';
-
+export { type BootEntry, type BootTraceHandle, createBootTrace } from './boot-trace.js';
+export { createFpsWidget, type FpsWidget, type FpsWidgetOptions } from './fps-widget.js';
 export {
-  type OverlayFlags,
-  type DebugRect,
-  type DebugCircle,
-  type DebugLine,
-  type DebugDrawCommand,
-  DebugOverlay,
-} from './overlay.js';
-
-export { type FpsWidget, type FpsWidgetOptions, createFpsWidget } from './fps-widget.js';
-
-export {
+  createFrameBudget,
+  type FrameBudgetHandle,
   type FrameBudgetLimits,
   type FrameBudgetSnapshot,
-  type FrameBudgetHandle,
-  createFrameBudget,
 } from './frame-budget.js';
-
-export { type BootEntry, type BootTraceHandle, createBootTrace } from './boot-trace.js';
-
 export {
-  type PerfSectionStats,
-  type PerfCounterStats,
-  type PerfReport,
-  type PerfRecorderHandle,
+  type DebugCircle,
+  type DebugDrawCommand,
+  type DebugLine,
+  DebugOverlay,
+  type DebugRect,
+  type OverlayFlags,
+} from './overlay.js';
+export { emitPerfReport, PERF_BENCH_TAG } from './perf-output.js';
+export {
   createPerfRecorder,
+  type PerfCounterStats,
+  type PerfRecorderHandle,
+  type PerfReport,
+  type PerfSectionStats,
 } from './perf-recorder.js';
-
-export { PERF_BENCH_TAG, emitPerfReport } from './perf-output.js';
+export { type DebugStats, StatsTracker } from './stats.js';
+export { TimeControl } from './time-control.js';

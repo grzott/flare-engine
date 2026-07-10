@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  decodeImage,
   type SkDataLike,
   type SkiaImageDecodeModuleLike,
-  decodeImage,
 } from '../src/decode-image.js';
 import type { SkImageLike } from '../src/texture.js';
 

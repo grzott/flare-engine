@@ -11,9 +11,8 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { resolve } from 'node:path';
 import type { SkImageLike } from '@flare-engine/assets';
-import { Renderer, createFrameRenderer } from '@flare-engine/render';
 import type { CanvasLike, SpriteDrawCommand } from '@flare-engine/render';
-import { water } from '@flare-engine/render';
+import { createFrameRenderer, Renderer, water } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { createWebFrameRenderer } from '../src/web-frame-renderer.js';
 import { createWebSkiaModule } from '../src/web-skia-module.js';

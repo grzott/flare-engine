@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useId } from 'react';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { useFocusManager, useFocusedId } from './focus-context.js';
+import { useFocusedId, useFocusManager } from './focus-context.js';
 import { useTheme } from './theme.js';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';

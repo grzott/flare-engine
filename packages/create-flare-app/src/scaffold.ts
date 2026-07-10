@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
-import { cp, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { version } from '../package.json';
-import { TEMPLATES, type TemplateId, isTemplateId } from './manifest.js';
+import { isTemplateId, TEMPLATES, type TemplateId } from './manifest.js';
 
 /** Options for `scaffoldApp`. */
 export interface ScaffoldOptions {

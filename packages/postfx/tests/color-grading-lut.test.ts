@@ -3,10 +3,10 @@ import { EffectChain } from '../src/chain.js';
 import { createColorGradingLut, createVignette } from '../src/effect.js';
 import { createNeutralLutBytes } from '../src/lut.js';
 import {
+  createPostFxRuntime,
   type SkImageLike,
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
-  createPostFxRuntime,
 } from '../src/runtime.js';
 import { COLOR_GRADING_LUT_SKSL } from '../src/shaders.js';
 

@@ -14,7 +14,7 @@
  * --empty`). Bun-runnable plain ESM. Exit 1 on any violation, 0 when clean.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

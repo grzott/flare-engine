@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
-import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
+import { SpriteBatch } from '../src/sprite-batch.js';
 import { drawText, getKerning, measureText, parseBMFontJSON } from '../src/sprite-font.js';
 
 function mockImage(): SkImageLike {

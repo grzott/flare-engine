@@ -267,7 +267,7 @@ export function createDialogueRunner(options?: DialogueRunnerOptions): DialogueR
     advance(): void {
       if (_state !== 'running' || !_graph || !_currentNodeId) return;
       const node = getNode(_graph, _currentNodeId);
-      if (!node || node.kind !== 'line') return;
+      if (node?.kind !== 'line') return;
       if (node.next) {
         run(node.next, _currentNodeId);
       } else {

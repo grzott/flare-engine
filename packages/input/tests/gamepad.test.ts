@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import {
+  createGamepadState,
   GamepadButton,
   type GamepadSnapshot,
   type GamepadState,
-  createGamepadState,
   getAxis,
   isButtonDown,
   resetGamepadFrame,

@@ -1,5 +1,4 @@
-import type { SkImageLike } from '@flare-engine/assets';
-import type { SpriteFrame } from '@flare-engine/assets';
+import type { SkImageLike, SpriteFrame } from '@flare-engine/assets';
 import type { Renderer } from './renderer.js';
 import type { AnySpriteEffect } from './sprite-effects.js';
 

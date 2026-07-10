@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { AnySpriteEffect, FlashEffect, SpriteColor } from '../src/sprite-effects.js';
 import {
   custom,
   dropShadow,
@@ -9,7 +10,6 @@ import {
   tint,
   updateEffect,
 } from '../src/sprite-effects.js';
-import type { AnySpriteEffect, FlashEffect, SpriteColor } from '../src/sprite-effects.js';
 
 const white: SpriteColor = { r: 1, g: 1, b: 1, a: 1 };
 const red: SpriteColor = { r: 1, g: 0, b: 0, a: 1 };

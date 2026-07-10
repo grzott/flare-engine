@@ -1,8 +1,8 @@
 import type { AssetLoader } from '@flare-engine/assets';
 import { AssetManager } from '@flare-engine/assets';
 import { AudioManager } from '@flare-engine/audio';
-import { GameLoop } from '@flare-engine/core';
 import type { GameLoopConfig } from '@flare-engine/core';
+import { GameLoop } from '@flare-engine/core';
 import { World } from '@flare-engine/ecs';
 import { InputManager } from '@flare-engine/input';
 import { Camera2D, Renderer, SpriteBatch } from '@flare-engine/render';

@@ -11,8 +11,8 @@
 
 import { EffectChain } from './chain.js';
 import type { Effect, EffectUniforms } from './effect.js';
-import { type CompiledPass, type PostFxRuntime, createPostFxRuntime } from './runtime.js';
 import type { SkiaPostFxModuleLike } from './runtime.js';
+import { type CompiledPass, createPostFxRuntime, type PostFxRuntime } from './runtime.js';
 
 export interface PostFxFlashConfig {
   /** Id of a `grayscale-flash` effect already added to the chain. */

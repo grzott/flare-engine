@@ -1,17 +1,15 @@
+export { buildProgram } from './cli.js';
 export {
-  type TemplateManifest,
-  type TemplateId,
-  TEMPLATES,
   isTemplateId,
+  TEMPLATES,
+  type TemplateId,
+  type TemplateManifest,
 } from './manifest.js';
-
 export {
-  type ScaffoldOptions,
-  type ScaffoldResult,
-  scaffoldApp,
   detectPackageManager,
   installSpawnSpec,
   isValidAppName,
+  type ScaffoldOptions,
+  type ScaffoldResult,
+  scaffoldApp,
 } from './scaffold.js';
-
-export { buildProgram } from './cli.js';

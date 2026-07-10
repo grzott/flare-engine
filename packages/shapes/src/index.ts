@@ -1,3 +1,13 @@
+export { shapeBoundsRadius, singleShapeRadius } from './bounds.js';
+
+export {
+  applyFriendlyGlow,
+  applyHazardGlow,
+  argbTo,
+  drawShape,
+  friendlyGlowArgb,
+  hazardGlowArgb,
+} from './draw.js';
 export type {
   AnnulusSpec,
   ArcSpec,
@@ -16,14 +26,3 @@ export type {
   TrapezoidSpec,
   TriangleSpec,
 } from './types.js';
-
-export {
-  applyFriendlyGlow,
-  applyHazardGlow,
-  argbTo,
-  drawShape,
-  friendlyGlowArgb,
-  hazardGlowArgb,
-} from './draw.js';
-
-export { shapeBoundsRadius, singleShapeRadius } from './bounds.js';

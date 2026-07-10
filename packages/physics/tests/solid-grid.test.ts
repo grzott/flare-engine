@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  type SolidGrid,
-  type SolidTile,
   buildSolidGrid,
   isBlockedAABB,
   moveAndSlideInto,
+  type SolidGrid,
+  type SolidTile,
 } from '../src/solid-grid.js';
 
 // 10×10 grid, 16px tiles

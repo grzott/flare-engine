@@ -21,7 +21,7 @@ mock.module('@flare-engine/render', () => ({
   ...realRender,
 }));
 
-import { type SkiaModuleLike, createSkiaFrameRenderer } from '../src/skia-bridge.js';
+import { createSkiaFrameRenderer, type SkiaModuleLike } from '../src/skia-bridge.js';
 
 /** Minimal mock Skia objects that record calls so tests can assert call shape. */
 
@@ -1383,8 +1383,8 @@ describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
     );
     const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
     const [desc] = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
-    expect((desc?.uniforms as Record<string, unknown>).a).toBe(1);
-    expect((desc?.uniforms as Record<string, unknown>).b).toBe(2);
+    expect((desc!.uniforms as Record<string, unknown>).a).toBe(1);
+    expect((desc!.uniforms as Record<string, unknown>).b).toBe(2);
   });
 
   it('vector uniform: named key maps to number[] of correct length', () => {
@@ -1397,7 +1397,7 @@ describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
     );
     const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
     const [desc] = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
-    const color = (desc?.uniforms as Record<string, unknown>).color;
+    const color = (desc!.uniforms as Record<string, unknown>).color;
     expect(Array.isArray(color)).toBe(true);
     expect(color).toHaveLength(3);
     expect((color as number[])[0]).toBeCloseTo(0.1);

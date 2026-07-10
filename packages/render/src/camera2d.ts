@@ -1,5 +1,4 @@
-import type { Vec2 } from '@flare-engine/math';
-import type { Rect } from '@flare-engine/math';
+import type { Rect, Vec2 } from '@flare-engine/math';
 
 /** Camera follow smoothing options. */
 export interface FollowOptions {

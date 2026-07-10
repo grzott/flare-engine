@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  createProceduralAtlas,
   type ProceduralFrameSpec,
   type SkCanvasLike,
+  type SkiaAtlasModuleLike,
   type SkPaintLike,
   type SkRectLike,
   type SkSurfaceLike,
-  type SkiaAtlasModuleLike,
-  createProceduralAtlas,
 } from '../src/procedural-atlas.js';
 import type { SkImageLike } from '../src/texture.js';
 

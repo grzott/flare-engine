@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { SeededRNG, Vec2, angleDelta, rotateTowards, vec2 } from '../src/index.js';
+import { angleDelta, rotateTowards, SeededRNG, Vec2, vec2 } from '../src/index.js';
 
 // Verbatim reference extracted from PT homing.ts:53-63.
 // Do NOT simplify these operations — byte-identity is the contract.

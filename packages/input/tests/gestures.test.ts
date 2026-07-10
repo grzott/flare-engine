@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { GestureDetector } from '../src/gestures.js';
 import type { SwipeEvent } from '../src/gestures.js';
+import { GestureDetector } from '../src/gestures.js';
 
 describe('GestureDetector', () => {
   it('detects a tap (short press, small movement)', () => {

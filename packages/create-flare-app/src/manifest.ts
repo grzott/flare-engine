@@ -41,5 +41,5 @@ export const TEMPLATES = {
 export type TemplateId = keyof typeof TEMPLATES;
 
 export function isTemplateId(value: string): value is TemplateId {
-  return Object.prototype.hasOwnProperty.call(TEMPLATES, value);
+  return Object.hasOwn(TEMPLATES, value);
 }

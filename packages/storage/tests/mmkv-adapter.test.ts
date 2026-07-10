@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { type MMKVLike, createMmkvAdapter } from '../src/mmkv-adapter.js';
+import { createMmkvAdapter, type MMKVLike } from '../src/mmkv-adapter.js';
 
 function fakeMmkv(): MMKVLike {
   const store = new Map<string, string>();

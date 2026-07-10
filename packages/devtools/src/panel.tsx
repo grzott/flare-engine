@@ -53,13 +53,7 @@ function PanelBody(): ReactNode {
   );
 }
 
-function DevButton({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}): ReactNode {
+function DevButton({ label, onPress }: { label: string; onPress: () => void }): ReactNode {
   return (
     <Pressable
       onPress={onPress}

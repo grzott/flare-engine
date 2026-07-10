@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import type { SkImageLike } from '@flare-engine/assets';
-import type { SpriteFrame } from '@flare-engine/assets';
-import { SpriteBatch } from '../src/sprite-batch.js';
+import type { SkImageLike, SpriteFrame } from '@flare-engine/assets';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
-import { grayscale, tint } from '../src/sprite-effects.js';
+import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteColor } from '../src/sprite-effects.js';
+import { grayscale, tint } from '../src/sprite-effects.js';
 
 function mockImage(id: string): SkImageLike & { id: string } {
   return { id, width: () => 256, height: () => 256, readPixels: () => null };

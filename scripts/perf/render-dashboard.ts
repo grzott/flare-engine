@@ -17,11 +17,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  DEFAULT_WINDOW_DAYS,
-  type RegressionResult,
   checkRegressions,
+  DEFAULT_WINDOW_DAYS,
   loadBaselineOverride,
   parseNdjson,
+  type RegressionResult,
 } from './regression-check';
 
 export function groupByDeviceScenario(

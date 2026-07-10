@@ -38,13 +38,7 @@ function HUDBody(): ReactNode {
   );
 }
 
-function HudButton({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}): ReactNode {
+function HudButton({ label, onPress }: { label: string; onPress: () => void }): ReactNode {
   return (
     <Pressable
       onPress={onPress}

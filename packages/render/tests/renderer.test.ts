@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { Renderer } from '../src/renderer.js';
 import type { CanvasLike } from '../src/renderer.js';
+import { Renderer } from '../src/renderer.js';
 
 function mockCanvas(): CanvasLike & { calls: string[] } {
   const calls: string[] = [];

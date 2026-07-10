@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { FSM } from '../src/fsm.js';
 import type { State } from '../src/fsm.js';
+import { FSM } from '../src/fsm.js';
 
 describe('FSM', () => {
   it('starts in given state and calls onEnter', () => {

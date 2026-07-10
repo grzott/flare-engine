@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { SeededRNG, hashU32, seededIndex } from '../src/index.js';
+import { hashU32, SeededRNG, seededIndex } from '../src/index.js';
 
 // Known-answer vectors — externally computed lowbias32 outputs, independent of
 // the implementation under test, so a regression in the finalizer is caught

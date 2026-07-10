@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, createElement, useContext } from 'react';
+import { createContext, createElement, type ReactNode, useContext } from 'react';
 
 export interface ThemeColors {
   bg: string;

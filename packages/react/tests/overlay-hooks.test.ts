@@ -74,9 +74,7 @@ function installFakeRaf(): void {
 }
 
 function removeFakeRaf(): void {
-  // biome-ignore lint/performance/noDelete: cleaning up globalThis test shims
   delete (globalThis as Record<string, unknown>).requestAnimationFrame;
-  // biome-ignore lint/performance/noDelete: cleaning up globalThis test shims
   delete (globalThis as Record<string, unknown>).cancelAnimationFrame;
   rafQueue.clear();
 }

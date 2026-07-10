@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Transform2D, Vec2, approxEquals } from '../src/index.js';
+import { approxEquals, Transform2D, Vec2 } from '../src/index.js';
 
 describe('Transform2D.identity', () => {
   it('creates identity', () => {

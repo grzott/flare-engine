@@ -1,4 +1,4 @@
-import { Position, Velocity, World, _resetComponentIds, defineSystem } from '@flare-engine/ecs';
+import { _resetComponentIds, defineSystem, Position, Velocity, World } from '@flare-engine/ecs';
 import { SeededRNG } from '@flare-engine/math';
 import { type BenchStats, runBench } from './harness.js';
 

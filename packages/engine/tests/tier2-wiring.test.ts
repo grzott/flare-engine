@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { EventEmitter } from '@flare-engine/events';
-import { type Tier2Providers, type Tier2Rule, createTier2Wiring } from '../src/tier2-wiring.js';
+import { createTier2Wiring, type Tier2Providers, type Tier2Rule } from '../src/tier2-wiring.js';
 
 type Events = {
   'zone-start': (zone: string) => void;

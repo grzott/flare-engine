@@ -1,14 +1,14 @@
 import {
-  type VirtualButtonState,
   createButtonState,
   pressButton,
   releaseButton,
   resetButtonFrame,
+  type VirtualButtonState,
 } from '@flare-engine/input';
 import type React from 'react';
 import { useCallback, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 /** Props for the <VirtualButton> component. */
 export interface VirtualButtonProps {

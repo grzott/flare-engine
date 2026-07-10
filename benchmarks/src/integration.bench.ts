@@ -1,10 +1,10 @@
 import {
+  _resetComponentIds,
+  defineSystem,
   Position,
   type Query,
   Velocity,
   World,
-  _resetComponentIds,
-  defineSystem,
 } from '@flare-engine/ecs';
 import { SeededRNG } from '@flare-engine/math';
 import { ParticleEmitter } from '@flare-engine/particles';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Color, type Oklab, approxEquals } from '../src/index.js';
+import { approxEquals, Color, type Oklab } from '../src/index.js';
 
 describe('Color constants', () => {
   it('WHITE', () => expect(Color.WHITE).toEqual({ r: 1, g: 1, b: 1, a: 1 }));

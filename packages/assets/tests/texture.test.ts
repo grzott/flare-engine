@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { createTexture } from '../src/texture.js';
 import type { SkImageLike } from '../src/texture.js';
+import { createTexture } from '../src/texture.js';
 
 function mockImage(w: number, h: number): SkImageLike {
   return { width: () => w, height: () => h, readPixels: () => null };

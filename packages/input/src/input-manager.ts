@@ -1,18 +1,18 @@
-import type { GamepadSource } from './gamepad-source.js';
 import {
-  type GamepadState,
   createGamepadState,
+  type GamepadState,
   resetGamepadFrame,
   updateGamepadFromSnapshot,
 } from './gamepad.js';
+import type { GamepadSource } from './gamepad-source.js';
 import {
-  type Pointer,
-  type TouchPoint,
   createPointer,
+  type Pointer,
   pointerDown,
   pointerMove,
   pointerUp,
   resetPointerFrame,
+  type TouchPoint,
 } from './pointer.js';
 import type { RemapTable } from './remap.js';
 import { applyRemap } from './remap.js';

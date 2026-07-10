@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "noEmit": true, "rootDir": ".", "jsx": "react-jsx" },
+  "compilerOptions": { "noEmit": true, "rootDir": ".", "jsx": "react-jsx", "types": ["bun"] },
   "include": [
     "templates/*/src",
     "templates/*/tests",

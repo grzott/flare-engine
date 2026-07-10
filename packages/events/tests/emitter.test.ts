@@ -135,7 +135,6 @@ describe('EventEmitter.emit', () => {
   it('allows removal during emit', () => {
     const em = new EventEmitter<TestEvents>();
     const calls: number[] = [];
-    // biome-ignore lint/style/useConst: assigned after declaration
     let unsub2: (() => void) | undefined;
     em.on('ping', () => {
       calls.push(1);

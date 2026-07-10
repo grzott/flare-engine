@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
-import { createFrameRenderer } from '../src/frame-renderer.js';
 import type { FrameRendererModule, PaintLike } from '../src/frame-renderer.js';
+import { createFrameRenderer } from '../src/frame-renderer.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
-import { fog, updateEffect } from '../src/sprite-effects.js';
 import type { AnySpriteEffect, SpriteColor } from '../src/sprite-effects.js';
+import { fog, updateEffect } from '../src/sprite-effects.js';
 
 const gray: SpriteColor = { r: 0.5, g: 0.5, b: 0.5, a: 1 };
 

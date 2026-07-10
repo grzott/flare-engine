@@ -8,7 +8,7 @@
  * renders behind the geometry.
  */
 
-import type { SkCanvas, SkPaint, Skia as SkiaModule } from '@shopify/react-native-skia';
+import type { SkCanvas, Skia as SkiaModule, SkPaint } from '@shopify/react-native-skia';
 import { singleShapeRadius } from './bounds.js';
 import type {
   AnnulusSpec,

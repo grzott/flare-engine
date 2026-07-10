@@ -1,7 +1,7 @@
+export { HapticsContext, useHaptics } from './context.js';
 export {
-  NoopHapticsProvider,
   type HapticImpactStyle,
   type HapticNotificationType,
   type HapticsProvider,
+  NoopHapticsProvider,
 } from './provider.js';
-export { HapticsContext, useHaptics } from './context.js';

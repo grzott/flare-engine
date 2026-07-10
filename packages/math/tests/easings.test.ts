@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { EasingFn } from '../src/index.js';
 import {
   easeInBack,
   easeInBounce,
@@ -36,7 +37,6 @@ import {
   springOut,
   step,
 } from '../src/index.js';
-import type { EasingFn } from '../src/index.js';
 
 const allEasings: [string, EasingFn][] = [
   ['linear', linear],

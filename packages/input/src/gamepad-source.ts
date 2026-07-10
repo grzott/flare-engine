@@ -45,7 +45,7 @@ export function createWebGamepadSource(nav?: NavigatorLike): GamepadSource {
       const out: (GamepadSnapshot | null)[] = new Array(pads.length);
       for (let i = 0; i < pads.length; i++) {
         const p = pads[i];
-        if (!p || !p.connected) {
+        if (!p?.connected) {
           out[i] = null;
           continue;
         }

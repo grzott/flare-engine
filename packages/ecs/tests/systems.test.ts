@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import { _resetComponentIds } from '../src/component.js';
 import { Follower, Lifetime, Position, Velocity } from '../src/components.js';
+import type { CullBounds } from '../src/systems.js';
 import {
   createBoundsCullSystem,
   createFollowerSystem,
@@ -8,7 +9,6 @@ import {
   createMovementSystem,
   createOrphanCullSystem,
 } from '../src/systems.js';
-import type { CullBounds } from '../src/systems.js';
 import { World } from '../src/world.js';
 
 beforeEach(() => {

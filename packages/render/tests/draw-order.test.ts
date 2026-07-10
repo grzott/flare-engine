@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { drawOrderCompare, sortByDrawOrder } from '../src/draw-order.js';
 import type { Drawable } from '../src/draw-order.js';
+import { drawOrderCompare, sortByDrawOrder } from '../src/draw-order.js';
 
 describe('DrawOrder', () => {
   describe('sortByDrawOrder', () => {

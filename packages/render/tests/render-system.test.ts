@@ -3,8 +3,8 @@ import type { SkImageLike } from '@flare-engine/assets';
 import type { ComponentDef, Query, World } from '@flare-engine/ecs';
 import type { PositionData, SpriteData } from '../src/render-system.js';
 import { Renderer } from '../src/renderer.js';
-import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
+import { SpriteBatch } from '../src/sprite-batch.js';
 import { tint } from '../src/sprite-effects.js';
 
 // Restore real @flare-engine/ecs BEFORE importing render-system.js.

@@ -31,7 +31,7 @@
   },
   "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "bun test",
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit"

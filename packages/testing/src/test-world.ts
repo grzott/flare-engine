@@ -1,6 +1,6 @@
 import { GameLoop } from '@flare-engine/core';
 import { World } from '@flare-engine/ecs';
-import { type FakeClock, createFakeClock } from './fake-clock.js';
+import { createFakeClock, type FakeClock } from './fake-clock.js';
 
 export interface TestWorld {
   /** ECS world. */

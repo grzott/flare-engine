@@ -17,7 +17,7 @@
  * slow for 41 packages). Exit 1 if any package fails either check.
  */
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { cpus } from 'node:os';
 import { dirname, join } from 'node:path';

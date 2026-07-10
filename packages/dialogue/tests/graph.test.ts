@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { type DialogueNode, createDialogueGraph, getNode } from '../src/graph.js';
+import { createDialogueGraph, type DialogueNode, getNode } from '../src/graph.js';
 
 describe('createDialogueGraph', () => {
   test('creates a graph with id, start, and nodes', () => {

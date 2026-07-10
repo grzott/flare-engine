@@ -1,4 +1,4 @@
-import { type FrameRenderer, createFrameRenderer } from '@flare-engine/render';
+import { createFrameRenderer, type FrameRenderer } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { createWebSkiaModule } from './web-skia-module.js';
 

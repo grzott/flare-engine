@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import { EffectChain } from '../src/chain.js';
 import { createGodRays } from '../src/effect.js';
 import {
+  createPostFxRuntime,
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
-  createPostFxRuntime,
 } from '../src/runtime.js';
 import { GOD_RAYS_SKSL } from '../src/shaders.js';
 

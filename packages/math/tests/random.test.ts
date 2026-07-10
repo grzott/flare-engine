@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  SeededRNG,
   choose,
   randomFloat,
   randomInt,
   randomPointInCircle,
   randomVec2InRect,
+  SeededRNG,
   shuffle,
 } from '../src/index.js';
 

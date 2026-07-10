@@ -40,11 +40,11 @@ mock.module('@flare-engine/ui', () => ({
 }));
 
 import {
+  createEntitlementStore,
+  createProductCatalog,
   type IAPProvider,
   NoopIAPProvider,
   type PurchaseResult,
-  createEntitlementStore,
-  createProductCatalog,
 } from '@flare-engine/iap';
 
 // ── shared catalog ─────────────────────────────────────────────────────────────

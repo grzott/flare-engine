@@ -14,9 +14,9 @@
 import {
   type CaptureOptions,
   type CaptureSource,
+  captureScreenshot,
   type ImageFormat,
   type Screenshot,
-  captureScreenshot,
 } from './capture.js';
 
 export interface ScreenshotTarget {

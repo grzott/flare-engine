@@ -1,67 +1,60 @@
 export {
-  type Pointer,
-  type TouchPoint,
+  createGamepadState,
+  GamepadAxis,
+  type GamepadAxisId,
+  GamepadButton,
+  type GamepadButtonId,
+  type GamepadButtonState,
+  type GamepadSnapshot,
+  type GamepadState,
+  getAxis,
+  isButtonDown,
+  resetGamepadFrame,
+  updateGamepadFromSnapshot,
+  wasButtonPressed,
+  wasButtonReleased,
+} from './gamepad.js';
+export {
+  createWebGamepadSource,
+  type GamepadSource,
+} from './gamepad-source.js';
+export {
+  type GestureConfig,
+  GestureDetector,
+  type PinchEvent,
+  type SwipeDirection,
+  type SwipeEvent,
+} from './gestures.js';
+export { InputManager } from './input-manager.js';
+export {
   createPointer,
-  resetPointerFrame,
+  type Pointer,
   pointerDown,
   pointerMove,
   pointerUp,
+  resetPointerFrame,
+  type TouchPoint,
 } from './pointer.js';
-
-export { InputManager } from './input-manager.js';
-
-export {
-  GamepadButton,
-  GamepadAxis,
-  type GamepadButtonId,
-  type GamepadAxisId,
-  type GamepadButtonState,
-  type GamepadState,
-  type GamepadSnapshot,
-  createGamepadState,
-  updateGamepadFromSnapshot,
-  resetGamepadFrame,
-  isButtonDown,
-  wasButtonPressed,
-  wasButtonReleased,
-  getAxis,
-} from './gamepad.js';
-
-export {
-  type GamepadSource,
-  createWebGamepadSource,
-} from './gamepad-source.js';
-
 export {
   type AxisMap,
-  type RemapTable,
-  type RemapStore,
-  createIdentityRemap,
   applyRemap,
-  saveRemap,
+  createIdentityRemap,
   loadRemap,
+  type RemapStore,
+  type RemapTable,
+  saveRemap,
 } from './remap.js';
-
 export {
-  type SwipeDirection,
-  type GestureConfig,
-  type SwipeEvent,
-  type PinchEvent,
-  GestureDetector,
-} from './gestures.js';
-
-export {
-  type VirtualJoystickConfig,
-  type VirtualJoystickState,
-  createJoystickState,
-  updateJoystick,
-  releaseJoystick,
-} from './virtual-joystick.js';
-
-export {
-  type VirtualButtonState,
   createButtonState,
-  resetButtonFrame,
   pressButton,
   releaseButton,
+  resetButtonFrame,
+  type VirtualButtonState,
 } from './virtual-button.js';
+export {
+  createJoystickState,
+  releaseJoystick,
+  updateJoystick,
+  type VirtualJoystickConfig,
+  type VirtualJoystickState,
+} from './virtual-joystick.js';

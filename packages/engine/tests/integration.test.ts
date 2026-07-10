@@ -4,19 +4,30 @@
  * No real Skia canvas — mocks any renderer-facing calls.
  */
 import { describe, expect, it } from 'bun:test';
-import { createTweenManager, updateTweens } from '@flare-engine/animation';
-import { tween } from '@flare-engine/animation';
-import { createSpriteAnimator, playAnimation, updateAnimator } from '@flare-engine/animation';
+import {
+  createSpriteAnimator,
+  createTweenManager,
+  playAnimation,
+  tween,
+  updateAnimator,
+  updateTweens,
+} from '@flare-engine/animation';
 import { createSpriteSheet } from '@flare-engine/assets';
 import { GameLoop } from '@flare-engine/core';
-import { World, _resetComponentIds, defineComponent, defineSystem } from '@flare-engine/ecs';
-import { Position, Velocity } from '@flare-engine/ecs';
-import { World as ECSWorld } from '@flare-engine/ecs';
-import { AABB, CollisionWorld } from '@flare-engine/physics';
+import {
+  _resetComponentIds,
+  defineComponent,
+  defineSystem,
+  World as ECSWorld,
+  Position,
+  Velocity,
+  World,
+} from '@flare-engine/ecs';
 import type { CollisionPair } from '@flare-engine/physics';
+import { AABB, CollisionWorld } from '@flare-engine/physics';
 import { Camera2D } from '@flare-engine/render';
-import { SceneManager } from '@flare-engine/scene';
 import type { Scene } from '@flare-engine/scene';
+import { SceneManager } from '@flare-engine/scene';
 
 // ─── 1. ECS + Physics ────────────────────────────────────────────────────────
 

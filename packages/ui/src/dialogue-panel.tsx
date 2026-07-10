@@ -62,6 +62,7 @@ export function DialoguePanel({
         {choices && choices.length > 0 ? (
           <View style={{ marginTop: theme.spacing.md }}>
             {choices.map((c, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: static choice list, never reordered
               <View key={`${c.label}-${i}`} style={{ marginTop: i === 0 ? 0 : theme.spacing.xs }}>
                 <Button
                   label={c.label}

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { version } from '../package.json';
-import { TEMPLATES, type TemplateId, isTemplateId } from '../src/manifest.js';
+import { isTemplateId, TEMPLATES, type TemplateId } from '../src/manifest.js';
 import {
   detectPackageManager,
   installSpawnSpec,
@@ -34,9 +34,8 @@ describe('manifest', () => {
     // to the literal union. Were TEMPLATES annotated `Record<string, …>` again,
     // TemplateId would widen to `string | number` and `Equal<…>` would be
     // `false`, failing this assignment under root tsc.
-    type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-      ? true
-      : false;
+    type Equal<A, B> =
+      (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
     const isLiteralUnion: Equal<TemplateId, 'blank' | 'topdown' | 'shmup'> = true;
     expect(isLiteralUnion).toBe(true);
   });
@@ -70,7 +69,6 @@ describe('detectPackageManager', () => {
     try {
       expect(detectPackageManager(undefined)).toBe('bun');
     } finally {
-      // biome-ignore lint/performance/noDelete: env var must be unset, not set to "undefined"
       if (prev === undefined) delete process.env.npm_config_user_agent;
       else process.env.npm_config_user_agent = prev;
     }
@@ -82,7 +80,6 @@ describe('detectPackageManager', () => {
     try {
       expect(detectPackageManager(undefined)).toBe('pnpm');
     } finally {
-      // biome-ignore lint/performance/noDelete: env var must be unset, not set to "undefined"
       if (prev === undefined) delete process.env.npm_config_user_agent;
       else process.env.npm_config_user_agent = prev;
     }

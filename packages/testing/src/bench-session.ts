@@ -1,5 +1,5 @@
-import { SeededRNG } from '@flare-engine/math';
 import type { SeededRNG as SeededRNGType } from '@flare-engine/math';
+import { SeededRNG } from '@flare-engine/math';
 
 export interface BenchSessionOptions {
   seed?: number;

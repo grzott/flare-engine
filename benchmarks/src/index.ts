@@ -12,8 +12,8 @@ import { physicsBenches } from './physics.bench.js';
 import { renderBenches } from './render.bench.js';
 import {
   type DeviceReport,
-  type MicrobenchReport,
   heapToResult,
+  type MicrobenchReport,
   resultsDir,
   statsToResult,
   writeMicrobenchJson,

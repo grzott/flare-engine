@@ -1,5 +1,6 @@
 import type { SkImageLike } from '@flare-engine/assets';
 import {
+  createFrameRenderer,
   type FrameRenderer,
   type FrameRendererCompiledPass,
   type FrameRendererModule,
@@ -7,7 +8,6 @@ import {
   type FrameRendererPostFxDescriptor,
   type FrameRendererPostFxRuntime,
   type SpriteDrawCommand,
-  createFrameRenderer,
 } from '@flare-engine/render';
 import type { SkColor, SkImage, SkImageFilter, SkRuntimeEffect } from '@shopify/react-native-skia';
 
@@ -199,6 +199,5 @@ function unpackArgb(out: Float32Array, argb: number): void {
 // Re-export the PostFxPassDescriptor shape for GameView consumers.
 // The type is defined above in this file so it carries the concrete SkRuntimeEffect/SkImage
 // types that GameView needs — unlike the generic FrameRendererPostFxDescriptor from render.
-export type { FrameRendererPostFxDescriptor };
 // Alias for clarity at call-sites.
-export type { SpriteDrawCommand };
+export type { FrameRendererPostFxDescriptor, SpriteDrawCommand };

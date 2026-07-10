@@ -9,10 +9,10 @@ import {
   createVignette,
 } from '../src/effect.js';
 import {
+  createPostFxRuntime,
   type SkImageLike,
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
-  createPostFxRuntime,
 } from '../src/runtime.js';
 
 function createMockSkia(): SkiaPostFxModuleLike {

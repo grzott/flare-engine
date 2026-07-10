@@ -64,7 +64,6 @@ export interface DropTable<K extends string> {
 export function createDropTable<K extends string>(entries: readonly DropEntry<K>[]): DropTable<K> {
   // Closed-over filter state — set before each weightedIndexBy call.
   // `var` so the binding is function-scoped and hoisted; reassigned each call.
-  // biome-ignore lint/style/noVar: intentional closure var for zero-alloc hot path
   var currentIsAllowed: (item: K) => boolean = () => true;
 
   const weightAt = (entry: DropEntry<K>): number =>

@@ -7,11 +7,11 @@ mock.module('@flare-engine/render', () => ({ ...realRender }));
 
 import {
   type RenderShapesOpts,
+  renderShapesToImage,
   type ShapeRect,
+  type SkiaModuleLike,
   type SkOffscreenCanvasLike,
   type SkSurfaceLike,
-  type SkiaModuleLike,
-  renderShapesToImage,
 } from '../src/skia-bridge.js';
 
 // ---------------------------------------------------------------------------

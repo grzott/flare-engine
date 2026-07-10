@@ -35,13 +35,21 @@
   },
   "files": ["dist", "templates", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "bun test",
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.templates.json"
   },
   "dependencies": {
     "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@flare-engine/ecs": "^0.2.1",
+    "@flare-engine/engine": "^0.2.1",
+    "@flare-engine/physics": "^0.2.1",
+    "@flare-engine/react": "^0.2.1",
+    "@flare-engine/render": "^0.2.1",
+    "@flare-engine/tilemap": "^0.2.1"
   },
   "engines": {
     "node": ">=20"

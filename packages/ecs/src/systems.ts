@@ -1,6 +1,6 @@
 import { Follower, Lifetime, Position, Velocity } from './components.js';
-import { defineSystem } from './system.js';
 import type { SystemDef } from './system.js';
+import { defineSystem } from './system.js';
 import type { World } from './world.js';
 
 /**

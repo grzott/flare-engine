@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import { EffectChain } from '../src/chain.js';
 import { createVignette } from '../src/effect.js';
 import {
+  createPostFxRuntime,
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
-  createPostFxRuntime,
 } from '../src/runtime.js';
 
 function createMockSkia(): SkiaPostFxModuleLike {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { World, defineComponent } from '@flare-engine/ecs';
+import { defineComponent, World } from '@flare-engine/ecs';
 import { defineSnapshot } from '../src/define-snapshot.js';
 
 const Health = defineComponent<{ hp: number }>('Health', () => ({ hp: 100 }));

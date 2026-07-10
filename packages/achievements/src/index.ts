@@ -1,7 +1,7 @@
+export { AchievementsContext, useAchievements } from './context.js';
 export {
-  NoopAchievementsProvider,
   type AchievementId,
   type AchievementState,
   type AchievementsProvider,
+  NoopAchievementsProvider,
 } from './provider.js';
-export { AchievementsContext, useAchievements } from './context.js';

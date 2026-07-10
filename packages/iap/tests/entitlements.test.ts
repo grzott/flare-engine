@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  type IAPProvider,
-  type PurchaseResult,
-  type Transaction,
   createEntitlementStore,
   createProductCatalog,
   getCatalogEntry,
   getGrantsForProduct,
+  type IAPProvider,
+  type PurchaseResult,
+  type Transaction,
 } from '../src/index.js';
 
 const catalog = createProductCatalog([

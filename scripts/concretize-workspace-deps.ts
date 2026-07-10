@@ -11,7 +11,7 @@
  * correct regardless of publisher or lockfile state; local dev still links because
  * the local version satisfies the caret range.
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const PACKAGES_DIR = 'packages';

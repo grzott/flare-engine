@@ -1,13 +1,13 @@
-export { ShopScreen, type ShopScreenProps } from './ShopScreen.js';
 export { PaywallModal, type PaywallModalProps } from './PaywallModal.js';
 export {
   RestorePurchasesButton,
   type RestorePurchasesButtonProps,
 } from './RestorePurchasesButton.js';
+export { ShopScreen, type ShopScreenProps } from './ShopScreen.js';
 export type {
-  ShopItemCopy,
-  ShopPanelStrings,
+  LocalizeFn,
   PaywallStrings,
   RestoreStrings,
-  LocalizeFn,
+  ShopItemCopy,
+  ShopPanelStrings,
 } from './types.js';

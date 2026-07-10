@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["bun"]
   },
   "include": ["packages/*/src", "packages/*/tests"]
 }

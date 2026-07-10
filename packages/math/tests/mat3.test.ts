@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Mat3, Transform2D, approxEquals } from '../src/index.js';
+import { approxEquals, Mat3, Transform2D } from '../src/index.js';
 
 function expectMat3Close(a: Float32Array, b: Float32Array, eps = 1e-5) {
   expect(a.length).toBe(9);

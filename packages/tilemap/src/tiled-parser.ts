@@ -128,7 +128,7 @@ export function parseTiled(json: unknown): TilemapData {
   for (const ts of data.tilesets) {
     if (ts.source !== undefined) {
       throw new TilemapParseError(
-        `parseTiled: external tileset "${ts.source}" is not supported. Embed tilesets on export (Tiled ▸ Map ▸ "Embed tilesets") or use the CLI's --embed-tilesets.`,
+        `parseTiled: external tileset "${ts.source}" is not supported. Embed tilesets on export (Tiled ▸ Map ▸ "Embed tilesets") or run it through \`flare tiled-to-flare\` (which embeds tilesets by default).`,
       );
     }
 

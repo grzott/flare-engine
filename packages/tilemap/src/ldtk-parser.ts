@@ -81,6 +81,41 @@ export interface ParseLDtkOptions {
   intGridSolid?: (value: number) => boolean;
 }
 
+export interface LDtkEntity {
+  /** LDtk entity identifier (its type, e.g. "Player") — the key you switch on to decide what to spawn. */
+  id: string;
+  /** Entity position in pixels (LDtk px, pivot-adjusted per the parser convention). */
+  x: number;
+  y: number;
+  /** Entity box size in pixels. */
+  width: number;
+  height: number;
+  /** Custom field instances, keyed by field identifier. */
+  fields: Record<string, unknown>;
+}
+
+/**
+ * Extract every LDtk entity from a parsed map as a flat, spawn-ready list —
+ * the LDtk-entity → ECS spawn convention. Walks all object layers; tile layers are skipped.
+ */
+export function parseLDtkEntities(map: TilemapData): LDtkEntity[] {
+  const entities: LDtkEntity[] = [];
+  for (const layer of map.layers) {
+    if (layer.type !== 'object') continue;
+    for (const obj of layer.objects) {
+      entities.push({
+        id: obj.type,
+        x: obj.x,
+        y: obj.y,
+        width: obj.width,
+        height: obj.height,
+        fields: obj.properties,
+      });
+    }
+  }
+  return entities;
+}
+
 /**
  * Parse an LDtk JSON project into an array of TilemapData (one per level).
  * Returns all levels with their tile and entity layers.

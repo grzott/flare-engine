@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { parseLDtk } from '../src/ldtk-parser.js';
+import { parseLDtk, parseLDtkEntities } from '../src/ldtk-parser.js';
 import { TilemapParseError } from '../src/parse-error.js';
 import { extractColliders } from '../src/tilemap-collider.js';
 import { getTilesetForGid } from '../src/tilemap-data.js';
+import { entitiesLdtk } from './fixtures/entities-ldtk.js';
 import { twoTilesetIntGridLdtk } from './fixtures/two-tileset-intgrid.js';
 
 describe('parseLDtk', () => {
@@ -286,6 +287,43 @@ describe('parseLDtk — two-tileset IntGrid fixture', () => {
     expect(defaultCount).toBe(4);
     expect(customCount).toBe(2);
     expect(customCount).toBeLessThan(defaultCount);
+  });
+});
+
+describe('parseLDtkEntities', () => {
+  test('extracts two entities with correct id, position, size, and fields', () => {
+    const map = parseLDtk(entitiesLdtk)[0]!;
+    const entities = parseLDtkEntities(map);
+    expect(entities).toHaveLength(2);
+
+    const player = entities.find((e) => e.id === 'Player')!;
+    expect(player.id).toBe('Player');
+    expect(typeof player.id).toBe('string');
+    expect(player.x).toBe(40);
+    expect(player.y).toBe(56);
+    expect(player.width).toBe(16);
+    expect(player.height).toBe(16);
+    expect(player.fields).toEqual({ health: 100 });
+
+    const enemy = entities.find((e) => e.id === 'Enemy')!;
+    expect(enemy.id).toBe('Enemy');
+    expect(enemy.x).toBe(96);
+    expect(enemy.y).toBe(32);
+    expect(enemy.width).toBe(24);
+    expect(enemy.height).toBe(24);
+    expect(enemy.fields).toEqual({ patrol: true, speed: 40 });
+  });
+
+  test('skips tile layers — count stays 2, no spurious ids', () => {
+    const map = parseLDtk(entitiesLdtk)[0]!;
+    const entities = parseLDtkEntities(map);
+    expect(entities).toHaveLength(2);
+    expect(entities.every((e) => e.id === 'Player' || e.id === 'Enemy')).toBe(true);
+  });
+
+  test('returns empty array when no entity layers are present', () => {
+    const map = parseLDtk(makeLDtkJSON())[0]!;
+    expect(parseLDtkEntities(map)).toHaveLength(0);
   });
 });
 

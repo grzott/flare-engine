@@ -1,4 +1,9 @@
-export { type ParseLDtkOptions, parseLDtk } from './ldtk-parser.js';
+export {
+  type LDtkEntity,
+  type ParseLDtkOptions,
+  parseLDtk,
+  parseLDtkEntities,
+} from './ldtk-parser.js';
 
 export { TilemapParseError } from './parse-error.js';
 

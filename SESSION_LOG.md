@@ -9062,3 +9062,29 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 244 — 2026-07-10 (scope: engine)
+
+**Goal:** OSS-M4 — tilemap: authoring story polish
+
+**Touched files**
+- `.changeset/oss-m4-tilemap-authoring-entities.md`
+- `docs/design/api-specs.md`
+- `packages/cli/README.md`
+- `packages/tilemap/src/index.ts`
+- `packages/tilemap/src/ldtk-parser.ts`
+- `packages/tilemap/src/tiled-parser.ts`
+- `packages/tilemap/tests/fixtures/entities-ldtk.ts`
+- `packages/tilemap/tests/ldtk-parser.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

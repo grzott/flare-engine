@@ -204,8 +204,33 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 | ----------------- | ----------------------------------------------------------------------------------------------------------- |
 | `parseTiled(json)`     | → `TilemapData`. Orthogonal maps, tile/object layers, properties, collision shapes.                   |
 | `parseLDtk(json)`      | → `TilemapData`. Levels, tile/entity layers, enums.                                                   |
+| `parseLDtkEntities(map)` | → `LDtkEntity[]`. Flattens all object layers into spawn-ready `{ id, x, y, width, height, fields }` — `id` is the LDtk entity identifier (its type). Feed each to `world.spawn`. |
 | `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles into `this.batch`, then calls `flush(this.batch)` — delegates to `drawInto`. `drawInto(camera, batch)` queues visible tiles into the caller-owned `batch` without flushing — zero-alloc, enables single-flush z-ordering (tiles under sprites). |
 | `extractColliders(data)` | → `TileCollider[]`. Extracts solid tiles → collision shapes for physics.                             |
+
+#### Authoring pipeline
+
+**Tiled (primary).** Export with Tile Layer Format = **CSV** (base64, compressed, and chunked formats throw `TilemapParseError`). Tilesets must be **embedded** (Tiled ▸ Map ▸ "Embed tilesets") OR left external and run through `flare tiled-to-flare` (embeds by default; `--no-embed-tilesets` keeps refs). Only **orthogonal** orientation; only **tilelayer** + **objectgroup** layers (flatten groups, remove image layers). Each unsupported input throws `TilemapParseError` with an actionable message — thrown cases: infinite maps, non-orthogonal orientation, external tilesets, base64/compressed/chunked layer data, unsupported layer types.
+
+**LDtk (secondary) — support matrix:**
+
+| LDtk layer type | Output |
+| --- | --- |
+| `Tiles` / `AutoLayer` | Tile layer — resolved through each layer's tileset, deterministic firstGids (sorted by uid ascending). |
+| `IntGrid` | Tile layer with a synthetic collision tileset — `solidTiles` populated via the `intGridSolid` predicate (default `v > 0`); non-empty layers produce colliders via `extractColliders`. |
+| `Entities` | Object layer — extracted as spawn-ready `LDtkEntity[]` via `parseLDtkEntities`. |
+
+`externalLevels: true` ("Save levels to separate files") throws `TilemapParseError`.
+
+**Entity → ECS spawn wiring:**
+
+```ts
+for (const e of parseLDtkEntities(map)) {
+  const entity = world.spawn();
+  world.add(entity, Position, { x: e.x, y: e.y });
+  if (e.id === 'Player') world.add(entity, PlayerTag);
+}
+```
 
 ### `@flare-engine/pathfinding` (< 8KB gzip)
 
@@ -627,7 +652,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | API | Description |
 | --- | --- |
 | `flare pack-atlas <input> [--out <dir>] [--padding N] [--max-size N] [--format png\|webp]` | Sprite folder → TexturePacker-compatible JSON + atlas PNG consumable by `@flare-engine/assets`. Default `--padding 2`, `--max-size 2048`, `--format png`. |
-| `flare tiled-to-flare <tmj> [--out <file>] [--embed-tilesets]` | Tiled `.tmj` → normalized runtime JSON consumed by `@flare-engine/tilemap`. Flattens object layers, resolves external tilesets, drops editor-only metadata. |
+| `flare tiled-to-flare <tmj> [--out <file>] [--no-embed-tilesets]` | Tiled `.tmj` → normalized runtime JSON consumed by `@flare-engine/tilemap`. Flattens object layers, resolves external tilesets, drops editor-only metadata. Embeds tilesets by default; `--no-embed-tilesets` keeps external refs. |
 | `flare new <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm]` | Thin alias that spawns `create-flare-app` with the same args. Present so `flare` is a single discoverable entrypoint. |
 | `packAtlas(opts: AtlasPackerOptions): Promise<AtlasResult>` | Programmatic form of `pack-atlas`. Returns `{ jsonPath, imagePath, frames, width, height }`. |
 | `convertTiled(opts: TiledConvertOptions): Promise<TiledResult>` | Programmatic form of `tiled-to-flare`. Returns `{ outPath, layers, tilesets }`. |

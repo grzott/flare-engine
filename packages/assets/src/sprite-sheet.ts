@@ -43,10 +43,28 @@ export function createSpriteSheet(): SpriteSheet {
   };
 }
 
+// ----- Rotated-frame dev warning -----
+
+declare const __DEV__: boolean | undefined;
+
+/**
+ * Warn (dev builds only) when a TexturePacker frame is exported rotated.
+ * Rotated frames are not yet remapped, so they render sideways — the frame is
+ * named so the artist can re-export it. Full rotation support is post-launch.
+ */
+function warnRotatedFrame(name: string): void {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.warn(
+      `[flare-engine/assets] sprite frame "${name}": rotation unsupported — re-export without rotation`,
+    );
+  }
+}
+
 // ----- TexturePacker JSON (hash format) -----
 
 interface TPHashFrame {
   frame: { x: number; y: number; w: number; h: number };
+  rotated?: boolean;
 }
 
 interface TPHashJSON {
@@ -62,6 +80,7 @@ export function parseTexturePackerHash(json: unknown): SpriteSheet {
     const entry = entries[i];
     if (!entry) continue;
     const [name, value] = entry;
+    if (value.rotated) warnRotatedFrame(name);
     const f = value.frame;
     sheet.frames.push({ name, x: f.x, y: f.y, w: f.w, h: f.h });
     sheet.frameMap.set(name, i);
@@ -74,6 +93,7 @@ export function parseTexturePackerHash(json: unknown): SpriteSheet {
 interface TPArrayFrame {
   filename: string;
   frame: { x: number; y: number; w: number; h: number };
+  rotated?: boolean;
 }
 
 interface TPArrayJSON {
@@ -87,6 +107,7 @@ export function parseTexturePackerArray(json: unknown): SpriteSheet {
   for (let i = 0; i < data.frames.length; i++) {
     const entry = data.frames[i];
     if (!entry) continue;
+    if (entry.rotated) warnRotatedFrame(entry.filename);
     const f = entry.frame;
     sheet.frames.push({
       name: entry.filename,

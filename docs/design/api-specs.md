@@ -145,10 +145,12 @@ Lifecycle is manual — the package wires no automatic listener. Call `AudioMana
 
 | API            | Description                                                                                  |
 | -------------- | -------------------------------------------------------------------------------------------- |
-| `AssetManager` | `load(manifest)` → Promise. `get(key)`. `progress` (0-1), `onProgress` signal.               |
-| `AssetLoader`  | Function type `(entry) => Promise<unknown>`. Injected by the host (e.g. `@flare-engine/react`).     |
+| `AssetManager` | `load(manifest)` → Promise (fail-fast — one failure rejects). `loadManifestSettled(manifest)` → `{ loaded: string[]; failed: { key, error }[] }` (caches successes, never rejects). `get(key)`. `progress` (0-1), `onProgress` signal. |
+| `AssetLoader`  | Function type `(entry) => Promise<unknown>`. Injected by the host. Two defaults ship (below); or supply your own. |
+| `createFetchAssetLoader({ decodeImage, fetch? })` | Web `AssetLoader` over `fetch` (defaults to global). Per `entry.type`: `texture` → `Texture` (via `decodeImage`), `binary` → `Uint8Array`, `json`/`spritesheet` → parsed JSON. `decodeImage: (bytes) => SkImageLike \| null` — wire to `kit.MakeImageFromEncoded`. `fetch` is the structural `FetchLike`, not DOM-typed. |
+| `createFileAssetLoader({ readFile, decodeImage })` | Native `AssetLoader` over an injected `readFile: (path) => Promise<Uint8Array>` (e.g. expo-file-system) — no RN import. Same per-`type` mapping; JSON is parsed from UTF-8 bytes. |
 | `Texture`      | Wraps Skia SkImage                                                                           |
-| `SpriteSheet`  | Parsed from TexturePacker JSON (hash + array) / Aseprite JSON                                |
+| `SpriteSheet`  | Parsed from TexturePacker JSON (hash + array) / Aseprite JSON. **Rotated frames are unsupported** — TexturePacker `rotated: true` frames render sideways; the parser emits a dev-mode `console.warn` naming the frame. Re-export with rotation disabled. Full support is post-launch. |
 | `SpriteFrame`  | `{ name, x, y, w, h }` — one frame in an atlas.                                              |
 | `createProceduralAtlas(Skia, frames, opts?)` | Builds an `SkImage` + `SpriteSheet` from `{ name, w, h, color }[]`. Row-packs by `maxWidth`, honors `padding`. Narrow `SkiaAtlasModuleLike` is injected by the caller so `@flare-engine/assets` stays runtime-agnostic. |
 | `SkImageLike`                               | Structural interface: `width(): number; height(): number; readPixels(): Float32Array \| Uint8Array \| null`. `readPixels` enables pixel read-back for CPU-side logic (e.g. collision maps, lighting lookups). |

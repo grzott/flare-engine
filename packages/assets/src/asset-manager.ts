@@ -18,6 +18,22 @@ export interface ManifestEntry {
 /** A load function provided by the platform to actually fetch+decode assets. */
 export type AssetLoader = (entry: ManifestEntry) => Promise<Texture | SpriteSheet | unknown>;
 
+/** A single entry that failed during {@link AssetManager.loadManifestSettled}. */
+export interface ManifestLoadFailure {
+  /** Key of the manifest entry that failed. */
+  key: string;
+  /** The value thrown by the loader (an `Error` or otherwise). */
+  error: unknown;
+}
+
+/** Partial-failure summary returned by {@link AssetManager.loadManifestSettled}. */
+export interface ManifestLoadResult {
+  /** Keys of entries that loaded and were cached. */
+  loaded: string[];
+  /** Entries that threw, with the captured error. */
+  failed: ManifestLoadFailure[];
+}
+
 /**
  * AssetManager — loads, caches, and provides access to game assets.
  *
@@ -62,6 +78,43 @@ export class AssetManager {
     });
 
     await Promise.all(promises);
+  }
+
+  /**
+   * Load all assets without rejecting on the first failure. Successful assets
+   * are cached; failures are collected and returned. Progress still advances to
+   * 1 once every entry has settled. Prefer this over {@link load} when a partial
+   * asset set is acceptable (e.g. optional/decorative assets).
+   */
+  async loadManifestSettled(manifest: ManifestEntry[]): Promise<ManifestLoadResult> {
+    const loaded: string[] = [];
+    const failed: ManifestLoadFailure[] = [];
+
+    if (manifest.length === 0) {
+      this.progress = 1;
+      this.onProgress.emit(1);
+      return { loaded, failed };
+    }
+
+    let settled = 0;
+    const total = manifest.length;
+
+    const promises = manifest.map(async (entry) => {
+      try {
+        const asset = await this._loader(entry);
+        this._assets.set(entry.key, asset);
+        loaded.push(entry.key);
+      } catch (error) {
+        failed.push({ key: entry.key, error });
+      } finally {
+        settled++;
+        this.progress = settled / total;
+        this.onProgress.emit(this.progress);
+      }
+    });
+
+    await Promise.all(promises);
+    return { loaded, failed };
   }
 
   /** Get a loaded asset by key. Returns undefined if not found. */

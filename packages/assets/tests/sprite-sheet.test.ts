@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it, spyOn } from 'bun:test';
 import {
   addAnimation,
   getFrame,
@@ -6,6 +6,12 @@ import {
   parseTexturePackerArray,
   parseTexturePackerHash,
 } from '../src/sprite-sheet.js';
+
+const g = globalThis as Record<string, unknown>;
+
+afterEach(() => {
+  g.__DEV__ = undefined;
+});
 
 describe('SpriteSheet', () => {
   describe('parseTexturePackerHash', () => {
@@ -226,6 +232,62 @@ describe('SpriteSheet', () => {
       const json = { frames: {} };
       const sheet = parseTexturePackerHash(json);
       expect(getFrame(sheet, 'missing')).toBeUndefined();
+    });
+  });
+
+  describe('rotated-frame dev warning', () => {
+    it('warns naming a rotated hash frame when __DEV__ is on', () => {
+      g.__DEV__ = true;
+      const warn = spyOn(console, 'warn').mockImplementation(() => {});
+
+      const sheet = parseTexturePackerHash({
+        frames: { 'r.png': { frame: { x: 0, y: 0, w: 8, h: 8 }, rotated: true } },
+      });
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const msg = String(warn.mock.calls[0]?.[0]);
+      expect(msg).toContain('r.png');
+      expect(msg).toContain('rotation');
+      // Frame still parses (renders sideways, but is not dropped).
+      expect(sheet.frames).toHaveLength(1);
+      warn.mockRestore();
+    });
+
+    it('warns naming a rotated array frame when __DEV__ is on', () => {
+      g.__DEV__ = true;
+      const warn = spyOn(console, 'warn').mockImplementation(() => {});
+
+      parseTexturePackerArray({
+        frames: [{ filename: 'a.png', frame: { x: 0, y: 0, w: 8, h: 8 }, rotated: true }],
+      });
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toContain('a.png');
+      warn.mockRestore();
+    });
+
+    it('is silent when __DEV__ is unset', () => {
+      g.__DEV__ = undefined;
+      const warn = spyOn(console, 'warn').mockImplementation(() => {});
+
+      parseTexturePackerHash({
+        frames: { 'r.png': { frame: { x: 0, y: 0, w: 8, h: 8 }, rotated: true } },
+      });
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('does not warn for non-rotated frames even when __DEV__ is on', () => {
+      g.__DEV__ = true;
+      const warn = spyOn(console, 'warn').mockImplementation(() => {});
+
+      parseTexturePackerHash({
+        frames: { 'ok.png': { frame: { x: 0, y: 0, w: 8, h: 8 } } },
+      });
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     });
   });
 });

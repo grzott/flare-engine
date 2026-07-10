@@ -9033,3 +9033,32 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 243 — 2026-07-10 (scope: engine)
+
+**Goal:** OSS-M3 — assets: default loaders
+
+**Touched files**
+- `.changeset/oss-m3-assets-default-loaders.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/assets/README.md`
+- `packages/assets/src/asset-manager.ts`
+- `packages/assets/src/index.ts`
+- `packages/assets/src/loaders.ts`
+- `packages/assets/src/sprite-sheet.ts`
+- `packages/assets/tests/asset-manager.test.ts`
+- `packages/assets/tests/loaders.test.ts`
+- `packages/assets/tests/sprite-sheet.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** fixup:3 — root-tsc bun-types preconnect refactor to structural FetchLike + 2 biome test-format nits caught pre-gate by adversarial review
+
+**Next:** see `docs/plans/todo.md`.
+
+---

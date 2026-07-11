@@ -9124,3 +9124,31 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 246 — 2026-07-11 (scope: engine)
+
+**Goal:** OSS-M6 — haptics: real adapter via injection
+
+**Touched files**
+- `.changeset/oss-m6-haptics-real-adapter.md`
+- `docs/design/api-specs.md`
+- `packages/haptics/README.md`
+- `packages/haptics/src/expo.ts`
+- `packages/haptics/src/index.ts`
+- `packages/haptics/src/provider.ts`
+- `packages/haptics/src/web.ts`
+- `packages/haptics/tests/expo.test.ts`
+- `packages/haptics/tests/provider.test.ts`
+- `packages/haptics/tests/web.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

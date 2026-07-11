@@ -13,7 +13,6 @@ Goal: public flip in October 2026 — npm public + repo public + docs live. **Fu
 _2026-07-05 deep audit folded in (ledger: [_local/deep-audit-2026-07-05.md](_local/deep-audit-2026-07-05.md); row specs: road-to-oss §17). Every plan version-floor validated CORRECT vs current official docs (Skia 2.x→RN≥0.79/react≥19; Expo 57/RN 0.86/React 19.2; gesture-handler-drop safe). New pre-freeze rows: correctness **B25–B31**, packaging/CI/toolchain **C2–C4**. Design-quality cleanup → post-flip **Arc HYG** (below the P2 line). Env fixes already landed this session: turbo `globalDependencies`, check-deps LAYER_MAP fill + unmapped-scoped hard-error, biome `noDefaultExport`._ 
 Capacity: ~49–55 sessions (~46 launch rows + B25–C4; B8/B14/M1 are two-session; B13/C1/M2/M5/D5/F2 run 1–2) against 13 wk × ~5 = ~65 available — lands by Oct 5 with slack, not without.
 
-- **OSS-M6 — haptics: real adapter via injection (P1).** `createExpoHapticsProvider` (structural expo-haptics) + `createWebVibrationProvider`; stateful Noop toggle; README + api-specs:797 rewritten to what ships. Spec: §6 M6.
 - **OSS-D1 — README snippet-compile harness (P0) [MT].** `scripts/check-readme-snippets.mjs` + root `check:readme`; produce the per-package failure inventory for D2–D4. Spec: §7 D1.
 - **OSS-D2 — README truth pass A: foundation + runtime + systems (P0).** Snippets compile; absolute api-specs links; public install lines; no `.claude/`/PT links. Spec: §7.
 - **OSS-D3 — README truth pass B: features + platform (P0).** Same treatment for the features/platform tiers. Spec: §7.

@@ -860,20 +860,25 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/haptics` (< 1KB raw, interface-only)
+### `@flare-engine/haptics` (< 2KB raw, interface + injected providers)
 
-**Responsibility.** Tactile-feedback interface for weapon / impact / bomb feel. Consumer-supplied adapter at 0.1.0; 0.2.0 roadmap: a concrete `@flare-engine/haptics-expo` adapter wrapping Expo Haptics.
+**Responsibility.** Tactile-feedback interface for weapon / impact / bomb feel, with concrete providers wired at the app boundary via **injection** — no `expo-haptics` or `react-native` dependency (the same adapter pattern as `@flare-engine/iap-revenuecat`). Ships an Expo Haptics adapter, a Web Vibration adapter, and no-op fallbacks.
 
 | API | Description |
 | --- | --- |
 | `HapticsProvider` | Interface: `impact(style?)`, `notification(type?)`, `selection()` (all `Promise<void>`), plus an enabled gate `isEnabled()` / `setEnabled(enabled)`. Cue methods mirror the iOS `UIFeedbackGenerator` family so any platform SDK can back it. |
-| `NoopHapticsProvider` | Default export. Cues resolve immediately and fire nothing; `isEnabled()` returns `false` (no backend) and `setEnabled` is inert. |
-| `HapticsContext` / `useHaptics()` | React context + hook. |
+| `createExpoHapticsProvider(expo)` | Provider over an injected `expo-haptics` module — the structural `ExpoHapticsModule` shape `{ impactAsync, notificationAsync, selectionAsync }`. Maps `impact`/`notification`/`selection` onto expo's calls, forwarding the cue kind (expo's string-enum values equal `HapticImpactStyle` / `HapticNotificationType`); an omitted kind forwards `undefined` so expo applies its own default. Starts enabled. |
+| `createWebVibrationProvider(vibrate?)` | Provider over structural `navigator.vibrate` (`WebVibrate = (pattern: number \| number[]) => boolean`). Impact scales the buzz with intensity, each notification category has its own pulse pattern, selection is a short tick. Absent `vibrate` → returns the inert `NoopHapticsProvider`, so `isEnabled()` stays `false` and no feature-detect is needed. Otherwise starts enabled. |
+| `NoopHapticsProvider` | Immutable default. Cues resolve immediately and fire nothing; `isEnabled()` returns `false` and `setEnabled` is inert by design (hard "off" default + the `HapticsContext` default value). |
+| `createNoopHapticsProvider(enabled?)` | Stateful no-op: cues never fire, but `setEnabled` / `isEnabled` track real state so a consumer's haptics toggle is unit-testable without a native backend. Each call is an independent instance; defaults to disabled. |
+| `HapticsContext` / `useHaptics()` | React context (defaults to `NoopHapticsProvider`) + hook. |
 | `HapticImpactStyle` / `HapticNotificationType` | Payload types. `HapticImpactStyle`: `'light' \| 'medium' \| 'heavy' \| 'soft' \| 'rigid'`. `HapticNotificationType`: `'success' \| 'warning' \| 'error'`. |
+| `ExpoHapticsModule` / `WebVibrate` | Structural injection types for the two adapters (declared here so the package depends on neither SDK). |
 
 **Implementation notes:**
 
-- No runtime deps. React peer dep only for the context + hook.
+- No runtime deps. React peer dep only for the context + hook; the providers are framework-agnostic.
+- Providers are built on one internal gate helper, so a custom backend (native `Vibration`, a Core Haptics bridge) forwards its cues and never re-implements the enabled logic.
 - The enabled gate lets the user's haptics setting and the reduced-motion gate (`@flare-engine/a11y`) live in one place instead of at every call site — when disabled, cue methods are no-ops.
 
 ---

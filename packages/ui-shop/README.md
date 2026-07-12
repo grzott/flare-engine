@@ -13,9 +13,15 @@ bun add @flare-engine/ui-shop @flare-engine/iap @flare-engine/ui
 ## Usage
 
 ```tsx
-import { IAPContext, createEntitlementStore, createProductCatalog } from '@flare-engine/iap';
+import { useState } from 'react';
+import {
+  IAPContext,
+  NoopIAPProvider,
+  createEntitlementStore,
+  createProductCatalog,
+} from '@flare-engine/iap';
 import { ShopScreen, PaywallModal, RestorePurchasesButton } from '@flare-engine/ui-shop';
-import type { ShopPanelStrings, PaywallStrings, RestoreStrings } from '@flare-engine/ui-shop';
+import type { PaywallStrings, RestoreStrings, ShopPanelStrings } from '@flare-engine/ui-shop';
 
 const catalog = createProductCatalog([
   { productId: 'game.full', grants: ['full_game'], type: 'non-consumable' },
@@ -36,33 +42,41 @@ const restoreStrings: RestoreStrings = {
   successKey: 'restore.success', emptyKey: 'restore.empty', errorKey: 'restore.error',
 };
 
-// Wrap with IAPContext.Provider supplying a concrete adapter (e.g. createRevenueCatProvider)
-<IAPContext.Provider value={provider}>
-  <ShopScreen
-    catalog={catalog}
-    entitlementStore={store}
-    copy={{ 'game.full': { titleKey: 'p.full.title', descriptionKey: 'p.full.desc', ctaKey: 'p.full.cta', ownedLabelKey: 'p.full.owned' } }}
-    strings={shopStrings}
-    localize={(key) => t(key)}
-    onPurchase={(id, result) => console.log(id, result.status)}
-  />
+function t(key: string): string { return key; }
 
-  <PaywallModal
-    visible={paywallOpen}
-    productId="game.full"
-    entitlementKey="full_game"
-    entitlementStore={store}
-    strings={paywallStrings}
-    localize={(key) => t(key)}
-    onDismiss={() => setPaywallOpen(false)}
-    onPurchased={(result) => console.log('purchased', result)}
-  />
+// Swap NoopIAPProvider for a concrete adapter (e.g. createRevenueCatProvider)
+function ShopExample() {
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
-  <RestorePurchasesButton
-    entitlementStore={store}
-    strings={restoreStrings}
-    localize={(key) => t(key)}
-    onComplete={(results) => console.log('restored', results.length)}
-  />
-</IAPContext.Provider>
+  return (
+    <IAPContext.Provider value={NoopIAPProvider}>
+      <ShopScreen
+        catalog={catalog}
+        entitlementStore={store}
+        copy={{ 'game.full': { titleKey: 'p.full.title', descriptionKey: 'p.full.desc', ctaKey: 'p.full.cta', ownedLabelKey: 'p.full.owned' } }}
+        strings={shopStrings}
+        localize={t}
+        onPurchase={(id, result) => console.log(id, result.status)}
+      />
+
+      <PaywallModal
+        visible={paywallOpen}
+        productId="game.full"
+        entitlementKey="full_game"
+        entitlementStore={store}
+        strings={paywallStrings}
+        localize={t}
+        onDismiss={() => setPaywallOpen(false)}
+        onPurchased={(result) => console.log('purchased', result)}
+      />
+
+      <RestorePurchasesButton
+        entitlementStore={store}
+        strings={restoreStrings}
+        localize={t}
+        onComplete={(results) => console.log('restored', results.length)}
+      />
+    </IAPContext.Provider>
+  );
+}
 ```

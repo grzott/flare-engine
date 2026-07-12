@@ -34,6 +34,9 @@ export function App() {
 
 ```ts
 import { createStorageAchievements } from '@flare-engine/achievements';
+import type { AchievementsStore } from '@flare-engine/achievements';
+
+declare const myStore: AchievementsStore;
 
 const achievements = createStorageAchievements(myStore); // { get, set }
 

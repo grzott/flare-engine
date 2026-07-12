@@ -13,24 +13,33 @@ Peer dep: `react` (for the context).
 ## Usage
 
 ```tsx
-import { IAPContext, NoopIAPProvider, createProductCatalog,
-         createEntitlementStore, canAccessContent } from '@flare-engine/iap';
+import {
+  IAPContext,
+  NoopIAPProvider,
+  createProductCatalog,
+  createEntitlementStore,
+  canAccessContent,
+} from '@flare-engine/iap';
 
 const catalog = createProductCatalog([
   { productId: 'game.full', grants: ['full_game'], type: 'non-consumable' },
 ]);
 const store = createEntitlementStore(catalog);
 
-<IAPContext.Provider value={NoopIAPProvider}>
-  {/* …app… */}
-</IAPContext.Provider>
+function App() {
+  return (
+    <IAPContext.Provider value={NoopIAPProvider}>
+      {/* …app… */}
+    </IAPContext.Provider>
+  );
+}
 
-if (canAccessContent({ requiresEntitlement: 'full_game' }, store)) {
-  showZone4();
+function isZone4Unlocked(): boolean {
+  return canAccessContent({ requiresEntitlement: 'full_game' }, store);
 }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineiap--1kb-raw-interface-only).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineiap--1kb-raw-interface-only).
 
 ## License
 

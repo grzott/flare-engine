@@ -90,7 +90,7 @@ packages/<name>/
 | Lint + Format | [Biome](https://biomejs.dev). Run `bun run lint:fix` to auto-fix. Never Prettier or ESLint.      |
 | Commits       | Conventional Commits, ≤72 chars, no emoji. Example: `feat(ecs): cache archetype bitmask`.        |
 | Tests         | `bun test`. One test file per source file. Cover `NaN`, `Infinity`, zero, negative, edge inputs. |
-| Versioning    | Changesets (SemVer, independent per package).                                                    |
+| Versioning    | Changesets (lockstep — one shared version across `@flare-engine/*` + `create-flare-app`).        |
 
 Longer versions live in [AGENTS.md](AGENTS.md).
 

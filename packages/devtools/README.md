@@ -14,21 +14,37 @@ Peer deps: `react`, `react-native`.
 
 ```tsx
 import { DevtoolsProvider, DevtoolsPanel, DevtoolsHUD, useEntityInspector } from '@flare-engine/devtools';
+import type { World } from '@flare-engine/ecs';
+import type { GameLoop } from '@flare-engine/core';
+import type { ReactNode } from 'react';
 
-if (__DEV__) {
-  <DevtoolsProvider world={world} loop={loop} config={{ ringSize: 120 }}>
-    <DevtoolsPanel />
-    <DevtoolsHUD />
-  </DevtoolsProvider>
+declare const world: World;
+declare const loop: GameLoop;
+declare const __DEV__: boolean;
+
+function App({ children }: { children?: ReactNode }) {
+  if (!__DEV__) return <>{children}</>;
+  return (
+    <DevtoolsProvider
+      world={world}
+      loop={loop}
+      snapshot={() => ({})}
+      config={{ ringSize: 120 }}
+    >
+      {children}
+      <DevtoolsPanel />
+      <DevtoolsHUD />
+    </DevtoolsProvider>
+  );
 }
 
 function CustomInspector() {
-  const { selected, components } = useEntityInspector();
+  const { selected, entities } = useEntityInspector();
   // ...
 }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginedevtools--8kb-gzip-tree-shaken-in-prod).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedevtools--8kb-gzip-tree-shaken-in-prod).
 
 ## License
 

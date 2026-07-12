@@ -28,9 +28,9 @@ import { scaffoldApp } from 'create-flare-app';
 await scaffoldApp({ name: 'my-game', template: 'shmup', packageManager: 'bun' });
 ```
 
-For the full-scope showcase, see [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical Flare game in its own repo, consuming the engine from npm.
+For full-scope showcases built on Flare, see [flareengine.dev](https://flareengine.dev).
 
-See [API spec](../../docs/design/api-specs.md#create-flare-app--30kb-raw-node-only-standalone-npm-package).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#create-flare-app--30kb-raw-node-only-standalone-npm-package).
 
 ## License
 

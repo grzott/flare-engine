@@ -9243,3 +9243,35 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 250 — 2026-07-12 (scope: engine)
+
+**Goal:** OSS-D4 — README truth pass C: ui/integration/tooling + root docs
+
+**Touched files**
+- `.changeset/oss-d4-readme-truth-c.md`
+- `CONTRIBUTING.md`
+- `README.md`
+- `docs/plans/todo.md`
+- `packages/achievements/README.md`
+- `packages/cli/README.md`
+- `packages/create-flare-app/README.md`
+- `packages/devtools/README.md`
+- `packages/engine/README.md`
+- `packages/iap/README.md`
+- `packages/react/README.md`
+- `packages/testing/README.md`
+- `packages/ui-shop/README.md`
+- `packages/ui/README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:3 deny:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

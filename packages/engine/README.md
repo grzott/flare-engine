@@ -33,7 +33,7 @@ const game = createGame({ fixedDt: 1 / 60 });
 game.start();
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineengine--2kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineengine--2kb-gzip).
 
 ## React Native New Architecture
 

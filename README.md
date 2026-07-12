@@ -11,11 +11,11 @@
 
 ## Status
 
-**0.2.0 lockstep cut (restricted) — public OSS launch coming October 2026.**
+**Public OSS launch: October 2026.** The `@flare-engine/*` scope cuts a `0.3.0` lockstep release and flips from restricted to public npm access during the launch window.
 
-- 40 scoped packages live on npm as private/restricted `@flare-engine/*@0.2.0`; they flip public at the OSS launch
-- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). Lives in its own repo since 2026-06-10 and consumes the engine from npm — the proof the engine works as a real dependency, not just a workspace
-- Pre-launch polish remains: landing-page MP4 + store-page links, docs site, API snapshot lock, governance files, EUIPO trademark filing
+- 40 scoped `@flare-engine/*` packages + `create-flare-app`, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
+- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). Lives in its own repo since 2026-06-10 and consumes the engine from npm — proof it works as a real dependency, not just a workspace
+- Not affiliated with [FLARE (flarerpg.org)](https://flarerpg.org), a separate action-RPG game engine — this project is the `@flare-engine/*` TypeScript packages for React Native + Web
 - Full roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md)
 
 ---
@@ -39,14 +39,14 @@
 │  1        │  Runtime       │  core  ·  ecs                                        │
 │  0        │  Foundation    │  math  ·  events                                     │
 ├───────────┼────────────────┼──────────────────────────────────────────────────────┤
-│  ─        │  Interfaces    │  haptics                                             │
+│  ─        │  Haptics       │  haptics                                             │
 │  ─        │  Tooling       │  cli  ·  devtools  ·  create-flare-app               │
-│  ─        │  Tier-2 stubs  │  leaderboards  ·  achievements  ·  iap  ·  analytics │
+│  ─        │  Tier-2        │  leaderboards  ·  achievements  ·  iap  ·  analytics │
 │  ─        │  Adapters      │  iap-revenuecat                                      │
 └───────────┴────────────────┴──────────────────────────────────────────────────────┘
 ```
 
-Each package is independently versioned, tree-shakeable, and builds to dual CJS+ESM with `.d.ts`. Full diagram and rationale in [docs/design/architecture.md](docs/design/architecture.md).
+Every package shares one lockstep version, is tree-shakeable, and builds to dual CJS+ESM with `.d.ts`. Full diagram and rationale in [docs/design/architecture.md](docs/design/architecture.md).
 
 ---
 
@@ -88,13 +88,13 @@ Each package is independently versioned, tree-shakeable, and builds to dual CJS+
 | `@flare-engine/cli`          | —     | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
 | `@flare-engine/devtools`     | —     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-0.1.0)      |
 | `create-flare-app`           | —     | shipping                 | `npm create flare-app@latest` — blank / topdown / shmup templates              |
-| `@flare-engine/leaderboards` | —     | stub                     | Interface + no-op provider; concrete adapters deferred past 0.2.0             |
-| `@flare-engine/achievements` | —     | stub                     | Interface + no-op provider; concrete adapters deferred past 0.2.0             |
+| `@flare-engine/leaderboards` | —     | shipping                 | Interface + no-op + in-memory provider (`createMemoryLeaderboards`); platform adapters post-launch |
+| `@flare-engine/achievements` | —     | shipping                 | Interface + no-op + in-memory / storage-backed providers; platform adapters post-launch |
 | `@flare-engine/iap`          | —     | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
-| `@flare-engine/analytics`    | —     | stub                     | Interface + no-op provider; concrete adapters deferred past 0.2.0             |
+| `@flare-engine/analytics`    | —     | shipping                 | Interface + no-op + in-memory + console providers; vendor adapters post-launch |
 | `@flare-engine/iap-revenuecat` | —   | shipping                 | Concrete RevenueCat `IAPProvider` adapter (lazy `react-native-purchases`)      |
 | `@flare-engine/ui-shop`      | 3.5   | shipping                 | `ShopScreen` + `PaywallModal` + `RestorePurchasesButton` consuming `IAPContext` |
-| `@flare-engine/haptics`      | —     | shipping                 | `HapticsProvider` interface + `NoopHapticsProvider` + React context            |
+| `@flare-engine/haptics`      | —     | shipping                 | `HapticsProvider` interface + Noop / Expo / Web-Vibration providers + context  |
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).
 
@@ -115,34 +115,11 @@ git clone https://github.com/grzott/Pan-Tvardowski
 cd Pan-Tvardowski && bun install && bun run start
 ```
 
-A fresh project scaffolds via (requires registry access until the public launch):
+A fresh project scaffolds via:
 
 ```bash
 npm create flare-app@latest my-game
 ```
-
----
-
-## Consuming from npm (restricted)
-
-`@flare-engine/*` packages are published to the public npm registry with **restricted**
-access until the October 2026 OSS launch. Consuming them needs a read-only granular npm
-token for the `@flare-engine` scope (owner-generated; never committed). Point the scope
-at the registry and reference the token via env var:
-
-```ini
-# .npmrc (committed) — token comes from the NPM_TOKEN env var or ~/.npmrc
-@flare-engine:registry=https://registry.npmjs.org/
-//registry.npmjs.org/:_authToken=${NPM_TOKEN}
-```
-
-Version policy for consumers:
-
-- Depend with `^0.2.0`. Patch releases (0.2.x) are non-breaking and flow in-range.
-- Future minor releases (0.3.0) may break; they require an explicit range bump on the
-  consumer side — see the compat-guard caret-ceiling rule in [CONTRIBUTING.md](CONTRIBUTING.md).
-- `leaderboards` / `achievements` / `analytics` remain interface-only stubs at 0.2.0
-  (see the Status column above); concrete adapters are deferred past 0.2.0.
 
 ---
 
@@ -156,7 +133,7 @@ Version policy for consumers:
 | Build              | [tsup](https://tsup.egoist.dev) (dual CJS/ESM + `.d.ts`)                                           |
 | Test               | Bun test                                                                                           |
 | Commits            | Conventional Commits (commitlint + Husky)                                                          |
-| Versioning         | [Changesets](https://github.com/changesets/changesets) (independent SemVer per package)            |
+| Versioning         | [Changesets](https://github.com/changesets/changesets) (lockstep — one shared version across `@flare-engine/*` + `create-flare-app`) |
 | Rendering (native) | [`@shopify/react-native-skia`](https://shopify.github.io/react-native-skia/)                       |
 | Rendering (web)    | CanvasKit WASM                                                                                     |
 | Audio              | [`react-native-audio-api`](https://github.com/software-mansion/react-native-audio-api) / Web Audio |

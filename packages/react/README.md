@@ -13,23 +13,39 @@ Peer deps: `react`, `react-native`.
 ## Usage
 
 ```tsx
-import { GameView, VirtualJoystick, useGameLoop } from '@flare-engine/react';
+import React from 'react';
+import {
+  GameView,
+  VirtualJoystick,
+  useGameLoop,
+  type GameContextValue,
+} from '@flare-engine/react';
 
 function HUD() {
-  useGameLoop((dt) => { /* ...frame logic... */ });
+  useGameLoop((_dt) => {
+    // per-frame logic here
+  });
   return null;
 }
 
-<GameView
-  config={{ designResolution: { width: 1080, height: 1920 }, fixedDt: 1 / 60 }}
-  onReady={(ctx) => bootstrap(ctx)}
->
-  <HUD />
-  <VirtualJoystick onChange={(v) => /* ... */} />
-</GameView>
+function bootstrap(_ctx: GameContextValue): void {
+  // initialise scenes, load assets, etc.
+}
+
+export function App() {
+  return (
+    <GameView
+      config={{ fixedDt: 1 / 60 }}
+      onReady={(ctx) => bootstrap(ctx)}
+    >
+      <HUD />
+      <VirtualJoystick onStateChange={(_state) => {}} />
+    </GameView>
+  );
+}
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginereact--10kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginereact--10kb-gzip).
 
 ## License
 

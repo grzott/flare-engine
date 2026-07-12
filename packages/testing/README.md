@@ -22,10 +22,12 @@ world.add(e, Velocity, { x: 1, y: 0 });
 stepFrames(60, 1 / 60);
 
 const snap = serializeScene(world, [Position]);
-expect(snap.entities[0].components.Position.x).toBe(60);
+// components values are typed unknown; cast to the component shape to read fields
+const posX = (snap.entities[0]?.components['Position'] as { x: number } | undefined)?.x;
+const passed: boolean = posX === 60;
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginetesting--4kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginetesting--4kb-raw).
 
 ## License
 

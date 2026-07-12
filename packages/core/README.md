@@ -11,7 +11,11 @@ bun add @flare-engine/core
 ## Usage
 
 ```ts
-import { GameLoop, Clock, Pool } from '@flare-engine/core';
+import { GameLoop, Pool } from '@flare-engine/core';
+
+function updateGame(dt: number): void {
+  // advance game state by dt seconds
+}
 
 const loop = new GameLoop({ fixedDt: 1 / 60 });
 loop.onUpdate.add((dt) => updateGame(dt));
@@ -22,7 +26,7 @@ const b = bullets.acquire();
 bullets.release(b);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginecore--3kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginecore--3kb-gzip).
 
 ## License
 

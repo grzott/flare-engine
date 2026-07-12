@@ -13,15 +13,18 @@ bun add @flare-engine/physics
 ```ts
 import { CollisionWorld, AABB, createCollider } from '@flare-engine/physics';
 
-const world = new CollisionWorld();
-world.onCollisionStart.add((pair) => console.log(pair.a, pair.b));
+declare const entityA: number;
+declare const x: number, y: number;
 
-const colliderA = createCollider({ shape: AABB(32, 32), layer: 1, mask: 2 });
+const world = new CollisionWorld();
+world.onCollisionStart.add((pair) => console.log(pair.entityA, pair.entityB));
+
+const colliderA = createCollider(AABB(32, 32), { layer: 1, mask: 2 });
 world.add(entityA, colliderA.shape, x, y, false, colliderA.layer, colliderA.mask);
 world.step();
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginephysics--4kb-aabb).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginephysics--4kb-aabb).
 
 ## License
 

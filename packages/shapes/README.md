@@ -4,7 +4,7 @@ Procedural 2D shape primitives for [react-native-skia](https://shopify.github.io
 
 ## Why
 
-Mobile and indie game prototypes don't need sprite sheets to start. Compose ships, enemies, pickups, and UI shapes from primitives, ship a playable build, and replace shapes with art only after the mechanics lock — exactly the workflow Unity Shapes2D and Defold prototyping threads document. [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) prototyped its full 29-ship roster shape-first this way before swapping in sprite art, and still drives its procedural shape atlas with this package.
+Mobile and indie game prototypes don't need sprite sheets to start. Compose ships, enemies, pickups, and UI shapes from primitives, ship a playable build, and replace shapes with art only after the mechanics lock — exactly the workflow Unity Shapes2D and Defold prototyping threads document. Shape-first prototyping keeps the iteration loop tight: a project can reach a playable state immediately and swap in sprite art only after mechanics lock.
 
 ## Install
 
@@ -17,20 +17,27 @@ bun add @flare-engine/shapes @shopify/react-native-skia
 ## Usage
 
 ```ts
+import type { Skia as SkiaModule, SkCanvas, SkPaint } from '@shopify/react-native-skia';
 import { drawShape, type ShapeSpec } from '@flare-engine/shapes';
 
-// Compose any entity from primitives.
-const shape: ShapeSpec = { kind: 'circle', r: 24, fill: 0xff8844cc };
-drawShape(Skia, canvas, paint, shape, /* x */ 100, /* y */ 200, /* rot */ 0);
+// `Skia` from react-native-skia is a value; the handle type is `typeof Skia`
+// (mirrors `type Skia = typeof SkiaModule` inside src/draw.ts).
+type Skia = typeof SkiaModule;
 
-// Need a custom shape? Use the SVG escape hatch:
-const star: ShapeSpec = {
-  kind: 'path',
-  d: 'M 128 0 L 168 80 L 256 93 L 192 155 L 207 244 L 128 202 L 49 244 L 64 155 L 0 93 L 88 80 Z',
-  boundsR: 256,
-  fill: 0xffc9a24a,
-};
-drawShape(Skia, canvas, paint, star, 0, 0, 0);
+function demo(skia: Skia, canvas: SkCanvas, paint: SkPaint): void {
+  // Compose any entity from primitives.
+  const shape: ShapeSpec = { kind: 'circle', r: 24, fill: 0xff8844cc };
+  drawShape(skia, canvas, paint, shape, /* x */ 100, /* y */ 200, /* rot */ 0);
+
+  // Need a custom shape? Use the SVG escape hatch:
+  const star: ShapeSpec = {
+    kind: 'path',
+    d: 'M 128 0 L 168 80 L 256 93 L 192 155 L 207 244 L 128 202 L 49 244 L 64 155 L 0 93 L 88 80 Z',
+    boundsR: 256,
+    fill: 0xffc9a24a,
+  };
+  drawShape(skia, canvas, paint, star, 0, 0, 0);
+}
 ```
 
 ## Primitives
@@ -79,7 +86,9 @@ const amulet: readonly ShapeSpec[] = [
 ## Bounds
 
 ```ts
-import { shapeBoundsRadius, singleShapeRadius } from '@flare-engine/shapes';
+import { shapeBoundsRadius, singleShapeRadius, type ShapeSpec } from '@flare-engine/shapes';
+
+declare const playerShip: ShapeSpec;
 
 // For atlas tile sizing — max half-extent across a composition.
 const tileRadius = shapeBoundsRadius([playerShip]);

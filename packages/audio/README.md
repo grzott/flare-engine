@@ -14,10 +14,14 @@ Native: pair with `react-native-audio-api` (Web Audio API on native).
 
 ```ts
 import { AudioManager, SFXPool, createChannels } from '@flare-engine/audio';
-import { AudioContext } from 'react-native-audio-api';
+import type { AudioContextLike, AudioBufferLike } from '@flare-engine/audio';
+
+// AudioContextLike is the engine's interface — obtain a real one from
+// `new AudioContext()` (react-native-audio-api on native, the Web Audio global on web).
+declare const ctx: AudioContextLike;
+declare const shootBuffer: AudioBufferLike;
 
 // One AudioContext, created lazily via the manager's factory.
-const ctx = new AudioContext();
 const manager = new AudioManager();
 manager.init(() => ctx);
 
@@ -39,6 +43,9 @@ There is no automatic background/foreground handling — nothing subscribes to `
 
 ```ts
 import { AppState } from 'react-native';
+import { AudioManager } from '@flare-engine/audio';
+
+declare const manager: AudioManager;
 
 AppState.addEventListener('change', (state) => {
   if (state === 'active') manager.resume();
@@ -49,12 +56,16 @@ AppState.addEventListener('change', (state) => {
 On web, subscribe to `visibilitychange`:
 
 ```ts
+import { AudioManager } from '@flare-engine/audio';
+
+declare const manager: AudioManager;
+
 document.addEventListener('visibilitychange', () => {
   document.hidden ? manager.suspend() : manager.resume();
 });
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineaudio--4kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineaudio--4kb-gzip).
 
 ## License
 

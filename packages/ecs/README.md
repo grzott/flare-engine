@@ -13,7 +13,7 @@ bun add @flare-engine/ecs
 ```ts
 import { World, defineComponent, Position, Velocity } from '@flare-engine/ecs';
 
-const Health = defineComponent<{ hp: number }>('Health', { hp: 100 });
+const Health = defineComponent<{ hp: number }>('Health', () => ({ hp: 100 }));
 
 const world = new World();
 const e = world.spawn();
@@ -25,7 +25,7 @@ const movers = world.query(Position, Velocity);
 for (const id of movers) { /* ... */ }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineecs--8kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineecs--8kb-gzip).
 
 ## License
 

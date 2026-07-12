@@ -59,7 +59,7 @@ const reg2 = reg.unlock('item-1').unlock('item-2').unlock('item-3');
 reg2.isCapstone; // true
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineprogression).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineprogression).
 
 ## License
 

@@ -13,18 +13,28 @@ Peer dep: `@shopify/react-native-skia`.
 ## Usage
 
 ```ts
-import { EffectChain, createVignette, createCrt, createPostFxRuntime } from '@flare-engine/postfx';
+import {
+  EffectChain,
+  createVignette,
+  createCrt,
+  createPostFxRuntime,
+} from '@flare-engine/postfx';
+import type { SkiaPostFxModuleLike } from '@flare-engine/postfx';
+
+declare const skia: SkiaPostFxModuleLike;
+declare const width: number;
+declare const height: number;
 
 const chain = new EffectChain();
-chain.add('vignette', createVignette({ intensity: 0.4 }));
-chain.add('crt', createCrt({ scanlineStrength: 0.3 }));
+chain.add(createVignette('vignette', { intensity: 0.4 }));
+chain.add(createCrt('crt', { scanlineIntensity: 0.3 }));
 
 const runtime = createPostFxRuntime(skia);
 const passes = runtime.buildPass(chain, width, height);
 // renderer composites passes into the scene
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginepostfx--8kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginepostfx--8kb-raw).
 
 ## License
 

@@ -9175,3 +9175,38 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 248 — 2026-07-12 (scope: engine)
+
+**Goal:** OSS-D2 — README truth pass A: foundation + runtime + systems
+
+**Touched files**
+- `.changeset/oss-d2-readme-truth-a.md`
+- `docs/plans/todo.md`
+- `packages/assets/README.md`
+- `packages/audio/README.md`
+- `packages/core/README.md`
+- `packages/ecs/README.md`
+- `packages/events/README.md`
+- `packages/input/README.md`
+- `packages/math/README.md`
+- `packages/physics/README.md`
+- `packages/postfx/README.md`
+- `packages/progression/README.md`
+- `packages/render-web/README.md`
+- `packages/render/README.md`
+- `packages/shapes/README.md`
+- `packages/simulation/README.md`
+- `packages/storage/README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:3 gate:1 drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

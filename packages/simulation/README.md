@@ -64,7 +64,7 @@ agents.forEachAgent((x, y) => { /* draw */ });
 
 `onSense` / `onMove` hooks let callers inject chemotaxis or repulsion by closing over their own data (nutrient sources, obstacle fields) without coupling the engine to domain logic.
 
-See [API spec](../../docs/design/api-specs.md#flare-enginesimulation).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginesimulation).
 
 ## License
 

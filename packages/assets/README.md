@@ -19,9 +19,10 @@ no renderer of its own.
 ### Web (CanvasKit)
 
 ```ts
-import { AssetManager, createFetchAssetLoader, type ManifestEntry } from '@flare-engine/assets';
+import { AssetManager, createFetchAssetLoader, type ManifestEntry, type SkImageLike } from '@flare-engine/assets';
 
-// `kit` is your initialised CanvasKit instance.
+declare const kit: { MakeImageFromEncoded(bytes: Uint8Array): SkImageLike | null };
+
 const loader = createFetchAssetLoader({
   decodeImage: (bytes) => kit.MakeImageFromEncoded(bytes),
 });
@@ -40,7 +41,7 @@ const hero = assets.get('hero'); // Texture
 
 ### Native (React Native + Skia)
 
-```ts
+```ts no-check
 import { Skia } from '@shopify/react-native-skia';
 import * as FileSystem from 'expo-file-system';
 import { AssetManager, createFileAssetLoader, decodeImage } from '@flare-engine/assets';
@@ -69,6 +70,10 @@ Per entry `type`: `texture` → a `Texture`; `binary` → `Uint8Array`;
 asset set is acceptable, use `loadManifestSettled()`:
 
 ```ts
+import { AssetManager, type ManifestEntry } from '@flare-engine/assets';
+declare const assets: AssetManager;
+declare const manifest: ManifestEntry[];
+
 const { loaded, failed } = await assets.loadManifestSettled(manifest);
 if (failed.length) console.warn('some assets failed', failed);
 // loaded: string[] of cached keys; failed: { key, error }[]
@@ -77,12 +82,15 @@ if (failed.length) console.warn('some assets failed', failed);
 ### Sprite sheets & procedural atlases
 
 ```ts
-import { parseTexturePackerHash, createProceduralAtlas } from '@flare-engine/assets';
+import { parseTexturePackerHash, createProceduralAtlas, type SkiaAtlasModuleLike } from '@flare-engine/assets';
+
+declare const json: unknown;
+declare const skia: SkiaAtlasModuleLike;
 
 const sheet = parseTexturePackerHash(json);
 
 // Procedural placeholder atlas:
-const { image, sheet: atlas } = await createProceduralAtlas(skia, [
+const { image, sheet: atlas } = createProceduralAtlas(skia, [
   { name: 'enemy', w: 32, h: 32, color: 0xff_00_ff_00 },
 ]);
 ```
@@ -92,7 +100,7 @@ frames sideways; the parser cannot yet remap them, so they render rotated. Frame
 with `rotated: true` emit a dev-mode `console.warn` naming the frame — re-export
 the atlas with rotation disabled. Full rotation support is post-launch.
 
-See [API spec](../../docs/design/api-specs.md#flare-engineassets--6kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineassets--6kb-gzip).
 
 ## License
 

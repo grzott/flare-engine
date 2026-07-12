@@ -13,7 +13,7 @@ bun add @flare-engine/events
 ```ts
 import { EventEmitter, Signal } from '@flare-engine/events';
 
-type GameEvents = { 'enemy-killed': { id: number; score: number } };
+type GameEvents = { 'enemy-killed': (e: { id: number; score: number }) => void };
 const bus = new EventEmitter<GameEvents>();
 const off = bus.on('enemy-killed', (e) => console.log(e.score));
 
@@ -30,7 +30,7 @@ onHit.emit(10);
 - A handler **removed** during an emit still runs for that emit (and any nested emit); the removal takes effect once the outermost emit completes.
 - `emit()` is **re-entrant** (a handler may call `emit()` again) and **throw-safe**: a throwing handler propagates to the caller but never wedges deferred removal.
 
-See [API spec](../../docs/design/api-specs.md#flare-engineevents--1kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineevents--1kb-gzip).
 
 ## License
 

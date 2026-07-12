@@ -38,16 +38,18 @@ input.update(); // resets all per-frame edge flags including keyboard
 
 ```ts
 // Action binding example (platform-neutral)
-import { isActionDown, wasActionPressed, type KeyBindings } from '@flare-engine/input';
+import { InputManager, isActionDown, wasActionPressed, type KeyBindings } from '@flare-engine/input';
 
 const bindings: KeyBindings = { jump: ['Space', 'KeyW'], fire: ['KeyZ', 'KeyJ'] };
 
-// in update loop:
-if (wasActionPressed(input.keyboard, bindings, 'jump')) player.jump();
-if (isActionDown(input.keyboard, bindings, 'fire')) player.fire();
+function update(input: InputManager, player: { jump(): void; fire(): void }) {
+  // in update loop:
+  if (wasActionPressed(input.keyboard, bindings, 'jump')) player.jump();
+  if (isActionDown(input.keyboard, bindings, 'fire')) player.fire();
+}
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineinput--6kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineinput--6kb-gzip).
 
 ## License
 

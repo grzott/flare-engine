@@ -19,10 +19,10 @@ const out = vec2(0, 0);
 Vec2.lerp(a, b, 0.5, out);
 
 const rng = new SeededRNG(42);
-const t = easeOutQuad(rng.float());
+const t = easeOutQuad(rng.float(0, 1));
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginemath--5kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginemath--5kb-gzip).
 
 ## License
 

@@ -25,6 +25,7 @@
     "check:exports": "bun scripts/check-exports.mjs",
     "check:nodenext": "bun scripts/check-nodenext.mjs",
     "check:publish-safety": "bun scripts/check-publish-safety.mjs",
+    "check:readme": "bun scripts/check-readme-snippets.mjs",
     "check:audit": "bun audit",
     "deps:outdated": "bun outdated --recursive",
     "lint:fix": "biome check --write .",

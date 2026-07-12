@@ -870,6 +870,49 @@ and the `:47` status line were fixed 2026-07-03, as was `roadmap.md`); docs/READ
 `.claude/skills`, `Pan-Tvardowski` across READMEs+CONTRIBUTING returns only intentional hits
 (disambiguation/none); every install line is the public form; **`grep -rE 'Pan.?Tvardowski|Phase 11|folio|session #' packages/*/src` returns zero** (carries B22's src-vocab scrub, §16); **`MIT` appears in shipping files only inside the 0.1–0.2.1 immutability note** (carries E2's MIT-grep, §16).
 
+**D1 failure inventory** — generated 2026-07-11 by `bun run check:readme` (regenerate before each D-pass; it typechecks every README `ts`/`tsx` block against workspace source). 9 green, 32 failing, 62 snippets checked, 137 errors. A `Cannot find name` on an undeclared placeholder means "declare it or tag the fence ` ```ts no-check `". Green (no snippet work — link/install/date normalization only): a11y, analytics, cli, create-flare-app, engine, iap-revenuecat, leaderboards, progression, simulation.
+
+_D2 (15) worklist_
+- **math** (1): L22 TS2554 Expected 2 arguments, but got 0. (`rng.float()` needs `(min, max)`)
+- **events** (3): L17 TS2344 `GameEvents` does not satisfy constraint `EventMap`; L18 TS2345 handler shape; L18 TS7006 implicit-any param `e`.
+- **core** (1): L17 TS2304 Cannot find name `updateGame`.
+- **ecs** (1): L16 TS2353 `hp` not in `() => { hp: number }` (prefab component shape).
+- **render** (10): L20 `skiaCanvas`; L22 TS2554 drawSprite expected 6 args got 1; L23 `image`/`frame`/`x`/`y`/`w`/`h` undeclared; L23 TS2345 `number` vs `SpriteColor`; L24 `skia`.
+- **render-web** (13): L22 TS2554 `loadCanvasKit()` needs `wasmUrl` (prose also mislabels it "locateFile"); L32/44/65 `kit`/`canvasEl`; L47 `width`/`height`; L48 `atlasImage`/`commands`; L50 `surface`; L75 `newW`/`newH`.
+- **shapes** (7): L24/33 `Skia`/`canvas`/`paint` undeclared; L85 `playerShip`.
+- **postfx** (7): L19/20 TS2554+TS2345 create* effect signature (id string, not options); L22 `skia`; L23 `width`/`height`.
+- **input** (4): L46/47 `input`/`player` undeclared.
+- **physics** (6): L17 TS2339 `CollisionPair` has no `a`/`b`; L19 TS2353 `shape` not in `Shape`; L20 `entityA`/`x`/`y`.
+- **audio** (8): L22/25/29 DOM `AudioContext` not structurally `AudioContextLike` (missing `onended`); L32 `shootBuffer`; L44/45/53 `manager`.
+- **simulation** — clean; **progression** — clean.
+- **storage** (2): L17/44 TS2307 `react-native-mmkv` (phantom peer — kill the prose claim per D2 note).
+
+_D3 (13) worklist_
+- **scene** (2): L17 TS2739 scene object missing `name`/`world`/`camera`; L23 TS2554 arg count.
+- **animation** (4): L15 TS2305 no `easeOutQuad` export (it's in `math`); L17 `sheet`; L19/22 `dt`.
+- **particles** (7): L18 TS2322 `number[]` vs `number`; L19 `number` vs `Color` (×2); L23 `dt`/`gravityX`/`gravityY` + TS2554 arg count.
+- **tilemap** (6): L16 `json`; L17 `atlas` + TS2554; L18 `camera`/`skia`/`gameRenderer`.
+- **pathfinding** (5): L19 TS2554 expected 5-6 got 4; L23 `result` possibly null (×2) + `PathResult` has no `found`/`cells`.
+- **dialogue** (5): L16/21/27 TS2554 arg counts; L24 TS7006 implicit-any `id`/`args`.
+- **debug** (7): L18 TS2554; L21/23/24 `StatsTracker`/`FpsWidget` API drift (`beginFrame`/`endFrame`/`formatLine`/`snapshot`); L23 `drawCalls`/`entityCount`.
+- **errors** (3): L20 TS2554; L25 `CrashScreen`; L29 `App`.
+- **localization** (3): L17 TS2353 `fallback` not in `LocalizationManagerOptions`; L18 `enJson`/`plJson`.
+- **deep-links** (2): L20 `Linking`; L21 `sceneManager`.
+- **share** (2): L17 `skiaCanvasRef`; L20 `Share`.
+- **a11y** — clean.
+- **haptics** (2): L16 TS2307 `expo-haptics`; L42 `Button`.
+
+_D4 (13) worklist_
+- **ui** (3): L22 TS2322 `ButtonProps` (variant/onPress); L22 `resume`; L35 `keys`.
+- **ui-shop** (6): L40 `provider`; L46/56/64 `t`; L51 `paywallOpen`; L57 `setPaywallOpen`.
+- **react** (1): L28 TS1109 Expression expected (`onChange={(v) => /* … */}` empty arrow body — real syntax error).
+- **engine** — clean.
+- **devtools** (4): L19 TS2741 `DevtoolsProvider` missing `snapshot` + `world`/`loop`; L26 TS2339 `EntityInspectorView.components`.
+- **testing** (2): L25 `expect` undeclared + TS2571 unknown (bun-test snippet).
+- **cli** — clean; **create-flare-app** — clean; **leaderboards** — clean; **analytics** — clean; **iap-revenuecat** — clean.
+- **achievements** (1): L38 `myStore`.
+- **iap** (1): L29 `showZone4`.
+
 ### OSS-D5 · design-docs honesty (P0, 2-3 sessions per 2026-07-05 audit, [main-thread] — seam: D5a architecture.md / D5b api-specs.md)
 
 **Scope:** `docs/design/architecture.md`, `docs/design/api-specs.md`, `packages/math` easing headers.

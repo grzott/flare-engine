@@ -31,6 +31,11 @@ apps/*/.expo/
 # scripts/check-nodenext.mjs on every run; never committed.
 scripts/nodenext-probe/probe.generated.mts
 
+# README snippet-compile scratch — virtual snippet files + generated tsconfig
+# regenerated from every packages/*/README.md by scripts/check-readme-snippets.mjs
+# on every run; never committed.
+scripts/readme-snippets/
+
 # TestingBot credentials — real values never committed; see .env.testingbot.example
 apps/*/.env.testingbot
 

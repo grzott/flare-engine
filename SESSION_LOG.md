@@ -9152,3 +9152,26 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 247 — 2026-07-11 (scope: engine)
+
+**Goal:** OSS-D1 — README snippet-compile harness
+
+**Touched files**
+- `.gitignore`
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `package.json`
+- `scripts/check-readme-snippets.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:2 deny:1 fixup:2
+
+**Next:** see `docs/plans/todo.md`.
+
+---

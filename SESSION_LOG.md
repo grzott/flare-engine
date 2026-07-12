@@ -9275,3 +9275,28 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 251 — 2026-07-12 (scope: engine)
+
+**Goal:** OSS-D5 design-docs honesty (architecture + api-specs re-derivation)
+
+**Touched files**
+- `.changeset/oss-d5-design-docs-honesty.md`
+- `docs/design/api-specs.md`
+- `docs/design/architecture.md`
+- `docs/plans/todo.md`
+- `packages/math/README.md`
+- `packages/math/src/easings.ts`
+- `scripts/check-readme-snippets.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:2 gate:0 deny:0 fixup:0 drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

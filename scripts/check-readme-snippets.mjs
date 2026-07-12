@@ -128,6 +128,21 @@ for (const pkg of packages) {
   }
 }
 
+// Also typecheck the ts/tsx fences in the top-level design doc api-specs.md.
+// Public docs that lie are worse than no docs — the api-specs fences resolve
+// @flare-engine/* through the SAME paths map built above and contribute no
+// paths entry of their own. Doc sources carry a `label` used in the report;
+// package sources default to README.md.
+const DOC_SOURCES = [
+  {
+    dir: '__api-specs__',
+    name: 'docs/design/api-specs.md',
+    label: 'api-specs.md',
+    readme: join(ROOT, 'docs', 'design', 'api-specs.md'),
+  },
+];
+const sources = [...packages, ...DOC_SOURCES];
+
 // Extract every ts/tsx fenced block from a README. Records the 1-based README line
 // of the block's first code line (diagnostics anchor there). Accepts the common
 // `typescript` alias case-insensitively so a differently-tagged fence is never
@@ -174,7 +189,7 @@ const errorsByFile = new Map(); // file -> [{ readmeLine, code, msg }]
 const present = new Set(); // snippet files currently written to GEN_DIR
 let checkedCount = 0;
 let skippedCount = 0;
-for (const pkg of packages) {
+for (const pkg of sources) {
   pkg.snippets = extractSnippets(pkg.readme);
   let n = 0;
   for (const snip of pkg.snippets) {
@@ -298,8 +313,8 @@ let green = 0;
 let failing = 0;
 let noSnippets = 0;
 let totalErrors = 0;
-const pad = Math.max(...packages.map((p) => p.name.length));
-for (const pkg of packages) {
+const pad = Math.max(...sources.map((p) => p.name.length));
+for (const pkg of sources) {
   const checked = pkg.snippets.filter((s) => !s.noCheck).length;
   const errs = perPkg.get(pkg.name) ?? [];
   totalErrors += errs.length;
@@ -324,20 +339,21 @@ for (const pkg of packages) {
 }
 
 if (failing > 0) {
-  console.log('\n--- Failure inventory (D2-D4 fixer worklist) ---');
-  for (const pkg of packages) {
+  console.log('\n--- Failure inventory (fixer worklist) ---');
+  for (const pkg of sources) {
     const errs = perPkg.get(pkg.name);
     if (!errs || errs.length === 0) continue;
+    const docLabel = pkg.label ?? 'README.md';
     console.log(`\n### ${pkg.name}`);
     for (const e of errs.sort((a, b) => a.readmeLine - b.readmeLine)) {
-      console.log(`- README.md:${e.readmeLine}  ${e.code}  ${e.msg}`);
+      console.log(`- ${docLabel}:${e.readmeLine}  ${e.code}  ${e.msg}`);
     }
   }
 }
 
 console.log(
   `\nSummary: ${green} green, ${failing} failing, ${noSnippets} without snippets ` +
-    `(${packages.length} packages). ${checkedCount} snippet${checkedCount === 1 ? '' : 's'} checked, ` +
+    `(${sources.length} sources). ${checkedCount} snippet${checkedCount === 1 ? '' : 's'} checked, ` +
     `${skippedCount} no-check skipped, ${totalErrors} error${totalErrors === 1 ? '' : 's'}.`,
 );
 

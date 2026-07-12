@@ -2,7 +2,7 @@
 
 > Living document. Update alongside code changes — divergence is a spec bug.
 >
-> Last refreshed against `packages/*/src/index.ts`: **2026-07-01**.
+> Last refreshed against `packages/*/src/index.ts`: **2026-07-12**.
 
 ---
 
@@ -19,7 +19,7 @@
 | `Mat3`                                                        | 3x3 on Float32Array. `multiply`, `translate`, `rotate`, `scale`, `invert`, `identity`                                                                |
 | `Color`                                                       | RGBA. `lerp`, `toHex`, `fromHex`, `toSkColor`, `multiply`, `create`. OKLab/OKLCH: `toOklab`, `fromOklab`, `toOklch`, `fromOklch` (operates in linear sRGB; `fromOklab`/`fromOklch` clamp out-of-gamut results — round-trip exact only in-gamut). WCAG: `relativeLuminance`, `contrastRatio`. Distance: `deltaEOk`, `deltaEOkLab`. Types: `Oklab`, `Oklch`. |
 | `clamp`, `lerp`, `inverseLerp`, `map`, `degToRad`, `radToDeg`, `approxEquals`, `wrap`, `pingPong`, `smoothStep`, `sign`, `angleDelta(a, b)`, `rotateTowards(cur, target, maxStep)` | Scalar utils. `angleDelta` returns shortest signed delta `a - b` wrapped to `[-π, π]` (branch form — exact ±π pass through unwrapped). `rotateTowards` rotates angle `cur` toward `target` by at most `maxStep` radians. Both are byte-identical to hand-rolled homing math. |
-| `easings`                                                     | 32 functions (quad/cubic/quart/quint/sine/expo/circ/back/elastic/bounce In/Out/InOut + linear, step, springIn/Out/InOut). Tree-shakeable named exports. |
+| `easings`                                                     | 35 functions (quad/cubic/quart/quint/sine/expo/circ/back/elastic/bounce In/Out/InOut + linear, step, springIn/Out/InOut). Tree-shakeable named exports. |
 | Random                                                        | `SeededRNG` class. Top-level `randomFloat(min, max)`, `randomInt(min, max)`, `randomVec2InRect(rect)`, `randomPointInCircle(cx, cy, r)`, `shuffle`, `choose`. Weighted: `weightedIndex(weights, roll01)` — cumulative-walk index from weight array; `weightedIndexBy<T>(items, weight, roll01)` — cumulative-walk index via accessor; `weightedPick<T>(items, weight, roll01)` — returns the item (allocating wrapper). Hash/seeded: `hashU32(seed)` — lowbias32 avalanche finalizer (decorrelates adjacent seeds); `seededIndex(seed, count)` — stateless deterministic index in `[0, count)`. All `roll01` inputs expected in `[0, 1)`. |
 | Reward                                                        | Timed-window + capped-bonus scoring math. `cappedBonus(pay, frac, capFrac)` — `floor(pay × min(frac, capFrac))`, 0 for non-positive pay. `advanceWindowedStreak(prev, elapsed, lastT, windowSec)` — increments streak if within window, resets to 1 on gap (`lastT < 0` = no prior event). `windowExpired(elapsed, lastT, windowSec)` — true when window was open and has since lapsed. `remainingInWindow(awarded, capPerWindow)` — non-negative slots remaining in a rate-cap window. All pure, zero-alloc. |
 | Intersection                                                  | `pointInRect`, `pointInCircle`, `rectVsRect`, `rectVsCircle`, `circleVsCircle`, `lineVsRect`, `lineVsCircle`, `rayVsRect`                            |
@@ -174,9 +174,9 @@ Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not
 
 | API                                    | Description                                                                                     |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `createSpriteAnimator(sheet)`          | Returns animator state. `playAnimation(state, name)`, `updateAnimator(state, dt)`. Tick-based.  |
+| `createSpriteAnimator(sheet)`          | Returns animator state. `playAnimation(state, name)`, `updateAnimator(state, dt)` → `SpriteFrame \| null`, `pauseAnimation(state)` / `resumeAnimation(state)` / `stopAnimation(state)`, `getCurrentFrame(state)` → `SpriteFrame \| null`. Tick-based. |
 | `tween(from, to, duration, easing?)`   | Returns `Tween` state object. `updateTween(tween, dt)` → value. Chain via `chainTween`.         |
-| `spring(config)`                       | `{stiffness, damping, mass, target}`. `updateSpring(spring, dt)` → value.                       |
+| `spring(value, target, config?)`       | `config` is `Partial<SpringConfig>` — `{stiffness (100), damping (10), mass (1)}` (no `target` in config; it is the positional arg). Returns `Spring { value, velocity, target, config, atRest }`. `updateSpring(s, dt)` → value. `setSpringTarget(s, target)` wakes it; `resetSpring(s, value)` zeroes velocity. |
 | `TweenManager`                         | `addTween(mgr, tween)`, `updateTweens(mgr, dt)`. Auto-removes completed.                        |
 | `periodicTween(from, to, period, easing?)` | Oscillating driver that ping-pongs between `from` and `to` indefinitely. Default easing: `easeInOutSine`. Returns `PeriodicTween` state. `updatePeriodicTween(tw, dt)` → current value (wraps elapsed modulo period). `resetPeriodicTween(tw)` zeroes elapsed and restores `value = from`. Period must be > 0. |
 | `createStepSequence(steps)` | Returns `StepSequence { steps, current, elapsed }`. `steps` is `StepSequenceStep[] = { duration: number }[]`; throws if empty or any `duration <= 0`. `current=0, elapsed=0`. |
@@ -222,9 +222,9 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 
 `externalLevels: true` ("Save levels to separate files") throws `TilemapParseError`.
 
-**Entity → ECS spawn wiring:**
+**Entity → ECS spawn wiring** (illustrative fragment — `world`, `Position`, `PlayerTag` are the consumer's own; tagged `no-check`):
 
-```ts
+```ts no-check
 for (const e of parseLDtkEntities(map)) {
   const entity = world.spawn();
   world.add(entity, Position, { x: e.x, y: e.y });
@@ -259,9 +259,9 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 | --- | --- |
 | `DialogueGraph` / `DialogueNode` (union) | A graph is a `Map<NodeId, DialogueNode>` plus a `start: NodeId`. Node kinds: `LineNode` (speaker + text), `ChoiceNode` (player picks an `ChoiceOption`), `BranchNode` (predicate-driven `BranchArm[]`), `ActionNode` (fires a side effect via `ActionHandler`), `EndNode`. |
 | `createDialogueGraph(start, nodes)` / `getNode(graph, id)` | Builders + lookup. |
-| `DialogueRunner` / `createDialogueRunner(graph, opts)` | Stateful runner. Options: `{ onLine, onChoice, onEnd, conditions: ConditionResolver, actions: ActionHandler, variables: VariableBag }`. Runner emits `DialogueLineEvent` / `DialogueChoiceEvent` to the host. `DialogueRunnerState` is the serializable position. |
-| `interpolate(text, variables)` | Interpolates `{var}` tokens against a `VariableBag` (`Record<string, string \| number \| boolean>`). |
-| `createTextReveal(text, opts?)` / `updateTextReveal(state, dt)` / `completeTextReveal(state)` / `resetTextReveal(state)` | Typewriter state machine — `TextRevealState` exposes `visible: string`, `done: boolean`. `TextRevealOptions` covers `cps` (chars/sec), `instantOnSkip`. |
+| `DialogueRunner` / `createDialogueRunner(options?)` | Stateful runner. `DialogueRunnerOptions`: `{ conditions?: ConditionResolver, actions?: ActionHandler, onError?(err: DialogueError) }`. The graph + variables are passed to `runner.start(graph, variables?)`, **not** the factory. Events are **Signals** on the runner: `onLine: Signal<DialogueLineEvent>`, `onChoice: Signal<DialogueChoiceEvent>`, `onAction: Signal<string>`, `onEnd: Signal<string>`. Drive with `advance()` / `selectChoice(index)` / `stop()`; read `state` / `currentNodeId` / `graphId`. `DialogueRunnerState` is a status union: `'idle' \| 'running' \| 'waiting-choice' \| 'ended'`. |
+| `interpolate(text, variables)` | Interpolates `{var}` tokens against a `VariableBag` (`Record<string, string \| number>`); an unknown token passes through unchanged. |
+| `createTextReveal(text)` / `updateTextReveal(state, dt, options?)` / `completeTextReveal(state)` / `resetTextReveal(state)` | Typewriter state machine — `createTextReveal` takes no options. `TextRevealState` exposes `visibleText: string` and `complete: boolean`. Per-frame options live on `updateTextReveal`: `TextRevealOptions` = `{ speed? (chars/sec, default 30), punctuationDelay? (extra seconds after `.!?:;`, default 0.15) }`. |
 
 **Implementation notes:**
 
@@ -329,13 +329,20 @@ Web-integration bridge — the web analog of `@flare-engine/react`: it composes 
 
 **Typical web setup:**
 ```ts
+import { createFrameRenderer } from '@flare-engine/render';
+import { createWebSkiaModule, loadCanvasKit } from '@flare-engine/render-web';
+
+declare const width: number;
+declare const height: number;
+declare const time: number;
+
 const kit = await loadCanvasKit('/assets/canvaskit.wasm');
 const mod = createWebSkiaModule(kit);
-const renderer = createFrameRenderer(mod);   // from @flare-engine/render
+const renderer = createFrameRenderer(mod); // backend-neutral body from @flare-engine/render
 renderer.beginFrame(width, height, time);
-// … draw sprites …
+// … draw sprites via renderer.drawAtlas(image, commands) …
 const pic = renderer.endFrame();
-// replay pic onto a CK surface via drawPicture
+// replay `pic` onto a CanvasKit surface via drawPicture
 ```
 
 ### `@flare-engine/engine` (< 2KB gzip)
@@ -389,17 +396,17 @@ React error boundary + structured crash payloads for the OSS launch reliability 
 
 | API                                                       | Description                                                                                                                                                                   |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CrashPayload`                                            | `{ name, message, stack?, timestamp, context? }`. Stable shape for transports and bug reporters.                                                                              |
-| `createCrashPayload(err, context?)`                       | Normalizes any thrown value (`Error`, string, unknown) into a `CrashPayload`. Attaches optional `context` record for scene/level/user metadata.                               |
-| `CrashTransport`                                          | `{ send(payload): void \| Promise<void> }`. Pluggable sink — Sentry, console, HTTP, etc.                                                                                      |
-| `createNoopTransport()` / `createConsoleTransport(tag?)`  | Built-in transports for dev and tests.                                                                                                                                        |
+| `CrashPayload`                                            | `{ message, name, stack: string \| null, timestamp, context: Record<string, unknown> }`. Stable, JSON-safe shape for transports and bug reporters (`stack`/`context` are always present — `stack` is `null` when unavailable, `context` defaults to `{}`).                          |
+| `createCrashPayload(err, context?)`                       | Normalizes any thrown value (`Error`, string, unknown) into a `CrashPayload`. Merges the optional `context` record for scene/level/user metadata.                             |
+| `CrashTransport`                                          | `{ report(payload): void \| Promise<void> }`. Pluggable sink — Sentry, console, HTTP, etc.                                                                                    |
+| `createNoopTransport()` / `createConsoleTransport()`      | Built-in transports for dev and tests (neither takes arguments).                                                                                                              |
 | `createSentryTransport({ dsn?, environment?, release?, sampleRate?, enabled? })` | Lazy-loaded `@sentry/react-native` transport. Returns noop if `dsn` is missing or `enabled === false`. Imports the SDK on first capture; degrades to noop on import failure. `@sentry/react-native` is an **optional peer dependency** — never bundled. |
-| `composeTransports(...transports)`                        | Fan-out helper. Returns a `CrashTransport` whose `send` calls every child sequentially; per-child failure is caught + logged but never aborts the chain. Empty input → valid noop transport. |
-| `ErrorBoundary`                                           | React class component. Props: `fallback: (err, reset) => ReactNode`, `onError?(payload)`, `transport?`, `context?`. Catches render-time errors, forwards to transport, renders fallback with a `reset()` that clears state. |
+| `composeTransports(...transports)`                        | Fan-out helper. Returns a `CrashTransport` whose `report` calls every child sequentially; per-child failure is caught + logged but never aborts the chain. Empty input → valid noop transport. |
+| `ErrorBoundary`                                           | React class component. Props: `fallback: (payload: CrashPayload, reset: () => void) => ReactNode`, `onError?(error: unknown, payload: CrashPayload)`, `transport?: CrashTransport`, `context?: Record<string, unknown>`. Catches render-time errors, calls `transport?.report(payload)`, renders fallback with a `reset()` that clears state. |
 
 **Implementation notes:**
 
-- React is a **peer dependency** — package declares `react >= 19` and lists it as `external` in `tsup.config.ts`.
+- React is a **peer dependency** — the package declares `react >= 19`; it is never bundled (peer deps are externalized by the `tsdown` build).
 - Component is a class (required for `componentDidCatch` / `getDerivedStateFromError`). All other exports are plain functions.
 - Tests instantiate the class directly and stub `setState`; no DOM/JSDOM required.
 
@@ -411,9 +418,9 @@ Deterministic test helpers for ECS games. Pure dev-time package — never bundle
 
 | API                                                  | Description                                                                                                                                                                                   |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createFakeClock()`                                  | Deterministic `requestFrame` / `cancelFrame` replacement. `advance(ms)` fires pending callbacks in order. `reset()` clears queued frames and elapsed time.                                    |
+| `createFakeClock()`                                  | Deterministic `requestFrame` / `cancelFrame` replacement. `advance(seconds)` advances time by **seconds** and fires every pending callback once (throws on negative input). `reset()` clears queued frames and elapsed time.                                    |
 | `createTestWorld(opts?)`                             | Wires a `World` + `GameLoop` + fake clock together. Options: `{ fixedDt?, maxDt? }`. Returns `{ world, loop, clock, step(dt), stepFrames(n, dt) }` — call `step` / `stepFrames` in tests instead of `loop.start()`. |
-| `MockInputManager`                                   | Extends `@flare-engine/input` `InputManager` with `press(id, x, y)`, `move(id, x, y)`, `release(id)`, `tap(x, y)` for scripted pointer sequences. No native bridges.                           |
+| `MockInputManager` / `createMockInputManager()`      | Extends `@flare-engine/input` `InputManager` with `press(x, y, id = 0)`, `move(x, y, id = 0)`, `release(x, y, id = 0)`, `tap(x, y, id = 0)` (press→release) for scripted pointer sequences. `createMockInputManager()` is the factory. No native bridges.        |
 | `serializeScene(world, components)`                  | Snapshots every entity's matching component data into a stable JSON-ish object. Stable key order enables diffing.                                                                             |
 | `snapshotsEqual(a, b)`                               | Deep equality for two scene snapshots. Useful for regression tests that record a known-good state.                                                                                            |
 | `createBenchSession(opts?)` | `opts: { seed?: number }` (default seed = 1). Saves `Math.random`, installs a `SeededRNG(seed)`-backed replacement. Returns `BenchSession { rng, setFlag, getFlag, done, whenDone, end }`. `done()` resolves `whenDone` (idempotent — second call is a no-op, never rejects). `end()` restores `Math.random` (idempotent). Flags stored in a plain `Record<string, boolean>`; `getFlag` returns `false` if unset. **Do not nest sessions.** |
@@ -421,7 +428,7 @@ Deterministic test helpers for ECS games. Pure dev-time package — never bundle
 
 **Implementation notes:**
 
-- Depends on `@flare-engine/core`, `@flare-engine/ecs`, `@flare-engine/input`, `@flare-engine/math` (all `workspace:*`, all `external` in tsup).
+- Depends on `@flare-engine/core`, `@flare-engine/ecs`, `@flare-engine/input`, `@flare-engine/math` (all `workspace:*`, all externalized by the build — never inlined).
 - `createFakeClock` returns functions compatible with `GameLoop`'s `tick` / `cancelTick` hooks — no monkey-patching required.
 - Reverse usage: `@flare-engine/core` tests may import from `@flare-engine/testing` as a dev-only consumer (turbo's package graph remains acyclic — testing → core runtime, core → testing devDep).
 - `createBenchSession` is the backbone for deterministic bench scenarios and the planned PT agent-QA epic (Tier-1 headless `GameSnapshot` + critic workflow).
@@ -613,7 +620,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ### `@flare-engine/a11y` (< 2KB raw, light)
 
-**Responsibility.** Central accessibility state. Consumed by `animation`, `postfx`, and `ui` to dampen or neutralize motion/contrast/scale per user preference. Full screen-reader pass deferred to 0.3.0.
+**Responsibility.** Central accessibility state. Consumed by `animation`, `postfx`, and `ui` to dampen or neutralize motion/contrast/scale per user preference. Full screen-reader pass deferred post-launch.
 
 | API | Description |
 | --- | --- |
@@ -691,7 +698,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 ### `@flare-engine/devtools` (< 8KB gzip, tree-shaken in prod)
 
-**Responsibility.** 0.1.0 partial slice per build-plan §11.10: entity inspector, time scrub, pause/step. Web surface is a floating panel; native surface is a minimal HUD overlay. Zero overhead when the provider is not mounted — mirrors the tree-shake pattern from `@flare-engine/debug`. Full devtools parity (network inspector, profiler flamegraph, asset inspector) deferred to 0.2.0.
+**Responsibility.** 0.1.0 partial slice per build-plan §11.10: entity inspector, time scrub, pause/step. Web surface is a floating panel; native surface is a minimal HUD overlay. Zero overhead when the provider is not mounted — mirrors the tree-shake pattern from `@flare-engine/debug`. Full devtools parity (network inspector, profiler flamegraph, asset inspector) deferred post-launch.
 
 | API | Description |
 | --- | --- |
@@ -707,10 +714,10 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 **Implementation notes:**
 
-- Peer deps: `react`, `react-native`. Hard deps: `@flare-engine/events`, `@flare-engine/ecs`, `@flare-engine/core`, `@flare-engine/react`.
+- Peer deps: `react` (`>=19`), `react-native` (`>=0.79`). Hard deps: `@flare-engine/core`, `@flare-engine/ecs` only.
 - Tree-shaken via `__DEV__` guard in the package entry so production bundles drop the whole module when providers aren't mounted.
 - Ring buffer pre-allocates snapshot objects at construction and reuses them in place — no per-frame allocation.
-- Snapshot source is pluggable: defaults to `World.serialize()` if available, falls back to user callback. API may firm up in 0.2.0.
+- Snapshot source is pluggable: defaults to `World.serialize()` if available, falls back to user callback. API may firm up post-launch.
 - Tests: logic unit tests (ring buffer wrap/rewind, snapshot diff), plus one React Testing Library smoke test on `DevtoolsPanel`.
 - `isDevMode` uses `declare const __DEV__: boolean | undefined` so TypeScript accepts the global without `@ts-ignore`. The `declare` is file-scoped (not ambient-global) — callers on other runtimes (Vite, Jest) set `globalThis.__DEV__` instead.
 
@@ -780,7 +787,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 | `canAccessContent(spec, entitlements)` | Pure boolean gate. Returns `true` when `spec.requiresEntitlement` is absent or `entitlements.isEntitled(spec.requiresEntitlement)` resolves true. |
 | `ProductCatalog` / `CatalogEntry` / `EntitlementKey` | Catalog binding: each `CatalogEntry` is `{ productId, entitlements: EntitlementKey[] }`. The catalog is a `Map<ProductId, CatalogEntry>` returned from `createProductCatalog(entries)`. |
 | `createProductCatalog(entries)` / `getCatalogEntry(catalog, id)` / `getGrantsForProduct(catalog, id)` | Pure helpers. `getGrantsForProduct` returns the entitlement-key list a successful purchase would grant. |
-| `EntitlementStore` / `createEntitlementStore(opts?)` | Reactive set of granted `EntitlementKey`s with `grant(key)`, `grantProduct(catalog, productId)`, `revoke(key)`, `isEntitled(key)`, `list()`, and an `onChange: Signal<EntitlementKey[]>`. `EntitlementStoreOptions` accepts an `initial` snapshot for hydration from save. |
+| `EntitlementStore` / `createEntitlementStore(catalog, options?)` | Reactive set of granted `EntitlementKey`s bound to a `ProductCatalog` at construction. Methods: `isEntitled(key)` (zero-alloc hot path), `grant(key)`, `grantProduct(productId)` (grants every key the catalog maps to `productId`; unknown products are ignored), `revoke(key)`, `snapshot()` → a fresh sorted `readonly EntitlementKey[]`, `restoreOnBoot(provider)` → `Promise<void>` (calls `provider.restore()` and grants purchased results), `attachProvider(provider)` → `Unsubscribe` (auto-grants streamed transactions). `onChange: Signal<void>` fires on grant/revoke. `EntitlementStoreOptions` = `{ initial?: readonly EntitlementKey[] }` for hydration from save. |
 
 **Implementation notes:**
 
@@ -883,6 +890,31 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
+## Layer 2: Shapes (procedural primitives)
+
+### `@flare-engine/shapes` (< 4KB gzip)
+
+Procedural 2D shape primitives for Skia — a `ShapeSpec` vocabulary of 12 named atomic shapes plus an SVG `path` escape hatch, composable for shape-first game prototyping (compose ships / enemies / pickups from primitives, swap in sprite art once mechanics lock). Zero runtime deps; `@shopify/react-native-skia` is an **optional, type-only peer** (`import type` only — never in the runtime bundle), so the package also runs on web/CanvasKit where the injected `Skia` handle is CanvasKit's.
+
+| API | Description |
+| --- | --- |
+| `ShapeSpec` (union) | Discriminated on `kind`: `circle`, `rect`, `triangle`, `ngon`, `star`, `ring`, `polyline`, `gradient-rect`, `arc`, `annulus`, `trapezoid`, `path`, `ship`. Every member extends `BaseSpec` = `{ fill?, stroke?, strokeWidth?, ox?, oy?, rot?, glow? }` — colors are 32-bit ARGB ints, `ox`/`oy` are local offsets, `rot` is local radians, and `glow` is `'friendly'` (safe-green rim) or `'hazard'` (orange double-stroke). |
+| `PathSpec` | `{ kind: 'path', d: string, boundsR: number }` — `d` is an SVG path-data string parsed by `Skia.Path.MakeFromSVGString` (Figma / Inkscape syntax). A malformed `d` is silently skipped (no throw). `boundsR` is the required bounding-radius hint for atlas tile sizing. |
+| `ShipSpec` / `SquareSpec` | Composite: `{ kind: 'ship', hull: ShapeSpec, weapons: readonly RectSpec[], engine: SquareSpec }`. `SquareSpec` (`{ kind: 'square', size }`) is used **only** as `ShipSpec.engine`, not as a flat `ShapeSpec` member. (Generalizing the `ship`/`hull` vocabulary to a genre-neutral surface is a post-launch API item, not a docs edit.) |
+| `drawShape(Skia, canvas, paint, spec, x, y, rot)` | Dispatcher. Draws `spec` at `(x + spec.ox, y + spec.oy)` rotated by `rot + spec.rot`, reusing the caller-owned `paint`; emits the glow ring (when `spec.glow` is set) behind the body. Allocation-free per call except where Skia itself allocates path objects. |
+| `argbTo(out: Float32Array, argb: number)` | Unpacks a 32-bit ARGB int into a length-4 `Float32Array` `[r, g, b, a]` (0–1) for Skia paints — zero-alloc into the caller's buffer. |
+| `friendlyGlowArgb()` / `hazardGlowArgb()` | The two glow ARGB constants (`#6FA66B` @ α≈0.25; `#E84B2A` @ α≈0.6). |
+| `applyFriendlyGlow(Skia, canvas, paint, cx, cy, r)` / `applyHazardGlow(…)` | Draw the glow rings directly — used internally by `drawShape`, exported for custom compositing. |
+| `singleShapeRadius(spec)` / `shapeBoundsRadius(specs)` | Bounding-radius helpers — `singleShapeRadius` for one spec (glow sizing + atlas tiles), `shapeBoundsRadius` for the max over a `readonly ShapeSpec[]` composite. |
+
+**Implementation notes:**
+
+- Pure data + free functions — no classes. A `ShapeSpec` is a plain object; `drawShape` is the only Skia-touching entry point and receives the `Skia` module + `canvas` + `paint` by injection.
+- Adding a new named primitive touches four places by design: the `ShapeSpec` union, a `draw.ts` branch, a `bounds.ts` branch, and tests. Arbitrary one-off shapes need no new primitive — use `{ kind: 'path', d, boundsR }`.
+- No atlas / packing export — the package draws immediately; atlas tile sizing is left to the consumer via the bounds helpers.
+
+---
+
 ## Layer 2: Simulation (continuous-time dynamics)
 
 ### `@flare-engine/simulation`
@@ -974,5 +1006,5 @@ Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weig
 - `createDropTable` closes over a single `weightAt` accessor (not re-allocated per roll) and a `currentIsAllowed` binding (reassigned before each `weightedIndexBy` call). Biome `biome-ignore lint/style/noVar` comment guards the hoisted var.
 - `resolveTier` / `resolveTierIndex` scan all entries to find the largest satisfied `at` — O(n), no sort required, stable for small tiers (≤10 typical).
 - `CollectibleRegistry` is a persistent (copy-on-write) data structure. Each `unlock` call returns a fresh object; the input is never mutated.
-- Not barrelled into `@flare-engine/engine` (curated, matches XP6/XP7). Initial 0.2.0 lockstep release, publish owner-gated.
+- Not barrelled into `@flare-engine/engine` (curated, matches XP6/XP7). Publish owner-gated.
 

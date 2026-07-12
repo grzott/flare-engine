@@ -1,6 +1,6 @@
 # @flare-engine/math
 
-2D math primitives for the Flare engine — `Vec2`, `Rect`, `Circle`, `Transform2D`, `Mat3`, `Color`, 32 easing functions, seeded RNG, intersection tests, angle/steering helpers (`angleDelta`, `rotateTowards`, `Vec2.turnVelocityToward`), weighted random picks (`weightedIndex`, `weightedIndexBy`, `weightedPick`), deterministic hash utils (`hashU32`, `seededIndex`), and timed-window reward math (`cappedBonus`, `advanceWindowedStreak`, `windowExpired`, `remainingInWindow`). Plain-object types with static method namespaces; zero-alloc forms take an `out` parameter to avoid GC pressure in game loops.
+2D math primitives for the Flare engine — `Vec2`, `Rect`, `Circle`, `Transform2D`, `Mat3`, `Color`, 35 easing functions, seeded RNG, intersection tests, angle/steering helpers (`angleDelta`, `rotateTowards`, `Vec2.turnVelocityToward`), weighted random picks (`weightedIndex`, `weightedIndexBy`, `weightedPick`), deterministic hash utils (`hashU32`, `seededIndex`), and timed-window reward math (`cappedBonus`, `advanceWindowedStreak`, `windowExpired`, `remainingInWindow`). Plain-object types with static method namespaces; zero-alloc forms take an `out` parameter to avoid GC pressure in game loops.
 
 ## Install
 

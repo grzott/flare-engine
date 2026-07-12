@@ -1,4 +1,4 @@
-// 42 easing functions — all (t: number) => number, t in [0,1]
+// Easing functions — all (t: number) => number, t in [0,1]
 // Robert Penner easings + spring, bounce, elastic variants.
 // Tree-shakeable named exports.
 

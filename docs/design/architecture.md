@@ -1,6 +1,6 @@
 # Flare Engine — Architecture Reference
 
-> Last updated: 2026-07-01
+> Last updated: 2026-07-12
 
 ---
 
@@ -8,7 +8,7 @@
 
 Flare is a modular, TypeScript-first 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
 
-The original 16-package core (Layers 0–4) was completed in Phases 1–6. Phase 11 (OSS launch prep) added Layers 2.5 and 3.5 plus tooling and Tier-2 stubs (14 packages + 4 stubs). Post-11.14 extraction work added the `@flare-engine/iap-revenuecat` adapter (concrete RevenueCat `IAPProvider`) and the `@flare-engine/ui-shop` reusable shop UI, bringing the shipping surface to 36 packages. Subsequent additions (`haptics`, `devtools`, `render-web`), XP6's `@flare-engine/simulation` (n-body, Verlet integrators, wave-packet pool), and XP8's `@flare-engine/progression` (upgrade tracks, drop tables, unlock DAG) bring the in-repo total to 41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`). The 0.2.0 lockstep cut published all 40 scoped packages at 0.2.0 (owner-gated).
+The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`). The repository now holds **41 package dirs — 40 scoped `@flare-engine/*` plus `create-flare-app`**. Dependency edges flow strictly downward; lower layers never import from higher ones.
 
 ---
 
@@ -29,9 +29,10 @@ graph TD
     subgraph "Layer 2 — Systems"
         RENDER["@flare-engine/render<br/>SpriteBatch, Camera2D, SpriteFont, Effects"]
         INPUT["@flare-engine/input<br/>Pointer, VirtualJoystick, Gestures"]
-        PHYSICS["@flare-engine/physics<br/>AABB, planck.js, SpatialIndex"]
+        PHYSICS["@flare-engine/physics<br/>AABB, SpatialIndex, raycast"]
         AUDIO["@flare-engine/audio<br/>SFXPool, Music, Channels"]
         ASSETS["@flare-engine/assets<br/>Loader, SpriteSheet, TilemapData"]
+        SHAPES["@flare-engine/shapes<br/>ShapeSpec primitives, drawShape"]
         SIMULATION["@flare-engine/simulation<br/>NBody, Verlet/Leapfrog, RipplePool"]
         PROGRESSION["@flare-engine/progression<br/>UpgradeTrack, DropTable, UnlockDag"]
     end
@@ -91,7 +92,7 @@ graph TD
 
 | Package                | Purpose                                                                  | Size target | Deps |
 | ---------------------- | ------------------------------------------------------------------------ | ----------- | ---- |
-| `@flare-engine/math`   | Vec2, Rect, Circle, Transform2D, Mat3, 42 easings, random, intersections | < 5KB       | 0    |
+| `@flare-engine/math`   | Vec2, Rect, Circle, Transform2D, Mat3, 35 easings, random, intersections | < 5KB       | 0    |
 | `@flare-engine/events` | EventEmitter\<EventMap\>, Signal\<T\>                                    | < 1KB       | 0    |
 
 ### Layer 1 — Core Runtime
@@ -107,9 +108,10 @@ graph TD
 | ----------------------- | --------------------------------------------------------------------------------------- | ------------ | ---------------------- |
 | `@flare-engine/render`  | Skia Atlas SpriteBatch, Camera2D, DrawOrder, SpriteEffects, SpriteFont                  | < 10KB       | react-native-skia      |
 | `@flare-engine/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | gesture-handler        |
-| `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (rbush), planck.js integration, raycast               | < 4KB (AABB) | planck.js optional     |
+| `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (uniform grid), raycast                                | < 4KB        | —                      |
 | `@flare-engine/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |
 | `@flare-engine/assets`  | AssetManager, SpriteSheet parser (TexturePacker, Aseprite), loaders, progress           | < 6KB        | —                      |
+| `@flare-engine/shapes`  | 12 shape primitives (circle/rect/ngon/star/arc/annulus/trapezoid/…) + `ship` composite + SVG `path` escape hatch; `drawShape` Skia dispatcher, glow rings, ARGB helpers | < 4KB | react-native-skia (type-only) |
 | `@flare-engine/simulation` | N-body gravity (Plummer softening), velocity-Verlet / leapfrog integrators, wave-packet ripple pool | < 5KB | 0 |
 | `@flare-engine/progression` | Meta-progression primitives: geometric upgrade tracks, pity-aware weighted drop tables, prerequisite unlock DAG, tier resolution, collectible registry | < 5KB | math |
 
@@ -118,7 +120,7 @@ graph TD
 | Package                   | Purpose                                                                                  | Size target |
 | ------------------------- | ---------------------------------------------------------------------------------------- | ----------- |
 | `@flare-engine/scene`     | Scene lifecycle, SceneManager (stack, transitions: fade/slide)                           | < 4KB       |
-| `@flare-engine/animation` | SpriteAnimator (tick-based), Tween (42 easings), Spring, Timeline                        | < 5KB       |
+| `@flare-engine/animation` | SpriteAnimator (tick-based), Tween (35 easings) + TweenManager, Spring, step sequences   | < 5KB       |
 | `@flare-engine/particles` | Emitters, object-pooled, immediate-mode Skia rendering                                   | < 4KB       |
 | `@flare-engine/tilemap`   | Tiled .tmj parser, LDtk parser, viewport culling, collision extraction                   | < 8KB       |
 | `@flare-engine/debug`     | FPS/entity/draw-call overlay, collision bounds, time controls. Tree-shaken via `__DEV__` | < 3KB       |
@@ -179,7 +181,7 @@ Two modes:
 | Scene-scoped ECS Worlds                                   | Clean memory on scene switch, no entity leaks    |
 | Coroutines via generators                                 | Eliminates callback hell for game sequences      |
 | `__DEV__` guards for debug code                           | Tree-shaken in production                        |
-| Peer deps for Skia, gesture-handler, planck.js, audio-api | User controls versions; engine stays thin        |
+| Peer deps for Skia, gesture-handler, audio-api            | User controls versions; engine stays thin        |
 
 ---
 
@@ -190,7 +192,7 @@ Two modes:
 | Screen scaling (FIT/FILL/STRETCH)      | core          | Must-have   | ~200         |
 | Coroutines (generator-based)           | core          | Must-have   | ~150         |
 | Object pooling                         | core          | Must-have   | ~80          |
-| Spatial partitioning (rbush)           | physics       | Must-have   | ~100         |
+| Spatial partitioning (SpatialIndex)    | physics       | Must-have   | ~100         |
 | Debug overlay                          | debug (new)   | Should-have | ~300         |
 | SpriteEffects (tint, flash, grayscale) | render        | Should-have | ~150         |
 | SpriteFont (BMFont)                    | render        | Should-have | ~300         |
@@ -213,13 +215,13 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 | `@flare-engine/localization` | String tables, ICU plurals, locale resolution                               |
 | `@flare-engine/deep-links`   | URL → scene router + history API + `Linking` integration                    |
 | `@flare-engine/share`        | `captureScreenshot()` + Web Share API + `expo-sharing` fallback             |
-| `@flare-engine/a11y`         | Reduced-motion + contrast tokens (screen-reader coverage in 0.3.0)          |
+| `@flare-engine/a11y`         | Reduced-motion + contrast tokens (full screen-reader coverage post-launch)  |
 
 ### Layer 3 — Genre packages
 
 | Package                     | Purpose                                      |
 | --------------------------- | -------------------------------------------- |
-| `@flare-engine/pathfinding` | A\* grid pathfinding + JPS + flow fields     |
+| `@flare-engine/pathfinding` | A\* grid pathfinding + JPS + navmesh         |
 | `@flare-engine/dialogue`    | Branching dialogue graph + runtime evaluator |
 
 ### Layer 3.5 — UI & post-processing
@@ -234,18 +236,35 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 | Package                  | Purpose                                                                                       |
 | ------------------------ | --------------------------------------------------------------------------------------------- |
 | `@flare-engine/cli`      | `flare pack-atlas`, `flare tiled-to-flare`, `flare new` (sharp + maxrects-packer + commander) |
-| `@flare-engine/devtools` | Entity inspector + time scrub + pause/step (0.1.0 partial; full panel in 0.2.0)               |
+| `@flare-engine/devtools` | Entity inspector + time scrub + pause/step (partial slice; full panel post-launch)            |
 | `create-flare-app`       | `npm create flare-app@latest` — blank / topdown / shmup templates                             |
 
 ### Tier-2 stubs (interface-only at 0.1.0)
 
-`@flare-engine/leaderboards` · `@flare-engine/achievements` · `@flare-engine/iap` · `@flare-engine/analytics` — each exports a typed interface plus a `NoopProvider`. For `leaderboards` / `achievements` / `analytics` the concrete platform adapters remain **deferred past 0.2.0** — these three ship as interface-only stubs in the 0.2.0 cut (`iap` additionally ships `ProductCatalog` + `EntitlementStore` + content gates, with the concrete RevenueCat adapter in `@flare-engine/iap-revenuecat`).
+`@flare-engine/leaderboards` · `@flare-engine/achievements` · `@flare-engine/iap` · `@flare-engine/analytics` — each exports a typed interface plus a `NoopProvider`. For `leaderboards` / `achievements` / `analytics` the concrete platform adapters (Game Center, Play Games, PostHog, …) remain **deferred post-launch** — these three ship as interface + `NoopProvider` + in-memory/dev provider for now (`iap` additionally ships `ProductCatalog` + `EntitlementStore` + content gates, with the concrete RevenueCat adapter in `@flare-engine/iap-revenuecat`).
 
 ### Device-feedback interface
 
 | Package                  | Purpose                                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------------------------ |
 | `@flare-engine/haptics`  | Typed `HapticsProvider` interface + `NoopHapticsProvider` + React context (`HapticsContext` / `useHaptics`). React peer dep; no bundled native binding. |
+
+---
+
+## Post-launch roadmap
+
+Capabilities that appear in older design sketches but are **not shipping** in the launch surface. They are recorded here so the module docs above can stay honest about what exists today.
+
+| Capability | Home package | Status |
+| ---------- | ------------ | ------ |
+| planck.js rigid-body physics (`PhysicsWorld`, `RigidBody`, `applyForce` / `applyImpulse`) | `physics` (Tier 2) | Not implemented. AABB `CollisionWorld` is the shipping collision model; planck integration is revisited only if AABB proves insufficient. There is no `planck.js` dependency or peer dependency today. |
+| Spatial-hash / rbush broadphase | `physics` | The shipping `SpatialIndex` is a hand-rolled uniform grid suited to < ~1000 dynamic entities. A grid/rbush broadphase upgrade for larger scenes is future work. |
+| Flow-field pathfinding | `pathfinding` | A\* + Jump-Point Search + a convex-polygon navmesh ship today; flow fields are not implemented. |
+
+**Positioning notes**
+
+- **Networking is deliberately out of scope.** Flare is a client-side 2D engine; multiplayer transport, netcode, and rollback are non-goals — consumers bring their own networking layer.
+- **The API convention is factories returning plain objects.** New public API is factory-shaped (`createX(…)` + free functions over plain-object state, with zero-alloc `out`-param forms on hot paths). The Layer-3-era classes (`ParticleEmitter`, `ErrorBoundary`, and a few others) are grandfathered, not a pattern to extend — the class-vs-factory question is settled in favor of factories, decided before the public API freezes.
 
 ---
 
@@ -258,7 +277,7 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 | Lint + Format | **Biome**                             | ESLint + Prettier       | Single Rust binary, ~100× faster, lint + format in one tool  |
 | Commits       | **Conventional Commits** (commitlint) | No enforcement          | Clean changelogs, semantic-versioning automation             |
 | Versioning    | **Changesets** (SemVer)               | semantic-release        | Manual control over coordinated multi-package releases       |
-| Build         | **tsup**                              | Bun bundler, rollup     | Mature dual CJS+ESM, `.d.ts`. Re-evaluate Bun bundler later. |
+| Build         | **tsdown**                            | tsup, Bun bundler       | Rolldown-based; dual CJS+ESM + `.d.ts`. Replaced tsup in the C4 toolchain migration. |
 | Testing       | **Bun test**                          | Vitest                  | Zero-config, fast, built into runtime. Enough for pure TS.   |
 | CI            | **GitHub Actions**                    | —                       | Standard, free for OSS                                       |
 | Git hooks     | **Husky** + lint-staged               | simple-git-hooks        | Ecosystem standard, reliable                                 |

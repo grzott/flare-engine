@@ -1,19 +1,27 @@
 #!/usr/bin/env bun
 /**
- * Copy the root LICENSE into every publishable packages/*\/ so that every
- * tarball built by tsup contains the MIT text. The root is the single source
- * of truth — package-level LICENSE files are overwritten on every run.
+ * Copy the root LICENSE and NOTICE into every publishable packages/*\/ so that
+ * every tarball built by tsup contains the Apache-2.0 text plus the NOTICE that
+ * Apache-2.0 §4(d) requires each redistribution to carry. The root files are the
+ * single source of truth — package-level copies are overwritten on every run, so
+ * a newly-added package (and any edit to the root files) stays consistent.
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const licensePath = join(root, 'LICENSE');
-if (!existsSync(licensePath)) {
-  console.error('[propagate-license] root LICENSE not found');
-  process.exit(1);
-}
-const license = readFileSync(licensePath);
+
+const readRoot = (file: string): Buffer => {
+  const path = join(root, file);
+  if (!existsSync(path)) {
+    console.error(`[propagate-license] root ${file} not found`);
+    process.exit(1);
+  }
+  return readFileSync(path);
+};
+
+const license = readRoot('LICENSE');
+const notice = readRoot('NOTICE');
 
 const packagesDir = join(root, 'packages');
 if (!existsSync(packagesDir)) {
@@ -27,7 +35,8 @@ for (const name of readdirSync(packagesDir)) {
   if (!statSync(dir).isDirectory()) continue;
   if (!existsSync(join(dir, 'package.json'))) continue;
   writeFileSync(join(dir, 'LICENSE'), license);
+  writeFileSync(join(dir, 'NOTICE'), notice);
   copied++;
 }
 
-console.log(`[propagate-license] wrote LICENSE to ${copied} package(s)`);
+console.log(`[propagate-license] wrote LICENSE + NOTICE to ${copied} package(s)`);

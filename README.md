@@ -2,7 +2,7 @@
 
 > Modular 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on Skia
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](./tsconfig.base.json)
 
 **Flare** is a modular 2D engine that runs the same TypeScript on iOS, Android, and the browser — for high-performance animation, gamification, interactive UI, and games. Zero-alloc hot paths, hybrid ECS, GPU sprite batching, and a device-verified end-to-end loop, all under the `@flare-engine/*` npm scope. It lives inside your React Native and web apps — not a Unity/Godot/Unreal competitor.
@@ -155,4 +155,6 @@ Tooling rationale: see the Tooling section of [docs/design/architecture.md](docs
 
 ## License
 
-[MIT](./LICENSE)
+[Apache-2.0](./LICENSE)
+
+Published versions `0.1.0`–`0.2.1` were released under MIT and remain MIT on npm; `0.3.0` and later are Apache-2.0.

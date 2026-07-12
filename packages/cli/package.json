@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "Flare engine CLI — pack-atlas, tiled-to-flare, new app scaffolder",
   "keywords": ["flare-engine", "cli", "atlas", "tiled", "sprite-sheet", "scaffold"],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",
   "bugs": {
@@ -32,7 +32,7 @@
   "bin": {
     "flare": "dist/bin.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "README.md", "LICENSE", "NOTICE"],
   "scripts": {
     "build": "tsdown",
     "test": "bun test",

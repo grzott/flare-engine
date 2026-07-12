@@ -125,4 +125,4 @@ Two visual halos for free, set `glow: 'friendly' | 'hazard'` on any primitive:
 
 ## License
 
-MIT
+Apache-2.0

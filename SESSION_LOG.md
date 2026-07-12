@@ -9300,3 +9300,193 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 252 — 2026-07-12 (scope: engine)
+
+**Goal:** OSS-E1 governance files + OSS-E2 Apache-2.0 relicense
+
+**Touched files**
+- `.github/FUNDING.yml`
+- `.github/ISSUE_TEMPLATE/`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+- `CODE_OF_CONDUCT.md`
+- `CONTRIBUTING.md`
+- `LICENSE`
+- `NOTICE`
+- `README.md`
+- `SECURITY.md`
+- `TRADEMARK.md`
+- `benchmarks/package.json`
+- `docs/plans/road-to-oss-2026-09.md`
+- `package.json`
+- `packages/a11y/LICENSE`
+- `packages/a11y/NOTICE`
+- `packages/a11y/README.md`
+- `packages/a11y/package.json`
+- `packages/achievements/LICENSE`
+- `packages/achievements/NOTICE`
+- `packages/achievements/package.json`
+- `packages/analytics/LICENSE`
+- `packages/analytics/NOTICE`
+- `packages/analytics/package.json`
+- `packages/animation/LICENSE`
+- `packages/animation/NOTICE`
+- `packages/animation/README.md`
+- `packages/animation/package.json`
+- `packages/assets/LICENSE`
+- `packages/assets/NOTICE`
+- `packages/assets/README.md`
+- `packages/assets/package.json`
+- `packages/audio/LICENSE`
+- `packages/audio/NOTICE`
+- `packages/audio/README.md`
+- `packages/audio/package.json`
+- `packages/cli/LICENSE`
+- `packages/cli/NOTICE`
+- `packages/cli/README.md`
+- `packages/cli/package.json`
+- `packages/core/LICENSE`
+- `packages/core/NOTICE`
+- `packages/core/README.md`
+- `packages/core/package.json`
+- `packages/create-flare-app/LICENSE`
+- `packages/create-flare-app/NOTICE`
+- `packages/create-flare-app/README.md`
+- `packages/create-flare-app/package.json`
+- `packages/debug/LICENSE`
+- `packages/debug/NOTICE`
+- `packages/debug/README.md`
+- `packages/debug/package.json`
+- `packages/deep-links/LICENSE`
+- `packages/deep-links/NOTICE`
+- `packages/deep-links/README.md`
+- `packages/deep-links/package.json`
+- `packages/devtools/LICENSE`
+- `packages/devtools/NOTICE`
+- `packages/devtools/README.md`
+- `packages/devtools/package.json`
+- `packages/dialogue/LICENSE`
+- `packages/dialogue/NOTICE`
+- `packages/dialogue/README.md`
+- `packages/dialogue/package.json`
+- `packages/ecs/LICENSE`
+- `packages/ecs/NOTICE`
+- `packages/ecs/README.md`
+- `packages/ecs/package.json`
+- `packages/engine/LICENSE`
+- `packages/engine/NOTICE`
+- `packages/engine/README.md`
+- `packages/engine/package.json`
+- `packages/errors/LICENSE`
+- `packages/errors/NOTICE`
+- `packages/errors/README.md`
+- `packages/errors/package.json`
+- `packages/events/LICENSE`
+- `packages/events/NOTICE`
+- `packages/events/README.md`
+- `packages/events/package.json`
+- `packages/haptics/LICENSE`
+- `packages/haptics/NOTICE`
+- `packages/haptics/package.json`
+- `packages/iap-revenuecat/LICENSE`
+- `packages/iap-revenuecat/NOTICE`
+- `packages/iap-revenuecat/package.json`
+- `packages/iap/LICENSE`
+- `packages/iap/NOTICE`
+- `packages/iap/README.md`
+- `packages/iap/package.json`
+- `packages/input/LICENSE`
+- `packages/input/NOTICE`
+- `packages/input/README.md`
+- `packages/input/package.json`
+- `packages/leaderboards/LICENSE`
+- `packages/leaderboards/NOTICE`
+- `packages/leaderboards/package.json`
+- `packages/localization/LICENSE`
+- `packages/localization/NOTICE`
+- `packages/localization/README.md`
+- `packages/localization/package.json`
+- `packages/math/LICENSE`
+- `packages/math/NOTICE`
+- `packages/math/README.md`
+- `packages/math/package.json`
+- `packages/particles/LICENSE`
+- `packages/particles/NOTICE`
+- `packages/particles/README.md`
+- `packages/particles/package.json`
+- `packages/pathfinding/LICENSE`
+- `packages/pathfinding/NOTICE`
+- `packages/pathfinding/README.md`
+- `packages/pathfinding/package.json`
+- `packages/physics/LICENSE`
+- `packages/physics/NOTICE`
+- `packages/physics/README.md`
+- `packages/physics/package.json`
+- `packages/postfx/LICENSE`
+- `packages/postfx/NOTICE`
+- `packages/postfx/README.md`
+- `packages/postfx/package.json`
+- `packages/progression/LICENSE`
+- `packages/progression/NOTICE`
+- `packages/progression/README.md`
+- `packages/progression/package.json`
+- `packages/react/LICENSE`
+- `packages/react/NOTICE`
+- `packages/react/README.md`
+- `packages/react/package.json`
+- `packages/render-web/LICENSE`
+- `packages/render-web/NOTICE`
+- `packages/render-web/README.md`
+- `packages/render-web/package.json`
+- `packages/render/LICENSE`
+- `packages/render/NOTICE`
+- `packages/render/README.md`
+- `packages/render/package.json`
+- `packages/scene/LICENSE`
+- `packages/scene/NOTICE`
+- `packages/scene/README.md`
+- `packages/scene/package.json`
+- `packages/shapes/LICENSE`
+- `packages/shapes/NOTICE`
+- `packages/shapes/README.md`
+- `packages/shapes/package.json`
+- `packages/share/LICENSE`
+- `packages/share/NOTICE`
+- `packages/share/README.md`
+- `packages/share/package.json`
+- `packages/simulation/LICENSE`
+- `packages/simulation/NOTICE`
+- `packages/simulation/README.md`
+- `packages/simulation/package.json`
+- `packages/storage/LICENSE`
+- `packages/storage/NOTICE`
+- `packages/storage/README.md`
+- `packages/storage/package.json`
+- `packages/testing/LICENSE`
+- `packages/testing/NOTICE`
+- `packages/testing/README.md`
+- `packages/testing/package.json`
+- `packages/tilemap/LICENSE`
+- `packages/tilemap/NOTICE`
+- `packages/tilemap/README.md`
+- `packages/tilemap/package.json`
+- `packages/ui-shop/LICENSE`
+- `packages/ui-shop/NOTICE`
+- `packages/ui-shop/package.json`
+- `packages/ui/LICENSE`
+- `packages/ui/NOTICE`
+- `packages/ui/README.md`
+- `packages/ui/package.json`
+- `scripts/propagate-license.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** deny:1 (npx tsc blocked, used bun runtime); drift:1 (scripts/propagate-license.ts — audit-surfaced NOTICE §4d propagation gap)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -4,7 +4,7 @@
   "private": true,
   "description": "One-shot scaffolder for Flare engine apps — `npm create flare-app@latest`",
   "keywords": ["flare-engine", "scaffold", "create-app", "expo", "react-native"],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",
   "bugs": {
@@ -33,7 +33,7 @@
   "bin": {
     "create-flare-app": "dist/bin.js"
   },
-  "files": ["dist", "templates", "README.md", "LICENSE"],
+  "files": ["dist", "templates", "README.md", "LICENSE", "NOTICE"],
   "scripts": {
     "build": "tsdown",
     "test": "bun test",

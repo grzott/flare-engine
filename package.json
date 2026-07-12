@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Modular 2D engine for React Native + Web — animation, gamification, interactive UI, and games, built on Skia",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",
   "bugs": {

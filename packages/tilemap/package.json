@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "Tiled/LDtk parser, culled tilemap renderer",
   "keywords": ["flare-engine", "tilemap", "tiled", "ldtk"],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",
   "bugs": {
@@ -29,7 +29,7 @@
       }
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "README.md", "LICENSE", "NOTICE"],
   "scripts": {
     "build": "tsdown",
     "test": "bun test",

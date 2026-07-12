@@ -43,4 +43,4 @@ The requirement comes from your app's *other* native dependencies, not from Flar
 
 ## License
 
-MIT
+Apache-2.0

@@ -33,4 +33,4 @@ See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-
 
 ## License
 
-MIT
+Apache-2.0

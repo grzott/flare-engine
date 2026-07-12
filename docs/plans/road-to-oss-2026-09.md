@@ -1013,6 +1013,8 @@ no-publishes rule.
 - From a clean temp dir against the verdaccio registry: `npm create flare-app@latest` (all three
   templates), install, typecheck; `bun add @flare-engine/engine` resolves the full tree with zero
   `workspace:`/`0.0.0` leaks; the C1 web-only fixture installs with no RN tree.
+- Assert every published tarball's manifest `license == "Apache-2.0"` and that `LICENSE` + `NOTICE`
+  are present in the tarball file list (E2 relicense — added 2026-07-12).
 - Feed every delta back into the runbook (F1 doc rev).
 
 **Done when:** cold scaffold + installs green from verdaccio; runbook updated with any corrections;
@@ -1030,6 +1032,9 @@ audit them, not just 0.3.0.
   lives IN the script and the `_local/` report, not in this public doc. Names absent at a given
   version are expected (only 36 packages existed at 0.1.0) — record as n/a, never as failure.
   Report per package×version.
+- Also assert each HEAD-packed tarball manifest carries `"license": "Apache-2.0"` and ships both
+  `LICENSE` and `NOTICE` (E2 relicense — added 2026-07-12). Published 0.1.0–0.2.1 tarballs stay MIT
+  by design (immutable) — record, do not flag.
 - Hits in OLD versions go to the owner for disposition before the flip (§14); the per-hit ledger
   and remediation choices live in the `_local/` report and the runbook's owner lane. HEAD hits =
   fix rows.

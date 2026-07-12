@@ -12,14 +12,12 @@ bun add @flare-engine/haptics
 
 Pick a provider at the app boundary and put it on the context. The cue surface is three semantic calls — `impact(style?)` for weapon / hit / bomb feel, `notification(type?)` for victory / error cues, and `selection()` for light UI ticks — plus an `isEnabled()` / `setEnabled(enabled)` gate. The gate keeps the user's haptics setting and the reduced-motion gate (`@flare-engine/a11y`) in one place; when disabled, cue methods are no-ops.
 
-```tsx
+```tsx no-check
 import * as Haptics from 'expo-haptics';
 import {
   createExpoHapticsProvider,
   createWebVibrationProvider,
   HapticsContext,
-  NoopHapticsProvider,
-  useHaptics,
 } from '@flare-engine/haptics';
 
 // Native: inject the expo-haptics module. Web: inject navigator.vibrate.
@@ -36,10 +34,15 @@ export function App() {
     </HapticsContext.Provider>
   );
 }
+```
+
+```tsx
+import { Button } from 'react-native';
+import { useHaptics } from '@flare-engine/haptics';
 
 function FireButton() {
   const haptics = useHaptics();
-  return <Button onPress={() => haptics.impact('heavy')} />;
+  return <Button title="Fire" onPress={() => haptics.impact('heavy')} />;
 }
 ```
 

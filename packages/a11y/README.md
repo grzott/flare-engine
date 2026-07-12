@@ -36,7 +36,7 @@ const level = wcagLevel(ratio); // 'AAA'
 const level2 = wcagLevel(ratio, true); // 'AAA' (large text)
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginea11y--2kb-raw-light).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginea11y--2kb-raw-light).
 
 ## License
 

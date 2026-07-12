@@ -16,14 +16,13 @@ import { createGrid, setWalkable, findPathJPS, octileDistance } from '@flare-eng
 const grid = createGrid({ width: 32, height: 32 });
 setWalkable(grid, 5, 5, false);
 
-const result = findPathJPS(grid, { x: 0, y: 0 }, { x: 30, y: 30 }, {
+const result = findPathJPS(grid, 0, 0, 30, 30, {
   heuristic: octileDistance,
-  diagonal: true,
 });
-if (result.found) console.log(result.cells);
+if (result !== null) console.log(result.path);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginepathfinding--8kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginepathfinding--8kb-gzip).
 
 ## License
 

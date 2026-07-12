@@ -14,11 +14,15 @@ Optional peer deps: `react`, `@sentry/react-native` (only if you wire the Sentry
 
 ```tsx
 import { ErrorBoundary, createSentryTransport, createConsoleTransport,
-         composeTransports } from '@flare-engine/errors';
+         composeTransports, type CrashPayload } from '@flare-engine/errors';
+import type { ReactNode } from 'react';
+
+declare function CrashScreen(props: { err: CrashPayload; onRetry: () => void }): ReactNode;
+declare function App(): ReactNode;
 
 const transport = composeTransports(
-  createConsoleTransport('crash'),
-  createSentryTransport({ dsn: process.env.EXPO_PUBLIC_SENTRY_DSN, enabled: true }),
+  createConsoleTransport(),
+  createSentryTransport({ dsn: 'https://xxx@o0.ingest.sentry.io/0', enabled: true }),
 );
 
 <ErrorBoundary
@@ -30,7 +34,7 @@ const transport = composeTransports(
 </ErrorBoundary>
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineerrors--2kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineerrors--2kb-raw).
 
 ## License
 

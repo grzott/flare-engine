@@ -11,10 +11,14 @@ bun add @flare-engine/share
 ## Usage
 
 ```ts
+import { Share } from 'react-native';
 import { captureScreenshot, ShareManager, createNativeShareTransport,
          createWebShareTransport, createWebClipboardTransport } from '@flare-engine/share';
+import type { CaptureSource } from '@flare-engine/share';
 
-const shot = captureScreenshot(skiaCanvasRef.current, { format: 'png' });
+declare const source: CaptureSource;
+
+const shot = captureScreenshot(source, { format: 'png' });
 
 const share = new ShareManager()
   .register(createNativeShareTransport(Share))
@@ -26,7 +30,7 @@ if (shot) {
 }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineshare--5kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineshare--5kb-raw).
 
 ## License
 

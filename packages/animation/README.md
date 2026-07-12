@@ -12,7 +12,12 @@ bun add @flare-engine/animation
 
 ```ts
 import { createSpriteAnimator, playAnimation, updateAnimator,
-         tween, updateTween, easeOutQuad } from '@flare-engine/animation';
+         tween, updateTween } from '@flare-engine/animation';
+import { easeOutQuad } from '@flare-engine/math';
+import type { SpriteSheet } from '@flare-engine/assets';
+
+declare const sheet: SpriteSheet;
+declare const dt: number;
 
 const anim = createSpriteAnimator(sheet);
 playAnimation(anim, 'walk');
@@ -22,7 +27,7 @@ const t = tween(0, 100, 0.5, easeOutQuad);
 const value = updateTween(t, dt);
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-engineanimation--5kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineanimation--5kb-gzip).
 
 ## License
 

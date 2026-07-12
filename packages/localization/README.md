@@ -12,9 +12,14 @@ bun add @flare-engine/localization
 
 ```ts
 import { LocalizationManager } from '@flare-engine/localization';
+import type { StringTable } from '@flare-engine/localization';
+
+declare const enJson: StringTable;
+declare const plJson: StringTable;
 
 const lm = new LocalizationManager({
-  fallback: 'en',
+  initialLocale: 'en',
+  fallbackLocale: 'en',
   tables: { en: enJson, pl: plJson },
 });
 
@@ -40,7 +45,7 @@ formatTimestamp(0, 'en'); // ""
 formatTimestamp(0, 'en', { fallback: 'N/A' }); // "N/A"
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginelocalization--7kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginelocalization--7kb-raw).
 
 ## License
 

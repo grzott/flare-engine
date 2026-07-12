@@ -11,7 +11,10 @@ bun add @flare-engine/deep-links
 ## Usage
 
 ```ts
+import { Linking } from 'react-native';
 import { DeepLinkRouter, DeepLinkManager, createNativeSource, parseUrl } from '@flare-engine/deep-links';
+
+declare const sceneManager: { go(scene: string, params: Record<string, string>): void };
 
 const router = new DeepLinkRouter()
   .register('/zone/:id', 'play')
@@ -26,7 +29,7 @@ parseUrl('flare://zone/4?from=shop');
 // { scheme: 'flare', host: '', segments: ['zone', '4'], query: { from: 'shop' } }
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginedeep-links--6kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedeep-links--6kb-raw).
 
 ## License
 

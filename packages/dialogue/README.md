@@ -13,21 +13,22 @@ bun add @flare-engine/dialogue
 ```ts
 import { createDialogueGraph, createDialogueRunner, createTextReveal } from '@flare-engine/dialogue';
 
-const graph = createDialogueGraph('start', new Map([
-  ['start', { kind: 'line', speaker: 'mage', text: 'Hello {playerName}.', next: 'choice' }],
-  ['choice', { kind: 'choice', options: [/* ... */] }],
-]));
-
-const runner = createDialogueRunner(graph, {
-  variables: { playerName: 'Twardowski' },
-  conditions: () => true,
-  actions: (id, args) => { /* ... */ },
+const graph = createDialogueGraph('intro', 'start', {
+  start: { kind: 'line', speaker: 'mage', text: 'Hello {playerName}.', next: 'choice' },
+  choice: { kind: 'choice', options: [] },
 });
 
-const reveal = createTextReveal('Hello.', { cps: 30 });
+const runner = createDialogueRunner({
+  conditions: () => true,
+  actions: (key: string) => { /* fire action `key` */ },
+});
+
+runner.start(graph, { playerName: 'Twardowski' });
+
+const reveal = createTextReveal('Hello.');
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginedialogue--5kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedialogue--5kb-gzip).
 
 ## License
 

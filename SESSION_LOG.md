@@ -9210,3 +9210,36 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 249 — 2026-07-12 (scope: engine)
+
+**Goal:** OSS-D3 — README truth pass B: features + platform
+
+**Touched files**
+- `.changeset/oss-d3-readme-truth-b.md`
+- `docs/plans/todo.md`
+- `packages/a11y/README.md`
+- `packages/animation/README.md`
+- `packages/debug/README.md`
+- `packages/deep-links/README.md`
+- `packages/dialogue/README.md`
+- `packages/errors/README.md`
+- `packages/haptics/README.md`
+- `packages/localization/README.md`
+- `packages/particles/README.md`
+- `packages/pathfinding/README.md`
+- `packages/scene/README.md`
+- `packages/share/README.md`
+- `packages/tilemap/README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---

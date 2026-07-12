@@ -12,18 +12,28 @@ bun add @flare-engine/scene
 
 ```ts
 import { SceneManager, fadeTransition } from '@flare-engine/scene';
+import type { World } from '@flare-engine/ecs';
+import type { Camera2D } from '@flare-engine/render';
+
+// world and camera are injected by SceneManager after the factory runs
+declare const world: World;
+declare const camera: Camera2D;
 
 const manager = new SceneManager();
 manager.register('menu', () => ({
-  onEnter() { /* ... */ },
-  onUpdate(dt) { /* ... */ },
-  onExit() { /* ... */ },
+  name: 'menu',
+  world,
+  camera,
+  onEnter() {},
+  onUpdate(_dt: number) {},
+  onExit() {},
 }));
 
-await manager.go('menu', undefined, fadeTransition(0.3));
+manager.setTransition(fadeTransition(0.3));
+await manager.go('menu');
 ```
 
-See [API spec](../../docs/design/api-specs.md#flare-enginescene--4kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginescene--4kb-gzip).
 
 ## License
 

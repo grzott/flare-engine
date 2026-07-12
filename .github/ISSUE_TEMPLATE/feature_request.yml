@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a new capability or API for a @flare-engine/* package
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For substantial changes, please open a
+        [Discussion](https://github.com/grzott/flare-engine/discussions) first so
+        we can scope it against the
+        [roadmap](https://github.com/grzott/flare-engine/blob/main/docs/plans/roadmap.md)
+        before you invest the effort.
+  - type: input
+    id: package
+    attributes:
+      label: Target package
+      description: Where would this live? e.g. `@flare-engine/math`, or "new package".
+      placeholder: "@flare-engine/..."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that Flare makes hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API
+      description: A sketch of the function/type surface you'd expect. Named exports, zero-alloc where hot.
+      render: ts
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you've tried, or other API shapes you weighed.
+    validations:
+      required: false

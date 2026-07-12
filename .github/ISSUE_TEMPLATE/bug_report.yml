@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a reproducible problem in a @flare-engine/* package
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! A minimal reproduction (a
+        failing `bun test` snippet or a small standalone repo) is the fastest
+        path to a fix.
+  - type: input
+    id: package
+    attributes:
+      label: Package
+      description: Which package(s)? e.g. `@flare-engine/render`, `@flare-engine/ecs`
+      placeholder: "@flare-engine/..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Engine version
+      description: The `@flare-engine/*` version you're on (they move in lockstep).
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - React Native (iOS)
+        - React Native (Android)
+        - Web (CanvasKit)
+        - Both native and web
+        - Node / test environment
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime versions
+      description: React Native / Expo / react-native-skia / browser, as relevant.
+      placeholder: "RN 0.86, Expo 57, skia 2.6.6"
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal failing snippet or repo link is ideal.
+      placeholder: |
+        1. ...
+        2. ...
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include any error message or stack trace.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I'm on the latest `0.3.x` release.
+          required: true

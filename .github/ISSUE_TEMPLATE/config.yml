@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions & ideas (Discussions)
+    url: https://github.com/grzott/flare-engine/discussions
+    about: Ask questions, share ideas, or propose features before filing an issue.
+  - name: Documentation
+    url: https://github.com/grzott/flare-engine#readme
+    about: Package guides, the API spec, and the layer map.

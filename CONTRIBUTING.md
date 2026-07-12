@@ -111,10 +111,10 @@ Longer versions live in [AGENTS.md](AGENTS.md).
 
 ## Code of Conduct
 
-Be kind, assume good intent, and keep discussion focused on the work. A formal Code of Conduct (Contributor Covenant 2.1) lands at 0.1.0-rc.
+Be kind, assume good intent, and keep discussion focused on the work. This project adopts the [Contributor Covenant 2.1](CODE_OF_CONDUCT.md) — please read it before participating.
 
 ---
 
 ## License
 
-By contributing you agree that your contributions are licensed under the project's [MIT license](LICENSE).
+By contributing you agree that your contributions are licensed under the project's [Apache-2.0 license](LICENSE).

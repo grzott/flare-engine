@@ -1,7 +1,7 @@
 {
   "name": "@flare-engine/animation",
   "version": "0.2.1",
-  "description": "Sprite animation, tweens, springs, timeline",
+  "description": "Sprite animation, tweens, springs, step sequences",
   "keywords": ["flare-engine", "animation", "tween", "spring"],
   "license": "MIT",
   "author": "Grzegorz Otto",

@@ -9490,3 +9490,24 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 253 — 2026-07-13 (scope: engine)
+
+**Goal:** OSS-F1 flip runbook + CI backstop
+
+**Touched files**
+- `.github/workflows/ci.yml`
+- `docs/plans/flip-runbook.md`
+- `scripts/flip-access.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none (gate green throughout); F1 audit caught 2 majors the gate can't see: flip-access resume skip was dead-code (npm status line parse), runbook offered a local publish path that ships no provenance
+
+**Next:** see `docs/plans/todo.md`.
+
+---

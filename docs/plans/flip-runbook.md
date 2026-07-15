@@ -27,8 +27,14 @@ no clean rollback.
 
 - [ ] **H1 done:** `0.3.0` published **restricted**; the two-week manual window
       (Oct 5–18) passed with no launch-blockers (road-to-oss §11).
-- [ ] **F2 done:** this runbook rehearsed on verdaccio; every command below ran
-      clean against a throwaway registry; corrections folded back in.
+- [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
+      `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
+      tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Two rehearsal gotchas folded
+      in: a local `bun run version` needs `changelog:false`/`GITHUB_TOKEN` (step 5); the
+      cold-consumer test points the **default** registry at verdaccio, not a scope
+      config (the unscoped `create-flare-app` isn't routed by `@flare-engine:registry`).
+      One launch bug surfaced — the templates' `react` pin is too low for RN 0.86's
+      peer — tracked as a pre-freeze engine fix.
 - [ ] **F3 done:** tarball audit clean (or every old-version hit has an owner
       disposition, §14).
 - [ ] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4).
@@ -114,6 +120,10 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 41.
 - [ ] Owner: `bun run version` — runs `changeset version` **and**
       `concretize-workspace-deps` (rewrites internal `workspace:*` → `^<version>`;
       the S5 rehearsal proved this is required or tarballs ship broken deps).
+      *(The CI flip has `GITHUB_TOKEN`, so `@changesets/changelog-github` works. A
+      **local** re-run must set `GITHUB_TOKEN`, or transiently set
+      `.changeset/config.json` `"changelog": false`, or `changeset version` dies while
+      generating changelog entries — F2 caught this.)*
 - [ ] Owner: review the version bump + regenerated `CHANGELOG`s; commit.
 - [ ] Owner: publish through **CI only** — push `main` with `vars.ENABLE_RELEASE
       == 'true'` so `release.yml` runs `bun run release` with the step-2

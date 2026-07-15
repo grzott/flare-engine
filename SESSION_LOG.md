@@ -9511,3 +9511,23 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 254 — 2026-07-15 (scope: engine)
+
+**Goal:** OSS-F2 verdaccio flip rehearsal (runbook corrections)
+
+**Touched files**
+- `docs/plans/flip-runbook.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none (gate green); F2 rehearsal surfaced 3 deltas incl. a launch-blocking template react-peer ERESOLVE (bun/yarn-lenient, only npm strict catches it) -> spawned B32; owner-paired troubleshooting was rehearsal findings not harness friction
+
+**Next:** see `docs/plans/todo.md`.
+
+---

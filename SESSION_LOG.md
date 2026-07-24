@@ -9531,3 +9531,25 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 255 — 2026-07-24 (scope: engine)
+
+**Goal:** OSS-B32 create-flare-app templates react peer bump
+
+**Touched files**
+- `packages/create-flare-app/templates/blank/package.json`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `package.json` (lint-staged hook fix — see frictions)
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** commit blocked by a latent husky/lint-staged defect: the `*.json` lint-staged glob feeds `biome check --write` the three template `package.json`, but biome.json excludes the whole `templates/` dir (`!**/packages/create-flare-app/templates`) → biome processed 0 files and exited 1 (`No files were processed`) → pre-commit reverted. First commit whose entire staged code-set falls inside the biome-excluded dir (TPL1 #202 staged real src too, so it never surfaced). Fixed by adding `--no-errors-on-unmatched` to the lint-staged biome command (root `package.json`); verified exit 0 on the all-ignored batch and still lints matched files. Any future template-only commit is now safe.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -78,7 +78,7 @@ export function isBlockedAABB(
 /**
  * Axis-separated slide movement. Attempts to move by (`dx`, `dy`); each axis
  * is applied independently so a blocked diagonal input slides along the wall.
- * The y-check uses the already-updated x position (byte-identical to Berek).
+ * The y-check uses the already-updated x position.
  * Zero-alloc: writes result into the provided `out` Vec2 and returns it.
  */
 export function moveAndSlideInto(

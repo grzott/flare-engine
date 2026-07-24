@@ -9573,3 +9573,23 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 257 — 2026-07-24 (scope: engine)
+
+**Goal:** OSS-B33 physics drop private game name from shipped comment
+
+**Touched files**
+- `.changeset/oss-b33-physics-drop-berek-comment.md`
+- `packages/physics/src/solid-grid.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

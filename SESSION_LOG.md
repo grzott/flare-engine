@@ -9553,3 +9553,23 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 256 — 2026-07-24 (scope: engine)
+
+**Goal:** OSS-F3 tarball + published-versions audit script
+
+**Touched files**
+- `docs/plans/todo.md`
+- `scripts/audit-tarballs.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** npm-pack tar extraction failed under the Windows tar (GNU-tar reads C:\ paths as remote hosts) -> rewrote extraction as a pure-Node gunzip+ustar parser (no external tar); adversarial-verify workflow caught 3 real detector gaps (game-ip word-boundary anchoring, unbuilt-dist false-clean, PGP-armor miss) the selftest+gate could not see
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,0 +1,141 @@
+# Manual-test protocol — the two-week freeze window (Oct 5–18)
+
+**Owner-executed** after OSS-H1 (freeze + `0.3.0` restricted publish), before OSS-I1 (flip, target Oct 20).
+Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
+
+## How to use this doc
+
+- Walk every box in order. Check `[x]` on pass; on fail, log a row in **§7 Findings** and keep going
+  (don't stop the sweep — collect everything, then triage).
+- **Everything runs against `^0.3.0` RESTRICTED**, not the public registry. `create-flare-app` and the
+  public `@flare-engine/*@0.3.0` versions do **not** exist on npmjs until flip day — the tokenless
+  *public*-registry cold scaffold is deliberately **I2's** job (flip day), not this window's.
+- **First-run + web consumption use the F2 verdaccio harness** (local registry at
+  `http://localhost:4873`). Reuse the exact setup rehearsed in
+  [flip-runbook.md](flip-runbook.md) (F2). Point the **default** registry at verdaccio — the unscoped
+  `create-flare-app` is not routed by a `@flare-engine:registry` scope config:
+
+  ```bash
+  # start verdaccio + publish 0.3.0 to it exactly as the F2 rehearsal did (flip-runbook F2), then:
+  npm config set registry http://localhost:4873/
+  # ...run the §1 / §4-web consumption tests...
+  npm config delete registry   # restore npmjs when done
+  ```
+
+- Reference devices: the owner's Android phone (locale **PL** — English-only matchers fail; see
+  bilingual note in §2), plus a desktop browser matrix. iOS where a real device is available.
+- Findings become **`FREEZE-FIX`-tagged** todo rows, fixed in priority order (§7). Non-blocking →
+  post-flip backlog. Freeze rule: fixes only — no API changes, no new features, no docs restructuring.
+
+---
+
+## §1 — First-run funnel (LAUNCH-CRITICAL)
+
+The path a stranger hits first. A break here is a launch blocker. Run against verdaccio (above).
+
+- [ ] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
+  - [ ] `npm create flare-app@latest my-<tpl>` → pick the template → completes with **no `ERESOLVE`**
+        and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
+  - [ ] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
+  - [ ] `npm run start` — Metro bundles and resolves every `@flare-engine/*` import with no error.
+        (Actually *running* the app needs a **dev build** — `@shopify/react-native-skia` is a native
+        module, so plain `expo start` + Expo Go "press a/i" red-screens with a missing-native-module
+        error. If the template README tells a stranger to "press a/i" into Expo Go, that mismatch is a
+        §7 finding.)
+- [ ] **Linux container** (e.g. `node:22` docker, clean `$HOME`) — repeat all three templates end-to-end
+      (catches Windows-only path luck; the F2 rehearsal only proved `--skip-install`).
+- [ ] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the
+      tilemap renders and the virtual joystick moves the player over solid-grid collision (the TPL1 wire).
+- [ ] **Root-README quickstart, verbatim** — every command block in [README.md](../../README.md) run
+      exactly as written against the same registry override (`npm create flare-app@latest my-game`, the
+      install/build lines). Any command that errors or drifts from its documented output = a finding.
+
+## §2 — Pan Tvardowski at `^0.3.0`
+
+PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski)); bump it to
+`@flare-engine/*@^0.3.0`, `bun install` from the restricted registry, build to the reference device.
+
+- [ ] **Full campaign sweep** — zones 1→8 playable start to finish; no crash, no stuck scene.
+- [ ] **Saves + settings round-trip** — quit mid-run, relaunch: progress/settings restored intact
+      (no save-wipe — the migration landmine).
+- [ ] **Shop** — open, purchase/equip a weapon/ship, changes persist across relaunch.
+- [ ] **Locale PL↔EN** — toggle both ways; all strings swap, no missing keys, no layout overflow
+      (device locale is PL — keep any smoke matchers bilingual `en|pl`).
+- [ ] **Reduced-motion** — OS reduced-motion on: transitions/particles honor it.
+- [ ] **Colorblind atlas** — each colorblind palette renders correctly.
+- [ ] **B5 scene-restart** — die/restart and full scene reload: async preload completes, no leaked
+      state, no double-run teardown.
+- [ ] **B12 IAP-restore** — restore-purchases path re-grants entitlements; gated content unlocks.
+- [ ] **Audio, by ear** — reference device, **volume up, native audio NOT skipped** (do *not* set
+      `PT_SKIP_NATIVE_AUDIO=1` for this build): SFX fire on gameplay events; music plays and crossfades
+      cleanly on zone/scene change (no clipping/overlap); the settings volume/mute control actually
+      attenuates the buses. (A muted/stubbed playthrough passes the "no crash" sweep while shipping
+      broken audio — this is the least-exercised device path.)
+- [ ] **Shader-backed backgrounds/effects (B24)** — in each zone using a water/fog/fire or
+      env-background shader, confirm it **renders** (not blank/black), **animates over time** (not
+      frozen at t=0), and that effect sprites layer in correct **global z-order** against normal sprites.
+
+## §3 — Berek at `0.3.0`
+
+Second-genre proof (top-down). Bump to `^0.3.0`, install from restricted registry, run.
+
+- [ ] Tilemap renders; **solid-grid** movement/collision behaves (the XP5 physics + tilemap lift path
+      — the exact code B33 just de-referenced).
+- [ ] A representative level walk: no crash, no regression vs the last known-good engine version.
+
+## §4 — Web (page hero demos) at `^0.3.0`
+
+`flare-engine-page` repo (CanvasKit-WASM backend, `render-web`). Bump to `^0.3.0`, deploy the preview.
+
+- [ ] **Desktop browser matrix** — hero demos render + animate on **Chrome**, **Firefox**, **Safari**.
+- [ ] **Mobile browsers** — **Android Chrome** + **iOS Safari** (real devices): demos render, touch works.
+- [ ] **WASM load on throttled 4G** — CanvasKit downloads + inits within an acceptable time; no hang.
+- [ ] **Time-driven shader on web** — at least one hero demo using a time/resolution-driven shader
+      (the render `dist` runs on the CanvasKit backend too): confirm it **renders and animates** on the
+      web backend, not just native (B24 fixed the resolution-0 / frozen-time bugs — re-prove on web).
+- [ ] **Lighthouse** — re-run; mobile + desktop still hit the owner's **100** bar.
+
+## §5 — New surfaces (this arc's additions)
+
+Each new-in-arc capability exercised at least once on its real target.
+
+- [ ] **M1 — keyboard input** on desktop web: a scaffolded/topdown web build (or a page demo) responds
+      to `createKeyboard` input — arrows/WASD drive movement or UI focus; keydown/keyup + per-frame
+      reset behave (no stuck keys).
+- [ ] **M2 — headless barrel**: a plain `bun` script `import`s from `@flare-engine/engine/headless`,
+      steps an ECS world, and runs to completion **with no React/Skia/react-native pulled in** (no
+      native/DOM dependency error).
+- [ ] **B8 / M4 — Tiled authoring**: author a fresh map in **Tiled 1.12**, export `.tmj`, run it through
+      the `cli` → template pipeline (`parseTiled` / LDtk entities), and render it — flip bits + entities
+      resolve correctly.
+- [ ] **M6 — haptics** on device: a build using the real `expo-haptics` provider fires haptics on the
+      wired events; the `NoopHapticsProvider` fallback is silent (no crash) where haptics is absent.
+
+## §6 — Docs site
+
+`flare-engine-page` docs (Astro Starlight + typedoc). On a **real phone**:
+
+- [ ] **Every page + link** loads (no 404, no broken internal link); nav works.
+- [ ] **Typedoc reference pages** render (the generated API pages, not just hand-written docs).
+- [ ] **Getting-started, verbatim, as a stranger** — the owner follows it literally with no prior
+      knowledge; any step that assumes context or drifts from reality = a finding.
+
+## §7 — Findings → FREEZE-FIX
+
+Log every failure here. Then create a `FREEZE-FIX`-tagged row in [todo.md](todo.md) per launch-critical
+finding, fixed in priority order; non-blocking items → the post-flip backlog (road-to-oss §13).
+
+| # | §/step | Surface | Symptom | Severity (blocker / major / minor) | FREEZE-FIX row | Status |
+|---|--------|---------|---------|------------------------------------|----------------|--------|
+|   |        |         |         |                                    |                |        |
+
+### Exit criteria (all must hold before OSS-I1 / flip)
+
+- [ ] §1 first-run funnel is **green on both OSes, all three templates** (zero blockers).
+- [ ] PT + Berek run on `0.3.0` with no blocker/major regression.
+- [ ] Web matrix + Lighthouse 100 hold; docs getting-started is followable cold.
+- [ ] **§5 new surfaces** (M1 keyboard, M2 headless, B8/M4 Tiled, M6 haptics) each executed on its real
+      target and green — or every failure logged in §7 and triaged (blockers closed).
+- [ ] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.3.x` restricted patch and
+      re-tested); majors closed or explicitly accepted; minors triaged to the post-flip backlog.
+- [ ] Owner sign-off recorded here: `signed-off: ____________  date: __________`

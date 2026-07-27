@@ -9593,3 +9593,22 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 258 — 2026-07-24 (scope: engine)
+
+**Goal:** OSS-H2 manual-test protocol doc
+
+**Touched files**
+- `docs/plans/manual-test-protocol.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

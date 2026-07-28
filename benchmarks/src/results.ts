@@ -22,6 +22,15 @@ export type MicrobenchResult = {
   opsPerSec: number;
   samples: number;
   innerIters: number;
+  /**
+   * Lowest and highest per-run median across the runs folded into this row.
+   * Absent on a single-run capture. This is the run-to-run spread of the
+   * medians, not the intra-run sample spread — it answers "how much does this
+   * number move if I measure again", which is the only question a regression
+   * threshold can be set against.
+   */
+  bandMinNs?: number;
+  bandMaxNs?: number;
 };
 
 export type MicrobenchSuite = {
@@ -34,6 +43,8 @@ export type MicrobenchHeap = {
   iterations: number;
   deltaBytes: number;
   bytesPerFrame: number;
+  bandMinBytesPerFrame?: number;
+  bandMaxBytesPerFrame?: number;
 };
 
 /**
@@ -57,6 +68,10 @@ export type MicrobenchReport = Provenance & {
   generated: string;
   runtime: string;
   platform: string;
+  /** Number of independent capture runs folded in; absent on a single-run capture. */
+  runs?: number;
+  /** `generated` of every run folded in, oldest first. */
+  aggregatedFrom?: string[];
   suites: MicrobenchSuite[];
   heap: MicrobenchHeap[];
 };
@@ -173,6 +188,31 @@ export function readMicrobenchJson(): MicrobenchReport | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Reads the append-only run log. `malformed` counts lines that failed to parse
+ * — a crash mid-append can leave a partial final line, and a caller promoting a
+ * baseline must refuse rather than quietly aggregate whatever survived.
+ */
+export function readHistory(): { rows: MicrobenchReport[]; malformed: number } {
+  let raw: string;
+  try {
+    raw = readFileSync(historyFile(), 'utf8');
+  } catch {
+    return { rows: [], malformed: 0 };
+  }
+  const rows: MicrobenchReport[] = [];
+  let malformed = 0;
+  for (const line of raw.split('\n')) {
+    if (line.trim() === '') continue;
+    try {
+      rows.push(JSON.parse(line) as MicrobenchReport);
+    } catch {
+      malformed++;
+    }
+  }
+  return { rows, malformed };
 }
 
 /** Append-only run log. Every capture lands here; nothing ever rewrites a row. */

@@ -33,8 +33,18 @@ bun --filter @flare-engine-apps/bench-dashboard lint
 
 ```bash
 bun run bench            # runs + appends benchmarks/results/history.ndjson, leaves the baseline alone
-bun run bench:baseline   # same run, and promotes it to benchmarks/results/microbench.json
+bun run bench:promote    # folds the last 5 history runs into the baseline (median + spread)
+bun run bench:baseline   # single-run shortcut: promotes just that one run, no spread
 ```
+
+`history.ndjson` is **tracked on purpose** — it is the append-only record every baseline is
+derived from, so a promoted number can always be traced back to the individual runs behind it.
+A local exploratory run therefore shows up in `git status`; use `bun run bench -- --no-record`
+if you do not want it in the record.
+
+The normal capture is five runs then a promote, which is what puts a real spread on every row.
+`bench:promote` refuses runs that disagree on machine, commit, or scenario set, and refuses any
+run captured from a dirty tree — a baseline has to name exactly the code it measured.
 
 The dashboard reads the **baseline**, so only `bench:baseline` changes what it renders. Both
 commands go through turbo and build the engine packages first — benchmarks resolve

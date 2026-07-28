@@ -1,50 +1,71 @@
 {
-  "generated": "2026-04-16T10:53:08.699Z",
+  "generated": "2026-07-28T14:08:58.673Z",
   "runtime": "Bun 1.3.11",
   "platform": "win32 x64",
+  "cpuModel": "13th Gen Intel(R) Core(TM) i9-13900KF",
+  "cpuCount": 32,
+  "totalMemMB": 65349,
+  "gitSha": "0b88096ec164",
+  "gitDirty": false,
+  "runs": 5,
+  "aggregatedFrom": [
+    "2026-07-28T13:58:36.433Z",
+    "2026-07-28T14:01:12.184Z",
+    "2026-07-28T14:03:49.391Z",
+    "2026-07-28T14:06:24.042Z",
+    "2026-07-28T14:08:58.673Z"
+  ],
   "suites": [
     {
       "title": "ECS",
       "results": [
         {
           "scenario": "ecs.step   500 entities (Pos+Vel)",
-          "medianNs": 11513.499999999936,
-          "meanNs": 11600.833333333341,
-          "minNs": 7469.999999999999,
-          "p99Ns": 17773.499999999985,
-          "opsPerSec": 86854.56203587141,
+          "medianNs": 11440.5,
+          "meanNs": 11888.666666666664,
+          "minNs": 11316.000000000058,
+          "p99Ns": 17408.000000000004,
+          "opsPerSec": 87408.76709934007,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 11427.99999999994,
+          "bandMaxNs": 11520.500000000027
         },
         {
           "scenario": "ecs.step  1000 entities (Pos+Vel)",
-          "medianNs": 23695.000000000164,
-          "meanNs": 24713.650000000012,
-          "minNs": 17558.499999999953,
-          "p99Ns": 45064.00000000014,
-          "opsPerSec": 42202.996412745015,
+          "medianNs": 23345.000000000196,
+          "meanNs": 24333.33333333334,
+          "minNs": 23080.500000000084,
+          "p99Ns": 38508.49999999994,
+          "opsPerSec": 42835.72499464518,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 23233.50000000005,
+          "bandMaxNs": 25936.000000000095
         },
         {
           "scenario": "ecs.step  2000 entities (Pos+Vel)",
-          "medianNs": 46701.500000000065,
-          "meanNs": 46852.76666666665,
-          "minNs": 38269.50000000011,
-          "p99Ns": 58259.99999999964,
-          "opsPerSec": 21412.588460756047,
+          "medianNs": 48249.50000000001,
+          "meanNs": 48538.94999999995,
+          "minNs": 47247.999999999876,
+          "p99Ns": 52775.5000000002,
+          "opsPerSec": 20725.603374128226,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 47664.999999999505,
+          "bandMaxNs": 49352.49999999996
         },
         {
           "scenario": "ecs.step  5000 entities (Pos+Vel)",
-          "medianNs": 119678.49999999999,
-          "meanNs": 119744.3166666667,
-          "minNs": 109274.00000000033,
-          "p99Ns": 128761.00000000007,
-          "opsPerSec": 8355.719699026977,
+          "medianNs": 123177.0000000006,
+          "meanNs": 124806.83333333328,
+          "minNs": 120443.99999999996,
+          "p99Ns": 133735.99999999953,
+          "opsPerSec": 8118.39872703504,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 122305.49999999994,
+          "bandMaxNs": 124883.49999999968
         }
       ]
     },
@@ -53,63 +74,75 @@
       "results": [
         {
           "scenario": "physics.step   100 AABB sparse",
-          "medianNs": 79941.99999999978,
-          "meanNs": 80042.83333333321,
-          "minNs": 67869.49999999935,
-          "p99Ns": 100861.49999999975,
-          "opsPerSec": 12509.069075079467,
+          "medianNs": 79818.00000000022,
+          "meanNs": 83303.09999999999,
+          "minNs": 71974.99999999991,
+          "p99Ns": 107453.49999999916,
+          "opsPerSec": 12528.502342829905,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 77067.50000000057,
+          "bandMaxNs": 82369.49999999978
         },
         {
           "scenario": "physics.step   100 AABB dense ",
-          "medianNs": 74624.99999999636,
-          "meanNs": 76049.29999999939,
-          "minNs": 60282.99999999945,
-          "p99Ns": 103771.99999999903,
-          "opsPerSec": 13400.335008375863,
+          "medianNs": 76947.00000000012,
+          "meanNs": 78130.96666666647,
+          "minNs": 74493.99999999968,
+          "p99Ns": 96059.99999999767,
+          "opsPerSec": 12995.95825698206,
           "samples": 30,
-          "innerIters": 100
+          "innerIters": 100,
+          "bandMinNs": 47554.00000000009,
+          "bandMaxNs": 78299.0000000018
         },
         {
           "scenario": "physics.step   500 AABB sparse",
-          "medianNs": 2094336.000000003,
-          "meanNs": 2092539.0833333347,
-          "minNs": 1754697.500000002,
-          "p99Ns": 2462377.9999999986,
-          "opsPerSec": 477.47830338589347,
+          "medianNs": 2755465.9999999963,
+          "meanNs": 2770570.816666666,
+          "minNs": 2721177.000000007,
+          "p99Ns": 2848134,
+          "opsPerSec": 362.9150205446198,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 2732769.500000004,
+          "bandMaxNs": 2906409.5
         },
         {
           "scenario": "physics.step   500 AABB dense ",
-          "medianNs": 2046131.999999998,
-          "meanNs": 2089081.2999999977,
-          "minNs": 1896405.0000000135,
-          "p99Ns": 2575495.00000001,
-          "opsPerSec": 488.72702249903773,
+          "medianNs": 2829711.000000025,
+          "meanNs": 2841720.5666666687,
+          "minNs": 2753038.000000015,
+          "p99Ns": 3062945,
+          "opsPerSec": 353.39297900032585,
           "samples": 30,
-          "innerIters": 100
+          "innerIters": 100,
+          "bandMinNs": 2792845.9999999907,
+          "bandMaxNs": 2967079.9999999874
         },
         {
           "scenario": "physics.step  1000 AABB sparse",
-          "medianNs": 8330262.000000075,
-          "meanNs": 8542423.533333331,
-          "minNs": 7643696.000000055,
-          "p99Ns": 9562733.999999981,
-          "opsPerSec": 120.04424350638563,
+          "medianNs": 11820017.999999981,
+          "meanNs": 11804035.133333327,
+          "minNs": 11531784.000000043,
+          "p99Ns": 12000907.999999909,
+          "opsPerSec": 84.60224003042987,
           "samples": 30,
-          "innerIters": 50
+          "innerIters": 50,
+          "bandMinNs": 11701125.999999931,
+          "bandMaxNs": 12238847.999999998
         },
         {
           "scenario": "physics.step  1000 AABB dense ",
-          "medianNs": 9581445.000000168,
-          "meanNs": 9571889.833333319,
-          "minNs": 8755800.000000091,
-          "p99Ns": 10891020.000000207,
-          "opsPerSec": 104.3683911977768,
+          "medianNs": 12559935.000000041,
+          "meanNs": 12542836.000000022,
+          "minNs": 9869330.000000264,
+          "p99Ns": 13552769.999999871,
+          "opsPerSec": 79.61824643200755,
           "samples": 30,
-          "innerIters": 20
+          "innerIters": 20,
+          "bandMinNs": 12404930.00000024,
+          "bandMaxNs": 13035325.000000011
         }
       ]
     },
@@ -118,73 +151,87 @@
       "results": [
         {
           "scenario": "particles.update   500 integrate-only",
-          "medianNs": 2782.0000000065193,
-          "meanNs": 3229.633333330033,
-          "minNs": 2259.5000000001164,
-          "p99Ns": 5111.500000020897,
-          "opsPerSec": 359453.63048082555,
+          "medianNs": 3116.0000000090804,
+          "meanNs": 3389.1500000002757,
+          "minNs": 2989.500000003318,
+          "p99Ns": 6743.500000011409,
+          "opsPerSec": 320924.26187326247,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 3040.000000000873,
+          "bandMaxNs": 3284.5000000088476
         },
         {
           "scenario": "particles.update  1000 integrate-only",
-          "medianNs": 7707.00000000943,
-          "meanNs": 7854.183333330487,
-          "minNs": 4510.999999984051,
-          "p99Ns": 14518.500000012864,
-          "opsPerSec": 129752.17334874484,
+          "medianNs": 6222.5000000034925,
+          "meanNs": 7227.300000002288,
+          "minNs": 5924.5000000009895,
+          "p99Ns": 9976.999999998952,
+          "opsPerSec": 160707.11128958437,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 5968.49999998085,
+          "bandMaxNs": 8355.999999985215
         },
         {
           "scenario": "particles.update  2000 integrate-only",
-          "medianNs": 16895.000000004075,
-          "meanNs": 17862.466666664353,
-          "minNs": 12785.99999997823,
-          "p99Ns": 28861.499999984517,
-          "opsPerSec": 59189.10920389221,
+          "medianNs": 18378.499999998894,
+          "meanNs": 18838.216666664568,
+          "minNs": 17775.500000025204,
+          "p99Ns": 25382.500000014257,
+          "opsPerSec": 54411.40463041381,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 17939.49999999313,
+          "bandMaxNs": 19343.000000008033
         },
         {
           "scenario": "particles.update  5000 integrate-only",
-          "medianNs": 47106.499999972584,
-          "meanNs": 49121.43333333126,
-          "minNs": 32685.999999994234,
-          "p99Ns": 73267.99999998912,
-          "opsPerSec": 21228.492883160117,
+          "medianNs": 45539.000000026135,
+          "meanNs": 46176.83333333239,
+          "minNs": 44253.49999997707,
+          "p99Ns": 56250.49999998737,
+          "opsPerSec": 21959.199806746437,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 44927.99999999989,
+          "bandMaxNs": 56154.000000024105
         },
         {
           "scenario": "particles.update   500 emit+integrate",
-          "medianNs": 8457.999999991443,
-          "meanNs": 9171.883333337368,
-          "minNs": 5070.50000000163,
-          "p99Ns": 17263.500000008207,
-          "opsPerSec": 118231.2603453549,
+          "medianNs": 12349.499999982072,
+          "meanNs": 12712.0333333296,
+          "minNs": 12252.000000007683,
+          "p99Ns": 16422.999999995227,
+          "opsPerSec": 80974.93825672714,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 12312.500000007276,
+          "bandMaxNs": 14047.499999978754
         },
         {
           "scenario": "particles.update  1000 emit+integrate",
-          "medianNs": 13011.500000029628,
-          "meanNs": 13467.516666671145,
-          "minNs": 9781.999999977415,
-          "p99Ns": 21171.49999998219,
-          "opsPerSec": 76855.08972814225,
+          "medianNs": 25681.999999978867,
+          "meanNs": 25724.899999999856,
+          "minNs": 24569.000000010423,
+          "p99Ns": 34622.50000000495,
+          "opsPerSec": 38937.77743169624,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 22567.000000017284,
+          "bandMaxNs": 27492.500000007567
         },
         {
           "scenario": "particles.update  2000 emit+integrate",
-          "medianNs": 27705.999999998316,
-          "meanNs": 28646.799999998617,
-          "minNs": 19707.000000016706,
-          "p99Ns": 46202.99999998679,
-          "opsPerSec": 36093.2649967538,
+          "medianNs": 53302.00000000332,
+          "meanNs": 54623.48333333042,
+          "minNs": 42139.00000002468,
+          "p99Ns": 68437.5,
+          "opsPerSec": 18761.022100482867,
           "samples": 30,
-          "innerIters": 200
+          "innerIters": 200,
+          "bandMinNs": 50799.50000003009,
+          "bandMaxNs": 54844.000000011874
         }
       ]
     },
@@ -193,83 +240,99 @@
       "results": [
         {
           "scenario": "render.flush    100 sprites / 1 atlas",
-          "medianNs": 3126.9999999979823,
-          "meanNs": 3849.30000000006,
-          "minNs": 2115.333333349554,
-          "p99Ns": 21655.00000000369,
-          "opsPerSec": 319795.3309883739,
+          "medianNs": 8808.666666664067,
+          "meanNs": 9678.78888888663,
+          "minNs": 7820.333333317346,
+          "p99Ns": 18870.000000000193,
+          "opsPerSec": 113524.55914632883,
           "samples": 30,
-          "innerIters": 300
+          "innerIters": 300,
+          "bandMinNs": 8032.000000021071,
+          "bandMaxNs": 11281.666666667055
         },
         {
           "scenario": "render.flush    500 sprites / 1 atlas",
-          "medianNs": 13700.666666651765,
-          "meanNs": 14746.566666666897,
-          "minNs": 10857.333333333372,
-          "p99Ns": 22069.666666672372,
-          "opsPerSec": 72989.14894660267,
+          "medianNs": 44782.00000000167,
+          "meanNs": 45544.72222222102,
+          "minNs": 37433.33333334401,
+          "p99Ns": 56438.33333332926,
+          "opsPerSec": 22330.400607386062,
           "samples": 30,
-          "innerIters": 300
+          "innerIters": 300,
+          "bandMinNs": 38590.000000015905,
+          "bandMaxNs": 50845.00000002056
         },
         {
           "scenario": "render.flush   1000 sprites / 1 atlas",
-          "medianNs": 26607.999999978347,
-          "meanNs": 29322.59999999466,
-          "minNs": 19738.999999972293,
-          "p99Ns": 44899.99999997962,
-          "opsPerSec": 37582.681900210984,
+          "medianNs": 89412.00000001118,
+          "meanNs": 90024.03333333497,
+          "minNs": 73819.00000000314,
+          "p99Ns": 118176.0000000213,
+          "opsPerSec": 11184.18109425888,
           "samples": 30,
-          "innerIters": 100
+          "innerIters": 100,
+          "bandMinNs": 76008.99999997637,
+          "bandMaxNs": 124066.99999999546
         },
         {
           "scenario": "render.flush    500 sprites / 4 atlas",
-          "medianNs": 16947.000000000116,
-          "meanNs": 18434.933333332687,
-          "minNs": 12183.00000000454,
-          "p99Ns": 28223.999999997133,
-          "opsPerSec": 59007.49395173146,
+          "medianNs": 55089.33333333213,
+          "meanNs": 58336.47777777433,
+          "minNs": 49537.99999998106,
+          "p99Ns": 70491.66666666376,
+          "opsPerSec": 18152.334390202977,
           "samples": 30,
-          "innerIters": 300
+          "innerIters": 300,
+          "bandMinNs": 49848.666666657664,
+          "bandMaxNs": 64409.33333333912
         },
         {
           "scenario": "render.flush   1000 sprites / 8 atlas",
-          "medianNs": 35788.00000002957,
-          "meanNs": 39252.90000000192,
-          "minNs": 25976.000000009662,
-          "p99Ns": 66237.00000003737,
-          "opsPerSec": 27942.327036972554,
+          "medianNs": 109476.99999996985,
+          "meanNs": 121953.99999999549,
+          "minNs": 100190.00000000233,
+          "p99Ns": 200691.00000000617,
+          "opsPerSec": 9134.338719550915,
           "samples": 30,
-          "innerIters": 100
+          "innerIters": 100,
+          "bandMinNs": 102279.0000000532,
+          "bandMaxNs": 114775.99999998345
         },
         {
           "scenario": "render.sort     500 items (0 swaps)",
-          "medianNs": 1264.4000000000233,
-          "meanNs": 1519.1266666670952,
-          "minNs": 994.3999999959487,
-          "p99Ns": 2704.0000000124564,
-          "opsPerSec": 790888.9591901151,
+          "medianNs": 1770.9999999933643,
+          "meanNs": 1779.4266666654341,
+          "minNs": 1500,
+          "p99Ns": 2288.0000000004657,
+          "opsPerSec": 564652.7385678977,
           "samples": 30,
-          "innerIters": 500
+          "innerIters": 500,
+          "bandMinNs": 1746.6000000131316,
+          "bandMaxNs": 1959.6000000019558
         },
         {
           "scenario": "render.sort     500 items (5 swaps)",
-          "medianNs": 5968.999999997322,
-          "meanNs": 6246.226666665461,
-          "minNs": 4366.199999989476,
-          "p99Ns": 11158.400000000258,
-          "opsPerSec": 167532.2499581921,
+          "medianNs": 6915.399999998044,
+          "meanNs": 6899.3399999977555,
+          "minNs": 4871.199999994133,
+          "p99Ns": 10282.00000000652,
+          "opsPerSec": 144604.79509504625,
           "samples": 30,
-          "innerIters": 500
+          "innerIters": 500,
+          "bandMinNs": 6561.000000001513,
+          "bandMaxNs": 7143.800000005285
         },
         {
           "scenario": "render.sort    1000 items (10 swaps)",
-          "medianNs": 20807.000000000702,
-          "meanNs": 20927.799999999115,
-          "minNs": 15287.400000001071,
-          "p99Ns": 27350.800000000163,
-          "opsPerSec": 48060.74878646447,
+          "medianNs": 22311.600000000908,
+          "meanNs": 23031.59333333315,
+          "minNs": 21671.799999996438,
+          "p99Ns": 32311.19999999646,
+          "opsPerSec": 44819.7350257247,
           "samples": 30,
-          "innerIters": 500
+          "innerIters": 500,
+          "bandMinNs": 22180.000000007567,
+          "bandMaxNs": 25517.40000001155
         }
       ]
     },
@@ -278,33 +341,39 @@
       "results": [
         {
           "scenario": "integration.frame   500 entities + 300p",
-          "medianNs": 1989789.9999999937,
-          "meanNs": 2004688.0999999994,
-          "minNs": 1744628.9999999863,
-          "p99Ns": 2249847.000000009,
-          "opsPerSec": 502.5655973745989,
+          "medianNs": 2875889.9999999995,
+          "meanNs": 2885782.9999999953,
+          "minNs": 2764770.9999998915,
+          "p99Ns": 2962286.9999999963,
+          "opsPerSec": 347.7184454203743,
           "samples": 30,
-          "innerIters": 100
+          "innerIters": 100,
+          "bandMinNs": 2857446.9999999567,
+          "bandMaxNs": 3085192.9999999995
         },
         {
           "scenario": "integration.frame  1000 entities + 300p",
-          "medianNs": 9007799.999999952,
-          "meanNs": 9316612.333333332,
-          "minNs": 8425617.499999862,
-          "p99Ns": 11420757.500000035,
-          "opsPerSec": 111.01489819933894,
+          "medianNs": 12002145.000000019,
+          "meanNs": 12083258.500000011,
+          "minNs": 11359837.499999776,
+          "p99Ns": 13413347.500000237,
+          "opsPerSec": 83.31844016215422,
           "samples": 30,
-          "innerIters": 40
+          "innerIters": 40,
+          "bandMinNs": 11953890.000000319,
+          "bandMaxNs": 12726734.999999825
         },
         {
           "scenario": "integration.frame  2000 entities + 300p",
-          "medianNs": 38011445.0000001,
-          "meanNs": 38282788.999999955,
-          "minNs": 35603234.999999404,
-          "p99Ns": 42665365.000000015,
-          "opsPerSec": 26.307865959844396,
+          "medianNs": 49197065.00000029,
+          "meanNs": 49131138.83333333,
+          "minNs": 44365700.00000065,
+          "p99Ns": 53457309.99999942,
+          "opsPerSec": 20.32641581362616,
           "samples": 30,
-          "innerIters": 20
+          "innerIters": 20,
+          "bandMinNs": 48769085.00000063,
+          "bandMaxNs": 50818894.99999961
         }
       ]
     }
@@ -313,20 +382,26 @@
     {
       "name": "integration.heap   500 entities",
       "iterations": 500,
-      "deltaBytes": -11159022,
-      "bytesPerFrame": -22318.044
+      "deltaBytes": -45071354,
+      "bytesPerFrame": -90142.708,
+      "bandMinBytesPerFrame": -90632.686,
+      "bandMaxBytesPerFrame": -55855.618
     },
     {
       "name": "integration.heap  1000 entities",
       "iterations": 500,
-      "deltaBytes": 18558656,
-      "bytesPerFrame": 37117.312
+      "deltaBytes": 19161303,
+      "bytesPerFrame": 38322.606,
+      "bandMinBytesPerFrame": 37178.522,
+      "bandMaxBytesPerFrame": 38343.888
     },
     {
       "name": "integration.heap  2000 entities",
       "iterations": 500,
-      "deltaBytes": -17198122,
-      "bytesPerFrame": -34396.244
+      "deltaBytes": -16951762,
+      "bytesPerFrame": -33903.524,
+      "bandMinBytesPerFrame": -34378.314,
+      "bandMaxBytesPerFrame": -33098.778
     }
   ]
 }

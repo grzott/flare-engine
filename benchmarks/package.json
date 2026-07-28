@@ -8,6 +8,7 @@
   "scripts": {
     "bench": "bun run src/index.ts",
     "bench:baseline": "bun run src/index.ts --write-baseline",
+    "bench:promote": "bun run src/index.ts --promote",
     "bench:md": "bun run src/index.ts --markdown",
     "test": "bun test",
     "lint": "biome check src/ tests/",

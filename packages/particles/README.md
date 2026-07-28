@@ -1,6 +1,8 @@
 # @flare-engine/particles
 
-Pre-allocated particle pool + emitter. Zero per-frame GC during gameplay — particles are recycled. Target: 200–500 alive particles at 60 fps. This package owns particle data and lifecycle; rendering happens via the host's immediate-mode Skia layer (PictureRecorder).
+Pre-allocated particle pool + emitter — particles are recycled rather than reallocated, so a steady-state emitter does not allocate per particle per frame. Target: 200–500 alive particles at 60 fps. This package owns particle data and lifecycle; rendering happens via the host's immediate-mode Skia layer (PictureRecorder).
+
+Measured integrate cost per frame is published in [benchmarks](https://github.com/grzott/flare-engine/blob/main/docs/references/benchmarks.md), with the capture date and run-to-run spread on every row. Allocation counts are not yet instrumented, so treat the recycling above as a structural property of the pool rather than a measured zero-GC guarantee.
 
 ## Install
 

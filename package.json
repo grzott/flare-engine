@@ -32,6 +32,7 @@
     "format": "biome format --write .",
     "bench": "turbo bench",
     "bench:baseline": "turbo bench:baseline",
+    "bench:promote": "turbo bench:promote",
     "bench:md": "turbo bench:md",
     "propagate-license": "bun run scripts/propagate-license.ts",
     "prebuild": "bun run propagate-license",

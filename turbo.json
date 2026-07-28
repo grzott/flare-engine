@@ -10,7 +10,12 @@
       "dependsOn": ["build"]
     },
     "@flare-engine/benchmarks#test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tests/**", "package.json", "tsconfig.json"]
+    },
+    "@flare-engine/benchmarks#bench:promote": {
+      "dependsOn": ["^build"],
+      "cache": false
     },
     "@flare-engine/benchmarks#bench": {
       "dependsOn": ["^build"],

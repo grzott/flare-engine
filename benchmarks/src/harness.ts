@@ -89,21 +89,3 @@ export function formatStats(s: BenchStats): string {
         : `${s.opsPerSec.toFixed(0)}/s`;
   return `${s.name.padEnd(44)}  ${cost.padStart(10)}/op   ${ops.padStart(10)}   p99 ${(s.nsPerOp.p99 / 1000).toFixed(1)}us`;
 }
-
-export function toMarkdownRow(s: BenchStats): string {
-  const ns = s.nsPerOp.median;
-  const cost =
-    ns < 1_000
-      ? `${ns.toFixed(1)} ns`
-      : ns < 1_000_000
-        ? `${(ns / 1_000).toFixed(2)} µs`
-        : `${(ns / 1_000_000).toFixed(2)} ms`;
-  const ops =
-    s.opsPerSec >= 1e6
-      ? `${(s.opsPerSec / 1e6).toFixed(2)}M`
-      : s.opsPerSec >= 1e3
-        ? `${(s.opsPerSec / 1e3).toFixed(1)}K`
-        : s.opsPerSec.toFixed(0);
-  const p99 = s.nsPerOp.p99 / 1000;
-  return `| ${s.name} | ${cost} | ${ops}/s | ${p99.toFixed(1)} µs |`;
-}

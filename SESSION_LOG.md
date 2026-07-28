@@ -9658,3 +9658,58 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 260 — 2026-07-28 (scope: engine)
+
+**Goal:** PERF-1 follow-up — declare FLARE_BENCH_ALLOW_STALE for turbo strict env
+
+**Touched files**
+- `apps/bench-dashboard/README.md`
+- `benchmarks/src/index.ts`
+- `docs/plans/todo.md`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none (follow-up to #259: the review's critic completed after the row closed and found turbo strict-env stripped the documented staleness override)
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 261 — 2026-07-28 (scope: engine)
+
+**Goal:** PERF-2 — correct the record: 5-run baseline, spread bands, honest doc
+
+**Touched files**
+- `SESSION_LOG.md`
+- `apps/bench-dashboard/README.md`
+- `benchmarks/package.json`
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `benchmarks/src/harness.ts`
+- `benchmarks/src/index.ts`
+- `benchmarks/src/promote.ts`
+- `benchmarks/src/results.ts`
+- `benchmarks/tests/promote.test.ts`
+- `docs/references/benchmarks.md`
+- `package.json`
+- `packages/particles/README.md`
+- `packages/physics/README.md`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -9612,3 +9612,49 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 259 — 2026-07-28 (scope: engine)
+
+**Goal:** PERF-1 — bench harness automation-hardening + dead-fork delete
+
+**Touched files**
+- `.gitignore`
+- `apps/bench-dashboard/README.md`
+- `benchmarks/package.json`
+- `benchmarks/src/ecs.bench.ts`
+- `benchmarks/src/harness.ts`
+- `benchmarks/src/index.ts`
+- `benchmarks/src/integration.bench.ts`
+- `benchmarks/src/particles.bench.ts`
+- `benchmarks/src/physics.bench.ts`
+- `benchmarks/src/render.bench.ts`
+- `benchmarks/src/results.ts`
+- `benchmarks/src/scenario-contract.ts`
+- `benchmarks/tests/`
+- `benchmarks/tsconfig.json`
+- `docs/design/native-acceleration.md`
+- `docs/history/build-plan-archive.md`
+- `docs/perf/REGRESSION.md`
+- `docs/perf/bench-results.ndjson`
+- `docs/perf/protocol.md`
+- `docs/plans/engine-deep-audit-2026-07.md`
+- `docs/references/benchmarks.md`
+- `package.json`
+- `scripts/perf/bench-cloud.sh`
+- `scripts/perf/bench-local.sh`
+- `scripts/perf/devices.json`
+- `scripts/perf/regression-check.ts`
+- `scripts/perf/render-dashboard.ts`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** drift:1 (regenerated docs/references/benchmarks.md — changing the generator left the committed doc inconsistent; PERF-2 still owns re-capturing the numbers)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

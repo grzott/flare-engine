@@ -203,8 +203,8 @@ Device-side measurements (Android done, iOS optional follow-up):
 - [x] Hidden triple-tap on menu title launches bench scene
 - [x] Bench scene bugs fixed during first capture: bench now integrates `Position += Velocity*dt` + `coll.step()` per frame (previously didn't move); bench registration no longer gated on `__DEV__` so release builds can be measured.
 - [x] `benchmarks/results/device.json` populated with Samsung Galaxy A54 5G (Android 16, release build). `bun run bench:md:cache` renders `docs/references/benchmarks.md` device section from JSON without re-running microbenches.
-- [x] Phase 10 gating decision recorded in `benchmarks.md` — stay deferred; if ever needed, physics broadphase is first C++ target (cliff at 350 colliders maps to the physics microbench).
-- ⏸ iOS capture — optional, not launch-blocking. Same flow (release build → triple-tap title → copy CSV → append to `device.json` → `bun run bench:md:cache`).
+- [x] Phase 10 gating decision recorded in [native-acceleration.md](../design/native-acceleration.md) (moved there 2026-07-28 out of the benchmarks generator) — stay deferred; if ever needed, physics broadphase is first C++ target (cliff at 350 colliders maps to the physics microbench).
+- ⏸ iOS capture — superseded by Arc PERF ([perf-measurement-2026-07.md](../plans/perf-measurement-2026-07.md) §11.7); the triple-tap CSV pipeline no longer exists and `bench:md:cache` was retired 2026-07-28.
 - ⏸ Audio SFXPool polyphony limits (needs device audio pipeline)
 - ⏸ Memory / GC pressure in steady-state on device
 

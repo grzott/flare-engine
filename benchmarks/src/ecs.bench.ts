@@ -1,6 +1,6 @@
 import { _resetComponentIds, defineSystem, Position, Velocity, World } from '@flare-engine/ecs';
 import { SeededRNG } from '@flare-engine/math';
-import { type BenchStats, runBench } from './harness.js';
+import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
 
 function buildWorld(entities: number): World {
   _resetComponentIds();
@@ -31,14 +31,17 @@ function buildWorld(entities: number): World {
 
 const DT = 1 / 60;
 
-export function ecsBenches(): BenchStats[] {
+export function ecsBenches(overrides?: BenchOverrides): BenchStats[] {
   return [500, 1000, 2000, 5000].map((n) =>
-    runBench({
-      name: `ecs.step  ${n.toString().padStart(4)} entities (Pos+Vel)`,
-      setup: () => buildWorld(n),
-      run: (world) => world.step(DT),
-      innerIters: 200,
-      samples: 30,
-    }),
+    runBench(
+      {
+        name: `ecs.step  ${n.toString().padStart(4)} entities (Pos+Vel)`,
+        setup: () => buildWorld(n),
+        run: (world) => world.step(DT),
+        innerIters: 200,
+        samples: 30,
+      },
+      overrides,
+    ),
   );
 }

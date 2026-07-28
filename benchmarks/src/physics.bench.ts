@@ -1,6 +1,6 @@
 import { SeededRNG } from '@flare-engine/math';
 import { AABB, CollisionWorld } from '@flare-engine/physics';
-import { type BenchStats, runBench } from './harness.js';
+import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
 
 type PhysicsState = {
   world: CollisionWorld;
@@ -38,26 +38,32 @@ function stepAndMove(state: PhysicsState): void {
   world.step();
 }
 
-export function physicsBenches(): BenchStats[] {
+export function physicsBenches(overrides?: BenchOverrides): BenchStats[] {
   const out: BenchStats[] = [];
   for (const n of [100, 500, 1000]) {
     out.push(
-      runBench({
-        name: `physics.step  ${n.toString().padStart(4)} AABB sparse`,
-        setup: () => buildWorld(n, 'sparse'),
-        run: stepAndMove,
-        innerIters: n >= 1000 ? 50 : 200,
-        samples: 30,
-      }),
+      runBench(
+        {
+          name: `physics.step  ${n.toString().padStart(4)} AABB sparse`,
+          setup: () => buildWorld(n, 'sparse'),
+          run: stepAndMove,
+          innerIters: n >= 1000 ? 50 : 200,
+          samples: 30,
+        },
+        overrides,
+      ),
     );
     out.push(
-      runBench({
-        name: `physics.step  ${n.toString().padStart(4)} AABB dense `,
-        setup: () => buildWorld(n, 'dense'),
-        run: stepAndMove,
-        innerIters: n >= 1000 ? 20 : 100,
-        samples: 30,
-      }),
+      runBench(
+        {
+          name: `physics.step  ${n.toString().padStart(4)} AABB dense `,
+          setup: () => buildWorld(n, 'dense'),
+          run: stepAndMove,
+          innerIters: n >= 1000 ? 20 : 100,
+          samples: 30,
+        },
+        overrides,
+      ),
     );
   }
   return out;

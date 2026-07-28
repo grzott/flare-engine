@@ -11,13 +11,19 @@ import { particlesBenches } from './particles.bench.js';
 import { physicsBenches } from './physics.bench.js';
 import { renderBenches } from './render.bench.js';
 import {
+  appendHistoryRow,
+  benchmarksDocFile,
+  collectProvenance,
   type DeviceReport,
   heapToResult,
   type MicrobenchReport,
+  readMicrobenchJson,
   resultsDir,
   statsToResult,
+  writeFileAtomic,
   writeMicrobenchJson,
 } from './results.js';
+import { findContractViolations, HEADLINE_PREFIXES } from './scenario-contract.js';
 
 type Group = { title: string; results: BenchStats[] };
 
@@ -104,28 +110,40 @@ function deviceFpsStats(fps: number[]): {
   return { min, avg: sum / fps.length, max };
 }
 
-function printMarkdown(
+function renderMarkdown(
   groups: Group[],
   heap: HeapDeltaResult[],
   device: DeviceReport | null,
-): void {
-  const runtime = `Bun ${Bun.version}`;
-  const platform = `${process.platform} ${process.arch}`;
-  const date = new Date().toISOString().slice(0, 10);
+  capture: MicrobenchReport,
+): string {
+  const captured = capture.generated.slice(0, 10);
+  const rendered = new Date().toISOString().slice(0, 10);
+  const cpu =
+    capture.cpuModel === undefined
+      ? 'CPU: unrecorded'
+      : `CPU: ${capture.cpuModel} (${capture.cpuCount ?? '?'} cores)`;
+  const commit =
+    capture.gitSha === undefined
+      ? 'Commit: unrecorded'
+      : `Commit: ${capture.gitSha}${capture.gitDirty ? ' (dirty tree)' : ''}`;
 
   const lines: string[] = [];
   lines.push('# Flare Engine — Benchmarks');
   lines.push('');
   lines.push(
-    `> Generated: ${date} · Runtime: ${runtime} · Platform: ${platform}. Regenerate: \`bun run bench:md\` (re-runs microbenches, ~60s) or \`bun run bench:md:cache\` (device-only update from cached JSON).`,
+    `> **Captured: ${captured}** · Rendered: ${rendered} · Runtime: ${capture.runtime} · Platform: ${capture.platform} · ${cpu} · ${commit}`,
+  );
+  lines.push('');
+  lines.push(
+    '> Every number below comes from the committed baseline captured on the date above — not from the day this page was rendered. Re-capture with `bun run bench:baseline` (~2 min), then `bun run bench:md`.',
   );
   lines.push('');
 
   // Headline numbers
-  const ecsK = findResult(groups, 'ecs.step  1000');
-  const partK = findResult(groups, 'particles.update  1000 integrate');
-  const renderK = findResult(groups, 'render.flush   1000 sprites / 1 atlas');
-  const integ1k = findResult(groups, 'integration.frame  1000');
+  const ecsK = findResult(groups, HEADLINE_PREFIXES.ecs);
+  const partK = findResult(groups, HEADLINE_PREFIXES.particles);
+  const renderK = findResult(groups, HEADLINE_PREFIXES.render);
+  const integ1k = findResult(groups, HEADLINE_PREFIXES.integration);
   lines.push('## Headline numbers');
   lines.push('');
   lines.push('| Metric | Value |');
@@ -167,7 +185,7 @@ function printMarkdown(
   );
   lines.push('');
   lines.push(
-    'Each row reports the median of 30 samples, where each sample times N inner iterations of the hot path. "p99" is the 99th-percentile sample latency across those 30 samples.',
+    'Each row reports the median of the sample count recorded in the baseline, where each sample times N inner iterations of the hot path. "p99" is the 99th-percentile sample latency across those samples.',
   );
   lines.push('');
   lines.push(
@@ -187,7 +205,11 @@ function printMarkdown(
   lines.push('## Integration heap delta');
   lines.push('');
   lines.push(
-    'Heap growth across N steady-state frames after warmup, measured `process.memoryUsage().heapUsed` deltas around forced GCs. Numbers near zero indicate zero-alloc steady state (modulo bookkeeping noise). Negative values just mean the GC reclaimed warmup garbage.',
+    'Heap growth across N steady-state frames after warmup, measured `process.memoryUsage().heapUsed` deltas around forced GCs.',
+  );
+  lines.push('');
+  lines.push(
+    '**These numbers do not currently support a zero-alloc claim.** The section runs in the same process as every preceding suite, so the deltas carry that accumulated garbage and the sign flips between runs. Measured in isolation the same frames show a stable positive per-frame growth. Exact allocation counters replace this section in a later row; until then read it as a known-broken instrument, not as evidence.',
   );
   lines.push('');
   lines.push('| Scenario | Frames | Δ heap | Per-frame |');
@@ -244,24 +266,14 @@ function printMarkdown(
     '- **Integration** — one frame = `world.step` + per-entity `coll.setPosition` + `coll.step` + `emitter.update` + sprite draw queue + `sortByDrawOrder` + `batch.flush`. Steady state: 300 particles + N entities (Pos+Vel + AABB collider + sprite). Closer shape match to a real demo frame than per-system microbenches.',
   );
   lines.push('');
-  lines.push('## Gating Phase 10 (C++ acceleration)');
+  lines.push('## Gating native (C++) acceleration');
   lines.push('');
   lines.push(
-    'Per [build-plan.md](../plans/build-plan.md), C++ acceleration is only started for subsystems where these benchmarks (plus on-device measurements from the demo game) show a concrete bottleneck. Priority order from [native-acceleration.md](../design/native-acceleration.md) remains: particles → ECS hot loop → spatial hash → physics. Numbers above are the JS baseline against which any C++ port must demonstrate speedup.',
-  );
-  lines.push('');
-  lines.push('### Decision — 2026-04-22');
-  lines.push('');
-  lines.push(
-    'First device capture (Samsung Galaxy A54 5G, Android 16, release): light (60 entities) 120 fps, medium (180 entities) ~117 fps, heavy (350 entities) ~48 fps. The cliff between medium and heavy maps to the physics microbench: `CollisionWorld.step` is O(n·log n) broadphase + O(k) resolution, and the heavy load crosses the 500-AABB threshold where Bun measures ~2 ms/step (≈12 ms/step extrapolated under Hermes on ARM). That single call consumes most of a 16.6 ms budget at 350 colliders, confirming physics as the primary bottleneck at demo-scale loads — matching the `<1000 dynamic entities` guidance in the physics package.',
-  );
-  lines.push('');
-  lines.push(
-    '**Outcome:** Phase 10 stays deferred until a second device (iOS) confirms the same cliff and a realistic target game needs >200 colliders. Demo at typical gameplay loads (≤150 colliders) comfortably holds 120 fps on mid-range Android, so the launch does not require a native port. If a future consumer hits the ceiling, the data points to physics broadphase (spatial hash) as the first C++ target, not particles.',
+    'Priority order and the standing gate decision live in [native-acceleration.md](../design/native-acceleration.md). Numbers above are the JS baseline against which any native port must demonstrate speedup.',
   );
   lines.push('');
 
-  console.log(lines.join('\n'));
+  return lines.join('\n');
 }
 
 function buildReport(groups: Group[], heap: HeapDeltaResult[]): MicrobenchReport {
@@ -269,6 +281,7 @@ function buildReport(groups: Group[], heap: HeapDeltaResult[]): MicrobenchReport
     generated: new Date().toISOString(),
     runtime: `Bun ${Bun.version}`,
     platform: `${process.platform} ${process.arch}`,
+    ...collectProvenance(),
     suites: groups.map((g) => ({
       title: g.title,
       results: g.results.map(statsToResult),
@@ -277,56 +290,96 @@ function buildReport(groups: Group[], heap: HeapDeltaResult[]): MicrobenchReport
   };
 }
 
-const args = new Set(process.argv.slice(2));
-
-if (args.has('--from-cache')) {
-  // Render markdown from cached microbench.json + device.json.
-  // Use this after updating device.json without re-running microbenches.
-  const microFile = resolve(resultsDir(), 'microbench.json');
-  const raw = readFileSync(microFile, 'utf8');
-  const cached = JSON.parse(raw) as MicrobenchReport;
-  const cachedGroups: Group[] = cached.suites.map((s) => ({
+function reportToGroups(report: MicrobenchReport): Group[] {
+  return report.suites.map((s) => ({
     title: s.title,
     results: s.results.map(
       (r): BenchStats => ({
         name: r.scenario,
         innerIters: r.innerIters,
         samples: r.samples,
-        nsPerOp: {
-          min: r.minNs,
-          median: r.medianNs,
-          mean: r.meanNs,
-          p99: r.p99Ns,
-        },
+        nsPerOp: { min: r.minNs, median: r.medianNs, mean: r.meanNs, p99: r.p99Ns },
         opsPerSec: r.opsPerSec,
       }),
     ),
   }));
-  const cachedHeap: HeapDeltaResult[] = cached.heap.map((h) => ({
-    name: h.name,
-    iterations: h.iterations,
-    deltaBytes: h.deltaBytes,
-    bytesPerFrame: h.bytesPerFrame,
-  }));
-  const device = loadDeviceReport();
-  printMarkdown(cachedGroups, cachedHeap, device);
+}
+
+const MAX_BASELINE_AGE_DAYS = 30;
+
+function ageInDays(iso: string): number {
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return Number.POSITIVE_INFINITY;
+  return (Date.now() - then) / 86_400_000;
+}
+
+const args = new Set(process.argv.slice(2));
+
+// `--markdown` publishes the committed baseline; it never runs the suites. One
+// captured number therefore backs both the doc and the dashboard, and no render
+// path can stamp today's date on an older capture.
+if (args.has('--markdown')) {
+  const baseline = readMicrobenchJson();
+  if (baseline === null) {
+    console.error(
+      `No readable baseline at ${resolve(resultsDir(), 'microbench.json')} (missing or unparseable). Capture one: bun run bench:baseline`,
+    );
+    process.exit(1);
+  }
+  if (typeof baseline.generated !== 'string' || Number.isNaN(Date.parse(baseline.generated))) {
+    console.error(
+      'Baseline has no usable "generated" timestamp — it cannot be dated honestly. Re-capture: bun run bench:baseline',
+    );
+    process.exit(1);
+  }
+
+  // A baseline captured before a scenario rename would publish a doc with that
+  // headline row silently missing. Absence has to fail loudly here, not render.
+  const violations = findContractViolations(baseline.suites);
+  if (violations.length > 0) {
+    console.error('Baseline does not match the frozen scenario contract:');
+    for (const v of violations) console.error(`  - ${v}`);
+    console.error('Re-capture with `bun run bench:baseline`, or update src/scenario-contract.ts.');
+    process.exit(1);
+  }
+
+  const allowStale = args.has('--allow-stale') || process.env.FLARE_BENCH_ALLOW_STALE === '1';
+  const age = ageInDays(baseline.generated);
+  if (age > MAX_BASELINE_AGE_DAYS && !allowStale) {
+    console.error(
+      `Baseline captured ${Math.floor(age)} days ago (${baseline.generated.slice(0, 10)}), limit is ${MAX_BASELINE_AGE_DAYS}.`,
+    );
+    console.error('Re-capture with `bun run bench:baseline`.');
+    console.error('To publish it as-is: FLARE_BENCH_ALLOW_STALE=1 bun run bench:md');
+    process.exit(1);
+  }
+  const markdown = renderMarkdown(
+    reportToGroups(baseline),
+    baseline.heap.map((h) => ({
+      name: h.name,
+      iterations: h.iterations,
+      deltaBytes: h.deltaBytes,
+      bytesPerFrame: h.bytesPerFrame,
+    })),
+    loadDeviceReport(),
+    baseline,
+  );
+  const target = benchmarksDocFile();
+  writeFileAtomic(target, `${markdown}\n`);
+  console.error(`Wrote ${target} from the ${baseline.generated.slice(0, 10)} capture.`);
   process.exit(0);
 }
 
 const groups = runAll();
 const heap = integrationHeapDelta(500);
+const report = buildReport(groups, heap);
 
-if (!args.has('--no-json')) {
-  const report = buildReport(groups, heap);
-  const file = writeMicrobenchJson(report);
-  if (!args.has('--markdown')) {
-    console.error(`\nWrote ${file}`);
-  }
+if (!args.has('--no-record')) {
+  console.error(`\nAppended run to ${appendHistoryRow(report)}`);
 }
 
-if (args.has('--markdown')) {
-  const device = loadDeviceReport();
-  printMarkdown(groups, heap, device);
-} else {
-  printText(groups, heap);
+if (args.has('--write-baseline')) {
+  console.error(`Wrote baseline ${writeMicrobenchJson(report)}`);
 }
+
+printText(groups, heap);

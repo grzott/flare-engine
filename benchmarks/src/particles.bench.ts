@@ -1,5 +1,5 @@
 import { ParticleEmitter } from '@flare-engine/particles';
-import { type BenchStats, runBench } from './harness.js';
+import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
 
 const DT = 1 / 60;
 
@@ -46,30 +46,36 @@ function streamingEmitter(cap: number): ParticleEmitter {
   return em;
 }
 
-export function particlesBenches(): BenchStats[] {
+export function particlesBenches(overrides?: BenchOverrides): BenchStats[] {
   const out: BenchStats[] = [];
 
   for (const n of [500, 1000, 2000, 5000]) {
     out.push(
-      runBench({
-        name: `particles.update  ${n.toString().padStart(4)} integrate-only`,
-        setup: () => steadyStateEmitter(n),
-        run: (em) => em.update(DT),
-        innerIters: 200,
-        samples: 30,
-      }),
+      runBench(
+        {
+          name: `particles.update  ${n.toString().padStart(4)} integrate-only`,
+          setup: () => steadyStateEmitter(n),
+          run: (em) => em.update(DT),
+          innerIters: 200,
+          samples: 30,
+        },
+        overrides,
+      ),
     );
   }
 
   for (const n of [500, 1000, 2000]) {
     out.push(
-      runBench({
-        name: `particles.update  ${n.toString().padStart(4)} emit+integrate`,
-        setup: () => streamingEmitter(n),
-        run: (em) => em.update(DT),
-        innerIters: 200,
-        samples: 30,
-      }),
+      runBench(
+        {
+          name: `particles.update  ${n.toString().padStart(4)} emit+integrate`,
+          setup: () => streamingEmitter(n),
+          run: (em) => em.update(DT),
+          innerIters: 200,
+          samples: 30,
+        },
+        overrides,
+      ),
     );
   }
 

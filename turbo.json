@@ -9,6 +9,21 @@
     "test": {
       "dependsOn": ["build"]
     },
+    "@flare-engine/benchmarks#test": {
+      "dependsOn": ["^build"]
+    },
+    "@flare-engine/benchmarks#bench": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "@flare-engine/benchmarks#bench:baseline": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "@flare-engine/benchmarks#bench:md": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
     "lint": {},
     "typecheck": {
       "dependsOn": ["^build"]

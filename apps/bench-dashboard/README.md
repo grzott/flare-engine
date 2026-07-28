@@ -29,12 +29,16 @@ bun --filter @flare-engine-apps/bench-dashboard lint
 
 ## Refreshing data
 
-**Microbench JSON** — re-run the off-device suite (takes ~60 s on Windows):
+**Microbench JSON** — re-run the off-device suite (takes ~2 min on Windows):
 
 ```bash
-cd benchmarks
-bun run bench        # writes benchmarks/results/microbench.json
+bun run bench            # runs + appends benchmarks/results/history.ndjson, leaves the baseline alone
+bun run bench:baseline   # same run, and promotes it to benchmarks/results/microbench.json
 ```
+
+The dashboard reads the **baseline**, so only `bench:baseline` changes what it renders. Both
+commands go through turbo and build the engine packages first — benchmarks resolve
+`@flare-engine/*` to `dist/`, so an unbuilt run measures stale code.
 
 **Device JSON** — hand-append samples from a device bench scene (the original `apps/demo` source was retired at stage 11.14; the bench scene lives in [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski), now its own repo):
 
@@ -42,12 +46,15 @@ bun run bench        # writes benchmarks/results/microbench.json
 2. Triple-tap the menu title → bench scene runs 3 × 10 s
 3. Copy CSV between `BENCH FPS CSV BEGIN` / `END` markers from logcat (`adb logcat ReactNativeJS:V *:S`)
 4. Append a device entry to [`benchmarks/results/device.json`](../../benchmarks/results/device.json) following the existing schema
-5. Regenerate the markdown doc from cache (no microbench re-run):
+5. Regenerate the markdown doc (renders the committed baseline, never re-runs the suites):
 
 ```bash
-cd benchmarks
-bun run bench:md:cache   # writes docs/references/benchmarks.md from cached JSON
+bun run bench:md   # writes docs/references/benchmarks.md from benchmarks/results/microbench.json
 ```
+
+`bench:md` refuses a baseline older than 30 days rather than republish it silently. Until a
+fresh capture lands, publish the existing one deliberately with
+`FLARE_BENCH_ALLOW_STALE=1 bun run bench:md`.
 
 Then rebuild the dashboard to see the new device rows.
 

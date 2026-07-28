@@ -7,10 +7,10 @@
   "type": "module",
   "scripts": {
     "bench": "bun run src/index.ts",
-    "bench:md": "bun run src/index.ts --markdown > ../docs/references/benchmarks.md",
-    "bench:md:cache": "bun run src/index.ts --from-cache > ../docs/references/benchmarks.md",
-    "bench:json": "bun run src/index.ts > /dev/null",
-    "lint": "biome check src/",
+    "bench:baseline": "bun run src/index.ts --write-baseline",
+    "bench:md": "bun run src/index.ts --markdown",
+    "test": "bun test",
+    "lint": "biome check src/ tests/",
     "typecheck": "tsc --noEmit"
   },
   "exports": {

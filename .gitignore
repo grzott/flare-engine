@@ -39,7 +39,8 @@ scripts/readme-snippets/
 # TestingBot credentials — real values never committed; see .env.testingbot.example
 apps/*/.env.testingbot
 
-# TestingBot per-run artifacts persisted by bench-cloud.sh for CI inspection.
+# TestingBot per-run artifacts from a device bench run (the harness itself lives
+# in the Pan-Tvardowski repo until the engine device lane is rebuilt).
 # Uploaded as GH Actions artifact, not committed.
 perf-artifacts/
 

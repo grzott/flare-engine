@@ -10,7 +10,7 @@ import { SeededRNG } from '@flare-engine/math';
 import { ParticleEmitter } from '@flare-engine/particles';
 import { AABB, CollisionWorld } from '@flare-engine/physics';
 import { type Drawable, SpriteBatch, sortByDrawOrder } from '@flare-engine/render';
-import { type BenchStats, runBench } from './harness.js';
+import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
 
 interface SkImageStub {
   width(): number;
@@ -126,15 +126,18 @@ function frame(state: IntegrationState): void {
   state.batch.flush(state.drawAtlas);
 }
 
-export function integrationBenches(): BenchStats[] {
+export function integrationBenches(overrides?: BenchOverrides): BenchStats[] {
   return [500, 1000, 2000].map((n) =>
-    runBench({
-      name: `integration.frame  ${n.toString().padStart(4)} entities + ${PARTICLE_COUNT}p`,
-      setup: () => buildState(n),
-      run: frame,
-      innerIters: n >= 2000 ? 20 : n >= 1000 ? 40 : 100,
-      samples: 30,
-    }),
+    runBench(
+      {
+        name: `integration.frame  ${n.toString().padStart(4)} entities + ${PARTICLE_COUNT}p`,
+        setup: () => buildState(n),
+        run: frame,
+        innerIters: n >= 2000 ? 20 : n >= 1000 ? 40 : 100,
+        samples: 30,
+      },
+      overrides,
+    ),
   );
 }
 
@@ -147,11 +150,11 @@ export type HeapDeltaResult = {
 
 declare const Bun: { gc(force: boolean): void } | undefined;
 
-export function integrationHeapDelta(iterations = 500): HeapDeltaResult[] {
+export function integrationHeapDelta(iterations = 500, warmupFrames = 30): HeapDeltaResult[] {
   const results: HeapDeltaResult[] = [];
   for (const n of [500, 1000, 2000]) {
     const state = buildState(n);
-    for (let w = 0; w < 30; w++) frame(state);
+    for (let w = 0; w < warmupFrames; w++) frame(state);
     if (typeof Bun !== 'undefined') Bun.gc(true);
     const before = process.memoryUsage().heapUsed;
     for (let i = 0; i < iterations; i++) frame(state);

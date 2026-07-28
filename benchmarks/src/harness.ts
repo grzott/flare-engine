@@ -15,6 +15,19 @@ export type BenchStats = {
   opsPerSec: number;
 };
 
+/**
+ * Per-run overrides applied on top of every BenchDef. The smoke gate runs the
+ * real suites at sample counts that finish in seconds; timings from an
+ * overridden run are not comparable to a full capture.
+ */
+export type BenchOverrides = {
+  samples?: number;
+  innerIters?: number;
+  warmup?: number;
+};
+
+export const SMOKE_OVERRIDES: BenchOverrides = { samples: 2, innerIters: 1, warmup: 0 };
+
 const NS_PER_MS = 1_000_000;
 
 function percentile(sorted: readonly number[], p: number): number {
@@ -24,10 +37,10 @@ function percentile(sorted: readonly number[], p: number): number {
   return sorted[idx] as number;
 }
 
-export function runBench<S>(def: BenchDef<S>): BenchStats {
-  const innerIters = def.innerIters ?? 1;
-  const samples = def.samples ?? 30;
-  const warmup = def.warmup ?? 3;
+export function runBench<S>(def: BenchDef<S>, overrides?: BenchOverrides): BenchStats {
+  const innerIters = overrides?.innerIters ?? def.innerIters ?? 1;
+  const samples = overrides?.samples ?? def.samples ?? 30;
+  const warmup = overrides?.warmup ?? def.warmup ?? 3;
 
   const state = def.setup();
 

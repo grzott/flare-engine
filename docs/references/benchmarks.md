@@ -1,6 +1,8 @@
 # Flare Engine — Benchmarks
 
-> Generated: 2026-04-22 · Runtime: Bun 1.3.11 · Platform: win32 x64. Regenerate: `bun run bench:md` (re-runs microbenches, ~60s) or `bun run bench:md:cache` (device-only update from cached JSON).
+> **Captured: 2026-04-16** · Rendered: 2026-07-28 · Runtime: Bun 1.3.11 · Platform: win32 x64 · CPU: unrecorded · Commit: unrecorded
+
+> Every number below comes from the committed baseline captured on the date above — not from the day this page was rendered. Re-capture with `bun run bench:baseline` (~2 min), then `bun run bench:md`.
 
 ## Headline numbers
 
@@ -18,7 +20,7 @@
 
 Off-device microbenchmarks exercise engine hot paths under Bun on the developer machine — pure algorithmic cost, no Skia, no React Native bridge, no device I/O. Their value is regression detection and order-of-magnitude sizing; they do **not** predict on-device frame times. For real frame times see the [Device](#device) section.
 
-Each row reports the median of 30 samples, where each sample times N inner iterations of the hot path. "p99" is the 99th-percentile sample latency across those 30 samples.
+Each row reports the median of the sample count recorded in the baseline, where each sample times N inner iterations of the hot path. "p99" is the 99th-percentile sample latency across those samples.
 
 Frame budget at 60 fps is 16.67 ms. A system taking 1 ms per step leaves 15+ ms for the rest of the frame.
 
@@ -77,7 +79,9 @@ Frame budget at 60 fps is 16.67 ms. A system taking 1 ms per step leaves 15+ ms 
 
 ## Integration heap delta
 
-Heap growth across N steady-state frames after warmup, measured `process.memoryUsage().heapUsed` deltas around forced GCs. Numbers near zero indicate zero-alloc steady state (modulo bookkeeping noise). Negative values just mean the GC reclaimed warmup garbage.
+Heap growth across N steady-state frames after warmup, measured `process.memoryUsage().heapUsed` deltas around forced GCs.
+
+**These numbers do not currently support a zero-alloc claim.** The section runs in the same process as every preceding suite, so the deltas carry that accumulated garbage and the sign flips between runs. Measured in isolation the same frames show a stable positive per-frame growth. Exact allocation counters replace this section in a later row; until then read it as a known-broken instrument, not as evidence.
 
 | Scenario | Frames | Δ heap | Per-frame |
 |---|---:|---:|---:|
@@ -107,13 +111,7 @@ On-device FPS samples captured from a device benchmark scene (hidden triple-tap 
 - **Render** — `flush` measures sprite command queueing + grouping by texture. `sort` measures `sortByDrawOrder` on a nearly-sorted list with K random swaps (insertion sort is O(n+k²) after k swaps).
 - **Integration** — one frame = `world.step` + per-entity `coll.setPosition` + `coll.step` + `emitter.update` + sprite draw queue + `sortByDrawOrder` + `batch.flush`. Steady state: 300 particles + N entities (Pos+Vel + AABB collider + sprite). Closer shape match to a real demo frame than per-system microbenches.
 
-## Gating Phase 10 (C++ acceleration)
+## Gating native (C++) acceleration
 
-Per [roadmap.md](../plans/roadmap.md), C++ acceleration is only started for subsystems where these benchmarks (plus on-device measurements from the showcase game) show a concrete bottleneck. Priority order from [native-acceleration.md](../design/native-acceleration.md) remains: particles → ECS hot loop → spatial hash → physics. Numbers above are the JS baseline against which any C++ port must demonstrate speedup.
-
-### Decision — 2026-04-22
-
-First device capture (Samsung Galaxy A54 5G, Android 16, release): light (60 entities) 120 fps, medium (180 entities) ~117 fps, heavy (350 entities) ~48 fps. The cliff between medium and heavy maps to the physics microbench: `CollisionWorld.step` is O(n·log n) broadphase + O(k) resolution, and the heavy load crosses the 500-AABB threshold where Bun measures ~2 ms/step (≈12 ms/step extrapolated under Hermes on ARM). That single call consumes most of a 16.6 ms budget at 350 colliders, confirming physics as the primary bottleneck at demo-scale loads — matching the `<1000 dynamic entities` guidance in the physics package.
-
-**Outcome:** Phase 10 stays deferred until a second device (iOS) confirms the same cliff and a realistic target game needs >200 colliders. Demo at typical gameplay loads (≤150 colliders) comfortably holds 120 fps on mid-range Android, so the launch does not require a native port. If a future consumer hits the ceiling, the data points to physics broadphase (spatial hash) as the first C++ target, not particles.
+Priority order and the standing gate decision live in [native-acceleration.md](../design/native-acceleration.md). Numbers above are the JS baseline against which any native port must demonstrate speedup.
 

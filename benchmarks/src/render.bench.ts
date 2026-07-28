@@ -1,6 +1,6 @@
 import { SeededRNG } from '@flare-engine/math';
 import { type Drawable, SpriteBatch, sortByDrawOrder } from '@flare-engine/render';
-import { type BenchStats, runBench } from './harness.js';
+import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
 
 interface SkImageStub {
   width(): number;
@@ -77,7 +77,7 @@ function sortRun(state: SortState): void {
   sortByDrawOrder<Drawable>(items);
 }
 
-export function renderBenches(): BenchStats[] {
+export function renderBenches(overrides?: BenchOverrides): BenchStats[] {
   const out: BenchStats[] = [];
 
   for (const { n, tx } of [
@@ -88,13 +88,16 @@ export function renderBenches(): BenchStats[] {
     { n: 1000, tx: 8 },
   ]) {
     out.push(
-      runBench({
-        name: `render.flush   ${n.toString().padStart(4)} sprites / ${tx} atlas`,
-        setup: () => buildBatchState(n, tx),
-        run: batchRun,
-        innerIters: n >= 1000 ? 100 : 300,
-        samples: 30,
-      }),
+      runBench(
+        {
+          name: `render.flush   ${n.toString().padStart(4)} sprites / ${tx} atlas`,
+          setup: () => buildBatchState(n, tx),
+          run: batchRun,
+          innerIters: n >= 1000 ? 100 : 300,
+          samples: 30,
+        },
+        overrides,
+      ),
     );
   }
 
@@ -104,13 +107,16 @@ export function renderBenches(): BenchStats[] {
     { n: 1000, j: 10 },
   ]) {
     out.push(
-      runBench({
-        name: `render.sort    ${n.toString().padStart(4)} items (${j} swaps)`,
-        setup: () => buildSortState(n, j),
-        run: sortRun,
-        innerIters: 500,
-        samples: 30,
-      }),
+      runBench(
+        {
+          name: `render.sort    ${n.toString().padStart(4)} items (${j} swaps)`,
+          setup: () => buildSortState(n, j),
+          run: sortRun,
+          innerIters: 500,
+          samples: 30,
+        },
+        overrides,
+      ),
     );
   }
 

@@ -121,3 +121,25 @@ Combined with Nitro C++ and shared Float32Arrays: true multi-threaded game archi
 | react-native-filament | 1,300 | Full 3D engine (Filament) + Bullet3 physics in C++, React API. 90.9% C++.        |
 | react-native-mmkv v4  | 8,300 | Rewritten as Nitro Module. Synchronous C++ calls, ~30x faster than AsyncStorage. |
 | VisionCamera          | ~7K   | Real-time 60fps frame processing via worklets + C++.                             |
+
+---
+
+## Gate decision — 2026-04-22 (numbers superseded)
+
+Relocated here from the benchmarks generator, which hardcoded it as prose and re-emitted it
+on every regeneration regardless of what the fresh numbers said.
+
+First device capture (Samsung Galaxy A54 5G, Android 16, release): light (60 entities) 120 fps,
+medium (180 entities) ~117 fps, heavy (350 entities) ~48 fps. The cliff between medium and heavy
+was mapped to the physics microbench: `CollisionWorld.step` is O(n·log n) broadphase + O(k)
+resolution, and the heavy load crosses the 500-AABB threshold where Bun measured ~2 ms/step
+(≈12 ms/step extrapolated under Hermes on ARM).
+
+**Outcome:** native acceleration stays deferred. Priority order if the gate ever trips remains
+particles → ECS hot loop → spatial hash → physics, with physics broadphase (spatial hash) as the
+first target on this evidence.
+
+**Status of the evidence (2026-07-28):** both halves are stale. The device numbers are a single
+2026-04-22 capture on one device, and the microbench numbers behind the extrapolation predate five
+commits to the render hot path. Re-derive before citing this decision again — see
+[perf-measurement-2026-07.md](../plans/perf-measurement-2026-07.md).

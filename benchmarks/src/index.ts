@@ -350,7 +350,8 @@ if (args.has('--markdown')) {
       `Baseline captured ${Math.floor(age)} days ago (${baseline.generated.slice(0, 10)}), limit is ${MAX_BASELINE_AGE_DAYS}.`,
     );
     console.error('Re-capture with `bun run bench:baseline`.');
-    console.error('To publish it as-is: FLARE_BENCH_ALLOW_STALE=1 bun run bench:md');
+    console.error('To publish it as-is, set FLARE_BENCH_ALLOW_STALE=1 and re-run bun run bench:md');
+    console.error('  PowerShell: $env:FLARE_BENCH_ALLOW_STALE=1; bun run bench:md');
     process.exit(1);
   }
   const markdown = renderMarkdown(

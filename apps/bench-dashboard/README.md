@@ -53,8 +53,10 @@ bun run bench:md   # writes docs/references/benchmarks.md from benchmarks/result
 ```
 
 `bench:md` refuses a baseline older than 30 days rather than republish it silently. Until a
-fresh capture lands, publish the existing one deliberately with
-`FLARE_BENCH_ALLOW_STALE=1 bun run bench:md`.
+fresh capture lands, publish the existing one deliberately by setting
+`FLARE_BENCH_ALLOW_STALE=1` (PowerShell: `$env:FLARE_BENCH_ALLOW_STALE=1;`) before the command.
+The variable is declared in `turbo.json` — turbo runs tasks in strict env mode and drops any
+variable a task does not list.
 
 Then rebuild the dashboard to see the new device rows.
 

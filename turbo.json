@@ -22,7 +22,8 @@
     },
     "@flare-engine/benchmarks#bench:md": {
       "dependsOn": ["^build"],
-      "cache": false
+      "cache": false,
+      "env": ["FLARE_BENCH_ALLOW_STALE"]
     },
     "lint": {},
     "typecheck": {

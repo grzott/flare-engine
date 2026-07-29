@@ -11,7 +11,7 @@
     },
     "@flare-engine/benchmarks#test": {
       "dependsOn": ["^build"],
-      "inputs": ["src/**", "tests/**", "package.json", "tsconfig.json"]
+      "inputs": ["src/**", "tests/**", "package.json", "tsconfig.json", "results/**"]
     },
     "@flare-engine/benchmarks#bench:promote": {
       "dependsOn": ["^build"],

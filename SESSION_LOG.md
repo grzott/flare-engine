@@ -9776,10 +9776,29 @@ None — audit-only close per row allowance.
 
 **Goal:** PERF-4a — microbench honesty (P1 rework): real transform path, exact alloc gate, isolated heap probe
 
+**Outcome:** the render + integration suites now drive the real `createFrameRenderer`
+through a counting zero-alloc Skia stub, so per-sprite transform construction is inside the
+measured region for the first time. New baseline (5 runs, median-of-medians, spread bands):
+`render.flush 1000 / 1 atlas` **55.6 µs**, `integration.frame 1000 + 300p` **12.47 ms**,
+`ecs.step 1000` **23.3 µs** (control). 11 exact-integer alloc rows pass in CI; all three
+isolated heap probes converge at or under their own resolution. **Not comparable to any
+pre-2026-07-29 capture** — measured region, warm-up policy, sampling and workload bounds all
+changed (see perf-measurement-2026-07.md §11.4a).
+
+**Findings:** B26 **withdrawn** (the "+15.7–33.4 KB/frame retained growth" was a 30-frame
+warm-up artifact; re-measured ~0 with every structural counter flat). Two new engine defects
+spawned as rows: **B27/PERF-9** (physics pair-`Set` reuse costs 38× the heap footprint it
+saves under JSC — 49 MB vs 1 MB) and **B28/PERF-10** (`typeof __DEV__` on an undeclared
+global costs ~270 ns/eval and sits per-sprite in `fillXforms`; RN unaffected, web/Node not).
+A 35-agent adversarial review caught 2 blockers pre-commit: the `__DEV__` inflation (headline
+row read 486 µs instead of 57 µs) and a heap probe that could not converge at 2000 entities.
+
 **Touched files**
 - `apps/bench-dashboard/app/lib/types.ts`
 - `apps/bench-dashboard/app/lib/units.ts`
 - `benchmarks/package.json`
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
 - `benchmarks/src/alloc.ts`
 - `benchmarks/src/dev-flag.ts`
 - `benchmarks/src/ecs.bench.ts`
@@ -9795,11 +9814,14 @@ None — audit-only close per row allowance.
 - `benchmarks/src/scenario-contract.ts`
 - `benchmarks/src/skia-stub.ts`
 - `benchmarks/tests/alloc.test.ts`
+- `benchmarks/tests/baseline.test.ts`
 - `benchmarks/tests/promote.test.ts`
 - `benchmarks/tests/smoke.test.ts`
 - `bun.lock`
 - `docs/plans/perf-measurement-2026-07.md`
 - `docs/plans/todo.md`
+- `docs/references/benchmarks.md`
+- `turbo.json`
 
 **Gates**
 - lint: green

@@ -9858,6 +9858,9 @@ row read 486 µs instead of 57 µs) and a heap probe that could not converge at 
 - `benchmarks/results/history.ndjson`
 - `benchmarks/results/microbench.json`
 - `docs/references/benchmarks.md`
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `docs/references/benchmarks.md`
 - `turbo.json`
 
 **Gates**
@@ -10131,7 +10134,36 @@ of the five runs.
 
 **Frictions:** corr:0 / deny:0 / gate:1 / fixup:13 / drift:0
 
-**Next:** re-capture (5 runs, clean tree → promote → `bench:md`) as this round's second commit,
-which clears both the staleness and the new doc stamp. Then **PERF-8**.
+**Re-capture (commit 2) — and a harness gap it exposed.**
+
+The first two attempts at `ca97f90` were **discarded, not published.** They disagreed with the
+14:14 capture by more than the commit could explain: `integration.frame 1000` read 10.54 ms then
+9.7 ms against 12.5 ms, while `render.flush` rose ~10% and the `ecs.step` **control row** — which no
+commit in that range touches — moved too. `ca97f90` contains exactly one line of executable change,
+a `lines.push` inside the markdown generator, which does not run during a capture; everything else
+in it is docstrings. Two rows slower and one 23% faster also rules out a simple clock-speed story.
+
+Cause: **eight residual `claude` processes** from the 78-agent review workflow were still resident,
+hundreds of CPU-seconds each. Both clean captures predate them; both disturbed captures ran
+alongside them. With the sessions closed and CPU load at 7%, the third attempt landed back in
+family with the pre-existing reference:
+
+| Scenario | ref (`268f246`, quiet) | disturbed | published (`ca97f90`, quiet) |
+|---|---:|---:|---:|
+| `ecs.step 1000` *(control)* | 23.1–23.5 µs | 21.6–25.0 | **23.3 µs** (23.0–23.9) |
+| `render.flush 1000 / 1 atlas` | 54.9–56.1 µs | 55.4–64.1 | **55.7 µs** (54.6–56.3) |
+| `integration.frame 1000` | 12.51–12.64 ms | 9.16–12.78 | **12.63 ms** (12.55–12.88) |
+
+`microbench.json` and `benchmarks.md` were restored from HEAD in between; the ten discarded runs
+**stay in `history.ndjson`**, which is append-only by design — they happened, they are evidence, and
+they are not a baseline. Publishing 9.7 ms would have recorded a 23% improvement no code produced,
+which is the precise failure this arc exists to end.
+
+**The gap:** provenance records CPU model, core count and RAM, but nothing about machine LOAD, so
+the harness cannot tell a quiet capture from a contended one — and the only reason this was caught
+is that a human-legible control row exists and someone read it. A capture-time load guard (refuse,
+or at minimum record) is a candidate row. **Filed as B29.**
+
+**Next:** **PERF-8** (dashboard hardening + root `PERFORMANCE.md`); PERF-4b and PERF-9 post-freeze.
 
 ---

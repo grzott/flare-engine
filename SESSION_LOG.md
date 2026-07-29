@@ -9855,6 +9855,9 @@ row read 486 µs instead of 57 µs) and a heap probe that could not converge at 
 - `scripts/check-perf.mjs`
 - `scripts/lib/pack.mjs`
 - `scripts/lib/perf-gate.mjs`
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `docs/references/benchmarks.md`
 - `turbo.json`
 
 **Gates**
@@ -9974,10 +9977,10 @@ so it must end with a 5-run re-capture.
 - test: green
 - build: green
 - deps / changeset / perf: green
-- **perf-freshness: RED, overridden with `FLARE_PERF_ALLOW_STALE=1`** — by design. This row edits
-  `packages/render/src`, `packages/core/src` and `benchmarks/src`, so the committed capture stops
-  describing HEAD the moment it lands. The re-capture is this row's second commit; the override is
-  the documented escape and is used here exactly once, deliberately.
+- **perf-freshness: RED at the first close, overridden with `FLARE_PERF_ALLOW_STALE=1`; GREEN after
+  the re-capture.** By design: this row edits `packages/render/src`, `packages/core/src` and
+  `benchmarks/src`, so the committed capture stopped describing HEAD the moment commit 1 landed.
+  The override was used exactly once, deliberately, and the second commit cleared it.
 
 **Outcome**
 
@@ -10038,8 +10041,23 @@ configuration is no longer distinguishable from the declared one, where before i
   `frame-renderer-counters.test.ts` already flip `globalThis.__DEV__` mid-describe, including a
   `delete g['__DEV__']` case, which is precisely the contract the property read preserves.
 
-**Next:** the re-capture (5 runs from the clean tree → `bench:promote` → `bench:md`) lands as this
-row's second commit, which is what clears the freshness override. Then **PERF-8** (dashboard
-hardening + root `PERFORMANCE.md`); PERF-4b and PERF-9 are post-freeze.
+**Re-capture (commit 2).** 5 runs, all clean-tree at `268f246`, `devFlag=false`, schema 2, all
+three heap rows converged, all 11 alloc gate rows passing. Headline movement against the PERF-4a
+baseline at `b7f5fc7`, which is the control this row needed:
+
+| Scenario | at `b7f5fc7` | at `268f246` | band |
+|---|---:|---:|---|
+| `render.flush 1000 / 1 atlas` | 55.6 µs | **55.1 µs** | 54.9–56.1 |
+| `render.flush 1000 / outline` | — | **123.1 µs** | 122.4–131.7 |
+| `ecs.step 1000` *(control)* | 23.3 µs | **23.2 µs** | 23.1–23.5 |
+| `integration.frame 1000 + 300p` | 12.47 ms | **12.56 ms** | 12.51–12.64 |
+
+Every row is inside its own spread band — which is the expected and desired result. The bench
+declares `__DEV__ = false`, so it measures the configuration this change does not touch; a moved
+number here would have meant the rewrite altered behaviour rather than cost. The win is real but
+invisible to this table, and the generated doc now carries a line saying exactly that.
+
+**Next:** **PERF-8** (dashboard hardening + root `PERFORMANCE.md`); PERF-4b and PERF-9 are
+post-freeze.
 
 ---

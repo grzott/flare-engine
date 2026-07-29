@@ -9948,3 +9948,98 @@ first row that will make `check:perf-freshness` go red on purpose: it touches `p
 so it must end with a 5-run re-capture.
 
 ---
+
+## Session 266 — 2026-07-29 (scope: engine)
+
+**Goal:** PERF-10 — hot-loop __DEV__ guard (B28)
+
+**Touched files**
+- `.changeset/perf-10-dev-flag-property-read.md`
+- `benchmarks/src/index.ts`
+- `docs/design/api-specs.md`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+- `packages/core/src/pool.ts`
+- `packages/core/tests/pool-dist.test.ts`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render/tests/frame-renderer-dist.test.ts`
+- `scripts/check-perf-freshness.mjs`
+- `scripts/check-perf.mjs`
+- `scripts/lib/git.mjs`
+- `scripts/lib/perf-gate.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+- deps / changeset / perf: green
+- **perf-freshness: RED, overridden with `FLARE_PERF_ALLOW_STALE=1`** — by design. This row edits
+  `packages/render/src`, `packages/core/src` and `benchmarks/src`, so the committed capture stops
+  describing HEAD the moment it lands. The re-capture is this row's second commit; the override is
+  the documented escape and is used here exactly once, deliberately.
+
+**Outcome**
+
+Arc-PERF, engine-builder scope, one lockstep minor changeset (core + render). B28 closed.
+
+JSC has no inline cache for an unresolvable global identifier, so
+`typeof __DEV__ !== 'undefined' && __DEV__` costs ~270 ns **per evaluation** where the flag is
+undeclared. PERF-3 had put that expression inside `fillXforms` — once per sprite per transform
+pass, **nine times over under an outline effect** — and `Pool.release()` had carried it per
+released object since before this arc. Both now read `globalThis.__DEV__` as a property
+(~0.46 ns, ~400× cheaper, identically togglable at runtime). `Pool`'s **constructor** keeps the
+identifier form on purpose: once per pool, and it is the site a bundler can constant-fold.
+
+**Measured before and after**, `render.flush 1000 sprites / 1 atlas`, median of 41 samples × 20
+inner iterations after a 3000-frame warm-up:
+
+| `__DEV__` | before | after |
+|---|---:|---:|
+| undeclared | 412–450 µs | 56–88 µs |
+| declared `false` | 56–88 µs | 55–88 µs |
+| declared `true` | 59 µs | 57 µs |
+
+The 56/88 µs split is **bimodal on this machine and appears in both configurations** — one
+interleaved pair came out `undeclared 55.9` / `declared-false 87.9`, the reverse of its neighbours
+— so it is JIT/thermal state, not residual guard cost. Exit criterion holds: the undeclared
+configuration is no longer distinguishable from the declared one, where before it was ~7.4× worse.
+
+**Findings**
+
+- **The published table cannot move, and the generated doc now says so.** The bench pins
+  `__DEV__ = false` (dev-flag.ts), so it has always measured the cheap configuration. The win
+  belongs to consumers who never define the flag — web/CanvasKit bundles, Node, Bun. React Native
+  defines it always and sees no change. A line in "What these numbers do not measure" states the
+  before/after so nobody reads the flat table as "PERF-10 did nothing".
+- **Deviation from the §11.10 spec: the guards stay truthiness checks, not `=== true`.** `=== true`
+  would silently disable the pool's double-release guard for a consumer who set `__DEV__ = 1`.
+  Truthiness matches the old expression for every possible value, so the rewrite is
+  behaviour-preserving, and the cost is identical — both are one inline-cached load.
+- **Render's dist canary was inverted, not deleted.** It used to assert that `typeof __DEV__`
+  SURVIVES tsdown (guarding against constant-folding freezing the flag). It now asserts the
+  opposite: that the bare form never comes back and the read stays `.__DEV__`. Core had no dist
+  assertion at all and gained `pool-dist.test.ts`; it cannot assert the identifier is absent,
+  because the constructor legitimately keeps it. **Both mutation-verified** — reverting the two
+  source files to the identifier form and rebuilding produces 6 failures across the two packages.
+- The frame-renderer docstring is **phrased to avoid quoting the old expression verbatim**, because
+  the canary greps the built artifact as text and a surviving comment would read as a
+  reintroduction. Verified against the actual dist: render emits zero `typeof __DEV__`, core emits
+  exactly one (the constructor).
+- **Follow-up fix to PERF-5, found by using it on a real row.** `check:perf-freshness` compared
+  committed history only, so at `/close` — where the row's changes are still uncommitted — it
+  reported FRESH for exactly the edits about to invalidate the capture, and the red would appear
+  only in CI after the push. That is fails-green at the last moment a builder can act on it
+  cheaply. It now counts uncommitted changes to measured paths as staleness. The git helpers moved
+  to `scripts/lib/git.mjs`, shared with check-perf.mjs, carrying the porcelain leading-space
+  warning with them. **This row is the proof:** the canary correctly reds all five suites and names
+  `packages/core/src/pool.ts (uncommitted)` as the first offender.
+- Existing runtime-toggle tests needed no changes — `pool.test.ts` and
+  `frame-renderer-counters.test.ts` already flip `globalThis.__DEV__` mid-describe, including a
+  `delete g['__DEV__']` case, which is precisely the contract the property read preserves.
+
+**Next:** the re-capture (5 runs from the clean tree → `bench:promote` → `bench:md`) lands as this
+row's second commit, which is what clears the freshness override. Then **PERF-8** (dashboard
+hardening + root `PERFORMANCE.md`); PERF-4b and PERF-9 are post-freeze.
+
+---

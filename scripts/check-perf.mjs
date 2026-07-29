@@ -36,10 +36,10 @@
  * Requires built dists (`bun run build`) — it measures what ships, not src.
  * Exit codes: 0 = green · 1 = gate failed · 2 = setup error.
  */
-import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { git, gitLines } from './lib/git.mjs';
 import {
   declaredEntryPoints,
   discoverPublishTargets,
@@ -63,32 +63,6 @@ const withBytes = argv.includes('--bytes');
 const write = argv.includes('--write');
 
 assertSelftest('check-perf');
-
-const git = (...args) => {
-  try {
-    return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
-  } catch {
-    return '';
-  }
-};
-
-/**
- * Untrimmed line split. `git status --porcelain` encodes the staged/unstaged
- * pair in columns 1-2, so an unstaged edit begins with a SPACE — trimming the
- * whole output silently eats the first character of the first path, which
- * turned `.perf-baseline.json` into `perf-baseline.json` and made the review
- * guard blind to the one file it exists to watch.
- */
-const gitLines = (...args) => {
-  try {
-    return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' })
-      .split('\n')
-      .map((l) => l.replace(/\r$/, ''))
-      .filter((l) => l !== '');
-  } catch {
-    return [];
-  }
-};
 
 // --- Baseline ----------------------------------------------------------------
 

@@ -361,6 +361,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   lines.push(
     '- **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.',
   );
+  lines.push(
+    `- **These numbers are captured with \`__DEV__\` pinned to \`false\`, so they do not show the PERF-10 win.** Where \`__DEV__\` is left undeclared — web/CanvasKit bundles, plain Node or Bun, anything that is not React Native — the engine used to pay ~270 ns per evaluation of a \`typeof\`-guarded global, once per sprite per transform pass. \`render.flush 1000 / 1 atlas\` measured 412-450 µs in that configuration and 56-88 µs after the fix, which is the band shown below. Consumers who never define the flag gained roughly 7x on this row; the table itself cannot move, because the bench has always declared it.`,
+  );
   lines.push('');
 
   lines.push('## Suites');

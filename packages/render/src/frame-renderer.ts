@@ -1,4 +1,28 @@
-declare const __DEV__: boolean | undefined;
+/**
+ * Dev-flag access for the per-sprite transform counters below.
+ *
+ * Read as a PROPERTY of a stable object, never as the bare `__DEV__` identifier
+ * behind a `typeof` guard. JSC has no inline cache for an unresolvable global
+ * identifier, so that form costs ~270 ns *per evaluation* wherever the global
+ * is undeclared — and this expression sits once per sprite per transform pass,
+ * nine times over under an outline effect. A property miss on `globalThis` is
+ * inline-cached at ~0.46 ns, ~400x cheaper, and stays togglable at runtime
+ * exactly as before.
+ *
+ * (Phrased without the literal old expression on purpose: the dist canary in
+ * `tests/frame-renderer-dist.test.ts` greps the built artifact as text, and a
+ * comment quoting it would read as a reintroduction.)
+ *
+ * React Native always defines `__DEV__`, so RN builds never paid this; web /
+ * CanvasKit and any Node or Bun consumer did. Measured B28, retired PERF-10:
+ * `render.flush 1000 / 1 atlas` in the UNDECLARED configuration went 412-450 µs
+ * before this change to 56-88 µs after — the same band the declared-false
+ * configuration occupies, so the two are no longer distinguishable.
+ *
+ * Non-RN runtimes set `globalThis.__DEV__`, which is the contract api-specs
+ * already documents for `isDevMode()`. Truthiness is deliberate: it matches the
+ * previous guard for every possible value, so no consumer loses a dev check.
+ */
 
 import type { SkImageLike } from '@flare-engine/assets';
 import type { CanvasLike } from './renderer.js';
@@ -34,6 +58,9 @@ import {
   type TintEffect,
   type WaterEffect,
 } from './sprite-effects.js';
+
+/** See the dev-flag note at the top of this file. */
+const G = globalThis as { __DEV__?: boolean };
 
 // ---------------------------------------------------------------------------
 // Structural interfaces — no @shopify/react-native-skia import anywhere here.
@@ -410,7 +437,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const scale = cmd.srcW === 0 ? 1 : cmd.dstW / cmd.srcW;
       if (cmd.rotation === 0) {
         xforms[i]?.set(scale, 0, cmd.dstX + dx, cmd.dstY + dy);
-        if (typeof __DEV__ !== 'undefined' && __DEV__) _xformUnrotatedCount++;
+        if (G.__DEV__) _xformUnrotatedCount++;
       } else {
         const c = Math.cos(cmd.rotation);
         const s = Math.sin(cmd.rotation);
@@ -426,7 +453,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
           px - scos * axSrc + ssin * aySrc,
           py - ssin * axSrc - scos * aySrc,
         );
-        if (typeof __DEV__ !== 'undefined' && __DEV__) _xformRotatedCount++;
+        if (G.__DEV__) _xformRotatedCount++;
       }
     }
   }

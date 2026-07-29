@@ -10,7 +10,21 @@ const DIST_ESM = join(RENDER_DIR, 'dist', 'index.mjs');
 // so under `bun run test` all dep builds complete before this suite starts.
 // For a bare `bun test` run the first assertions below fail clearly if dist is
 // absent; the fix is `bun run build` in packages/render.
-describe('frame-renderer dist: __DEV__ identifier survives tsdown', () => {
+//
+// PERF-10 changed what this canary guards. The `fillXforms` counters used to
+// read the bare `__DEV__` identifier, and the risk was tsdown constant-folding
+// it (`typeof true`), which would freeze the flag at build time. They now read
+// `globalThis.__DEV__` as a property, which is ~400x cheaper when the global is
+// undeclared (B28). A `define`-style substitution cannot rewrite a member
+// expression, so the folding risk is gone — but the *reason* the property form
+// exists is that the identifier form is expensive, and nothing else in the repo
+// would notice a well-meaning refactor putting it back. That is what these
+// assertions now pin.
+//
+// Both artifacts are checked: the ESM one is what Metro and every web bundler
+// actually load via the `import` condition, so a CJS-only grep would miss a
+// per-format regression.
+describe('frame-renderer dist: the dev-flag read stays a property access', () => {
   test('dist/index.js exists after build', () => {
     expect(existsSync(DIST_CJS)).toBe(true);
   });
@@ -19,27 +33,33 @@ describe('frame-renderer dist: __DEV__ identifier survives tsdown', () => {
     expect(existsSync(DIST_ESM)).toBe(true);
   });
 
-  test('dist/index.js still contains the literal text "typeof __DEV__"', () => {
-    const content = readFileSync(DIST_CJS, 'utf8');
-    const occurrences = (content.match(/typeof __DEV__/g) ?? []).length;
-    expect(occurrences).toBeGreaterThan(0);
-  });
+  for (const [label, path] of [
+    ['dist/index.js', DIST_CJS],
+    ['dist/index.mjs', DIST_ESM],
+  ] as const) {
+    test(`${label} reads the flag as a globalThis property`, () => {
+      const content = readFileSync(path, 'utf8');
+      expect(content).toMatch(/__DEV__/);
+      // The minifier may alias `globalThis` to a local; what must survive is a
+      // member read of `.__DEV__` rather than a bare identifier reference.
+      expect(content).toMatch(/\.__DEV__/);
+    });
 
-  test('dist/index.mjs still contains the literal text "typeof __DEV__"', () => {
-    const content = readFileSync(DIST_ESM, 'utf8');
-    const occurrences = (content.match(/typeof __DEV__/g) ?? []).length;
-    expect(occurrences).toBeGreaterThan(0);
-  });
+    test(`${label} never evaluates the bare __DEV__ identifier in the hot path`, () => {
+      const content = readFileSync(path, 'utf8');
+      // `typeof __DEV__` is the ~270 ns/eval form PERF-10 removed. Any
+      // reintroduction — by a refactor or by a bundler transform — fails here.
+      expect(content).not.toContain('typeof __DEV__');
+    });
 
-  test('dist/index.js does NOT contain "typeof true" or "typeof false"', () => {
-    const content = readFileSync(DIST_CJS, 'utf8');
-    expect(content).not.toContain('typeof true');
-    expect(content).not.toContain('typeof false');
-  });
-
-  test('dist/index.mjs does NOT contain "typeof true" or "typeof false"', () => {
-    const content = readFileSync(DIST_ESM, 'utf8');
-    expect(content).not.toContain('typeof true');
-    expect(content).not.toContain('typeof false');
-  });
+    test(`${label} was not constant-folded at build time`, () => {
+      const content = readFileSync(path, 'utf8');
+      // A `define` substitution would leave these artifacts behind and freeze
+      // the flag, defeating the runtime togglability the counters require.
+      expect(content).not.toContain('typeof true');
+      expect(content).not.toContain('typeof false');
+      expect(content).not.toContain('globalThis.true');
+      expect(content).not.toContain('globalThis.false');
+    });
+  }
 });

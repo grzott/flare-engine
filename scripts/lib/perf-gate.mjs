@@ -256,11 +256,13 @@ export function reconcileReviews({ baselineTouched, srcTouched, oldReviews, newR
 /**
  * Decides which suites of a capture no longer describe HEAD.
  *
- * `commitsBySuite` maps a suite title to the commits touching its measured
- * sources since the capture commit — an EXACT test, unlike comparing dates: a
- * capture from sixty days ago against untouched sources still describes HEAD
- * perfectly, and a capture from this morning against a source edited since does
- * not. Age is a proxy; reachability is the fact.
+ * `commitsBySuite` maps a suite title to the changes touching its measured
+ * sources since the capture commit — committed AND uncommitted — an EXACT test,
+ * unlike comparing dates: a capture from sixty days ago against untouched
+ * sources still describes HEAD perfectly, and a capture from this morning
+ * against a source edited since does not. Age is a proxy; reachability is the
+ * fact. Uncommitted edits count because the local gate runs before the commit
+ * exists, and that is the last cheap moment to re-capture.
  */
 export function reconcileFreshness({ suiteTitles, freshness, commitsBySuite, instrumentCommits }) {
   const problems = [];
@@ -295,7 +297,7 @@ export function reconcileFreshness({ suiteTitles, freshness, commitsBySuite, ins
 
   if (instrumentCommits.length > 0) {
     problems.push(
-      `the bench itself changed since the capture (${instrumentCommits.length} commit(s) under ` +
+      `the bench itself changed since the capture (${instrumentCommits.length} change(s) under ` +
         `${(freshness.instrument ?? []).join(', ')}) — every number was measured by a different ` +
         'instrument. First offender: ' +
         instrumentCommits[0],
@@ -306,7 +308,7 @@ export function reconcileFreshness({ suiteTitles, freshness, commitsBySuite, ins
     const commits = commitsBySuite[title] ?? [];
     if (commits.length > 0) {
       problems.push(
-        `suite "${title}" measures sources changed by ${commits.length} commit(s) since the ` +
+        `suite "${title}" measures sources changed by ${commits.length} change(s) since the ` +
           `capture. First offender: ${commits[0]}`,
       );
     }

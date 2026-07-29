@@ -1,5 +1,21 @@
 declare const __DEV__: boolean | undefined;
 
+/**
+ * Dev-flag access for `release()`, which runs once per released object.
+ *
+ * JSC has no inline cache for an unresolvable global identifier, so the bare
+ * `typeof __DEV__ !== 'undefined' && __DEV__` form costs ~270 ns *per
+ * evaluation* wherever the global is undeclared — React Native always defines
+ * it, but web/CanvasKit and any Node or Bun consumer does not. A property miss
+ * on `globalThis` is inline-cached at ~0.46 ns and stays togglable at runtime
+ * exactly as before. Measured B28, retired PERF-10.
+ *
+ * The constructor below deliberately keeps the identifier form: it runs once
+ * per pool, where ~270 ns is free, and it is the site a bundler can
+ * constant-fold for dead-code elimination.
+ */
+const G = globalThis as { __DEV__?: boolean };
+
 /** Options for Pool construction. */
 export interface PoolOptions {
   /**
@@ -75,7 +91,7 @@ export class Pool<T> {
 
   /** Return an object to the pool. Calls reset if configured. */
   release(item: T): void {
-    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    if (G.__DEV__) {
       if (!this._liveSet) this._liveSet = new Set();
       if (this._liveSet.has(item)) throw new Error('[Pool] double-release detected');
       this._liveSet.add(item);

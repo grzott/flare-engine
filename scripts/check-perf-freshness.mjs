@@ -32,9 +32,9 @@
  *
  * Exit codes: 0 = fresh · 1 = stale · 2 = setup error.
  */
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { dirtyPaths, git, gitOk } from './lib/git.mjs';
 import { REPO_ROOT, workspaceClosure } from './lib/pack.mjs';
 import { assertSelftest, reconcileFreshness } from './lib/perf-gate.mjs';
 
@@ -42,23 +42,6 @@ const BASELINE_PATH = join(REPO_ROOT, '.perf-baseline.json');
 const CAPTURE_PATH = join(REPO_ROOT, 'benchmarks', 'results', 'microbench.json');
 
 assertSelftest('check-perf-freshness');
-
-const git = (...args) => {
-  try {
-    return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
-  } catch {
-    return '';
-  }
-};
-
-const gitOk = (...args) => {
-  try {
-    execFileSync('git', args, { cwd: REPO_ROOT, stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 const readJson = (path, label) => {
   try {
@@ -122,6 +105,17 @@ const commitsSince = (paths) =>
         .split('\n')
         .filter(Boolean);
 
+/**
+ * Uncommitted edits count as staleness too.
+ *
+ * Committed history alone is not enough for the LOCAL gate: at `/close` the row
+ * being closed is still in the working tree, so a commit-only check reports
+ * fresh for exactly the change about to invalidate the capture, and the red
+ * only appears in CI after the push. That is fails-green in the one place a
+ * builder can still act on it cheaply.
+ */
+const dirtyLabels = (paths) => dirtyPaths(paths).map((p) => `${p} (uncommitted)`);
+
 const commitsBySuite = {};
 const mappingProblems = [];
 for (const [title, names] of Object.entries(freshness?.suites ?? {})) {
@@ -132,7 +126,8 @@ for (const [title, names] of Object.entries(freshness?.suites ?? {})) {
     );
     continue;
   }
-  commitsBySuite[title] = commitsSince(closure.dirs.map((d) => `packages/${d}/src`));
+  const paths = closure.dirs.map((d) => `packages/${d}/src`);
+  commitsBySuite[title] = [...commitsSince(paths), ...dirtyLabels(paths)];
 }
 if (mappingProblems.length > 0) {
   console.error('\ncheck-perf-freshness: FAILED\n');
@@ -141,7 +136,8 @@ if (mappingProblems.length > 0) {
   process.exit(1);
 }
 
-const instrumentCommits = commitsSince(freshness?.instrument ?? []);
+const instrumentPaths = freshness?.instrument ?? [];
+const instrumentCommits = [...commitsSince(instrumentPaths), ...dirtyLabels(instrumentPaths)];
 
 // Heap rows are captured by the same run and covered by a suite's mapping; an
 // unmapped one would go unwatched, so it is treated as stale.

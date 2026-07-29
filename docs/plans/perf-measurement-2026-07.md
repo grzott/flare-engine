@@ -368,7 +368,7 @@ findings were each independently refutation-tested; everything below survived.
 | **B25** | major | **Dashboard fails-green class**: unchecked `as T` cast + hand-duplicated types (dead `@flare-engine/benchmarks` dep); headline substring match → `return null` (schema drift renders NaN or silently drops cards while CI stays green); /integration undated and renders B2 noise with good/bad colors; no staleness logic anywhere; deploy target is dead infra (README: GH Pages beside nonexistent `apps/site` via the removed `next export`); basePath/absolute-nav/root-escaping-link deploy blockers. | data.ts:6-11, page.tsx:41,:74, integration/page.tsx:29-31, README.md:58 |
 | **B26** | ~~lead~~ **WITHDRAWN 2026-07-29** | **Not a zero-alloc violation — a warm-up artifact.** The reported +15.7–33.4 KB/frame was measured after a 30-frame warm-up and one forced GC, which snapshots the heap *below* the plateau its allocation rate implies; the climb to that plateau was then divided by the frame count and published as retained growth. Re-measured with a 2000-frame warm-up (PERF-4a, two independent probes): −0.2 to +2.5 KB/frame, and every structural invariant flat across 2000 frames — `SpriteBatch.allocCount` frozen at N after frame 1, `ParticlePool.created` 0, broadphase size constant. Under JSC `heapUsed` reports MarkedSpace *footprint*, never live bytes, so it cannot carry a retention claim at all; the exact counters now do (§11.4a). **Real finding underneath:** the plateau's height is driven by `CollisionWorld`'s reused pair-`Set` — see B27. | re-measured 2026-07-29, PERF-4a |
 | **B27** | major | **`CollisionWorld`'s "no per-frame allocation" pair buffers are inverted under JSC.** `pairBufA`/`pairBufB` swapped with `clear()` + refill (collision-world.ts:56-60,:133-135) hold ~49 MB heap / ~227 MB RSS after 2500 frames × 564 keys, versus ~1 MB / ~177 MB for a fresh `new Set()` per frame and 0.3 MB for a reused array — the reuse costs ~38× the footprint it was written to save. Two smaller siblings in the same loop: `SpatialIndex.update` does `entries.find(closure)` per entity per frame (spatial-index.ts:49-51 — a closure allocation *and* O(n²) per frame on top of the brute-force broadphase), and `for (const [a, b] of this.entries)` (collision-world.ts:137) materialises a 2-element array per entity per frame while `CollisionEntry` already carries `.entity`. Measured under Bun/JSC only — **verify on Hermes before changing engine code**, since RN is the primary target. Row: §11.9. | measured 2026-07-29, PERF-4a probes |
-| **B28** | major | **The `typeof __DEV__` guard costs ~270 ns per evaluation wherever `__DEV__` is undeclared** — JSC has no inline cache for an unresolvable global identifier. Measured on this machine, 1e6 evaluations: undeclared **272.5 ns**, declared-false **0.7 ns**, declared-true **1.2 ns**, and a `globalThis` property read of an *absent* property **0.46 ns**. PERF-3 put that expression inside `fillXforms` (frame-renderer.ts:413,:429), i.e. once per sprite per transform pass — 9x that under an outline effect — and `Pool.release` (pool.ts:78) has had it once per released object since before this arc. React Native always defines `__DEV__`, so RN builds are unaffected; **web/CanvasKit bundles and any Node/Bun consumer are not**, unless their bundler defines it. Cost there: ~0.27 ms/frame at 1000 sprites, ~2.4 ms under outline. It also inflated this arc's own first re-capture ~7x until PERF-4a pinned the flag. Fix is a `globalThis` property read — equally toggleable at runtime, ~400x cheaper when absent. Row: §11.10. | measured 2026-07-29, PERF-4a |
+| **B28** | ~~major~~ **CLOSED 2026-07-29 (PERF-10)** | **The `typeof __DEV__` guard costs ~270 ns per evaluation wherever `__DEV__` is undeclared** — JSC has no inline cache for an unresolvable global identifier. Measured on this machine, 1e6 evaluations: undeclared **272.5 ns**, declared-false **0.7 ns**, declared-true **1.2 ns**, and a `globalThis` property read of an *absent* property **0.46 ns**. PERF-3 put that expression inside `fillXforms` (frame-renderer.ts:413,:429), i.e. once per sprite per transform pass — 9x that under an outline effect — and `Pool.release` (pool.ts:78) has had it once per released object since before this arc. React Native always defines `__DEV__`, so RN builds are unaffected; **web/CanvasKit bundles and any Node/Bun consumer are not**, unless their bundler defines it. Cost there: ~0.27 ms/frame at 1000 sprites, ~2.4 ms under outline. It also inflated this arc's own first re-capture ~7x until PERF-4a pinned the flag. Fix is a `globalThis` property read — equally toggleable at runtime, ~400x cheaper when absent. **Done:** `fillXforms` and `Pool.release()` converted; undeclared-configuration cost fell from 412–450 µs to 56–88 µs on `render.flush 1000 / 1 atlas`, matching the declared configuration (§11.10). | measured 2026-07-29, PERF-4a |
 
 ---
 
@@ -712,7 +712,55 @@ Kills B25. Files: apps/bench-dashboard/**, PERFORMANCE.md (new, root), turbo.jso
 **Exit:** the dashboard cannot publish a stale or schema-drifted number; PERFORMANCE.md
 names every unmeasured surface.
 
-### §11.10 PERF-10 — hot-loop `__DEV__` guard (B28) (engine-builder, packages/**)
+### §11.10 PERF-10 — hot-loop `__DEV__` guard (B28) — DONE 2026-07-29
+
+**Shipped.** Two hot sites read `globalThis.__DEV__` as a property instead of evaluating the bare
+identifier: `fillXforms` (frame-renderer.ts, once per sprite per transform pass) and
+`Pool.release()` (pool.ts, once per released object). The `Pool` constructor keeps the identifier
+form as specified. One lockstep minor changeset (core + render).
+
+**Measured, before and after, on the PERF-4a bench** — `render.flush 1000 sprites / 1 atlas`,
+median of 41 samples × 20 inner iterations after a 3000-frame warm-up:
+
+| `__DEV__` | before | after |
+|---|---:|---:|
+| undeclared | 412–450 µs | 56–88 µs |
+| declared `false` | 56–88 µs | 55–88 µs |
+| declared `true` | 59 µs | 57 µs |
+
+The 56/88 µs split is bimodal on this machine and appears in **both** configurations — one
+interleaved pair came out `undeclared 55.9` / `declared-false 87.9`, the reverse of its
+neighbours — so it is JIT/thermal state, not residual guard cost. The exit criterion holds: the
+undeclared configuration is no longer distinguishable from the declared one, where before it was
+~7.4× worse.
+
+**Published numbers do not move**, and the generated doc now says so in "What these numbers do not
+measure": the bench pins `__DEV__ = false` (dev-flag.ts), so the table has always shown the cheap
+configuration. The win belongs to consumers who never define the flag — web/CanvasKit, Node, Bun.
+RN defines it always and is unaffected.
+
+**Dist canaries, both mutation-verified** (reverted to the identifier form → 6 failures across the
+two packages): render's existing canary was rewritten — it used to assert `typeof __DEV__` SURVIVES
+tsdown (guarding against constant-folding), and now asserts the opposite, that the bare form never
+returns and the read stays `.__DEV__`. A matching `pool-dist.test.ts` was added for core, which
+had no dist assertion at all; it cannot assert the identifier is absent, because the constructor
+legitimately keeps it.
+
+**Deviation:** the guards stay TRUTHINESS checks (`if (G.__DEV__)`), not the `=== true` the spec
+below suggests. `=== true` would silently disable the pool's double-release guard for a consumer
+who set `__DEV__ = 1`; truthiness matches the old expression for every possible value, so the
+mechanical rewrite stays behaviour-preserving. Perf is identical — both are one inline-cached load.
+
+**Follow-up fix to PERF-5, found by using it:** `check:perf-freshness` compared committed history
+only, so at `/close` — where the row's changes are still uncommitted — it reported FRESH for
+exactly the edits about to invalidate the capture, and the red would only appear in CI after the
+push. Fails-green in the one place a builder can still cheaply act on it. It now counts
+uncommitted changes to measured paths as staleness (`scripts/lib/git.mjs`, shared with
+check-perf.mjs). This row is the proof: it correctly reds all five suites.
+
+---
+
+Original spec.
 
 The cheapest real win in this arc: a mechanical rewrite of one expression, measured at ~270 ns
 per evaluation saved wherever `__DEV__` is undeclared. Not an RN issue (Metro always defines

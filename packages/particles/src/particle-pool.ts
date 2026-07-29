@@ -100,6 +100,16 @@ export class ParticlePool {
     return this._active.length;
   }
 
+  /**
+   * Cumulative factory calls made by the internal pool's acquire()/tryAcquire().
+   * prewarm() is excluded: factory calls there pre-fill the free list and are
+   * not counted. Intended use: snapshot before and after a frame — a non-zero
+   * delta in steady state means unexpected allocation.
+   */
+  get created(): number {
+    return this._pool.created;
+  }
+
   /** Read-only access to active particles. */
   get particles(): readonly Particle[] {
     return this._active;

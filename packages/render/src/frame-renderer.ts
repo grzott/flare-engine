@@ -1,3 +1,5 @@
+declare const __DEV__: boolean | undefined;
+
 import type { SkImageLike } from '@flare-engine/assets';
 import type { CanvasLike } from './renderer.js';
 import {
@@ -243,6 +245,9 @@ const OUTLINE_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [-Math.SQRT1_2, -Math.SQRT1_2],
 ];
 
+let _xformUnrotatedCount = 0;
+let _xformRotatedCount = 0;
+
 // ---------------------------------------------------------------------------
 // Implementation
 // ---------------------------------------------------------------------------
@@ -405,6 +410,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const scale = cmd.srcW === 0 ? 1 : cmd.dstW / cmd.srcW;
       if (cmd.rotation === 0) {
         xforms[i]?.set(scale, 0, cmd.dstX + dx, cmd.dstY + dy);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) _xformUnrotatedCount++;
       } else {
         const c = Math.cos(cmd.rotation);
         const s = Math.sin(cmd.rotation);
@@ -420,6 +426,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
           px - scos * axSrc + ssin * aySrc,
           py - ssin * axSrc - scos * aySrc,
         );
+        if (typeof __DEV__ !== 'undefined' && __DEV__) _xformRotatedCount++;
       }
     }
   }
@@ -878,6 +885,32 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       return recorder.finishRecordingAsPicture();
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Xform branch counters — observable surface for bench/diagnostic use
+// ---------------------------------------------------------------------------
+
+/** Zero both branch counters unconditionally (no __DEV__ guard). */
+export function resetXformCounters(): void {
+  _xformUnrotatedCount = 0;
+  _xformRotatedCount = 0;
+}
+
+/**
+ * Cumulative `fillXforms` branch hit counts since the last reset. Both stay 0
+ * when `__DEV__` is falsy or absent.
+ *
+ * These count transform WRITES, not sprites: a run drawn with an outline effect
+ * passes through `fillXforms` 9 times (8 offset passes + 1 main pass), so it
+ * contributes 9 hits per command — the transform work the renderer actually
+ * performs. The counters are process-global: every `createFrameRenderer`
+ * instance increments the same pair, so readings sum across live renderers.
+ *
+ * Allocates one object per call — never call it from the render loop.
+ */
+export function getXformCounters(): { rotated: number; unrotated: number } {
+  return { rotated: _xformRotatedCount, unrotated: _xformUnrotatedCount };
 }
 
 // ---------------------------------------------------------------------------

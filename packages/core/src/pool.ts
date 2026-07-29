@@ -23,6 +23,7 @@ export class Pool<T> {
   private resetFn: ((item: T) => void) | undefined;
   private _capacity: number | undefined;
   private _live = 0;
+  private _created = 0;
   private _liveSet: Set<T> | undefined;
 
   /**
@@ -42,7 +43,13 @@ export class Pool<T> {
   /** Get an object from the pool (or create a new one). Never throws; may exceed capacity. */
   acquire(): T {
     this._live++;
-    const item = this.items.length > 0 ? this.items.pop()! : this.factory();
+    let item: T;
+    if (this.items.length > 0) {
+      item = this.items.pop()!;
+    } else {
+      this._created++;
+      item = this.factory();
+    }
     this._liveSet?.delete(item);
     return item;
   }
@@ -55,7 +62,13 @@ export class Pool<T> {
   tryAcquire(): T | null {
     if (this._capacity !== undefined && this._live >= this._capacity) return null;
     this._live++;
-    const item = this.items.length > 0 ? this.items.pop()! : this.factory();
+    let item: T;
+    if (this.items.length > 0) {
+      item = this.items.pop()!;
+    } else {
+      this._created++;
+      item = this.factory();
+    }
     this._liveSet?.delete(item);
     return item;
   }
@@ -87,6 +100,13 @@ export class Pool<T> {
   /** Number of currently live (acquired, not yet released) objects. */
   get live(): number {
     return this._live;
+  }
+
+  /** Cumulative number of factory calls made by acquire()/tryAcquire().
+   *  prewarm() is deliberately excluded: this counter exists to detect
+   *  steady-state allocation, so compare it before and after a frame. */
+  get created(): number {
+    return this._created;
   }
 
   /** Clear all pooled objects. Does not affect live count. */

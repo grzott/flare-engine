@@ -15,6 +15,7 @@ export {
   type FrameRendererPostFxChain,
   type FrameRendererPostFxDescriptor,
   type FrameRendererPostFxRuntime,
+  getXformCounters,
   type ImageFilterFactoryLike,
   type PaintLike,
   type PictureLike,
@@ -23,6 +24,7 @@ export {
   type RSXformLike,
   type RuntimeEffectFactoryLike,
   type RuntimeEffectLike,
+  resetXformCounters,
 } from './frame-renderer.js';
 export {
   createRenderSystem,

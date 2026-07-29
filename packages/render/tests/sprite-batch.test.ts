@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { SkImageLike, SpriteFrame } from '@flare-engine/assets';
+import { Renderer } from '../src/renderer.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 import { SpriteBatch } from '../src/sprite-batch.js';
 import type { SpriteColor } from '../src/sprite-effects.js';
@@ -387,6 +388,69 @@ describe('SpriteBatch — z-order / consecutive-run flush', () => {
     expect(runs).toHaveLength(2);
     expect(runs[0]).toBe(false);
     expect(runs[1]).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// allocCount — cumulative pool-miss counter
+// ---------------------------------------------------------------------------
+
+describe('SpriteBatch — allocCount', () => {
+  it('fresh SpriteBatch has allocCount of 0', () => {
+    const batch = new SpriteBatch();
+    expect(batch.allocCount).toBe(0);
+  });
+
+  it('draw 1 sprite + flush increments allocCount to 1', () => {
+    const batch = new SpriteBatch();
+    batch.draw(mockImage('a'), frame(0, 0, 16, 16), 0, 0);
+    batch.flush(() => {});
+    expect(batch.allocCount).toBe(1);
+  });
+
+  it('second draw+flush reuses pooled command — allocCount stays 1', () => {
+    const batch = new SpriteBatch();
+    batch.draw(mockImage('a'), frame(0, 0, 16, 16), 0, 0);
+    batch.flush(() => {});
+    // Command returned to pool; next draw must not increment allocCount.
+    batch.draw(mockImage('a'), frame(0, 0, 16, 16), 0, 0);
+    batch.flush(() => {});
+    expect(batch.allocCount).toBe(1);
+  });
+
+  it('draw 5 sprites into a fresh batch — allocCount === 5', () => {
+    const batch = new SpriteBatch();
+    for (let i = 0; i < 5; i++) {
+      batch.draw(mockImage('a'), frame(0, 0, 16, 16), i * 20, 0);
+    }
+    batch.flush(() => {});
+    expect(batch.allocCount).toBe(5);
+  });
+
+  it('clear() does not reset allocCount', () => {
+    const batch = new SpriteBatch();
+    batch.draw(mockImage('a'), frame(0, 0, 16, 16), 0, 0);
+    batch.draw(mockImage('a'), frame(0, 0, 16, 16), 20, 0);
+    batch.flush(() => {});
+    const countBefore = batch.allocCount;
+    batch.draw(mockImage('a'), frame(0, 0, 16, 16), 40, 0);
+    batch.clear();
+    expect(batch.allocCount).toBe(countBefore);
+  });
+
+  it('drawCalls === batchCount after a multi-run flush with Renderer', () => {
+    const batch = new SpriteBatch();
+    const renderer = new Renderer();
+    const imgA = mockImage('a');
+    const imgB = mockImage('b');
+    // Three interleaved textures produce 3 runs.
+    batch.draw(imgA, frame(0, 0, 16, 16), 0, 0);
+    batch.draw(imgB, frame(0, 0, 16, 16), 20, 0);
+    batch.draw(imgA, frame(0, 0, 16, 16), 40, 0);
+    batch.flush(() => {}, renderer);
+    expect(renderer.stats.drawCalls).toBe(3);
+    expect(renderer.stats.batchCount).toBe(3);
+    expect(renderer.stats.drawCalls).toBe(renderer.stats.batchCount);
   });
 });
 

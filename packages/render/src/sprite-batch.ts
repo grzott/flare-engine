@@ -75,10 +75,17 @@ export class SpriteBatch {
   private _commands: SpriteDrawCommand[] = [];
   private _pool: SpriteDrawCommand[] = [];
   private _batches: Batch[] = [];
+  private _allocCount = 0;
 
   /** Number of queued draw commands. */
   get count(): number {
     return this._commands.length;
+  }
+
+  /** Cumulative number of SpriteDrawCommand objects allocated because the internal
+   *  command pool was empty. Steady state should be 0 after warm-up. */
+  get allocCount(): number {
+    return this._allocCount;
   }
 
   /** Queue a sprite draw from a frame.
@@ -244,6 +251,7 @@ export class SpriteBatch {
     if (this._pool.length > 0) {
       return this._pool.pop()!;
     }
+    this._allocCount++;
     return {
       image: null!,
       srcX: 0,

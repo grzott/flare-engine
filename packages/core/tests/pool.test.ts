@@ -181,6 +181,55 @@ describe('Pool.tryAcquire (capacity cap)', () => {
   });
 });
 
+describe('Pool.created', () => {
+  it('is 0 for a new pool', () => {
+    const pool = new Pool(() => ({}));
+    expect(pool.created).toBe(0);
+  });
+
+  it('increments once per factory call via acquire()', () => {
+    const pool = new Pool(() => ({}));
+    pool.acquire();
+    pool.acquire();
+    pool.acquire();
+    expect(pool.created).toBe(3);
+  });
+
+  it('does not increment when recycling a released object', () => {
+    const pool = new Pool(() => ({}));
+    const obj = pool.acquire();
+    expect(pool.created).toBe(1);
+    pool.release(obj);
+    pool.acquire();
+    expect(pool.created).toBe(1);
+  });
+
+  it('increments via tryAcquire() factory branch but not at capacity', () => {
+    const pool = new Pool(() => ({}), undefined, { capacity: 1 });
+    pool.tryAcquire();
+    expect(pool.created).toBe(1);
+    expect(pool.tryAcquire()).toBeNull();
+    expect(pool.created).toBe(1);
+  });
+
+  it('prewarm does not increment created; consuming a prewarmed item stays 0', () => {
+    const pool = new Pool(() => ({}));
+    pool.prewarm(5);
+    expect(pool.created).toBe(0);
+    pool.acquire();
+    expect(pool.created).toBe(0);
+  });
+
+  it('clear() does not reset created', () => {
+    const pool = new Pool(() => ({}));
+    pool.acquire();
+    pool.acquire();
+    expect(pool.created).toBe(2);
+    pool.clear();
+    expect(pool.created).toBe(2);
+  });
+});
+
 describe('Pool double-release guard (__DEV__)', () => {
   const g = globalThis as Record<string, unknown>;
   let originalDev: unknown;

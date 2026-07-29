@@ -11,7 +11,23 @@ export interface CanvasLike {
 
 /** Stats tracked per frame. */
 export interface RenderStats {
+  /**
+   * Number of SpriteBatch flush runs emitted this frame — one per contiguous
+   * same-key (image, effect, alpha, stretch) run, NOT the number of raw canvas
+   * calls. An outline run fans into 9 canvas drawAtlas calls, a stretch run
+   * into n drawImageRect calls, a zone-bg run into n drawRect calls.
+   * Equal to batchCount whenever SpriteBatch.flush is the only writer;
+   * recordDrawCall()/recordBatch() are public and can diverge them if a
+   * custom batching system drives them independently.
+   */
   drawCalls: number;
+  /**
+   * Number of SpriteBatch flush runs — incremented alongside drawCalls at
+   * the same two sites in SpriteBatch.flush. Equal to drawCalls when only
+   * SpriteBatch.flush writes both; recordDrawCall()/recordBatch() are
+   * independent public methods and can produce different values if called
+   * directly by a custom batching system.
+   */
   batchCount: number;
 }
 
@@ -96,12 +112,14 @@ export class Renderer {
     c.translate(-cameraX, -cameraY);
   }
 
-  /** Increment draw call counter. Called by batching systems. */
+  /** Increment draw call counter. Invoked in tandem with recordBatch, once per
+   *  flush run in SpriteBatch.flush. */
   recordDrawCall(): void {
     this.stats.drawCalls++;
   }
 
-  /** Increment batch counter. */
+  /** Increment batch counter. Invoked in tandem with recordDrawCall, once per
+   *  flush run in SpriteBatch.flush. */
   recordBatch(): void {
     this.stats.batchCount++;
   }

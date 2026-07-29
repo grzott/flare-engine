@@ -164,4 +164,44 @@ describe('ParticlePool', () => {
     pool.update(1, 0, 0);
     expect(p.rotation).toBeCloseTo(Math.PI, 5);
   });
+
+  describe('created counter', () => {
+    it('is 0 after construction even though the constructor prewarms', () => {
+      // prewarm fills the free list via factory but Pool does not count those
+      // calls in _created; the counter tracks only acquire/tryAcquire factory hits.
+      const pool = new ParticlePool(8);
+      expect(pool.created).toBe(0);
+    });
+
+    it('increments by the overflow count when capacity is exceeded', () => {
+      const cap = 4;
+      const pool = new ParticlePool(cap);
+      // First `cap` acquires pull from the prewarmed free list — no factory calls.
+      for (let i = 0; i < cap; i++) {
+        pool.acquire();
+      }
+      expect(pool.created).toBe(0);
+      // Two more acquires exceed capacity — factory is called twice.
+      pool.acquire();
+      pool.acquire();
+      expect(pool.created).toBe(2);
+    });
+
+    it('does not increment when releasing and re-acquiring within prewarmed capacity', () => {
+      const cap = 4;
+      const pool = new ParticlePool(cap);
+      // Drain the entire prewarmed free list so the only way to satisfy the
+      // next acquire() is from a recycled particle, not a leftover prewarm slot.
+      for (let i = 0; i < cap; i++) pool.acquire();
+      expect(pool.created).toBe(0);
+      // Kill the first active particle via update — releases it back to the free list.
+      const victim = pool.particles[0]!;
+      victim.life = 0.01;
+      victim.maxLife = 1;
+      pool.update(0.1, 0, 0);
+      // Re-acquire recycles the released item — no factory call.
+      pool.acquire();
+      expect(pool.created).toBe(0);
+    });
+  });
 });

@@ -9740,3 +9740,34 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 263 — 2026-07-29 (scope: engine)
+
+**Goal:** PERF-3 — engine perf-observability counters (SpriteBatch.allocCount, Pool.created, fillXforms branch counters, drawCalls/batchCount aliasing)
+
+**Touched files**
+- `.changeset/perf-3-observability-counters.md`
+- `docs/design/api-specs.md`
+- `packages/core/src/pool.ts`
+- `packages/core/tests/pool.test.ts`
+- `packages/particles/src/particle-pool.ts`
+- `packages/particles/tests/particle-pool.test.ts`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render/src/index.ts`
+- `packages/render/src/renderer.ts`
+- `packages/render/src/sprite-batch.ts`
+- `packages/render/tests/frame-renderer-counters.test.ts`
+- `packages/render/tests/frame-renderer-dist.test.ts`
+- `packages/render/tests/sprite-batch.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 gate:0 drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -39,8 +39,10 @@ bun run bench:baseline   # single-run shortcut: promotes just that one run, no s
 
 `history.ndjson` is **tracked on purpose** — it is the append-only record every baseline is
 derived from, so a promoted number can always be traced back to the individual runs behind it.
-A local exploratory run therefore shows up in `git status`; use `bun run bench -- --no-record`
-if you do not want it in the record.
+A local exploratory run therefore shows up in `git status`. To keep one out of the record, set
+`FLARE_BENCH_NO_RECORD=1` (PowerShell: `$env:FLARE_BENCH_NO_RECORD=1;`) before the command.
+As with the staleness override, this is an env var rather than a flag because turbo runs in
+strict env mode and `bun run` strips the `--` separator, so a flag never reaches the script.
 
 The normal capture is five runs then a promote, which is what puts a real spread on every row.
 `bench:promote` refuses runs that disagree on machine, commit, or scenario set, and refuses any

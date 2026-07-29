@@ -92,6 +92,9 @@ export type DeviceRun = {
 
 export type DeviceReport = {
   generated: string;
+  /** Set when the capture can no longer be refreshed; `staleReason` says why. */
+  stale?: boolean;
+  staleReason?: string;
   devices: DeviceRun[];
 };
 

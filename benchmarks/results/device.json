@@ -1,5 +1,7 @@
 {
   "generated": "2026-04-22",
+  "stale": true,
+  "staleReason": "Captured 2026-04-22 from a bench scene in a game app that now lives in a separate repository. The copy-CSV-from-logcat pipeline that produced these rows no longer exists, so this file cannot be refreshed. Engine-owned device measurement is rebuilt in docs/plans/perf-measurement-2026-07.md §11.7.",
   "devices": [
     {
       "device": "Samsung Galaxy A54 5G",

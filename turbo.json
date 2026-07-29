@@ -19,7 +19,8 @@
     },
     "@flare-engine/benchmarks#bench": {
       "dependsOn": ["^build"],
-      "cache": false
+      "cache": false,
+      "env": ["FLARE_BENCH_NO_RECORD"]
     },
     "@flare-engine/benchmarks#bench:baseline": {
       "dependsOn": ["^build"],

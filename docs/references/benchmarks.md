@@ -23,7 +23,7 @@ _Captured: 2026-07-28_
 
 Off-device microbenchmarks exercise engine hot paths under Bun on the developer machine — pure algorithmic cost, no Skia, no React Native bridge, no device I/O. Their value is regression detection and order-of-magnitude sizing; they do **not** predict on-device frame times. For real frame times see the [Device](#device) section.
 
-Each row reports the median of the sample count recorded in the baseline, where each sample times N inner iterations of the hot path. "p99" is the 99th-percentile sample latency across those samples.
+Each capture run times N inner iterations of the hot path per sample and reports that run's median. A baseline folds several independent runs together: the published cost is the median of those per-run medians, and "Spread across runs" is their lowest and highest. "p99" is the median across runs of each run's 99th-percentile sample.
 
 Frame budget at 60 fps is 16.67 ms. A system taking 1 ms per step leaves 15+ ms for the rest of the frame.
 
@@ -31,7 +31,8 @@ Frame budget at 60 fps is 16.67 ms. A system taking 1 ms per step leaves 15+ ms 
 
 ## What these numbers do not measure
 
-- **Per-sprite transform cost is excluded.** The `render.flush` rows drive `SpriteBatch` with a caller-supplied draw callback and never construct the frame renderer, so building the per-sprite RSXform transforms — including the rotation branch — happens outside the measured region. These rows are command queueing plus batch-run grouping only.
+- **Per-sprite transform cost is excluded.** The `render.flush` rows — and the `integration.frame` rows, which use the same no-op draw callback — drive `SpriteBatch` without ever constructing the frame renderer, so building the per-sprite RSXform transforms, including the rotation branch, happens outside the measured region. The sprite portion of those numbers is command queueing plus batch-run grouping only. This applies to the headline integration figure too.
+- **The physics and integration workloads drift while being measured.** Entities integrate their positions with no bounds, wrap, or reseed across the whole sample window, so a "dense" scenario disperses toward sparse as it runs and the broadphase cost falls with it. Those medians therefore depend on the sampler configuration, and are not comparable across changes to it.
 - **The multi-atlas rows are a worst case, not batching.** They interleave textures per sprite, which breaks the batch run on every command, so a "4 atlas" row measures run-breaking overhead rather than batched multi-atlas drawing.
 - **No Skia, no GPU, no bridge, no device.** These are pure JS costs under Bun on one desktop machine; they do not predict on-device frame time.
 - **No web/CanvasKit numbers exist yet.**
@@ -104,21 +105,23 @@ _Captured: 2026-07-28_
 
 Heap growth across N steady-state frames after warmup, measured `process.memoryUsage().heapUsed` deltas around forced GCs.
 
-**These numbers do not currently support a zero-alloc claim.** The section runs in the same process as every preceding suite, so the deltas carry that accumulated garbage and the sign flips between runs. Measured in isolation the same frames show a stable positive per-frame growth. Exact allocation counters replace this section in a later row; until then read it as a known-broken instrument, not as evidence.
+**These numbers do not currently support a zero-alloc claim.** The section runs in the same process as every preceding suite, so each delta carries that accumulated garbage rather than the frame's own allocation. The spread column shows the damage: within one scenario the sign is stable across runs, but the magnitude moves by more than half, and the sign differs between scenarios — a negative row means the GC reclaimed more warmup garbage than the measured frames allocated, which says nothing about whether those frames allocated. Exact allocation counters replace this section in a later row; until then read it as a known-broken instrument, not as evidence.
 
 _Captured: 2026-07-28_
 
-| Scenario | Frames | Δ heap | Per-frame |
-|---|---:|---:|---:|
-| integration.heap   500 entities | 500 | -44015.0 KB | -90142.7 B |
-| integration.heap  1000 entities | 500 | +18712.2 KB | 38322.6 B |
-| integration.heap  2000 entities | 500 | -16554.5 KB | -33903.5 B |
+| Scenario | Frames | Δ heap | Per-frame | Spread across runs |
+|---|---:|---:|---:|---:|
+| integration.heap   500 entities | 500 | -44015.0 KB | -90142.7 B | -90633 – -55856 B |
+| integration.heap  1000 entities | 500 | +18712.2 KB | 38322.6 B | 37179 – 38344 B |
+| integration.heap  2000 entities | 500 | -16554.5 KB | -33903.5 B | -34378 – -33099 B |
 
 ## Device
 
-> **Stale — captured 2026-04-22, and not re-capturable.** These rows predate the microbench baseline above and came from a bench scene in a game app that now lives in a separate repository; the copy-CSV-from-logcat pipeline that produced them no longer exists. They are kept as a historical datapoint only. Engine-owned device measurement is rebuilt in [the perf plan](../plans/perf-measurement-2026-07.md) §11.7.
+> **Stale — captured 2026-04-22, and not re-capturable.** Captured 2026-04-22 from a bench scene in a game app that now lives in a separate repository. The copy-CSV-from-logcat pipeline that produced these rows no longer exists, so this file cannot be refreshed. Engine-owned device measurement is rebuilt in docs/plans/perf-measurement-2026-07.md §11.7. Kept as a historical datapoint only.
 
 On-device FPS samples captured from a device benchmark scene. Each sample = one second; load levels spawn fixed entity/particle counts.
+
+_Captured: 2026-04-22 — stale_
 
 ### Samsung Galaxy A54 5G (Android 16 / One UI 8.0)
 

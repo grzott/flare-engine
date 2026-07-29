@@ -9713,3 +9713,30 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 262 — 2026-07-28 (scope: engine)
+
+**Goal:** PERF-2 follow-up — review fixes: no-record env, honest heap prose, disclosure gaps
+
+**Touched files**
+- `apps/bench-dashboard/README.md`
+- `benchmarks/results/device.json`
+- `benchmarks/src/index.ts`
+- `benchmarks/src/results.ts`
+- `benchmarks/tests/promote.test.ts`
+- `docs/plans/todo.md`
+- `docs/references/benchmarks.md`
+- `packages/physics/README.md`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** gate:1 (lint — python text-mode writes injected CRLF; use Edit or newline='' on Windows)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

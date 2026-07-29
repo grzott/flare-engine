@@ -8,7 +8,13 @@ import { EXPECTED_HEAP_SCENARIOS, EXPECTED_SCENARIOS } from '../src/scenario-con
  * Every scenario in a run shares the value, so a run is identified by one
  * number and the aggregation math stays legible.
  */
+let captureSeq = 0;
+
 function runAt(medianNs: number, overrides: Partial<MicrobenchReport> = {}): MicrobenchReport {
+  // Monotonic and distinct per fixture: a shared timestamp would make the
+  // "dated by its newest capture" assertion pass no matter what promote picked.
+  captureSeq += 1;
+  const stamp = `2026-07-28T${String(captureSeq % 24).padStart(2, '0')}:00:00.000Z`;
   const result = (scenario: string): MicrobenchResult => ({
     scenario,
     medianNs,
@@ -20,7 +26,7 @@ function runAt(medianNs: number, overrides: Partial<MicrobenchReport> = {}): Mic
     innerIters: 100,
   });
   return {
-    generated: `2026-07-2${Math.min(9, Math.max(0, Math.round(medianNs % 10)))}T00:00:00.000Z`,
+    generated: stamp,
     runtime: 'Bun 1.3.11',
     platform: 'win32 x64',
     cpuModel: 'Test CPU',

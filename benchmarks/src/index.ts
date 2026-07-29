@@ -18,6 +18,7 @@ import {
   type DeviceReport,
   heapToResult,
   historyFile,
+  type MicrobenchHeap,
   type MicrobenchReport,
   type MicrobenchResult,
   readHistory,
@@ -55,12 +56,16 @@ function formatHeapDelta(r: HeapDeltaResult): string {
     .padStart(4)} frames   ${perFrame.padStart(16)}`;
 }
 
-function heapDeltaMdRow(r: HeapDeltaResult): string {
+function heapDeltaMdRow(r: MicrobenchHeap): string {
   const total =
     r.deltaBytes >= 0
       ? `+${(r.deltaBytes / 1024).toFixed(1)} KB`
       : `${(r.deltaBytes / 1024).toFixed(1)} KB`;
-  return `| ${r.name} | ${r.iterations} | ${total} | ${r.bytesPerFrame.toFixed(1)} B |`;
+  const spread =
+    r.bandMinBytesPerFrame === undefined || r.bandMaxBytesPerFrame === undefined
+      ? '—'
+      : `${r.bandMinBytesPerFrame.toFixed(0)} – ${r.bandMaxBytesPerFrame.toFixed(0)} B`;
+  return `| ${r.name} | ${r.iterations} | ${total} | ${r.bytesPerFrame.toFixed(1)} B | ${spread} |`;
 }
 
 function printText(groups: Group[], heap: HeapDeltaResult[]): void {
@@ -207,7 +212,7 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push('');
   lines.push(
-    'Each row reports the median of the sample count recorded in the baseline, where each sample times N inner iterations of the hot path. "p99" is the 99th-percentile sample latency across those samples.',
+    'Each capture run times N inner iterations of the hot path per sample and reports that run\'s median. A baseline folds several independent runs together: the published cost is the median of those per-run medians, and "Spread across runs" is their lowest and highest. "p99" is the median across runs of each run\'s 99th-percentile sample.',
   );
   lines.push('');
   lines.push(
@@ -222,7 +227,10 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   lines.push('## What these numbers do not measure');
   lines.push('');
   lines.push(
-    '- **Per-sprite transform cost is excluded.** The `render.flush` rows drive `SpriteBatch` with a caller-supplied draw callback and never construct the frame renderer, so building the per-sprite RSXform transforms — including the rotation branch — happens outside the measured region. These rows are command queueing plus batch-run grouping only.',
+    '- **Per-sprite transform cost is excluded.** The `render.flush` rows — and the `integration.frame` rows, which use the same no-op draw callback — drive `SpriteBatch` without ever constructing the frame renderer, so building the per-sprite RSXform transforms, including the rotation branch, happens outside the measured region. The sprite portion of those numbers is command queueing plus batch-run grouping only. This applies to the headline integration figure too.',
+  );
+  lines.push(
+    '- **The physics and integration workloads drift while being measured.** Entities integrate their positions with no bounds, wrap, or reseed across the whole sample window, so a "dense" scenario disperses toward sparse as it runs and the broadphase cost falls with it. Those medians therefore depend on the sampler configuration, and are not comparable across changes to it.',
   );
   lines.push(
     '- **The multi-atlas rows are a worst case, not batching.** They interleave textures per sprite, which breaks the batch run on every command, so a "4 atlas" row measures run-breaking overhead rather than batched multi-atlas drawing.',
@@ -254,13 +262,13 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push('');
   lines.push(
-    '**These numbers do not currently support a zero-alloc claim.** The section runs in the same process as every preceding suite, so the deltas carry that accumulated garbage and the sign flips between runs. Measured in isolation the same frames show a stable positive per-frame growth. Exact allocation counters replace this section in a later row; until then read it as a known-broken instrument, not as evidence.',
+    "**These numbers do not currently support a zero-alloc claim.** The section runs in the same process as every preceding suite, so each delta carries that accumulated garbage rather than the frame's own allocation. The spread column shows the damage: within one scenario the sign is stable across runs, but the magnitude moves by more than half, and the sign differs between scenarios — a negative row means the GC reclaimed more warmup garbage than the measured frames allocated, which says nothing about whether those frames allocated. Exact allocation counters replace this section in a later row; until then read it as a known-broken instrument, not as evidence.",
   );
   lines.push('');
   lines.push(`_Captured: ${captured}_`);
   lines.push('');
-  lines.push('| Scenario | Frames | Δ heap | Per-frame |');
-  lines.push('|---|---:|---:|---:|');
+  lines.push('| Scenario | Frames | Δ heap | Per-frame | Spread across runs |');
+  lines.push('|---|---:|---:|---:|---:|');
   for (const r of capture.heap) lines.push(heapDeltaMdRow(r));
   lines.push('');
 
@@ -268,12 +276,16 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   lines.push('');
   if (device && device.devices.length > 0) {
     lines.push(
-      `> **Stale — captured ${device.generated}, and not re-capturable.** These rows predate the microbench baseline above and came from a bench scene in a game app that now lives in a separate repository; the copy-CSV-from-logcat pipeline that produced them no longer exists. They are kept as a historical datapoint only. Engine-owned device measurement is rebuilt in [the perf plan](../plans/perf-measurement-2026-07.md) §11.7.`,
+      device.stale
+        ? `> **Stale — captured ${device.generated}, and not re-capturable.** ${device.staleReason ?? ''} Kept as a historical datapoint only.`
+        : `> Captured ${device.generated}.`,
     );
     lines.push('');
     lines.push(
       'On-device FPS samples captured from a device benchmark scene. Each sample = one second; load levels spawn fixed entity/particle counts.',
     );
+    lines.push('');
+    lines.push(`_Captured: ${device.generated}${device.stale ? ' — stale' : ''}_`);
     lines.push('');
     for (const d of device.devices) {
       lines.push(`### ${d.device} (${d.os})`);
@@ -294,7 +306,7 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     }
   } else {
     lines.push(
-      'No device samples captured yet. Run a release build on hardware, open the bench scene (triple-tap the menu title), copy CSV from console, and append entries to `benchmarks/results/device.json`.',
+      'No device samples. Engine-owned device measurement is not built yet — it is tracked in [the perf plan](../plans/perf-measurement-2026-07.md) §11.7. The historical capture pipeline (a bench scene in a game app, copied out of logcat by hand) no longer exists, so there is no procedure to run here today.',
     );
     lines.push('');
   }
@@ -405,13 +417,13 @@ if (args.has('--markdown')) {
   const baseline = readMicrobenchJson();
   if (baseline === null) {
     console.error(
-      `No readable baseline at ${resolve(resultsDir(), 'microbench.json')} (missing or unparseable). Capture one: bun run bench:baseline`,
+      `No readable baseline at ${resolve(resultsDir(), 'microbench.json')} (missing or unparseable). Capture one: bun run bench x5, then bun run bench:promote`,
     );
     process.exit(1);
   }
   if (typeof baseline.generated !== 'string' || Number.isNaN(Date.parse(baseline.generated))) {
     console.error(
-      'Baseline has no usable "generated" timestamp — it cannot be dated honestly. Re-capture: bun run bench:baseline',
+      'Baseline has no usable "generated" timestamp — it cannot be dated honestly. Re-capture: `bun run bench` x5 then `bun run bench:promote`.',
     );
     process.exit(1);
   }
@@ -422,7 +434,9 @@ if (args.has('--markdown')) {
   if (violations.length > 0) {
     console.error('Baseline does not match the frozen scenario contract:');
     for (const v of violations) console.error(`  - ${v}`);
-    console.error('Re-capture with `bun run bench:baseline`, or update src/scenario-contract.ts.');
+    console.error(
+      'Re-capture (`bun run bench` x5 then `bun run bench:promote`), or update src/scenario-contract.ts.',
+    );
     process.exit(1);
   }
 
@@ -432,7 +446,7 @@ if (args.has('--markdown')) {
     console.error(
       `Baseline captured ${Math.floor(age)} days ago (${baseline.generated.slice(0, 10)}), limit is ${MAX_BASELINE_AGE_DAYS}.`,
     );
-    console.error('Re-capture with `bun run bench:baseline`.');
+    console.error('Re-capture: `bun run bench` x5 then `bun run bench:promote`.');
     console.error('To publish it as-is, set FLARE_BENCH_ALLOW_STALE=1 and re-run bun run bench:md');
     console.error('  PowerShell: $env:FLARE_BENCH_ALLOW_STALE=1; bun run bench:md');
     process.exit(1);
@@ -448,7 +462,9 @@ const groups = runAll();
 const heap = integrationHeapDelta(500);
 const report = buildReport(groups, heap);
 
-if (!args.has('--no-record')) {
+const noRecord = args.has('--no-record') || process.env.FLARE_BENCH_NO_RECORD === '1';
+
+if (!noRecord) {
   console.error(`\nAppended run to ${appendHistoryRow(report)}`);
 }
 

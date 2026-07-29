@@ -369,7 +369,7 @@ findings were each independently refutation-tested; everything below survived.
 | **B26** | ~~lead~~ **WITHDRAWN 2026-07-29** | **Not a zero-alloc violation — a warm-up artifact.** The reported +15.7–33.4 KB/frame was measured after a 30-frame warm-up and one forced GC, which snapshots the heap *below* the plateau its allocation rate implies; the climb to that plateau was then divided by the frame count and published as retained growth. Re-measured with a 2000-frame warm-up (PERF-4a, two independent probes): −0.2 to +2.5 KB/frame, and every structural invariant flat across 2000 frames — `SpriteBatch.allocCount` frozen at N after frame 1, `ParticlePool.created` 0, broadphase size constant. Under JSC `heapUsed` reports MarkedSpace *footprint*, never live bytes, so it cannot carry a retention claim at all; the exact counters now do (§11.4a). **Real finding underneath:** the plateau's height is driven by `CollisionWorld`'s reused pair-`Set` — see B27. | re-measured 2026-07-29, PERF-4a |
 | **B27** | major | **`CollisionWorld`'s "no per-frame allocation" pair buffers are inverted under JSC.** `pairBufA`/`pairBufB` swapped with `clear()` + refill (collision-world.ts:56-60,:133-135) hold ~49 MB heap / ~227 MB RSS after 2500 frames × 564 keys, versus ~1 MB / ~177 MB for a fresh `new Set()` per frame and 0.3 MB for a reused array — the reuse costs ~38× the footprint it was written to save. Two smaller siblings in the same loop: `SpatialIndex.update` does `entries.find(closure)` per entity per frame (spatial-index.ts:49-51 — a closure allocation *and* O(n²) per frame on top of the brute-force broadphase), and `for (const [a, b] of this.entries)` (collision-world.ts:137) materialises a 2-element array per entity per frame while `CollisionEntry` already carries `.entity`. Measured under Bun/JSC only — **verify on Hermes before changing engine code**, since RN is the primary target. Row: §11.9. | measured 2026-07-29, PERF-4a probes |
 | **B28** | ~~major~~ **CLOSED 2026-07-29 (PERF-10)** | **The `typeof __DEV__` guard costs ~270 ns per evaluation wherever `__DEV__` is undeclared** — JSC has no inline cache for an unresolvable global identifier. Measured on this machine, 1e6 evaluations: undeclared **272.5 ns**, declared-false **0.7 ns**, declared-true **1.2 ns**, and a `globalThis` property read of an *absent* property **0.46 ns**. PERF-3 put that expression inside `fillXforms` (frame-renderer.ts:413,:429), i.e. once per sprite per transform pass — 9x that under an outline effect — and `Pool.release` (pool.ts:78) has had it once per released object since before this arc. React Native always defines `__DEV__`, so RN builds are unaffected; **web/CanvasKit bundles and any Node/Bun consumer are not**, unless their bundler defines it. Cost there: ~0.27 ms/frame at 1000 sprites, ~2.4 ms under outline. It also inflated this arc's own first re-capture ~7x until PERF-4a pinned the flag. Fix is a `globalThis` property read — equally toggleable at runtime, ~400x cheaper when absent. **Done:** `fillXforms` and `Pool.release()` converted; undeclared-configuration cost fell from 412–450 µs to 56–88 µs on `render.flush 1000 / 1 atlas`, matching the declared configuration (§11.10). | measured 2026-07-29, PERF-4a |
-| **B29** | major | **The harness cannot tell a quiet capture from a contended one.** Provenance records `cpuModel`/`cpuCount`/`totalMemMB`/`gitSha`/`gitDirty` but nothing about machine LOAD, and nothing in the capture path refuses or flags a busy machine. Demonstrated 2026-07-29: two consecutive 5-run captures taken while eight residual agent processes were resident read `integration.frame 1000` at 10.54 ms and 9.7 ms against 12.5 ms an hour earlier, with `render.flush` ~10% high and the `ecs.step` control row displaced — across a commit whose only executable change was one `lines.push` in the markdown generator. Both captures were discarded by hand; a third, on a quiet machine, returned to 12.63 ms (12.55–12.88). **The only thing that caught it was a human reading the control row**, which is the same pull-not-push failure mode as B24. Options: sample load at capture start and refuse above a threshold; record it in provenance so promote can refuse a mixed window; or assert the control row against a committed expectation. Not pre-freeze-blocking, but it undermines every number the arc publishes. | measured 2026-07-29, PERF-5/10 review round |
+| **B29** | ~~major~~ **CLOSED 2026-07-29 (PERF-11)** | **The harness cannot tell a quiet capture from a contended one.** Provenance records `cpuModel`/`cpuCount`/`totalMemMB`/`gitSha`/`gitDirty` but nothing about machine LOAD, and nothing in the capture path refuses or flags a busy machine. Demonstrated 2026-07-29: two consecutive 5-run captures taken while eight residual agent processes were resident read `integration.frame 1000` at 10.54 ms and 9.7 ms against 12.5 ms an hour earlier, with `render.flush` ~10% high and the `ecs.step` control row displaced — across a commit whose only executable change was one `lines.push` in the markdown generator. Both captures were discarded by hand; a third, on a quiet machine, returned to 12.63 ms (12.55–12.88). **The only thing that caught it was a human reading the control row**, which is the same pull-not-push failure mode as B24. Options: sample load at capture start and refuse above a threshold; record it in provenance so promote can refuse a mixed window; or assert the control row against a committed expectation. Not pre-freeze-blocking, but it undermines every number the arc publishes. **Done:** foreign CPU load is measured around the timed suites and recorded in provenance; `promote` refuses a run above 15% foreign load, a run with no load record at all, and a window whose runs disagree by more than 20% — the last pinned against this incident's real recorded medians. §11.11. | measured 2026-07-29, PERF-5/10 review round |
 
 ---
 
@@ -693,6 +693,41 @@ exist. Fail tier stays at 1.25 and stays soft: it opens the issue and labels it,
 build, because a wall-clock number on shared hardware must never be able to block a merge.
 
 **Freeze-window interaction:** the cron pauses Oct 5–18 per the H1 rule in road-to-oss §11.
+
+### §11.11 PERF-11 — capture-time load guard (B29) [MT] — DONE 2026-07-29
+
+`benchmarks/src/load.ts` measures **foreign CPU load** — system-wide utilisation from `os.cpus()`
+minus this process's own share from `process.cpuUsage()` — across the window in which the timed
+suites run, and records it in provenance. The window excludes the heap probes deliberately: they
+fork, and `process.cpuUsage()` cannot see a child, so spanning them would misreport our own work as
+a noisy neighbour.
+
+**Two independent refusals in `promote`, because neither subsumes the other:**
+
+| Check | Catches | Misses |
+|---|---|---|
+| foreign load > 15% | the cause — a contended machine | a resident process that pollutes cache without burning CPU |
+| run-to-run spread > 20% | the symptom, whatever the cause | a window that is internally tight but at the wrong level |
+
+B29 produced one capture of each kind, which is why both exist. A run with **no** load record is
+also refused: "unrecorded" is not "quiet", and every pre-PERF-11 capture is unrecorded.
+
+**Both thresholds are calibrated against measurement, not chosen.** Foreign load on the reference
+machine in ordinary working state (editor + agent session) read 4.36 / 4.38 / 4.51 / 5.43 percent
+across four captures — the realistic floor is ~5%, not zero — so the ceiling sits at ~3× that. The
+spread ceiling sits at ~2× the worst legitimate row in the published baseline
+(`physics.step 100 AABB sparse`, 9.4% — short scenarios are inherently noisier) and refuses B29's
+first bad capture at 34%. **Stated limit:** the load ceiling was calibrated from below only. The
+machine state that produced B29 no longer exists and was never measured with this instrument, so
+the load threshold is *not* validated against the real event — the spread threshold is, and the test
+suite pins it using the actual recorded medians (9.16/9.91/10.54/11.97/12.78 ms) rather than a
+made-up spread.
+
+The published doc now carries the foreign-load figure beside the CPU model, and states both ceilings
+in "What these numbers do not measure".
+
+**Exit:** a contended or unstable capture cannot become a published baseline without a human
+deliberately overriding, rather than a human happening to read the control row.
 
 ### §11.6 PERF-6 — web bench (P4) [MT, 2 sessions]
 

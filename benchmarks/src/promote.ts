@@ -1,4 +1,5 @@
 import type { AllocRow } from './alloc.js';
+import { MAX_FOREIGN_LOAD_PERCENT, MAX_SPREAD_PERCENT } from './load.js';
 import type {
   MicrobenchHeap,
   MicrobenchReport,
@@ -178,6 +179,41 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   const allocOutcome = reconcileAlloc(runs);
   if (!allocOutcome.ok) return { ok: false, problems: allocOutcome.problems };
 
+  // B29: a capture taken on a contended machine measures the neighbours.
+  //
+  // Two independent tests, because neither alone is sufficient. Foreign CPU
+  // load names the CAUSE but cannot see a resident process that perturbs caches
+  // without burning cycles; run-to-run spread catches the SYMPTOM whatever the
+  // cause, but a window can be internally tight and still sit at the wrong
+  // level. The incident that produced this guard had one capture fail each test.
+  const environment: string[] = [];
+  for (const run of runs) {
+    if (run.foreignLoadPercent === undefined) {
+      environment.push(
+        `run ${run.generated} does not record machine load — it predates the B29 guard, and "unrecorded" is not "quiet". Re-capture rather than publish a window that cannot be shown to be clean.`,
+      );
+    } else if (run.foreignLoadPercent > MAX_FOREIGN_LOAD_PERCENT) {
+      environment.push(
+        `run ${run.generated} was captured while ${run.foreignLoadPercent.toFixed(1)}% of the machine was busy with other processes (ceiling ${MAX_FOREIGN_LOAD_PERCENT}%) — it measures the neighbours as much as the engine.`,
+      );
+    }
+  }
+  if (environment.length > 0) return { ok: false, problems: environment };
+
+  const unstable: string[] = [];
+  for (const suite of suites) {
+    for (const r of suite.results) {
+      if (r.bandMinNs === undefined || r.bandMaxNs === undefined || r.medianNs <= 0) continue;
+      const spread = ((r.bandMaxNs - r.bandMinNs) / r.medianNs) * 100;
+      if (spread > MAX_SPREAD_PERCENT) {
+        unstable.push(
+          `"${r.scenario}" varies ${spread.toFixed(0)}% across the folded runs (${(r.bandMinNs / 1000).toFixed(1)}-${(r.bandMaxNs / 1000).toFixed(1)} µs, ceiling ${MAX_SPREAD_PERCENT}%) — that is not a measurement, it is two different states of the machine averaged together.`,
+        );
+      }
+    }
+  }
+  if (unstable.length > 0) return { ok: false, problems: unstable };
+
   const captures = runs.map((r) => r.generated).sort();
   const newest = captures[captures.length - 1] as string;
 
@@ -194,6 +230,7 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
       totalMemMB: first.totalMemMB,
       gitSha: first.gitSha,
       gitDirty: false,
+      foreignLoadPercent: Math.max(...runs.map((r) => r.foreignLoadPercent ?? 0)),
       runs: runs.length,
       aggregatedFrom: captures,
       suites,

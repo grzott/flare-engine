@@ -93,6 +93,13 @@ export type Provenance = {
   totalMemMB?: number;
   gitSha?: string;
   gitDirty?: boolean;
+  /**
+   * Percent of total CPU capacity consumed by OTHER processes while the timed
+   * suites ran (B29). Absent on captures taken before this was measured; a
+   * window mixing recorded and unrecorded runs is refused by `promote` rather
+   * than judged, since "unrecorded" is not "quiet".
+   */
+  foreignLoadPercent?: number;
 };
 
 export type MicrobenchReport = Provenance & {

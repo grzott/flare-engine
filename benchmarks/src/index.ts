@@ -11,6 +11,13 @@ import {
 } from './harness.js';
 import type { HeapProbeResult } from './heap-probe.js';
 import { integrationBenches } from './integration.bench.js';
+import {
+  type LoadWindow,
+  MAX_FOREIGN_LOAD_PERCENT,
+  MAX_SPREAD_PERCENT,
+  measureLoad,
+  sampleCpu,
+} from './load.js';
 import { particlesBenches } from './particles.bench.js';
 import { physicsBenches } from './physics.bench.js';
 import { aggregateRuns } from './promote.js';
@@ -273,8 +280,15 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   lines.push(`<!-- flare-capture: ${capture.gitSha ?? 'unrecorded'} -->`);
   lines.push('# Flare Engine — Benchmarks');
   lines.push('');
+  // Machine load belongs beside the CPU model, not buried: a number captured on
+  // a contended machine is not comparable with one that was not, and the reader
+  // cannot tell from the figure itself (B29).
+  const load =
+    capture.foreignLoadPercent === undefined
+      ? 'Load: unrecorded'
+      : `Foreign load: ${capture.foreignLoadPercent.toFixed(1)}%`;
   lines.push(
-    `> **Captured: ${captured}** (${runsNote}) · Rendered: ${rendered} · Runtime: ${capture.runtime} · Platform: ${capture.platform} · ${cpu} · ${commit}`,
+    `> **Captured: ${captured}** (${runsNote}) · Rendered: ${rendered} · Runtime: ${capture.runtime} · Platform: ${capture.platform} · ${cpu} · ${load} · ${commit}`,
   );
   lines.push('');
   lines.push(
@@ -365,6 +379,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push(
     '- **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.',
+  );
+  lines.push(
+    `- **Every number here was captured on a machine that was ${capture.foreignLoadPercent === undefined ? 'not measured for' : `${capture.foreignLoadPercent.toFixed(1)}% busy with`} other work.** \`bench:promote\` refuses a window above ${MAX_FOREIGN_LOAD_PERCENT}% foreign load, or one whose runs disagree by more than ${MAX_SPREAD_PERCENT}%. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).`,
   );
   lines.push(
     `- **The table cannot show the 2026-07-29 dev-flag fix, because the bench has always declared \`__DEV__\`.** Until that date the engine read the flag as a bare identifier behind a \`typeof\` guard, once per sprite per transform pass. Under **JSC** — Bun, and Safari/iOS WebKit — an unresolvable global costs ~270 ns per evaluation, so a consumer who never defines \`__DEV__\` was paying it: \`render.flush 1000 / 1 atlas\` measured 412-450 µs in that configuration against 56-88 µs after the fix, the same band the declared configuration occupies. React Native always defines the flag and was never affected. **V8 (Node, Chrome) and SpiderMonkey were never measured** — the ~270 ns figure is JSC-only and must not be read as a cross-engine claim.`,
@@ -497,6 +514,7 @@ function buildReport(
   groups: Group[],
   heap: HeapProbeResult[],
   alloc: AllocRow[],
+  load: LoadWindow,
 ): MicrobenchReport {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -505,6 +523,7 @@ function buildReport(
     platform: `${process.platform} ${process.arch}`,
     devFlag: devFlagState(),
     ...collectProvenance(),
+    foreignLoadPercent: Number(load.foreignPercent.toFixed(2)),
     suites: groups.map((g) => ({
       title: g.title,
       results: g.results.map(statsToResult),
@@ -661,13 +680,28 @@ if (args.has('--markdown')) {
 applyBenchDevFlag();
 assertDevFlagDefined();
 
+// The load window brackets the timed suites and nothing else: the heap probes
+// fork children, whose CPU `process.cpuUsage()` cannot see and would therefore
+// misreport as a noisy neighbour (load.ts).
+const cpuBefore = sampleCpu();
 const groups = runAll();
+const load = measureLoad(cpuBefore, sampleCpu());
 // Counters and heap run after the timed suites: the allocation gate arms
 // __DEV__ (which turns on the pool's debug live-set) and the heap probes fork
 // processes, neither of which may touch a timing measurement.
 const alloc = allocRows();
 const heap = runHeapProbes();
-const report = buildReport(groups, heap, alloc);
+const report = buildReport(groups, heap, alloc, load);
+
+if (load.foreignPercent > MAX_FOREIGN_LOAD_PERCENT) {
+  console.error(
+    `
+WARNING: ${load.foreignPercent.toFixed(1)}% of this machine was busy with other ` +
+      `processes while the suites ran (ceiling ${MAX_FOREIGN_LOAD_PERCENT}%). The run is still ` +
+      'appended to the history log as evidence, but `bench:promote` will refuse to publish it. ' +
+      'Close what else is running and re-capture.',
+  );
+}
 
 const noRecord = args.has('--no-record') || process.env.FLARE_BENCH_NO_RECORD === '1';
 
@@ -687,6 +721,11 @@ const gateFailures = alloc.filter((r) => r.problems.length > 0);
 if (args.has('--write-baseline')) {
   if (gateFailures.length > 0) {
     console.error('Allocation gate failed — refusing to overwrite the baseline.');
+  } else if (load.foreignPercent > MAX_FOREIGN_LOAD_PERCENT) {
+    console.error(
+      `Machine was ${load.foreignPercent.toFixed(1)}% busy with other processes — refusing to ` +
+        'overwrite the baseline with a contended capture.',
+    );
   } else {
     console.error(`Wrote baseline ${writeMicrobenchJson(report)}`);
   }

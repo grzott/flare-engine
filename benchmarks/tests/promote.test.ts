@@ -42,6 +42,7 @@ function runAt(medianNs: number, overrides: Partial<MicrobenchReport> = {}): Mic
     totalMemMB: 16000,
     gitSha: 'abc123abc123',
     gitDirty: false,
+    foreignLoadPercent: 0.4,
     suites: Object.entries(EXPECTED_SCENARIOS).map(([title, scenarios]) => ({
       title,
       results: scenarios.map(result),
@@ -90,24 +91,26 @@ function firstResult(report: MicrobenchReport): MicrobenchResult {
 
 describe('aggregateRuns', () => {
   test('takes the per-scenario median across runs, not the mean', () => {
-    // Mean would be 40 (the 100 outlier drags it); the median is 20.
-    const outcome = aggregateRuns([runAt(10), runAt(20), runAt(100)].map((r) => r));
+    // Mean would be 102 (the 106 run drags it); the median is 101. Kept inside
+    // the B29 stability ceiling on purpose: a fixture the gate would refuse in
+    // production is not evidence about production.
+    const outcome = aggregateRuns([runAt(99), runAt(101), runAt(106)].map((r) => r));
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
-    expect(firstResult(outcome.report).medianNs).toBe(20);
+    expect(firstResult(outcome.report).medianNs).toBe(101);
   });
 
   test('records the run-to-run spread as the band', () => {
-    const outcome = aggregateRuns([runAt(10), runAt(20), runAt(100)]);
+    const outcome = aggregateRuns([runAt(99), runAt(101), runAt(106)]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     const r = firstResult(outcome.report);
-    expect(r.bandMinNs).toBe(10);
-    expect(r.bandMaxNs).toBe(100);
+    expect(r.bandMinNs).toBe(99);
+    expect(r.bandMaxNs).toBe(106);
   });
 
   test('opsPerSec is recomputed from the aggregated median, not aggregated itself', () => {
-    const outcome = aggregateRuns([runAt(10), runAt(20), runAt(100)]);
+    const outcome = aggregateRuns([runAt(99), runAt(101), runAt(106)]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     const r = firstResult(outcome.report);
@@ -115,7 +118,7 @@ describe('aggregateRuns', () => {
   });
 
   test('carries run count and every source capture timestamp', () => {
-    const outcome = aggregateRuns([runAt(10), runAt(20), runAt(30)]);
+    const outcome = aggregateRuns([runAt(99), runAt(101), runAt(103)]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect(outcome.report.runs).toBe(3);
@@ -171,11 +174,11 @@ describe('aggregateRuns', () => {
   });
 
   test('withholds p99 unless every folded run carries one', () => {
-    const partial = runAt(20);
+    const partial = runAt(101);
     for (const suite of partial.suites) {
       for (const r of suite.results) r.p99Ns = undefined;
     }
-    const outcome = aggregateRuns([runAt(10), partial, runAt(30)]);
+    const outcome = aggregateRuns([runAt(99), partial, runAt(103)]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     // Medianing [number, undefined, number] silently publishes an arbitrary
@@ -184,14 +187,15 @@ describe('aggregateRuns', () => {
   });
 
   test('folds maxNs across runs', () => {
-    const outcome = aggregateRuns([runAt(10), runAt(20), runAt(100)]);
+    // maxNs is the median of the runs' maxima; the fixture sets max = 2x median.
+    const outcome = aggregateRuns([runAt(99), runAt(101), runAt(106)]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
-    expect(firstResult(outcome.report).maxNs).toBe(40);
+    expect(firstResult(outcome.report).maxNs).toBe(202);
   });
 
   test('carries the exact-counter section through promotion', () => {
-    const outcome = aggregateRuns([runAt(10), runAt(20)]);
+    const outcome = aggregateRuns([runAt(99), runAt(101)]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect((outcome.report.alloc ?? []).map((r) => r.scenario)).toEqual([
@@ -238,6 +242,58 @@ describe('aggregateRuns', () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.problems.some((p) => p.includes('undeclared'))).toBe(true);
+  });
+
+  test('refuses a run captured while the machine was busy with other work', () => {
+    // B29: the incident this guards was a 23% shift in integration.frame with
+    // no code change, caught only because a human read the control row.
+    const outcome = aggregateRuns([runAt(100), runAt(100, { foreignLoadPercent: 41 })]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.join(' ')).toContain('busy with other processes');
+  });
+
+  test('refuses a run that does not record machine load at all', () => {
+    // "Unrecorded" is not "quiet" — a pre-B29 capture cannot be shown clean.
+    const outcome = aggregateRuns([runAt(100), runAt(100, { foreignLoadPercent: undefined })]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.join(' ')).toContain('does not record machine load');
+  });
+
+  test('refuses a window whose runs disagree too widely to be one measurement', () => {
+    // The REAL medians B29's first bad capture recorded for
+    // `integration.frame 1000`, in nanoseconds, taken from history.ndjson.
+    // Pinning the actual event rather than a made-up spread is the difference
+    // between a threshold that is calibrated and one that is asserted.
+    const incident = [10_540_000, 11_970_000, 9_910_000, 12_780_000, 9_160_000];
+    const outcome = aggregateRuns(incident.map((ns) => runAt(ns)));
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.join(' ')).toContain('two different states of the machine');
+  });
+
+  test('accepts the clean capture that replaced it', () => {
+    // Same row, same machine, quiet: 12.55-12.88 ms. The guard has to let this
+    // through, or the only way past it is to delete it.
+    const clean = [12_550_000, 12_560_000, 12_630_000, 12_820_000, 12_880_000];
+    expect(aggregateRuns(clean.map((ns) => runAt(ns))).ok).toBe(true);
+  });
+
+  test('accepts a window whose spread is ordinary run-to-run noise', () => {
+    // Guards the threshold from the other side: a gate that fires on a good
+    // day gets raised until it never fires at all.
+    expect(aggregateRuns([runAt(100), runAt(103)]).ok).toBe(true);
+  });
+
+  test('publishes the worst load reading in the window, not the best', () => {
+    const outcome = aggregateRuns([
+      runAt(100, { foreignLoadPercent: 0.2 }),
+      runAt(100, { foreignLoadPercent: 3.1 }),
+    ]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.report.foreignLoadPercent).toBe(3.1);
   });
 
   test('refuses a heap row that never reached its plateau', () => {

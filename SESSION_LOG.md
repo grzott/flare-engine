@@ -9690,6 +9690,8 @@ None — audit-only close per row allowance.
 - `apps/bench-dashboard/README.md`
 - `benchmarks/package.json`
 - `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json` (commit 2)
+- `docs/references/benchmarks.md` (commit 2)
 - `benchmarks/results/microbench.json`
 - `benchmarks/src/harness.ts`
 - `benchmarks/src/index.ts`
@@ -10165,5 +10167,83 @@ is that a human-legible control row exists and someone read it. A capture-time l
 or at minimum record) is a candidate row. **Filed as B29.**
 
 **Next:** **PERF-8** (dashboard hardening + root `PERFORMANCE.md`); PERF-4b and PERF-9 post-freeze.
+
+---
+
+## Session 268 — 2026-07-29 (scope: engine)
+
+**Goal:** PERF-11 — capture-time load guard (B29)
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/src/index.ts`
+- `benchmarks/src/load.ts`
+- `benchmarks/src/promote.ts`
+- `benchmarks/src/results.ts`
+- `benchmarks/tests/promote.test.ts`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Gates (cont.)**
+- deps / changeset / perf: green
+- **perf-freshness: RED, overridden** — this row edits `benchmarks/src`, so the capture stops
+  describing HEAD the moment it lands. Cleared by the re-capture commit, which also becomes the
+  first capture to carry a load reading.
+
+**Outcome**
+
+Closes B29, filed one session ago when two captures read `integration.frame 1000` 23% low beside a
+fleet of residual agent processes and **nothing but a human reading the control row noticed**.
+
+`benchmarks/src/load.ts` measures **foreign CPU load** — system-wide utilisation from `os.cpus()`
+minus this process's own share from `process.cpuUsage()` — across the timed suites. The window
+excludes the heap probes deliberately: they fork, and `process.cpuUsage()` cannot see a child, so
+spanning them would misreport our own work as a noisy neighbour.
+
+**`promote` gained two independent refusals, because neither subsumes the other:**
+
+| Check | Catches | Blind to |
+|---|---|---|
+| foreign load > 15% | the cause — a contended machine | a resident process polluting cache without burning CPU |
+| run-to-run spread > 20% | the symptom, whatever the cause | a window internally tight but at the wrong level |
+
+B29 produced exactly one capture of each kind, which is the whole argument for having both. A run
+with **no** load record is refused too — "unrecorded" is not "quiet".
+
+**Findings**
+
+- **Both thresholds are calibrated against measurement, and my first draft of one was wrong.** The
+  docstring asserted "an undisturbed capture reads well under 1% foreign load". Measured: 4.36,
+  4.38, 4.51, 5.43 percent across four captures. The realistic floor on a working machine — editor
+  open, agent session running — is ~5%, not zero, so an 8% ceiling had 1.5x headroom and would have
+  been raised until it meant nothing. Ceiling moved to 15% (~3x measured quiet) and the docstring
+  corrected to the measurement.
+- The spread ceiling was similarly retuned: 12% left only 1.3x headroom over the worst *legitimate*
+  row in the published baseline (`physics.step 100 AABB sparse` at 9.4% — short scenarios are
+  inherently noisier). Now 20%, ~2x that, and it still refuses B29's bad capture at 34%.
+- **The spread test pins the real event, not an invented one.** It folds the actual recorded
+  medians from the incident (9.16 / 9.91 / 10.54 / 11.97 / 12.78 ms) and asserts refusal, plus the
+  clean capture that replaced it (12.55–12.88 ms) and asserts acceptance. A threshold with a
+  fixture on only one side is a threshold nobody can safely tighten.
+- **Stated limit, in the code and the plan:** the load ceiling is calibrated *from below* only. The
+  machine state that produced B29 no longer exists and was never measured with this instrument, so
+  the load threshold is **not** validated against the real event — only the spread threshold is.
+- Adding the spread guard broke seven existing `aggregateRuns` tests, whose fixtures folded runs
+  like 10/20/100 ns — a 900% spread no real capture produces. Retuned to realistic values that
+  still separate median from mean (99/101/106). The alternative, a test-only bypass, would have
+  meant the published path and the tested path diverging at exactly the check that matters.
+- The typecheck gate caught the new tests using `outcome.problems?.` on a discriminated union —
+  benchmarks' tsconfig covers `tests/`, unlike most packages.
+
+**Frictions:** corr:1 / deny:0 / gate:2 / fixup:2 / drift:0
+
+**Next:** re-capture (5 runs, clean tree → promote → `bench:md`) as commit 2 — the first baseline to
+carry a load reading, and the first to pass through both new refusals. Then **PERF-8**.
 
 ---

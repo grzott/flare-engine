@@ -601,6 +601,71 @@ docs/plans/manual-test-protocol.md.
 fails CI; a publish cannot bypass any of it; the 0.3.0 freeze checklist contains the perf
 gate by reference. **All three hold as of 2026-07-29.**
 
+### §11.5c Review fixes — 2026-07-29 (36-agent adversarial pass over §11.5 + §11.10)
+
+Six lenses → two independent verifiers per finding (one refuting, one required to construct a real
+repro). 36 raised, 31 survived, collapsing to ~13 distinct defects — four lenses independently found
+the same `freshness` fail-open, which is the strongest signal in the batch.
+
+**Fail-open holes closed** (all in the gate this arc built, all the same shape as the B8 disease
+one level up — the check still runs, still prints OK, and is watching nothing):
+
+- `freshness.instrument` absent, empty, or written as a string silently disabled the instrument
+  canary. An empty path list yields no paths, no paths yields no commits, and no commits reads as
+  fresh. Now validated: non-empty array of strings, or red. Note the asymmetry that made this easy
+  to miss — a *stringified* `suites` value already failed closed (`workspaceClosure` spreads a
+  string to characters, all unknown), while the identical malformation of `instrument` failed open.
+- A suite mapped to `[]` was permanently fresh, for the same reason. Now red.
+- An unresolvable base ref turned the rubber-stamp guard into a no-op that still printed OK — a
+  shallow clone (`fetch-depth: 1`, a tempting CI speed-up) was enough. Now red whenever the
+  baseline or a package src is modified and no range can be resolved.
+- `--write` rebuilt `counters` from whatever the bench produced, so deleting a scenario from
+  `alloc.ts` and re-running it silently erased the baseline key — rewriting the evidence instead of
+  failing on it, defeating reconcileCounters' own "a scenario cannot be retired by deleting it from
+  the bench" guarantee. Now requires an explicit `--retire`.
+- `COUNTER_FIELDS` was only checked one way: a counter the BENCH gains but the list does not name
+  was never compared, never written, and never missed. Now red.
+- **A selftest assertion was vacuous.** `'a mapping with no suite fails'` passed `suiteTitles: []`,
+  which hit the early return three branches above the drift check it claimed to pin, and its needle
+  matched the early-return string. Split into two real assertions plus four new ones for the
+  validations above.
+
+**The doc the canary exists to protect was not being checked.** `bench:md` is a separate command, so
+a capture + promote that stopped short of it left `docs/references/benchmarks.md` showing the
+previous commit's numbers with every gate green. The generator now stamps
+`<!-- flare-capture: <sha> -->` into the page and the canary asserts it matches the baseline.
+
+**Doc-truth fixes** — in an arc about honest numbers, these matter more than their size suggests:
+
+- The generated methodology paragraph still described the removed `typeof` guard in the **present
+  tense**, contradicting the PERF-10 caveat twelve lines below it in the same file. Both rewritten.
+- **The ~270 ns figure is JSC-only** (Bun, Safari/WebKit) and had been published as applying to
+  "plain Node" and web bundles generally — but Node and Chrome are V8, which was never measured.
+  Corrected everywhere, with the unmeasured engines named.
+- The caveat claimed 56-88 µs was "the band shown below" while the table showed 55.1 µs
+  (54.9-56.1). Removed.
+- `benchmarks/src/dev-flag.ts` documented the pre-PERF-10 engine in the present tense, with line
+  anchors (`frame-renderer.ts:413,:429`) that had already rotted. Rewritten without line numbers.
+- api-specs claimed every non-RN runtime "already" sets `globalThis.__DEV__` — if that were true,
+  the undeclared configuration PERF-10 fixed could not exist.
+- **The re-capture recipe was wrong in three places** (road-to-oss §11, the canary's own failure
+  message, verify.sh): all said `bench:baseline` ×5, which is `--write-baseline` and overwrites the
+  tracked baseline with a single-run capture on every one of the five runs. The correct recipe is
+  plain `bench` ×5 (append-only history) then `bench:promote`.
+- "`{}` for three months" was wrong and mis-attributed: the figure belongs to the stale-capture
+  window (April–July), not to the baseline file's lifetime.
+
+**Also:** `bun run release` now runs `check:perf` + `check:perf-freshness` itself. B19 was satisfied
+only by workflow steps, but the owner runs that script by hand for the restricted publish, and the
+invariant is "a publish cannot bypass the gate". The core dist canary now counts `typeof __DEV__`
+occurrences (exactly one — the constructor's) rather than merely matching `.__DEV__` anywhere in the
+bundle, which any other module could have satisfied while `release()` quietly reverted.
+
+**Refuted, recorded so they are not re-raised:** 5 findings, including the claim that
+`const G = globalThis` misbehaves under tsdown's CJS output (it does not — verified against both
+emitted artefacts) and that the ceiling `{}`/typo case ungates a package (the shape guard at
+perf-gate.mjs fires).
+
 ### §11.5b Track B plumbing — DECIDED 2026-07-29, built in PERF-7
 
 Recorded here so PERF-7 executes a decision instead of re-opening one. Track B is wall-clock: it

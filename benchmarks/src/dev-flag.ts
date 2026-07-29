@@ -1,31 +1,32 @@
 /**
  * Pins the `__DEV__` configuration every capture is taken under.
  *
- * This is not a detail. The engine guards its diagnostic counters with
- * `typeof __DEV__ !== 'undefined' && __DEV__` (frame-renderer.ts:413,:429 —
- * evaluated once per sprite per transform pass — and pool.ts:78, once per
- * released object). In JSC an *unresolvable* global identifier costs about
- * **270 ns per evaluation**; once the global exists, the same expression costs
- * **0.5 ns**. Measured on this machine, 1e6 evaluations per configuration:
+ * `false` is the right value: it is the React Native *release* configuration —
+ * what a shipped game runs — and it leaves the diagnostic counters off, which
+ * is the state their "cost only when armed" design assumes.
+ *
+ * **Why this is recorded rather than assumed.** Until 2026-07-29 the engine read
+ * the dev flag as a bare identifier behind a `typeof` guard, once per sprite per
+ * transform pass. JSC has no inline cache for an unresolvable global, so a bench
+ * process that did not declare the flag measured a ~270 ns penalty per sprite
+ * and published it as engine cost: the 1000-sprite flush row read ~412 µs
+ * undeclared against ~55 µs declared. Measured here, 1e6 evaluations per
+ * configuration:
  *
  *   typeof IDENT, global undeclared ....... 272.5 ns
  *   typeof IDENT, global declared false ..... 0.7 ns
  *   typeof IDENT, global declared true ...... 1.2 ns
  *   globalThis property read, absent ........ 0.5 ns
  *
- * Bun declares no `__DEV__`, so a bench process that does not set it measures
- * that ~270 ns penalty once per sprite and reports it as engine cost: the
- * 1000-sprite flush row reads ~412 µs undeclared versus ~55 µs declared. The
- * harness would be publishing a JSC deoptimisation as a render regression.
+ * PERF-10 moved the hot sites (`fillXforms` in frame-renderer.ts, `Pool.release`
+ * in pool.ts) onto that last form, so the configuration no longer changes the
+ * measurement. This module stays anyway, for two reasons: the flag still selects
+ * whether the counters are armed, and a capture that cannot state which
+ * configuration it ran under cannot be compared against one that can — the
+ * provenance is the point, not the penalty.
  *
- * `false` is the right value: it is the React Native *release* configuration —
- * what a shipped game runs — and it leaves the diagnostic counters off, which
- * is the state their "cost only when armed" design assumes.
- *
- * The engine-side defect this exposes (the guard should read a property off
- * `globalThis` rather than an unresolvable identifier, which is equally
- * toggleable at runtime and ~400x cheaper when absent) is its own row: see
- * docs/plans/perf-measurement-2026-07.md §11.10.
+ * Line numbers are deliberately omitted here; they rot. See
+ * docs/plans/perf-measurement-2026-07.md §11.10 and B28.
  */
 
 export const BENCH_DEV_FLAG = false;

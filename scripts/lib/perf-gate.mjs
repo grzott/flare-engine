@@ -5,10 +5,11 @@
  * is testable from `selftest()` without packing a tarball or running a bench.
  *
  * The governing rule is **fail-closed**: absence and emptiness are red, never
- * green. That is the B3 lesson encoded — the previous incarnation of this gate
- * was an empty `{}` that passed everything for three months while a 3x render
- * regression shipped. A check that cannot tell "nothing is wrong" from "nothing
- * was checked" is not a check.
+ * green. That is the B8 lesson encoded — this file's predecessor was a literal
+ * `{}` that gated nothing, while the published render numbers drifted 3.1x out
+ * of date across April to July. A check that cannot tell "nothing is wrong"
+ * from "nothing was checked" is not a check, and neither is a threshold file
+ * with no thresholds in it.
  */
 
 /**
@@ -96,6 +97,20 @@ export function reconcileCounters(rows, baselineCounters) {
     const unknown = Object.keys(want).filter((f) => !COUNTER_FIELDS.includes(f));
     for (const f of unknown) {
       problems.push(`scenario "${row.scenario}" baseline has unknown counter "${f}".`);
+    }
+
+    // The reverse direction: a counter the BENCH now reports but COUNTER_FIELDS
+    // does not list is never compared, never written by `--write`, and never
+    // missed by anything — it would be a gate-shaped hole in the shape of a new
+    // feature. `frames` is the one legitimate non-counter number on the row.
+    const ungated = Object.keys(row).filter(
+      (f) => f !== 'frames' && typeof row[f] === 'number' && !COUNTER_FIELDS.includes(f),
+    );
+    for (const f of ungated) {
+      problems.push(
+        `the bench reports counter "${f}" (scenario "${row.scenario}") which COUNTER_FIELDS does ` +
+          'not list, so nothing gates it. Add it to COUNTER_FIELDS and re-run --write.',
+      );
     }
 
     let anyNonZero = false;
@@ -271,11 +286,43 @@ export function reconcileFreshness({ suiteTitles, freshness, commitsBySuite, ins
     return ['.perf-baseline.json has no "freshness" section — the canary has nothing to check.'];
   }
   const map = freshness.suites;
-  if (!map || typeof map !== 'object' || Object.keys(map).length === 0) {
+  if (!map || typeof map !== 'object' || Array.isArray(map) || Object.keys(map).length === 0) {
     return ['.perf-baseline.json "freshness.suites" is empty — no suite is being watched.'];
   }
   if (suiteTitles.length === 0) {
     return ['the capture contains no suites.'];
+  }
+
+  // The watch LISTS themselves must be checked, not just their contents.
+  //
+  // An empty or malformed list produces an empty path set, an empty path set
+  // produces no commits, and no commits reads as "fresh" — so deleting a key
+  // is indistinguishable from nothing having changed. That is the same shape as
+  // the `{}` baseline this gate replaced, one level up: the check would still
+  // run, still print OK, and still be watching nothing.
+  const instrument = freshness.instrument;
+  if (!Array.isArray(instrument) || instrument.length === 0) {
+    problems.push(
+      `.perf-baseline.json "freshness.instrument" is ${JSON.stringify(instrument)} — it must be a ` +
+        'non-empty array of paths. With no instrument path a rewritten bench reads as fresh, ' +
+        'which is exactly the PERF-4a failure (486 µs -> 55.6 µs with zero engine changes).',
+    );
+  } else if (instrument.some((p) => typeof p !== 'string' || p.trim() === '')) {
+    problems.push('.perf-baseline.json "freshness.instrument" contains a non-string path.');
+  }
+
+  for (const [title, names] of Object.entries(map)) {
+    if (!Array.isArray(names) || names.length === 0) {
+      problems.push(
+        `freshness maps suite "${title}" to ${JSON.stringify(names)} — it must be a non-empty ` +
+          'array of package names, or the suite is permanently "fresh".',
+      );
+    } else if (names.some((n) => typeof n !== 'string' || !n.startsWith('@'))) {
+      problems.push(
+        `freshness maps suite "${title}" to something that is not a list of package names ` +
+          `(${JSON.stringify(names)}).`,
+      );
+    }
   }
 
   for (const title of suiteTitles) {
@@ -419,6 +466,11 @@ export function selftest() {
     }),
     'unknown counter',
   );
+  fires(
+    'a bench counter missing from COUNTER_FIELDS fails',
+    reconcileCounters([baseRow('alloc.render 1000 / 1 atlas', { drawCirclesPerFrame: 7 })], clean),
+    'nothing gates it',
+  );
 
   const sized = [{ name: '@flare-engine/math', ok: true, bytes: 1000 }];
   expect(
@@ -544,7 +596,17 @@ export function selftest() {
     'no freshness mapping',
   );
   fires(
-    'a mapping with no suite fails',
+    'a mapping naming a suite the capture lacks fails',
+    reconcileFreshness({
+      suiteTitles: ['ECS'],
+      freshness: { ...freshness, suites: { ...freshness.suites, Ghost: ['@flare-engine/render'] } },
+      commitsBySuite: { ECS: [], Ghost: [] },
+      instrumentCommits: [],
+    }),
+    'which the capture does not contain',
+  );
+  fires(
+    'a capture with no suites fails',
     reconcileFreshness({
       suiteTitles: [],
       freshness,
@@ -552,6 +614,46 @@ export function selftest() {
       instrumentCommits: [],
     }),
     'no suites',
+  );
+  fires(
+    'a missing instrument list fails',
+    reconcileFreshness({
+      suiteTitles: ['ECS'],
+      freshness: { suites: freshness.suites },
+      commitsBySuite: { ECS: [] },
+      instrumentCommits: [],
+    }),
+    '"freshness.instrument" is undefined',
+  );
+  fires(
+    'an empty instrument list fails',
+    reconcileFreshness({
+      suiteTitles: ['ECS'],
+      freshness: { ...freshness, instrument: [] },
+      commitsBySuite: { ECS: [] },
+      instrumentCommits: [],
+    }),
+    'non-empty array of paths',
+  );
+  fires(
+    'a stringified instrument list fails',
+    reconcileFreshness({
+      suiteTitles: ['ECS'],
+      freshness: { ...freshness, instrument: 'benchmarks/src' },
+      commitsBySuite: { ECS: [] },
+      instrumentCommits: [],
+    }),
+    'non-empty array of paths',
+  );
+  fires(
+    'a suite mapped to an empty package list fails',
+    reconcileFreshness({
+      suiteTitles: ['ECS'],
+      freshness: { ...freshness, suites: { ECS: [] } },
+      commitsBySuite: { ECS: [] },
+      instrumentCommits: [],
+    }),
+    'permanently "fresh"',
   );
   fires(
     'a missing freshness section fails',

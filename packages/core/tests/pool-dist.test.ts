@@ -41,6 +41,16 @@ describe('pool dist: the hot dev-flag read stays a property access', () => {
       expect(content).toMatch(/\.__DEV__/);
     });
 
+    test(`${label} keeps exactly one bare-identifier read — the constructor's`, () => {
+      const content = readFileSync(path, 'utf8');
+      // Matching `.__DEV__` alone is too weak: any other module in this package
+      // could satisfy it while `release()` quietly reverts to the identifier
+      // form used elsewhere in the repo. Counting pins the split — one
+      // construction-time read, and no second one.
+      const bare = (content.match(/typeof __DEV__/g) ?? []).length;
+      expect(bare).toBe(1);
+    });
+
     test(`${label} was not constant-folded at build time`, () => {
       const content = readFileSync(path, 'utf8');
       expect(content).not.toContain('typeof true');

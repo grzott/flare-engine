@@ -3,12 +3,16 @@ declare const __DEV__: boolean | undefined;
 /**
  * Dev-flag access for `release()`, which runs once per released object.
  *
- * JSC has no inline cache for an unresolvable global identifier, so the bare
- * `typeof __DEV__ !== 'undefined' && __DEV__` form costs ~270 ns *per
- * evaluation* wherever the global is undeclared — React Native always defines
- * it, but web/CanvasKit and any Node or Bun consumer does not. A property miss
- * on `globalThis` is inline-cached at ~0.46 ns and stays togglable at runtime
- * exactly as before. Measured B28, retired PERF-10.
+ * JSC has no inline cache for an unresolvable global identifier, so reading the
+ * bare `__DEV__` identifier behind a `typeof` guard costs ~270 ns *per
+ * evaluation* wherever the global is undeclared. React Native always defines it;
+ * web/CanvasKit and any Node or Bun consumer does not. A property miss on
+ * `globalThis` is inline-cached at ~0.46 ns and stays togglable at runtime
+ * exactly as before. Measured B28 (on JSC — V8 was never measured), PERF-10.
+ *
+ * Phrased without the literal old expression so `tests/pool-dist.test.ts` can
+ * count its occurrences in the built artifact: exactly one must survive, the
+ * constructor's.
  *
  * The constructor below deliberately keeps the identifier form: it runs once
  * per pool, where ~270 ns is free, and it is the site a bundler can

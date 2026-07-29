@@ -10061,3 +10061,77 @@ invisible to this table, and the generated doc now carries a line saying exactly
 post-freeze.
 
 ---
+
+## Session 267 — 2026-07-29 (scope: engine)
+
+**Goal:** PERF-5/10 adversarial review fixes
+
+**Touched files**
+- `.claude/hooks/verify.sh`
+- `benchmarks/src/dev-flag.ts`
+- `benchmarks/src/index.ts`
+- `docs/design/api-specs.md`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `package.json`
+- `packages/core/src/pool.ts`
+- `packages/core/tests/pool-dist.test.ts`
+- `scripts/check-perf-freshness.mjs`
+- `scripts/check-perf.mjs`
+- `scripts/lib/perf-gate.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Gates (cont.)**
+- deps / changeset / perf: green
+- **perf-freshness: RED, overridden with `FLARE_PERF_ALLOW_STALE=1`** — this round edits
+  `packages/core/src` and `benchmarks/src`, and the new doc-stamp assertion correctly reports that
+  `benchmarks.md` predates the stamp. Both clear in the re-capture commit.
+
+**Outcome**
+
+Fix round from a 36-agent adversarial pass over PERF-5 and PERF-10 (6 lenses, then two independent
+verifiers per finding — one refuting, one required to construct a real repro). 36 raised, 31
+survived, collapsing to ~13 distinct defects. **Full record: perf-measurement-2026-07.md §11.5c** —
+not restated here.
+
+The headline: **four lenses independently found the same fail-open in the gate this arc just
+built.** `freshness.instrument` absent, empty, or written as a string silently disabled the
+instrument canary — an empty path list yields no paths, no paths yields no commits, and no commits
+reads as fresh. Same for a suite mapped to `[]`. That is the B8 disease one level up: the check
+still runs, still prints OK, and is watching nothing. The asymmetry that hid it is worth
+remembering — a *stringified* `suites` value already failed closed, because `workspaceClosure`
+spreads a string into characters that all land in `unknown`, while the identical malformation of
+`instrument` failed open.
+
+Also closed: an unresolvable base ref turned the rubber-stamp guard into a silent no-op (a shallow
+clone is enough); `--write` silently retired baseline scenarios, rewriting the evidence instead of
+failing on it; `COUNTER_FIELDS` was checked one-directionally so a new bench counter would be
+ungated; and **one selftest assertion was vacuous** — it passed `suiteTitles: []`, hitting an early
+return three branches above the check it claimed to pin, with a needle that matched the
+early-return string.
+
+**The canary was not checking the doc it exists to protect.** `bench:md` is a separate command, so
+a capture + promote that stopped short of it left the published page showing the previous commit's
+numbers with every gate green. The generator now stamps the capture sha into the page and the
+canary asserts it matches — and that assertion fired on its first run, as the gate output above
+shows.
+
+**Doc-truth, which in this arc is not a lesser category:** the generated methodology paragraph
+still described the removed guard in the present tense, contradicting the PERF-10 caveat twelve
+lines below it in the same file; **the ~270 ns figure is JSC-only** (Bun, Safari) and had been
+published as applying to "plain Node" and web bundles generally, when Node and Chrome are V8 and
+were never measured; and the re-capture recipe was wrong in three places — all said
+`bench:baseline` ×5, which is `--write-baseline` and overwrites the tracked baseline on every one
+of the five runs.
+
+**Frictions:** corr:0 / deny:0 / gate:1 / fixup:13 / drift:0
+
+**Next:** re-capture (5 runs, clean tree → promote → `bench:md`) as this round's second commit,
+which clears both the staleness and the new doc stamp. Then **PERF-8**.
+
+---

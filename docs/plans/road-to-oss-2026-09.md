@@ -1118,9 +1118,9 @@ does not) and §11.5.
       unjustified baseline edit rode in with an engine change.
 - [ ] `bun run check:perf-bytes` green: every published package under its byte ceiling.
 - [ ] `.perf-baseline.json` populated — a counter row per alloc scenario, a ceiling per package.
-      An empty file is red, not green (B3/B8: it was `{}` for three months and gated nothing).
+      An empty file is red, not green (B8: it shipped as `{}` and gated nothing, while the published render numbers drifted 3.1x out of date between April and July).
 - [ ] Microbench captured **≤7 days before freeze**, **≥5 runs from a clean tree**, published with
-      spread bands: `bun run bench:baseline` ×5 → `bench:promote` → `bench:md`. A single-run
+      spread bands: `bun run bench` ×5 → `bench:promote` → `bench:md`. A single-run
       capture has no band, so nothing downstream can separate a regression from this machine's noise.
 - [ ] `bun run check:perf-freshness` green: no commit under any measured package or under
       `benchmarks/src` since the capture commit. **Never close this one with

@@ -178,17 +178,34 @@ if (baseRef && baselineTouched) {
   try {
     oldReviews = JSON.parse(git('show', `${baseRef}:.perf-baseline.json`)).reviews ?? [];
   } catch {
+    // The file did not exist at the base ref — first population. Every current
+    // review entry is therefore new, which reconcileReviews handles.
     oldReviews = [];
   }
 }
-const reviewProblems = write
-  ? []
-  : reconcileReviews({
+
+const reviewProblems = [];
+if (!write) {
+  // A gate that cannot see a range cannot police it. Silently degrading to
+  // "working tree only" would let a shallow clone (`fetch-depth: 1`) turn the
+  // rubber-stamp guard into a no-op that still prints OK — and CI is precisely
+  // where a shallow clone is a tempting speed-up.
+  if (baseRef === null && (baselineTouched || srcTouched)) {
+    reviewProblems.push(
+      'cannot resolve a comparison base (no FLARE_PERF_BASE_REF, no HEAD~1) while ' +
+        '.perf-baseline.json or a package src is modified — the review guard would be inspecting ' +
+        'nothing. Fetch history (`fetch-depth: 0`) or set FLARE_PERF_BASE_REF.',
+    );
+  }
+  reviewProblems.push(
+    ...reconcileReviews({
       baselineTouched,
       srcTouched,
       oldReviews,
       newReviews: baseline.reviews,
-    });
+    }),
+  );
+}
 
 // --- Write mode --------------------------------------------------------------
 
@@ -197,6 +214,25 @@ if (write) {
     console.error('\ncheck-perf --write: FAILED — refusing to record from a broken pack:');
     for (const p of byteProblems) console.error(`  - ${p}`);
     console.error('');
+    process.exit(1);
+  }
+
+  // `--write` rebuilds `counters` from what the bench produced, so a scenario
+  // deleted from the bench simply stops appearing — which would quietly undo
+  // reconcileCounters' "a scenario cannot be retired by deleting it from the
+  // bench" guarantee by rewriting the evidence instead of failing on it.
+  // Retiring a scenario has to be deliberate.
+  const retired = Object.keys(baseline.counters ?? {}).filter(
+    (name) => !rows.some((r) => r.scenario === name),
+  );
+  if (retired.length > 0 && !argv.includes('--retire')) {
+    console.error(
+      '\ncheck-perf --write: FAILED — this would drop baseline scenario(s) the bench no longer ' +
+        'produces:\n' +
+        retired.map((n) => `  - ${n}`).join('\n') +
+        '\n\nIf the scenario is genuinely retired, re-run with --retire and add a dated `reviews` ' +
+        'entry saying why. If it is not, the bench lost a row.\n',
+    );
     process.exit(1);
   }
 

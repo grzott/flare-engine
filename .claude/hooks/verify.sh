@@ -76,7 +76,7 @@ run_gate "changeset" bun run check:changeset
 #
 # check:perf-freshness goes red when a row touches a measured package. That is
 # the point (the numbers now describe older code), and the fix is a re-capture:
-#   bun run bench:baseline  x5 from a clean tree -> bench:promote -> bench:md
+#   bun run bench  x5 from a clean tree -> bench:promote -> bench:md
 # To close a row without re-capturing, `$env:FLARE_PERF_ALLOW_STALE=1` and say
 # so in the session block.
 if [ "$SCOPE" != "game" ]; then

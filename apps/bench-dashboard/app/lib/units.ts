@@ -1,6 +1,10 @@
 export type ScaledTime = { value: string; unit: string };
 
-export function fmtTime(ns: number): ScaledTime {
+export function fmtTime(ns: number | undefined): ScaledTime {
+  // A row captured below the p99 sample threshold carries no p99 at all. Without
+  // this guard both comparisons below are false for `undefined` and the cell
+  // renders the string "NaN ms" with nothing in CI to catch it.
+  if (ns === undefined || !Number.isFinite(ns)) return { value: '—', unit: '' };
   if (ns < 1_000) return { value: ns.toFixed(1), unit: 'ns' };
   if (ns < 1_000_000) return { value: (ns / 1_000).toFixed(2), unit: 'µs' };
   return { value: (ns / 1_000_000).toFixed(3), unit: 'ms' };

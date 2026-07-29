@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test';
+import type { AllocRow } from '../src/alloc.js';
 import { aggregateRuns } from '../src/promote.js';
-import type { MicrobenchReport, MicrobenchResult } from '../src/results.js';
-import { EXPECTED_HEAP_SCENARIOS, EXPECTED_SCENARIOS } from '../src/scenario-contract.js';
+import { type MicrobenchReport, type MicrobenchResult, SCHEMA_VERSION } from '../src/results.js';
+import {
+  EXPECTED_ALLOC_SCENARIOS,
+  EXPECTED_HEAP_SCENARIOS,
+  EXPECTED_SCENARIOS,
+} from '../src/scenario-contract.js';
 
 /**
  * Builds a contract-satisfying report whose scenarios all report `medianNs`.
@@ -20,15 +25,18 @@ function runAt(medianNs: number, overrides: Partial<MicrobenchReport> = {}): Mic
     medianNs,
     meanNs: medianNs,
     minNs: medianNs,
+    maxNs: medianNs * 2,
     p99Ns: medianNs,
     opsPerSec: 1e9 / medianNs,
-    samples: 30,
+    samples: 100,
     innerIters: 100,
   });
   return {
+    schemaVersion: SCHEMA_VERSION,
     generated: stamp,
     runtime: 'Bun 1.3.11',
     platform: 'win32 x64',
+    devFlag: 'false',
     cpuModel: 'Test CPU',
     cpuCount: 8,
     totalMemMB: 16000,
@@ -40,11 +48,39 @@ function runAt(medianNs: number, overrides: Partial<MicrobenchReport> = {}): Mic
     })),
     heap: EXPECTED_HEAP_SCENARIOS.map((name) => ({
       name,
-      iterations: 500,
+      iterations: 1000,
       deltaBytes: medianNs,
-      bytesPerFrame: medianNs / 500,
+      bytesPerFrame: medianNs / 1000,
+      warmupFrames: 2000,
+      converged: true,
+      plateauHeapMB: 20,
+      blocks: 3,
+      blockFrames: 200,
+      resolutionBytesPerFrame: 512,
     })),
+    alloc: EXPECTED_ALLOC_SCENARIOS.map(allocRow),
     ...overrides,
+  };
+}
+
+function allocRow(scenario: string): AllocRow {
+  const expected = {
+    perFrameFactoryCalls: 0,
+    drawAtlasPerFrame: 1,
+    drawImageRectPerFrame: 0,
+    drawRectPerFrame: 0,
+    xformUnrotatedPerFrame: 1000,
+    xformRotatedPerFrame: 0,
+  };
+  return {
+    scenario,
+    frames: 20,
+    poolMisses: 0,
+    particleFactoryCalls: 0,
+    cachedFactoryCalls: 0,
+    ...expected,
+    expected,
+    problems: [],
   };
 }
 
@@ -125,6 +161,95 @@ describe('aggregateRuns', () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.problems.some((p) => p.includes('unexpected scenario'))).toBe(true);
+  });
+
+  test('refuses a window that mixes result-schema versions', () => {
+    const outcome = aggregateRuns([runAt(10), runAt(20, { schemaVersion: 1 })]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('result schema v1'))).toBe(true);
+  });
+
+  test('withholds p99 unless every folded run carries one', () => {
+    const partial = runAt(20);
+    for (const suite of partial.suites) {
+      for (const r of suite.results) r.p99Ns = undefined;
+    }
+    const outcome = aggregateRuns([runAt(10), partial, runAt(30)]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    // Medianing [number, undefined, number] silently publishes an arbitrary
+    // member; the row must simply carry no p99 instead.
+    expect(firstResult(outcome.report).p99Ns).toBeUndefined();
+  });
+
+  test('folds maxNs across runs', () => {
+    const outcome = aggregateRuns([runAt(10), runAt(20), runAt(100)]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(firstResult(outcome.report).maxNs).toBe(40);
+  });
+
+  test('carries the exact-counter section through promotion', () => {
+    const outcome = aggregateRuns([runAt(10), runAt(20)]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect((outcome.report.alloc ?? []).map((r) => r.scenario)).toEqual([
+      ...EXPECTED_ALLOC_SCENARIOS,
+    ]);
+  });
+
+  test('refuses runs whose exact counters disagree — that is a finding, not noise', () => {
+    const drifted = runAt(20);
+    const row = (drifted.alloc as AllocRow[])[0] as AllocRow;
+    row.drawAtlasPerFrame = 2;
+    const outcome = aggregateRuns([runAt(10), drifted]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('not deterministic'))).toBe(true);
+  });
+
+  test('refuses a run whose allocation gate failed', () => {
+    const failed = runAt(20);
+    const row = (failed.alloc as AllocRow[])[0] as AllocRow;
+    row.problems = ['pool misses: 3, expected 0'];
+    const outcome = aggregateRuns([failed]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('alloc gate failed'))).toBe(true);
+  });
+
+  test('refuses a run missing the alloc section entirely', () => {
+    const outcome = aggregateRuns([runAt(10), runAt(20, { alloc: [] })]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('missing alloc scenario'))).toBe(true);
+  });
+
+  test('refuses a window whose runs disagree about the __DEV__ configuration', () => {
+    const outcome = aggregateRuns([runAt(10), runAt(20, { devFlag: 'undeclared' })]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('devFlag'))).toBe(true);
+  });
+
+  test('refuses a run captured with __DEV__ undeclared — it measures a JSC deopt', () => {
+    const outcome = aggregateRuns([runAt(10, { devFlag: 'undeclared' })]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('undeclared'))).toBe(true);
+  });
+
+  test('refuses a heap row that never reached its plateau', () => {
+    const drifting = runAt(20);
+    const row = drifting.heap[0];
+    if (row) row.converged = false;
+    const outcome = aggregateRuns([runAt(10), drifting]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('never reached its allocation plateau'))).toBe(
+      true,
+    );
   });
 
   test('a single run aggregates to itself with a zero-width band', () => {

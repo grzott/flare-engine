@@ -46,11 +46,13 @@
       "name": "@flare-engine/benchmarks",
       "version": "0.0.0",
       "dependencies": {
+        "@flare-engine/core": "workspace:*",
         "@flare-engine/ecs": "workspace:*",
         "@flare-engine/math": "workspace:*",
         "@flare-engine/particles": "workspace:*",
         "@flare-engine/physics": "workspace:*",
         "@flare-engine/render": "workspace:*",
+        "@flare-engine/testing": "workspace:*",
       },
       "devDependencies": {
         "@types/node": "^25.6.0",
@@ -203,6 +205,7 @@
         "@flare-engine/math": "^0.2.1",
         "@flare-engine/particles": "^0.2.1",
         "@flare-engine/physics": "^0.2.1",
+        "@flare-engine/postfx": "^0.2.1",
         "@flare-engine/react": "^0.2.1",
         "@flare-engine/render": "^0.2.1",
         "@flare-engine/scene": "^0.2.1",
@@ -422,10 +425,10 @@
       "name": "@flare-engine/testing",
       "version": "0.2.1",
       "dependencies": {
-        "@flare-engine/core": "^0.1.0",
-        "@flare-engine/ecs": "^0.1.0",
-        "@flare-engine/input": "^0.1.0",
-        "@flare-engine/math": "^0.1.0",
+        "@flare-engine/core": "^0.2.1",
+        "@flare-engine/ecs": "^0.2.1",
+        "@flare-engine/input": "^0.2.1",
+        "@flare-engine/math": "^0.2.1",
       },
     },
     "packages/tilemap": {

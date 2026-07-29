@@ -1,10 +1,23 @@
 import { describe, expect, test } from 'bun:test';
+import { resolve } from 'node:path';
 import { ecsBenches } from '../src/ecs.bench.js';
-import { type BenchStats, SMOKE_OVERRIDES } from '../src/harness.js';
-import { integrationBenches, integrationHeapDelta } from '../src/integration.bench.js';
+import { type BenchStats, P99_MIN_SAMPLES, SMOKE_OVERRIDES } from '../src/harness.js';
+import { runHeapProbe } from '../src/heap-probe.js';
+import {
+  buildState,
+  frame,
+  integrationBenches,
+  outOfBoundsCount as integrationOutOfBounds,
+} from '../src/integration.bench.js';
 import { particlesBenches } from '../src/particles.bench.js';
-import { physicsBenches } from '../src/physics.bench.js';
+import {
+  buildWorld,
+  physicsBenches,
+  outOfBoundsCount as physicsOutOfBounds,
+  stepAndMove,
+} from '../src/physics.bench.js';
 import { renderBenches } from '../src/render.bench.js';
+import { srcDir } from '../src/results.js';
 import {
   EXPECTED_HEAP_SCENARIOS,
   EXPECTED_SCENARIOS,
@@ -39,22 +52,23 @@ describe('microbench smoke', () => {
       for (const s of stats) {
         expect(Number.isFinite(s.nsPerOp.median)).toBe(true);
         expect(Number.isFinite(s.nsPerOp.mean)).toBe(true);
-        expect(Number.isFinite(s.nsPerOp.p99)).toBe(true);
+        expect(Number.isFinite(s.nsPerOp.max)).toBe(true);
+        // p99 is withheld below the sample threshold rather than published as
+        // the top sample under a percentile's name.
+        expect(s.nsPerOp.p99).toBeUndefined();
         // Proves the overrides actually reached runBench — without this a
         // silently-ignored override would make the smoke run take 2 minutes.
         expect(s.samples).toBe(SMOKE_OVERRIDES.samples as number);
         expect(s.innerIters).toBe(SMOKE_OVERRIDES.innerIters as number);
+        expect(s.warmupBatches).toBe(0);
       }
     });
   }
 
-  test('heap delta section runs and matches the frozen scenario list', () => {
-    const heap = integrationHeapDelta(2, 1);
-    expect(heap.map((h) => h.name)).toEqual([...EXPECTED_HEAP_SCENARIOS]);
-    for (const h of heap) {
-      expect(Number.isFinite(h.deltaBytes)).toBe(true);
-      expect(h.iterations).toBe(2);
-    }
+  test('a full-sample row does carry a p99', () => {
+    const [row] = ecsBenches({ samples: P99_MIN_SAMPLES, innerIters: 1, warmupMs: 0 });
+    expect(row?.samples).toBe(P99_MIN_SAMPLES);
+    expect(Number.isFinite(row?.nsPerOp.p99)).toBe(true);
   });
 
   test('the live suites satisfy the contract the published doc is validated against', () => {
@@ -64,6 +78,80 @@ describe('microbench smoke', () => {
     }));
     expect(findContractViolations(suites)).toEqual([]);
   });
+});
+
+describe('workload stationarity', () => {
+  // B16: these workloads used to integrate off the field while being measured,
+  // so a "dense" scenario decayed into a sparse one mid-run and the median
+  // depended on the sampler configuration. The bound is now machine-checked.
+  test('integration entities stay inside the play field across many frames', () => {
+    const state = buildState(200);
+    for (let i = 0; i < 600; i++) frame(state);
+    expect(integrationOutOfBounds(state)).toBe(0);
+  });
+
+  test('physics colliders stay inside the play field across many frames', () => {
+    const dense = buildWorld(100, 'dense');
+    for (let i = 0; i < 600; i++) stepAndMove(dense);
+    expect(physicsOutOfBounds(dense)).toBe(0);
+
+    const sparse = buildWorld(100, 'sparse');
+    for (let i = 0; i < 600; i++) stepAndMove(sparse);
+    expect(physicsOutOfBounds(sparse)).toBe(0);
+  });
+});
+
+describe('isolated heap probe', () => {
+  test('the probe body runs and reports the frozen scenario names', () => {
+    const names = [500, 1000, 2000].map(
+      (entities) =>
+        runHeapProbe({
+          entities,
+          warmupBudgetMs: 0,
+          blockFrames: 2,
+          blocks: 2,
+          gcRounds: 1,
+        }).name,
+    );
+    expect(names).toEqual([...EXPECTED_HEAP_SCENARIOS]);
+  });
+
+  test('the probe reports structural invariants, not just a heap number', () => {
+    const r = runHeapProbe({ entities: 200, warmupBudgetMs: 0, blockFrames: 4, blocks: 2 });
+    expect(Number.isFinite(r.deltaBytes)).toBe(true);
+    expect(r.blockBytesPerFrame).toHaveLength(2);
+    expect(r.iterations).toBe(8);
+    // The claim the heap number cannot make on its own.
+    expect(r.spriteBatchAllocs).toBe(0);
+    expect(r.particlesCreated).toBe(0);
+    expect(r.outOfBounds).toBe(0);
+  });
+
+  test('the CLI form runs in a real subprocess and emits one JSON line', () => {
+    const proc = Bun.spawnSync(
+      [
+        'bun',
+        'run',
+        resolve(srcDir(), 'heap-probe.ts'),
+        '--entities',
+        '100',
+        '--warmup-ms',
+        '1',
+        '--block-frames',
+        '2',
+        '--blocks',
+        '2',
+        '--gc-rounds',
+        '1',
+      ],
+      { cwd: resolve(srcDir(), '..'), stdout: 'pipe', stderr: 'pipe' },
+    );
+    expect(proc.exitCode).toBe(0);
+    const line = proc.stdout.toString().trim().split('\n').pop() ?? '';
+    const parsed = JSON.parse(line) as { name: string; outOfBounds: number };
+    expect(parsed.name).toBe('integration.heap   100 entities');
+    expect(parsed.outOfBounds).toBe(0);
+  }, 30_000);
 });
 
 describe('contract validation', () => {

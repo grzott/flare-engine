@@ -1,5 +1,12 @@
-import type { MicrobenchHeap, MicrobenchReport, MicrobenchResult } from './results.js';
-import { findContractViolations } from './scenario-contract.js';
+import type { AllocRow } from './alloc.js';
+import type {
+  MicrobenchHeap,
+  MicrobenchReport,
+  MicrobenchResult,
+  MicrobenchSuite,
+} from './results.js';
+import { SCHEMA_VERSION } from './results.js';
+import { findAllocViolations, findContractViolations } from './scenario-contract.js';
 
 export type AggregateOutcome =
   | { ok: true; report: MicrobenchReport }
@@ -19,7 +26,7 @@ function median(values: readonly number[]): number {
 
 function sharedField(
   runs: readonly MicrobenchReport[],
-  field: 'runtime' | 'platform' | 'cpuModel' | 'gitSha',
+  field: 'runtime' | 'platform' | 'cpuModel' | 'gitSha' | 'devFlag',
   problems: string[],
 ): void {
   const seen = [...new Set(runs.map((r) => r[field] ?? 'unrecorded'))];
@@ -37,9 +44,10 @@ function sharedField(
  * scenario's outlier as fact.
  *
  * Fail-closed: anything that makes the runs not-one-measurement (different
- * machine, different commit, a dirty tree, drifted scenario names) is refused
- * rather than silently averaged, because the result is committed as the
- * comparison reference every later run is judged against.
+ * machine, different commit, a dirty tree, drifted scenario names, a schema
+ * change mid-window) is refused rather than silently averaged, because the
+ * result is committed as the comparison reference every later run is judged
+ * against.
  */
 export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutcome {
   const problems: string[] = [];
@@ -52,14 +60,32 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   sharedField(runs, 'platform', problems);
   sharedField(runs, 'cpuModel', problems);
   sharedField(runs, 'gitSha', problems);
+  sharedField(runs, 'devFlag', problems);
 
   for (const run of runs) {
+    if (run.devFlag === 'undeclared') {
+      problems.push(
+        `run ${run.generated} was captured with __DEV__ undeclared — every guarded counter site cost ~270 ns per evaluation, so its render rows measure a JSC deoptimisation rather than the engine`,
+      );
+    }
+  }
+
+  for (const run of runs) {
+    const version = run.schemaVersion ?? 1;
+    if (version !== SCHEMA_VERSION) {
+      problems.push(
+        `run ${run.generated} was captured under result schema v${version}, this build writes v${SCHEMA_VERSION} — re-capture instead of folding the two together`,
+      );
+    }
     if (run.gitDirty === true) {
       problems.push(
         `run ${run.generated} was captured from a dirty tree — commit first so the baseline names the code it measured`,
       );
     }
     for (const violation of findContractViolations(run.suites)) {
+      problems.push(`run ${run.generated}: ${violation}`);
+    }
+    for (const violation of findAllocViolations(run.alloc ?? [])) {
       problems.push(`run ${run.generated}: ${violation}`);
     }
   }
@@ -76,7 +102,7 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
 
   if (problems.length > 0) return { ok: false, problems };
 
-  const suites = first.suites.map((suite, suiteIdx) => ({
+  const suites: MicrobenchSuite[] = first.suites.map((suite, suiteIdx) => ({
     title: suite.title,
     results: suite.results.map((result, resultIdx): MicrobenchResult => {
       const across = runs.map(
@@ -87,12 +113,12 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
       );
       const medians = across.map((x) => x.medianNs);
       const medianNs = median(medians);
-      return {
+      const out: MicrobenchResult = {
         scenario: result.scenario,
         medianNs,
         meanNs: median(across.map((x) => x.meanNs)),
         minNs: median(across.map((x) => x.minNs)),
-        p99Ns: median(across.map((x) => x.p99Ns)),
+        maxNs: median(across.map((x) => x.maxNs)),
         // Recomputed rather than aggregated: a median-of-opsPerSec would not be
         // the reciprocal of the median-of-medians, and the row would contradict
         // itself.
@@ -102,6 +128,12 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
         bandMinNs: Math.min(...medians),
         bandMaxNs: Math.max(...medians),
       };
+      // Only fold a p99 when every run has one. A window that mixes rows with
+      // and without would otherwise median an array containing undefined, which
+      // sorts as NaN and publishes an arbitrary member as fact.
+      const p99s = across.map((x) => x.p99Ns);
+      if (p99s.every((v): v is number => typeof v === 'number')) out.p99Ns = median(p99s);
+      return out;
     }),
   }));
 
@@ -113,10 +145,38 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
       iterations: entry.iterations,
       deltaBytes: median(across.map((x) => x.deltaBytes)),
       bytesPerFrame: median(perFrame),
+      warmupFrames: median(across.map((x) => x.warmupFrames ?? 0)),
+      // One non-converged run taints the row: the number would then be a
+      // plateau reading folded together with a heap still climbing toward it.
+      converged: across.every((x) => x.converged === true),
+      plateauHeapMB: median(across.map((x) => x.plateauHeapMB ?? 0)),
+      blocks: entry.blocks,
+      blockFrames: entry.blockFrames,
+      resolutionBytesPerFrame: median(across.map((x) => x.resolutionBytesPerFrame ?? 0)),
       bandMinBytesPerFrame: Math.min(...perFrame),
       bandMaxBytesPerFrame: Math.max(...perFrame),
     };
   });
+
+  // A row that never reached its plateau is the artifact this instrument exists
+  // to retire (§10 B26) — it must not be folded into a baseline and published as
+  // a steady-state number.
+  const unconverged = heap.filter((h) => !h.converged).map((h) => h.name);
+  if (unconverged.length > 0) {
+    return {
+      ok: false,
+      problems: unconverged.map(
+        (name) =>
+          `heap row "${name}" never reached its allocation plateau in at least one run — its delta is the climb toward the plateau, not a steady-state measurement. Re-run the probe with a larger warm-up budget.`,
+      ),
+    };
+  }
+
+  // Exact integers, so they are reconciled rather than averaged: runs that
+  // disagree mean the draw path is not deterministic, which is a finding, not
+  // noise to smooth over.
+  const allocOutcome = reconcileAlloc(runs);
+  if (!allocOutcome.ok) return { ok: false, problems: allocOutcome.problems };
 
   const captures = runs.map((r) => r.generated).sort();
   const newest = captures[captures.length - 1] as string;
@@ -124,9 +184,11 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   return {
     ok: true,
     report: {
+      schemaVersion: SCHEMA_VERSION,
       generated: newest,
       runtime: first.runtime,
       platform: first.platform,
+      devFlag: first.devFlag,
       cpuModel: first.cpuModel,
       cpuCount: first.cpuCount,
       totalMemMB: first.totalMemMB,
@@ -136,6 +198,36 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
       aggregatedFrom: captures,
       suites,
       heap,
+      alloc: allocOutcome.alloc,
     },
   };
+}
+
+type AllocOutcome = { ok: true; alloc: AllocRow[] } | { ok: false; problems: string[] };
+
+function reconcileAlloc(runs: readonly MicrobenchReport[]): AllocOutcome {
+  const first = (runs[0] as MicrobenchReport).alloc ?? [];
+  const problems: string[] = [];
+
+  for (const row of first) {
+    if (row.problems.length > 0) {
+      problems.push(`alloc gate failed for ${row.scenario}: ${row.problems.join('; ')}`);
+    }
+  }
+
+  for (const run of runs.slice(1)) {
+    const rows = run.alloc ?? [];
+    for (const [i, row] of rows.entries()) {
+      const reference = first[i];
+      if (reference === undefined) continue;
+      if (JSON.stringify(row) !== JSON.stringify(reference)) {
+        problems.push(
+          `alloc counters for ${row.scenario} differ between runs — the draw path is not deterministic: ${JSON.stringify(reference)} vs ${JSON.stringify(row)}`,
+        );
+      }
+    }
+  }
+
+  if (problems.length > 0) return { ok: false, problems };
+  return { ok: true, alloc: first };
 }

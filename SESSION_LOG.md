@@ -9771,3 +9771,44 @@ None — audit-only close per row allowance.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 264 — 2026-07-29 (scope: engine)
+
+**Goal:** PERF-4a — microbench honesty (P1 rework): real transform path, exact alloc gate, isolated heap probe
+
+**Touched files**
+- `apps/bench-dashboard/app/lib/types.ts`
+- `apps/bench-dashboard/app/lib/units.ts`
+- `benchmarks/package.json`
+- `benchmarks/src/alloc.ts`
+- `benchmarks/src/dev-flag.ts`
+- `benchmarks/src/ecs.bench.ts`
+- `benchmarks/src/harness.ts`
+- `benchmarks/src/heap-probe.ts`
+- `benchmarks/src/index.ts`
+- `benchmarks/src/integration.bench.ts`
+- `benchmarks/src/particles.bench.ts`
+- `benchmarks/src/physics.bench.ts`
+- `benchmarks/src/promote.ts`
+- `benchmarks/src/render.bench.ts`
+- `benchmarks/src/results.ts`
+- `benchmarks/src/scenario-contract.ts`
+- `benchmarks/src/skia-stub.ts`
+- `benchmarks/tests/alloc.test.ts`
+- `benchmarks/tests/promote.test.ts`
+- `benchmarks/tests/smoke.test.ts`
+- `bun.lock`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (owner split PERF-4 into 4a/4b); deny:2 (rm -rf blocked); drift:1 (dev-flag.ts + PERF-9/10 rows added after review found 2 blockers)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

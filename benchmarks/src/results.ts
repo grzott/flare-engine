@@ -10,18 +10,34 @@ import {
 import { cpus, totalmem } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { AllocRow } from './alloc.js';
 import type { BenchStats } from './harness.js';
-import type { HeapDeltaResult } from './integration.bench.js';
+import type { HeapProbeResult } from './heap-probe.js';
+
+/**
+ * Bumped whenever a capture's shape changes in a way that makes old rows
+ * un-foldable with new ones. `--promote` refuses a mixed window rather than
+ * aggregating across the change: the first version of this schema had no
+ * `maxNs` and always had `p99Ns`, and silently medianing the two together
+ * produced a published number that was neither.
+ */
+export const SCHEMA_VERSION = 2;
 
 export type MicrobenchResult = {
   scenario: string;
   medianNs: number;
   meanNs: number;
   minNs: number;
-  p99Ns: number;
+  maxNs: number;
   opsPerSec: number;
   samples: number;
   innerIters: number;
+  /**
+   * Present only on rows captured with enough samples for a percentile to mean
+   * anything (`P99_MIN_SAMPLES`). Below that the 99th percentile is the top
+   * sample under a more authoritative name, so `maxNs` carries it instead.
+   */
+  p99Ns?: number;
   /**
    * Lowest and highest per-run median across the runs folded into this row.
    * Absent on a single-run capture. This is the run-to-run spread of the
@@ -43,6 +59,21 @@ export type MicrobenchHeap = {
   iterations: number;
   deltaBytes: number;
   bytesPerFrame: number;
+  /** Frames run before measurement started, reaching the allocation plateau. */
+  warmupFrames: number;
+  /** False when the warm-up budget expired before the heap settled. */
+  converged: boolean;
+  /** Resident heap at the end of the measured blocks. */
+  plateauHeapMB: number;
+  /** Measured blocks and their length — the doc states these rather than guessing. */
+  blocks: number;
+  blockFrames: number;
+  /**
+   * Per-frame resolution of this row: GC-scheduling noise divided by the block
+   * length. A `bytesPerFrame` below it means "under the instrument's
+   * resolution", not "zero".
+   */
+  resolutionBytesPerFrame: number;
   bandMinBytesPerFrame?: number;
   bandMaxBytesPerFrame?: number;
 };
@@ -65,15 +96,25 @@ export type Provenance = {
 };
 
 export type MicrobenchReport = Provenance & {
+  /** Absent on pre-2026-07-29 captures; treated as version 1. */
+  schemaVersion?: number;
   generated: string;
   runtime: string;
   platform: string;
+  /**
+   * The `__DEV__` configuration the capture ran under. Load-bearing provenance,
+   * not trivia: an undeclared `__DEV__` costs ~270 ns per guarded evaluation
+   * under JSC and inflates the render rows ~7x (see dev-flag.ts).
+   */
+  devFlag?: 'true' | 'false' | 'undeclared';
   /** Number of independent capture runs folded in; absent on a single-run capture. */
   runs?: number;
   /** `generated` of every run folded in, oldest first. */
   aggregatedFrom?: string[];
   suites: MicrobenchSuite[];
   heap: MicrobenchHeap[];
+  /** Exact-integer draw-path counters. Absent on pre-schema-2 captures. */
+  alloc?: AllocRow[];
 };
 
 export type DeviceLoad = {
@@ -99,28 +140,44 @@ export type DeviceReport = {
 };
 
 export function statsToResult(s: BenchStats): MicrobenchResult {
-  return {
+  const out: MicrobenchResult = {
     scenario: s.name,
     medianNs: s.nsPerOp.median,
     meanNs: s.nsPerOp.mean,
     minNs: s.nsPerOp.min,
-    p99Ns: s.nsPerOp.p99,
+    maxNs: s.nsPerOp.max,
     opsPerSec: s.opsPerSec,
     samples: s.samples,
     innerIters: s.innerIters,
   };
+  if (s.nsPerOp.p99 !== undefined) out.p99Ns = s.nsPerOp.p99;
+  return out;
 }
 
-export function heapToResult(h: HeapDeltaResult): MicrobenchHeap {
+export function heapToResult(h: HeapProbeResult): MicrobenchHeap {
   return {
     name: h.name,
     iterations: h.iterations,
     deltaBytes: h.deltaBytes,
     bytesPerFrame: h.bytesPerFrame,
+    warmupFrames: h.warmupFrames,
+    converged: h.converged,
+    plateauHeapMB: h.plateauHeapMB,
+    blocks: h.blocks,
+    blockFrames: h.blockFrames,
+    resolutionBytesPerFrame: h.resolutionBytesPerFrame,
   };
 }
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+export function srcDir(): string {
+  return HERE;
+}
+
+export function benchmarksDir(): string {
+  return resolve(HERE, '..');
+}
 
 export function resultsDir(): string {
   return resolve(HERE, '..', 'results');

@@ -53,8 +53,18 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
     'render.flush    100 sprites / 1 atlas',
     'render.flush    500 sprites / 1 atlas',
     'render.flush   1000 sprites / 1 atlas',
-    'render.flush    500 sprites / 4 atlas',
-    'render.flush   1000 sprites / 8 atlas',
+    'render.flush   5000 sprites / 1 atlas',
+    'render.flush    500 sprites / 4 atlas interleaved',
+    'render.flush    500 sprites / 4 atlas clustered',
+    'render.flush   1000 sprites / 8 atlas interleaved',
+    'render.flush   1000 sprites / 8 atlas clustered',
+    'render.flush   1000 sprites / 50% rotated',
+    'render.flush   1000 sprites / 100% rotated',
+    'render.flush   1000 sprites / 4 alpha runs',
+    'render.flush   1000 sprites / tint effect',
+    'render.flush   1000 sprites / outline effect',
+    'render.flush   1000 sprites / stretch path',
+    'render.flush   1000 sprites / zone-bg path',
     'render.sort     500 items (0 swaps)',
     'render.sort     500 items (5 swaps)',
     'render.sort    1000 items (10 swaps)',
@@ -70,6 +80,26 @@ export const EXPECTED_HEAP_SCENARIOS: readonly string[] = [
   'integration.heap   500 entities',
   'integration.heap  1000 entities',
   'integration.heap  2000 entities',
+];
+
+/**
+ * Exact-counter rows. Unlike the timing scenarios these have no run-to-run
+ * variance at all: every number is an integer the draw path must reproduce
+ * exactly, so a missing row is a silently dropped guarantee rather than a
+ * missing measurement.
+ */
+export const EXPECTED_ALLOC_SCENARIOS: readonly string[] = [
+  'alloc.render  1000 sprites / 1 atlas',
+  'alloc.render  1000 sprites / 100% rotated',
+  'alloc.render  1000 sprites / 8 atlas interleaved',
+  'alloc.render  1000 sprites / 8 atlas clustered',
+  'alloc.render  1000 sprites / 4 alpha runs',
+  'alloc.render  1000 sprites / tint effect',
+  'alloc.render  1000 sprites / outline effect',
+  'alloc.render  1000 sprites / stretch path',
+  'alloc.render  1000 sprites / zone-bg path',
+  'alloc.frame    500 entities + 300p',
+  'alloc.frame   1000 entities + 300p',
 ];
 
 type SuiteShape = {
@@ -111,5 +141,24 @@ export function findContractViolations(suites: readonly SuiteShape[]): string[] 
     }
   }
 
+  return problems;
+}
+
+/**
+ * Same fail-closed reconciliation for the exact-counter section. Kept separate
+ * from the suite check because an old baseline legitimately carries no alloc
+ * rows at all, and that has to read as one missing section rather than as
+ * eleven missing scenarios.
+ */
+export function findAllocViolations(rows: readonly { readonly scenario: string }[]): string[] {
+  const problems: string[] = [];
+  const names = rows.map((r) => r.scenario);
+  for (const expected of EXPECTED_ALLOC_SCENARIOS) {
+    if (!names.includes(expected)) problems.push(`missing alloc scenario: ${expected}`);
+  }
+  const allExpected = new Set(EXPECTED_ALLOC_SCENARIOS);
+  for (const actual of names) {
+    if (!allExpected.has(actual)) problems.push(`unexpected alloc scenario: ${actual}`);
+  }
   return problems;
 }

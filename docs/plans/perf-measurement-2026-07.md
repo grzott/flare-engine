@@ -366,19 +366,21 @@ findings were each independently refutation-tested; everything below survived.
 | **B23** | major | **`createBenchSession` has zero consumers** in benchmarks/ or PT while api-specs ships it as "the backbone for deterministic bench scenarios"; P3 "reuse bench-mode.ts" would hand-roll seeding a third time (PT uses its own mulberry32; benchmarks uses SeededRNG directly). Consolidate or correct api-specs before the flip. | packages/testing/src/bench-session.ts:25, api-specs.md:434 |
 | **B24** | blocker | **§6's freshness items had no mechanical checker in any phase** — pull-not-push reapplied to the gate itself. The keystone control is `check:perf-freshness` in PR CI (the only runner that provably always runs): fail when a suite's capture date predates the newest commit under the packages it measures. Same liveness-canary pattern as `check:readme`. | §6:278-280 vs §5; ci.yml:35 precedent |
 | **B25** | major | **Dashboard fails-green class**: unchecked `as T` cast + hand-duplicated types (dead `@flare-engine/benchmarks` dep); headline substring match → `return null` (schema drift renders NaN or silently drops cards while CI stays green); /integration undated and renders B2 noise with good/bad colors; no staleness logic anywhere; deploy target is dead infra (README: GH Pages beside nonexistent `apps/site` via the removed `next export`); basePath/absolute-nav/root-escaping-link deploy blockers. | data.ts:6-11, page.tsx:41,:74, integration/page.tsx:29-31, README.md:58 |
-| **B26** | lead | **A real zero-alloc violation to hunt**: the isolated heap measurement (see §9 B2) shows +15.7–33.4 KB/frame retained growth in the integration frame, stable ±0.2%. P1's exact alloc counters should localize it. Known uncounted steady-state alloc: the live slice at frame-renderer.ts:383,:390. | measured 2026-07-28, 2 isolated runs |
+| **B26** | ~~lead~~ **WITHDRAWN 2026-07-29** | **Not a zero-alloc violation — a warm-up artifact.** The reported +15.7–33.4 KB/frame was measured after a 30-frame warm-up and one forced GC, which snapshots the heap *below* the plateau its allocation rate implies; the climb to that plateau was then divided by the frame count and published as retained growth. Re-measured with a 2000-frame warm-up (PERF-4a, two independent probes): −0.2 to +2.5 KB/frame, and every structural invariant flat across 2000 frames — `SpriteBatch.allocCount` frozen at N after frame 1, `ParticlePool.created` 0, broadphase size constant. Under JSC `heapUsed` reports MarkedSpace *footprint*, never live bytes, so it cannot carry a retention claim at all; the exact counters now do (§11.4a). **Real finding underneath:** the plateau's height is driven by `CollisionWorld`'s reused pair-`Set` — see B27. | re-measured 2026-07-29, PERF-4a |
+| **B27** | major | **`CollisionWorld`'s "no per-frame allocation" pair buffers are inverted under JSC.** `pairBufA`/`pairBufB` swapped with `clear()` + refill (collision-world.ts:56-60,:133-135) hold ~49 MB heap / ~227 MB RSS after 2500 frames × 564 keys, versus ~1 MB / ~177 MB for a fresh `new Set()` per frame and 0.3 MB for a reused array — the reuse costs ~38× the footprint it was written to save. Two smaller siblings in the same loop: `SpatialIndex.update` does `entries.find(closure)` per entity per frame (spatial-index.ts:49-51 — a closure allocation *and* O(n²) per frame on top of the brute-force broadphase), and `for (const [a, b] of this.entries)` (collision-world.ts:137) materialises a 2-element array per entity per frame while `CollisionEntry` already carries `.entity`. Measured under Bun/JSC only — **verify on Hermes before changing engine code**, since RN is the primary target. Row: §11.9. | measured 2026-07-29, PERF-4a probes |
+| **B28** | major | **The `typeof __DEV__` guard costs ~270 ns per evaluation wherever `__DEV__` is undeclared** — JSC has no inline cache for an unresolvable global identifier. Measured on this machine, 1e6 evaluations: undeclared **272.5 ns**, declared-false **0.7 ns**, declared-true **1.2 ns**, and a `globalThis` property read of an *absent* property **0.46 ns**. PERF-3 put that expression inside `fillXforms` (frame-renderer.ts:413,:429), i.e. once per sprite per transform pass — 9x that under an outline effect — and `Pool.release` (pool.ts:78) has had it once per released object since before this arc. React Native always defines `__DEV__`, so RN builds are unaffected; **web/CanvasKit bundles and any Node/Bun consumer are not**, unless their bundler defines it. Cost there: ~0.27 ms/frame at 1000 sprites, ~2.4 ms under outline. It also inflated this arc's own first re-capture ~7x until PERF-4a pinned the flag. Fix is a `globalThis` property read — equally toggleable at runtime, ~400x cheaper when absent. Row: §11.10. | measured 2026-07-29, PERF-4a |
 
 ---
 
 ## 11. Execution rows — Arc PERF (todo.md points here)
 
 §5's phases remain the design rationale; this section is the row-ified execution order with
-§9–§10 folded in. Routing: **PERF-3 = engine-builder** (`packages/**`, minor changeset);
-all other rows **[MT]** main-thread. **PERF-1→5 are the pre-freeze must** (the §7
+§9–§10 folded in. Routing: **PERF-3 and PERF-9 = engine-builder** (`packages/**`, minor
+changeset each); all other rows **[MT]** main-thread. **PERF-1→5 are the pre-freeze must** (the §7
 "defensible release" core plus gates); PERF-8 is cheap and pre-freeze-preferred; PERF-6/7
 slide post-flip if the calendar tightens, with PERFORMANCE.md declaring the blank (§8).
-Owner-OOB items are ledgered per row, never blocking. Changesets: only PERF-3 touches
-`packages/*/src` → one lockstep minor; other rows need none.
+Owner-OOB items are ledgered per row, never blocking. Changesets: only PERF-3 and PERF-9
+touch `packages/*/src` → one lockstep minor each; other rows need none.
 
 ### §11.1 PERF-1 — bench harness automation-hardening + dead-fork delete [MT]
 
@@ -454,37 +456,71 @@ Zero-alloc law: pre-allocated integer increments only — established production
 **Exit:** every §4 counter has an engine surface or a bench-side injection point; gate +
 root tsc green.
 
-### §11.4 PERF-4 — microbench honesty (P1 rework) [MT, 1–2 sessions]
+### §11.4a PERF-4a — microbench honesty (P1 rework) [MT] — DONE 2026-07-29
 
-Requires PERF-3. Kills B1, B16, B17, B23, B26-hunt. Files: benchmarks/src/** (+ a counting
-FrameRendererModule stub), api-specs.md if B23 resolves by amendment.
+Required PERF-3. Kills B1, B16, B17, B23; withdraws B26 and spawns B27/§11.9. Files:
+benchmarks/src/** (+ `skia-stub.ts`, `heap-probe.ts`, `alloc.ts`), benchmarks/tests/**,
+apps/bench-dashboard (p99 tolerance only), benchmarks/results/*, docs/references/benchmarks.md.
 
-1. Render bench drives the real pipeline: construct
-   `createFrameRenderer(countingSkiaStubModule)` and pass `frameRenderer.drawAtlas` to
-   `flush` — the only way `fillXforms` executes (§9: a flush callback can never reach it).
-   The stub counts **every** DrawSurfaceLike method and hard-fails on any unknown call, so
-   a future draw path (like 2026-07's zone-bg drawRect) breaks the gate loudly instead of
-   shipping unmeasured.
-2. Scenario matrix: sprite sweep 100→5,000 × atlas 1/4/8 in *both* interleaved (worst case,
-   keep) and texture-clustered (expected runs == atlas count) orders; rotated fraction
-   0/50/100%; mixed alpha/stretch/effect scenarios; outline/stretch/zone-bg path scenarios
-   (B17).
-3. Allocation measurement: retire the in-process heap-delta; report heap only
-   isolated-subprocess-per-scenario (stable ±0.2%); the exact gate is phrased honestly —
-   "zero pool misses + zero injected-factory calls per steady-state frame" (pool/factory
-   counters provably cannot see e.g. the live slice at frame-renderer.ts:383,:390; the
-   subprocess heap number stays as the whole-heap backstop). Hunt the B26 +15–33 KB/frame
-   lead.
-4. Harness stats: report max as `max`; p99 only at n≥100; warm up by elapsed time (≥300 ms)
-   not 3 fixed batches; multi-run median-of-medians + IQR by default.
-5. Bound the physics/integration workloads (wrap/bounce at seed bounds) + a post-run
-   bounding-box assert so stationarity is machine-checked (B16).
-6. Seeding: consolidate all bench seeding on `@flare-engine/testing` `createBenchSession`,
-   or amend api-specs.md:434 (B23).
-7. Extend coverage: animation, postfx, tilemap, pathfinding, math — per-frame paths only.
+1. Render + integration benches drive the real pipeline: `createFrameRenderer(countingStub)`
+   with `frameRenderer.drawAtlas` passed to `flush` — the only way `fillXforms` executes
+   (§9: a flush callback can never reach it). **Measured effect: `render.flush 1000
+   sprites / 1 atlas` is 486 µs, not 89 µs — 5.4× of what the old bench reported, and that
+   5.4× was the unmeasured transform build.** The stub counts every DrawSurfaceLike method
+   and, in strict mode (the gate; not the timed runs), throws on any member it does not
+   know, so a future draw path breaks the gate loudly instead of shipping unmeasured. Its
+   `set`/`setXYWH` write real fields — a no-op setter, which is what every pre-existing test
+   stub uses, lets JSC eliminate the transform arithmetic as dead.
+2. Scenario matrix: 15 flush rows + 3 sort rows. Sweep 100→5,000 × 1 atlas; 4- and 8-atlas
+   in *both* interleaved (run length 1, worst case) and clustered (runs == atlas count)
+   orders; rotated 0/50/100%; 4 alpha runs; tint / outline / stretch / zone-bg paths (B17).
+3. Allocation: in-process heap-delta retired for an isolated subprocess per scenario that
+   warms to the allocation plateau under a wall-clock budget and reports per-block deltas
+   plus a convergence flag. The exact gate is 11 rows of integers — zero pool misses, zero
+   particle-factory calls, zero cached Skia factory calls, and per-frame draw-call and
+   transform-write counts predicted from the scenario (e.g. outline == 9 drawAtlas and 9N
+   transform writes; 8-atlas interleaved == 1000 drawAtlas, clustered == 8). It runs in CI
+   via `turbo test`, not only when a human types the bench command.
+4. Harness: `max` always, p99 only at n≥100 samples (default samples 100; rows below the
+   threshold publish `—` rather than the top sample under a percentile's name), warm-up by
+   elapsed time (300 ms) instead of 3 fixed batches, per-row sample-window drift warning.
+5. Physics + integration workloads wrap at the field edge; `outOfBoundsCount` asserts it in
+   the smoke gate and aborts a capture from the heap probe (B16).
+6. Seeding consolidated on `@flare-engine/testing` `createBenchSession` in all five suites,
+   and the particle emitter's seed is now stated rather than inherited from its default of
+   1 (B23 resolved by consolidation — api-specs.md:434 needs no amendment).
+7. Schema v2 + fail-closed promotion: `maxNs`, optional `p99Ns`, `alloc[]`, `schemaVersion`;
+   `--promote` refuses a mixed-schema window, refuses runs whose exact counters disagree,
+   and only folds a p99 when every run has one.
 
-**Exit:** the bench measures the transform path; every row carries variance; alloc counts
-are exact integers; suites are stationary.
+8. **`__DEV__` is pinned to `false` for every capture** (benchmarks/src/dev-flag.ts) and
+   recorded in the report's provenance; `--promote` and `--markdown` both refuse a capture
+   taken with it undeclared. This is not hygiene — see B28: leaving it undeclared made the
+   first re-capture read 486 µs on the headline render row instead of 57 µs.
+
+**Instrument discontinuity — do not compare across it.** The post-4a render and integration
+numbers are not comparable to any capture before 2026-07-29: the measured region gained the
+whole transform path, the warm-up policy changed from 3 fixed batches to a 300 ms budget,
+sampling went from 30 to 100 samples, and the workloads are now bounded. §1's April-vs-July
+regression table stands as a record of the *old* instrument comparing against itself; the
+new baseline starts a new series.
+
+**Exit met:** the bench measures the transform path; every row carries variance; alloc
+counts are exact integers; suites are machine-checked stationary.
+
+### §11.4b PERF-4b — bench coverage extension (P1 remainder) [MT]
+
+Requires PERF-4a. Extend coverage to per-frame paths that no bench touches today:
+animation (`updateTweens` / `updateSpring` / `updateAnimator`), postfx (controller tick,
+`chain.enabled()`, `runtime.buildPass` against a stub Skia module), tilemap
+(`TilemapRenderer.drawInto` culled, `getTileAt`, gid decode), pathfinding (A* open, A*
+maze, JPS), math (`Vec2` `*Into`, `Transform2D`, `Mat3`) — per-frame paths only (B5).
+Each new suite needs: a `scenario-contract.ts` entry, a smoke-gate row, `innerIters` sized
+to the 0.3–25 ms sample window, and workspace deps added to benchmarks/package.json.
+Ends with a 5-run re-capture + `bench:promote` + `bench:md`, exactly as PERF-4a did.
+
+**Exit:** every tier-2/3 package with a per-frame hot path has at least one bench row, and
+the published doc names the ones that still do not.
 
 ### §11.5 PERF-5 — Track A gate + freshness canary + freeze-gate homing (P2) [MT, 1–2 sessions]
 
@@ -612,3 +648,60 @@ Kills B25. Files: apps/bench-dashboard/**, PERFORMANCE.md (new, root), turbo.jso
 
 **Exit:** the dashboard cannot publish a stale or schema-drifted number; PERFORMANCE.md
 names every unmeasured surface.
+
+### §11.10 PERF-10 — hot-loop `__DEV__` guard (B28) (engine-builder, packages/**)
+
+The cheapest real win in this arc: a mechanical rewrite of one expression, measured at ~270 ns
+per evaluation saved wherever `__DEV__` is undeclared. Not an RN issue (Metro always defines
+it) — this is web/CanvasKit and any Node/Bun consumer. One lockstep minor changeset.
+
+Files: packages/render/src/frame-renderer.ts (:413, :429 — per sprite per transform pass),
+packages/core/src/pool.ts (:78 — per released object; :38 is construction-time and fine),
+tests. Leave the non-hot sites alone (assets/sprite-sheet.ts warn path, scene-manager.ts
+transitions, devtools/dev-mode.ts) — they are not worth the churn.
+
+1. Replace `typeof __DEV__ !== 'undefined' && __DEV__` in the hot sites with a module-level
+   `const G = globalThis as { __DEV__?: boolean }` and `if (G.__DEV__ === true)`. A property
+   miss on a stable object is inline-cached (0.46 ns measured) and stays toggleable at
+   runtime, which the existing tests require — they flip `globalThis.__DEV__` mid-describe
+   and expect the next call to honour it.
+2. Keep the ambient `declare const __DEV__` for the remaining sites; do not introduce a
+   build-time define (tsdown must never compile-time-fold this — §11.3 item 3 already
+   asserts that with a dist grep).
+3. Re-measure with the PERF-4a bench in both configurations and record the delta here. The
+   bench pins `__DEV__ = false`, so the win will NOT show up in the published numbers — it
+   shows up for consumers who never define the flag. Add one bench row or a note that says so.
+
+**Exit:** no per-item hot loop in `packages/**` evaluates an unresolvable global; the
+measured cost in the undeclared configuration falls to the declared-configuration cost.
+
+### §11.9 PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, packages/**)
+
+Spawned by PERF-4a's B26 investigation. Not a launch blocker and not on the PERF-1→5
+pre-freeze path — but it is the single largest allocation-pressure source in the measured
+frame, and it sits under every game's collision step. One lockstep minor changeset.
+
+Files: packages/physics/src/{collision-world.ts,spatial-index.ts}, tests.
+
+1. **Verify on Hermes first.** Every number in B27 was measured under Bun/JSC. RN is the
+   primary target; if Hermes reclaims `Set` backing storage on `clear()` the premise
+   changes and only items 2–3 survive. Record the Hermes reading in this row before
+   touching `collision-world.ts`.
+2. `SpatialIndex.update` (spatial-index.ts:49-51): replace `entries.find((e) => e.item ===
+   item)` with a `Map<T, SpatialEntry<T>>` index — removes a closure allocation per entity
+   per frame and an O(n) scan inside an already O(n²) broadphase. Keep `remove`'s
+   swap-remove semantics working with the index.
+3. `CollisionWorld.step` (collision-world.ts:137): iterate `this.entries.values()` and read
+   `entryA.entity` instead of destructuring `[entityA, entryA]` — the field already exists,
+   so this drops one 2-element array per entity per frame for free.
+4. Pair set (collision-world.ts:56-60,:133-135), only if item 1 holds: the swap semantics
+   are load-bearing — `activePairs` must still hold the previous frame's set at the two
+   diff loops, and `remove()` mutates it in place while iterating. A fresh `Set` per step is
+   the smallest change that preserves both; a sorted-array merge is cheaper still but
+   rewrites the diff and `remove()`.
+5. Re-measure with the PERF-4a heap probe and record the before/after plateau in
+   benchmarks.md's heap section.
+
+**Exit:** the integration heap plateau falls materially at 1000 entities with no change to
+enter/exit signal behaviour, or the row is closed with the Hermes measurement that refutes
+the premise.

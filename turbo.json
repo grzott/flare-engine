@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["tsconfig.base.json", "tsconfig.json", "biome.json", "bunfig.toml"],
+  "globalPassThroughEnv": ["FLARE_PERF_ALLOW_STALE", "FLARE_PERF_BASE_REF"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

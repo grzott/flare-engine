@@ -112,8 +112,8 @@ anyone will install.
 | **B4** | **The device harness measures the game, not the engine.** All 6 scenarios are Pan Tvardowski content (bosses, zones). Useful as a showcase datapoint; not an engine spec | `PT/maestro/perf-*.yml` |
 | **B5** | **Bench coverage is 4 of 41 packages.** ecs, physics, particles, render (+ an integration composite). Nothing for animation, postfx, tilemap, pathfinding, scene, simulation, ui, math | `benchmarks/src/*.bench.ts` |
 | **B6** | **Web is entirely unmeasured.** `packages/render-web` has 4 test files and zero benchmarks. `canvaskit-parity.md` flagged "`drawAtlas` WebGL performance may differ — benchmark in the stage 11.1 spike"; that spike never produced numbers | `docs/references/canvaskit-parity.md:11` |
-| **B7** | **No gate anywhere.** `.github/workflows/ci.yml` has no bench step. `docs/plans/flip-runbook.md` has zero perf gates. `docs/plans/manual-test-protocol.md` sets no frame-rate bar | grep: 0 hits |
-| **B8** | **`.perf-baseline.json` is `{}`** in both repos. The threshold mechanism exists and is empty | both roots |
+| **B7** | ~~**No gate anywhere.**~~ **CLOSED 2026-07-29 (PERF-5).** ci.yml and release.yml both run `check:perf` + `check:perf-bytes` + `check:perf-freshness`; verify.sh runs the counter half on engine/mixed rows; flip-runbook and manual-test-protocol each reference the H1 perf gate | ci.yml, release.yml, verify.sh |
+| **B8** | ~~**`.perf-baseline.json` is `{}`**~~ **CLOSED 2026-07-29 (PERF-5).** Populated: 11 counter rows + 41 byte ceilings. An empty `counters` or `bundleBytes` block is now an explicit failure, so it cannot silently return to `{}` | .perf-baseline.json |
 | **B9** | **Duplicate stale infra.** `flare-engine/scripts/perf/` + `docs/perf/` are a dead fork left by the PT extraction — engine data stops 2026-05-26, PT's runs to 06-12, and the engine has no `perf-bench.yml` so its copy can never run | both trees |
 | **B10** | **iOS has never been measured.** 3 iOS devices configured `skip:true`; blocked on the $99/yr Apple Developer Program | `devices.json`, `protocol.md` § Activating iOS |
 
@@ -272,19 +272,19 @@ frame-rate bar instead of only "it renders".
 
 ---
 
-## 6. Proposed release gate (new, for the flip runbook)
+## 6. Release gate — HOMED (2026-07-29, PERF-5)
 
-No `0.3.0` freeze without:
+This section proposed the gate. It now **lives** in
+[road-to-oss-2026-09.md](road-to-oss-2026-09.md) §11 / OSS-H1, "Perf gate (single source)", and is
+not restated here: the freeze checklist is the thing people actually read at freeze time, and a
+gate that exists in a planning doc is a gate nobody runs. `flip-runbook.md` and
+`manual-test-protocol.md` each carry one reference checkbox pointing at that block.
 
-- [ ] Track A counters green in CI, thresholds committed in `.perf-baseline.json`
-- [ ] Microbench re-run within 7 days of the freeze commit, committed with variance bands
-- [ ] Engine-level device numbers on ≥2 Android devices, captured within 14 days
-- [ ] Web numbers on ≥1 desktop + ≥1 mobile browser
-- [ ] Every number in `README.md`, `benchmarks.md`, and `PERFORMANCE.md` carries a capture date
-- [ ] No number older than the most recent commit to the path it measures
-- [ ] `PERFORMANCE.md` names every unmeasured surface, iOS first
-
-The last two are the ones that would have caught this audit's finding in June.
+The two items that would have caught this audit's finding in June — "no number older than the most
+recent commit to the path it measures", and dated numbers everywhere — are the ones with
+mechanical checkers now: `check:perf-freshness` (this file, §11.5) and the generator's
+`Captured:`/`Rendered:` split (§11.1). The remaining device/web items are dated-or-declared,
+pending PERF-6/PERF-7.
 
 ---
 
@@ -359,12 +359,12 @@ findings were each independently refutation-tested; everything below survived.
 | **B16** | major | **Physics/integration workloads are non-stationary**: positions integrate unbounded (up to ±5,500 px drift vs a 2,000 px seed box over the sample window); "dense" decays to sparse mid-run; medians depend on sampler config. Explains the withdrawn secondary table. | physics.bench.ts:15,:29-39 |
 | **B17** | major | **Multi-atlas rows measure degenerate run-length-1 grouping** (`images[i % uniqueTextures]` breaks the batch run on every adjacent sprite); the alpha/rotation/stretch batch-key fields — the three post-April features — are never varied. "Batching actually batches" is never exercised. | render.bench.ts:37-48, sprite-batch.ts:195-201 |
 | **B18** | major | **Nothing forces a build before benching.** benchmarks resolves `@flare-engine/*` to dist/; there is no turbo `bench` task, no `dependsOn ^build`. Un-built invocations — including P0's protocol as written — silently measure stale code. | benchmarks/package.json deps, turbo.json |
-| **B19** | major | **release.yml runs a parallel gate subset** — a ci.yml-only perf gate cannot block a publish. Every perf gate lands in *both* workflows, plus verify.sh *after* build, engine/mixed scope only (test runs before build there; game scope skips build). | release.yml:32-37, verify.sh:58-69 |
+| **B19** | ~~major~~ **CLOSED 2026-07-29 (PERF-5)** | **release.yml runs a parallel gate subset** — a ci.yml-only perf gate cannot block a publish. Every perf gate lands in *both* workflows, plus verify.sh *after* build, engine/mixed scope only (test runs before build there; game scope skips build). **Done as specified**, minus `check:perf-bytes` in verify.sh (~69 s to pack 41 packages; CI and release both run it). | release.yml, verify.sh |
 | **B20** | major | **PT harness fails-green class** to fix before the P3 lift: regression-check exits 0 on zero rows; a >7-day gap resets the baseline to current (weekly cadence self-pins to ratio 1.0 — window must be ≥4× cadence or last-N-runs); no device×scenario×metric matrix validation; the 5% ratio gate has no absolute floor (its only real firing was 5 "regressions" on µs-scale noise, itself masked); zero-combo runs exit green; scenario ids live in three divergent namespaces (dispatch enum ≠ flow stems ≠ ndjson); debug artifacts were never uploaded (path outside workspace + `if-no-files-found: warn`). | PT regression-check.ts:32,:136; bench-cloud.sh:311-336; perf-bench.yml:43 |
 | **B21** | major | **B3 revive protocol reordered** (root cause reattributed, §9): verify TestingBot account/plan/device-catalog names FIRST → fix artifact upload so the next failure leaves evidence → one single-device `workflow_dispatch` → only then fresh APK at HEAD → weekly cron with staleness gate, never `continue-on-error`. | PT perf-bench.yml:13-29 + gh run logs |
 | **B22** | major | **results/device.json is a third stale published surface** (generated 2026-04-22, one Galaxy A54 entry) rendered by the dashboard /device route; its documented refresh pipeline (triple-tap + "BENCH FPS CSV" logcat markers) no longer exists anywhere in PT. §1–§8 never mention it. | device.json:2, dashboard README.md:39-52 |
 | **B23** | major | **`createBenchSession` has zero consumers** in benchmarks/ or PT while api-specs ships it as "the backbone for deterministic bench scenarios"; P3 "reuse bench-mode.ts" would hand-roll seeding a third time (PT uses its own mulberry32; benchmarks uses SeededRNG directly). Consolidate or correct api-specs before the flip. | packages/testing/src/bench-session.ts:25, api-specs.md:434 |
-| **B24** | blocker | **§6's freshness items had no mechanical checker in any phase** — pull-not-push reapplied to the gate itself. The keystone control is `check:perf-freshness` in PR CI (the only runner that provably always runs): fail when a suite's capture date predates the newest commit under the packages it measures. Same liveness-canary pattern as `check:readme`. | §6:278-280 vs §5; ci.yml:35 precedent |
+| **B24** | ~~blocker~~ **CLOSED 2026-07-29 (PERF-5)** | **§6's freshness items had no mechanical checker in any phase** — pull-not-push reapplied to the gate itself. The keystone control is `check:perf-freshness` in PR CI (the only runner that provably always runs): fail when a suite's capture date predates the newest commit under the packages it measures. Same liveness-canary pattern as `check:readme`. **Shipped comparing reachability rather than dates** — `git log <capture-sha>..HEAD -- <measured paths>` (§11.5). | check-perf-freshness.mjs |
 | **B25** | major | **Dashboard fails-green class**: unchecked `as T` cast + hand-duplicated types (dead `@flare-engine/benchmarks` dep); headline substring match → `return null` (schema drift renders NaN or silently drops cards while CI stays green); /integration undated and renders B2 noise with good/bad colors; no staleness logic anywhere; deploy target is dead infra (README: GH Pages beside nonexistent `apps/site` via the removed `next export`); basePath/absolute-nav/root-escaping-link deploy blockers. | data.ts:6-11, page.tsx:41,:74, integration/page.tsx:29-31, README.md:58 |
 | **B26** | ~~lead~~ **WITHDRAWN 2026-07-29** | **Not a zero-alloc violation — a warm-up artifact.** The reported +15.7–33.4 KB/frame was measured after a 30-frame warm-up and one forced GC, which snapshots the heap *below* the plateau its allocation rate implies; the climb to that plateau was then divided by the frame count and published as retained growth. Re-measured with a 2000-frame warm-up (PERF-4a, two independent probes): −0.2 to +2.5 KB/frame, and every structural invariant flat across 2000 frames — `SpriteBatch.allocCount` frozen at N after frame 1, `ParticlePool.created` 0, broadphase size constant. Under JSC `heapUsed` reports MarkedSpace *footprint*, never live bytes, so it cannot carry a retention claim at all; the exact counters now do (§11.4a). **Real finding underneath:** the plateau's height is driven by `CollisionWorld`'s reused pair-`Set` — see B27. | re-measured 2026-07-29, PERF-4a |
 | **B27** | major | **`CollisionWorld`'s "no per-frame allocation" pair buffers are inverted under JSC.** `pairBufA`/`pairBufB` swapped with `clear()` + refill (collision-world.ts:56-60,:133-135) hold ~49 MB heap / ~227 MB RSS after 2500 frames × 564 keys, versus ~1 MB / ~177 MB for a fresh `new Set()` per frame and 0.3 MB for a reused array — the reuse costs ~38× the footprint it was written to save. Two smaller siblings in the same loop: `SpatialIndex.update` does `entries.find(closure)` per entity per frame (spatial-index.ts:49-51 — a closure allocation *and* O(n²) per frame on top of the brute-force broadphase), and `for (const [a, b] of this.entries)` (collision-world.ts:137) materialises a 2-element array per entity per frame while `CollisionEntry` already carries `.entity`. Measured under Bun/JSC only — **verify on Hermes before changing engine code**, since RN is the primary target. Row: §11.9. | measured 2026-07-29, PERF-4a probes |
@@ -375,7 +375,7 @@ findings were each independently refutation-tested; everything below survived.
 ## 11. Execution rows — Arc PERF (todo.md points here)
 
 §5's phases remain the design rationale; this section is the row-ified execution order with
-§9–§10 folded in. Routing: **PERF-3 and PERF-9 = engine-builder** (`packages/**`, minor
+§9–§10 folded in. Routing: **PERF-3, PERF-9 and PERF-10 = engine-builder** (`packages/**`, minor
 changeset each); all other rows **[MT]** main-thread. **PERF-1→5 are the pre-freeze must** (the §7
 "defensible release" core plus gates); PERF-8 is cheap and pre-freeze-preferred; PERF-6/7
 slide post-flip if the calendar tightens, with PERFORMANCE.md declaring the blank (§8).
@@ -522,9 +522,45 @@ Ends with a 5-run re-capture + `bench:promote` + `bench:md`, exactly as PERF-4a 
 **Exit:** every tier-2/3 package with a per-frame hot path has at least one bench row, and
 the published doc names the ones that still do not.
 
-### §11.5 PERF-5 — Track A gate + freshness canary + freeze-gate homing (P2) [MT, 1–2 sessions]
+### §11.5 PERF-5 — Track A gate + freshness canary + freeze-gate homing (P2) [MT] — DONE 2026-07-29
 
-Kills B7, B8, B19, B24. Files: scripts/check-perf.mjs, scripts/check-perf-freshness.mjs,
+**Shipped.** `scripts/lib/perf-gate.mjs` (pure reconcilers + a selftest both CLIs run before they
+trust a green), `scripts/lib/pack.mjs` (the `npm pack` + unbuilt-dist primitives, now shared with
+audit-tarballs.mjs instead of duplicated), `scripts/check-perf.mjs`, `scripts/check-perf-freshness.mjs`,
+a populated `.perf-baseline.json` (11 counter rows + 41 byte ceilings), and the wiring in ci.yml /
+release.yml / verify.sh. B7, B8, B19, B24 closed.
+
+**Two deviations from the spec below, both deliberate:**
+
+1. **The canary compares reachability, not dates (item 4).** The spec said "capture timestamp older
+   than the newest commit". It ships as `git log <capture-sha>..HEAD -- <measured paths>`, which is
+   exact where a timestamp is a proxy: a sixty-day-old capture against untouched sources still
+   describes HEAD, and a capture from this morning against a source edited since does not. Clock
+   skew and rebases cannot fool it. Absolute age stays where it already was — `bench:md` refuses to
+   render a doc from a baseline older than 30 days — rather than becoming a second copy of one
+   policy number. The suite→package map lists only DIRECT imports and is expanded through the
+   workspace dependency graph at run time, so `math` correctly stales every `render` row without
+   anyone maintaining that edge by hand.
+2. **Byte ceilings are a separate invocation (`check:perf-bytes`), in CI and release but not in
+   verify.sh (items 2, 5).** Packing 41 packages costs ~69 s measured. Paying that on every local
+   `/close` is how a gate gets commented out; CI runs it on every push and release.yml runs it
+   again on the path that ships bytes, so nothing reaches consumers unweighed. The counter half
+   (~2 s) does run in verify.sh.
+
+**Verified non-vacuous by mutation, not by reading:** a drifted counter, an improved counter, an
+emptied `counters` block (the exact `{}` state B8 describes), a baseline key with no scenario, a
+suite with no freshness mapping, unmapped heap rows, an instrument change since the capture, a
+package over its ceiling, a package with no ceiling, and all four review-guard states each produce
+the intended red. That exercise found a real bug: `git status --porcelain` marks an unstaged edit
+with a leading SPACE, and trimming the whole output ate the first character of the first path —
+`.perf-baseline.json` arrived as `perf-baseline.json`, so the rubber-stamp guard was blind to the
+one file it exists to watch. Fixed with an untrimmed line split plus `-uall`.
+
+**Item 7 (Track B plumbing) is a recorded decision, built in PERF-7 — see §11.5b below.**
+
+---
+
+Original spec. Kills B7, B8, B19, B24. Files: scripts/check-perf.mjs, scripts/check-perf-freshness.mjs,
 .perf-baseline.json, .github/workflows/{ci.yml,release.yml}, .claude/hooks/verify.sh,
 docs/plans/road-to-oss-2026-09.md §11, docs/plans/flip-runbook.md,
 docs/plans/manual-test-protocol.md.
@@ -563,7 +599,34 @@ docs/plans/manual-test-protocol.md.
 
 **Exit:** a PR that adds a hot-path allocation, a draw call, or lets a capture go stale
 fails CI; a publish cannot bypass any of it; the 0.3.0 freeze checklist contains the perf
-gate by reference.
+gate by reference. **All three hold as of 2026-07-29.**
+
+### §11.5b Track B plumbing — DECIDED 2026-07-29, built in PERF-7
+
+Recorded here so PERF-7 executes a decision instead of re-opening one. Track B is wall-clock: it
+is recorded and dashboarded, never hard-gated (§4).
+
+**Runner: a local scheduled script that commits results back.** Not a self-hosted GitHub runner —
+on a public repo that executes fork-PR code, which is unacceptable after the flip unless fenced,
+and fencing it is more machinery than the signal is worth. Not a GitHub-hosted runner either: §4's
+whole premise is that its ±50% swing makes the numbers unusable for comparison.
+
+**Commit-back lands on a `perf-data` branch**, not on `main` with `[skip ci]`. A plain push to
+main fires ci.yml, and once `vars.ENABLE_RELEASE` is true it fires release.yml too — a nightly bot
+push would attempt a nightly release. `[skip ci]` suppresses that but is a one-line typo away from
+not suppressing it. A separate branch cannot reach the release path at all. Branch protection on
+`main` is a 403 on today's free-plan private repo and becomes both available and desirable at the
+flip; the branch layout is chosen so neither state changes the answer.
+
+**The warn tier pushes; it does not wait to be looked at.** At a 1.10 rolling-median ratio the
+automation creates-or-updates a **pinned GitHub issue** titled "perf drift", with the scenario, the
+ratio, and the commit range. Dashboards are this plan's own documented rot surface (B22: the
+device dashboard read from a JSON nothing had written in months and nobody noticed) — a signal
+whose only delivery mechanism is a page someone must remember to open is a signal that does not
+exist. Fail tier stays at 1.25 and stays soft: it opens the issue and labels it, it does not fail a
+build, because a wall-clock number on shared hardware must never be able to block a merge.
+
+**Freeze-window interaction:** the cron pauses Oct 5–18 per the H1 rule in road-to-oss §11.
 
 ### §11.6 PERF-6 — web bench (P4) [MT, 2 sessions]
 

@@ -36,6 +36,16 @@ jobs:
       - run: bun run check:exports
       - run: bun run check:nodenext
 
+      # B19: a publish must not be able to bypass the perf gate. ci.yml runs on
+      # the same push, but a red CI does not stop this workflow — the two are
+      # independent jobs, so the gate is repeated on the path that ships bytes
+      # to consumers.
+      - run: bun run check:perf
+        env:
+          FLARE_PERF_BASE_REF: ${{ github.event.before }}
+      - run: bun run check:perf-bytes
+      - run: bun run check:perf-freshness
+
       - name: Create release PR or publish to npm
         uses: changesets/action@v1
         with:

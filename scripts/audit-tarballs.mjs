@@ -41,14 +41,19 @@
  * Exit codes: 0 = HEAD clean · 1 = HEAD hits (fix rows) or selftest failure ·
  *             2 = usage/setup error.
  */
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, relative } from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import {
+  declaredEntryPoints,
+  discoverPublishTargets,
+  npm,
+  REPO_ROOT,
+  withPackedTarball,
+} from './lib/pack.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = REPO_ROOT;
 const REPORT_PATH = join(ROOT, 'docs', 'plans', '_local', 'f3-tarball-audit.md');
 const PUBLISHED_VERSIONS_EXPECTED = ['0.1.0', '0.2.0', '0.2.1'];
 const MAX_SCAN_BYTES = 2 * 1024 * 1024;
@@ -122,14 +127,6 @@ const SCAFFOLDER_PACKAGES = new Set(['create-flare-app', '@flare-engine/cli']);
 // Files that must never appear in a published tarball.
 const FORBIDDEN_FILES =
   /(?:^|[\\/])(?:\.npmrc|\.env(?:\.[\w-]+)?|id_rsa|.*\.pem|.*\.key)$|(?:^|[\\/])(?:\.git|node_modules)[\\/]/i;
-
-// --- npm helper --------------------------------------------------------------
-const npm = (...args) =>
-  execFileSync('npm', args, {
-    cwd: ROOT,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
 
 // --- Tarball read (pure Node: gunzip + ustar parse) --------------------------
 const parseOctal = (buf) => {
@@ -211,37 +208,14 @@ const scanEntries = (files, targetName) => {
   return hits;
 };
 
-// Entry-point paths a consumer actually imports, collected from the manifest.
-// Used to catch an unbuilt/empty dist that would otherwise scan as a false "clean":
-// `npm pack --ignore-scripts` silently drops an unmatched `files:["dist"]` glob, so
-// a package with no dist/ still packs (manifest+README+LICENSE+NOTICE) and scans 0 hits.
-const declaredEntryPoints = (manifest) => {
-  const out = new Set();
-  const add = (p) => {
-    if (typeof p !== 'string') return;
-    const n = p.replace(/^\.\//, '');
-    if (n) out.add(n);
-  };
-  for (const key of ['main', 'module', 'types']) add(manifest[key]);
-  const walk = (node) => {
-    if (typeof node === 'string') add(node);
-    else if (node && typeof node === 'object') for (const v of Object.values(node)) walk(v);
-  };
-  walk(manifest.exports);
-  return [...out];
-};
-
 // --- Pack + scan one tarball -------------------------------------------------
 // spec: {name, dir} for a HEAD pack, or {name, version} for a published fetch.
-const packAndScan = (spec, workDir) => {
-  const dest = mkdtempSync(join(workDir, 'pkg-'));
-  try {
-    const packArg = spec.dir ?? `${spec.name}@${spec.version}`;
-    const out = npm('pack', '--json', '--ignore-scripts', '--pack-destination', dest, packArg);
-    const meta = JSON.parse(out);
-    const filename = Array.isArray(meta) ? meta[0]?.filename : meta.filename;
-    if (!filename) return { ok: false, reason: 'npm pack returned no filename' };
-    const files = readTarball(join(dest, filename))
+// The unbuilt-dist guard lives in `declaredEntryPoints` (scripts/lib/pack.mjs):
+// without it an unbuilt package packs manifest+README+LICENSE+NOTICE and scans
+// as a false "clean".
+const packAndScan = (spec, workDir) =>
+  withPackedTarball(spec, workDir, ({ path }) => {
+    const files = readTarball(path)
       .filter((e) => e.name.startsWith('package/'))
       .map((e) => ({ path: e.name.slice('package/'.length), data: e.data }))
       .filter((e) => e.path && !e.path.endsWith('/'));
@@ -263,36 +237,7 @@ const packAndScan = (spec, workDir) => {
       hasNotice: files.some((e) => e.path === 'NOTICE'),
       hits: scanEntries(files, spec.name),
     };
-  } catch (err) {
-    return {
-      ok: false,
-      reason: String(err.stderr || err.message || err)
-        .split('\n')[0]
-        .trim(),
-    };
-  } finally {
-    rmSync(dest, { recursive: true, force: true });
-  }
-};
-
-// --- Target discovery --------------------------------------------------------
-const discoverTargets = (only) => {
-  const packagesDir = join(ROOT, 'packages');
-  const targets = [];
-  for (const name of readdirSync(packagesDir).sort()) {
-    const dir = join(packagesDir, name);
-    const manifestPath = join(dir, 'package.json');
-    if (!existsSync(manifestPath)) continue;
-    const pkg = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    if (typeof pkg.name !== 'string') continue;
-    const isScoped = pkg.name.startsWith('@flare-engine/');
-    const isCreateFlareApp = pkg.name === 'create-flare-app';
-    if (!((isScoped && !pkg.private) || isCreateFlareApp)) continue;
-    if (only && !pkg.name.includes(only)) continue;
-    targets.push({ name: pkg.name, dir, flipsPublic: isCreateFlareApp });
-  }
-  return targets;
-};
+  });
 
 // --- Published version discovery --------------------------------------------
 const publishedVersions = (name) => {
@@ -459,7 +404,7 @@ const headOnly = argv.includes('--head-only');
 const onlyIndex = argv.indexOf('--only');
 const only = onlyIndex !== -1 ? argv[onlyIndex + 1] : undefined;
 
-const targets = discoverTargets(only);
+const targets = discoverPublishTargets(only);
 if (targets.length === 0) {
   console.error('[audit-tarballs] no publishable targets found under packages/');
   process.exit(2);

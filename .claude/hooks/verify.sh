@@ -68,6 +68,22 @@ fi
 run_gate "deps"      bun run check:deps
 run_gate "changeset" bun run check:changeset
 
+# Perf (Track A). Engine + mixed only: a game-scope row cannot move an engine
+# counter, and both gates need built dists.
+#
+# `check:perf-bytes` is deliberately NOT here — it packs 41 packages (~60 s) and
+# CI runs it on every push, so the cost lands where it is affordable.
+#
+# check:perf-freshness goes red when a row touches a measured package. That is
+# the point (the numbers now describe older code), and the fix is a re-capture:
+#   bun run bench:baseline  x5 from a clean tree -> bench:promote -> bench:md
+# To close a row without re-capturing, `$env:FLARE_PERF_ALLOW_STALE=1` and say
+# so in the session block.
+if [ "$SCOPE" != "game" ]; then
+  run_gate "perf"           bun run check:perf
+  run_gate "perf-freshness" bun run check:perf-freshness
+fi
+
 # ---- Diff snapshot ---------------------------------------------------------
 
 CHANGED=$(git status --porcelain | awk '{print $2}' | sort -u)

@@ -1104,6 +1104,40 @@ engine integration); the `dynamics` lift stays a post-flip option and must not b
   no docs restructuring. Each fix ships as a lockstep 0.3.x restricted patch when a consumer needs
   it re-tested.
 
+#### Perf gate (single source)
+
+The freeze perf gate lives **here and nowhere else**. `flip-runbook.md` and
+`manual-test-protocol.md` each carry ONE checkbox pointing at this block and restate nothing —
+a perf item copied into three files is three items that drift. Spec + rationale:
+[perf-measurement-2026-07.md](perf-measurement-2026-07.md) §4 (why counters gate and wall-clock
+does not) and §11.5.
+
+**Hard — the freeze does not happen until these are green:**
+
+- [ ] `bun run check:perf` green: Track A counters reconcile with `.perf-baseline.json`, and no
+      unjustified baseline edit rode in with an engine change.
+- [ ] `bun run check:perf-bytes` green: every published package under its byte ceiling.
+- [ ] `.perf-baseline.json` populated — a counter row per alloc scenario, a ceiling per package.
+      An empty file is red, not green (B3/B8: it was `{}` for three months and gated nothing).
+- [ ] Microbench captured **≤7 days before freeze**, **≥5 runs from a clean tree**, published with
+      spread bands: `bun run bench:baseline` ×5 → `bench:promote` → `bench:md`. A single-run
+      capture has no band, so nothing downstream can separate a regression from this machine's noise.
+- [ ] `bun run check:perf-freshness` green: no commit under any measured package or under
+      `benchmarks/src` since the capture commit. **Never close this one with
+      `FLARE_PERF_ALLOW_STALE`** — at freeze the whole point is that the numbers describe the
+      frozen tree.
+
+**Dated-or-declared-unmeasured — recorded, does not block:**
+
+- Native device (PERF-7) and web (PERF-6) numbers: either a dated capture, or `PERFORMANCE.md`
+  names that surface as unmeasured, iOS first. Consistent with §7's fallback and §13. Shipping
+  "we have not measured this" is honest; shipping a stale number as current is not.
+
+**Freeze-window rule (Oct 5–18):** any commit-back perf cron **pauses**, or diverts to
+artifact-only upload, for the duration — H1 is fix-only, and a bot pushing a results file into a
+frozen tree is exactly the kind of unplanned commit the freeze exists to prevent. Resumes after the
+flip.
+
 ### OSS-H2 · manual-test protocol (P0, author ~Sep 28, [main-thread]; owner executes Oct 5–18)
 
 Written as `docs/plans/manual-test-protocol.md` by an agent session; the checklist to cover:

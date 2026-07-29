@@ -38,6 +38,8 @@ no clean rollback.
 - [ ] **F3 done:** tarball audit clean (or every old-version hit has an owner
       disposition, §14).
 - [ ] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4).
+- [ ] **Perf gate green:** every hard item in the "Perf gate (single source)" block of
+      road-to-oss §11 / OSS-H1. Not restated here on purpose — one source per fact.
 - [ ] **npm auth ready:** granular publish token (Bypass-2FA) in `~/.npmrc`, the
       `@flare-engine` org on a paid plan, credential rotation done (§14). Keep the
       2FA device handy for `--otp` on the access flip.

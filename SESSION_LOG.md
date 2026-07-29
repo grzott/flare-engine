@@ -9834,3 +9834,117 @@ row read 486 µs instead of 57 µs) and a heap probe that could not converge at 
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 265 — 2026-07-29 (scope: engine)
+
+**Goal:** PERF-5 — Track A gate + freshness canary + freeze-gate homing
+
+**Touched files**
+- `.claude/hooks/verify.sh`
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
+- `.perf-baseline.json`
+- `docs/plans/flip-runbook.md`
+- `docs/plans/manual-test-protocol.md`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `package.json`
+- `scripts/audit-tarballs.mjs`
+- `scripts/check-perf-freshness.mjs`
+- `scripts/check-perf.mjs`
+- `scripts/lib/pack.mjs`
+- `scripts/lib/perf-gate.mjs`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+- deps / changeset: green
+- **perf / perf-freshness: green** (the new gates, running in the gate that closed the row that added them)
+
+**Outcome**
+
+Arc-PERF P2. B7 (no gate anywhere), B8 (`.perf-baseline.json` is `{}`), B19 (release.yml runs a
+parallel gate subset), B24 (freshness had no mechanical checker) are closed.
+
+Three commands over one pure core. `scripts/lib/perf-gate.mjs` holds every decision as a function
+from data to problems — no git, no npm, no I/O — so the whole surface is exercised by a `selftest()`
+that **both CLIs run before they trust a green**. That placement is deliberate: a selftest wired as
+its own optional CI step is one a hurried session skips, and a gate whose own logic is unproven is
+the exact failure this arc exists to retire.
+
+- **`check:perf`** — reconciles the 11 exact-integer draw-path scenarios (measured live against
+  PERF-4a's counting Skia stub) with `.perf-baseline.json`. Fail-closed in both directions: an
+  empty baseline fails, a scenario with no key fails, a key with no scenario fails, and an
+  **improvement fails too**, because `drawAtlas 1000 → 8` is a published claim changing, not a
+  free win. Liveness floor rejects an all-zero row — zeroes cannot distinguish "the hot path
+  allocated nothing" from "the hot path never ran".
+- **`check:perf-bytes`** — packs all 41 publishable packages and weighs them against ~10% ceilings
+  (967 KB total today; `render` 116 KB is the largest). Ceilings, not equality: every legitimate
+  edit moves the byte count, and a gate that fires on a doc typo gets disabled within a week.
+  Slack ceilings (<0.7×) warn rather than fail — failing would punish whoever made things smaller.
+- **`check:perf-freshness`** — the B24 keystone.
+
+**The canary compares reachability, not dates** — a deliberate deviation from the §11.5 spec.
+`git log <capture-sha>..HEAD -- <measured paths>` is exact where a timestamp is a proxy: a
+sixty-day-old capture against untouched sources still describes HEAD, and a capture from this
+morning against a source edited since does not; rebases and clock skew cannot fool it. Each suite
+declares only its DIRECT imports and the gate expands them through the workspace dep graph at run
+time, so a `math` commit correctly stales every `render` row without anyone maintaining that edge.
+`benchmarks/src` stales everything — PERF-4a is the precedent, moving the headline row from 486 µs
+to 55.6 µs with zero engine changes. Absolute age stays where it already lived (`bench:md`'s
+30-day refusal) rather than becoming a second copy of one policy number.
+
+**Findings**
+
+- **Real bug, found by the mutation pass and not by reading:** `git status --porcelain` encodes
+  staged/unstaged in columns 1–2, so an unstaged edit begins with a SPACE. Trimming the whole
+  output ate the first character of the first path — `.perf-baseline.json` arrived as
+  `perf-baseline.json`, and the rubber-stamp guard was **blind to the one file it exists to
+  watch**. It reported OK on all four planted review-guard defects. Fixed with an untrimmed line
+  split plus `-uall` (which also expands untracked directories — git otherwise collapses a
+  brand-new `packages/foo/src/` to the directory alone).
+- 14 planted defects each produce the intended red: drifted counter, improved counter, emptied
+  `counters` (the literal `{}` B8 describes), baseline key with no scenario, unmapped suite,
+  unmapped heap rows, instrument changed since capture, package over ceiling, package with no
+  ceiling, and all four review-guard states. The byte gate was proven end-to-end through a real
+  41-package pack, not just through the selftest.
+- **`check:perf-bytes` is CI/release-only, not in verify.sh** — the second deliberate deviation.
+  Packing 41 packages measured 69 s. Paying that on every local `/close` is how a gate gets
+  commented out; CI runs it on every push and release.yml runs it again on the path that actually
+  ships bytes, so nothing reaches a consumer unweighed. The ~2 s counter half does run locally.
+- **release.yml gets its own copy of all three (B19).** ci.yml and release.yml are independent
+  jobs on the same push — a red CI does not stop a publish.
+- `scripts/lib/pack.mjs` extracts the `npm pack` + unbuilt-dist primitives that audit-tarballs.mjs
+  owned. Both gates now share one definition of "what ships" and of "this dist was never built"
+  (an unbuilt package packs manifest+README+LICENSE+NOTICE, weighs ~2 KB, and would sail under
+  every ceiling). Refactor verified by audit-tarballs' own `--selftest` (14 categories) plus a
+  real `--head-only` pack.
+- **Freeze gate homed** in road-to-oss §11/H1 as the single source; flip-runbook and
+  manual-test-protocol carry one reference checkbox each and restate nothing. §6 of the perf plan,
+  which *proposed* the gate, now points at where it lives. Oct 5–18 cron-pause rule recorded.
+- **Track B plumbing decided** (§11.5b) so PERF-7 executes rather than re-opens: a `perf-data`
+  branch over `[skip ci]` on main (once `ENABLE_RELEASE` is true, a nightly bot push to main would
+  attempt a nightly release, and `[skip ci]` is one typo from not suppressing it); a local
+  scheduled runner over self-hosted (a self-hosted runner on a public repo executes fork-PR code);
+  and the warn tier **pushes a pinned GitHub issue** rather than updating a dashboard — B22 is the
+  proof that a surface nobody opens is not a signal.
+- Two `--write` safety rules: it never RAISES a byte ceiling (that is the rubber-stamp move the
+  review guard exists to catch, so it stays a hand edit), and it refuses to record a counter the
+  bench itself calls wrong, which would publish the bug as the baseline.
+- No changeset — no `packages/*/src` touched ([[changeset_gate_src_only]]). `turbo.json` gained
+  `globalPassThroughEnv` for the two new env vars, which is a global-config change and busts the
+  turbo cache once.
+
+**Frictions:** corr:0 / deny:2 / gate:1 / fixup:3 / drift:0
+
+**Next:** **PERF-10** (hot-loop `__DEV__` guard, engine-builder, `packages/**`) — pulled ahead of
+PERF-8 and PERF-4b. Three mechanical sites, cannot move a published number, and it decides whether
+web/CanvasKit and Node consumers eat a ~270 ns-per-sprite deopt at the October flip. It is also the
+first row that will make `check:perf-freshness` go red on purpose: it touches `packages/render/src`,
+so it must end with a 5-run re-capture.
+
+---

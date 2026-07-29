@@ -1,1 +1,375 @@
-{}
+{
+  "$comment": [
+    "Track A perf baseline — the committed, diff-visible copy of every perf claim that can be",
+    "stated as an exact integer. Enforced by `bun run check:perf` (counters + published bytes +",
+    "the rubber-stamp guard) and `bun run check:perf-freshness` (are the wall-clock numbers still",
+    "about this code). Spec: docs/plans/perf-measurement-2026-07.md §4 and §11.5.",
+    "",
+    "`counters` is regenerated with `bun scripts/check-perf.mjs --write`. Do not hand-edit it to",
+    "make a red gate green: a counter that moved is a published claim that changed, and changing",
+    "it in the same commit as `packages/*/src` requires a dated `reviews` entry.",
+    "",
+    "`bundleBytes.ceiling` is the gzipped tarball size npm pack reports, with ~10% headroom.",
+    "`--write --bytes` creates missing ceilings and tightens slack ones; it never RAISES one.",
+    "",
+    "`freshness.suites` lists each bench suite's DIRECT engine imports; the gate expands them",
+    "through the workspace dependency graph at run time, so `render` automatically drags in",
+    "`math` and nobody has to remember that in review."
+  ],
+  "schema": 1,
+  "counters": {
+    "alloc.render  1000 sprites / 1 atlas": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 1,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 1000,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / 100% rotated": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 1,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 0,
+      "xformRotatedPerFrame": 1000
+    },
+    "alloc.render  1000 sprites / 8 atlas interleaved": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 1000,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 1000,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / 8 atlas clustered": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 8,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 1000,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / 4 alpha runs": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 4,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 1000,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / tint effect": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 1,
+      "drawAtlasPerFrame": 1,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 1000,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / outline effect": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 1,
+      "drawAtlasPerFrame": 9,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 9000,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / stretch path": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 0,
+      "drawImageRectPerFrame": 1000,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 0,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.render  1000 sprites / zone-bg path": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 1,
+      "drawAtlasPerFrame": 0,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 1000,
+      "xformUnrotatedPerFrame": 0,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.frame    500 entities + 300p": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 1,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 500,
+      "xformRotatedPerFrame": 0
+    },
+    "alloc.frame   1000 entities + 300p": {
+      "poolMisses": 0,
+      "particleFactoryCalls": 0,
+      "cachedFactoryCalls": 0,
+      "perFrameFactoryCalls": 0,
+      "drawAtlasPerFrame": 1,
+      "drawImageRectPerFrame": 0,
+      "drawRectPerFrame": 0,
+      "xformUnrotatedPerFrame": 1000,
+      "xformRotatedPerFrame": 0
+    }
+  },
+  "bundleBytes": {
+    "@flare-engine/a11y": {
+      "ceiling": 12687,
+      "measured": 11533,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/achievements": {
+      "ceiling": 12098,
+      "measured": 10998,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/analytics": {
+      "ceiling": 9914,
+      "measured": 9012,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/animation": {
+      "ceiling": 16083,
+      "measured": 14620,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/assets": {
+      "ceiling": 24232,
+      "measured": 22029,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/audio": {
+      "ceiling": 14922,
+      "measured": 13565,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/cli": {
+      "ceiling": 21073,
+      "measured": 19157,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/core": {
+      "ceiling": 22743,
+      "measured": 20675,
+      "measuredAt": "2026-07-29"
+    },
+    "create-flare-app": {
+      "ceiling": 31420,
+      "measured": 28563,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/debug": {
+      "ceiling": 21614,
+      "measured": 19649,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/deep-links": {
+      "ceiling": 14989,
+      "measured": 13626,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/devtools": {
+      "ceiling": 18917,
+      "measured": 17197,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/dialogue": {
+      "ceiling": 16807,
+      "measured": 15279,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/ecs": {
+      "ceiling": 24162,
+      "measured": 21965,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/engine": {
+      "ceiling": 14832,
+      "measured": 13483,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/errors": {
+      "ceiling": 10624,
+      "measured": 9658,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/events": {
+      "ceiling": 9706,
+      "measured": 8823,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/haptics": {
+      "ceiling": 12935,
+      "measured": 11759,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/iap": {
+      "ceiling": 12142,
+      "measured": 11038,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/iap-revenuecat": {
+      "ceiling": 12459,
+      "measured": 11326,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/input": {
+      "ceiling": 48789,
+      "measured": 44353,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/leaderboards": {
+      "ceiling": 11048,
+      "measured": 10043,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/localization": {
+      "ceiling": 16320,
+      "measured": 14836,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/math": {
+      "ceiling": 66239,
+      "measured": 60217,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/particles": {
+      "ceiling": 14804,
+      "measured": 13458,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/pathfinding": {
+      "ceiling": 37646,
+      "measured": 34223,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/physics": {
+      "ceiling": 22179,
+      "measured": 20162,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/postfx": {
+      "ceiling": 59875,
+      "measured": 54431,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/progression": {
+      "ceiling": 17837,
+      "measured": 16215,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/react": {
+      "ceiling": 51558,
+      "measured": 46870,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/render": {
+      "ceiling": 127566,
+      "measured": 115969,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/render-web": {
+      "ceiling": 24195,
+      "measured": 21995,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/scene": {
+      "ceiling": 15126,
+      "measured": 13750,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/shapes": {
+      "ceiling": 20696,
+      "measured": 18814,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/share": {
+      "ceiling": 15256,
+      "measured": 13869,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/simulation": {
+      "ceiling": 45593,
+      "measured": 41448,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/storage": {
+      "ceiling": 38395,
+      "measured": 34904,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/testing": {
+      "ceiling": 15248,
+      "measured": 13861,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/tilemap": {
+      "ceiling": 38735,
+      "measured": 35213,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/ui": {
+      "ceiling": 52631,
+      "measured": 47846,
+      "measuredAt": "2026-07-29"
+    },
+    "@flare-engine/ui-shop": {
+      "ceiling": 15343,
+      "measured": 13948,
+      "measuredAt": "2026-07-29"
+    }
+  },
+  "freshness": {
+    "instrument": ["benchmarks/src"],
+    "suites": {
+      "ECS": ["@flare-engine/ecs", "@flare-engine/testing"],
+      "Physics": ["@flare-engine/physics", "@flare-engine/testing"],
+      "Particles": ["@flare-engine/particles"],
+      "Render": ["@flare-engine/render", "@flare-engine/testing"],
+      "Integration": [
+        "@flare-engine/ecs",
+        "@flare-engine/particles",
+        "@flare-engine/physics",
+        "@flare-engine/render",
+        "@flare-engine/testing"
+      ]
+    },
+    "heapSuites": {
+      "integration.heap": "Integration"
+    }
+  },
+  "reviews": [
+    {
+      "date": "2026-07-29",
+      "reason": "PERF-5: first population. Counters and ceilings recorded from the honest instrument at b7f5fc7 (PERF-4a); before this the file was `{}` and gated nothing."
+    }
+  ]
+}

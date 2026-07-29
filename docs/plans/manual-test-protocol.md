@@ -138,4 +138,7 @@ finding, fixed in priority order; non-blocking items → the post-flip backlog (
       target and green — or every failure logged in §7 and triaged (blockers closed).
 - [ ] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.3.x` restricted patch and
       re-tested); majors closed or explicitly accepted; minors triaged to the post-flip backlog.
+- [ ] **Perf gate still green after the last FREEZE-FIX patch** — every hard item in the "Perf gate
+      (single source)" block of road-to-oss §11 / OSS-H1. Not restated here on purpose. A fix that
+      touches a measured package re-reds `check:perf-freshness`; that is a re-capture, not a waiver.
 - [ ] Owner sign-off recorded here: `signed-off: ____________  date: __________`

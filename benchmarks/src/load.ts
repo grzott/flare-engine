@@ -28,7 +28,7 @@ import { cpus } from 'node:os';
  *      here. A low reading is therefore weak evidence of a quiet machine, while
  *      a high one is strong evidence of a noisy one. It is a smoke detector,
  *      not a proof of absence — which is why `promote` also refuses on
- *      run-to-run spread, a symptom rather than a cause.
+ *      run-to-run deviation, a symptom rather than a cause.
  */
 
 export type CpuSnapshot = {
@@ -91,26 +91,37 @@ export function measureLoad(before: CpuSnapshot, after: CpuSnapshot): LoadWindow
  * produced B29 — eight resident agent processes — because that state no longer
  * exists and was never measured with this instrument. The ceiling is calibrated
  * from below (what quiet looks like) rather than from above (what the incident
- * looked like). MAX_SPREAD_PERCENT is the threshold demonstrated against the
- * real event.
+ * looked like). The deviation check below is the threshold demonstrated
+ * against the real event.
  */
 export const MAX_FOREIGN_LOAD_PERCENT = 15;
 
 /**
- * Above this run-to-run spread, a window is too unstable to publish, whatever
- * the load reading says.
- *
- * Calibrated from both ends against recorded data. The worst legitimate row in
- * the published baseline is `physics.step 100 AABB sparse` at 9.4% — the short,
- * fast scenarios are inherently noisier — so the ceiling sits at roughly twice
- * that. B29's first bad capture had `integration.frame 1000` ranging
- * 9.16-12.78 ms across five runs, a 34% spread, which this refuses; the test
- * suite pins that case against the real recorded medians.
- *
- * It catches the symptom rather than the cause, so it works even when a
- * neighbouring process perturbs caches without burning CPU. It does not catch a
- * window that is internally tight but sitting at the wrong level, which is what
- * B29's *second* bad capture looked like — that is the load reading's job.
- * Neither check subsumes the other.
+ * How far one run's median may sit from the folded median before it counts as
+ * deviant.
  */
-export const MAX_SPREAD_PERCENT = 20;
+export const MAX_RUN_DEVIATION_PERCENT = 10;
+
+/**
+ * How many deviant runs make a window unpublishable.
+ *
+ * **Two, not one — and the reason is the statistic itself.** The published
+ * number is a median of per-run medians, which by construction absorbs one
+ * outlier in five and reports the other four. So a single bad run is not a
+ * reason to refuse: the number it produces is still right. Two is, because at
+ * that point the median is being computed across genuinely different states of
+ * the machine and no single value describes them.
+ *
+ * The first version of this check keyed on the min-max BAND instead, which is
+ * maximally sensitive to exactly the case the median already handles: it
+ * refused a `particles.update 1000 emit+integrate` window whose five runs read
+ * 16.42 / 20.20 / 16.51 / 16.46 / 16.49 µs. Thirteen of the fifteen recorded
+ * runs of that row sit inside 16.4-16.75; the row is fine and the check was
+ * wrong. A gate must be robust in the same way as the number it guards, or it
+ * fails on healthy data and gets deleted.
+ *
+ * Validated against the recorded history in both directions — it refuses B29's
+ * bad capture (three of five runs deviant) and accepts every clean window,
+ * including the noisy-but-sound particles rows.
+ */
+export const MIN_DEVIANT_RUNS = 2;

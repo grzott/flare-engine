@@ -1,5 +1,5 @@
 import type { AllocRow } from './alloc.js';
-import { MAX_FOREIGN_LOAD_PERCENT, MAX_SPREAD_PERCENT } from './load.js';
+import { MAX_FOREIGN_LOAD_PERCENT, MAX_RUN_DEVIATION_PERCENT, MIN_DEVIANT_RUNS } from './load.js';
 import type {
   MicrobenchHeap,
   MicrobenchReport,
@@ -200,14 +200,29 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   }
   if (environment.length > 0) return { ok: false, problems: environment };
 
+  // Counted against the FOLDED median rather than the min-max band: the
+  // published statistic is a median, so one outlier run is already absorbed and
+  // refusing on it would fail healthy data (load.ts). Two deviant runs mean the
+  // median itself is straddling two states.
   const unstable: string[] = [];
-  for (const suite of suites) {
-    for (const r of suite.results) {
-      if (r.bandMinNs === undefined || r.bandMaxNs === undefined || r.medianNs <= 0) continue;
-      const spread = ((r.bandMaxNs - r.bandMinNs) / r.medianNs) * 100;
-      if (spread > MAX_SPREAD_PERCENT) {
+  for (const [suiteIdx, suite] of suites.entries()) {
+    for (const [resultIdx, r] of suite.results.entries()) {
+      if (r.medianNs <= 0) continue;
+      const perRun = runs.map(
+        (run) =>
+          (run.suites[suiteIdx]?.results[resultIdx] as MicrobenchResult | undefined)?.medianNs,
+      );
+      const deviant = perRun.filter(
+        (ns) =>
+          ns !== undefined &&
+          (Math.abs(ns - r.medianNs) / r.medianNs) * 100 > MAX_RUN_DEVIATION_PERCENT,
+      );
+      if (deviant.length >= MIN_DEVIANT_RUNS) {
+        const worst = Math.max(
+          ...deviant.map((ns) => (Math.abs((ns as number) - r.medianNs) / r.medianNs) * 100),
+        );
         unstable.push(
-          `"${r.scenario}" varies ${spread.toFixed(0)}% across the folded runs (${(r.bandMinNs / 1000).toFixed(1)}-${(r.bandMaxNs / 1000).toFixed(1)} µs, ceiling ${MAX_SPREAD_PERCENT}%) — that is not a measurement, it is two different states of the machine averaged together.`,
+          `"${r.scenario}": ${deviant.length} of ${runs.length} runs sit more than ${MAX_RUN_DEVIATION_PERCENT}% from the folded median of ${(r.medianNs / 1000).toFixed(1)} µs (worst ${worst.toFixed(0)}%) — the median is straddling two states of the machine, not describing one.`,
         );
       }
     }

@@ -10247,3 +10247,74 @@ with **no** load record is refused too — "unrecorded" is not "quiet".
 carry a load reading, and the first to pass through both new refusals. Then **PERF-8**.
 
 ---
+
+## Session 269 — 2026-07-30 (scope: engine)
+
+**Goal:** PERF-11 — capture-time load guard (B29)
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/src/index.ts`
+- `benchmarks/src/load.ts`
+- `benchmarks/src/promote.ts`
+- `benchmarks/tests/promote.test.ts`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Gates (cont.)**
+- deps / changeset / perf: green
+- **perf-freshness: RED, overridden** — this round edits `benchmarks/src` again. Cleared by the
+  re-capture commit that follows.
+
+**Outcome**
+
+Follow-up to #268, forced by the guard **failing on healthy data the first time it ran for real.**
+
+The stability check refused the first capture taken after it shipped:
+`particles.update 1000 emit+integrate` reading 16.42 / 20.20 / 16.51 / 16.46 / 16.49 µs — a 23%
+min-max band against a 20% ceiling. Before touching the threshold I pulled that row's history:
+**thirteen of its fifteen recorded runs sit inside 16.4–16.75 µs.** The row is sound. The check was
+not.
+
+**The defect was that the gate was less robust than the number it guards.** The published statistic
+is a median of per-run medians, which absorbs one outlier in five by construction and reports the
+other four. Keying the gate on min–max made it maximally sensitive to exactly the case the median
+already handles. Replaced with: refuse when **two or more** runs sit further than 10% from the
+folded median. One outlier is tolerable because the median makes it so; two mean the median is
+straddling two states and no single value describes them.
+
+**Validated by replaying every recorded capture window in the log**, not by argument:
+
+| Window | Verdict | Why |
+|---|---|---|
+| B29's bad capture | **refuse** | 3 of 5 runs deviant on `integration.frame` |
+| `0b88096` (PERF-2 era) | **refuse** | 3 of 5 on `render.flush 500` — matches that era's documented 76–124 µs swing |
+| every clean window | accept | at most one deviant run each |
+
+Raising the ceiling instead would have been the easy fix and the wrong one: B29's bad capture was
+34%, so a threshold above 23% would have kept the healthy row and lost the incident it exists to
+catch. The band is still published — it is honest about how much the number moves — it is just no
+longer what the gate keys on.
+
+**Findings**
+
+- A second correction to my own numbers in two sessions. #268 recorded that the spread ceiling was
+  "calibrated against the worst legitimate row, 9.4%". That sampled **one** baseline, which happened
+  to be a quiet one for the particles rows; across all six recorded captures those rows read
+  19/1/30/25/1/23%. One sample is not a calibration.
+- Both corrections have the same shape: a threshold asserted from a single observation, then
+  contradicted by the data when it was actually queried. The load ceiling and this one are now both
+  documented with the full range they were derived from.
+
+**Frictions:** corr:2 / deny:0 / gate:3 / fixup:3 / drift:0
+
+**Next:** re-capture at this commit → promote → `bench:md`, override-free, as the closing commit.
+Then **PERF-8**.
+
+---

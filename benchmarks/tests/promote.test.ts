@@ -261,7 +261,7 @@ describe('aggregateRuns', () => {
     expect(outcome.problems.join(' ')).toContain('does not record machine load');
   });
 
-  test('refuses a window whose runs disagree too widely to be one measurement', () => {
+  test('refuses a window where several runs straddle different machine states', () => {
     // The REAL medians B29's first bad capture recorded for
     // `integration.frame 1000`, in nanoseconds, taken from history.ndjson.
     // Pinning the actual event rather than a made-up spread is the difference
@@ -270,7 +270,16 @@ describe('aggregateRuns', () => {
     const outcome = aggregateRuns(incident.map((ns) => runAt(ns)));
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
-    expect(outcome.problems.join(' ')).toContain('two different states of the machine');
+    expect(outcome.problems.join(' ')).toContain('straddling two states of the machine');
+  });
+
+  test('accepts a window with ONE outlier run — the median already absorbs it', () => {
+    // The real `particles.update 1000 emit+integrate` window that the first,
+    // band-based version of this check wrongly refused: four runs at ~16.5 µs
+    // and one at 20.2. Thirteen of fifteen recorded runs of that row sit inside
+    // 16.4-16.75, so the row is sound and the gate was not.
+    const window = [16_420, 20_200, 16_510, 16_460, 16_490];
+    expect(aggregateRuns(window.map((ns) => runAt(ns))).ok).toBe(true);
   });
 
   test('accepts the clean capture that replaced it', () => {

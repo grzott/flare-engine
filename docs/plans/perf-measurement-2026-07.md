@@ -707,7 +707,7 @@ a noisy neighbour.
 | Check | Catches | Misses |
 |---|---|---|
 | foreign load > 15% | the cause — a contended machine | a resident process that pollutes cache without burning CPU |
-| run-to-run spread > 20% | the symptom, whatever the cause | a window that is internally tight but at the wrong level |
+| ≥2 runs >10% from the folded median | the symptom, whatever the cause | a window that is internally tight but at the wrong level |
 
 B29 produced one capture of each kind, which is why both exist. A run with **no** load record is
 also refused: "unrecorded" is not "quiet", and every pre-PERF-11 capture is unrecorded.
@@ -715,13 +715,24 @@ also refused: "unrecorded" is not "quiet", and every pre-PERF-11 capture is unre
 **Both thresholds are calibrated against measurement, not chosen.** Foreign load on the reference
 machine in ordinary working state (editor + agent session) read 4.36 / 4.38 / 4.51 / 5.43 percent
 across four captures — the realistic floor is ~5%, not zero — so the ceiling sits at ~3× that. The
-spread ceiling sits at ~2× the worst legitimate row in the published baseline
-(`physics.step 100 AABB sparse`, 9.4% — short scenarios are inherently noisier) and refuses B29's
-first bad capture at 34%. **Stated limit:** the load ceiling was calibrated from below only. The
-machine state that produced B29 no longer exists and was never measured with this instrument, so
-the load threshold is *not* validated against the real event — the spread threshold is, and the test
-suite pins it using the actual recorded medians (9.16/9.91/10.54/11.97/12.78 ms) rather than a
-made-up spread.
+**Stated limit:** the load ceiling was calibrated from below only. The machine state that produced
+B29 no longer exists and was never measured with this instrument, so the load threshold is *not*
+validated against the real event — the stability threshold is, and the test suite pins it using the
+actual recorded medians (9.16/9.91/10.54/11.97/12.78 ms) rather than a made-up spread.
+
+**The stability criterion counts runs deviating from the FOLDED MEDIAN, not the min-max band — a
+correction forced by the guard failing on healthy data the first time it ran for real.** The band
+version refused a `particles.update 1000 emit+integrate` window reading
+16.42 / 20.20 / 16.51 / 16.46 / 16.49 µs. Thirteen of that row's fifteen recorded runs sit inside
+16.4-16.75: the row was sound and the check was not. **A median of per-run medians absorbs one
+outlier in five by construction**, so refusing on a single one fails data the published number
+already handles correctly, while two deviant runs mean the median is straddling two states. The
+gate now has the same robustness as the statistic it guards.
+
+**Replayed over every recorded capture window**, as validation in both directions: it refuses B29's
+bad capture (3 of 5 runs deviant) and the `0b88096` PERF-2-era window (3 of 5 on
+`render.flush 500`, consistent with that era's documented 76-124 µs swing), and accepts every clean
+window — each of which has at most one deviant run.
 
 The published doc now carries the foreign-load figure beside the CPU model, and states both ceilings
 in "What these numbers do not measure".

@@ -14,7 +14,8 @@ import { integrationBenches } from './integration.bench.js';
 import {
   type LoadWindow,
   MAX_FOREIGN_LOAD_PERCENT,
-  MAX_SPREAD_PERCENT,
+  MAX_RUN_DEVIATION_PERCENT,
+  MIN_DEVIANT_RUNS,
   measureLoad,
   sampleCpu,
 } from './load.js';
@@ -381,7 +382,7 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     '- **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.',
   );
   lines.push(
-    `- **Every number here was captured on a machine that was ${capture.foreignLoadPercent === undefined ? 'not measured for' : `${capture.foreignLoadPercent.toFixed(1)}% busy with`} other work.** \`bench:promote\` refuses a window above ${MAX_FOREIGN_LOAD_PERCENT}% foreign load, or one whose runs disagree by more than ${MAX_SPREAD_PERCENT}%. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).`,
+    `- **Every number here was captured on a machine that was ${capture.foreignLoadPercent === undefined ? 'not measured for' : `${capture.foreignLoadPercent.toFixed(1)}% busy with`} other work.** \`bench:promote\` refuses a window above ${MAX_FOREIGN_LOAD_PERCENT}% foreign load, or one where ${MIN_DEVIANT_RUNS} or more runs sit further than ${MAX_RUN_DEVIATION_PERCENT}% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).`,
   );
   lines.push(
     `- **The table cannot show the 2026-07-29 dev-flag fix, because the bench has always declared \`__DEV__\`.** Until that date the engine read the flag as a bare identifier behind a \`typeof\` guard, once per sprite per transform pass. Under **JSC** — Bun, and Safari/iOS WebKit — an unresolvable global costs ~270 ns per evaluation, so a consumer who never defines \`__DEV__\` was paying it: \`render.flush 1000 / 1 atlas\` measured 412-450 µs in that configuration against 56-88 µs after the fix, the same band the declared configuration occupies. React Native always defines the flag and was never affected. **V8 (Node, Chrome) and SpiderMonkey were never measured** — the ~270 ns figure is JSC-only and must not be read as a cross-engine claim.`,

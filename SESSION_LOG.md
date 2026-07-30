@@ -10314,7 +10314,27 @@ longer what the gate keys on.
 
 **Frictions:** corr:2 / deny:0 / gate:3 / fixup:3 / drift:0
 
-**Next:** re-capture at this commit → promote → `bench:md`, override-free, as the closing commit.
-Then **PERF-8**.
+**Closing capture (commit 2)** — 5 runs at `b1b21c1`, clean tree, foreign load 3.0-4.6%, and the
+first baseline in this repo to pass through both new refusals rather than around them. No override.
+
+It also reproduced the exact case that broke the first version of the gate: `particles.update 1000
+emit+integrate` came out 16.5 / **20.3** / 16.4 / 16.5 / 16.5 µs — one outlier again. The band
+criterion would have refused it a second time; the median criterion accepted it and published
+16.5 µs, which is the number thirteen of the row's now-twenty recorded runs agree on. The band is
+still shown (16.4-20.3), so the reader can see the row is occasionally noisy.
+
+| Scenario | published | band | control? |
+|---|---:|---|---|
+| `ecs.step 1000` | 23.2 µs | 22.9-23.5 | control row, stable |
+| `render.flush 1000 / 1 atlas` | 55.6 µs | 54.5-56.1 | |
+| `particles.update 1000 emit+integrate` | 16.5 µs | 16.4-20.3 | one outlier, absorbed |
+| `integration.frame 1000 + 300p` | 12.62 ms | 12.31-12.71 | |
+
+Gate green end to end including `check:perf-bytes` (41 packages) and `check:perf-freshness` with the
+doc stamp matching `b1b21c1f7ad8`.
+
+**Next:** **PERF-8** (dashboard hardening + root `PERFORMANCE.md`) — the last pre-freeze-preferred
+row. PERF-4b, PERF-6, PERF-7 and PERF-9 are post-freeze or calendar-dependent. With PERF-1→5 plus
+10 and 11 done, the arc's pre-freeze must is complete.
 
 ---

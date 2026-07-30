@@ -362,10 +362,10 @@ findings were each independently refutation-tested; everything below survived.
 | **B19** | ~~major~~ **CLOSED 2026-07-29 (PERF-5)** | **release.yml runs a parallel gate subset** — a ci.yml-only perf gate cannot block a publish. Every perf gate lands in *both* workflows, plus verify.sh *after* build, engine/mixed scope only (test runs before build there; game scope skips build). **Done as specified**, minus `check:perf-bytes` in verify.sh (~69 s to pack 41 packages; CI and release both run it). | release.yml, verify.sh |
 | **B20** | major | **PT harness fails-green class** to fix before the P3 lift: regression-check exits 0 on zero rows; a >7-day gap resets the baseline to current (weekly cadence self-pins to ratio 1.0 — window must be ≥4× cadence or last-N-runs); no device×scenario×metric matrix validation; the 5% ratio gate has no absolute floor (its only real firing was 5 "regressions" on µs-scale noise, itself masked); zero-combo runs exit green; scenario ids live in three divergent namespaces (dispatch enum ≠ flow stems ≠ ndjson); debug artifacts were never uploaded (path outside workspace + `if-no-files-found: warn`). | PT regression-check.ts:32,:136; bench-cloud.sh:311-336; perf-bench.yml:43 |
 | **B21** | major | **B3 revive protocol reordered** (root cause reattributed, §9): verify TestingBot account/plan/device-catalog names FIRST → fix artifact upload so the next failure leaves evidence → one single-device `workflow_dispatch` → only then fresh APK at HEAD → weekly cron with staleness gate, never `continue-on-error`. | PT perf-bench.yml:13-29 + gh run logs |
-| **B22** | major | **results/device.json is a third stale published surface** (generated 2026-04-22, one Galaxy A54 entry) rendered by the dashboard /device route; its documented refresh pipeline (triple-tap + "BENCH FPS CSV" logcat markers) no longer exists anywhere in PT. §1–§8 never mention it. | device.json:2, dashboard README.md:39-52 |
+| **B22** | ~~major~~ **ADDRESSED 2026-07-30 (PERF-8)** | **results/device.json is a third stale published surface** (generated 2026-04-22, one Galaxy A54 entry) rendered by the dashboard /device route; its documented refresh pipeline (triple-tap + "BENCH FPS CSV" logcat markers) no longer exists anywhere in PT. §1–§8 never mention it. | device.json:2, dashboard README.md:39-52 |
 | **B23** | major | **`createBenchSession` has zero consumers** in benchmarks/ or PT while api-specs ships it as "the backbone for deterministic bench scenarios"; P3 "reuse bench-mode.ts" would hand-roll seeding a third time (PT uses its own mulberry32; benchmarks uses SeededRNG directly). Consolidate or correct api-specs before the flip. | packages/testing/src/bench-session.ts:25, api-specs.md:434 |
 | **B24** | ~~blocker~~ **CLOSED 2026-07-29 (PERF-5)** | **§6's freshness items had no mechanical checker in any phase** — pull-not-push reapplied to the gate itself. The keystone control is `check:perf-freshness` in PR CI (the only runner that provably always runs): fail when a suite's capture date predates the newest commit under the packages it measures. Same liveness-canary pattern as `check:readme`. **Shipped comparing reachability rather than dates** — `git log <capture-sha>..HEAD -- <measured paths>` (§11.5). | check-perf-freshness.mjs |
-| **B25** | major | **Dashboard fails-green class**: unchecked `as T` cast + hand-duplicated types (dead `@flare-engine/benchmarks` dep); headline substring match → `return null` (schema drift renders NaN or silently drops cards while CI stays green); /integration undated and renders B2 noise with good/bad colors; no staleness logic anywhere; deploy target is dead infra (README: GH Pages beside nonexistent `apps/site` via the removed `next export`); basePath/absolute-nav/root-escaping-link deploy blockers. | data.ts:6-11, page.tsx:41,:74, integration/page.tsx:29-31, README.md:58 |
+| **B25** | ~~major~~ **CLOSED 2026-07-30 (PERF-8)** | **Dashboard fails-green class**: unchecked `as T` cast + hand-duplicated types (dead `@flare-engine/benchmarks` dep); headline substring match → `return null` (schema drift renders NaN or silently drops cards while CI stays green); /integration undated and renders B2 noise with good/bad colors; no staleness logic anywhere; deploy target is dead infra (README: GH Pages beside nonexistent `apps/site` via the removed `next export`); basePath/absolute-nav/root-escaping-link deploy blockers. | data.ts:6-11, page.tsx:41,:74, integration/page.tsx:29-31, README.md:58 |
 | **B26** | ~~lead~~ **WITHDRAWN 2026-07-29** | **Not a zero-alloc violation — a warm-up artifact.** The reported +15.7–33.4 KB/frame was measured after a 30-frame warm-up and one forced GC, which snapshots the heap *below* the plateau its allocation rate implies; the climb to that plateau was then divided by the frame count and published as retained growth. Re-measured with a 2000-frame warm-up (PERF-4a, two independent probes): −0.2 to +2.5 KB/frame, and every structural invariant flat across 2000 frames — `SpriteBatch.allocCount` frozen at N after frame 1, `ParticlePool.created` 0, broadphase size constant. Under JSC `heapUsed` reports MarkedSpace *footprint*, never live bytes, so it cannot carry a retention claim at all; the exact counters now do (§11.4a). **Real finding underneath:** the plateau's height is driven by `CollisionWorld`'s reused pair-`Set` — see B27. | re-measured 2026-07-29, PERF-4a |
 | **B27** | major | **`CollisionWorld`'s "no per-frame allocation" pair buffers are inverted under JSC.** `pairBufA`/`pairBufB` swapped with `clear()` + refill (collision-world.ts:56-60,:133-135) hold ~49 MB heap / ~227 MB RSS after 2500 frames × 564 keys, versus ~1 MB / ~177 MB for a fresh `new Set()` per frame and 0.3 MB for a reused array — the reuse costs ~38× the footprint it was written to save. Two smaller siblings in the same loop: `SpatialIndex.update` does `entries.find(closure)` per entity per frame (spatial-index.ts:49-51 — a closure allocation *and* O(n²) per frame on top of the brute-force broadphase), and `for (const [a, b] of this.entries)` (collision-world.ts:137) materialises a 2-element array per entity per frame while `CollisionEntry` already carries `.entity`. Measured under Bun/JSC only — **verify on Hermes before changing engine code**, since RN is the primary target. Row: §11.9. | measured 2026-07-29, PERF-4a probes |
 | **B28** | ~~major~~ **CLOSED 2026-07-29 (PERF-10)** | **The `typeof __DEV__` guard costs ~270 ns per evaluation wherever `__DEV__` is undeclared** — JSC has no inline cache for an unresolvable global identifier. Measured on this machine, 1e6 evaluations: undeclared **272.5 ns**, declared-false **0.7 ns**, declared-true **1.2 ns**, and a `globalThis` property read of an *absent* property **0.46 ns**. PERF-3 put that expression inside `fillXforms` (frame-renderer.ts:413,:429), i.e. once per sprite per transform pass — 9x that under an outline effect — and `Pool.release` (pool.ts:78) has had it once per released object since before this arc. React Native always defines `__DEV__`, so RN builds are unaffected; **web/CanvasKit bundles and any Node/Bun consumer are not**, unless their bundler defines it. Cost there: ~0.27 ms/frame at 1000 sprites, ~2.4 ms under outline. It also inflated this arc's own first re-capture ~7x until PERF-4a pinned the flag. Fix is a `globalThis` property read — equally toggleable at runtime, ~400x cheaper when absent. **Done:** `fillXforms` and `Pool.release()` converted; undeclared-configuration cost fell from 412–450 µs to 56–88 µs on `render.flush 1000 / 1 atlas`, matching the declared configuration (§11.10). | measured 2026-07-29, PERF-4a |
@@ -802,7 +802,67 @@ apps/bench-dashboard device reader, docs/plans/todo.md (parked particle-storm ga
 **Exit:** a per-device engine frame-cost table free of PT content; a silent zero-row week
 turns the lane red.
 
-### §11.8 PERF-8 — publish: dashboard hardening + PERFORMANCE.md (P5) [MT]
+### §11.8 PERF-8 — publish: dashboard hardening + PERFORMANCE.md (P5) [MT] — DONE 2026-07-30
+
+**Shipped.** New `apps/bench-dashboard/app/lib/schema.ts` (validating parser that THROWS),
+`app/components/CaptureBanner.tsx`, root `PERFORMANCE.md`, a scoped turbo task, and a rewritten
+dashboard README. B25 closed.
+
+**The dashboard can no longer fail green.** It parsed `JSON.parse(...) as T` and indexed into
+whatever came back, so schema drift rendered `NaN`, and a headline lookup that missed returned
+`null` and silently dropped the card — a quarter of the overview page could vanish and the result
+looked deliberate. Every field is now validated and every failure throws. Because this is a static
+export, a throw is a **failed build**, not a broken page served to a reader. Verified by mutation,
+each against a real `next build`:
+
+| Planted defect | Result |
+|---|---|
+| `schemaVersion` bumped to 3 | refused, naming both versions |
+| headline scenario renamed | refused, listing every available scenario |
+| heap row missing `resolutionBytesPerFrame` | refused, naming the row and field |
+| `DEPLOY=1` + 210-day-old capture | refused |
+| same stale capture, no `DEPLOY` | builds (local exploration still works) |
+| fresh capture + `DEPLOY=1` | builds |
+
+**`DEPLOY=1` was silently inert until turbo declared it** — the same strict-env-mode trap that made
+`FLARE_BENCH_ALLOW_STALE` unreachable in PERF-1. The mutation pass is the only reason it was caught:
+the assert was written, looked correct, and did nothing. It is now declared on the scoped task,
+which also lists `benchmarks/results/*.json` as inputs so a cache hit cannot redeploy stale HTML
+over a fresh capture.
+
+**Staleness is on every page**, not just the overview: capture date, commit, runs folded, `__DEV__`
+state, machine, foreign load, and the age in days — amber past 14, red past 30. The device page gets
+its own permanent red banner, because its data is not merely old but **unrefreshable** (B22): the
+pipeline that produced it no longer exists, which is a different statement from "stale" and needed
+saying differently.
+
+**Heap section reworked** to the PERF-4a schema. The old table drew a red or green bar sized by the
+raw delta, colouring GC-scheduling noise as an allocation regression (B2). It now shows warm-up
+frames, the per-frame delta rendered as `< ±N B` when it is under the instrument's own resolution,
+that resolution as its own column, the plateau, and convergence.
+
+**Deploy target: decided as NONE, deliberately.** The recorded target was GitHub Pages "alongside
+`apps/site`" via `next export` — `apps/site` has never existed in this repository and `next export`
+was removed from Next several majors ago. It described infrastructure that was never built. The
+dashboard is a local tool; the quotable numbers live in `docs/references/benchmarks.md` and
+`PERFORMANCE.md`, both behind CI gates. Standing up a publishing surface with no gate behind it,
+five weeks before a freeze, would add the exact problem this arc exists to remove. The pieces for a
+future deploy are in place and what is still missing (`basePath`, a redeploy trigger) is written
+down. **Owner may overrule — this is a judgement call, not a technical constraint.**
+
+**Root `PERFORMANCE.md`** leads with what is NOT measured, iOS first: never measured on any iOS
+device, ever; web/CanvasKit never benchmarked; the Android capture stale and unrefreshable; eleven
+packages with per-frame hot paths and no coverage at all; no cold-start, memory-ceiling, GC-pause or
+multi-core numbers anywhere. Three claims in its first draft were corrected against the data before
+it shipped — the iOS device-matrix detail (that matrix moved to another repository), the device
+capture date (2026-04-22 in this repo, not PT's 2026-06-12 last row), and the coverage count.
+
+**No re-capture needed:** the row touches no measured source, so `check:perf-freshness` stayed green
+throughout — the first row in this arc where that was true.
+
+---
+
+Original spec.
 
 Kills B25. Files: apps/bench-dashboard/**, PERFORMANCE.md (new, root), turbo.json
 (dashboard build inputs), docs/references/benchmarks.md.

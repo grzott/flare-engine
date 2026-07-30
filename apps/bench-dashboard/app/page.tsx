@@ -1,30 +1,33 @@
+import { CaptureBanner } from './components/CaptureBanner';
 import { HeadlineCard } from './components/HeadlineCard';
-import { getMicrobenchReport } from './lib/data';
+import { assertPublishable, getMicrobenchReport } from './lib/data';
+import { requireScenario } from './lib/schema';
 import { fmtTime } from './lib/units';
-
-function findResult(
-  suites: ReturnType<typeof getMicrobenchReport>['suites'],
-  suiteTitle: string,
-  scenarioSubstr: string,
-) {
-  const suite = suites.find((s) => s.title === suiteTitle);
-  return suite?.results.find((r) => r.scenario.includes(scenarioSubstr));
-}
 
 export default function OverviewPage() {
   const report = getMicrobenchReport();
-  const { suites, generated, runtime, platform } = report;
+  assertPublishable(report);
 
-  const ecsStep1k = findResult(suites, 'ECS', '1000 entities');
-  const particlesInteg1k = findResult(suites, 'Particles', '1000 integrate-only');
-  const renderFlush1k = findResult(suites, 'Render', '1000 sprites / 1 atlas');
-  const integFrame1k = findResult(suites, 'Integration', '1000 entities');
-
+  // `requireScenario` throws when a headline row is missing. The previous
+  // version silently dropped the card, so a renamed scenario would remove a
+  // quarter of this page and leave it looking deliberate (B25).
   const cards = [
-    { result: ecsStep1k, caption: 'ECS step — 1 000 entities' },
-    { result: particlesInteg1k, caption: 'Particles integrate — 1 000 alive' },
-    { result: renderFlush1k, caption: 'Render flush — 1 000 sprites / 1 atlas' },
-    { result: integFrame1k, caption: 'Integration frame — 1 000 entities' },
+    {
+      result: requireScenario(report, 'ECS', '1000 entities'),
+      caption: 'ECS step — 1 000 entities',
+    },
+    {
+      result: requireScenario(report, 'Particles', '1000 integrate-only'),
+      caption: 'Particles integrate — 1 000 alive',
+    },
+    {
+      result: requireScenario(report, 'Render', '1000 sprites / 1 atlas'),
+      caption: 'Render flush — 1 000 sprites / 1 atlas',
+    },
+    {
+      result: requireScenario(report, 'Integration', '1000 entities'),
+      caption: 'Integration frame — 1 000 entities',
+    },
   ];
 
   return (
@@ -32,51 +35,41 @@ export default function OverviewPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-100">Performance Overview</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Generated {generated} &middot; {runtime} &middot; {platform}
+          Off-device microbenchmarks — median of {report.runs ?? 1} independent run
+          {report.runs === 1 ? '' : 's'}
         </p>
       </div>
 
+      <CaptureBanner report={report} />
+
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {cards.map(({ result, caption }) => {
-          if (!result) return null;
           const { value, unit } = fmtTime(result.medianNs);
-          return <HeadlineCard key={caption} value={value} unit={unit} caption={caption} />;
+          const band =
+            result.bandMinNs === undefined || result.bandMaxNs === undefined
+              ? undefined
+              : `${fmtTime(result.bandMinNs).value}–${fmtTime(result.bandMaxNs).value} ${fmtTime(result.bandMaxNs).unit}`;
+          return (
+            <HeadlineCard key={caption} value={value} unit={unit} caption={caption} band={band} />
+          );
         })}
-      </div>
-
-      <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-5 space-y-2">
-        <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wide">
-          Build metadata
-        </h2>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-slate-500">Runtime</dt>
-            <dd className="font-mono text-slate-200">{runtime}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Platform</dt>
-            <dd className="font-mono text-slate-200">{platform}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Generated</dt>
-            <dd className="font-mono text-slate-200">{generated}</dd>
-          </div>
-        </dl>
       </div>
 
       <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-5">
         <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-3">
-          Reference
+          What these numbers are not
         </h2>
-        <p className="text-sm text-slate-400">
-          Full benchmark report:{' '}
-          <a
-            href="../../docs/references/benchmarks.md"
-            className="text-amber-400 hover:text-amber-300 underline underline-offset-2"
-          >
-            docs/references/benchmarks.md
-          </a>
-        </p>
+        <ul className="text-sm text-slate-400 space-y-1 list-disc list-inside">
+          <li>
+            Pure JS costs under Bun on one desktop machine — no Skia rasterization, no GPU, no
+            bridge, no device.
+          </li>
+          <li>No web/CanvasKit numbers exist yet; that backend has never been benchmarked.</li>
+          <li>
+            iOS has never been measured at all. <span className="font-mono">PERFORMANCE.md</span> at
+            the repository root lists every unmeasured surface.
+          </li>
+        </ul>
       </div>
     </div>
   );

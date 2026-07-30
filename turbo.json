@@ -10,6 +10,20 @@
     "test": {
       "dependsOn": ["build"]
     },
+    "@flare-engine-apps/bench-dashboard#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["out/**", ".next/**", "!.next/cache/**"],
+      "inputs": [
+        "app/**",
+        "package.json",
+        "tsconfig.json",
+        "next.config.ts",
+        "postcss.config.mjs",
+        "$TURBO_ROOT$/benchmarks/results/microbench.json",
+        "$TURBO_ROOT$/benchmarks/results/device.json"
+      ],
+      "env": ["DEPLOY"]
+    },
     "@flare-engine/benchmarks#test": {
       "dependsOn": ["^build"],
       "inputs": ["src/**", "tests/**", "package.json", "tsconfig.json", "results/**"]

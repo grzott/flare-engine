@@ -10338,3 +10338,90 @@ row. PERF-4b, PERF-6, PERF-7 and PERF-9 are post-freeze or calendar-dependent. W
 10 and 11 done, the arc's pre-freeze must is complete.
 
 ---
+
+## Session 270 — 2026-07-30 (scope: engine)
+
+**Goal:** PERF-8 — dashboard hardening + PERFORMANCE.md
+
+**Touched files**
+- `PERFORMANCE.md`
+- `apps/bench-dashboard/README.md`
+- `apps/bench-dashboard/app/components/CaptureBanner.tsx`
+- `apps/bench-dashboard/app/components/HeadlineCard.tsx`
+- `apps/bench-dashboard/app/device/page.tsx`
+- `apps/bench-dashboard/app/integration/page.tsx`
+- `apps/bench-dashboard/app/lib/data.ts`
+- `apps/bench-dashboard/app/lib/schema.ts`
+- `apps/bench-dashboard/app/lib/types.ts`
+- `apps/bench-dashboard/app/micro/page.tsx`
+- `apps/bench-dashboard/app/page.tsx`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Gates (cont.)**
+- deps / changeset / perf: green
+- **perf-freshness: GREEN, no override** — the first row in this arc that needed no re-capture,
+  because it touches no measured source.
+
+**Outcome**
+
+Closes B25, addresses B22, and **completes Arc PERF's pre-freeze work.**
+
+The dashboard did `JSON.parse(...) as T` and indexed into whatever came back, so schema drift
+rendered `NaN` and a headline lookup that missed returned `null` and dropped the card — a quarter
+of the overview page could vanish and the result looked deliberate, with CI green throughout. New
+`app/lib/schema.ts` validates every field and throws. Because this is a static export, a throw is a
+**failed build**, not a broken page served to a reader.
+
+**Six mutations, each against a real `next build`:**
+
+| Planted defect | Result |
+|---|---|
+| `schemaVersion` bumped to 3 | refused, naming both versions |
+| headline scenario renamed | refused, listing every available scenario |
+| heap row missing `resolutionBytesPerFrame` | refused, naming row and field |
+| `DEPLOY=1` + 210-day-old capture | refused |
+| same stale capture, no `DEPLOY` | builds — local exploration still works |
+| fresh capture + `DEPLOY=1` | builds |
+
+**Findings**
+
+- **`DEPLOY=1` was silently inert, and only the mutation pass caught it.** Turbo runs tasks in
+  strict env mode and strips any variable the task does not declare — the identical trap that made
+  `FLARE_BENCH_ALLOW_STALE` unreachable in PERF-1. The assert was written, read correctly, and did
+  nothing. Fixed by a scoped turbo task declaring `DEPLOY`, which also lists
+  `benchmarks/results/*.json` as inputs so a cache hit cannot redeploy stale HTML over a fresh
+  capture.
+- `require.resolve` with a variable specifier is "too dynamic" for Next's bundler. Switched to
+  static JSON imports through the package exports, which is better anyway: the data is now in the
+  module graph, so a changed capture is a changed build input rather than something the cache has
+  to be told about.
+- **Deploy target decided as NONE, deliberately** — the recorded target was GitHub Pages "alongside
+  `apps/site`" via `next export`; `apps/site` has never existed here and `next export` was removed
+  from Next several majors ago. It described infrastructure that was never built. The quotable
+  numbers live in `benchmarks.md` and `PERFORMANCE.md`, both behind CI gates; adding an ungated
+  publishing surface five weeks before a freeze would add the exact problem this arc removes. The
+  remaining pieces for a future deploy (`basePath`, redeploy trigger) are written down.
+  **This is a judgement call and the owner may overrule it.**
+- The device page gets a permanent red banner rather than the generic staleness one: its data is
+  **unrefreshable**, not merely old, and those are different statements (B22).
+- **Three claims in `PERFORMANCE.md`'s first draft were wrong and corrected against the data before
+  it shipped** — the iOS device-matrix detail (that matrix moved to the PT repo), the device
+  capture date (2026-04-22 in this repo, not PT's 2026-06-12 last data row), and the package
+  coverage count. Writing "what we do not measure" is exactly where invented specifics are most
+  tempting and most damaging.
+
+**Frictions:** corr:0 / deny:0 / gate:1 / fixup:2 / drift:0
+
+**Next:** Arc PERF's pre-freeze work is done. Remaining arc rows (PERF-4b, 6, 7, 9) are post-freeze
+or calendar-dependent. The queue reverts to Arc OSS, where the only required rows left are
+**OSS-F4** (date-bound Oct 2–5) and **OSS-H1** (the freeze itself, Oct 5, owner-paired), plus an
+optional P2 cut-line of seven feature rows.
+---

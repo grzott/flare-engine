@@ -72,8 +72,56 @@ variable a task does not list.
 
 Then rebuild the dashboard to see the new device rows.
 
+## Data loading and schema
+
+`app/lib/data.ts` **imports** the two result JSONs through the `@flare-engine/benchmarks` package
+exports rather than reading them from a relative path. That makes the workspace dependency real,
+puts the data in the module graph (a changed capture is a changed build input), and drops the old
+assumption that the build was invoked from this directory.
+
+Everything then goes through `app/lib/schema.ts`, which **validates and throws**. It replaced an
+unchecked `JSON.parse(...) as T`, and the difference is the point: this is a static export, so a
+schema mismatch now fails the build instead of shipping a page that renders `NaN`, or silently
+drops a headline card whose scenario was renamed. If you change the capture schema, this file is
+what tells you — loudly.
+
+## Staleness
+
+Every page carries a `CaptureBanner`: capture date, commit, runs folded, `__DEV__` state, machine
+and foreign load, plus the age in days — amber past 14, red past 30. Two of this repo's three
+published perf surfaces went stale for months without anyone noticing; a bare "generated <date>"
+is not enough, because nobody subtracts dates while reading a chart.
+
+For a real publish, build with `DEPLOY=1`:
+
+```bash
+DEPLOY=1 bun run build          # fails if the capture is older than 30 days
+```
+
+`DEPLOY` is declared in the root `turbo.json` for this task — turbo runs in strict env mode and
+drops any variable a task does not list, so an undeclared assert would have been silently inert.
+
+## Deployment
+
+**There is no deploy target, deliberately.** The note that used to sit here pointed at GitHub
+Pages "alongside `apps/site`" via `next export` — `apps/site` has never existed in this
+repository, and `next export` was removed from Next several major versions ago. It described
+infrastructure that was never built.
+
+This is a **local tool**. The published, quotable numbers live in
+[`docs/references/benchmarks.md`](../../docs/references/benchmarks.md) and
+[`PERFORMANCE.md`](../../PERFORMANCE.md), both of which are generated or maintained behind gates
+that run in CI. The dashboard is for exploring a capture interactively, and standing up a deploy
+pipeline for it before the October flip would add a publishing surface with no gate behind it —
+which is the problem this arc exists to fix, not a solution to it.
+
+If that decision changes, the pieces are in place: `output: 'export'` produces a static `out/`,
+`DEPLOY=1` refuses stale data, and the turbo task lists the result JSONs as inputs so a cached
+build cannot serve stale HTML over a fresh capture. What is still missing is a `basePath` for
+whatever subdirectory it lands under, and a redeploy trigger on result-JSON changes.
+
 ## Notes
 
-- The dashboard imports types from `@flare-engine/benchmarks` (workspace dep) but reads the JSON files directly from disk via relative paths. If you move `benchmarks/results/`, update `app/lib/data.ts`.
 - Private workspace — ignored by Changesets, never published.
-- Deployment target for launch is GitHub Pages alongside `apps/site` (Phase 11.12). Static export: `next build` + `next export` (config already `output: 'export'` in `next.config.ts`).
+- No test suite. The schema guard is exercised by the build itself: a malformed capture fails
+  `bun run build`, which CI runs.

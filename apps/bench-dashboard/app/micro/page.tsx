@@ -1,11 +1,14 @@
+import { CaptureBanner } from '../components/CaptureBanner';
 import { SuiteChart } from '../components/SuiteChart';
 import { SuiteTable } from '../components/SuiteTable';
-import { getMicrobenchReport } from '../lib/data';
+import { assertPublishable, getMicrobenchReport } from '../lib/data';
 
 const SUITE_ORDER = ['ECS', 'Particles', 'Render', 'Physics', 'Integration'];
 
 export default function MicroPage() {
-  const { suites, generated, runtime, platform } = getMicrobenchReport();
+  const report = getMicrobenchReport();
+  assertPublishable(report);
+  const { suites } = report;
 
   const ordered = SUITE_ORDER.flatMap((title) => {
     const s = suites.find((x) => x.title === title);
@@ -19,9 +22,11 @@ export default function MicroPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-100">Microbenchmarks</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {generated} &middot; {runtime} &middot; {platform}
+          Per-suite medians with their run-to-run spread
         </p>
       </div>
+
+      <CaptureBanner report={report} />
 
       {all.map((suite) => (
         <section key={suite.title} className="space-y-4">

@@ -65,7 +65,7 @@ the decisions, the determinism correction (§4), and the allocation-site invento
 | `apps/web/package.json` | Modify: `test` script, Vitest devDeps; Phase 2 adds the engine dep |
 | `turbo.json` | Modify: a `test` task |
 | `apps/web/src/components/page-collapse/collapse-engine.test.ts` | Create: the determinism gate |
-| `apps/web/src/components/page-collapse/page-collapse.tsx:585-588` | Modify: trigger copy |
+| `apps/web/src/components/page-collapse/page-collapse.tsx` | Modify: trigger copy — the collapse `<button>`'s `aria-label` **and** `title`, plus the badge `<Link>`'s text and `aria-label`. Three claim sites; find them by element, not line number |
 | `apps/web/src/lib/dynamics/**` | Delete in Phase 2 |
 | `apps/web/src/components/page-collapse/collapse-engine.ts:17` | Modify in Phase 2: the import |
 | `docs/reference-collapse-flare-engine-integration.md` | Modify: stale line ref, then mark executed |
@@ -99,10 +99,29 @@ the way `packages/physics/tests/*` already does.
 
 ## Phase 0 — now, `grzott-portfolio` only
 
+> **EXECUTED 2026-08-13**, on `grzott-portfolio` `main` (commits `b2313aa`..`dc57acd`).
+>
+> **The load-bearing result: the bake is deterministic under a fixed seed.** Task 2 Step 2's STOP
+> condition did not fire, so the migration contract's central claim holds and Phases 1-2 are not
+> invalidated. The solver was independently confirmed to carry no hidden entropy — no `Math.random`,
+> no `Date.now()`, no `Set`/`Map` iteration in the step path — so the injected `rng` really is the
+> sole non-determinism source.
+>
+> Corrections found during execution are marked **Corrected 2026-08-13** inline below. Read them:
+> three of them change what a task should do, and one changes what Task 10 can verify.
+
 ### Task 1: Stand up Vitest in the portfolio
 
-The portfolio has **no test infrastructure today** — no runner, no test files, and a gate of lint +
-typecheck + build only. This task creates the lane; Task 2 puts the first test in it.
+**Corrected 2026-08-13.** The original text claimed the portfolio had "no test infrastructure today
+— no runner, no test files". That was **false**, and the error is load-bearing: `apps/cms` already
+ships `"test": "node --test tests/*.test.mjs"` with two schema-drift suites — one of which was
+*failing* at the branch point (`cross_posts` written by the ingest route but absent from the
+`PostRow` TS type). Adding the root `test` script below therefore turned root `pnpm test` red on
+first use. It has since been fixed in the portfolio (the three 2026-04-30 syndication columns were
+missing from `PostRow`), so root `pnpm test` is green again — but do not re-derive the premise.
+
+What is true: **`apps/web` had no test runner and no test files.** This task creates that lane;
+Task 2 puts the first test in it.
 
 **Files:**
 - Create: `apps/web/vitest.config.ts`
@@ -110,7 +129,10 @@ typecheck + build only. This task creates the lane; Task 2 puts the first test i
 - Modify: `apps/web/package.json`, `turbo.json`
 
 **Interfaces:**
-- Produces: a working `pnpm test` at the repo root and in `@grzott/web`. Task 2 depends on it.
+- Produces: a working `pnpm test` in `@grzott/web`. Task 2 depends on it. (**Corrected
+  2026-08-13:** originally claimed a working `pnpm test` "at the repo root" too — unachievable as
+  written, because the root script fans out to `apps/cms`, whose suite was red. Scope the claim to
+  `@grzott/web`; the green scoped command is `pnpm test --filter @grzott/web`.)
 
 - [ ] **Step 1: Install the runner**
 
@@ -213,11 +235,18 @@ pnpm lint
 Biome lints the whole tree. If test-file idioms trip a rule, fix the config deliberately rather than
 sprinkling suppressions.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Emit the commit block — do not run it**
 
-```bash
+**Corrected 2026-08-13:** this step used to run `git add` / `git commit`, contradicting this
+document's own closing note ("Do not run `git add` / `commit` / `push` from a builder agent") and
+`grzott-portfolio`'s `CLAUDE.md` ("Propose only — never run `git add`/`git commit`/`git push`. The
+human pastes."). Emit the block for the owner to paste. Note the scope: `collapse` is **not** in the
+portfolio's commitlint scope enum (`web | cms | schemas | db | ui | config | repo | deps | docs |
+ci`), and subjects are sentence-case.
+
+```
 git add apps/web/vitest.config.ts apps/web/package.json turbo.json package.json pnpm-lock.yaml apps/web/src/lib/__smoke.test.ts
-git commit -m "build(web): add a vitest lane with happy-dom"
+git commit -m "build(web): Add a vitest lane with happy-dom"
 ```
 
 ---
@@ -306,6 +335,13 @@ describe('collapse bake determinism', () => {
     const b = sampleRun(0xc0ffee);
     expect(a.duration).toBe(b.duration);
     expect(a.frames).toEqual(b.frames);
+    // Settle margin (spec §6, gate item 2). A solver that stops resolving
+    // contacts still free-falls deterministically: `clampFloor` zeroes only
+    // `velocity.y`, so the burst `velocity.x` / `angularVelocity` never decay,
+    // `isSettled` never fires, and the bake runs to MAX_FRAMES (480 · 1/120 =
+    // 3.99s). Without this bound every other assertion here still passes on a
+    // broken solver. Shipped fixture settles at 1.175s.
+    expect(a.duration).toBeLessThan(2.5);
   });
 
   it('differs for a different seed', () => {
@@ -326,6 +362,30 @@ The second and third cases are not padding. Without them, a bug that leaves ever
 or freezes every piece — passes the equality assertion trivially, and the gate silently protects
 nothing.
 
+**Corrected 2026-08-13 — three deviations the shipped test needed. Carry them.**
+
+1. **The settle-margin assertion above was missing from this plan entirely.** Spec §6 lists it as
+   portfolio-side gate item 2 ("settle stays well inside `MAX_FRAMES = 480`… the margin is the
+   signal that solver behavior did not shift"), and dropping it left a gate that is **green on a
+   broken solver** — see the comment in the code. This is the single most important correction on
+   this page.
+2. **`sampleRun` must assert the piece count before baking.** `createCollapse` returns a
+   `NOOP_HANDLE` when the harvest finds nothing (`collapse-engine.ts:400`), whose `bakeChunk`
+   returns `true` immediately with `duration: 0`. Assert the exact expected count
+   (`expect(handle.pieceCount).toBe(12)`), not `> 0` — a fixture that silently drifts to 1-2 pieces
+   passes every other assertion while covering almost nothing. Cases 2 and 3 *would* catch a full
+   no-op handle, so this guard is diagnostic rather than protective: it fails at the cause instead
+   of producing a baffling "different seeds produced identical frames".
+3. **Reset the DOM between runs** — `document.body.innerHTML = ''` at the top of `buildFixture`.
+   `createCollapse` detaches simulated pieces onto `document.body` and mutates its inline style, so
+   run B inheriting run A's leftovers is a live contamination risk in a test whose entire purpose is
+   A-vs-B equality. Rule it out by construction.
+
+**What actually happened when this ran:** no fixture/API mismatch on the first run, and **no
+same-seed divergence**. The fixture bakes `pieceCount: 12`, `duration: 1.175s` (~142 frames), stable
+across four consecutive runs. `destroy()` needed no `{ restoreScroll: false }` workaround —
+happy-dom tolerates `scrollTo`'s `behavior` option.
+
 - [ ] **Step 2: Run it and read the failure carefully**
 
 ```bash
@@ -344,10 +404,11 @@ second RNG source the contract missed.
 - [ ] **Step 3: Delete the smoke test**
 
 ```bash
-git rm apps/web/src/lib/__smoke.test.ts
+rm apps/web/src/lib/__smoke.test.ts
 ```
 
-It has served its purpose; a real test now exercises the same wiring.
+It has served its purpose; a real test now exercises the same wiring. (**Corrected 2026-08-13:** was
+`git rm` — see Step 5.)
 
 - [ ] **Step 4: Run the portfolio's full gate**
 
@@ -358,13 +419,33 @@ pnpm test
 pnpm build
 ```
 
-- [ ] **Step 5: Commit**
+**Corrected 2026-08-13:** `pnpm test` at the root was red when this plan was written, for a
+pre-existing `apps/cms` reason unrelated to this work (see Task 1). That has since been fixed, so
+the bare command is correct again — but if the root is red for a reason you did not cause, the
+scoped `pnpm test --filter @grzott/web` is this task's actual gate, and the cms failure is a
+separate finding to report rather than absorb.
 
-```bash
-git add apps/web/src/components/page-collapse/collapse-engine.test.ts
-git rm apps/web/src/lib/__smoke.test.ts
-git commit -m "test(collapse): gate seeded bake determinism"
+- [ ] **Step 5: Emit the commit block — do not run it**
+
+**Corrected 2026-08-13:** was `git add` / `git rm` / `git commit`; see Task 1 Step 7 for why. Scope
+was `test(collapse)`, which **fails the portfolio's commitlint scope enum** — use `web`.
+
 ```
+git add apps/web/src/components/page-collapse/collapse-engine.test.ts apps/web/src/components/page-collapse/collapse-engine.ts
+git commit -m "test(web): Gate seeded bake determinism for page collapse"
+```
+
+The deleted `__smoke.test.ts` needs no `git rm` in the block: it was created and removed inside this
+same branch, so if it was never committed it is simply absent. `collapse-engine.ts` is in the block
+because of the doc-comment fix below.
+
+- [ ] **Step 6: Correct the `rng` doc comment in the source**
+
+**Added 2026-08-13.** `collapse-engine.ts:33-38` told the reader the migration requires a
+"byte-identical-bake gate". Spec §4 corrects that framing — there is no stored golden timeline and
+no cross-version byte-fidelity contract. Since this task creates the real gate, update that comment
+to describe it (same-seed reproducibility, sampled from playback transforms) and point at the test
+file. Leaving it would ship a known-false pointer in the exact place a future reader looks.
 
 ---
 
@@ -379,10 +460,21 @@ git commit -m "test(collapse): gate seeded bake determinism"
 
 - [ ] **Step 1: Read the current copy**
 
+**Corrected 2026-08-13: there are THREE sites, not one.** This step originally named only the link
+text, and the file table pinned it to `585-588`. Line numbers drift — find the **elements**: the
+collapse trigger `<button>` and the badge `<Link href="/projects/flare-engine">` directly below it.
+As executed, all three carried the same claim:
+
 ```
-apps/web/src/components/page-collapse/page-collapse.tsx:585  href="/projects/flare-engine"
-apps/web/src/components/page-collapse/page-collapse.tsx:588  built with my 2D engine
+page-collapse.tsx  button aria-label   "…physics demo built with my engine"
+page-collapse.tsx  button title        "…my own 2D rigid-body engine…"
+page-collapse.tsx  link text           "built with my 2D engine"
 ```
+
+The `title` is the one an executor will talk itself out of — it never names Flare, so it reads
+innocent. Reject that defense: the *original* link text never named Flare either. Proximity plus the
+word "engine", inches from a link labelled Flare engine, is what made the claim misleading, and that
+is exactly the shape of the `title`.
 
 - [ ] **Step 2: Replace with a claim that is true today**
 
@@ -401,12 +493,35 @@ Any other instance needs the same correction or the fix is cosmetic. While here,
 `docs/reference-collapse-flare-engine-integration.md`, which cites this location as `399-403` — that
 range is now the `activate` callback, and the copy lives at `585-588`.
 
-- [ ] **Step 4: Run the portfolio's full gate, then commit**
+- [ ] **Step 4: Run the portfolio's full gate, then emit the commit block**
 
-```bash
-git add apps/web/src/components/page-collapse/page-collapse.tsx docs/reference-collapse-flare-engine-integration.md
-git commit -m "fix(collapse): reframe the engine attribution copy"
+**Corrected 2026-08-13:** do not run git (Task 1 Step 7), and `fix(collapse)` fails the portfolio's
+commitlint scope enum — use `web`.
+
 ```
+git add apps/web/src/components/page-collapse/page-collapse.tsx docs/reference-collapse-flare-engine-integration.md
+git commit -m "fix(web): Reframe the collapse engine attribution copy"
+```
+
+**As executed 2026-08-13.** Owner approved a *prototype-for* framing over the reference doc's
+suggested *related-work* one, because the local module's own header already records the intent to
+become `@flare-engine/dynamics`:
+
+- link text → `a prototype for Flare engine`
+- link `aria-label` → `a prototype for Flare engine — my 2D engine project; this demo's physics is a
+  separate module of mine`
+- button `aria-label` → `Collapse the page — physics demo built on my own rigid-body module`
+- button `title` → `Physics demo — my own rigid-body module. Click to collapse; Shift-click to
+  shatter.`
+
+Note the link's accessible name **leads with the visible badge text verbatim**. That is WCAG 2.5.3
+"Label in Name" — a speech-input user saying the visible words must be able to activate the control.
+Do not reorder it in Task 10's second pass.
+
+One residual read, accepted knowingly: "a prototype **for** Flare engine" can also parse as "a
+prototype **of** Flare engine" — an early version of the engine itself. The accessible names
+disambiguate, but `title` is hover-only and `aria-label` is AT-only, so a sighted touch user sees
+only the five visible words. Rated low severity against the claim it replaced.
 
 ---
 
@@ -1366,10 +1481,24 @@ git commit -m "feat(dynamics): wire the umbrella, docs, and changeset"
 
 - [ ] **Step 1: Record the reference numbers before changing anything**
 
-Run the Task 2 determinism test and note the settle behavior for a representative collapse —
-`handle.duration` and the frame count at which the pile stops moving. Capture this from the
-**current local module**, before the dependency is added. Without it, Step 6 has nothing to compare
-against.
+**Already done — captured 2026-08-13 against the pre-swap local module:**
+
+| Metric | Pre-swap value |
+|---|---|
+| `handle.pieceCount` (test fixture) | 12 |
+| `handle.duration` | **1.175 s** (~142 frames @ 1/120) |
+| `MAX_FRAMES` cap | 480 frames = 3.9917 s |
+| Determinism | identical across two same-seed runs, stable over 4 consecutive runs |
+
+The test now **asserts** the margin (`expect(a.duration).toBeLessThan(2.5)`), so Step 6's comparison
+is automatic rather than an operator eyeball: if the swapped solver stops settling, the gate goes
+red on its own. Re-run it before the swap anyway to confirm the pre-swap number still reads 1.175 s
+— if it has drifted since August, something changed in the interim and that is worth knowing before
+you attribute a delta to the engine.
+
+Note the frame counts in spec §6 ("roughly 200 frames today") and here (142) describe **different
+things**: §6 means a real page collapse in the browser, this means the 12-box test fixture. Do not
+reconcile them.
 
 - [ ] **Step 2: Install the dependency**
 
@@ -1420,9 +1549,21 @@ come to rest without jitter, tunneling, or drift.
 
 - [ ] **Step 7: Update the copy and the reference doc**
 
-Reword the trigger a second time — it can be a powered-by claim now, because it is true. Mark the
-migration contract in `docs/reference-collapse-flare-engine-integration.md` as executed with a
-pointer to the engine spec, and drop the option table that no longer describes an open decision.
+Reword the trigger a second time — it can be a powered-by claim now, because it is true. **All
+three sites** (button `aria-label`, button `title`, link text + `aria-label`) carry the claim; see
+Task 3 Step 1. Preserve the WCAG 2.5.3 property: the link's accessible name must still lead with its
+visible text verbatim.
+
+**Corrected 2026-08-13 — most of this step's doc work is already done.** Phase 0 already: fixed the
+stale `page-collapse.tsx:399-403` citation (now `585-589`), marked Opt D done in the options table
+and the recommended-sequence line, added a dated pointer under "## The question" and "## Answer
+(verified)", and corrected **three** statements that mandated a byte-identical-bake gate spec §4
+had already retired — including one at the Migration-contract section that was *actively false*
+about the shipped test ("it hashes the pre-playback bake buffer": the gate samples playback
+transforms and is downstream of playback, not upstream).
+
+What remains for this step: mark the migration contract itself as executed with a pointer to this
+plan's spec, and drop the options table now that A/B/D/E are all closed.
 
 - [ ] **Step 8: Run the portfolio's full gate, then commit**
 
@@ -1445,9 +1586,19 @@ git commit -m "feat(collapse): run the collapse on @flare-engine/dynamics"
 - **Written 2026-08-13 for post-flip execution.** Phases 1 and 2 will be months old when they run.
   Re-read the spec and re-verify every file:line reference against HEAD before starting a task; the
   task boundaries, tests, and gates are the durable parts — the line numbers are not.
-- **Phase 0 is independent** and loses nothing if the lift is deferred or abandoned. Task 1 in
-  particular gives the portfolio a test lane it does not have today, useful well beyond this work.
+- **Phase 0 is DONE (2026-08-13)** and was independent, as predicted — it would have lost nothing if
+  the lift were deferred. `apps/web` now has a Vitest + happy-dom lane wired into Turbo and CI, a
+  determinism gate, and honest trigger copy.
 - **`bun run test` at the engine repo root, never raw `bun test`** — the raw form reports phantom
   mock failures in this workspace.
 - **Do not run `git add` / `commit` / `push` from a builder agent.** Both repos block it; emit the
-  commit block and let the owner run it.
+  commit block and let the owner run it. The Phase 0 task steps originally contradicted this in four
+  places; they are corrected inline, but check any step you are about to follow.
+- **The portfolio's commitlint enforces a scope enum** — `web | cms | schemas | db | ui | config |
+  repo | deps | docs | ci` — with sentence-case subjects ≤72 chars. This plan's original commit
+  blocks used `test(collapse)` / `fix(collapse)`, which would have been rejected. Corrected inline.
+- **Phase 0's execution surfaced a real, unrelated bug in the portfolio**: `PostRow` in
+  `packages/db/src/types.ts` was missing all three columns added by the 2026-04-30 syndication
+  migration (`cross_posts`, `octalysis_drives`, `series`), so `apps/cms`'s schema-drift test failed
+  and `mapPost` silently dropped the values on the web side. Fixed 2026-08-13. Mentioned here only
+  so nobody re-diagnoses it as fallout from the lift.

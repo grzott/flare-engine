@@ -135,6 +135,20 @@ consumer's replay fidelity, in the one place where `hypot` is the slower call. I
 requirement, so `dynamics` adopts math's sqrt form as a deliberate, documented, one-time
 perturbation — verified behaviorally (§6), not by hash.
 
+**Applied 2026-08-13.** This section declared the consumer doc's framing corrected but chartered
+nobody to correct it, so the false text would have outlived the gate by two months. Phase 0 closed
+that: `collapse-engine.ts`'s `rng` doc comment and **three** statements in
+`grzott-portfolio/docs/reference-collapse-flare-engine-integration.md` no longer mandate a
+byte-identical-bake gate. One of the three was not merely stale but *actively false* about the
+shipped artifact — it claimed the gate "hashes the pre-playback bake buffer" and is "upstream of
+playback", whereas the gate samples `el.style.transform` across a `seek` sweep and is therefore
+downstream of playback. A reader following it would have built a second, contradictory gate
+requiring `CollapseHandle`'s public API to be widened — precisely what the sampling design avoids.
+
+**Empirically confirmed 2026-08-13:** two same-seed bakes replay identically. The solver carries no
+hidden entropy — no `Math.random`, no `Date.now()`, no `Set`/`Map` iteration in the step path — so
+the injected `rng` is the sole non-determinism source, as this section assumes.
+
 ---
 
 ## 5. Zero-alloc pass
@@ -191,7 +205,13 @@ structures, not an SoA rewrite.
   `seek` values) rather than hashing the buffer. That needs no source change and covers the playback
   path too;
 - settle stays well inside `MAX_FRAMES = 480` — roughly 200 frames today, so the margin is the
-  signal that solver behavior did not shift;
+  signal that solver behavior did not shift. **This is the item that catches a broken solver, and
+  the task plan originally dropped it.** A solver that stops resolving contacts still free-falls
+  *deterministically*, so every other gate item above passes while the bake runs to the cap. It is
+  now an assertion, not an eyeball: `expect(a.duration).toBeLessThan(2.5)` against a measured
+  pre-swap baseline of **1.175 s / ~142 frames** for the 12-box test fixture (cap = 3.9917 s). Note
+  the "roughly 200 frames" figure above describes a **real page collapse in the browser**, not that
+  fixture — the two numbers measure different scenes and should not be reconciled;
 - one owner eyeball of a real collapse.
 
 Plus the standard per-row full gate in each repo.
@@ -200,19 +220,23 @@ Plus the standard per-row full gate in each repo.
 
 ## 7. Sequencing
 
-**Now, pre-freeze, portfolio-side only, zero engine cost:**
+**Now, pre-freeze, portfolio-side only, zero engine cost — ✅ BOTH DONE 2026-08-13:**
 
-1. **Messaging fix.** Reword the "built with my 2D engine" trigger and its `/projects/flare-engine`
-   link (`page-collapse.tsx:585-588` — the consumer doc's `399-403` is stale) to match reality.
-   This is the one actually-false public claim,
-   it takes minutes, and it is worth doing whether or not the lift ever ships. Owner editorial —
-   tracked in the portfolio repo as its Opt D, and as **PF1** in
-   [road-to-oss-2026-09.md](road-to-oss-2026-09.md) §10.
-2. **A test lane, then the determinism test.** The portfolio has **no test infrastructure today** —
-   no runner, no test files, a gate of lint + typecheck + build only. So this is two steps: stand up
-   Vitest + happy-dom (owner-approved 2026-08-13 over a one-off script, since the repo gains a real
-   test lane it currently lacks), then write the determinism gate in it. No engine dependency, and
-   it is the safety net the migration lands on.
+1. **Messaging fix. ✅ Done.** Rewording the "built with my 2D engine" trigger and its
+   `/projects/flare-engine` link to match reality. Owner editorial — tracked in the portfolio repo
+   as its Opt D, and as **PF1** in [road-to-oss-2026-09.md](road-to-oss-2026-09.md) §10.
+   **Correction:** the claim lived at **three** sites, not one — the collapse `<button>`'s
+   `aria-label` *and* `title`, plus the badge `<Link>`'s text. Locating it by the line range
+   `585-588` found only the third; the other two were recovered by the "check for the same claim
+   elsewhere" grep. Owner chose a *prototype-for* framing over *related-work*.
+2. **A test lane, then the determinism test. ✅ Done.** Vitest + happy-dom in `apps/web`
+   (owner-approved 2026-08-13 over a one-off script), then the determinism gate in it. No engine
+   dependency; it is the safety net the migration lands on, and it is now wired into CI so it
+   actually runs.
+   **Correction:** "the portfolio has no test infrastructure today — no runner, no test files" was
+   **false**. `apps/cms` already had `node --test` with two schema-drift suites, one of them failing
+   at the time (a `PostRow` type that never caught up with the 2026-04-30 syndication migration;
+   fixed 2026-08-13). What was true is that **`apps/web`** had no runner and no tests.
 
 **Cut: Opt B (`vec.ts` → `@flare-engine/math` rebase).** The consumer doc sequenced D → B → C when C
 was uncertain and B was the cheap partial win. With C chosen and timed post-flip, B needs pre-npm

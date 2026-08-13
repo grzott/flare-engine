@@ -88,10 +88,13 @@ local copies in `dynamics`. `Vec2.rotate` is already bit-identical to the donor'
 as-is.
 
 **Repo gates this package must satisfy** (none optional): `LAYER_MAP` entry in
-[check-deps-tiers.mjs](../../scripts/check-deps-tiers.mjs); `@flare-engine/engine` umbrella
-re-export; exports map with **no `"."`-level `types` key** (the attw masquerade fixed in OSS-C2);
-registration in `scripts/propagate-license.ts` so LICENSE + NOTICE ship; README; `api-specs.md` and
+[check-deps-tiers.mjs](../../scripts/check-deps-tiers.mjs) — an unmapped scoped package is a hard
+error, so this is not skippable; `@flare-engine/engine` umbrella re-export; exports map with **no
+`"."`-level `types` key** (the attw masquerade fixed in OSS-C2); README; `api-specs.md` and
 `architecture.md` entries; one lockstep **minor** changeset.
+
+LICENSE + NOTICE need no registration — `scripts/propagate-license.ts` walks `packages/*` and picks
+up new packages automatically, as does the root `workspaces` glob.
 
 ---
 
@@ -182,7 +185,11 @@ structures, not an SoA rewrite.
 
 **Portfolio-side, at the swap:**
 
-- the determinism test (seeded RNG, bake twice, identical `Float32Array`);
+- the determinism test — seeded RNG, bake twice, identical replay. Note that `CollapseHandle`
+  exposes `bakeChunk` / `seek` / `duration` / `destroy` / `pieceCount` and **not** the recorded
+  `Float32Array`, so the gate samples the observable output (transforms read back across a sweep of
+  `seek` values) rather than hashing the buffer. That needs no source change and covers the playback
+  path too;
 - settle stays well inside `MAX_FRAMES = 480` — roughly 200 frames today, so the margin is the
   signal that solver behavior did not shift;
 - one owner eyeball of a real collapse.
@@ -201,8 +208,11 @@ Plus the standard per-row full gate in each repo.
    it takes minutes, and it is worth doing whether or not the lift ever ships. Owner editorial —
    tracked in the portfolio repo as its Opt D, and as **PF1** in
    [road-to-oss-2026-09.md](road-to-oss-2026-09.md) §10.
-2. **The determinism test.** Seeded RNG, bake twice, assert identical. No engine dependency, and it
-   is the safety net the migration lands on.
+2. **A test lane, then the determinism test.** The portfolio has **no test infrastructure today** —
+   no runner, no test files, a gate of lint + typecheck + build only. So this is two steps: stand up
+   Vitest + happy-dom (owner-approved 2026-08-13 over a one-off script, since the repo gains a real
+   test lane it currently lacks), then write the determinism gate in it. No engine dependency, and
+   it is the safety net the migration lands on.
 
 **Cut: Opt B (`vec.ts` → `@flare-engine/math` rebase).** The consumer doc sequenced D → B → C when C
 was uncertain and B was the cheap partial win. With C chosen and timed post-flip, B needs pre-npm

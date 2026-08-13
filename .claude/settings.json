@@ -1,7 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(bun install)",
       "Bash(bun run lint:*)",
@@ -39,14 +38,7 @@
       "Edit(.claude/**)",
       "Edit(.github/**)",
       "Edit(CLAUDE.md)",
-      "Edit(SESSION_LOG.md)",
-      "Write(packages/**)",
-      "Write(apps/**)",
-      "Write(docs/**)",
-      "Write(.claude/**)",
-      "Write(.github/**)",
-      "Write(CLAUDE.md)",
-      "Write(SESSION_LOG.md)"
+      "Edit(SESSION_LOG.md)"
     ],
     "deny": [
       "Bash(git push:*)",
@@ -62,8 +54,7 @@
       "Bash(yarn:*)",
       "Bash(pnpm:*)",
       "Edit(bun.lock)",
-      "Edit(.husky/**)",
-      "Write(bun.lock)"
+      "Edit(.husky/**)"
     ]
   },
   "hooks": {

@@ -1,0 +1,240 @@
+# Flare Engine — `@flare-engine/dynamics` lift (design, 2026-08-13)
+
+Design SoT for lifting the `grzott-portfolio` page-collapse rigid-body core into a new engine
+package, and flipping the portfolio's collapse showcase onto it. Owner-approved 2026-08-13.
+
+**The point of the work:** the portfolio's collapse trigger reads *"built with my 2D engine"* and
+links to `/projects/flare-engine`, but the demo runs zero engine code. This makes the claim
+literally true by shipping the solver as an engine package and having `apps/web` consume it.
+
+**Decisions taken (do not re-litigate):**
+
+1. **Opt C** from the portfolio's own migration contract — upstream the solver, flip the consumer.
+   Opt A is dead (recorded below), Opt B is cut (§7), Opt E is an unrelated track.
+2. **Post-flip.** Lands after the Oct 19–23 OSS flip as a lockstep **0.4.0**. Nothing here touches
+   Arc OSS or Arc PERF, and nothing here may be pulled before the Oct 5 freeze.
+3. **`dynamics` is the engine's rigid-body story.** The parked planck.js adapter
+   ([engine-deep-audit-2026-07.md](engine-deep-audit-2026-07.md) §3) is demoted to a documented
+   "if a game ever needs joints / sleeping / CCD" option, not a parallel track.
+
+Consumer-side contract SoT (other repo, do not duplicate here):
+`grzott-portfolio/docs/reference-collapse-flare-engine-integration.md`. §4 of this doc **corrects**
+that file's determinism framing; everything else in it stands.
+
+---
+
+## 1. What exists today (verified 2026-08-13)
+
+**Donor** — `grzott-portfolio/apps/web/src/lib/dynamics/`, 556 LOC across 5 files, DOM-free,
+framework-free, plain objects + free functions, written in engine house style with the lift
+declared in its own header (`index.ts:1-7`):
+
+| File | LOC | Contents |
+|---|---|---|
+| `vec.ts` | 64 | `Vec2` + 11 free helpers |
+| `body.ts` | 129 | OBB body, mass/inertia from extents, `boxVertices` / `boxNormals` / `aabbOf` |
+| `collision.ts` | 157 | SAT + reference/incident face clipping → 1–2 point manifold |
+| `world.ts` | 190 | gravity integration, brute-force AABB broadphase, sequential-impulse solver |
+| `index.ts` | 16 | the barrel — the single consumer import |
+
+**Sole consumer:** `apps/web/src/components/page-collapse/collapse-engine.ts:17`, one import off the
+barrel, no deep imports.
+
+**Why the engine cannot already do this.** `@flare-engine/physics` v0.2.1 is collision *detection*:
+`CollisionWorld.step()` takes no `dt`, applies no gravity, mutates no positions; `Collider` carries
+only `shape/isTrigger/layer/mask`; shapes are AABB + Circle (no oriented boxes); `shapeOverlap`
+returns a bare boolean (no manifold, so no stacking). `@flare-engine/simulation` is contact-less
+point-mass / Verlet. This is Opt A's death certificate — recorded so nobody re-opens it on seeing
+the package name.
+
+**Why engine rendering is permanently out.** The showcase's entire value is that collapsing
+elements stay real DOM receiving only CSS transforms (indexable, accessible). `@flare-engine/
+render-web` rasterizes to a CanvasKit-WASM canvas and destroys that property. Engine physics here
+runs **headless** — compute `{x, y, angle}` per tick, DOM transforms stay portfolio-side — and
+that is the ceiling of what "runs on the engine" can mean for this demo.
+
+---
+
+## 2. Package design
+
+**`packages/dynamics` → `@flare-engine/dynamics`, tier 2**, dependency on `@flare-engine/math` only.
+
+**In scope (v1, frozen):** OBB boxes; gravity integration; SAT + Sutherland-Hodgman clipping
+manifold; sequential-impulse solver with Coulomb friction, restitution and Baumgarte
+de-penetration; brute-force AABB broadphase.
+
+**Out of scope:** joints, sleeping, CCD, circle/polygon shapes, ECS coupling, and any broadphase
+beyond the brute-force pass. `SpatialIndex` from `physics` is a legal equal-tier dependency — the
+tier gate rejects only *strictly upward* edges ([check-deps-tiers.mjs:214](../../scripts/check-deps-tiers.mjs))
+— but stays unwired at v1; the collapse runs tens of bodies.
+
+**Position next to `physics`, documented in both READMEs:** `physics` answers *did these overlap*,
+`dynamics` answers *where do they end up*. No dependency in either direction.
+
+**Public surface — the portfolio's ratified contract, verbatim:**
+
+- Values: `createWorld`, `addBody`, `createBody`, `step`.
+- Types: `World`, `Body`.
+- `createBody` input: `position.{x,y}`, `half.{x,y}`, `velocity.{x,y}`, `angularVelocity`,
+  `static`, `friction`, `restitution`, `density`.
+- `Body` fields read back per tick: `position.{x,y}`, `angle`, `velocity.{x,y}`, `angularVelocity`.
+- `Body` fields **written in place** by the consumer: `position.y`, `velocity.y`. These must stay
+  mutable plain-object fields — read-only getters or an SoA `Float32Array` body layout **break the
+  contract**. This caps the zero-alloc pass (§5) to transient per-step structures.
+
+**Two gaps this lift opens in `math`:** `Vec2.perp` and `Vec2.crossSV` do not exist upstream
+(`packages/math/src/vec2.ts` has `rotate` but neither). They land in `math` with `out` forms, not as
+local copies in `dynamics`. `Vec2.rotate` is already bit-identical to the donor's and is adopted
+as-is.
+
+**Repo gates this package must satisfy** (none optional): `LAYER_MAP` entry in
+[check-deps-tiers.mjs](../../scripts/check-deps-tiers.mjs); `@flare-engine/engine` umbrella
+re-export; exports map with **no `"."`-level `types` key** (the attw masquerade fixed in OSS-C2);
+registration in `scripts/propagate-license.ts` so LICENSE + NOTICE ship; README; `api-specs.md` and
+`architecture.md` entries; one lockstep **minor** changeset.
+
+---
+
+## 3. Lockstep consequence
+
+Adding a package does not ship `dynamics@0.1.0` beside a 0.3.x fleet. Changesets is `fixed`
+lockstep across all `@flare-engine/*`, so this is one minor bumping **every** package to **0.4.0**.
+The portfolio pins `@flare-engine/dynamics@^0.4.0`.
+
+---
+
+## 4. Determinism — correcting the consumer doc
+
+The consumer contract calls for a **byte-identical-bake gate** and warns that *any* solver-touching
+edit, "even a math-helper swap", perturbs the bake. That framing implies a stored golden timeline
+that a migration must reproduce bit-for-bit. It does not exist.
+
+`collapse-engine.ts:602` bakes at **runtime**, per trigger, into a 480-frame `Float32Array`
+(`MAX_FRAMES = 480`, `collapse-engine.ts:93`), seeded by `Math.random` in production. The consumer
+doc says so itself: "each collapse still varies". So:
+
+**The gate is a determinism assertion — same seed, bake twice in one process, identical bytes — not
+a cross-version fidelity contract.** There is nothing historical to match.
+
+This matters because a `math` rebase is *not* bit-neutral:
+
+| Donor helper | Upstream `Vec2.*` | Bit-identical? |
+|---|---|---|
+| `add`, `sub`, `scale`, `dot`, `cross` | same expression order | yes |
+| `rotate` | same expression order | yes |
+| `normalize` | donor `Math.hypot(x,y)` then `x / l`; math `Math.sqrt(x*x+y*y)` then `x * (1/len)` | **no** — two independent divergence sources |
+| `perp`, `crossSV` | absent upstream | n/a (§2) |
+| `len` | — | dead: exported, never called |
+
+`normalize` is on the hot path (`collision.ts:133`, inside `collide`, every step). Were bit-identity
+a real requirement, the engine would carry `Math.hypot` plus a divide in its solver forever, for one
+consumer's replay fidelity, in the one place where `hypot` is the slower call. It is not a
+requirement, so `dynamics` adopts math's sqrt form as a deliberate, documented, one-time
+perturbation — verified behaviorally (§6), not by hash.
+
+---
+
+## 5. Zero-alloc pass
+
+A straight lift violates the engine's own hot-path rule (AGENTS.md: no `new` in game loops). The
+donor allocates per vector op; at 10 solver iterations a modest pile costs thousands of objects per
+step. Sites, in `step` order:
+
+1. **Broadphase** — `aabbOf(b)` is recomputed inside the inner loop, so it runs O(n²) times and each
+   call allocates 8 vertex objects via `boxVertices`. Precompute AABBs once per body per step into a
+   preallocated array. This is an algorithmic fix, not only an allocation one.
+2. **`collide`** — `boxVertices` ×2 (8 objects), `boxNormals` ×2 (2 arrays + 8 objects),
+   `{x:-n.x,y:-n.y}` and `sub(s,v)` per normal inside `leastPenetration`, a fresh result object per
+   call, `clip`'s arrays and interpolated points, and a fresh `ManifoldPoint[]`.
+3. **`prepare`** — `Constraint[]`, `SolvePoint[]`, `perp(normal)`, two `sub` per point.
+4. **`solve`, ×10 iterations** — `relativeVelocity` allocates 3 objects per call and is called twice
+   per point per iteration; plus `scale` ×2 and two negation literals.
+
+**Two collapses worth calling out, because they remove allocation *and* work:**
+
+- `relativeVelocity` never escapes — its result is only ever `dot`ed against `normal` or `tangent`.
+  It reduces to two scalar expressions with no vector at all.
+- `pn` / `pt` exist only to reach `applyImpulse`. Re-signature it to scalars
+  (`applyImpulse(body, ix, iy, rx, ry)`) and both literals disappear.
+
+Everything else is pooling: per-world scratch vectors and free-lists for `Manifold`,
+`ManifoldPoint`, `Constraint`, `SolvePoint`, reused across steps and grown on demand.
+
+**The transformation is mechanical.** Writing into an `out` parameter instead of returning an object
+literal cannot change float bits, because the arithmetic is untouched. What *would* change bits is
+algebraic "improvement" — reassociating, fusing, or swapping a divide for a reciprocal multiply.
+Outside the single sanctioned `normalize` change (§4), the pass must not do that.
+
+Body storage stays object-per-body (§2 contract). "Zero-alloc" here means the transient per-step
+structures, not an SoA rewrite.
+
+---
+
+## 6. Gates
+
+**Engine-side package tests** — behavioral, not coverage:
+
+- boxes come to rest on a static floor and stay at rest;
+- a stack does not sink through under the tuned Baumgarte / slop;
+- total energy does not grow over a long run;
+- two-run determinism under a fixed seed;
+- zero heap growth across N steps after warmup.
+
+**Portfolio-side, at the swap:**
+
+- the determinism test (seeded RNG, bake twice, identical `Float32Array`);
+- settle stays well inside `MAX_FRAMES = 480` — roughly 200 frames today, so the margin is the
+  signal that solver behavior did not shift;
+- one owner eyeball of a real collapse.
+
+Plus the standard per-row full gate in each repo.
+
+---
+
+## 7. Sequencing
+
+**Now, pre-freeze, portfolio-side only, zero engine cost:**
+
+1. **Messaging fix.** Reword the "built with my 2D engine" trigger and its `/projects/flare-engine`
+   link (`page-collapse.tsx:585-588` — the consumer doc's `399-403` is stale) to match reality.
+   This is the one actually-false public claim,
+   it takes minutes, and it is worth doing whether or not the lift ever ships. Owner editorial —
+   tracked in the portfolio repo as its Opt D, and as **PF1** in
+   [road-to-oss-2026-09.md](road-to-oss-2026-09.md) §10.
+2. **The determinism test.** Seeded RNG, bake twice, assert identical. No engine dependency, and it
+   is the safety net the migration lands on.
+
+**Cut: Opt B (`vec.ts` → `@flare-engine/math` rebase).** The consumer doc sequenced D → B → C when C
+was uncertain and B was the cheap partial win. With C chosen and timed post-flip, B needs pre-npm
+`file:`/vendored dep plumbing *and* is discarded when C replaces the barrel wholesale. It buys
+nothing the swap does not.
+
+**Post-flip, in order:**
+
+1. **`math`** — `Vec2.perp` + `Vec2.crossSV` with `out` forms. Small; unblocks the lift.
+2. **`dynamics`** — the XL row: lift, zero-alloc pass, tests, packaging, docs, `LAYER_MAP`, umbrella
+   re-export, changeset.
+3. **Portfolio swap** — delete `apps/web/src/lib/dynamics/`, repoint the single import at
+   `collapse-engine.ts:17` to `@flare-engine/dynamics`. Not a re-export shim: one consumer, one
+   line, and the portfolio's KISS rule bans one-thing wrappers. Then reword the trigger copy a
+   second time — this time to something true.
+
+Tracked as a new post-flip **Arc DYN** in [todo.md](todo.md), seeded below Arc HYG so `/start`
+exhausts Arc OSS and Arc PERF first, with this document as its SoT.
+
+---
+
+## 8. Risks
+
+- **Post-flip timing dissolves the cross-repo risk.** The consumer doc's "not on npm → needs
+  `file:`/git/vendored dep + `transpilePackages`" assumed a pre-flip migration. Post-flip the engine
+  is on public npm and `dynamics` is pure TS with the same dual CJS/ESM build as every other
+  package, so `apps/web` just installs it. No vendoring, no transpile config, no dev-link.
+- **Engine version churn** likewise dissolves: pin `^0.4.0` rather than a commit.
+- **The zero-alloc pass is where correctness gets lost.** It touches every line of the solver while
+  the visible output is "a pile of boxes falls", which hides subtle regressions. The behavioral
+  gates in §6 exist for this; run them against the donor first to establish the reference numbers.
+- **One consumer, no bake-in.** `dynamics` ships with a single real user. Keep the v1 surface at
+  exactly §2 — every speculative addition is API surface frozen against no evidence.
+- **Duplicate scope with planck** is accepted, not avoided, by decision 3. Revisit only if a game
+  needs joints, sleeping, or CCD.

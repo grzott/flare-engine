@@ -301,3 +301,62 @@ describe('Vec2.turnVelocityToward', () => {
     expect(out.x).not.toBe(99);
   });
 });
+
+describe('Vec2.perp', () => {
+  it('rotates 90 degrees clockwise in screen space', () => {
+    expect(Vec2.perp({ x: 1, y: 0 })).toEqual({ x: -0, y: 1 });
+    expect(Vec2.perp({ x: 0, y: 1 })).toEqual({ x: -1, y: 0 });
+  });
+
+  it('is orthogonal to its input', () => {
+    const v = { x: 3, y: -7 };
+    expect(Vec2.dot(v, Vec2.perp(v))).toBe(0);
+  });
+
+  it('preserves length', () => {
+    const v = { x: 3, y: 4 };
+    expect(Vec2.length(Vec2.perp(v))).toBeCloseTo(5, 12);
+  });
+
+  it('writes into out and returns it without allocating', () => {
+    const out = { x: 0, y: 0 };
+    const r = Vec2.perp({ x: 2, y: 5 }, out);
+    expect(r).toBe(out);
+    expect(out).toEqual({ x: -5, y: 2 });
+  });
+
+  it('aliases safely when out is the input', () => {
+    const v = { x: 2, y: 5 };
+    Vec2.perp(v, v);
+    expect(v).toEqual({ x: -5, y: 2 });
+  });
+});
+
+describe('Vec2.crossSV', () => {
+  it('computes the scalar-cross-vector product', () => {
+    expect(Vec2.crossSV(2, { x: 3, y: 4 })).toEqual({ x: -8, y: 6 });
+  });
+
+  it('equals perp scaled by s', () => {
+    const v = { x: 3, y: -4 };
+    const s = 2.5;
+    expect(Vec2.crossSV(s, v)).toEqual(Vec2.scale(Vec2.perp(v), s));
+  });
+
+  it('returns zero for a zero scalar', () => {
+    expect(Vec2.crossSV(0, { x: 3, y: 4 })).toEqual({ x: -0, y: 0 });
+  });
+
+  it('writes into out and returns it without allocating', () => {
+    const out = { x: 0, y: 0 };
+    const r = Vec2.crossSV(3, { x: 1, y: 2 }, out);
+    expect(r).toBe(out);
+    expect(out).toEqual({ x: -6, y: 3 });
+  });
+
+  it('aliases safely when out is the input vector', () => {
+    const v = { x: 1, y: 2 };
+    Vec2.crossSV(3, v, v);
+    expect(v).toEqual({ x: -6, y: 3 });
+  });
+});

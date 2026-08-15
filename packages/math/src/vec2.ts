@@ -110,6 +110,32 @@ export const Vec2 = {
     return a.x * b.y - a.y * b.x;
   },
 
+  /** Perpendicular: (-y, x). In this engine's y-down screen space this is a 90° clockwise turn,
+   *  matching the Skia rotation convention used by `@flare-engine/render`. Writes into out if
+   *  provided. */
+  perp(v: Vec2, out?: Vec2): Vec2 {
+    const x = -v.y;
+    const y = v.x;
+    if (out) {
+      out.x = x;
+      out.y = y;
+      return out;
+    }
+    return { x, y };
+  },
+
+  /** Scalar × vector cross product: s × v = (-s·y, s·x). Writes into out if provided. */
+  crossSV(s: number, v: Vec2, out?: Vec2): Vec2 {
+    const x = -s * v.y;
+    const y = s * v.x;
+    if (out) {
+      out.x = x;
+      out.y = y;
+      return out;
+    }
+    return { x, y };
+  },
+
   /** Linearly interpolates between a and b (unclamped). */
   lerp(a: Vec2, b: Vec2, t: number, out?: Vec2): Vec2 {
     const x = a.x + (b.x - a.x) * t;

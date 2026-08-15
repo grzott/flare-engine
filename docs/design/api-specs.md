@@ -2,7 +2,7 @@
 
 > Living document. Update alongside code changes — divergence is a spec bug.
 >
-> Last refreshed against `packages/*/src/index.ts`: **2026-07-12**.
+> Last refreshed against `packages/*/src/index.ts`: **2026-08-14**.
 
 ---
 
@@ -12,7 +12,7 @@
 
 | API                                                           | Description                                                                                                                                          |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Vec2`                                                        | `{x,y}` object. Static methods: `add`, `sub`, `scale`, `normalize`, `normalizeOut(dx, dy, speed, out)`, `dot`, `cross`, `length`, `distance`, `lerp`, `rotate`, `angle`, `clampLength`, `turnVelocityToward(vx, vy, dx, dy, maxStep, out)`. `vec2(x,y)` factory. Zero-alloc forms take an `out` param. `normalizeOut` takes scalar components (not a Vec2) so callers avoid a temporary in hot paths. `turnVelocityToward` is zero-alloc homing steer (mandatory `out`): rotates velocity toward direction by at most `maxStep` radians, preserving speed. |
+| `Vec2`                                                        | `{x,y}` object. Static methods: `add`, `sub`, `scale`, `normalize`, `normalizeOut(dx, dy, speed, out)`, `dot`, `cross`, `perp(v, out?)`, `crossSV(s, v, out?)`, `length`, `distance`, `lerp`, `rotate`, `angle`, `clampLength`, `turnVelocityToward(vx, vy, dx, dy, maxStep, out)`. `vec2(x,y)` factory. Zero-alloc forms take an `out` param. `normalizeOut` takes scalar components (not a Vec2) so callers avoid a temporary in hot paths. `perp` returns the (-y, x) perpendicular (90° clockwise in this engine's y-down screen space); `crossSV` is the scalar × vector cross product `s × v = (-s·y, s·x)`. `turnVelocityToward` is zero-alloc homing steer (mandatory `out`): rotates velocity toward direction by at most `maxStep` radians, preserving speed. |
 | `Rect`                                                        | AABB. `contains(point)`, `intersects(rect)`, `intersection`, `union`, `expand`, `center`, `fromPoints`                                               |
 | `Circle`                                                      | Position + radius. `contains`, `overlaps` with Rect/Circle                                                                                           |
 | `Transform2D`                                                 | Position (Vec2) + rotation (radians) + scale (Vec2). `localToWorld()`, `worldToLocal()`                                                              |
@@ -240,14 +240,14 @@ Grid pathfinding (A\*), Jump-Point Search optimization for uniform-cost grids, a
 | API | Description |
 | --- | --- |
 | `Grid` / `GridConfig` / `createGrid(config)` | Walkability + cost grid. `inBounds(grid, x, y)`, `isWalkable(grid, x, y)`, `getCost(grid, x, y)`, `setWalkable(grid, x, y, v)`, `setCost(grid, x, y, n)`. |
-| `findPath(grid, start, goal, opts?)` | A\* over `Grid`. Returns `PathResult { found, cells, cost }`. `PathOptions` selects `manhattanDistance` / `octileDistance` / `chebyshevDistance` / `euclideanDistance` heuristics + diagonal toggle. |
-| `findPathJPS(grid, start, goal, opts?)` | Jump-Point Search variant — typically 5–10× faster than A\* on uniform open grids; falls back to A\*-equivalent moves when costs vary. `JpsOptions`. |
-| `NavMesh` / `NavMeshPolygon` / `Portal` / `createNavMesh(polygons, portals)` | Convex-polygon navmesh built from explicit polygon + portal lists. `findPolygonAt(mesh, x, y)`, `findNavMeshPath(mesh, fromXY, toXY) → NavMeshPathResult`. Used for non-grid bosses, large open zones. |
+| `findPath(grid, startX, startY, endX, endY, options?)` | A\* over `Grid`. Returns `PathResult { path, cost, explored }` or `null` when no route exists. `PathOptions` selects `manhattanDistance` / `octileDistance` / `chebyshevDistance` / `euclideanDistance` heuristics + diagonal toggle. |
+| `findPathJPS(grid, startX, startY, endX, endY, options?)` | Jump-Point Search variant — typically 5–10× faster than A\* on uniform open grids; falls back to A\*-equivalent moves when costs vary. Returns `PathResult \| null`. `JpsOptions`. |
+| `NavMesh` / `NavMeshPolygon` / `Portal` / `createNavMesh(polygons)` | Convex-polygon navmesh; each `NavMeshPolygon` carries its own `portals` (shared-edge list), so `createNavMesh` takes only the polygon array. `findPolygonAt(mesh, x, y)`, `findNavMeshPath(mesh, start, end) → NavMeshPathResult \| null`. Used for non-grid bosses, large open zones. |
 
 **Implementation notes:**
 
 - Pure-data API: grids and navmeshes are plain objects, no classes. Heuristics are exported as named functions for tree-shake.
-- Path output is a flat `cells: number[]` packed `[x0, y0, x1, y1, ...]` for zero-alloc consumption by ECS systems.
+- `findPath`/`findPathJPS` return `PathResult.path` as an array of `{ x, y }` grid-coordinate points from start to end inclusive — not a flat packed array. `findNavMeshPath` returns `NavMeshPathResult.path` as an array of smoothed `Vec2` world-space waypoints, plus `corridor: number[]`, the polygon ids traversed.
 - Not used by Pan Tvardowski (shmup) — verified by integration tests in `packages/pathfinding/tests/`.
 
 ---
@@ -321,11 +321,12 @@ Web-integration bridge — the web analog of `@flare-engine/react`: it composes 
 
 | API | Description |
 | --- | --- |
-| `loadCanvasKit(wasmUrl, onProgress?)` | Singleton loader. Reads wasm binary from `wasmUrl` (absolute URL or filesystem path). Falls back to `node:fs/promises` when `fetch` is absent (Node/Bun test environments). Calls `onProgress(1)` immediately if already loading/complete. Returns `Promise<CanvasKit>`. |
+| `loadCanvasKit(wasmUrl, onProgress?, options?)` | Singleton loader. Reads wasm binary from `wasmUrl` (absolute URL or filesystem path). Falls back to `node:fs/promises` when `fetch` is absent (Node/Bun test environments). Calls `onProgress(1)` immediately if already loading/complete. `options: LoadCanvasKitOptions` tunes the load's failure bounds. `deadlineMs` (default 45000) is the hard ceiling on the whole load. `stallMs` (default 15000) aborts the *streaming fetch* if no bytes arrive for that long — on abort, `init()` falls back to CanvasKit's own (unbounded) loader for that one retry, so `stallMs` alone does not bound the total load; only `deadlineMs` does. A successful load is cached for the module's lifetime; a **failed** load is not cached, so a later call retries instead of being stranded on the earlier rejection. Returns `Promise<CanvasKit>`. |
+| `LoadCanvasKitOptions` | `{ stallMs?: number; deadlineMs?: number }`. |
 | `createWebSkiaModule(kit)` | Returns a `FrameRendererModule` backed by CanvasKit. Adapter differences handled internally: `drawAtlas` flattens `RectLike[]`/`RSXformLike[]` to grow-only `Float32Array` scratch buffers (zero-alloc steady state); `rotate` takes degrees (the `CanvasLike`/`DrawSurfaceLike` contract) and forwards verbatim to CanvasKit — `render`'s camera seam converts radians → degrees once; `ColorFilter.MakeBlend` maps numeric mode literals to CK `BlendMode` enum entries; `RSXform` objects carry `scos/ssin/tx/ty` readable fields. Pass to `createFrameRenderer` from `@flare-engine/render`. |
 | `createWebFrameRenderer(kit)` | `createWebFrameRenderer(kit: CanvasKit): FrameRenderer`. The web/CanvasKit analog of `@flare-engine/react`'s `createSkiaFrameRenderer` — a thin composition `createFrameRenderer(createWebSkiaModule(kit))` (from `@flare-engine/render`), so the frame-renderer body stays backend-neutral and shared with native. Presentation (replaying `endFrame()` onto a CK surface + flushing) is the consumer's job — pair with `createWebSurface` or `createPostFxSurface`. |
 | `createWebSurface(kit, canvas)` | Returns `CanvasLike \| null`. Creates a WebGL-backed CanvasKit surface for the given `<canvas>` element and wraps its canvas as `CanvasLike`. Returns `null` when WebGL is unavailable. Unpacks packed-ARGB `clear(color: number)` to Float32Array for CK. Pass to `Renderer.setCanvas()`. |
-| `PostFxSurface` | Interface: `width`, `height`, `sceneCanvas()`, `onscreenCanvas()`, `clear(bgRgb)`, `fadeTrail(bgRgb, alpha)`, `composite(globalIntensity)`, `flush()`, `resize(w, h)`, `dispose()`. |
+| `PostFxSurface` | Interface: `width`, `height`, `sceneCanvas(): Canvas \| null`, `onscreenCanvas(): Canvas \| null`, `clear(bgRgb)`, `fadeTrail(bgRgb, alpha)`, `composite(globalIntensity)`, `flush()`, `resize(w, h)`, `isLost(): boolean`, `dispose()`. `sceneCanvas()`/`onscreenCanvas()` return `null` while the WebGL context is lost. The surface owns its WebGL context explicitly (`GetWebGLContext`/`MakeWebGLContext`/`MakeOnScreenGLSurface`) and self-heals: `webglcontextlost` marks it lost and no-ops `clear`/`fadeTrail`/`composite`/`flush`; `webglcontextrestored` rebuilds the context and surfaces on the same canvas and re-clears to the last background. `isLost()` reports the current state for a host-side fallback. `dispose()` frees the `GrDirectContext` and the context handle along with the surfaces. The composite blit uses `Src` blend mode so a pass cannot composite stale ping-pong content. |
 | `createPostFxSurface(kit, canvas, chain)` | **Bridge piece.** Returns `PostFxSurface \| null`. Creates a pair of offscreen surfaces (scene + ping-pong) plus a WebGL onscreen surface, and runs the caller-supplied `@flare-engine/postfx` `EffectChain` at composite time. Pass a new empty `EffectChain()` for a passthrough surface. |
 
 **Typical web setup:**

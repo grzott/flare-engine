@@ -11,8 +11,12 @@ literally true by shipping the solver as an engine package and having `apps/web`
 
 1. **Opt C** from the portfolio's own migration contract — upstream the solver, flip the consumer.
    Opt A is dead (recorded below), Opt B is cut (§7), Opt E is an unrelated track.
-2. **Post-flip.** Lands after the Oct 19–23 OSS flip as a lockstep **0.4.0**. Nothing here touches
-   Arc OSS or Arc PERF, and nothing here may be pulled before the Oct 5 freeze.
+2. ~~**Post-flip.**~~ **SUPERSEDED 2026-08-14 — this lands PRE-freeze.** Owner decision, recorded in
+   [consumer-enablement-2026-08.md](consumer-enablement-2026-08.md) §"Decisions taken" 1. The lift
+   rides the consumer-enablement release, not a post-flip one, so both consumers actually run engine
+   code for the weeks before the public flip instead of the flip shipping packages with no external
+   consumer. No version number is stated anywhere: the fleet is lockstep, so the number is decided
+   at version time.
 3. **`dynamics` is the engine's rigid-body story.** The parked planck.js adapter
    ([engine-deep-audit-2026-07.md](engine-deep-audit-2026-07.md) §3) is demoted to a documented
    "if a game ever needs joints / sleeping / CCD" option, not a parallel track.
@@ -100,9 +104,12 @@ up new packages automatically, as does the root `workspaces` glob.
 
 ## 3. Lockstep consequence
 
-Adding a package does not ship `dynamics@0.1.0` beside a 0.3.x fleet. Changesets is `fixed`
-lockstep across all `@flare-engine/*`, so this is one minor bumping **every** package to **0.4.0**.
-The portfolio pins `@flare-engine/dynamics@^0.4.0`.
+Adding a package does not ship `dynamics` at its own starting version beside the rest of the fleet.
+Changesets is `fixed` lockstep across all `@flare-engine/*`, so this is one minor bumping **every**
+package to the same number. The portfolio pins that number once it is cut.
+
+**Do not write the number into this document.** It moves whenever another row lands first, and a
+stale version in a design doc is the drift this plan corpus exists to avoid.
 
 ---
 
@@ -243,28 +250,48 @@ was uncertain and B was the cheap partial win. With C chosen and timed post-flip
 `file:`/vendored dep plumbing *and* is discarded when C replaces the barrel wholesale. It buys
 nothing the swap does not.
 
-**Post-flip, in order:**
+**Pre-freeze, in order** (resequenced 2026-08-14 — see decision 2):
 
-1. **`math`** — `Vec2.perp` + `Vec2.crossSV` with `out` forms. Small; unblocks the lift.
+1. ~~**`math`** — `Vec2.perp` + `Vec2.crossSV` with `out` forms.~~ **✅ DONE 2026-08-14.** Landed in
+   the consumer-enablement release as Plan A Task 1, both with optional `out` forms, 10 tests
+   including aliasing cases (`perp(v, v)`). Note the doc comment records the rotation as **90°
+   clockwise** — `(-y, x)` is the standard counter-clockwise formula in a y-up math frame, but this
+   engine is y-down (Skia), matching `render/src/sprite-batch.ts:27`. A solver that trusts "CCW"
+   here will build a mirrored tangent basis.
 2. **`dynamics`** — the XL row: lift, zero-alloc pass, tests, packaging, docs, `LAYER_MAP`, umbrella
-   re-export, changeset.
+   re-export, changeset. **Unblocked; this is now the next row.**
 3. **Portfolio swap** — delete `apps/web/src/lib/dynamics/`, repoint the single import at
    `collapse-engine.ts:17` to `@flare-engine/dynamics`. Not a re-export shim: one consumer, one
    line, and the portfolio's KISS rule bans one-thing wrappers. Then reword the trigger copy a
    second time — this time to something true.
 
-Tracked as a new post-flip **Arc DYN** in [todo.md](todo.md), seeded below Arc HYG so `/start`
-exhausts Arc OSS and Arc PERF first, with this document as its SoT.
+Tracked as **Arc DYN** in [todo.md](todo.md), with this document as its SoT. Originally seeded
+below Arc HYG as post-flip work; resequenced pre-freeze 2026-08-14 by the owner, so it no longer
+sits behind Arc OSS and Arc PERF in `/start` order.
+
+**The capacity risk is real and is not waved away.** `todo.md`'s own note reads "lands by Oct 5 with
+slack, not without", and this is an XL row now competing with Arc OSS and Arc PERF for pre-freeze
+capacity. The owner took that trade knowingly, to buy a real dogfooding cycle before the public
+flip. If the calendar tightens, this row — not an Arc OSS row — is the one to slip.
 
 ---
 
 ## 8. Risks
 
-- **Post-flip timing dissolves the cross-repo risk.** The consumer doc's "not on npm → needs
-  `file:`/git/vendored dep + `transpilePackages`" assumed a pre-flip migration. Post-flip the engine
-  is on public npm and `dynamics` is pure TS with the same dual CJS/ESM build as every other
-  package, so `apps/web` just installs it. No vendoring, no transpile config, no dev-link.
-- **Engine version churn** likewise dissolves: pin `^0.4.0` rather than a commit.
+- **The cross-repo risk dissolves, but not for the reason first written.** The consumer doc's "not
+  on npm → needs `file:`/git/vendored dep + `transpilePackages`" assumed that a pre-flip migration
+  had no way to resolve the package. It does. `flare-engine-page` already consumes the restricted
+  registry through a committed, secret-free `.npmrc` that reads `${NPM_TOKEN}` from the environment:
+
+  ```
+  @flare-engine:registry=https://registry.npmjs.org/
+  //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+  ```
+
+  `grzott-portfolio` needs the same four lines and nothing else — it has no `.npmrc` today. So the
+  swap works pre-flip: no vendoring, no `transpilePackages`, no dev-link. Verified 2026-08-14.
+- **Engine version churn** likewise dissolves: pin the cut version's caret range rather than a
+  commit.
 - **The zero-alloc pass is where correctness gets lost.** It touches every line of the solver while
   the visible output is "a pile of boxes falls", which hides subtle regressions. The behavioral
   gates in §6 exist for this; run them against the donor first to establish the reference numbers.

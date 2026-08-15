@@ -297,9 +297,9 @@
       "measuredAt": "2026-07-29"
     },
     "@flare-engine/render-web": {
-      "ceiling": 24195,
-      "measured": 21995,
-      "measuredAt": "2026-07-29"
+      "ceiling": 40947,
+      "measured": 37224,
+      "measuredAt": "2026-08-14"
     },
     "@flare-engine/scene": {
       "ceiling": 15126,
@@ -370,6 +370,10 @@
     {
       "date": "2026-07-29",
       "reason": "PERF-5: first population. Counters and ceilings recorded from the honest instrument at b7f5fc7 (PERF-4a); before this the file was `{}` and gated nothing."
+    },
+    {
+      "date": "2026-08-14",
+      "reason": "render-web ceiling raised 24195 -> 40947 B. Owner-authorized. The package took explicit ownership of the WebGL context (GetWebGLContext/MakeWebGLContext/MakeOnScreenGLSurface + paired teardown), gained webglcontextlost/restored self-healing, and its CanvasKit loader gained stall-abort, deadline and retry-after-failure. Added behaviour, not a regression. Note for future triage: source maps are ~61% of this package's gzipped dist (23254 B of 38242 B, summing per-file gzip of index.js.map, index.mjs.map, index.d.ts.map, index.d.mts.map against the full dist/), so byte growth here tracks source-map growth more than code growth."
     }
   ]
 }

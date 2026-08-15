@@ -17,10 +17,13 @@ marketing site not using the engine is the same class of claim-vs-reality gap th
    `createPostFxSurface` is at parity (§4.2). Swapping to it today is a net regression.
 2. **Never regress the page to adopt a package.** Where page-local code is ahead of the engine,
    the page keeps its copy and the engine gets a row. Applied twice below.
-3. **No early publish.** 0.3.0 stays reserved for the October flip. Anything gated on unpublished
-   engine code is gated, not worked around with a publish.
-4. **The two engine rows are not pre-freeze musts.** They unblock deletion of duplicated code, not
-   a defect. See §6 for the calendar call.
+3. ~~**No early publish.**~~ **SUPERSEDED 2026-08-14.** Owner decision, recorded in
+   [consumer-enablement-2026-08.md](consumer-enablement-2026-08.md) §"Decisions taken" 1: a
+   consumer-enablement release is cut **before** the freeze, and the launch is a later cut. No
+   version number is reserved or stated — the fleet is lockstep, so the number is decided at
+   version time.
+4. ~~**The two engine rows are not pre-freeze musts.**~~ **SUPERSEDED 2026-08-14.** E2 became
+   pre-freeze work and **has landed** (§5). E1 was cut as dead (§5). See §6.
 
 ---
 
@@ -108,7 +111,17 @@ as **consumer-contract tests**: retargeted at `@flare-engine/simulation`, they a
 resolved, published, bundled surface behaves — covering the packaging and exports-map failure modes
 an in-repo test cannot reach.
 
-Retargeting is one line per file. Keep the test bodies verbatim.
+For `nbody.test.ts` and `ripples.test.ts` this is one import line each; keep the bodies verbatim.
+
+`field.test.ts` needs more: the import, the `createTrailField` → `createScalarField` factory name at
+`:8,19,26,34,44,52`, and the `step()` arity at `:29,37,54`. **One test must be deleted:**
+`:42-48` "top-band decay starves the headline rows faster than the body" calls
+`step(0.3, 0.95, 0.2, 0.6, ∞)` with a live band and asserts `sample(60, 8) < sample(60, 90)`. Its
+subject does not exist in `ScalarField`.
+
+That deletion is the real cost of §2.2 and is called out rather than absorbed: it removes the only
+automated proof the band works. The deleted test is also the ready-made spec for the region-multiply
+row, should the band ever return — recover it from git history rather than rewriting it.
 
 ---
 
@@ -169,18 +182,27 @@ Both exist only because the page ran ahead of the engine. Both are game-agnostic
 anything about this site — and both have a working reference implementation in a named page file to
 test against.
 
-**E1 — `simulation`: `AgentField` settable `activeCount`.**
-Make the stepped-agent count mutable (allocate at the `count` ceiling; step, deposit, and iterate
-only the first `activeCount`), exactly the shape the page already runs at `sim.ts:202-205`. A quality
-throttle is table stakes for any agent sim shipping to mixed hardware. `forEachAgent` and `resize`
-honor it. Unblocks §4.1. One lockstep minor changeset.
+**E1 — `simulation`: `AgentField` settable `activeCount`. — ❌ CUT 2026-08-14, dead.**
+The row existed only so the page could adopt `createStigmergy` (§4.1). The page has since settled on
+keeping its own agent loop permanently — its own notes record the package helper as "a different
+contract", and no `createStigmergy` call site remains in `demos/physarum/sim.ts`. With no consumer
+waiting on it, the row unblocks nothing. File it again only if a real consumer appears.
 
-**E2 — `render-web`: `createPostFxSurface` context lifecycle + loss recovery.**
-Take explicit ownership of `GetWebGLContext` → `MakeWebGLContext` → `MakeOnScreenGLSurface`, free
-the `GrDirectContext` and the context handle in `dispose()`, and handle
-`webglcontextlost`/`webglcontextrestored` by no-op'ing draws while lost and rebuilding GPU objects on
-restore. Every web consumer hits the browser context cap; today the package leaks a context per
-surface. Unblocks §4.2. One lockstep minor changeset.
+**E2 — `render-web`: `createPostFxSurface` context lifecycle + loss recovery. — ✅ DONE 2026-08-14.**
+Landed in the consumer-enablement release (Plan A Tasks 3–6). Scope grew once the package was read
+against HEAD rather than against published 0.2.1: the `resize()` delta was **already fixed** at HEAD,
+and three items the original spec did not list were added — a `Src` blend mode on the composite blit,
+`clampDim` non-finite guarding, and loader stall/deadline/retry bounds.
+
+Two things worth carrying forward:
+
+- **It was a merge, not a port.** The engine was already *ahead* of the page on three axes — a
+  zero-alloc `rectScratch` where the page allocates `kit.LTRBRect()` per pass, multi-child sampler
+  support for LUT-class effects where the page binds only `[srcShader]`, and direct `pass.uniforms`
+  where the page wraps in `Float32Array.from`. Copying the page's file wholesale would have
+  regressed all three.
+- **`onscreenCanvas()` and `sceneCanvas()` now return `Canvas | null`.** The page's adapter must
+  guard both when it adopts the package.
 
 **Cut under YAGNI:** a `ScalarField` rectangular-region multiply. It would be needed only to
 re-enable the headline band, which the page has switched off (§2.2). File it if the band returns.
@@ -192,22 +214,23 @@ re-enable the headline band, which the page has switched off (§2.2). File it if
 **Page-side (independent, do now):** §3 test gate → §2.1 spacetime → §2.2 physarum. Three commits,
 no engine dependency, no publish. Net ~820 LOC deleted across three modules.
 
-**Engine-side (E1/E2):** these unblock deletion of duplicated code. Nothing is broken today, no
-consumer is blocked, and no launch claim depends on them. They must **not** jump the pre-freeze
-queue ahead of Arc OSS and Arc PERF, whose capacity note in [todo.md](todo.md) already reads "lands
-by Oct 5 with slack, not without."
+**Engine-side — RESOLVED 2026-08-14.** The calendar question this section posed is closed: the owner
+resequenced the work pre-freeze, E2 has landed, and E1 was cut as dead. The recommendation this
+section made — pre-freeze, on the grounds that the flip is the moment the site is most read and the
+worst moment for `getting-started.mdx:127` to still say the hero runs a local copy — is what
+happened, for exactly that reason.
 
-Two honest options, owner's call at planning time:
+**What remains is page-side and is now unblocked.** Once the consumer-enablement release is
+published, the page executes row D3: `canvaskit-loader.ts` becomes a shim keeping the `?url` import,
+`demos/postfx/surface.ts` becomes a thin adapter that builds the hero chain and delegates, and both
+local files delete. The page must also guard `onscreenCanvas()` / `sceneCanvas()`, which are now
+nullable, and drop its hand-rolled `smoothstep` in `logo/timeline.ts:59-64` — `@flare-engine/math`
+has exported `smoothStep` all along (`packages/math/src/scalar.ts:62`).
 
-- **Below the P2 cut-line, pre-freeze.** If the calendar stays green they ride the 0.3.0 cut and the
-  page finishes its adoption the week the flip lands. If it tightens they slip untouched.
-- **Post-flip, with 0.4.0.** They land alongside [dynamics-lift-2026-08.md](dynamics-lift-2026-08.md),
-  which is already a 0.4.0 post-flip lift from a sibling consumer — same shape, same arc.
-
-Recommendation: **below the P2 cut-line.** Both rows are small and each has a reference
-implementation, so they are unusually low-risk for pre-freeze work; and the flip is the moment the
-site is most read, which is the worst moment for `getting-started.mdx:127` to still say the hero
-runs a local copy.
+**The page's own `render-web-upstream-spec.md` needs two corrections** when D3 is picked up: it says
+the fix "belongs in 0.3.0 … already queued with 23 changesets" (the count was 44, and no version
+should be named), and it lists six deltas when only five were live at engine HEAD — `resize()` was
+already fixed there.
 
 ---
 

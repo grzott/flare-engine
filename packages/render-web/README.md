@@ -14,13 +14,15 @@ bun add @flare-engine/render-web canvaskit-wasm
 
 ### `loadCanvasKit` — `loader.ts`
 
-Loads the CanvasKit WASM binary and returns a ready `CanvasKit` instance. Takes the URL/path to the `canvaskit.wasm` binary (required), plus an optional `onProgress(fraction)` download callback.
+Loads the CanvasKit WASM binary and returns a ready `CanvasKit` instance. Takes the URL/path to the `canvaskit.wasm` binary (required), an optional `onProgress(fraction)` download callback, and an optional `LoadCanvasKitOptions` (`stallMs`, default 15000; `deadlineMs`, default 45000) bounding the load.
 
 ```ts
 import { loadCanvasKit } from '@flare-engine/render-web';
 
-const kit = await loadCanvasKit('/canvaskit.wasm');
+const kit = await loadCanvasKit('/canvaskit.wasm', undefined, { stallMs: 10_000, deadlineMs: 30_000 });
 ```
+
+A successful load is cached — later calls return the same instance. A **failed** load is not cached: a later call retries from scratch instead of being stranded on the earlier rejection.
 
 ### `createWebSurface` — `web-surface.ts`
 
@@ -76,7 +78,7 @@ surface.flush();
 Creates a `PostFxSurface` that owns an offscreen scene canvas, a ping-pong intermediate, and an onscreen WebGL surface. At `composite()` time it runs the caller-supplied `EffectChain` through compiled SkSL shaders and blits the result to screen.
 
 ```ts
-import type { CanvasKit } from 'canvaskit-wasm';
+import type { Canvas, CanvasKit } from 'canvaskit-wasm';
 import { createPostFxSurface } from '@flare-engine/render-web';
 import { EffectChain, createVignette, createBloom } from '@flare-engine/postfx';
 
@@ -84,6 +86,7 @@ declare const kit: CanvasKit;
 declare const canvasEl: HTMLCanvasElement;
 declare const newW: number;
 declare const newH: number;
+declare function drawHud(canvas: Canvas): void;
 
 const chain = new EffectChain();
 chain.add(createVignette('vig', { intensity: 0.6, radius: 0.8 }));
@@ -95,8 +98,13 @@ if (!surface) throw new Error('WebGL unavailable');
 // Game loop:
 surface.clear([0, 0, 0]);
 // ...draw to surface.sceneCanvas()...
-surface.composite(1);       // runs the shader chain
-surface.flush();            // present crisp overlays drawn to onscreenCanvas()
+surface.composite(1);       // runs the shader chain, presents the scene to onscreenCanvas()
+
+// Draw crisp overlays AFTER composite() but BEFORE flush(). Null while the context is lost.
+const overlay = surface.onscreenCanvas();
+if (overlay) drawHud(overlay);
+
+surface.flush();            // present the frame
 
 // On resize:
 surface.resize(newW, newH);
@@ -107,6 +115,19 @@ surface.dispose();
 ```
 
 Pass an empty `new EffectChain()` for a zero-overhead passthrough (no shader compilation).
+
+### Context loss and restore
+
+`sceneCanvas()` and `onscreenCanvas()` return `Canvas | null` — both are `null` while the WebGL context is lost. `PostFxSurface` self-heals: on `webglcontextlost` it marks itself lost and stops touching GPU objects (`clear`/`fadeTrail`/`composite`/`flush` become no-ops); on `webglcontextrestored` it rebuilds the context and surfaces on the same canvas and re-clears to the last background. Poll `isLost()` to drive a host-side fallback while recovery is pending:
+
+```ts
+import type { PostFxSurface } from '@flare-engine/render-web';
+
+declare const surface: PostFxSurface;
+declare function showStaticFallback(): void;
+
+if (surface.isLost()) showStaticFallback();
+```
 
 ## Architecture notes
 

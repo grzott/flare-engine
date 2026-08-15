@@ -4,13 +4,21 @@ import {
   type EffectChain,
   type SkiaPostFxModuleLike,
 } from '@flare-engine/postfx';
-import type { CanvasKit, Canvas as CKCanvas, Shader, Surface } from 'canvaskit-wasm';
+import type {
+  CanvasKit,
+  Canvas as CKCanvas,
+  GrDirectContext,
+  Shader,
+  Surface,
+  WebGLContextHandle,
+} from 'canvaskit-wasm';
 
 /**
  * A CanvasKit-backed render surface with a parameterized postfx chain.
  *
- * Lifted verbatim from `flare-engine-page/src/components/demos/postfx/surface.ts`
- * with the hardcoded effect chain replaced by the caller-supplied `chain` argument.
+ * Manages an offscreen scene surface and an on-screen surface, owns the WebGL
+ * `GrDirectContext`, handles context loss/restore, and composites the scene
+ * through a caller-supplied effect chain each frame.
  *
  * Usage:
  *   const chain = new EffectChain();
@@ -22,10 +30,10 @@ export interface PostFxSurface {
   readonly width: number;
   /** Current backing-store height (device px), floored. */
   readonly height: number;
-  /** The offscreen scene canvas — draw the scene here each frame. */
+  /** The offscreen scene canvas — draw the scene here each frame. Null while the context is lost. */
   sceneCanvas(): CKCanvas | null;
-  /** The on-screen canvas — draw crisp overlays here AFTER composite(). */
-  onscreenCanvas(): CKCanvas;
+  /** The on-screen canvas — draw crisp overlays here AFTER composite(). Null while lost. */
+  onscreenCanvas(): CKCanvas | null;
   /** Hard-clear the scene to an opaque background (call once after create + after resize). */
   clear(bgRgb: readonly number[]): void;
   /** Motion-blur trail: fade the previous scene frame toward bg instead of clearing. */
@@ -36,6 +44,8 @@ export interface PostFxSurface {
   flush(): void;
   /** Resize the canvas backing store + offscreen surfaces (does NOT clear — call clear() after). */
   resize(width: number, height: number): void;
+  /** True while the WebGL context is lost or GPU surfaces could not be allocated. */
+  isLost(): boolean;
   dispose(): void;
 }
 
@@ -54,13 +64,17 @@ export function createPostFxSurface(
   canvas: HTMLCanvasElement,
   chain: EffectChain,
 ): PostFxSurface | null {
-  const onscreenOrNull = kit.MakeWebGLCanvasSurface(canvas);
-  if (!onscreenOrNull) return null;
-  // let so resize() can rebind when the canvas backing store changes size.
-  let onscreen: import('canvaskit-wasm').Surface = onscreenOrNull;
+  const clampDim = (v: number): number => {
+    const n = Math.floor(v);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  };
 
-  let w = Math.max(1, canvas.width);
-  let h = Math.max(1, canvas.height);
+  let w = clampDim(canvas.width);
+  let h = clampDim(canvas.height);
+  // Retained so a future context-restore handler can re-clear to the last background.
+  // A private zero-alloc buffer copied INTO on each clear — never aliases the caller's
+  // array, so mutating that array later can't retroactively change what gets replayed.
+  const lastBg = new Float32Array(3);
 
   const info = () => ({
     width: w,
@@ -70,13 +84,84 @@ export function createPostFxSurface(
     colorSpace: kit.ColorSpace.SRGB,
   });
 
-  let scene: Surface | null = onscreen.makeSurface(info());
-  if (!scene) console.warn('[render-web] postfx: scene surface null; frame will be blank');
-  let pong: Surface | null = onscreen.makeSurface(info());
-  if (!pong) console.warn('[render-web] postfx: pong surface null; no multi-pass');
+  let ctxHandle: WebGLContextHandle = 0;
+  let grContext: GrDirectContext | null = null;
+  let onscreen: Surface | null = null;
+  let scene: Surface | null = null;
+  let pong: Surface | null = null;
+  let lost = false;
+
+  // Frees every GPU object. Null-safe: runs on partial construction and on every restore.
+  const disposeGpu = (): void => {
+    scene?.delete();
+    pong?.delete();
+    onscreen?.delete();
+    grContext?.delete();
+    if (ctxHandle) kit.deleteContext(ctxHandle);
+    scene = null;
+    pong = null;
+    onscreen = null;
+    grContext = null;
+    ctxHandle = 0;
+  };
+
+  // (Re)creates context + surfaces on the current canvas at w×h. False if the GPU cannot.
+  const buildGpu = (): boolean => {
+    ctxHandle = kit.GetWebGLContext(canvas);
+    if (!ctxHandle) return false;
+    grContext = kit.MakeWebGLContext(ctxHandle);
+    if (!grContext) {
+      kit.deleteContext(ctxHandle);
+      ctxHandle = 0;
+      return false;
+    }
+    onscreen = kit.MakeOnScreenGLSurface(grContext, w, h, kit.ColorSpace.SRGB);
+    scene = onscreen?.makeSurface(info()) ?? null;
+    pong = onscreen?.makeSurface(info()) ?? null;
+    if (!onscreen || !scene || !pong) {
+      disposeGpu();
+      return false;
+    }
+    return true;
+  };
+
+  if (!buildGpu()) {
+    disposeGpu();
+    return null;
+  }
+
+  const clearScene = (bgRgb: ArrayLike<number>): void => {
+    // Copy (not alias) — the restore path replays this later, when the caller's own
+    // array may hold different values. Keep recording even while lost, so a clear
+    // issued during a loss is honoured on restore.
+    lastBg[0] = bgRgb[0] ?? 0;
+    lastBg[1] = bgRgb[1] ?? 0;
+    lastBg[2] = bgRgb[2] ?? 0;
+    if (lost) return; // never touch GPU objects while the context is dead
+    const sc = scene?.getCanvas();
+    if (!sc) return;
+    sc.clear(kit.Color4f(lastBg[0], lastBg[1], lastBg[2], 1));
+    scene?.flush();
+  };
+
+  // preventDefault() keeps the context restorable; `lost` gates every draw op so nothing touches a
+  // dead context. On restore, rebuild on the same canvas and re-clear to the retained background.
+  const onContextLost = (e: Event): void => {
+    e.preventDefault();
+    lost = true;
+  };
+  const onContextRestored = (): void => {
+    disposeGpu();
+    lost = !buildGpu();
+    if (!lost) clearScene(lastBg);
+  };
+  canvas.addEventListener('webglcontextlost', onContextLost, false);
+  canvas.addEventListener('webglcontextrestored', onContextRestored, false);
 
   const fade = new kit.Paint();
   const fx = new kit.Paint();
+  // Full-frame replace-blit: never composite stale pong content from a previous pass.
+  fx.setBlendMode(kit.BlendMode.Src);
   const scratch = new Float32Array(4);
   const rectScratch = new Float32Array(4);
 
@@ -100,6 +185,7 @@ export function createPostFxSurface(
   const runtime = createPostFxRuntime(skia);
 
   function blit(img: import('canvaskit-wasm').Image): void {
+    if (lost || !onscreen) return;
     const passes: readonly CompiledPass[] = runtime.supported ? runtime.buildPass(chain, w, h) : [];
     if (passes.length === 0) {
       onscreen.getCanvas().drawImage(img, 0, 0);
@@ -173,15 +259,14 @@ export function createPostFxSurface(
     get height() {
       return h;
     },
-    sceneCanvas: () => scene?.getCanvas() ?? null,
-    onscreenCanvas: () => onscreen.getCanvas(),
+    sceneCanvas: () => (lost ? null : (scene?.getCanvas() ?? null)),
+    onscreenCanvas: () => (lost ? null : (onscreen?.getCanvas() ?? null)),
     clear(bgRgb) {
-      scene?.getCanvas().clear(kit.Color4f(bgRgb[0] ?? 0, bgRgb[1] ?? 0, bgRgb[2] ?? 0, 1));
-      scene?.flush();
+      clearScene(bgRgb);
     },
     fadeTrail(bgRgb, alpha) {
       const sc = scene?.getCanvas();
-      if (!sc) return;
+      if (lost || !sc) return;
       scratch[0] = bgRgb[0] ?? 0;
       scratch[1] = bgRgb[1] ?? 0;
       scratch[2] = bgRgb[2] ?? 0;
@@ -195,7 +280,7 @@ export function createPostFxSurface(
       sc.drawRect(rectScratch, fade);
     },
     composite(globalIntensity) {
-      if (!scene) return;
+      if (lost || !scene) return;
       scene.flush();
       chain.globalIntensity = globalIntensity;
       const img = scene.makeImageSnapshot();
@@ -203,39 +288,33 @@ export function createPostFxSurface(
       img.delete();
     },
     flush() {
-      onscreen.flush();
+      if (!lost) onscreen?.flush();
     },
     resize(nextW, nextH) {
-      w = Math.max(1, Math.floor(nextW));
-      h = Math.max(1, Math.floor(nextH));
+      w = clampDim(nextW);
+      h = clampDim(nextH);
       canvas.width = w;
       canvas.height = h;
-      // Recreate the on-screen surface: MakeWebGLCanvasSurface binds to the
-      // canvas backing store at creation time, so the old surface still refers
-      // to the pre-resize dimensions after canvas.width/height are updated.
-      const nextOnscreen = kit.MakeWebGLCanvasSurface(canvas);
-      if (nextOnscreen) {
-        onscreen.delete();
-        onscreen = nextOnscreen;
-      } else {
-        console.warn(
-          '[render-web] postfx: MakeWebGLCanvasSurface returned null on resize; keeping previous surface',
-        );
+      if (lost || !grContext) return; // a pending restore rebuilds at the new size
+      scene?.delete();
+      pong?.delete();
+      onscreen?.delete();
+      onscreen = kit.MakeOnScreenGLSurface(grContext, w, h, kit.ColorSpace.SRGB);
+      scene = onscreen?.makeSurface(info()) ?? null;
+      pong = onscreen?.makeSurface(info()) ?? null;
+      if (!onscreen || !scene || !pong) {
+        disposeGpu();
+        lost = true;
       }
-      scene?.delete();
-      pong?.delete();
-      scene = onscreen.makeSurface(info());
-      if (!scene) console.warn('[render-web] postfx: scene surface null after resize');
-      pong = onscreen.makeSurface(info());
-      if (!pong) console.warn('[render-web] postfx: pong surface null after resize');
     },
+    isLost: () => lost,
     dispose() {
-      scene?.delete();
-      pong?.delete();
+      canvas.removeEventListener('webglcontextlost', onContextLost, false);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored, false);
       fade.delete();
       fx.delete();
       runtime.reset();
-      onscreen.delete();
+      disposeGpu();
     },
   };
 }

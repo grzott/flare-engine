@@ -11,79 +11,9 @@ import {
   GRAYSCALE_FLASH_SKSL,
   VIGNETTE_SKSL,
 } from '@flare-engine/postfx';
-import type {
-  BlendMode,
-  CanvasKit,
-  Canvas as CKCanvas,
-  Image as CKImage,
-  InputColor,
-  InputRect,
-  Paint,
-  Surface,
-} from 'canvaskit-wasm';
+import type { CanvasKit } from 'canvaskit-wasm';
 import { createPostFxSurface } from '../src/postfx-surface.js';
-
-// ---------------------------------------------------------------------------
-// Mock helpers
-// ---------------------------------------------------------------------------
-
-function makeMockSurface(calls: { method: string; args?: unknown[] }[]): Surface {
-  const canvas: CKCanvas = {
-    save: () => 0,
-    restore: () => {},
-    translate: () => {},
-    scale: () => {},
-    rotate: () => {},
-    clear: (c: InputColor) => calls.push({ method: 'clear', args: [c] }),
-    drawImage: (img: CKImage, x: number, y: number) =>
-      calls.push({ method: 'drawImage', args: [img, x, y] }),
-    drawRect: (r: InputRect, p: Paint) => calls.push({ method: 'drawRect', args: [r, p] }),
-    concat: () => {},
-  } as unknown as CKCanvas;
-
-  const surface: Surface = {
-    getCanvas: () => canvas,
-    flush: () => {},
-    delete: () => {},
-    makeImageSnapshot: () =>
-      ({
-        makeShaderOptions: () => ({ delete: () => {} }),
-        delete: () => {},
-      }) as unknown as CKImage,
-    makeSurface: (_info: unknown) => makeMockSurface(calls),
-  } as unknown as Surface;
-
-  return surface;
-}
-
-function makeMockKit(): { kit: CanvasKit; onscreenCalls: { method: string; args?: unknown[] }[] } {
-  const onscreenCalls: { method: string; args?: unknown[] }[] = [];
-  const surface = makeMockSurface(onscreenCalls);
-
-  const kit = {
-    MakeWebGLCanvasSurface: (_canvas: unknown) => surface,
-    ColorType: { RGBA_8888: 0 },
-    AlphaType: { Premul: 1 },
-    ColorSpace: { SRGB: null },
-    BlendMode: { SrcOver: {} as BlendMode },
-    TileMode: { Clamp: 0 },
-    FilterMode: { Linear: 0 },
-    MipmapMode: { None: 0 },
-    Paint: class {
-      setColor() {}
-      setBlendMode() {}
-      setShader() {}
-      delete() {}
-    },
-    RuntimeEffect: {
-      Make: () => null,
-    },
-    Color4f: (r: number, g: number, b: number, a: number) => new Float32Array([r, g, b, a]),
-    LTRBRect: (l: number, t: number, r: number, b: number) => new Float32Array([l, t, r, b]),
-  } as unknown as CanvasKit;
-
-  return { kit, onscreenCalls };
-}
+import { makeMockKit } from './support/mock-kit.js';
 
 // ---------------------------------------------------------------------------
 // Real CanvasKit CPU loader (mirrors conformance.test.ts)
@@ -111,16 +41,15 @@ beforeAll(async () => {
 // ---------------------------------------------------------------------------
 
 describe('createPostFxSurface', () => {
-  it('returns null when MakeWebGLCanvasSurface fails', () => {
-    const kit = { MakeWebGLCanvasSurface: () => null } as unknown as CanvasKit;
+  it('returns null when the WebGL context cannot be acquired', () => {
+    const kit = { GetWebGLContext: () => 0 } as unknown as CanvasKit;
     const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
-    const result = createPostFxSurface(kit, canvas, new EffectChain());
-    expect(result).toBeNull();
+    expect(createPostFxSurface(kit, canvas, new EffectChain())).toBeNull();
   });
 
   it('exposes correct initial width and height', () => {
     const { kit } = makeMockKit();
-    const canvas = { width: 320, height: 240 } as HTMLCanvasElement;
+    const canvas = makeEventfulCanvas(320, 240);
     const surface = createPostFxSurface(kit, canvas, new EffectChain());
     expect(surface).not.toBeNull();
     expect(surface!.width).toBe(320);
@@ -129,7 +58,7 @@ describe('createPostFxSurface', () => {
 
   it('updates width and height on resize', () => {
     const { kit } = makeMockKit();
-    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const canvas = makeEventfulCanvas();
     const surface = createPostFxSurface(kit, canvas, new EffectChain());
     surface!.resize(800, 600);
     expect(surface!.width).toBe(800);
@@ -141,8 +70,8 @@ describe('createPostFxSurface', () => {
   it('chain is parameterized — different chains produce different surface instances', () => {
     const { kit: kit1 } = makeMockKit();
     const { kit: kit2 } = makeMockKit();
-    const canvas1 = { width: 100, height: 100 } as HTMLCanvasElement;
-    const canvas2 = { width: 100, height: 100 } as HTMLCanvasElement;
+    const canvas1 = makeEventfulCanvas();
+    const canvas2 = makeEventfulCanvas();
     const chain1 = new EffectChain();
     const chain2 = new EffectChain();
     chain2.add(createBloom('bloom', { threshold: 0.5, intensity: 0.9 }));
@@ -153,72 +82,25 @@ describe('createPostFxSurface', () => {
 
   it('sceneCanvas returns a canvas before dispose', () => {
     const { kit } = makeMockKit();
-    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const canvas = makeEventfulCanvas();
     const surface = createPostFxSurface(kit, canvas, new EffectChain());
     expect(surface!.sceneCanvas()).not.toBeNull();
   });
 
   it('resize recreates the onscreen surface and deletes the previous one', () => {
-    let mkWebGLCallCount = 0;
-    let initialOnscreenDeleted = false;
-
-    function makeTrackedOnscreen(onDelete: () => void): Surface {
-      const s: Surface = {
-        getCanvas: () =>
-          ({
-            clear: () => {},
-            drawImage: () => {},
-            drawRect: () => {},
-          }) as unknown as CKCanvas,
-        flush: () => {},
-        delete: onDelete,
-        makeImageSnapshot: () =>
-          ({
-            makeShaderOptions: () => ({ delete: () => {} }),
-            delete: () => {},
-          }) as unknown as CKImage,
-        makeSurface: () => makeTrackedOnscreen(() => {}),
-      } as unknown as Surface;
-      return s;
-    }
-
-    const kit = {
-      MakeWebGLCanvasSurface: (_canvas: unknown) => {
-        mkWebGLCallCount++;
-        const isFirst = mkWebGLCallCount === 1;
-        return makeTrackedOnscreen(() => {
-          if (isFirst) initialOnscreenDeleted = true;
-        });
-      },
-      ColorType: { RGBA_8888: 0 },
-      AlphaType: { Premul: 1 },
-      ColorSpace: { SRGB: null },
-      BlendMode: { SrcOver: {} as BlendMode },
-      TileMode: { Clamp: 0 },
-      FilterMode: { Linear: 0 },
-      MipmapMode: { None: 0 },
-      Paint: class {
-        setColor() {}
-        setBlendMode() {}
-        setShader() {}
-        delete() {}
-      },
-      RuntimeEffect: { Make: () => null },
-      Color4f: (r: number, g: number, b: number, a: number) => new Float32Array([r, g, b, a]),
-      LTRBRect: (l: number, t: number, r: number, b: number) => new Float32Array([l, t, r, b]),
-    } as unknown as CanvasKit;
-
-    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const { kit, onscreenCount, deletedSurfaces } = makeMockKit();
+    const canvas = makeEventfulCanvas();
     const surface = createPostFxSurface(kit, canvas, new EffectChain())!;
     expect(surface).not.toBeNull();
-    expect(mkWebGLCallCount).toBe(1);
+    expect(onscreenCount()).toBe(1);
 
     surface.resize(200, 150);
 
-    // resize() must call MakeWebGLCanvasSurface a second time (once per resize)
-    expect(mkWebGLCallCount).toBe(2);
+    // resize() must call MakeOnScreenGLSurface a second time (once per resize),
+    // rebuilding surfaces from the retained GrDirectContext.
+    expect(onscreenCount()).toBe(2);
     // The previous onscreen surface must be deleted so its backing store is freed
-    expect(initialOnscreenDeleted).toBe(true);
+    expect(deletedSurfaces.includes(1)).toBe(true);
   });
 });
 
@@ -229,15 +111,15 @@ describe('createPostFxSurface', () => {
 describe('composite / dispose behavior (mock, empty chain)', () => {
   it('composite with empty chain draws image directly then flushes onscreen', () => {
     // RuntimeEffect.Make returns null → runtime.supported = false → pass-through branch
-    const { kit, onscreenCalls } = makeMockKit();
-    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const { kit, calls } = makeMockKit();
+    const canvas = makeEventfulCanvas();
     const chain = new EffectChain();
     const surface = createPostFxSurface(kit, canvas, chain)!;
     expect(surface).not.toBeNull();
 
     surface.composite(1);
 
-    const drawImageCall = onscreenCalls.find((c) => c.method === 'drawImage');
+    const drawImageCall = calls.find((c) => c.method === 'drawImage');
     expect(drawImageCall).not.toBeUndefined();
     // drawImage(img, 0, 0)
     expect(drawImageCall!.args?.[1]).toBe(0);
@@ -246,7 +128,7 @@ describe('composite / dispose behavior (mock, empty chain)', () => {
 
   it('dispose deletes scene, pong, fade, fx; does not throw', () => {
     const { kit } = makeMockKit();
-    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const canvas = makeEventfulCanvas();
     const surface = createPostFxSurface(kit, canvas, new EffectChain());
     expect(surface).not.toBeNull();
     // Should not throw
@@ -254,61 +136,8 @@ describe('composite / dispose behavior (mock, empty chain)', () => {
   });
 
   it('dispose calls delete on both offscreen surfaces', () => {
-    // We need to track delete calls on the surfaces returned by makeSurface
-    const deletedSurfaces: number[] = [];
-    let surfaceCounter = 0;
-
-    function makeTrackedSurface(): Surface {
-      const id = ++surfaceCounter;
-      const s: Surface = {
-        getCanvas: () =>
-          ({
-            clear: () => {},
-            drawImage: () => {},
-            drawRect: () => {},
-          }) as unknown as CKCanvas,
-        flush: () => {},
-        delete: () => {
-          deletedSurfaces.push(id);
-        },
-        makeImageSnapshot: () =>
-          ({
-            makeShaderOptions: () => ({ delete: () => {} }),
-            delete: () => {},
-          }) as unknown as CKImage,
-        makeSurface: (_info: unknown) => makeTrackedSurface(),
-      } as unknown as Surface;
-      return s;
-    }
-
-    const deletedPaints: string[] = [];
-    const kit = {
-      MakeWebGLCanvasSurface: () => makeTrackedSurface(),
-      ColorType: { RGBA_8888: 0 },
-      AlphaType: { Premul: 1 },
-      ColorSpace: { SRGB: null },
-      BlendMode: { SrcOver: {} },
-      TileMode: { Clamp: 0 },
-      FilterMode: { Linear: 0 },
-      MipmapMode: { None: 0 },
-      Paint: class {
-        private _label: string;
-        constructor() {
-          this._label = `paint-${deletedPaints.length}`;
-        }
-        setColor() {}
-        setBlendMode() {}
-        setShader() {}
-        delete() {
-          deletedPaints.push(this._label);
-        }
-      },
-      RuntimeEffect: { Make: () => null },
-      Color4f: (r: number, g: number, b: number, a: number) => new Float32Array([r, g, b, a]),
-      LTRBRect: (l: number, t: number, r: number, b: number) => new Float32Array([l, t, r, b]),
-    } as unknown as CanvasKit;
-
-    const canvas = { width: 100, height: 100 } as HTMLCanvasElement;
+    const { kit, deletedSurfaces, deletedPaints } = makeMockKit();
+    const canvas = makeEventfulCanvas();
     const surface = createPostFxSurface(kit, canvas, new EffectChain())!;
     surface.dispose();
 
@@ -324,105 +153,9 @@ describe('composite / dispose behavior (mock, empty chain)', () => {
 // ---------------------------------------------------------------------------
 
 describe('multi-pass ping-pong (mock with runtime support)', () => {
-  function makeRuntimeSupportedKit(): {
-    kit: CanvasKit;
-    deletedShaders: string[];
-    deletedSrcShaders: string[];
-    deletedSnapshots: string[];
-    childrenCounts: number[];
-  } {
-    const deletedShaders: string[] = [];
-    const deletedSrcShaders: string[] = [];
-    const deletedSnapshots: string[] = [];
-    const childrenCounts: number[] = [];
-    let shaderIdx = 0;
-    let snapshotIdx = 0;
-
-    function makeTrackedSrcShader(label: string): object {
-      return {
-        delete() {
-          deletedSrcShaders.push(label);
-        },
-      };
-    }
-
-    function makeTrackedShader(label: string): object {
-      return {
-        delete() {
-          deletedShaders.push(label);
-        },
-      };
-    }
-
-    function makeTrackedSnapshot(label: string): CKImage {
-      const snap = {
-        makeShaderOptions: () =>
-          makeTrackedSrcShader(`src-${label}`) as ReturnType<CKImage['makeShaderOptions']>,
-        delete() {
-          deletedSnapshots.push(label);
-        },
-      } as unknown as CKImage;
-      return snap;
-    }
-
-    function makeRTSurface(): Surface {
-      const s: Surface = {
-        getCanvas: () =>
-          ({
-            clear: () => {},
-            drawImage: () => {},
-            drawRect: () => {},
-          }) as unknown as CKCanvas,
-        flush: () => {},
-        delete: () => {},
-        makeImageSnapshot: () => {
-          const label = `snap-${++snapshotIdx}`;
-          return makeTrackedSnapshot(label);
-        },
-        makeSurface: () => makeRTSurface(),
-      } as unknown as Surface;
-      return s;
-    }
-
-    // The fake RuntimeEffect always compiles and produces a tracked shader
-    const fakeEffect = {
-      makeShaderWithChildren: (_uniforms: ArrayLike<number>, children: unknown[]) => {
-        // Record how many non-null child shaders each pass binds — for the LUT
-        // effect this must be 2 ([srcShader, lutShader]); pre-fix blit bound 1.
-        childrenCounts.push(children.filter((c) => c != null).length);
-        const label = `shader-${++shaderIdx}`;
-        return makeTrackedShader(label);
-      },
-    };
-
-    const kit = {
-      MakeWebGLCanvasSurface: () => makeRTSurface(),
-      ColorType: { RGBA_8888: 0 },
-      AlphaType: { Premul: 1 },
-      ColorSpace: { SRGB: null },
-      BlendMode: { SrcOver: {} },
-      TileMode: { Clamp: 0 },
-      FilterMode: { Linear: 0 },
-      MipmapMode: { None: 0 },
-      Paint: class {
-        setColor() {}
-        setBlendMode() {}
-        setShader() {}
-        delete() {}
-      },
-      RuntimeEffect: {
-        Make: () => fakeEffect,
-      },
-      Color4f: (r: number, g: number, b: number, a: number) => new Float32Array([r, g, b, a]),
-      LTRBRect: (l: number, t: number, r: number, b: number) => new Float32Array([l, t, r, b]),
-    } as unknown as CanvasKit;
-
-    return { kit, deletedShaders, deletedSrcShaders, deletedSnapshots, childrenCounts };
-  }
-
   it('single-pass: shader and srcShader are deleted after composite', () => {
-    const { kit, deletedShaders, deletedSrcShaders } = makeRuntimeSupportedKit();
-    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const { kit, deletedShaders, deletedSrcShaders } = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas(64, 64);
     const chain = new EffectChain();
     chain.add(createVignette('v', { intensity: 0.5, radius: 0.7 }));
     const surface = createPostFxSurface(kit, canvas, chain)!;
@@ -436,8 +169,10 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
   });
 
   it('two-pass: intermediate snapshot and both shaders are deleted after composite', () => {
-    const { kit, deletedShaders, deletedSrcShaders, deletedSnapshots } = makeRuntimeSupportedKit();
-    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const { kit, deletedShaders, deletedSrcShaders, deletedSnapshots } = makeMockKit({
+      runtimeSupported: true,
+    });
+    const canvas = makeEventfulCanvas(64, 64);
     const chain = new EffectChain();
     chain.add(createVignette('v', { intensity: 0.5, radius: 0.7 }));
     chain.add(createGrayscaleFlash('g', { intensity: 0.3 }));
@@ -454,8 +189,8 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
   });
 
   it('dispose after multi-pass composite does not throw', () => {
-    const { kit } = makeRuntimeSupportedKit();
-    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const { kit } = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas(64, 64);
     const chain = new EffectChain();
     chain.add(createVignette('v'));
     const surface = createPostFxSurface(kit, canvas, chain)!;
@@ -464,8 +199,8 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
   });
 
   it('color-grading-lut pass binds the LUT as a second child and frees it', () => {
-    const { kit, childrenCounts } = makeRuntimeSupportedKit();
-    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const { kit, childrenCounts } = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas(64, 64);
     const deletedLut: string[] = [];
     const lutImage = {
       makeShaderOptions: () => ({ delete: () => deletedLut.push('lut') }),
@@ -485,8 +220,8 @@ describe('multi-pass ping-pong (mock with runtime support)', () => {
   });
 
   it('non-LUT effects still bind exactly one child (src only)', () => {
-    const { kit, childrenCounts } = makeRuntimeSupportedKit();
-    const canvas = { width: 64, height: 64 } as HTMLCanvasElement;
+    const { kit, childrenCounts } = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas(64, 64);
     const chain = new EffectChain();
     chain.add(createVignette('v'));
     chain.add(createGrayscaleFlash('g'));
@@ -754,5 +489,306 @@ describe('real CanvasKit CPU: shader compilation and pixel output', () => {
     lutImg.delete();
     srcImg.delete();
     red.delete();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Explicit WebGL context lifecycle (leak fix)
+// ---------------------------------------------------------------------------
+
+describe('explicit WebGL context lifecycle', () => {
+  it('dispose frees the GrDirectContext and the WebGL context handle', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    expect(surface).not.toBeNull();
+    expect(m.deletedContexts).toEqual([]);
+
+    surface.dispose();
+
+    expect(m.deletedGrContexts.length).toBe(1);
+    expect(m.deletedContexts.length).toBe(1);
+  });
+
+  it('does not leak a context per surface across create/dispose cycles', () => {
+    const m = makeMockKit();
+    for (let i = 0; i < 8; i++) {
+      const canvas = makeEventfulCanvas(64, 64);
+      createPostFxSurface(m.kit, canvas, new EffectChain())!.dispose();
+    }
+    // Identity, not just count — the mock hands out increasing ids, so this also
+    // proves each cycle frees its OWN handle rather than one stale handle 8 times.
+    expect(m.deletedContexts).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(m.deletedGrContexts).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('returns null and leaks nothing when the GPU cannot build', () => {
+    const m = makeMockKit();
+    m.failNextBuild(true);
+    const canvas = makeEventfulCanvas();
+    expect(createPostFxSurface(m.kit, canvas, new EffectChain())).toBeNull();
+    expect(m.deletedContexts.length).toBe(0);
+  });
+
+  it('frees the WebGL context when GrDirectContext creation fails', () => {
+    const m = makeMockKit();
+    m.failAt('grcontext');
+    const canvas = makeEventfulCanvas();
+    expect(createPostFxSurface(m.kit, canvas, new EffectChain())).toBeNull();
+    expect(m.deletedContexts.length).toBe(1);
+    expect(m.deletedGrContexts.length).toBe(0);
+  });
+
+  it('frees context and GrDirectContext when surface allocation fails', () => {
+    const m = makeMockKit();
+    m.failAt('surface');
+    const canvas = makeEventfulCanvas();
+    expect(createPostFxSurface(m.kit, canvas, new EffectChain())).toBeNull();
+    expect(m.deletedContexts.length).toBe(1);
+    expect(m.deletedGrContexts.length).toBe(1);
+  });
+
+  it('reports isLost false on a healthy surface', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    expect(surface.isLost()).toBe(false);
+    expect(surface.onscreenCanvas()).not.toBeNull();
+  });
+
+  it('resize rebuilds the on-screen surface from the retained GrDirectContext', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    expect(m.onscreenCount()).toBe(1);
+
+    surface.resize(200, 150);
+
+    expect(m.onscreenCount()).toBe(2);
+    expect(surface.width).toBe(200);
+    expect(surface.height).toBe(150);
+    // The context is retained across resize — only surfaces are rebuilt.
+    expect(m.deletedContexts.length).toBe(0);
+  });
+
+  it('clamps non-finite and non-positive dimensions to 1', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas(Number.NaN, 0);
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    expect(surface.width).toBe(1);
+    expect(surface.height).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WebGL context loss and restore self-heal
+// ---------------------------------------------------------------------------
+
+function makeEventfulCanvas(
+  width = 100,
+  height = 100,
+): HTMLCanvasElement & {
+  fire: (type: string) => Event;
+  listenerCount: () => number;
+} {
+  const listeners = new Map<string, Set<EventListener>>();
+  const canvas = {
+    width,
+    height,
+    addEventListener(type: string, fn: EventListener) {
+      const set = listeners.get(type) ?? new Set();
+      set.add(fn);
+      listeners.set(type, set);
+    },
+    removeEventListener(type: string, fn: EventListener) {
+      listeners.get(type)?.delete(fn);
+    },
+    fire(type: string) {
+      let defaultPrevented = false;
+      const ev = {
+        type,
+        preventDefault: () => {
+          defaultPrevented = true;
+        },
+        get defaultPrevented() {
+          return defaultPrevented;
+        },
+      } as unknown as Event;
+      for (const fn of listeners.get(type) ?? []) fn(ev);
+      return ev;
+    },
+    listenerCount: () => [...listeners.values()].reduce((n, s) => n + s.size, 0),
+  };
+  return canvas as unknown as HTMLCanvasElement & {
+    fire: (type: string) => Event;
+    listenerCount: () => number;
+  };
+}
+
+describe('WebGL context loss and restore', () => {
+  it('calls preventDefault on loss so the context stays restorable', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    const ev = canvas.fire('webglcontextlost');
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('reports lost and nulls both canvases while lost', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    canvas.fire('webglcontextlost');
+    expect(surface.isLost()).toBe(true);
+    expect(surface.sceneCanvas()).toBeNull();
+    expect(surface.onscreenCanvas()).toBeNull();
+  });
+
+  it('no-ops draw operations while lost instead of throwing', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    canvas.fire('webglcontextlost');
+    expect(() => {
+      surface.clear([0, 0, 0]);
+      surface.fadeTrail([0, 0, 0], 0.5);
+      surface.composite(1);
+      surface.flush();
+    }).not.toThrow();
+  });
+
+  it('issues NO GPU calls at all while lost', () => {
+    // `not.toThrow()` above is necessary but not sufficient: the mock canvas never throws, so a
+    // broken implementation that happily drew into a dead context would still satisfy it. This
+    // asserts the calls genuinely did not reach the GPU.
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    canvas.fire('webglcontextlost');
+    const before = m.calls.length;
+
+    surface.clear([0, 0, 0]);
+    surface.fadeTrail([0, 0, 0], 0.5);
+    surface.composite(1);
+    surface.flush();
+
+    expect(m.calls.length).toBe(before);
+  });
+
+  it('replays a clear issued while lost once the context is restored', () => {
+    // A clear that arrives during a loss must still be recorded, so the restore repaints the
+    // background the host last asked for — not the one from before the loss.
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    surface.clear([1, 0, 0]);
+    canvas.fire('webglcontextlost');
+    surface.clear([0, 0, 1]); // arrives while lost — no GPU call, but must be remembered
+    canvas.fire('webglcontextrestored');
+
+    const lastClear = m.calls.filter((c) => c.method === 'clear').at(-1);
+    expect(Array.from(lastClear!.args![0] as Float32Array)).toEqual([0, 0, 1, 1]);
+  });
+
+  it('rebuilds GPU objects on restore and clears to the last background', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    surface.clear([0.25, 0.5, 0.75]);
+    const clearsBefore = m.calls.filter((c) => c.method === 'clear').length;
+
+    canvas.fire('webglcontextlost');
+    canvas.fire('webglcontextrestored');
+
+    expect(surface.isLost()).toBe(false);
+    expect(surface.sceneCanvas()).not.toBeNull();
+    // The restore re-cleared to the retained background rather than to black.
+    const clearsAfter = m.calls.filter((c) => c.method === 'clear').length;
+    expect(clearsAfter).toBe(clearsBefore + 1);
+    const lastClear = m.calls.filter((c) => c.method === 'clear').at(-1);
+    expect(Array.from(lastClear!.args![0] as Float32Array)).toEqual([0.25, 0.5, 0.75, 1]);
+  });
+
+  it('stays lost when the GPU still cannot build on restore', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    canvas.fire('webglcontextlost');
+    m.failNextBuild(true);
+    canvas.fire('webglcontextrestored');
+    expect(surface.isLost()).toBe(true);
+  });
+
+  it('frees the old GPU objects on restore rather than leaking them', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    expect(m.deletedContexts.length).toBe(0);
+    canvas.fire('webglcontextlost');
+    canvas.fire('webglcontextrestored');
+    // The pre-loss context must have been released before the rebuild.
+    expect(m.deletedContexts.length).toBe(1);
+    expect(m.deletedGrContexts.length).toBe(1);
+  });
+
+  it('removes both listeners on dispose', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    expect(canvas.listenerCount()).toBe(2);
+    surface.dispose();
+    expect(canvas.listenerCount()).toBe(0);
+  });
+
+  it('rebuilds at the resized dimensions when a resize happened while lost', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+
+    canvas.fire('webglcontextlost');
+    surface.resize(800, 600);
+    canvas.fire('webglcontextrestored');
+
+    expect(surface.isLost()).toBe(false);
+    expect(surface.width).toBe(800);
+    expect(surface.height).toBe(600);
+    expect(canvas.width).toBe(800);
+    expect(canvas.height).toBe(600);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Composite blit blend mode (Src replace, not SrcOver composite)
+// ---------------------------------------------------------------------------
+
+describe('composite blit blend mode', () => {
+  it('sets Src on the fx paint at construction', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    // Constructed, never drawn — so the only blend mode set so far is the fx paint's.
+    // fadeTrail() sets SrcOver on the OTHER paint, but only when called.
+    expect(m.blendModes).toEqual([{ name: 'Src' }]);
+  });
+
+  it('does not re-blend the fx paint during composite', () => {
+    const m = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas();
+    const chain = new EffectChain();
+    chain.add(createVignette('v'));
+    const surface = createPostFxSurface(m.kit, canvas, chain)!;
+    const atConstruction = m.blendModes.length;
+    surface.composite(1);
+    expect(m.blendModes.slice(atConstruction)).toEqual([]);
+  });
+
+  it('fadeTrail still uses SrcOver on the fade paint', () => {
+    const m = makeMockKit();
+    const canvas = makeEventfulCanvas();
+    const surface = createPostFxSurface(m.kit, canvas, new EffectChain())!;
+    const atConstruction = m.blendModes.length;
+    surface.fadeTrail([0, 0, 0], 0.5);
+    // The trail fade is a genuine alpha-over and must NOT become Src.
+    expect(m.blendModes.slice(atConstruction)).toEqual([{ name: 'SrcOver' }]);
   });
 });

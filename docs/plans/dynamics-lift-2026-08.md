@@ -198,11 +198,34 @@ structures, not an SoA rewrite.
 
 **Engine-side package tests** — behavioral, not coverage:
 
-- boxes come to rest on a static floor and stay at rest;
+- boxes **stop** on a static floor and hold position — see the correction below;
 - a stack does not sink through under the tuned Baumgarte / slop;
 - total energy does not grow over a long run;
 - two-run determinism under a fixed seed;
 - zero heap growth across N steps after warmup.
+
+**Correction, applied 2026-08-15 — this section contradicted §2.** The first gate originally read
+"boxes come to rest on a static floor and **stay at rest**". That is not achievable by the solver §2
+freezes: a Baumgarte-biased sequential-impulse solver without sleeping sustains a small bounded limit
+cycle at the penetration-slop equilibrium. §2 explicitly scopes sleeping **out** of v1, so the two
+sections demanded opposite things.
+
+Established empirically during the lift: the donor, run unmodified through the identical scenario,
+produces bit-identical chatter (`y = 85.03961`, `vy = -2.62986` at step 2999) — so this is inherent
+to the ported algorithm, not a defect introduced by the lift or the zero-alloc pass. Position is
+stable to within 0.015 units over 600 further steps; only velocity oscillates, at roughly 2.6.
+Restitution is not the cause: with `gravity.y = 1800` and `dt = 1/60`, `restThreshold` is 30, far
+above the chatter, so the restitution bias is already zero.
+
+The gate now asserts what is both true and load-bearing — position band, **stopped moving** (600
+further steps move it < 0.1, which catches a solver that sinks or creeps), and **bounded** jitter
+(which catches energy injection) — rather than a velocity floor the algorithm cannot reach. Verified
+non-vacuous by faulting the solver so detected contacts are discarded, which fails it hard
+(position 22537 against a bound of 96).
+
+Sleeping / resting-velocity damping is the fix, and is filed as deliberate v2 work in Arc DYN. Until
+then a consumer needing pixel-exact stillness clamps at its own layer, which the first consumer
+already does.
 
 **Portfolio-side, at the swap:**
 
@@ -254,10 +277,19 @@ nothing the swap does not.
 
 1. ~~**`math`** — `Vec2.perp` + `Vec2.crossSV` with `out` forms.~~ **✅ DONE 2026-08-14.** Landed in
    the consumer-enablement release as Plan A Task 1, both with optional `out` forms, 10 tests
-   including aliasing cases (`perp(v, v)`). Note the doc comment records the rotation as **90°
+   including aliasing cases (`perp(v, v)`). The doc comment records the rotation as **90°
    clockwise** — `(-y, x)` is the standard counter-clockwise formula in a y-up math frame, but this
-   engine is y-down (Skia), matching `render/src/sprite-batch.ts:27`. A solver that trusts "CCW"
-   here will build a mirrored tangent basis.
+   engine is y-down (Skia), matching `render/src/sprite-batch.ts:27`.
+
+   **Corrected 2026-08-15 — the tangent-sign risk was overstated.** This document previously warned
+   that a solver trusting "CCW" would build a mirrored tangent basis and push friction the wrong
+   way. Measured, not reasoned: a fully mirrored tangent was patched into a scratch copy of the
+   solver and re-run, producing **bit-identical trajectories, max diff 0**. The friction sub-solver
+   is equivariant under `t → -t` — both the measured tangential velocity and the applied impulse
+   direction flip together, and the Coulomb clamp is a symmetric interval — so the sign is
+   physically inert *for this solver*. The doc comment is still worth having, because a future
+   consumer that uses `perp` for something not sign-symmetric (a one-sided constraint, a directional
+   effect) would care. Do not spend time chasing this as a suspected bug.
 2. **`dynamics`** — the XL row: lift, zero-alloc pass, tests, packaging, docs, `LAYER_MAP`, umbrella
    re-export, changeset. **Unblocked; this is now the next row.**
 3. **Portfolio swap** — delete `apps/web/src/lib/dynamics/`, repoint the single import at

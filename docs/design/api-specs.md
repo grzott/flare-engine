@@ -131,6 +131,33 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 
 **Tier 2 — planck.js integration: deferred.** `PhysicsWorld`, `RigidBody`, `applyForce`, `applyImpulse` are not implemented. Revisit after Phase 8 benchmarks — only bring it in if AABB proves insufficient.
 
+### `@flare-engine/dynamics` (< 8KB gzip)
+
+2D rigid bodies over oriented boxes (OBBs). `@flare-engine/physics` answers *did these overlap*;
+`@flare-engine/dynamics` answers *where do they end up* — the two packages do not depend on each
+other. Full rationale, the zero-alloc pooling design, and the resting-velocity limitation are in the
+package [README](https://github.com/grzott/flare-engine/tree/main/packages/dynamics#readme); one
+source per fact, so this section states the surface, not the reasoning.
+
+| API                        | Description                                                                                        |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `createWorld(opts?)`        | `opts: { gravity?: Vec2; iterations?: number }`. Returns a `World { bodies, gravity, iterations }`. |
+| `addBody(world, body)`      | Pushes a `Body` onto `world.bodies`. Returns the same `body`.                                       |
+| `createBody(opts)`          | `opts: { position, half, density?, velocity?, angle?, angularVelocity?, restitution?, friction?, static? }`. Derives mass/inertia from `half` × `density`; `static: true` yields `invMass = invInertia = 0`. |
+| `step(world, dt)`           | Advances the world by `dt` seconds: integrate velocities → broadphase (AABB) + narrowphase (SAT + face clip) → sequential-impulse solve (Coulomb friction, restitution, Baumgarte bias) → integrate positions. No-op for `dt <= 0`. Zero-alloc in steady state — all per-step scratch is pooled per `World`. |
+| `Body`                      | `{ position: Vec2; velocity: Vec2; angle: number; angularVelocity: number; half: Vec2; invMass: number; invInertia: number; restitution: number; friction: number }`. `position` / `velocity` are mutable plain objects written in place every `step()`, not getters. |
+
+```ts
+import { addBody, createBody, createWorld, step } from '@flare-engine/dynamics';
+
+const world = createWorld({ gravity: { x: 0, y: 1800 } });
+const box = addBody(world, createBody({ position: { x: 0, y: 0 }, half: { x: 10, y: 10 } }));
+step(world, 1 / 60);
+```
+
+**Out of scope in v1:** joints, sleeping, CCD (continuous collision detection), circle/polygon
+shapes, ECS coupling, and any broadphase beyond the brute-force all-pairs AABB pass.
+
 ### `@flare-engine/audio` (< 4KB gzip)
 
 | API            | Description                                                                                |

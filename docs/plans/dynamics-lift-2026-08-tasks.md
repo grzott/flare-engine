@@ -22,8 +22,13 @@ the decisions, the determinism correction (§4), and the allocation-site invento
 
 ## Global Constraints
 
-- **Timing: Phase 1 and 2 must not start before the OSS flip completes (Oct 19–23, 2026).** Phase 0
-  is portfolio-repo-only and runs any time.
+- ~~**Timing: Phase 1 and 2 must not start before the OSS flip completes.**~~ **SUPERSEDED
+  2026-08-14.** Owner resequenced this work **pre-freeze** — see
+  [consumer-enablement-2026-08.md](consumer-enablement-2026-08.md) §"Decisions taken" 1 and
+  [dynamics-lift-2026-08.md](dynamics-lift-2026-08.md) decision 2. Phase 1 runs now. Phase 2 runs
+  once the consumer-enablement release is published to the restricted registry; the portfolio
+  resolves it through the same committed `.npmrc` + `${NPM_TOKEN}` pattern `flare-engine-page`
+  already uses, so no vendoring or `transpilePackages` is needed.
 - **Two repos, two harnesses.** `flare-engine` is Bun + Turborepo; `grzott-portfolio` is
   **pnpm** + Turborepo, workspace name `@grzott/web`. Never run one repo's gate in the other —
   `/close` in particular resolves by cwd and will load the wrong one.
@@ -527,7 +532,17 @@ only the five visible words. Rated low severity against the claim it replaced.
 
 ## Phase 1 — post-flip, `flare-engine`
 
-### Task 4: `math` — `Vec2.perp` and `Vec2.crossSV`
+### Task 4: `math` — `Vec2.perp` and `Vec2.crossSV` — ✅ DONE 2026-08-14
+
+**Delivered ahead of this plan**, as Task 1 of the consumer-enablement release
+([consumer-enablement-2026-08-tasks-a.md](consumer-enablement-2026-08-tasks-a.md)), commit
+`6a10aa9`. The shipped surface matches this task's `Produces` contract exactly — both signatures,
+both `out` forms, and the aliasing cases below all pass.
+
+One addition worth carrying into Tasks 6 and 7: the shipped doc comment records the rotation as
+**90° clockwise**, not counter-clockwise. `(-y, x)` is the standard CCW formula in a y-up math
+frame, but this engine is y-down (Skia), matching `packages/render/src/sprite-batch.ts:27`. A
+contact-tangent basis built on a "CCW" assumption will be mirrored, which is a hard bug to trace.
 
 **Files:**
 - Modify: `packages/math/src/vec2.ts`

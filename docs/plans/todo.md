@@ -6,6 +6,26 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
+### Arc DYN — rigid-body dynamics + the portfolio dogfood (ACTIVE, resequenced pre-freeze 2026-08-14)
+
+Goal: make the portfolio's page-collapse showcase actually run engine code. **Full design in the
+SoT: [dynamics-lift-2026-08.md](dynamics-lift-2026-08.md)**; task breakdown in
+[dynamics-lift-2026-08-tasks.md](dynamics-lift-2026-08-tasks.md). Rows are `packages/**` →
+engine-builder. Owner resequenced this pre-freeze 2026-08-14 (dynamics-lift-2026-08.md §7 decision
+2; consumer-enablement-2026-08.md "Decisions taken" 1) — it no longer sits behind Arc OSS or Arc
+PERF in `/start` order, which is why it leads this list. DYN-2 waits on the consumer-enablement
+release reaching the restricted registry, not on the public flip.
+
+- **DYN-1 — `@flare-engine/dynamics` package.** OBB rigid bodies lifted from the portfolio donor,
+  zero-alloc pass, behavioral gates, packaging. One lockstep minor changeset. Spec: §2, §5, §6.
+- **DYN-2 — consumer swap (cross-repo, `grzott-portfolio`).** Delete the local module, repoint the
+  one import, verify settle parity. Runs in the portfolio's own harness. Spec: §7.
+- **DYN-3 — sleeping / resting-velocity damping (v2, deliberate).** Resting bodies settle in
+  *position* but keep a small bounded velocity oscillation (~2.6 units/s in the package's test
+  scenario) at the penetration-slop equilibrium — inherent to a Baumgarte-biased sequential-impulse
+  solver run without sleeping. Sleeping thresholds + damping are what would let boxes fully come to
+  rest; deliberately cut from v1 (§6). Spec: §6.
+
 ### Arc PERF — perf measurement remediation + benchmarking automation (ACTIVE 2026-07-28)
 
 Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze. **Full specs in the SoT: [perf-measurement-2026-07.md](perf-measurement-2026-07.md)** — §1–§8 first-pass audit, §9–§10 second-pass verification (18-agent adversarial, 2026-07-28: render 3.1× regression re-confirmed live; secondary drift table withdrawn; B11–B26 new findings), **§11 row specs** — rows here are lean pointers (one-source-per-fact); the builder reads the row's §11 section before planning. Routing: PERF-3, PERF-9 and PERF-10 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset each); all other rows touch benchmarks/`scripts/`/`.github/`/`apps/bench-*`/`docs/plans/` → **[MT] main-thread**. Sequencing below is the execution order; **PERF-1→5 are the pre-freeze must** (the §7 "defensible release" core + gates), PERF-8 is cheap and pre-freeze-preferred, PERF-6/7 slide post-flip if the calendar tightens (PERFORMANCE.md then declares web/device unmeasured, §8). Owner-OOB items (portfolio corrections, TestingBot account check, EAS bench project, engine-repo secrets) are ledgered per-row in §11, never blocking. Pick top → `/start`.

@@ -30,6 +30,7 @@ graph TD
         RENDER["@flare-engine/render<br/>SpriteBatch, Camera2D, SpriteFont, Effects"]
         INPUT["@flare-engine/input<br/>Pointer, VirtualJoystick, Gestures"]
         PHYSICS["@flare-engine/physics<br/>AABB, SpatialIndex, raycast"]
+        DYNAMICS["@flare-engine/dynamics<br/>OBB rigid bodies, contact solver"]
         AUDIO["@flare-engine/audio<br/>SFXPool, Music, Channels"]
         ASSETS["@flare-engine/assets<br/>Loader, SpriteSheet, TilemapData"]
         SHAPES["@flare-engine/shapes<br/>ShapeSpec primitives, drawShape"]
@@ -63,6 +64,7 @@ graph TD
     CORE --> RENDER
     CORE --> INPUT
     MATH --> PHYSICS
+    MATH --> DYNAMICS
     CORE --> AUDIO
     CORE --> ASSETS
     MATH --> PROGRESSION
@@ -109,6 +111,7 @@ graph TD
 | `@flare-engine/render`  | Skia Atlas SpriteBatch, Camera2D, DrawOrder, SpriteEffects, SpriteFont                  | < 10KB       | react-native-skia      |
 | `@flare-engine/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | gesture-handler        |
 | `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (uniform grid), raycast                                | < 4KB        | —                      |
+| `@flare-engine/dynamics` | OBB rigid bodies, SAT + face-clip contact manifolds, sequential-impulse solver          | < 8KB        | math                   |
 | `@flare-engine/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |
 | `@flare-engine/assets`  | AssetManager, SpriteSheet parser (TexturePacker, Aseprite), loaders, progress           | < 6KB        | —                      |
 | `@flare-engine/shapes`  | 12 shape primitives (circle/rect/ngon/star/arc/annulus/trapezoid/…) + `ship` composite + SVG `path` escape hatch; `drawShape` Skia dispatcher, glow rings, ARGB helpers | < 4KB | react-native-skia (type-only) |

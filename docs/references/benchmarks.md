@@ -37,7 +37,7 @@ Treat a change smaller than the run-to-run spread as noise.  The render and inte
 ## What these numbers do not measure
 
 - **No Skia rasterization, no GPU, no bridge, no device.** The draw path runs to the point where the engine hands a batch to Skia; what Skia then does with it is not measured here, and these are pure JS costs under Bun on one desktop machine.
-- **Web/CanvasKit numbers exist but are software-rasterized.** See [Web (CanvasKit)](#web-canvaskit) — those figures run Chromium headless with `--disable-gpu` (SwiftShader), which is a reproducible baseline, not a GPU-backed frame cost. No real-browser GPU device numbers exist yet.
+- **Web/CanvasKit numbers exist but are CPU-raster.** See [Web (CanvasKit)](#web-canvaskit) — those figures render through `CanvasKit.MakeSurface`, an offscreen surface that is CPU-backed by construction (not merely software rendering forced by a launch flag), which is a reproducible baseline, not a GPU-backed frame cost. A real GPU-backed lane now exists locally (`apps/bench-web`'s `?mode=gpu` / `web-gpu.json`) — see that section for the first captured numbers.
 - **The ECS suite is deliberately unbounded.** Its entities integrate off the field forever, because nothing in `world.step` branches on position and holding that suite byte-identical across the 2026-07 rework keeps it usable as the control row that made the render regression conclusive. The physics and integration suites wrap at the field edge instead, and a probe fails the capture if any entity escapes.
 - **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.
 - **Every number here was captured on a machine that was 4.6% busy with other work.** `bench:promote` refuses a window above 15% foreign load, or one where 2 or more runs sit further than 10% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).
@@ -174,24 +174,30 @@ _Captured: 2026-04-22 — stale_
 
 ## Web (CanvasKit)
 
-> **Software-rasterized (SwiftShader), not GPU-backed.** Every number in this section runs
-> Chromium headless with `--disable-gpu`, which forces CPU (SwiftShader) rasterization instead of
-> a host GPU — the reproducible, driver-independent baseline (CI runners have no GPU either), not
-> a real-world frame cost. Every record carries `runtime: "web-swiftshader"`, never a bare
-> `"web"`, precisely so it cannot be conflated with a future GPU-backed device lane. Valid for
-> **relative** comparison — scaling curves, clustered-vs-interleaved batching, effect cost — never
-> for "what fps will a user see".
+> **CPU-raster, not GPU-backed.** Every number in the CPU-raster subsection below renders through
+> `CanvasKit.MakeSurface` — an offscreen surface that is CPU-backed by construction (CanvasKit's
+> own type definitions say so), not merely software rendering forced by a launch flag — the
+> reproducible, driver-independent baseline (CI runners have no GPU either), not a real-world
+> frame cost. Every record carries `runtime: "web-cpu-raster"`, never a bare `"web"`, precisely so
+> it cannot be conflated with the GPU lane. Valid for **relative** comparison — scaling curves,
+> clustered-vs-interleaved batching, effect cost — never for "what fps will a user see". A real
+> GPU-backed lane exists too (`?mode=gpu`, `runtime: "web-gpu"`) — see
+> [GPU render suite](#gpu-render-suite) below; note its committed captures predate the
+> `web-swiftshader` → `web-cpu-raster` rename and so still read `runtime: "web-swiftshader"` in
+> the raw JSON/ndjson until the next `bun run bench:web` — the dashboard's schema accepts both
+> labels for exactly this reason.
 
-_Captured: 2026-08-16 · Commit: 3f6fb112a0b1 · Runtime: web-swiftshader · Host: win32 x64 (13th
-Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34_
+_Captured: 2026-08-16 · Commit: 3f6fb112a0b1 · Runtime: web-swiftshader (pre-rename; see note
+above) · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 ·
+Browser: chromium 151.0.7922.34_
 
 Hand-maintained (this section is not produced by `bun run bench:md`, which only reads
 `microbench.json`/`device.json`) from `apps/bench-web`'s capture — `benchmarks/results/web.json`
 (latest) and `benchmarks/results/web-history.ndjson` (append-only; a separate file from the node
 lane's `history.ndjson` so this lane's rows can never land inside that file's blind
 `rows.slice(-N)` window read by `bench:promote` — every row still carries the same
-`{commit, host, runtime, appVersion, unit}` provenance schema, and `runtime: "web-swiftshader"`
-is what a reader uses to tell the two lanes apart). Re-run with `bun run bench:web` (writes
+`{commit, host, runtime, appVersion, unit}` provenance schema, and `runtime` is what a reader uses
+to tell the lanes apart). Re-run with `bun run bench:web` (writes
 `apps/bench-web/results/web-bench.json`, appends history, and overwrites `web.json`); a full
 18-scenario capture takes roughly 15 minutes under CPU raster.
 
@@ -264,6 +270,58 @@ node lane's allocation counters: `outline` issues nine atlas draws and nine thou
 per frame by construction (see [Draw-path allocation counters](#draw-path-allocation-counters)),
 so the multiplier showing up under real CanvasKit rasterization too is the expected result, not a
 regression.
+
+### GPU render suite
+
+_Captured: 2026-08-16 · Commit: a8e8631718d6 · Runtime: web-gpu · Host: win32 x64 (13th Gen
+Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34 ·
+Renderer: `ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002782) Direct3D11 vs_5_0 ps_5_0, D3D11)`_
+
+The same 18 scenarios, same machine, same commit-adjacent state, run through
+`@flare-engine/render-web`'s `createPostFxSurface` against a real on-screen `<canvas>` + WebGL
+surface (`?mode=gpu` / `bun run bench:web:gpu` in `apps/bench-web`) instead of the offscreen
+CPU-raster `MakeSurface` above. Headless Chromium does **not** default to hardware acceleration —
+with no GPU-related launch flags it silently reports SwiftShader for `UNMASKED_RENDERER_WEBGL`
+even without `--disable-gpu` — so `playwright.config.ts` pins `--use-angle=d3d11` for this mode,
+and `browser-driver.mjs` refuses to write a result if the reported renderer string still matches
+`/swiftshader/i`. The renderer string above (`WEBGL_debug_renderer_info`) is the proof this
+capture actually used the host GPU, not a fallback.
+
+Each `flushOnce` includes the real presentation cost (scene snapshot + blit + `GrDirectContext`
+flush) every frame a consumer draws pays, not just the draw calls — see `src/runner.ts`'s
+`createGpuTarget`.
+
+Written to its own files — `benchmarks/results/web-gpu.json` (latest) and
+`benchmarks/results/web-gpu-history.ndjson` (append-only) — never merged into the CPU-raster
+series above, and not yet wired into `apps/bench-dashboard`.
+
+| Scenario | p50 | p95 | p99 | Samples |
+|---|---:|---:|---:|---:|
+| render.flush    100 sprites / 1 atlas | 0.067 ms | 0.067 ms | 0.134 ms | 100 |
+| render.flush    500 sprites / 1 atlas | 0.304 ms | 0.304 ms | 0.305 ms | 100 |
+| render.flush   1000 sprites / 1 atlas | 0.642 ms | 0.642 ms | 0.646 ms | 100 |
+| render.flush   5000 sprites / 1 atlas | 3.340 ms | 3.360 ms | 3.360 ms | 100 |
+| render.flush    500 sprites / 4 atlas interleaved | 2.565 ms | 3.208 ms | 3.212 ms | 100 |
+| render.flush    500 sprites / 4 atlas clustered | 0.321 ms | 0.321 ms | 0.323 ms | 100 |
+| render.flush   1000 sprites / 8 atlas interleaved | 5.882 ms | 6.865 ms | 6.871 ms | 100 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.668 ms | 0.668 ms | 0.672 ms | 100 |
+| render.flush   1000 sprites / 50% rotated | 0.668 ms | 0.668 ms | 0.672 ms | 100 |
+| render.flush   1000 sprites / 100% rotated | 0.835 ms | 0.835 ms | 0.840 ms | 100 |
+| render.flush   1000 sprites / 4 alpha runs | 0.596 ms | 0.596 ms | 0.600 ms | 100 |
+| render.flush   1000 sprites / tint effect | 0.642 ms | 0.646 ms | 0.646 ms | 100 |
+| render.flush   1000 sprites / outline effect | 3.564 ms | 3.579 ms | 3.579 ms | 100 |
+| render.flush   1000 sprites / stretch path | 2.470 ms | 3.085 ms | 3.089 ms | 100 |
+| render.flush   1000 sprites / zone-bg path | 2.223 ms | 2.777 ms | 2.780 ms | 100 |
+| render.sort     500 items (0 swaps) | 0.017 ms | 0.017 ms | 0.017 ms | 100 |
+| render.sort     500 items (5 swaps) | 0.074 ms | 0.074 ms | 0.074 ms | 100 |
+| render.sort    1000 items (10 swaps) | 0.309 ms | 0.309 ms | 0.309 ms | 100 |
+
+`render.flush 1000 sprites / 1 atlas`: **0.642 ms** GPU vs. **26.281 ms** CPU-raster — ~41x
+faster, on this one desktop GPU. Read that ratio as "GPU raster is dramatically cheaper than
+CanvasKit's CPU raster path", not as a number that generalizes to other hardware or to real
+on-device frame budgets: this is still one desktop machine's WebGL implementation, not a mobile
+GPU, and `render.sort` (pure JS, no rasterization) reads identically in both captures as expected
+— it does not touch either surface.
 
 ## Notes on interpretation
 

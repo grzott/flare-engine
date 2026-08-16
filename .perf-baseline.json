@@ -144,207 +144,212 @@
     "@flare-engine/a11y": {
       "ceiling": 12687,
       "measured": 11533,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/achievements": {
       "ceiling": 12098,
       "measured": 10998,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/analytics": {
       "ceiling": 9914,
       "measured": 9012,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/animation": {
       "ceiling": 16083,
       "measured": 14620,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/assets": {
       "ceiling": 24232,
       "measured": 22029,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/audio": {
       "ceiling": 14922,
-      "measured": 13565,
-      "measuredAt": "2026-07-29"
+      "measured": 13522,
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/cli": {
       "ceiling": 21073,
       "measured": 19157,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/core": {
       "ceiling": 22743,
-      "measured": 20675,
-      "measuredAt": "2026-07-29"
+      "measured": 21319,
+      "measuredAt": "2026-08-15"
     },
     "create-flare-app": {
       "ceiling": 31420,
       "measured": 28563,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/debug": {
       "ceiling": 21614,
       "measured": 19649,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/deep-links": {
       "ceiling": 14989,
       "measured": 13626,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/devtools": {
       "ceiling": 18917,
       "measured": 17197,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/dialogue": {
       "ceiling": 16807,
       "measured": 15279,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/ecs": {
       "ceiling": 24162,
       "measured": 21965,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/engine": {
       "ceiling": 14832,
-      "measured": 13483,
-      "measuredAt": "2026-07-29"
+      "measured": 13613,
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/errors": {
       "ceiling": 10624,
       "measured": 9658,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/events": {
       "ceiling": 9706,
       "measured": 8823,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/haptics": {
       "ceiling": 12935,
       "measured": 11759,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/iap": {
       "ceiling": 12142,
       "measured": 11038,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/iap-revenuecat": {
       "ceiling": 12459,
       "measured": 11326,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/input": {
       "ceiling": 48789,
       "measured": 44353,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/leaderboards": {
       "ceiling": 11048,
       "measured": 10043,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/localization": {
       "ceiling": 16320,
       "measured": 14836,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/math": {
       "ceiling": 66239,
-      "measured": 60217,
-      "measuredAt": "2026-07-29"
+      "measured": 61261,
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/particles": {
       "ceiling": 14804,
       "measured": 13458,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/pathfinding": {
       "ceiling": 37646,
       "measured": 34223,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/physics": {
       "ceiling": 22179,
-      "measured": 20162,
-      "measuredAt": "2026-07-29"
+      "measured": 20278,
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/postfx": {
       "ceiling": 59875,
       "measured": 54431,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/progression": {
       "ceiling": 17837,
       "measured": 16215,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/react": {
       "ceiling": 51558,
       "measured": 46870,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/render": {
       "ceiling": 127566,
-      "measured": 115969,
-      "measuredAt": "2026-07-29"
+      "measured": 117567,
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/render-web": {
       "ceiling": 40947,
-      "measured": 37224,
-      "measuredAt": "2026-08-14"
+      "measured": 37738,
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/scene": {
       "ceiling": 15126,
       "measured": 13750,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/shapes": {
       "ceiling": 20696,
       "measured": 18814,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/share": {
       "ceiling": 15256,
       "measured": 13869,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/simulation": {
       "ceiling": 45593,
       "measured": 41448,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/storage": {
       "ceiling": 38395,
       "measured": 34904,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/testing": {
       "ceiling": 15248,
       "measured": 13861,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/tilemap": {
       "ceiling": 38735,
       "measured": 35213,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/ui": {
       "ceiling": 52631,
       "measured": 47846,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
     },
     "@flare-engine/ui-shop": {
       "ceiling": 15343,
       "measured": 13948,
-      "measuredAt": "2026-07-29"
+      "measuredAt": "2026-08-15"
+    },
+    "@flare-engine/dynamics": {
+      "ceiling": 37650,
+      "measured": 34227,
+      "measuredAt": "2026-08-15"
     }
   },
   "freshness": {
@@ -374,6 +379,10 @@
     {
       "date": "2026-08-14",
       "reason": "render-web ceiling raised 24195 -> 40947 B. Owner-authorized. The package took explicit ownership of the WebGL context (GetWebGLContext/MakeWebGLContext/MakeOnScreenGLSurface + paired teardown), gained webglcontextlost/restored self-healing, and its CanvasKit loader gained stall-abort, deadline and retry-after-failure. Added behaviour, not a regression. Note for future triage: source maps are ~61% of this package's gzipped dist (23254 B of 38242 B, summing per-file gzip of index.js.map, index.mjs.map, index.d.ts.map, index.d.mts.map against the full dist/), so byte growth here tracks source-map growth more than code growth."
+    },
+    {
+      "date": "2026-08-15",
+      "reason": "New package @flare-engine/dynamics: ceiling CREATED at 37650 B (measured 34227 B, the standard 10% headroom). Creating a missing ceiling is the safe direction --write is allowed to take; no existing ceiling was raised (the run reported 1 created, 0 tightened, 41 left alone). The same `--write --bytes` run also refreshed `measured`/`measuredAt` fleet-wide to current reality — most are unchanged, audio fell 13565 -> 13522 B (a dead private field was removed) and core rose 20675 -> 21319 B with no source change in that package, which is pack-metadata drift rather than code growth. Counter scenarios were rewritten with identical values (no diff). Known-red at this commit and NOT addressed here: check:perf-freshness, which reports the published benchmark numbers as stale because commit 6a10aa9 (Vec2.perp/crossSV) changed sources that the ECS, Physics, Particles, Render and Integration suites transitively measure. Clearing it needs an owner-run recapture from a clean, quiet tree (bun run bench x5, bench:promote, bench:md) — an agent-run capture on a loaded machine would publish contended numbers, which is the failure mode PERF-1/PERF-5 exist to prevent."
     }
   ]
 }

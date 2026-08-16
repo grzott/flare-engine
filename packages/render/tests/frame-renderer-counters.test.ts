@@ -104,13 +104,13 @@ let originalDev: unknown;
 
 describe('getXformCounters / resetXformCounters', () => {
   beforeEach(() => {
-    originalDev = g['__DEV__'];
-    g['__DEV__'] = true;
+    originalDev = g.__DEV__;
+    g.__DEV__ = true;
     resetXformCounters();
   });
 
   afterEach(() => {
-    g['__DEV__'] = originalDev;
+    g.__DEV__ = originalDev;
   });
 
   it('a. after resetXformCounters, both counters are zero', () => {
@@ -148,7 +148,7 @@ describe('getXformCounters / resetXformCounters', () => {
   });
 
   it('f. with __DEV__ deleted from globalThis, drawing does NOT increment either counter', () => {
-    delete g['__DEV__'];
+    delete g.__DEV__;
     const renderer = createFrameRenderer(makeModule());
     renderer.beginFrame(128, 128);
     renderer.drawAtlas({} as SkImageLike, [makeCmd(0), makeCmd(Math.PI / 4)]);

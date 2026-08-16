@@ -5,6 +5,15 @@ export * from '@flare-engine/assets';
 export * from '@flare-engine/audio';
 export * from '@flare-engine/core';
 export * from '@flare-engine/debug';
+// dynamics — explicit to alias World (clashes with the ecs World class):
+export {
+  addBody,
+  type Body as DynamicsBody,
+  createBody,
+  createWorld,
+  step,
+  type World as DynamicsWorld,
+} from '@flare-engine/dynamics';
 export * from '@flare-engine/ecs';
 export * from '@flare-engine/events';
 export * from '@flare-engine/input';

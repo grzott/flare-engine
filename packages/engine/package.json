@@ -50,6 +50,7 @@
     "@flare-engine/math": "^0.2.1",
     "@flare-engine/events": "^0.2.1",
     "@flare-engine/core": "^0.2.1",
+    "@flare-engine/dynamics": "^0.2.1",
     "@flare-engine/ecs": "^0.2.1",
     "@flare-engine/render": "^0.2.1",
     "@flare-engine/input": "^0.2.1",

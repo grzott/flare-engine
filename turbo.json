@@ -46,6 +46,10 @@
       "cache": false,
       "env": ["FLARE_BENCH_ALLOW_STALE"]
     },
+    "@flare-engine-apps/bench-web#bench:web": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
     "lint": {},
     "typecheck": {
       "dependsOn": ["^build"]

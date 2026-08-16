@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Flare bench-web</title>
+    <style>
+      body {
+        font-family: ui-monospace, monospace;
+        background: #0b0f14;
+        color: #d7e0ea;
+        padding: 1rem;
+      }
+      #status {
+        white-space: pre-wrap;
+      }
+      table {
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+      td,
+      th {
+        border: 1px solid #2a3542;
+        padding: 0.25rem 0.6rem;
+        text-align: right;
+        font-size: 0.85rem;
+      }
+      th:first-child,
+      td:first-child {
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Flare bench-web — render suite (CanvasKit)</h1>
+    <p>
+      Software-rasterized (SwiftShader, <code>--disable-gpu</code>) — a reproducible baseline, not
+      a GPU-backed real-world number. See <code>runtime: "web-swiftshader"</code> in results.
+    </p>
+    <div id="status">loading…</div>
+    <table id="results-table" hidden>
+      <thead>
+        <tr>
+          <th>scenario</th>
+          <th>samples</th>
+          <th>p50 (ms)</th>
+          <th>p95 (ms)</th>
+          <th>p99 (ms)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

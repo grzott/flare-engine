@@ -37,6 +37,7 @@
     "bench:baseline": "turbo bench:baseline",
     "bench:promote": "turbo bench:promote",
     "bench:md": "turbo bench:md",
+    "bench:web": "turbo bench:web",
     "propagate-license": "bun run scripts/propagate-license.ts",
     "prebuild": "bun run propagate-license",
     "changeset": "changeset",

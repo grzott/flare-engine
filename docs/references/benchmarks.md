@@ -37,7 +37,7 @@ Treat a change smaller than the run-to-run spread as noise.  The render and inte
 ## What these numbers do not measure
 
 - **No Skia rasterization, no GPU, no bridge, no device.** The draw path runs to the point where the engine hands a batch to Skia; what Skia then does with it is not measured here, and these are pure JS costs under Bun on one desktop machine.
-- **No web/CanvasKit numbers exist yet.** The web backend has never been benchmarked.
+- **Web/CanvasKit numbers exist but are software-rasterized.** See [Web (CanvasKit)](#web-canvaskit) — those figures run Chromium headless with `--disable-gpu` (SwiftShader), which is a reproducible baseline, not a GPU-backed frame cost. No real-browser GPU device numbers exist yet.
 - **The ECS suite is deliberately unbounded.** Its entities integrate off the field forever, because nothing in `world.step` branches on position and holding that suite byte-identical across the 2026-07 rework keeps it usable as the control row that made the render regression conclusive. The physics and integration suites wrap at the field edge instead, and a probe fails the capture if any entity escapes.
 - **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.
 - **Every number here was captured on a machine that was 4.6% busy with other work.** `bench:promote` refuses a window above 15% foreign load, or one where 2 or more runs sit further than 10% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).
@@ -171,6 +171,99 @@ _Captured: 2026-04-22 — stale_
 | light (10 enemies + 50 bullets) | 119.79 | 120.2 | 120.41 | 10 |
 | medium (30 enemies + 150 bullets) | 111.37 | 116.6 | 119.52 | 10 |
 | heavy (50 enemies + 300 bullets) | 46.88 | 48.0 | 48.82 | 10 |
+
+## Web (CanvasKit)
+
+> **Software-rasterized (SwiftShader), not GPU-backed.** Every number in this section runs
+> Chromium headless with `--disable-gpu`, which forces CPU (SwiftShader) rasterization instead of
+> a host GPU — the reproducible, driver-independent baseline (CI runners have no GPU either), not
+> a real-world frame cost. Every record carries `runtime: "web-swiftshader"`, never a bare
+> `"web"`, precisely so it cannot be conflated with a future GPU-backed device lane. Valid for
+> **relative** comparison — scaling curves, clustered-vs-interleaved batching, effect cost — never
+> for "what fps will a user see".
+
+_Captured: 2026-08-16 · Commit: 3f6fb112a0b1 · Runtime: web-swiftshader · Host: win32 x64 (13th
+Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34_
+
+Hand-maintained (this section is not produced by `bun run bench:md`, which only reads
+`microbench.json`/`device.json`) from `apps/bench-web`'s capture — `benchmarks/results/web.json`
+(latest) and `benchmarks/results/web-history.ndjson` (append-only; a separate file from the node
+lane's `history.ndjson` so this lane's rows can never land inside that file's blind
+`rows.slice(-N)` window read by `bench:promote` — every row still carries the same
+`{commit, host, runtime, appVersion, unit}` provenance schema, and `runtime: "web-swiftshader"`
+is what a reader uses to tell the two lanes apart). Re-run with `bun run bench:web` (writes
+`apps/bench-web/results/web-bench.json`, appends history, and overwrites `web.json`); a full
+18-scenario capture takes roughly 15 minutes under CPU raster.
+
+### CanvasKit WASM payload
+
+Read straight off the installed `canvaskit-wasm` package on disk (raw = file size, gzip =
+`gzip -c <file> | wc -c`) — never hardcoded.
+
+| Variant | Raw | Gzipped |
+|---|---:|---:|
+| default | 7,094,511 B (6.77 MB) | 2,852,025 B (2.72 MB) |
+| full | 8,001,100 B (7.63 MB) | 3,200,682 B (3.05 MB) |
+
+`apps/bench-web` serves the `full` binary (needed for the render suite's effect coverage);
+`default` is the smaller number a production integration that skips those features would ship.
+
+### Cold start to first rendered frame
+
+"First rendered frame" = the first `surface.flush()` after CanvasKit finishes loading, on the
+off-screen CPU-raster surface the render suite itself uses — there is no on-screen `<canvas>` here,
+so browser paint/composite timings (FCP etc.) do not apply.
+
+| Cache | Plain network | Throttled 4G |
+|---|---:|---:|
+| cold | 185.8 ms | 16.48 s |
+| warm | 115.7 ms | 16.49 s |
+
+4G throttle profile (Chrome DevTools Protocol `Network.emulateNetworkConditions`, a
+flare-engine-defined profile stated here for reproducibility — not a copy of any external tool's
+preset): **download 4 Mbit/s (524288 B/s), upload 3 Mbit/s (393216 B/s), latency 20 ms**.
+
+The throttled cold/warm pair reads nearly identical. Measured directly (via CDP
+`Network.responseReceived.fromDiskCache`) that headless Chromium does not serve this WASM fetch
+from its HTTP disk cache in this harness — true even for two back-to-back same-page fetches with
+no navigation at all, despite a `Cache-Control: public, max-age=31536000, immutable` response
+header — so both throttled rows pay the full ~15s download. Read that as a property of this
+headless measurement harness, not as "repeat visits get no benefit on a real 4G connection" for
+browsers generally; the untouched pair's real ~40% warm speedup (from V8's WASM compile cache and
+local file-read caching, not HTTP caching) is the more representative signal here.
+
+### Render suite
+
+Same scenario set as [Render](#render) above (frozen in `scenario-contract.ts`), bound to real
+CanvasKit instead of a counting Skia stub via `@flare-engine/render-web`. Comparable to the node
+Render suite in **shape**, not in **magnitude** — different pipeline, different runtime.
+
+| Scenario | p50 | p95 | p99 | Samples |
+|---|---:|---:|---:|---:|
+| render.flush    100 sprites / 1 atlas | 2.267 ms | 2.400 ms | 2.667 ms | 100 |
+| render.flush    500 sprites / 1 atlas | 13.331 ms | 13.636 ms | 13.638 ms | 100 |
+| render.flush   1000 sprites / 1 atlas | 26.281 ms | 26.923 ms | 27.562 ms | 100 |
+| render.flush   5000 sprites / 1 atlas | 129.980 ms | 133.320 ms | 133.340 ms | 100 |
+| render.flush    500 sprites / 4 atlas interleaved | 15.385 ms | 16.027 ms | 16.669 ms | 100 |
+| render.flush    500 sprites / 4 atlas clustered | 13.140 ms | 13.462 ms | 13.463 ms | 100 |
+| render.flush   1000 sprites / 8 atlas interleaved | 30.388 ms | 31.371 ms | 31.376 ms | 100 |
+| render.flush   1000 sprites / 8 atlas clustered | 26.000 ms | 26.668 ms | 27.328 ms | 100 |
+| render.flush   1000 sprites / 50% rotated | 26.664 ms | 28.000 ms | 28.000 ms | 100 |
+| render.flush   1000 sprites / 100% rotated | 28.330 ms | 29.170 ms | 30.000 ms | 100 |
+| render.flush   1000 sprites / 4 alpha runs | 27.971 ms | 29.761 ms | 29.764 ms | 100 |
+| render.flush   1000 sprites / tint effect | 29.488 ms | 31.412 ms | 31.412 ms | 100 |
+| render.flush   1000 sprites / outline effect | 261.893 ms | 270.229 ms | 273.800 ms | 100 |
+| render.flush   1000 sprites / stretch path | 25.926 ms | 27.159 ms | 27.159 ms | 100 |
+| render.flush   1000 sprites / zone-bg path | 113.887 ms | 118.330 ms | 120.550 ms | 100 |
+| render.sort     500 items (0 swaps) | 0.017 ms | 0.017 ms | 0.017 ms | 100 |
+| render.sort     500 items (5 swaps) | 0.074 ms | 0.074 ms | 0.074 ms | 100 |
+| render.sort    1000 items (10 swaps) | 0.309 ms | 0.309 ms | 0.311 ms | 100 |
+
+The outline effect's ~10x cost over the plain 1000-sprite row (261.9 ms vs. 26.3 ms) matches the
+node lane's allocation counters: `outline` issues nine atlas draws and nine thousand transforms
+per frame by construction (see [Draw-path allocation counters](#draw-path-allocation-counters)),
+so the multiplier showing up under real CanvasKit rasterization too is the expected result, not a
+regression.
 
 ## Notes on interpretation
 

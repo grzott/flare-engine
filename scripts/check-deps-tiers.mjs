@@ -76,6 +76,11 @@ const LAYER_MAP = {
   engine: 4,
   'render-web': 4,
   cli: 4,
+  benchmarks: 4,
+  // apps/bench-web ships under the @flare-engine-apps/* scope (see apps/bench-dashboard),
+  // so this script's packages/*-only scan never reaches it directly. Mapped anyway per the
+  // downward-only convention, and as a forward guard if it is ever renamed under @flare-engine/*.
+  'bench-web': 4,
 };
 
 /** The sanctioned umbrella barrel — skipped for its own equal/upward check. */

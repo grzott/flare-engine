@@ -1,6 +1,7 @@
 import { AABB, CollisionWorld } from '@flare-engine/physics';
 import { createBenchSession } from '@flare-engine/testing';
 import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
+import { PHYSICS_SCENARIOS } from './scenarios/physics.js';
 
 export type PhysicsState = {
   world: CollisionWorld;
@@ -67,24 +68,11 @@ export function outOfBoundsCount(state: PhysicsState): number {
   return escaped;
 }
 
-const PHYSICS_SCENARIOS: readonly {
-  n: number;
-  density: 'sparse' | 'dense';
-  innerIters: number;
-}[] = [
-  { n: 100, density: 'sparse', innerIters: 28 },
-  { n: 100, density: 'dense', innerIters: 18 },
-  { n: 500, density: 'sparse', innerIters: 1 },
-  { n: 500, density: 'dense', innerIters: 1 },
-  { n: 1000, density: 'sparse', innerIters: 1 },
-  { n: 1000, density: 'dense', innerIters: 1 },
-];
-
 export function physicsBenches(overrides?: BenchOverrides): BenchStats[] {
-  return PHYSICS_SCENARIOS.map(({ n, density, innerIters }) =>
+  return PHYSICS_SCENARIOS.map(({ name, n, density, innerIters }) =>
     runBench(
       {
-        name: `physics.step  ${n.toString().padStart(4)} AABB ${density === 'sparse' ? 'sparse' : 'dense '}`,
+        name,
         setup: () => buildWorld(n, density),
         run: stepAndMove,
         innerIters,

@@ -1,6 +1,7 @@
 import { _resetComponentIds, defineSystem, Position, Velocity, World } from '@flare-engine/ecs';
 import { createBenchSession } from '@flare-engine/testing';
 import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
+import { ECS_SCENARIOS } from './scenarios/ecs.js';
 
 /**
  * The control suite. Its workload is deliberately left exactly as it was when
@@ -51,18 +52,11 @@ function buildWorld(entities: number): World {
 
 const DT = 1 / 60;
 
-const ECS_SCENARIOS: readonly { n: number; innerIters: number }[] = [
-  { n: 500, innerIters: 240 },
-  { n: 1000, innerIters: 83 },
-  { n: 2000, innerIters: 40 },
-  { n: 5000, innerIters: 16 },
-];
-
 export function ecsBenches(overrides?: BenchOverrides): BenchStats[] {
-  return ECS_SCENARIOS.map(({ n, innerIters }) =>
+  return ECS_SCENARIOS.map(({ name, n, innerIters }) =>
     runBench(
       {
-        name: `ecs.step  ${n.toString().padStart(4)} entities (Pos+Vel)`,
+        name,
         setup: () => buildWorld(n),
         run: (world) => world.step(DT),
         innerIters,

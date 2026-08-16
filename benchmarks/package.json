@@ -16,7 +16,10 @@
   },
   "exports": {
     "./results/microbench.json": "./results/microbench.json",
-    "./results/device.json": "./results/device.json"
+    "./results/device.json": "./results/device.json",
+    "./scenarios": "./src/scenarios/index.ts",
+    "./harness": "./src/harness.ts",
+    "./scenario-contract": "./src/scenario-contract.ts"
   },
   "dependencies": {
     "@flare-engine/core": "workspace:*",

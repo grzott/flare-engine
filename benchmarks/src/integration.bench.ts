@@ -18,6 +18,7 @@ import {
 } from '@flare-engine/render';
 import { createBenchSession } from '@flare-engine/testing';
 import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
+import { INTEGRATION_SCENARIOS, PARTICLE_COUNT } from './scenarios/integration.js';
 import { createCountingSkiaStub, makeStubImage, type SkiaStub } from './skia-stub.js';
 
 type BatchImage = Parameters<SpriteBatch['drawRaw']>[0];
@@ -38,7 +39,6 @@ export type IntegrationState = {
 };
 
 const DT = 1 / 60;
-const PARTICLE_COUNT = 300;
 const SPRITE = 12;
 
 /**
@@ -190,17 +190,11 @@ export function outOfBoundsCount(state: IntegrationState): number {
   return escaped;
 }
 
-const INTEGRATION_SCENARIOS: readonly { n: number; innerIters: number }[] = [
-  { n: 500, innerIters: 1 },
-  { n: 1000, innerIters: 1 },
-  { n: 2000, innerIters: 1 },
-];
-
 export function integrationBenches(overrides?: BenchOverrides): BenchStats[] {
-  return INTEGRATION_SCENARIOS.map(({ n, innerIters }) =>
+  return INTEGRATION_SCENARIOS.map(({ name, n, innerIters }) =>
     runBench(
       {
-        name: `integration.frame  ${n.toString().padStart(4)} entities + ${PARTICLE_COUNT}p`,
+        name,
         setup: () => buildState(n),
         run: frame,
         innerIters,

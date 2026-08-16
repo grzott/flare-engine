@@ -112,6 +112,8 @@ describe('counting Skia stub', () => {
 
   test('pool growth stops after the first frame at a given sprite count', () => {
     const state = buildFlushState({
+      name: 'pool growth probe (not in the frozen matrix)',
+      innerIters: 1,
       count: 64,
       textures: 1,
       order: 'clustered',

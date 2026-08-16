@@ -68,7 +68,13 @@ export const MAX_SAMPLE_WINDOW_MS = 25;
 
 const NS_PER_MS = 1_000_000;
 
-function percentile(sorted: readonly number[], p: number): number {
+/**
+ * Exported so other runners over the same scenario data (e.g. apps/bench-web's
+ * CanvasKit runner) share one percentile implementation. Two independent
+ * percentile calculations that quietly disagree would be a defect no gate
+ * catches until someone compares numbers by hand.
+ */
+export function percentile(sorted: readonly number[], p: number): number {
   if (sorted.length === 0) return 0;
   if (sorted.length === 1) return sorted[0] as number;
   const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1));

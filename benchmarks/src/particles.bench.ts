@@ -1,5 +1,6 @@
 import { ParticleEmitter } from '@flare-engine/particles';
 import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
+import { PARTICLES_SCENARIOS } from './scenarios/particles.js';
 
 const DT = 1 / 60;
 
@@ -56,49 +57,16 @@ function streamingEmitter(cap: number): ParticleEmitter {
   return em;
 }
 
-const INTEGRATE_SCENARIOS: readonly { n: number; innerIters: number }[] = [
-  { n: 500, innerIters: 360 },
-  { n: 1000, innerIters: 205 },
-  { n: 2000, innerIters: 115 },
-  { n: 5000, innerIters: 43 },
-];
-
-const EMIT_SCENARIOS: readonly { n: number; innerIters: number }[] = [
-  { n: 500, innerIters: 155 },
-  { n: 1000, innerIters: 95 },
-  { n: 2000, innerIters: 39 },
-];
-
 export function particlesBenches(overrides?: BenchOverrides): BenchStats[] {
-  const out: BenchStats[] = [];
-
-  for (const { n, innerIters } of INTEGRATE_SCENARIOS) {
-    out.push(
-      runBench(
-        {
-          name: `particles.update  ${n.toString().padStart(4)} integrate-only`,
-          setup: () => steadyStateEmitter(n),
-          run: (em) => em.update(DT),
-          innerIters,
-        },
-        overrides,
-      ),
-    );
-  }
-
-  for (const { n, innerIters } of EMIT_SCENARIOS) {
-    out.push(
-      runBench(
-        {
-          name: `particles.update  ${n.toString().padStart(4)} emit+integrate`,
-          setup: () => streamingEmitter(n),
-          run: (em) => em.update(DT),
-          innerIters,
-        },
-        overrides,
-      ),
-    );
-  }
-
-  return out;
+  return PARTICLES_SCENARIOS.map(({ name, n, kind, innerIters }) =>
+    runBench(
+      {
+        name,
+        setup: () => (kind === 'integrate' ? steadyStateEmitter(n) : streamingEmitter(n)),
+        run: (em) => em.update(DT),
+        innerIters,
+      },
+      overrides,
+    ),
+  );
 }

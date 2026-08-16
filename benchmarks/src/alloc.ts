@@ -59,7 +59,7 @@ export type AllocRow = {
   problems: string[];
 };
 
-const FLUSH_SCENARIO_BY_NAME = new Map(FLUSH_SCENARIOS.map((entry) => [entry.name, entry.s]));
+const FLUSH_SCENARIO_BY_NAME = new Map(FLUSH_SCENARIOS.map((entry) => [entry.name, entry]));
 
 const FRAMES = 20;
 const WARMUP_FRAMES = 5;

@@ -20,7 +20,8 @@
         "next.config.ts",
         "postcss.config.mjs",
         "$TURBO_ROOT$/benchmarks/results/microbench.json",
-        "$TURBO_ROOT$/benchmarks/results/device.json"
+        "$TURBO_ROOT$/benchmarks/results/device.json",
+        "$TURBO_ROOT$/benchmarks/results/web.json"
       ],
       "env": ["DEPLOY"]
     },

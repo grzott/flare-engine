@@ -61,7 +61,6 @@ export type AudioState = 'uninitialized' | 'running' | 'suspended' | 'closed';
  */
 export class AudioManager {
   private ctx: AudioContextLike | null = null;
-  private factory: (() => AudioContextLike) | null = null;
 
   /** Current audio state. */
   get state(): AudioState {
@@ -82,7 +81,6 @@ export class AudioManager {
   /** Initialize with a factory that creates the native AudioContext. */
   init(factory: () => AudioContextLike): void {
     if (this.ctx) return;
-    this.factory = factory;
     this.ctx = factory();
   }
 

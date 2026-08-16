@@ -1,7 +1,8 @@
 import deviceJson from '@flare-engine/benchmarks/results/device.json';
 import microbenchJson from '@flare-engine/benchmarks/results/microbench.json';
-import { parseDeviceReport, parseMicrobenchReport } from './schema';
-import type { DeviceReport, MicrobenchReport } from './types';
+import webJson from '@flare-engine/benchmarks/results/web.json';
+import { parseDeviceReport, parseMicrobenchReport, parseWebReport } from './schema';
+import type { DeviceReport, MicrobenchReport, WebReport } from './types';
 
 /**
  * Imported through the package export, not read from a `../../` path.
@@ -28,6 +29,10 @@ export function getMicrobenchReport(): MicrobenchReport {
 
 export function getDeviceReport(): DeviceReport {
   return parseDeviceReport(deviceJson);
+}
+
+export function getWebReport(): WebReport {
+  return parseWebReport(webJson);
 }
 
 // --- Staleness ---------------------------------------------------------------
@@ -61,8 +66,11 @@ export function freshnessOf(generated: string, now: Date = new Date()): Freshnes
  *
  * Keyed on an explicit env var rather than `NODE_ENV`: a developer running a
  * production build locally to check bundle output is not publishing anything.
+ *
+ * Takes any report shape carrying `generated` (both `MicrobenchReport` and `WebReport` qualify) —
+ * staleness is the same question regardless of which lane produced the capture.
  */
-export function assertPublishable(report: MicrobenchReport): void {
+export function assertPublishable(report: { generated: string }): void {
   if (process.env.DEPLOY !== '1') return;
   const { level, ageDays } = freshnessOf(report.generated);
   if (level === 'stale') {

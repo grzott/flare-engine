@@ -87,3 +87,60 @@ export type DeviceReport = {
   staleReason?: string;
   devices: DeviceRun[];
 };
+
+/**
+ * The web lane's provenance schema: `{ commit, host, runtime, appVersion, unit }` plus browser
+ * identity, present on every record below — never only on an enclosing envelope. `runtime` is
+ * always the literal `'web-swiftshader'`: these are software-rasterized (SwiftShader,
+ * `--disable-gpu`) numbers, not GPU-backed frame costs, and that string is what stops this lane
+ * ever mixing into the node lane's `runtime: "Bun x.y.z"` series.
+ */
+export type WebProvenance = {
+  commit: string;
+  host: string;
+  runtime: 'web-swiftshader';
+  appVersion: string;
+  browserName: string;
+  browserVersion: string;
+  capturedAt: string;
+};
+
+export type WebRenderResult = WebProvenance & {
+  kind: 'render';
+  name: string;
+  samples: number;
+  p50Ms: number;
+  p95Ms: number;
+  p99Ms: number;
+  unit: 'ms';
+};
+
+export type WebPayloadResult = WebProvenance & {
+  kind: 'payload';
+  name: string;
+  bytes: number;
+  unit: 'bytes';
+};
+
+export type WebNetworkProfile = {
+  downloadThroughputBytesPerSec: number;
+  uploadThroughputBytesPerSec: number;
+  latencyMs: number;
+};
+
+export type WebColdStartResult = WebProvenance & {
+  kind: 'coldStart';
+  name: string;
+  ms: number;
+  unit: 'ms';
+  /** Present only on the throttled variants — null on the untouched-network pair. */
+  network: WebNetworkProfile | null;
+};
+
+export type WebReport = {
+  schemaVersion: number;
+  generated: string;
+  render: WebRenderResult[];
+  payload: WebPayloadResult[];
+  coldStart: WebColdStartResult[];
+};

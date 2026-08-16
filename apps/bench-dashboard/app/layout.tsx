@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: '/micro', label: 'Microbench' },
   { href: '/integration', label: 'Integration' },
   { href: '/device', label: 'Device' },
+  { href: '/web', label: 'Web' },
 ] as const;
 
 type LayoutProps = { children: ReactNode };

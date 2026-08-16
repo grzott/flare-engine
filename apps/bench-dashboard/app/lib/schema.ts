@@ -1,4 +1,16 @@
-import type { DeviceReport, MicrobenchHeap, MicrobenchReport, MicrobenchResult } from './types';
+import { EXPECTED_SCENARIOS } from '@flare-engine/benchmarks/scenario-contract';
+import type {
+  DeviceReport,
+  MicrobenchHeap,
+  MicrobenchReport,
+  MicrobenchResult,
+  WebColdStartResult,
+  WebNetworkProfile,
+  WebPayloadResult,
+  WebProvenance,
+  WebRenderResult,
+  WebReport,
+} from './types';
 
 /**
  * Runtime validation for the result JSONs.
@@ -187,6 +199,143 @@ export function parseDeviceReport(raw: unknown): DeviceReport {
         }),
       };
     }),
+  };
+}
+
+function requireLiteralWebSwiftshader(value: unknown, where: string): 'web-swiftshader' {
+  if (value !== 'web-swiftshader') {
+    throw new SchemaError(
+      `${where}: expected the literal "web-swiftshader", got ${describe(value)}. A web-lane ` +
+        'record with any other runtime would be indistinguishable from the node lane once ' +
+        'rendered, which is exactly the mixed-series defect this field exists to prevent.',
+    );
+  }
+  return value;
+}
+
+function parseWebProvenance(o: Record<string, unknown>, where: string): WebProvenance {
+  return {
+    commit: requireString(o.commit, `${where}.commit`),
+    host: requireString(o.host, `${where}.host`),
+    runtime: requireLiteralWebSwiftshader(o.runtime, `${where}.runtime`),
+    appVersion: requireString(o.appVersion, `${where}.appVersion`),
+    browserName: requireString(o.browserName, `${where}.browserName`),
+    browserVersion: requireString(o.browserVersion, `${where}.browserVersion`),
+    capturedAt: requireString(o.capturedAt, `${where}.capturedAt`),
+  };
+}
+
+function requireLiteralUnit<U extends string>(value: unknown, unit: U, where: string): U {
+  if (value !== unit) {
+    throw new SchemaError(`${where}: expected unit "${unit}", got ${describe(value)}.`);
+  }
+  return unit;
+}
+
+function parseWebRenderResult(raw: unknown, where: string): WebRenderResult {
+  const o = requireObject(raw, where);
+  const name = requireString(o.name, `${where}.name`);
+  const at = `${where} ("${name}")`;
+  return {
+    ...parseWebProvenance(o, at),
+    kind: 'render',
+    name,
+    samples: requireNumber(o.samples, `${at}.samples`),
+    p50Ms: requireNumber(o.p50Ms, `${at}.p50Ms`),
+    p95Ms: requireNumber(o.p95Ms, `${at}.p95Ms`),
+    p99Ms: requireNumber(o.p99Ms, `${at}.p99Ms`),
+    unit: requireLiteralUnit(o.unit, 'ms', `${at}.unit`),
+  };
+}
+
+function parseWebPayloadResult(raw: unknown, where: string): WebPayloadResult {
+  const o = requireObject(raw, where);
+  const name = requireString(o.name, `${where}.name`);
+  const at = `${where} ("${name}")`;
+  return {
+    ...parseWebProvenance(o, at),
+    kind: 'payload',
+    name,
+    bytes: requireNumber(o.bytes, `${at}.bytes`),
+    unit: requireLiteralUnit(o.unit, 'bytes', `${at}.unit`),
+  };
+}
+
+function parseWebNetworkProfile(raw: unknown, where: string): WebNetworkProfile {
+  const o = requireObject(raw, where);
+  return {
+    downloadThroughputBytesPerSec: requireNumber(
+      o.downloadThroughputBytesPerSec,
+      `${where}.downloadThroughputBytesPerSec`,
+    ),
+    uploadThroughputBytesPerSec: requireNumber(
+      o.uploadThroughputBytesPerSec,
+      `${where}.uploadThroughputBytesPerSec`,
+    ),
+    latencyMs: requireNumber(o.latencyMs, `${where}.latencyMs`),
+  };
+}
+
+function parseWebColdStartResult(raw: unknown, where: string): WebColdStartResult {
+  const o = requireObject(raw, where);
+  const name = requireString(o.name, `${where}.name`);
+  const at = `${where} ("${name}")`;
+  return {
+    ...parseWebProvenance(o, at),
+    kind: 'coldStart',
+    name,
+    ms: requireNumber(o.ms, `${at}.ms`),
+    unit: requireLiteralUnit(o.unit, 'ms', `${at}.unit`),
+    network: o.network === null ? null : parseWebNetworkProfile(o.network, `${at}.network`),
+  };
+}
+
+/**
+ * Validates `web.json` — the software-rasterized (SwiftShader) web lane, kept schema-distinct
+ * from `microbench.json`'s node lane by construction (see `WebProvenance.runtime`).
+ *
+ * Cross-checks the render scenario names against `EXPECTED_SCENARIOS.Render` from
+ * `@flare-engine/benchmarks/scenario-contract` — the same frozen registry the node suite and
+ * `apps/bench-web`'s own test (`tests/runner.test.ts`) already reconcile against, so a scenario
+ * renamed on one side of the render/web split becomes a failed dashboard build rather than a
+ * table that silently shows fewer rows than the node lane's.
+ */
+export function parseWebReport(raw: unknown): WebReport {
+  const o = requireObject(raw, 'web.json');
+
+  const render = requireArray(o.render, 'web.json.render').map((r, i) =>
+    parseWebRenderResult(r, `web.json.render[${i}]`),
+  );
+  const payload = requireArray(o.payload, 'web.json.payload').map((p, i) =>
+    parseWebPayloadResult(p, `web.json.payload[${i}]`),
+  );
+  const coldStart = requireArray(o.coldStart, 'web.json.coldStart').map((c, i) =>
+    parseWebColdStartResult(c, `web.json.coldStart[${i}]`),
+  );
+
+  const expectedRender = EXPECTED_SCENARIOS.Render ?? [];
+  const gotNames = render.map((r) => r.name);
+  const wantNames = [...expectedRender];
+  if (JSON.stringify(gotNames) !== JSON.stringify(wantNames)) {
+    throw new SchemaError(
+      `web.json.render scenario names do not match the frozen Render contract.\n` +
+        `  got:  ${JSON.stringify(gotNames)}\n` +
+        `  want: ${JSON.stringify(wantNames)}`,
+    );
+  }
+  if (payload.length === 0) {
+    throw new SchemaError('web.json.payload is empty — there are no CanvasKit payload numbers.');
+  }
+  if (coldStart.length === 0) {
+    throw new SchemaError('web.json.coldStart is empty — there are no cold-start numbers.');
+  }
+
+  return {
+    schemaVersion: requireNumber(o.schemaVersion, 'web.json.schemaVersion'),
+    generated: requireString(o.generated, 'web.json.generated'),
+    render,
+    payload,
+    coldStart,
   };
 }
 

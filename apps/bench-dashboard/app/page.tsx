@@ -64,7 +64,13 @@ export default function OverviewPage() {
             Pure JS costs under Bun on one desktop machine — no Skia rasterization, no GPU, no
             bridge, no device.
           </li>
-          <li>No web/CanvasKit numbers exist yet; that backend has never been benchmarked.</li>
+          <li>
+            Web/CanvasKit numbers exist on the{' '}
+            <a href="/web" className="underline hover:text-slate-300">
+              Web
+            </a>{' '}
+            page, but are software-rasterized (SwiftShader) figures — not GPU-backed frame costs.
+          </li>
           <li>
             iOS has never been measured at all. <span className="font-mono">PERFORMANCE.md</span> at
             the repository root lists every unmeasured surface.

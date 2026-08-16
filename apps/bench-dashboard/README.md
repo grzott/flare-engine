@@ -1,6 +1,6 @@
 # `apps/bench-dashboard`
 
-Static Next.js dashboard that visualises Flare engine benchmark results. Reads the JSON produced by [`benchmarks/`](../../benchmarks) and renders four views — headline overview, microbench suites, integration frame cost, and on-device FPS samples.
+Static Next.js dashboard that visualises Flare engine benchmark results. Reads the JSON produced by [`benchmarks/`](../../benchmarks) and [`apps/bench-web`](../bench-web) and renders five views — headline overview, microbench suites, integration frame cost, on-device FPS samples, and web (CanvasKit) numbers.
 
 Private, never published to npm. Not part of the engine runtime.
 
@@ -12,6 +12,7 @@ Private, never published to npm. Not part of the engine runtime.
 | `/micro`       | `benchmarks/results/microbench.json` | Per-suite tables + charts (ECS, physics, particles, render) |
 | `/integration` | `benchmarks/results/microbench.json` | Integration-frame cost + heap delta                         |
 | `/device`      | `benchmarks/results/device.json`     | On-device FPS captures from a device bench scene            |
+| `/web`         | `benchmarks/results/web.json`        | CanvasKit render suite, WASM payload, cold start — software-rasterized (SwiftShader), labelled as such |
 
 JSON files are read at build time via `app/lib/data.ts`. Changing results = rerun the bench generators (see below) and rebuild.
 
@@ -72,9 +73,23 @@ variable a task does not list.
 
 Then rebuild the dashboard to see the new device rows.
 
+**Web JSON** — re-run `apps/bench-web`'s capture (~15 min for the full 18-scenario suite under
+CPU-raster SwiftShader):
+
+```bash
+bun run bench:web   # writes benchmarks/results/web.json + appends web-history.ndjson
+```
+
+`web-history.ndjson` is a separate append-only file from the node lane's `history.ndjson` — see
+`apps/bench-web/scripts/history.ts`'s header for why sharing one file is unsafe (`bench:promote`'s
+blind `rows.slice(-N)` has no runtime discriminant check). The dashboard reads `web.json`, the
+latest capture.
+
+Then rebuild the dashboard to see the new `/web` numbers.
+
 ## Data loading and schema
 
-`app/lib/data.ts` **imports** the two result JSONs through the `@flare-engine/benchmarks` package
+`app/lib/data.ts` **imports** the three result JSONs through the `@flare-engine/benchmarks` package
 exports rather than reading them from a relative path. That makes the workspace dependency real,
 puts the data in the module graph (a changed capture is a changed build input), and drops the old
 assumption that the build was invoked from this directory.

@@ -93,6 +93,11 @@ const PATTERNS = [
     re: /u\.expo\.dev|202e2a64-a737-48c1-8d71-0e7b8b6a3395|grzegorzotto\.dev/i,
   },
   { category: 'pt-vocab', severity: 'medium', re: /pan[\s._-]?tvardowski|tvardowski/i },
+  {
+    category: 'sibling-repo',
+    severity: 'high',
+    re: /grzott-portfolio|flare-engine-page|Pan-Tvardowski|pan-tvardowski-lore/i,
+  },
   // Unanchored (like pt-vocab) so IP names embedded in identifiers/keys are caught
   // (berekMode, spawnKogut, JedzaBossState); these have no English collision.
   {

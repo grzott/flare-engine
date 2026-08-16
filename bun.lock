@@ -48,7 +48,6 @@
       "dependencies": {
         "@flare-engine/core": "workspace:*",
         "@flare-engine/ecs": "workspace:*",
-        "@flare-engine/math": "workspace:*",
         "@flare-engine/particles": "workspace:*",
         "@flare-engine/physics": "workspace:*",
         "@flare-engine/render": "workspace:*",
@@ -180,6 +179,13 @@
       "version": "0.2.1",
       "dependencies": {
         "@flare-engine/events": "workspace:*",
+      },
+    },
+    "packages/dynamics": {
+      "name": "@flare-engine/dynamics",
+      "version": "0.2.1",
+      "dependencies": {
+        "@flare-engine/math": "^0.2.1",
       },
     },
     "packages/ecs": {
@@ -719,6 +725,8 @@
     "@flare-engine/devtools": ["@flare-engine/devtools@workspace:packages/devtools"],
 
     "@flare-engine/dialogue": ["@flare-engine/dialogue@workspace:packages/dialogue"],
+
+    "@flare-engine/dynamics": ["@flare-engine/dynamics@workspace:packages/dynamics"],
 
     "@flare-engine/ecs": ["@flare-engine/ecs@workspace:packages/ecs"],
 

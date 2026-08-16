@@ -45,6 +45,7 @@ const LAYER_MAP = {
   audio: 2,
   assets: 2,
   simulation: 2,
+  dynamics: 2,
   shapes: 2,
   progression: 2,
   storage: 2.5,

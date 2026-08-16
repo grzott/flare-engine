@@ -1,0 +1,50 @@
+{
+  "name": "@flare-engine/dynamics",
+  "version": "0.2.1",
+  "description": "2D rigid bodies: oriented boxes, contact manifolds, sequential-impulse solver",
+  "keywords": ["flare-engine", "physics", "rigid-body", "obb", "solver"],
+  "license": "Apache-2.0",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/dynamics"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE", "NOTICE"],
+  "scripts": {
+    "build": "tsdown",
+    "test": "bun test",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flare-engine/math": "^0.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false
+}

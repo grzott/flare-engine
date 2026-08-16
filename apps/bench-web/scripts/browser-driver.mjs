@@ -18,17 +18,21 @@
  * workspace root (resolves via normal Node module resolution from this file's location).
  *
  * Usage: node browser-driver.mjs <pageUrl> <configJson> <outFile>
- *   pageUrl:    the bench-web dev server URL (`scripts/server.ts`, started by the Bun parent).
- *   configJson: JSON-encoded { headless, launchArgs, waitTimeoutMs, viewport } — sourced from
- *               `../playwright.config.ts` by the Bun parent (single source of truth for those
- *               values) and passed through here as plain data, never re-declared.
- *   outFile:    path this script writes `{ results, browserName, browserVersion }` to on success.
+ *   pageUrl:    the bench-web dev server URL (`scripts/server.ts`, started by the Bun parent),
+ *               WITHOUT a `?mode=` query — this script appends it from `config.mode`.
+ *   configJson: JSON-encoded { headless, launchArgs, waitTimeoutMs, viewport, mode } — sourced
+ *               from `../playwright.config.ts` / `scripts/run.ts` by the Bun parent (single
+ *               source of truth for those values) and passed through here as plain data, never
+ *               re-declared. `mode` is `'cpu-raster' | 'gpu'` — see `src/main.ts`'s `parseMode`.
+ *   outFile:    path this script writes `{ results, browserName, browserVersion, rendererString }`
+ *               to on success. `rendererString` is `null` for `cpu-raster` (there is no GPU to
+ *               name) and the page's `UNMASKED_RENDERER_WEBGL` reading for `gpu`.
  */
 import { writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
 /** @typedef {{ name: string, samples: number, p50Ms: number, p95Ms: number, p99Ms: number }} ScenarioResult */
-/** @typedef {{ headless: boolean, launchArgs: string[], waitTimeoutMs: number, viewport: { width: number, height: number } }} DriverConfig */
+/** @typedef {{ headless: boolean, launchArgs: string[], waitTimeoutMs: number, viewport: { width: number, height: number }, mode: 'cpu-raster' | 'gpu' }} DriverConfig */
 
 async function main() {
   const [, , url, configJson, outFile] = process.argv;
@@ -37,6 +41,7 @@ async function main() {
   }
   /** @type {DriverConfig} */
   const config = JSON.parse(configJson);
+  const pageUrl = `${url}?mode=${config.mode}`;
 
   const browser = await chromium.launch({ headless: config.headless, args: config.launchArgs });
   try {
@@ -44,7 +49,7 @@ async function main() {
     page.on('console', (msg) => console.error(`[page] ${msg.text()}`));
     page.on('pageerror', (err) => console.error(`[page error] ${err.message}`));
 
-    await page.goto(url);
+    await page.goto(pageUrl);
     await page.waitForFunction(() => window.__BENCH_DONE__ === true, undefined, {
       timeout: config.waitTimeoutMs,
     });
@@ -54,11 +59,25 @@ async function main() {
 
     /** @type {ScenarioResult[]} */
     const results = await page.evaluate(() => window.__BENCH_RESULTS__ ?? []);
+    const rendererString = await page.evaluate(() => window.__BENCH_RENDERER__ ?? null);
+
+    if (config.mode === 'gpu') {
+      if (!rendererString) {
+        throw new Error('bench-web: gpu mode produced no renderer string');
+      }
+      if (/swiftshader/i.test(rendererString)) {
+        throw new Error(
+          `bench-web: gpu mode reports a software renderer, not hardware acceleration: ` +
+            `"${rendererString}" — check playwright.config.ts's GPU launch args`,
+        );
+      }
+    }
 
     const payload = {
       results,
       browserName: chromium.name(),
       browserVersion: browser.version(),
+      rendererString,
     };
     await writeFile(outFile, JSON.stringify(payload), 'utf8');
   } finally {

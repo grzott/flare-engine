@@ -69,7 +69,8 @@ export default function OverviewPage() {
             <a href="/web" className="underline hover:text-slate-300">
               Web
             </a>{' '}
-            page, but are software-rasterized (SwiftShader) figures — not GPU-backed frame costs.
+            page, but are CPU-raster figures (an offscreen, CPU-backed <code>MakeSurface</code>) —
+            not GPU-backed frame costs.
           </li>
           <li>
             iOS has never been measured at all. <span className="font-mono">PERFORMANCE.md</span> at

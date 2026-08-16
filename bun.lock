@@ -47,6 +47,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@flare-engine/benchmarks": "workspace:*",
+        "@flare-engine/postfx": "workspace:*",
         "@flare-engine/render": "workspace:*",
         "@flare-engine/render-web": "workspace:*",
         "@flare-engine/testing": "workspace:*",

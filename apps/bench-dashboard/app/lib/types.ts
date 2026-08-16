@@ -91,14 +91,17 @@ export type DeviceReport = {
 /**
  * The web lane's provenance schema: `{ commit, host, runtime, appVersion, unit }` plus browser
  * identity, present on every record below — never only on an enclosing envelope. `runtime` is
- * always the literal `'web-swiftshader'`: these are software-rasterized (SwiftShader,
- * `--disable-gpu`) numbers, not GPU-backed frame costs, and that string is what stops this lane
- * ever mixing into the node lane's `runtime: "Bun x.y.z"` series.
+ * always `'web-cpu-raster'` — an offscreen `CanvasKit.MakeSurface`, CPU-backed by construction,
+ * not GPU-backed frame costs — and that string is what stops this lane ever mixing into the node
+ * lane's `runtime: "Bun x.y.z"` series. `'web-swiftshader'` is also accepted: it is this same
+ * CPU-raster lane's old (factually wrong — SwiftShader is a GL implementation, and this surface
+ * never touches GL) label, kept only so already-committed `web.json` / `web-history.ndjson`
+ * records captured before the rename still parse. Never emitted by a fresh capture.
  */
 export type WebProvenance = {
   commit: string;
   host: string;
-  runtime: 'web-swiftshader';
+  runtime: 'web-cpu-raster' | 'web-swiftshader';
   appVersion: string;
   browserName: string;
   browserVersion: string;

@@ -7,12 +7,14 @@
   "scripts": {
     "dev": "bun run scripts/server.ts",
     "bench:web": "bun run scripts/run.ts",
+    "bench:web:gpu": "BENCH_WEB_MODE=gpu bun run scripts/run.ts",
     "lint": "biome check src/ scripts/ tests/",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
     "@flare-engine/benchmarks": "workspace:*",
+    "@flare-engine/postfx": "workspace:*",
     "@flare-engine/render": "workspace:*",
     "@flare-engine/render-web": "workspace:*",
     "@flare-engine/testing": "workspace:*"

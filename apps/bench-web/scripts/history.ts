@@ -14,9 +14,16 @@
  * Every record carries the full provenance schema the spec requires —
  * `{ commit, host, runtime, appVersion, unit }` — directly on itself rather than only on an
  * enclosing envelope, the same way each node-lane `MicrobenchResult` is self-contained inside its
- * report. `runtime` is fixed to `'web-swiftshader'` on every record: that is what lets the
- * dashboard tell this lane apart from the node lane's `runtime: "Bun x.y.z"` rows without the two
- * ever being able to mix into one incomparable series.
+ * report. `runtime` is one of two literals — `'web-cpu-raster'` (the offscreen `MakeSurface`
+ * lane) or `'web-gpu'` (the on-screen WebGL lane, `apps/bench-web/src/runner.ts`'s `createGpuTarget`)
+ * — never a bare `'web'`: that is what lets the dashboard tell this lane apart from the node
+ * lane's `runtime: "Bun x.y.z"` rows, and what stops the two web sub-lanes ever mixing into one
+ * incomparable series. GPU records additionally carry `rendererString` — the `UNMASKED_RENDERER_WEBGL`
+ * string read back from the page — because a GPU figure without the GPU named is not reproducible.
+ *
+ * The GPU lane writes to its own files (`web-gpu.json` / `web-gpu-history.ndjson`), never merged
+ * into the CPU-raster series above: the two measure different pipelines and are not comparable
+ * row-for-row the way two CPU-raster captures are.
  */
 import { appendFileSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
@@ -24,14 +31,21 @@ import { dirname, resolve } from 'node:path';
 import type { ScenarioResult } from '../src/runner.js';
 import type { NetworkProfile, PayloadByte } from './payload.js';
 
+/** `web-cpu-raster` = the offscreen `CanvasKit.MakeSurface` lane (no `<canvas>`/WebGL, CPU-backed
+ *  by construction). `web-gpu` = the on-screen WebGL lane via `@flare-engine/render-web`. */
+export type WebRuntimeLabel = 'web-cpu-raster' | 'web-gpu';
+
 export type Provenance = {
   readonly commit: string;
   readonly host: string;
-  readonly runtime: 'web-swiftshader';
+  readonly runtime: WebRuntimeLabel;
   readonly appVersion: string;
   readonly browserName: string;
   readonly browserVersion: string;
   readonly capturedAt: string;
+  /** `UNMASKED_RENDERER_WEBGL` (or the best available fallback) — present only on `web-gpu`
+   *  records. A GPU number without the GPU named is not reproducible. */
+  readonly rendererString?: string;
 };
 
 export type RenderHistoryRecord = Provenance & {
@@ -121,12 +135,14 @@ export async function readAppVersion(): Promise<string> {
 export function buildProvenance(input: {
   commit: string;
   host: string;
+  runtime: WebRuntimeLabel;
   appVersion: string;
   browserName: string;
   browserVersion: string;
   capturedAt: string;
+  rendererString?: string;
 }): Provenance {
-  return { ...input, runtime: 'web-swiftshader' };
+  return { ...input };
 }
 
 export function toRenderRecords(
@@ -198,6 +214,18 @@ export function webBaselineFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web.json');
 }
 
+/** The GPU lane's append-only history — a separate file from `historyFilePath()`, per this
+ *  module's header: the two runtimes measure different pipelines and must never land in one
+ *  series. */
+export function gpuHistoryFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-gpu-history.ndjson');
+}
+
+/** The GPU lane's "latest capture" baseline — a separate file from `webBaselineFilePath()`. */
+export function gpuWebBaselineFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-gpu.json');
+}
+
 /** Append-only, matching `appendHistoryRow` in `benchmarks/src/results.ts`'s convention: nothing
  *  here ever rewrites a previously written line. A separate file from that function's — see this
  *  module's header for why. */
@@ -214,6 +242,43 @@ export function appendHistory(records: readonly WebHistoryRecord[]): string {
  *  most recent run. */
 export function writeWebBaseline(capture: WebCapture): string {
   const file = webBaselineFilePath();
+  writeJsonAtomic(file, `${JSON.stringify(capture, null, 2)}\n`);
+  return file;
+}
+
+/**
+ * The GPU lane's capture — render scenarios only. Deliberately narrower than `WebCapture`: GPU
+ * mode measures the render path (the thing Task 2 exists to add), not the WASM payload or
+ * cold-start lanes, which are backend-agnostic (payload) or defined in terms of the CPU-raster
+ * surface by construction (cold-start's "first rendered frame" — see `coldstart-driver.mjs`) and
+ * so add nothing new under a GPU target. Re-running them per GPU capture would only duplicate the
+ * CPU-raster numbers under a misleading label.
+ */
+export type WebGpuCapture = {
+  readonly schemaVersion: 1;
+  readonly generated: string;
+  readonly render: readonly RenderHistoryRecord[];
+};
+
+export function buildWebGpuCapture(input: {
+  generated: string;
+  render: readonly RenderHistoryRecord[];
+}): WebGpuCapture {
+  return { schemaVersion: 1, ...input };
+}
+
+/** Append-only, mirroring `appendHistory` for the GPU lane's own file. */
+export function appendGpuHistory(records: readonly RenderHistoryRecord[]): string {
+  const file = gpuHistoryFilePath();
+  mkdirSync(dirname(file), { recursive: true });
+  const lines = records.map((r) => `${JSON.stringify(r)}\n`).join('');
+  appendFileSync(file, lines, 'utf8');
+  return file;
+}
+
+/** Overwrites the GPU lane's "latest capture" file, mirroring `writeWebBaseline`. */
+export function writeGpuWebBaseline(capture: WebGpuCapture): string {
+  const file = gpuWebBaselineFilePath();
   writeJsonAtomic(file, `${JSON.stringify(capture, null, 2)}\n`);
   return file;
 }

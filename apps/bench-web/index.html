@@ -33,8 +33,11 @@
   <body>
     <h1>Flare bench-web — render suite (CanvasKit)</h1>
     <p>
-      Software-rasterized (SwiftShader, <code>--disable-gpu</code>) — a reproducible baseline, not
-      a GPU-backed real-world number. See <code>runtime: "web-swiftshader"</code> in results.
+      Default mode (<code>?mode=cpu-raster</code>): CPU-backed raster surface
+      (<code>CanvasKit.MakeSurface</code>, no <code>&lt;canvas&gt;</code>/WebGL) — a reproducible
+      baseline, not a GPU-backed real-world number. See <code>runtime: "web-cpu-raster"</code> in
+      results. Pass <code>?mode=gpu</code> for the on-screen WebGL lane
+      (<code>runtime: "web-gpu"</code>) instead.
     </p>
     <div id="status">loading…</div>
     <table id="results-table" hidden>
@@ -49,6 +52,9 @@
       </thead>
       <tbody></tbody>
     </table>
+    <!-- Present unconditionally; only used when ?mode=gpu selects createGpuTarget. Sized to
+         runner.ts's VIEW_W/VIEW_H so createPostFxSurface reads the right backing-store size. -->
+    <canvas id="gpu-canvas" width="800" height="600"></canvas>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

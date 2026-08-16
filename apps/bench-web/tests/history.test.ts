@@ -13,6 +13,7 @@ import {
 const PROVENANCE_INPUT = {
   commit: 'abc123def456',
   host: 'win32 x64 (Test CPU)',
+  runtime: 'web-cpu-raster' as const,
   appVersion: '0.2.1',
   browserName: 'chromium',
   browserVersion: '151.0.7922.34',
@@ -20,9 +21,21 @@ const PROVENANCE_INPUT = {
 };
 
 describe('buildProvenance', () => {
-  it('carries every field the provenance schema requires, runtime fixed to web-swiftshader', () => {
+  it('carries every field the provenance schema requires, runtime as given', () => {
     const p = buildProvenance(PROVENANCE_INPUT);
-    expect(p).toEqual({ ...PROVENANCE_INPUT, runtime: 'web-swiftshader' });
+    expect(p).toEqual(PROVENANCE_INPUT);
+  });
+
+  it('carries rendererString through for gpu records', () => {
+    const p = buildProvenance({
+      ...PROVENANCE_INPUT,
+      runtime: 'web-gpu',
+      rendererString: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)',
+    });
+    expect(p.runtime).toBe('web-gpu');
+    expect(p.rendererString).toBe(
+      'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)',
+    );
   });
 });
 
@@ -47,7 +60,7 @@ describe('toRenderRecords / toPayloadRecords / toColdStartRecords', () => {
       unit: 'ms',
       commit: PROVENANCE_INPUT.commit,
       host: PROVENANCE_INPUT.host,
-      runtime: 'web-swiftshader',
+      runtime: 'web-cpu-raster',
       appVersion: PROVENANCE_INPUT.appVersion,
     });
   });

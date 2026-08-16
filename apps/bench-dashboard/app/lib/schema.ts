@@ -202,12 +202,22 @@ export function parseDeviceReport(raw: unknown): DeviceReport {
   };
 }
 
-function requireLiteralWebSwiftshader(value: unknown, where: string): 'web-swiftshader' {
-  if (value !== 'web-swiftshader') {
+/**
+ * Accepts both the current CPU-raster label and its old, factually-wrong predecessor
+ * (`'web-swiftshader'` — SwiftShader is a GL implementation; this surface never touches GL) so
+ * already-committed `web.json` / `web-history.ndjson` records captured before the rename still
+ * parse without being silently rewritten. A fresh capture never emits the old label.
+ */
+function requireWebCpuRasterRuntime(
+  value: unknown,
+  where: string,
+): 'web-cpu-raster' | 'web-swiftshader' {
+  if (value !== 'web-cpu-raster' && value !== 'web-swiftshader') {
     throw new SchemaError(
-      `${where}: expected the literal "web-swiftshader", got ${describe(value)}. A web-lane ` +
-        'record with any other runtime would be indistinguishable from the node lane once ' +
-        'rendered, which is exactly the mixed-series defect this field exists to prevent.',
+      `${where}: expected "web-cpu-raster" (or the pre-rename "web-swiftshader"), got ` +
+        `${describe(value)}. A web-lane record with any other runtime would be indistinguishable ` +
+        'from the node lane once rendered, which is exactly the mixed-series defect this field ' +
+        'exists to prevent.',
     );
   }
   return value;
@@ -217,7 +227,7 @@ function parseWebProvenance(o: Record<string, unknown>, where: string): WebProve
   return {
     commit: requireString(o.commit, `${where}.commit`),
     host: requireString(o.host, `${where}.host`),
-    runtime: requireLiteralWebSwiftshader(o.runtime, `${where}.runtime`),
+    runtime: requireWebCpuRasterRuntime(o.runtime, `${where}.runtime`),
     appVersion: requireString(o.appVersion, `${where}.appVersion`),
     browserName: requireString(o.browserName, `${where}.browserName`),
     browserVersion: requireString(o.browserVersion, `${where}.browserVersion`),
@@ -291,8 +301,9 @@ function parseWebColdStartResult(raw: unknown, where: string): WebColdStartResul
 }
 
 /**
- * Validates `web.json` — the software-rasterized (SwiftShader) web lane, kept schema-distinct
- * from `microbench.json`'s node lane by construction (see `WebProvenance.runtime`).
+ * Validates `web.json` — the CPU-raster web lane (an offscreen `CanvasKit.MakeSurface`, CPU-backed
+ * by construction, not GPU-backed), kept schema-distinct from `microbench.json`'s node lane by
+ * construction (see `WebProvenance.runtime`).
  *
  * Cross-checks the render scenario names against `EXPECTED_SCENARIOS.Render` from
  * `@flare-engine/benchmarks/scenario-contract` — the same frozen registry the node suite and

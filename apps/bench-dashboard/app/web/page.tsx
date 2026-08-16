@@ -9,10 +9,12 @@ import { fmtBytes, fmtMs } from '../lib/units';
 
 /**
  * The web (CanvasKit) lane — deliberately its own page, not folded into `/micro`, so the
- * SwiftShader banner below is the first thing a reader sees before any number. These are
- * software-rasterized figures (Chromium headless, `--disable-gpu`), not GPU-backed frame costs;
- * see `runtime: "web-swiftshader"` on every record. Valid for relative comparison (scaling
- * curves, batching strategy, effect cost) — not for predicting real-device fps.
+ * CPU-raster banner below is the first thing a reader sees before any number. These are
+ * CPU-raster figures — CanvasKit's `MakeSurface` is a CPU-backed offscreen surface by
+ * construction, not GPU-backed frame costs; see `runtime: "web-cpu-raster"` on every record.
+ * Valid for relative comparison (scaling curves, batching strategy, effect cost) — not for
+ * predicting real-device fps. A separate GPU lane exists (`apps/bench-web`'s `?mode=gpu` /
+ * `web-gpu.json`) but is not wired into this dashboard.
  */
 export default function WebPage() {
   const report = getWebReport();
@@ -48,15 +50,15 @@ export default function WebPage() {
       </div>
 
       <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-1">
-        <p className="text-sm font-semibold text-amber-200">
-          Software-rasterized (SwiftShader), not GPU-backed
-        </p>
+        <p className="text-sm font-semibold text-amber-200">CPU-raster, not GPU-backed</p>
         <p className="text-xs text-amber-200/80">
-          Every number on this page runs Chromium headless with <code>--disable-gpu</code>, forcing
-          CPU (SwiftShader) rasterization — the reproducible, driver-independent baseline, not a
-          real-world frame cost. Valid for relative comparison (scaling curves, clustered vs.
-          interleaved batching, effect cost); not valid for &quot;what fps will a user see&quot;.
-          Real GPU-backed device numbers are a separate, future lane.
+          Every number on this page renders through <code>CanvasKit.MakeSurface</code>, an offscreen
+          surface that is CPU-backed by construction (not merely software rendering forced by a
+          launch flag) — the reproducible, driver-independent baseline, not a real-world frame cost.
+          Valid for relative comparison (scaling curves, clustered vs. interleaved batching, effect
+          cost); not valid for &quot;what fps will a user see&quot;. A real GPU-backed lane exists (
+          <code>apps/bench-web</code>&apos;s <code>?mode=gpu</code>, written to{' '}
+          <code>web-gpu.json</code>) but is not yet wired into this dashboard.
         </p>
       </div>
 

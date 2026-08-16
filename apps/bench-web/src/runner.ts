@@ -8,10 +8,19 @@
  * logic with no CanvasKit involvement, so a browser run of them would add nothing a Node run
  * doesn't already give honestly. "Real CanvasKit" is specifically about the render path.
  *
- * Rendering target: a CPU-raster `CanvasKit.MakeSurface` (no `<canvas>`/WebGL surface). This is
- * the same surface CanvasKit's own conformance tests in `@flare-engine/render-web` use, and it
- * removes GPU driver/compositor variance entirely rather than merely controlling for it — the
- * strongest available form of "disable the GPU-variance sources you can control".
+ * Two render targets, selected by the caller via `RenderTarget` (see `main.ts` for mode wiring):
+ *
+ *  - `createCpuRasterTarget` — an offscreen `CanvasKit.MakeSurface` (no `<canvas>`/WebGL surface).
+ *    This is CanvasKit's CPU-backed raster surface by construction (its own type definitions say
+ *    so), not merely software rendering forced by a launch flag. It removes GPU driver/compositor
+ *    variance entirely rather than merely controlling for it — the strongest available form of
+ *    "disable the GPU-variance sources you can control". `present()` is a no-op: the bitmap is
+ *    never displayed, so there is nothing to flush.
+ *  - `createGpuTarget` — a real on-screen `<canvas>` + WebGL surface via
+ *    `@flare-engine/render-web`'s `createPostFxSurface` (passthrough `EffectChain`, so no shader
+ *    passes run — just the scene snapshot + blit + flush every real consumer pays). This is the
+ *    GPU-backed frame cost the CPU-raster lane above cannot measure by design; see
+ *    `playwright.config.ts` for the launch-arg side of making this mode actually use hardware.
  */
 
 import { DEFAULT_WARMUP_MS, P99_MIN_SAMPLES, percentile } from '@flare-engine/benchmarks/harness';
@@ -22,6 +31,7 @@ import {
   SORT_SCENARIOS,
   type SortScenario,
 } from '@flare-engine/benchmarks/scenarios';
+import { EffectChain } from '@flare-engine/postfx';
 import {
   type AnySpriteEffect,
   type Drawable,
@@ -34,7 +44,7 @@ import {
   sortByDrawOrder,
   tint,
 } from '@flare-engine/render';
-import { createWebFrameRenderer } from '@flare-engine/render-web';
+import { createPostFxSurface, createWebFrameRenderer } from '@flare-engine/render-web';
 import { createBenchSession } from '@flare-engine/testing';
 import type { CanvasKit, Canvas as CKCanvas, Image as CKImage, SkPicture } from 'canvaskit-wasm';
 
@@ -54,9 +64,68 @@ export type ScenarioResult = {
   readonly p99Ms: number;
 };
 
-const VIEW_W = 800;
-const VIEW_H = 600;
+export const VIEW_W = 800;
+export const VIEW_H = 600;
 const SPRITE = 16;
+
+/**
+ * Where a frame's drawn content lands, and how it gets presented. `canvas` is where scenario
+ * code draws each frame's `SkPicture`; `present()` is called once per simulated frame, after the
+ * draw, so a GPU target's snapshot + blit + flush cost — the actual cost of getting pixels
+ * on-screen — is inside the measured region exactly like a real consumer pays it every frame.
+ */
+export type RenderTarget = {
+  readonly canvas: CKCanvas;
+  present(): void;
+  dispose(): void;
+};
+
+/** The CPU-raster target: an offscreen bitmap that is never displayed, so `present()` is a no-op
+ *  — this preserves the CPU-raster lane's measured behaviour exactly as it was before GPU mode
+ *  existed. */
+export function createCpuRasterTarget(kit: CanvasKit): RenderTarget {
+  const surface = kit.MakeSurface(VIEW_W, VIEW_H);
+  if (surface === null) {
+    throw new Error(`bench-web: CanvasKit.MakeSurface(${VIEW_W}, ${VIEW_H}) returned null`);
+  }
+  return {
+    canvas: surface.getCanvas(),
+    present: () => {},
+    dispose: () => surface.delete(),
+  };
+}
+
+/**
+ * The GPU target: a real on-screen `<canvas>` backed by `@flare-engine/render-web`'s
+ * `createPostFxSurface`, given a passthrough (empty) `EffectChain` so no shader pass runs — the
+ * scene snapshot is blitted straight to the on-screen surface. Throws if WebGL is unavailable
+ * (e.g. the launch args in `playwright.config.ts` failed to secure a GPU context) rather than
+ * silently falling back to something CPU-backed, which would defeat the whole point of this mode.
+ */
+export function createGpuTarget(kit: CanvasKit, canvas: HTMLCanvasElement): RenderTarget {
+  canvas.width = VIEW_W;
+  canvas.height = VIEW_H;
+  const surface = createPostFxSurface(kit, canvas, new EffectChain());
+  if (surface === null) {
+    throw new Error('bench-web: createPostFxSurface returned null — WebGL context unavailable');
+  }
+  surface.clear([0, 0, 0]);
+  const sceneCanvas = surface.sceneCanvas();
+  if (sceneCanvas === null) {
+    throw new Error('bench-web: GPU surface has no scene canvas immediately after creation');
+  }
+  return {
+    canvas: sceneCanvas,
+    present: () => {
+      if (surface.isLost()) {
+        throw new Error('bench-web: WebGL context lost mid-capture');
+      }
+      surface.composite(1);
+      surface.flush();
+    },
+    dispose: () => surface.dispose(),
+  };
+}
 
 const WHITE: SpriteColor = { r: 1, g: 1, b: 1, a: 1 };
 const SKY: SpriteColor = { r: 0.2, g: 0.4, b: 0.8, a: 1 };
@@ -183,8 +252,11 @@ function disposeFlushRunnerState(state: FlushRunnerState): void {
   for (const image of state.images) deleteIfPossible(image);
 }
 
-/** One flush-and-present cycle, mirroring `render.bench.ts`'s `flushRun` plus presentation. */
-function flushOnce(state: FlushRunnerState, renderer: FrameRenderer, destCanvas: CKCanvas): void {
+/** One flush-and-present cycle, mirroring `render.bench.ts`'s `flushRun` plus presentation.
+ *  `target.present()` runs every simulated frame, not once per rAF tick's `innerIters` batch —
+ *  each `flushOnce` call is one full frame's worth of work, presentation included, matching what
+ *  a real consumer pays per frame. */
+function flushOnce(state: FlushRunnerState, renderer: FrameRenderer, target: RenderTarget): void {
   const { batch, images, imageOf, xs, ys, rotations, alphas, count, effect, stretch } = state;
   renderer.beginFrame(VIEW_W, VIEW_H);
   for (let i = 0; i < count; i++) {
@@ -211,9 +283,10 @@ function flushOnce(state: FlushRunnerState, renderer: FrameRenderer, destCanvas:
   );
   const pic = renderer.endFrame();
   if (pic !== null) {
-    destCanvas.drawPicture(pic as unknown as SkPicture);
+    target.canvas.drawPicture(pic as unknown as SkPicture);
     deleteIfPossible(pic);
   }
+  target.present();
 }
 
 type SortRunnerState = {
@@ -308,14 +381,14 @@ function toResult(
 async function runFlushScenario(
   kit: CanvasKit,
   renderer: FrameRenderer,
-  destCanvas: CKCanvas,
+  target: RenderTarget,
   scenario: FlushScenario,
 ): Promise<ScenarioResult> {
   const state = buildFlushRunnerState(kit, scenario);
   const innerIters = scenario.innerIters;
   try {
     const work = (): void => {
-      for (let i = 0; i < innerIters; i++) flushOnce(state, renderer, destCanvas);
+      for (let i = 0; i < innerIters; i++) flushOnce(state, renderer, target);
     };
     const rafSamplesMs = await sampleRafDeltas(work, P99_MIN_SAMPLES, DEFAULT_WARMUP_MS);
     return toResult(scenario.name, rafSamplesMs, innerIters);
@@ -342,16 +415,16 @@ export type RenderSuiteProgress = (done: number, total: number, result: Scenario
 /**
  * Runs every Render-suite scenario against real CanvasKit and returns one percentile record per
  * scenario, in `RENDER_SCENARIO_NAMES` order.
+ *
+ * `target` is caller-owned: build it with `createCpuRasterTarget` or `createGpuTarget` and
+ * dispose it yourself once this resolves — ownership stays with whoever constructed it, matching
+ * how `kit` and `onProgress` are already caller-supplied.
  */
 export async function runRenderSuite(
   kit: CanvasKit,
+  target: RenderTarget,
   onProgress?: RenderSuiteProgress,
 ): Promise<ScenarioResult[]> {
-  const destSurface = kit.MakeSurface(VIEW_W, VIEW_H);
-  if (destSurface === null) {
-    throw new Error(`bench-web: CanvasKit.MakeSurface(${VIEW_W}, ${VIEW_H}) returned null`);
-  }
-  const destCanvas = destSurface.getCanvas();
   // One long-lived FrameRenderer shared by every flush scenario, matching how a real game uses
   // it. createFrameRenderer has no dispose/teardown API (packages/render), so instantiating one
   // per scenario would multiply an unavoidable leak fifteen-fold for no benefit.
@@ -361,7 +434,7 @@ export async function runRenderSuite(
   const total = FLUSH_SCENARIOS.length + SORT_SCENARIOS.length;
 
   for (const scenario of FLUSH_SCENARIOS) {
-    const result = await runFlushScenario(kit, renderer, destCanvas, scenario);
+    const result = await runFlushScenario(kit, renderer, target, scenario);
     results.push(result);
     onProgress?.(results.length, total, result);
   }
@@ -371,6 +444,5 @@ export async function runRenderSuite(
     onProgress?.(results.length, total, result);
   }
 
-  destSurface.delete();
   return results;
 }

@@ -12,7 +12,7 @@ Private, never published to npm. Not part of the engine runtime.
 | `/micro`       | `benchmarks/results/microbench.json` | Per-suite tables + charts (ECS, physics, particles, render) |
 | `/integration` | `benchmarks/results/microbench.json` | Integration-frame cost + heap delta                         |
 | `/device`      | `benchmarks/results/device.json`     | On-device FPS captures from a device bench scene            |
-| `/web`         | `benchmarks/results/web.json`        | CanvasKit render suite, WASM payload, cold start — software-rasterized (SwiftShader), labelled as such |
+| `/web`         | `benchmarks/results/web.json`        | CanvasKit render suite, WASM payload, cold start — CPU-raster (offscreen `MakeSurface`), labelled as such |
 
 JSON files are read at build time via `app/lib/data.ts`. Changing results = rerun the bench generators (see below) and rebuild.
 
@@ -74,10 +74,11 @@ variable a task does not list.
 Then rebuild the dashboard to see the new device rows.
 
 **Web JSON** — re-run `apps/bench-web`'s capture (~15 min for the full 18-scenario suite under
-CPU-raster SwiftShader):
+CPU-raster; a GPU lane also exists, see below):
 
 ```bash
-bun run bench:web   # writes benchmarks/results/web.json + appends web-history.ndjson
+bun run bench:web                                   # writes benchmarks/results/web.json + appends web-history.ndjson (runtime: "web-cpu-raster")
+bun --cwd apps/bench-web run bench:web:gpu           # writes benchmarks/results/web-gpu.json + appends web-gpu-history.ndjson (runtime: "web-gpu"); local-only, not wired into this dashboard, not run in CI
 ```
 
 `web-history.ndjson` is a separate append-only file from the node lane's `history.ndjson` — see

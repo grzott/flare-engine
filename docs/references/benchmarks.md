@@ -37,7 +37,7 @@ Treat a change smaller than the run-to-run spread as noise.  The render and inte
 ## What these numbers do not measure
 
 - **No Skia rasterization, no GPU, no bridge, no device.** The draw path runs to the point where the engine hands a batch to Skia; what Skia then does with it is not measured here, and these are pure JS costs under Bun on one desktop machine.
-- **Web/CanvasKit numbers exist in three lanes: CPU-raster, desktop GPU, and an on-device Android GPU lane.** See [Web (CanvasKit)](#web-canvaskit). The GPU lane measures **CPU-side submission cost**, not GPU execution time — WebGL/CanvasKit calls queue and return, and reading true GPU time from page script is not available to this harness. Both lanes were re-captured 2026-08-18 on a corrected sampler; every web figure published before that date was quantized to the display refresh interval and must not be cited.
+- **Web/CanvasKit numbers exist in three lanes: CPU-raster, desktop GPU, and an on-device Android GPU lane.** See [Web (CanvasKit)](#web-canvaskit). Both GPU-backed lanes measure **CPU-side submission cost**, not GPU execution time — WebGL/CanvasKit calls queue work and return, and reading true GPU time from page script is not available to this harness. Every web figure published before 2026-08-18 was quantized to the display refresh interval and must not be cited.
 - **The ECS suite is deliberately unbounded.** Its entities integrate off the field forever, because nothing in `world.step` branches on position and holding that suite byte-identical across the 2026-07 rework keeps it usable as the control row that made the render regression conclusive. The physics and integration suites wrap at the field edge instead, and a probe fails the capture if any entity escapes.
 - **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.
 - **Every number here was captured on a machine that was 9.7% busy with other work.** `bench:promote` refuses a window above 15% foreign load, or one where 2 or more runs sit further than 10% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).
@@ -174,214 +174,130 @@ _Captured: 2026-04-22 — stale_
 
 ## Web (CanvasKit)
 
-Three lanes over the same 18 render scenarios (frozen in `scenario-contract.ts`), bound to real
-CanvasKit through `@flare-engine/render-web` instead of the node lane's counting Skia stub:
-**CPU-raster** renders through an offscreen `CanvasKit.MakeSurface`, CPU-backed by construction,
-which is the driver-independent baseline a CI runner can also produce; **GPU** renders through a
-real on-screen `<canvas>` + WebGL surface on this desktop; **Android device** runs that same
-on-screen path on a USB-attached phone. Every record carries `runtime: "web-cpu-raster"`,
-`"web-gpu"` or `"web-android-gpu"`, never a bare `"web"`, and each lane writes its own results and
-history files, so they can never be folded into one series.
+Three lanes over the same 18 render scenarios (frozen in `scenario-contract.ts`), bound to real CanvasKit through `@flare-engine/render-web` instead of the node lane's counting Skia stub: **CPU-raster** renders through an offscreen `CanvasKit.MakeSurface`, CPU-backed by construction, which is the driver-independent baseline a CI runner can also produce; **GPU** renders through a real on-screen `<canvas>` + WebGL surface on this desktop; **Android device** runs that same on-screen path on a USB-attached phone. Every record carries `runtime: "web-cpu-raster"`, `"web-gpu"` or `"web-android-gpu"`, never a bare `"web"`, and each lane writes its own results and history files, so they can never be folded into one series.
 
-> **Measurement correction, 2026-08-18 — every web number published before this date was wrong.**
-> The original sampler ran the work once per `requestAnimationFrame` callback and took the
-> frame-to-frame delta as its sample. rAF is vsync-locked, so that delta can only ever be an integer
-> multiple of the display refresh interval, which made every reported figure
-> `k x 16.667 ms / innerIters` for integer `k`. All 36 rows across both lanes were such multiples.
-> **13 of the 18 GPU rows sat at exactly k = 1** — they reported the display's refresh rate and
-> nothing whatsoever about the engine. Work cheaper than one refresh interval was invisible to that
-> clock by construction. The sampler now brackets the work with `performance.now()` and uses rAF
-> only to schedule batches, and grows each batch until it fills a ~20 ms window — long enough that
-> Chrome's 100 us Spectre clamp on `performance.now()` is noise — instead of running a fixed
-> `innerIters` count that was sized for the node bench against a counting stub. Both lanes below
-> were re-captured on the corrected instrument, and no row in either is a multiple of the refresh
-> interval any more. **Nothing below is comparable to a web capture published before 2026-08-18.**
+> **Measurement correction, 2026-08-18 — every web number published before this date was wrong.** The original sampler ran the work once per `requestAnimationFrame` callback and took the frame-to-frame delta as its sample. rAF is vsync-locked, so that delta can only ever be an integer multiple of the display refresh interval, which made every reported figure `k x 16.667 ms / innerIters` for integer `k`. All 36 rows across both lanes were such multiples. **13 of the 18 GPU rows sat at exactly k = 1** — they reported the display's refresh rate and nothing whatsoever about the engine. Work cheaper than one refresh interval was invisible to that clock by construction. The sampler now brackets the work with `performance.now()` and uses rAF only to schedule batches, and grows each batch until it fills a ~20 ms window — long enough that Chrome's 100 us Spectre clamp on `performance.now()` is noise — instead of running a fixed `innerIters` count that was sized for the node bench against a counting stub. Every lane below was captured on the corrected instrument. **Nothing below is comparable to a web capture published before 2026-08-18.**
 
-**Both GPU lanes measure CPU-side submission cost, not GPU execution time.** WebGL and CanvasKit
-calls queue work and return — `GrDirectContext.flush()` submits, it does not wait — so a clock
-bracket captures everything the CPU does to build and hand off the frame and none of what the GPU
-then does with it. Reading true GPU time from page script needs `EXT_disjoint_timer_query_webgl2`
-(generally not exposed) or a forced `finish()`/`readPixels` sync, which distorts the number by
-serializing the pipeline. Submission cost is in any case the figure a consumer's frame budget
-contends with on the main thread.
+**Both GPU lanes measure CPU-side submission cost, not GPU execution time.** WebGL and CanvasKit calls queue work and return — `GrDirectContext.flush()` submits, it does not wait — so a clock bracket captures everything the CPU does to build and hand off the frame and none of what the GPU then does with it. Reading true GPU time from page script needs `EXT_disjoint_timer_query_webgl2` (generally not exposed) or a forced `finish()`/`readPixels` sync, which distorts the number by serializing the pipeline. Submission cost is in any case the figure a consumer's frame budget contends with on the main thread.
 
-The **Ops/batch** column is the honesty check: it is how many repetitions filled the measurement
-window, so `p50 x ops` reconstructs that window. A row whose `p50` equals `refresh / ops` is the
-failure mode described above, and this column makes it visible rather than invisible.
+The **Ops/batch** column is the honesty check: it is how many repetitions filled the measurement window, so `p50 x ops` reconstructs that window. A row whose `p50` equals `refresh / ops` is the failure mode described above, and this column makes it visible rather than invisible.
 
-Hand-maintained: `bun run bench:md` regenerates only the node-lane sections from `microbench.json`
-and **deletes this one** — see todo row PERF-12. Sources: `benchmarks/results/web.json` +
-`web-gpu.json` (latest) and `web-history.ndjson` + `web-gpu-history.ndjson` (append-only, kept
-separate from the node lane's `history.ndjson` so these rows can never land inside
-`bench:promote`'s blind `rows.slice(-N)` window). Re-run with `bun run bench:web` /
-`bun run bench:web:gpu` in `apps/bench-web`.
+Sources: `web.json` / `web-gpu.json` / `web-android.json` (folded baseline per lane) with matching `*-history.ndjson` files, each lane kept separate from the node lane's `history.ndjson` so its rows can never land inside `bench:promote`'s blind `rows.slice(-N)` window. Capture with `bun run bench:web`, `bench:web:gpu` or `bench:web:android` in `apps/bench-web`, then fold with `bun run bench:web:promote -- --lane <lane> --runs N` in `benchmarks`. **Every figure below is a median-of-medians across the runs stated in its header, with the observed spread beside it** — the fold refuses a window whose captures disagree on commit, runtime, browser, renderer or phone, one the device was thermally throttling through, or one where two or more runs sit more than 10% from the folded median.
 
 ### CanvasKit WASM payload
 
-Read straight off the installed `canvaskit-wasm` package on disk (raw = file size, gzip =
-`gzip -c <file> | wc -c`) — never hardcoded.
+Read straight off the installed `canvaskit-wasm` package on disk (raw = file size, gzip = `gzip -c <file> | wc -c`) — never hardcoded.
 
 | Variant | Raw | Gzipped |
 |---|---:|---:|
 | default | 7,094,511 B (6.77 MB) | 2,852,025 B (2.72 MB) |
 | full | 8,001,100 B (7.63 MB) | 3,200,682 B (3.05 MB) |
 
-`apps/bench-web` serves the `full` binary (needed for the render suite's effect coverage);
-`default` is the smaller number a production integration that skips those features would ship.
+`apps/bench-web` serves the `full` binary (needed for the render suite's effect coverage); `default` is the smaller number a production integration that skips those features would ship.
 
 ### Cold start to first rendered frame
 
-"First rendered frame" = the first `surface.flush()` after CanvasKit finishes loading, on the
-off-screen CPU-raster surface the render suite itself uses — there is no on-screen `<canvas>` here,
-so browser paint/composite timings (FCP etc.) do not apply.
+"First rendered frame" = the first `surface.flush()` after CanvasKit finishes loading, on the off-screen CPU-raster surface the render suite itself uses — there is no on-screen `<canvas>` here, so browser paint/composite timings (FCP etc.) do not apply.
 
 | Cache | Plain network | Throttled 4G |
 |---|---:|---:|
-| cold | 126.8 ms | 16.51 s |
-| warm | 72.7 ms | 16.50 s |
+| cold | 128.0 ms | 16.55 s |
+| warm | 71.4 ms | 16.48 s |
 
-4G throttle profile (Chrome DevTools Protocol `Network.emulateNetworkConditions`, a
-flare-engine-defined profile stated here for reproducibility — not a copy of any external tool's
-preset): **download 4 Mbit/s (524288 B/s), upload 3 Mbit/s (393216 B/s), latency 20 ms**.
+4G throttle profile (Chrome DevTools Protocol `Network.emulateNetworkConditions`, a flare-engine-defined profile stated here for reproducibility — not a copy of any external tool's preset): **download 4 Mbit/s (524288 B/s), upload 3 Mbit/s (393216 B/s), latency 20 ms**.
 
-The throttled cold/warm pair reads nearly identical. Measured directly (via CDP
-`Network.responseReceived.fromDiskCache`) that headless Chromium does not serve this WASM fetch from
-its HTTP disk cache in this harness — true even for two back-to-back same-page fetches with no
-navigation at all, despite a `Cache-Control: public, max-age=31536000, immutable` response header —
-so both throttled rows pay the full download. Read that as a property of this headless measurement
-harness, not as "repeat visits get no benefit on a real 4G connection"; the untouched pair's warm
-speedup (from V8's WASM compile cache and local file-read caching, not HTTP caching) is the more
-representative signal.
+The throttled cold/warm pair reads nearly identical. Measured directly (via CDP `Network.responseReceived.fromDiskCache`) that headless Chromium does not serve this WASM fetch from its HTTP disk cache in this harness — true even for two back-to-back same-page fetches with no navigation at all, despite a `Cache-Control: public, max-age=31536000, immutable` response header — so both throttled rows pay the full download. Read that as a property of this headless measurement harness, not as "repeat visits get no benefit on a real 4G connection"; the untouched pair's warm speedup (from V8's WASM compile cache and local file-read caching, not HTTP caching) is the more representative signal.
 
 ### Render suite — CPU-raster
 
-_Captured: 2026-08-18 · Commit: a50c3adb7962 · Runtime: web-cpu-raster · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine
-version: 0.2.1 · Browser: chromium 151.0.7922.34_
+_Captured: 2026-08-18 · Median of 5 run(s) · Commit: 48ff6bd232b9 · Runtime: web-cpu-raster · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34_
 
-Comparable to the node [Render](#render) suite in **shape**, not in **magnitude** — different
-pipeline, different runtime. CanvasKit's software rasterizer does real per-pixel work the node
-lane's counting stub never performs.
+Comparable to the node [Render](#render) suite in **shape**, not in **magnitude** — different pipeline, different runtime. CanvasKit's software rasterizer does real per-pixel work the node lane's counting stub never performs.
 
-| Scenario | p50 | p95 | p99 | Samples | Ops/batch |
+| Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 2.886 ms | 2.957 ms | 3.100 ms | 100 | 7 |
-| render.flush    500 sprites / 1 atlas | 14.450 ms | 14.750 ms | 15.250 ms | 100 | 2 |
-| render.flush   1000 sprites / 1 atlas | 28.900 ms | 29.500 ms | 30.100 ms | 100 | 1 |
-| render.flush   5000 sprites / 1 atlas | 143.800 ms | 145.700 ms | 147.500 ms | 100 | 1 |
-| render.flush    500 sprites / 4 atlas interleaved | 16.000 ms | 16.250 ms | 16.400 ms | 100 | 2 |
-| render.flush    500 sprites / 4 atlas clustered | 14.500 ms | 14.750 ms | 14.950 ms | 100 | 2 |
-| render.flush   1000 sprites / 8 atlas interleaved | 32.300 ms | 33.000 ms | 33.400 ms | 100 | 1 |
-| render.flush   1000 sprites / 8 atlas clustered | 29.000 ms | 29.600 ms | 30.600 ms | 100 | 1 |
-| render.flush   1000 sprites / 50% rotated | 29.800 ms | 30.400 ms | 30.600 ms | 100 | 1 |
-| render.flush   1000 sprites / 100% rotated | 30.300 ms | 31.000 ms | 32.300 ms | 100 | 1 |
-| render.flush   1000 sprites / 4 alpha runs | 31.400 ms | 32.000 ms | 32.700 ms | 100 | 1 |
-| render.flush   1000 sprites / tint effect | 36.500 ms | 37.300 ms | 37.600 ms | 100 | 1 |
-| render.flush   1000 sprites / outline effect | 322.900 ms | 326.400 ms | 326.700 ms | 100 | 1 |
-| render.flush   1000 sprites / stretch path | 25.200 ms | 25.900 ms | 26.200 ms | 100 | 1 |
-| render.flush   1000 sprites / zone-bg path | 150.600 ms | 152.400 ms | 153.300 ms | 100 | 1 |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 ms | 0.003 ms | 100 | 11558 |
-| render.sort     500 items (5 swaps) | 0.006 ms | 0.006 ms | 0.008 ms | 100 | 3349 |
-| render.sort    1000 items (10 swaps) | 0.023 ms | 0.023 ms | 0.024 ms | 100 | 880 |
+| render.flush    100 sprites / 1 atlas | 2.871 ms | 2.871 – 2.900 ms | 2.971 ms | 3.043 ms | 7 |
+| render.flush    500 sprites / 1 atlas | 14.400 ms | 14.400 – 14.400 ms | 14.700 ms | 15.050 ms | 2 |
+| render.flush   1000 sprites / 1 atlas | 28.800 ms | 28.700 – 29.100 ms | 29.400 ms | 30.100 ms | 1 |
+| render.flush   5000 sprites / 1 atlas | 142.900 ms | 142.400 – 143.300 ms | 145.000 ms | 145.500 ms | 1 |
+| render.flush    500 sprites / 4 atlas interleaved | 16.100 ms | 16.100 – 16.250 ms | 16.550 ms | 16.950 ms | 2 |
+| render.flush    500 sprites / 4 atlas clustered | 14.350 ms | 14.300 – 14.400 ms | 14.650 ms | 15.200 ms | 2 |
+| render.flush   1000 sprites / 8 atlas interleaved | 32.200 ms | 32.000 – 32.200 ms | 33.000 ms | 34.000 ms | 1 |
+| render.flush   1000 sprites / 8 atlas clustered | 28.800 ms | 28.700 – 28.900 ms | 29.400 ms | 29.800 ms | 1 |
+| render.flush   1000 sprites / 50% rotated | 29.500 ms | 29.300 – 29.600 ms | 30.100 ms | 30.800 ms | 1 |
+| render.flush   1000 sprites / 100% rotated | 30.100 ms | 30.000 – 30.200 ms | 30.800 ms | 32.200 ms | 1 |
+| render.flush   1000 sprites / 4 alpha runs | 31.200 ms | 31.000 – 31.300 ms | 31.800 ms | 32.400 ms | 1 |
+| render.flush   1000 sprites / tint effect | 36.700 ms | 34.200 – 36.800 ms | 37.400 ms | 37.900 ms | 1 |
+| render.flush   1000 sprites / outline effect | 322.700 ms | 307.000 – 323.900 ms | 326.100 ms | 327.900 ms | 1 |
+| render.flush   1000 sprites / stretch path | 25.100 ms | 25.000 – 25.200 ms | 25.900 ms | 26.700 ms | 1 |
+| render.flush   1000 sprites / zone-bg path | 150.900 ms | 150.100 – 151.300 ms | 152.200 ms | 153.200 ms | 1 |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.002 ms | 0.003 ms | 11514 |
+| render.sort     500 items (5 swaps) | 0.006 ms | 0.006 – 0.006 ms | 0.006 ms | 0.008 ms | 3355 |
+| render.sort    1000 items (10 swaps) | 0.023 ms | 0.023 – 0.023 ms | 0.024 ms | 0.027 ms | 880 |
 
-### Render suite — GPU
+### Render suite — desktop GPU
 
-_Captured: 2026-08-18 · Commit: a50c3adb7962 · Runtime: web-gpu · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine
-version: 0.2.1 · Browser: chromium 151.0.7922.34 · Renderer:
-`ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002782) Direct3D11 vs_5_0 ps_5_0, D3D11)`_
+_Captured: 2026-08-18 · Median of 5 run(s) · Commit: 48ff6bd232b9 · Runtime: web-gpu · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34 · Renderer: `ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002782) Direct3D11 vs_5_0 ps_5_0, D3D11)`_
 
-Headless Chromium does **not** default to hardware acceleration — with no GPU-related launch flags
-it silently reports SwiftShader for `UNMASKED_RENDERER_WEBGL` even without `--disable-gpu` — so
-`playwright.config.ts` pins `--use-angle=d3d11` for this mode, and `browser-driver.mjs` refuses to
-write a result whose reported renderer still matches `/swiftshader/i`. The renderer string above
-(`WEBGL_debug_renderer_info`) is the proof this capture used the host GPU.
+Headless Chromium does **not** default to hardware acceleration — with no GPU-related launch flags it silently reports SwiftShader for `UNMASKED_RENDERER_WEBGL` even without `--disable-gpu` — so `playwright.config.ts` pins `--use-angle=d3d11` for this mode, and `browser-driver.mjs` refuses to write a result whose reported renderer still matches `/swiftshader/i`. The renderer string above (`WEBGL_debug_renderer_info`) is the proof this capture used the host GPU.
 
-| Scenario | p50 | p95 | p99 | Samples | Ops/batch |
+| Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 0.063 ms | 0.093 ms | 0.127 ms | 100 | 318 |
-| render.flush    500 sprites / 1 atlas | 0.174 ms | 0.183 ms | 0.201 ms | 100 | 115 |
-| render.flush   1000 sprites / 1 atlas | 0.333 ms | 0.374 ms | 0.410 ms | 100 | 61 |
-| render.flush   5000 sprites / 1 atlas | 1.521 ms | 1.717 ms | 2.150 ms | 100 | 14 |
-| render.flush    500 sprites / 4 atlas interleaved | 1.836 ms | 3.400 ms | 3.933 ms | 100 | 11 |
-| render.flush    500 sprites / 4 atlas clustered | 0.177 ms | 0.245 ms | 0.345 ms | 100 | 113 |
-| render.flush   1000 sprites / 8 atlas interleaved | 3.967 ms | 5.300 ms | 7.267 ms | 100 | 6 |
-| render.flush   1000 sprites / 8 atlas clustered | 0.338 ms | 0.449 ms | 1.111 ms | 100 | 59 |
-| render.flush   1000 sprites / 50% rotated | 0.308 ms | 0.317 ms | 0.328 ms | 100 | 66 |
-| render.flush   1000 sprites / 100% rotated | 0.337 ms | 0.351 ms | 0.361 ms | 100 | 60 |
-| render.flush   1000 sprites / 4 alpha runs | 0.301 ms | 0.317 ms | 0.323 ms | 100 | 67 |
-| render.flush   1000 sprites / tint effect | 0.286 ms | 0.306 ms | 0.333 ms | 100 | 70 |
-| render.flush   1000 sprites / outline effect | 2.010 ms | 2.170 ms | 2.322 ms | 100 | 10 |
-| render.flush   1000 sprites / stretch path | 1.700 ms | 2.422 ms | 2.900 ms | 100 | 12 |
-| render.flush   1000 sprites / zone-bg path | 1.413 ms | 2.588 ms | 3.450 ms | 100 | 15 |
-| render.sort     500 items (0 swaps) | 0.001 ms | 0.004 ms | 0.007 ms | 100 | 15052 |
-| render.sort     500 items (5 swaps) | 0.004 ms | 0.008 ms | 0.022 ms | 100 | 4537 |
-| render.sort    1000 items (10 swaps) | 0.017 ms | 0.017 ms | 0.017 ms | 100 | 1208 |
+| render.flush    100 sprites / 1 atlas | 0.064 ms | 0.063 – 0.069 ms | 0.092 ms | 0.128 ms | 311 |
+| render.flush    500 sprites / 1 atlas | 0.175 ms | 0.172 – 0.180 ms | 0.186 ms | 0.202 ms | 114 |
+| render.flush   1000 sprites / 1 atlas | 0.330 ms | 0.327 – 0.338 ms | 0.348 ms | 0.372 ms | 61 |
+| render.flush   5000 sprites / 1 atlas | 1.543 ms | 1.514 – 1.569 ms | 1.638 ms | 1.775 ms | 13 |
+| render.flush    500 sprites / 4 atlas interleaved | 2.512 ms | 2.344 – 2.550 ms | 2.650 ms | 3.043 ms | 8 |
+| render.flush    500 sprites / 4 atlas clustered | 0.209 ms | 0.204 – 0.213 ms | 0.220 ms | 0.236 ms | 96 |
+| render.flush   1000 sprites / 8 atlas interleaved | 5.325 ms | 5.100 – 5.550 ms | 5.500 ms | 6.200 ms | 4 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.402 ms | 0.392 – 0.404 ms | 0.419 ms | 0.430 ms | 50 |
+| render.flush   1000 sprites / 50% rotated | 0.379 ms | 0.370 – 0.379 ms | 0.394 ms | 0.419 ms | 53 |
+| render.flush   1000 sprites / 100% rotated | 0.410 ms | 0.402 – 0.414 ms | 0.423 ms | 0.444 ms | 49 |
+| render.flush   1000 sprites / 4 alpha runs | 0.365 ms | 0.361 – 0.372 ms | 0.385 ms | 0.419 ms | 55 |
+| render.flush   1000 sprites / tint effect | 0.351 ms | 0.345 – 0.357 ms | 0.374 ms | 0.455 ms | 57 |
+| render.flush   1000 sprites / outline effect | 2.625 ms | 2.600 – 2.675 ms | 2.775 ms | 3.171 ms | 8 |
+| render.flush   1000 sprites / stretch path | 2.256 ms | 2.110 – 2.278 ms | 2.322 ms | 2.575 ms | 9 |
+| render.flush   1000 sprites / zone-bg path | 1.918 ms | 1.900 – 1.982 ms | 2.010 ms | 2.110 ms | 11 |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.002 ms | 0.002 ms | 11418 |
+| render.sort     500 items (5 swaps) | 0.006 ms | 0.006 – 0.006 ms | 0.006 ms | 0.007 ms | 3350 |
+| render.sort    1000 items (10 swaps) | 0.023 ms | 0.023 – 0.023 ms | 0.023 ms | 0.026 ms | 878 |
 
-`render.flush 1000 sprites / 1 atlas` costs **0.333 ms** submitting on the GPU
-path against **28.900 ms** rasterizing on the CPU path — a factor of
-**87x** on this one desktop machine. Read that as "CanvasKit's
-software rasterizer is enormously more expensive than handing the same frame to a GPU driver", not
-as a figure that generalizes to other hardware or to a mobile GPU.
+`render.flush 1000 sprites / 1 atlas` costs **0.330 ms** submitting on the GPU path against **28.800 ms** rasterizing on the CPU path — a factor of **87x** on this one desktop machine. Read that as "CanvasKit's software rasterizer is enormously more expensive than handing the same frame to a GPU driver", not as a figure that generalizes to other hardware or to a mobile GPU.
 
-The three `render.sort` rows touch neither surface — pure JS array sorting — and read close to one
-another across both lanes, as expected. **Under the old sampler they read *identically*, and the
-previous version of this document credited that to the shared code path. The real cause was that
-both lanes pinned those rows to the vsync floor.** Freed of it they differ slightly, which is
-ordinary run-to-run variation on identical work.
+The three `render.sort` rows touch neither surface — pure JS array sorting — and read close to one another across both lanes, as expected. **Under the old sampler they read *identically*, and an earlier version of this document credited that to the shared code path. The real cause was that both lanes pinned those rows to the vsync floor.** Freed of it they differ slightly, which is ordinary run-to-run variation on identical work.
 
 ### Render suite — Android device (on-device GPU)
 
-_Captured: 2026-08-18 · Commit: e1cfbbc12548 · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine
-version: 0.2.1 · Browser: chrome-android 151.0.7922.137 · Renderer:
-`ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
+_Captured: 2026-08-18 · Median of 5 run(s) · Commit: 48ff6bd232b9 · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.2.1 · Browser: chrome-android 151.0.7922.137 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
 
-The same 18 scenarios on real phone hardware. The page runs the identical on-screen `<canvas>` +
-WebGL path as the desktop GPU lane, so the caveat there applies unchanged: **this is CPU-side
-submission cost, not GPU execution time.**
+The same 18 scenarios on real phone hardware, through the identical on-screen `<canvas>` + WebGL path as the desktop GPU lane, so the submission-cost caveat above applies here too.
 
-How it runs: `bun run bench:web:android` in `apps/bench-web` starts the bench server on this
-machine, opens `adb reverse tcp:<port> tcp:<port>` so `localhost:<port>` on the phone resolves back
-to it, then attaches to the phone's Chrome over its `@chrome_devtools_remote` socket via
-`adb forward` + `connectOverCDP` and drives the existing page. Chrome is **attached to, never
-launched** — `playwright._android`'s `launchBrowser()` hangs against retail Chrome on this device,
-and the browser belongs to whoever is holding the phone. The driver refuses to write a capture whose
-`UNMASKED_RENDERER_WEBGL` reads as a software rasterizer, the same guard the desktop GPU lane uses,
-so a silent SwiftShader fallback cannot be published as device hardware.
+`bun run bench:web:android` starts the bench server on the host, opens `adb reverse tcp:<port> tcp:<port>` so `localhost:<port>` on the phone resolves back to it, then attaches to the phone's Chrome over its `@chrome_devtools_remote` socket via `adb forward` + `connectOverCDP`. Chrome is **attached to, never launched** — `playwright._android`'s `launchBrowser()` hangs against retail Chrome on this device, and the browser belongs to whoever is holding the phone. The driver refuses to write a capture whose `UNMASKED_RENDERER_WEBGL` reads as a software rasterizer, the same guard the desktop GPU lane uses. Hardware identity comes from `getprop` at capture time, so a row names the phone it actually ran on. Requirements: exactly one authorised device in `adb devices` (the lane refuses zero and refuses to guess between several), USB debugging accepted, screen unlocked throughout.
 
-Requirements: exactly one authorised device in `adb devices` (the lane refuses zero, and refuses to
-guess between several), USB debugging accepted, and the screen unlocked for the duration.
-
-| Scenario | p50 | p95 | p99 | Ops/batch | vs desktop GPU |
+| Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 0.127 ms | 0.210 ms | 0.350 ms | 158 | 2.0x |
-| render.flush    500 sprites / 1 atlas | 0.242 ms | 0.258 ms | 0.461 ms | 83 | 1.4x |
-| render.flush   1000 sprites / 1 atlas | 0.437 ms | 0.558 ms | 1.035 ms | 46 | 1.3x |
-| render.flush   5000 sprites / 1 atlas | 1.864 ms | 1.964 ms | 4.020 ms | 11 | 1.2x |
-| render.flush    500 sprites / 4 atlas interleaved | 2.525 ms | 2.800 ms | 5.175 ms | 8 | 1.4x |
-| render.flush    500 sprites / 4 atlas clustered | 0.289 ms | 0.323 ms | 0.615 ms | 70 | 1.6x |
-| render.flush   1000 sprites / 8 atlas interleaved | 5.500 ms | 5.700 ms | 6.025 ms | 4 | 1.4x |
-| render.flush   1000 sprites / 8 atlas clustered | 0.481 ms | 0.505 ms | 1.176 ms | 42 | 1.4x |
-| render.flush   1000 sprites / 50% rotated | 0.453 ms | 0.483 ms | 1.133 ms | 44 | 1.5x |
-| render.flush   1000 sprites / 100% rotated | 0.466 ms | 0.513 ms | 1.063 ms | 43 | 1.4x |
-| render.flush   1000 sprites / 4 alpha runs | 0.461 ms | 0.571 ms | 1.000 ms | 44 | 1.5x |
-| render.flush   1000 sprites / tint effect | 0.455 ms | 0.481 ms | 1.150 ms | 44 | 1.6x |
-| render.flush   1000 sprites / outline effect | 3.071 ms | 3.143 ms | 4.300 ms | 7 | 1.5x |
-| render.flush   1000 sprites / stretch path | 2.563 ms | 2.713 ms | 4.080 ms | 8 | 1.5x |
-| render.flush   1000 sprites / zone-bg path | 2.300 ms | 2.456 ms | 3.650 ms | 9 | 1.6x |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.004 ms | 0.010 ms | 11905 | 1.3x |
-| render.sort     500 items (5 swaps) | 0.005 ms | 0.015 ms | 0.035 ms | 4154 | 1.1x |
-| render.sort    1000 items (10 swaps) | 0.018 ms | 0.075 ms | 0.131 ms | 1090 | 1.1x |
+| render.flush    100 sprites / 1 atlas | 0.127 ms | 0.123 – 0.127 ms | 0.233 ms | 0.402 ms | 158 |
+| render.flush    500 sprites / 1 atlas | 0.244 ms | 0.238 – 0.248 ms | 0.283 ms | 0.437 ms | 82 |
+| render.flush   1000 sprites / 1 atlas | 0.435 ms | 0.426 – 0.443 ms | 0.505 ms | 0.981 ms | 46 |
+| render.flush   5000 sprites / 1 atlas | 1.882 ms | 1.845 – 1.936 ms | 2.209 ms | 3.467 ms | 11 |
+| render.flush    500 sprites / 4 atlas interleaved | 2.587 ms | 2.500 – 2.613 ms | 2.775 ms | 4.400 ms | 8 |
+| render.flush    500 sprites / 4 atlas clustered | 0.274 ms | 0.268 – 0.285 ms | 0.335 ms | 0.574 ms | 73 |
+| render.flush   1000 sprites / 8 atlas interleaved | 5.650 ms | 5.425 – 5.650 ms | 5.875 ms | 6.000 ms | 4 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.500 ms | 0.479 – 0.502 ms | 0.518 ms | 1.206 ms | 40 |
+| render.flush   1000 sprites / 50% rotated | 0.459 ms | 0.453 – 0.474 ms | 0.495 ms | 0.976 ms | 44 |
+| render.flush   1000 sprites / 100% rotated | 0.470 ms | 0.467 – 0.484 ms | 0.510 ms | 1.111 ms | 43 |
+| render.flush   1000 sprites / 4 alpha runs | 0.459 ms | 0.449 – 0.479 ms | 0.483 ms | 1.206 ms | 44 |
+| render.flush   1000 sprites / tint effect | 0.451 ms | 0.437 – 0.465 ms | 0.479 ms | 1.144 ms | 45 |
+| render.flush   1000 sprites / outline effect | 3.086 ms | 3.014 – 3.171 ms | 3.157 ms | 4.400 ms | 7 |
+| render.flush   1000 sprites / stretch path | 2.600 ms | 2.512 – 2.650 ms | 2.763 ms | 4.460 ms | 8 |
+| render.flush   1000 sprites / zone-bg path | 2.289 ms | 2.222 – 2.333 ms | 2.378 ms | 3.600 ms | 9 |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.006 ms | 0.013 ms | 11894 |
+| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.017 ms | 0.035 ms | 4118 |
+| render.sort    1000 items (10 swaps) | 0.018 ms | 0.018 – 0.018 ms | 0.065 ms | 0.131 ms | 1096 |
 
-The phone costs **1.2x-2.0x** of the desktop's submission time on the flush scenarios and
-**1.1x-1.3x** on `render.sort`. That split is the informative part: `render.sort` is pure JS
-with no surface involved, so it isolates raw single-thread JS throughput, where a Tensor GS201
-lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is
-where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per
-operation, which is what a frame budget on this device actually contends with.
+The phone costs **1.0x-2.0x** of the desktop's submission time on the flush scenarios and **0.8x-1.0x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
 
-Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. A
-sustained run can clock down, and nothing in this harness pins the CPU/GPU governor or reads
-thermal state. Treat a single device capture as one sample from a warm phone, not a stable
-baseline, until this lane grows a repeat-and-fold step like the node lane's `bench:promote`.
+Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. A sustained run can clock down, and nothing in this harness pins the CPU/GPU governor or reads thermal state. Treat a single device capture as one sample from a warm phone, not a stable baseline, until this lane grows a repeat-and-fold step like the node lane's `bench:promote` (todo row PERF-13).
 
 ## Notes on interpretation
 

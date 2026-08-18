@@ -58,26 +58,6 @@ release reaching the restricted registry, not on the public flip.
 Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze. **Full specs in the SoT: [perf-measurement-2026-07.md](perf-measurement-2026-07.md)** — §1–§8 first-pass audit, §9–§10 second-pass verification (18-agent adversarial, 2026-07-28: render 3.1× regression re-confirmed live; secondary drift table withdrawn; B11–B26 new findings), **§11 row specs** — rows here are lean pointers (one-source-per-fact); the builder reads the row's §11 section before planning. Routing: PERF-3, PERF-9 and PERF-10 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset each); all other rows touch benchmarks/`scripts/`/`.github/`/`apps/bench-*`/`docs/plans/` → **[MT] main-thread**. Sequencing below is the execution order; **PERF-1→5 are the pre-freeze must** (the §7 "defensible release" core + gates), PERF-8 is cheap and pre-freeze-preferred, PERF-6/7 slide post-flip if the calendar tightens (PERFORMANCE.md then declares web/device unmeasured, §8). Owner-OOB items (portfolio corrections, TestingBot account check, EAS bench project, engine-repo secrets) are ledgered per-row in §11, never blocking. Pick top → `/start`.
 
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
-- **PERF-13 — repeat-and-fold for the web lanes (esp. on-device) [MT].** The node lane folds 5 runs
-  via `bench:promote` with two independent refusals (foreign CPU load > 15%, and 2+ runs deviating
-  > 10% from the folded median). The three web lanes have no equivalent: every published web figure
-  is a **single run**, and on a phone that run is also thermally and governor-dependent in ways
-  nothing here measures or pins. Needs a promote step per lane plus a device-side quiet/thermal
-  signal. **Thresholds must be calibrated against real captures across thermal states, not chosen**
-  — PERF-11 is the precedent: its first spread gate was written to a guess and immediately refused
-  healthy data, and the fix came from replaying it over every recorded window. That calibration is
-  measurement work, which is why this is a row and not a same-session follow-on.
-- **PERF-12 — `bench:md` destroys the hand-maintained Web sections (found 2026-08-18) [MT].**
-  `bun run bench:md` rewrites `docs/references/benchmarks.md` wholesale, so the routine recapture
-  step silently deleted the entire Web (CanvasKit) section — payload table, cold start, CPU-raster
-  suite, GPU suite, ~150 lines shipped in `ed579be`/`f030217` — and reinstated the generator's
-  now-false "No web/CanvasKit numbers exist yet" bullet (`benchmarks/src/index.ts:376`). Both
-  restored by hand this session; **nothing stops the next recapture doing it again.** Fix shape is a
-  decision: (a) move the web content into its own hand-owned `benchmarks-web.md` and have the
-  generator link it, keeping the generator's "I own this file" contract intact; (b) generate the web
-  section from `web.json`/`web-gpu.json`; (c) preserve a marked region. Any fix touches
-  `benchmarks/src`, which is the freshness `instrument` path, so it re-stales all five suites and
-  carries its own 5-run recapture.
 - **PERF-7 — native bench app + device-lane revival (P3) [MT + owner OOB, 2 sessions].** `apps/bench-native` engine scenarios (sprite/rotation/postfx/particles + texture-eviction/resume-from-background + cold start); lift harness from **PT HEAD only** (absolute-ceiling gate) with the B20 fails-green hardening (matrix validation, staleness gate, zero-combo fails, absolute-delta floor, one scenario-id namespace, artifact-path fix); revive per B21 order — TestingBot account verification FIRST, not a fresh APK; weekly cron with window ≥4× cadence + per-release anchor; bridge device data to the dashboard (kills dead device.json — B22); rewrite the parked particle-storm gate below. Spec: §11.7.
 - **PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, `packages/**`, post-freeze).** `SpatialIndex.update`'s per-entity closure + O(n) find; `entries` destructuring in the broadphase loop; the reused pair-`Set` that costs ~38× the heap footprint of a fresh one under JSC (verify on Hermes FIRST — RN is the primary target). One lockstep minor changeset. Spec: §11.9.
 
@@ -168,12 +148,19 @@ Order: S4a→S4b →gate→ S5→**S6**→S7(+setup)→S8→S9. Hard rules: S5 b
 
 - **TH1 — clear root-tsc test-file type errors (typecheck-gate-skips-tests backlog). DONE (2026-07-01, #195).** Surfaced during XP4's root-tsc diligence: `tsc -p tsconfig.json` (which includes `packages/*/tests`, unlike the per-package src-only /close gate) flagged **56 type errors across 19 test files in 11 packages** — a latent backlog the gate structurally can't see ([[typecheck-gate-skips-tests]]). Cleared all 56 **test-side only** (19 test files + 1 new `packages/render-web/tests/canvaskit-bin.d.ts` ambient decl; **zero `src/` changes**). Patterns: `.ts`→`.js`/package imports (kills TS5097 + the downstream src-vs-dist `World` identity TS2345 in `testing`), `readPixels` stubs on mock `SkImageLike` (render/tilemap), `!` / `=== true` narrowing for `noUncheckedIndexedAccess` + bun-types `toBe(<classInstance>)` (postfx/iap/share/ecs), canvaskit-wasm ambient decl + param annotations (render-web), CFA-defeating container objects for closure-assigned `let` (deep-links/iap). 12-agent workflow (10 parallel per-package fixers + root-tsc clean-check + diff weakening-audit): **no `any`/`@ts-ignore`/`.skip`, no assertion weakened, no src touched** (audit verdict clean; the few `as unknown as T` are last-resort structural bridges). Root tsc now 0; full gate green. Note: agents' `biome check src/` self-checks miss `tests/` formatting → ran `biome check --write` on the changed tests to pre-empt husky ([[lint-gate-skips-scripts]]).
 
-- **TH2 — root-tsc test-file type errors redux (typecheck-gate-skips-tests backlog).** OSS-C4's TS-5.9 root-tsc diligence surfaced **9 pre-existing test-file type errors**, proven present at HEAD under TS 5.5.4 (so NOT bump-induced; C4 is root-tsc-neutral): src-vs-dist `World` identity (`devtools/hooks.test.ts` ×2), `null`→`DialogueError` cast (`dialogue/runner.test.ts`), entitlements-mock shape + `never[]` (`iap-revenuecat/provider.test.ts` ×2), mock-cast `SkImageLike`/`Float32Array`→`number[]`/`{id}` (`render/sprite-batch.test.ts` ×3, `render-web/conformance.test.ts`). **Re-counted 2026-08-18: now
-  13, not 9** — `c57f760` (render-web context-loss hardening, CE-W2) added four in
+- **TH2 — root-tsc test-file type errors redux. DONE (2026-08-18).** OSS-C4's TS-5.9 root-tsc diligence surfaced **9 pre-existing test-file type errors**, proven present at HEAD under TS 5.5.4 (so NOT bump-induced; C4 is root-tsc-neutral): src-vs-dist `World` identity (`devtools/hooks.test.ts` ×2), `null`→`DialogueError` cast (`dialogue/runner.test.ts`), entitlements-mock shape + `never[]` (`iap-revenuecat/provider.test.ts` ×2), mock-cast `SkImageLike`/`Float32Array`→`number[]`/`{id}` (`render/sprite-batch.test.ts` ×3, `render-web/conformance.test.ts`). **Cleared 2026-08-18: 13 errors -> 0.** Re-counted first (13, not the 9 recorded) — `c57f760` (render-web context-loss hardening, CE-W2) added four in
   `render-web/tests/loader.test.ts`, all the same `as typeof fetch` cast class (a stub missing
   `fetch.preconnect`). The count grows silently precisely because the `/close` gate is per-package
-  and src-only, so nothing red ever appears; run `bunx tsc -p tsconfig.json --noEmit` to re-count
-  before starting. Same class TH1 (#195) cleared; deferred out of the C4 toolchain row per the "no drive-by" rule. Fix test-side only — no `any`/`@ts-ignore`/`.skip`, no assertion weakening — following TH1's `as unknown as T` / import-from-package patterns.
+  and src-only, so nothing red ever appears; run `bunx tsc -p tsconfig.json --noEmit` to re-count.
+  Fixed test-side only across 6 files, following TH1's patterns and adding one: `as unknown as T`
+  bridges for structurally-incompatible mocks (`fetch` without `preconnect`, `SkImageLike` with an
+  extra `id`, CanvasKit's `Float32Array | MallocObj` uniforms); `World` imported from
+  `@flare-engine/ecs` rather than `../../ecs/src` to kill the src-vs-dist identity mismatch; a
+  **container object** for the closure-assigned `let` that CFA narrowed back to `null`; and the
+  RevenueCat mocks given an explicit `RcCustomerInfo` shape, because their return types had been
+  inferred from whichever literal was written first, freezing one example's entitlement keys into
+  the contract. No `any`, no `@ts-ignore`, no `.skip`, no assertion weakened — verified by grep over
+  the diff. 371 tests in the touched packages still pass. Same class TH1 (#195) cleared; deferred out of the C4 toolchain row per the "no drive-by" rule. Fix test-side only — no `any`/`@ts-ignore`/`.skip`, no assertion weakening — following TH1's `as unknown as T` / import-from-package patterns.
 
 Research-flagged (ws337exio) modernizations the current harness predates — apply opportunistically: migrate `.claude/commands/{start,close}` → `.claude/skills/`; promote `verify.sh` to a Stop hook; swap the python-dependent hooks (`pre-bash-guard.sh`/`post-edit-lint.sh`) to `jq` (Windows/Bun-safe); add a PreToolUse Conventional-Commit validator; path-scoped `.claude/rules/` for heavy package context; **fix the stale folio-SoT claim in root `CLAUDE.md`/`roadmap.md` → `src/visual-spec/`**. The manual commit-block flow is deliberate — keep unless determinism is wanted.
 
@@ -203,6 +190,38 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **PERF-13 — repeat-and-fold for all three web lanes** (2026-08-18). Every published web figure
+  was a **single run** until now. New `benchmarks/src/web-promote.ts` (pure, 16 tests) folds N
+  captures per lane into a median-of-medians with the observed spread band, driven by
+  `bun run bench:web:promote -- --lane <cpu-raster|gpu|android> --runs N`. Fail-closed like the node
+  lane: refuses a window whose captures disagree on commit / runtime / browser / renderer / phone,
+  refuses a fold of one (its band would falsely read zero), refuses a drifted scenario set, and —
+  on device — refuses a capture taken while Android reported **thermal throttling**, read directly
+  from `dumpsys thermalservice` either side of every run rather than inferred. An **unreported**
+  thermal status is refused too: "unrecorded" is not "not throttling". **Thresholds calibrated
+  against 15 healthy captures (5 per lane), not chosen:** largest single-run deviation from the
+  folded median was CPU-raster 7.9% / desktop GPU 8.0% / Android 4.3%, so the 10% ceiling has only
+  ~1.25x magnitude headroom — what carries the gate is that it takes **two** deviant runs, and
+  across all 15 healthy captures no scenario had even one. Notably the **desktop lanes are noisier
+  than the phone**, the opposite of the intuition that motivated a device guard. Battery
+  temperature is recorded (23.4 -> 25.7 C across the folded device window) but **deliberately not
+  gated** — no throttled capture has ever been measured with this instrument, so any drift
+  threshold would be invented; the same from-below-only limit PERF-11 recorded. All three lanes
+  re-captured 5x and folded; doc + dashboard gained a Spread column and a Runs count, with the
+  band fields **required** in the validator so an unfolded capture cannot render
+  (mutation-verified). **Measured while doing it:** the Bun teardown panic is not the one-off the
+  first pass recorded — 4/5 on CPU-raster, 1/7 on Android, 0/5 on GPU, so the exit code is not a
+  reliable success signal on the long lane; README corrected.
+- **PERF-12 — `bench:md` no longer destroys the Web sections** (2026-08-18). Fixed by making the
+  generator **own** them: new `benchmarks/src/web-sections.ts` renders all three lanes from the
+  capture files, so `benchmarks.md` has exactly one owner instead of a machine-owned file with a
+  hand-maintained hole in it. The same operation that deleted ~150 lines now produces them. Also
+  killed the template's stale "No web/CanvasKit numbers exist yet" bullet, which the generator
+  reinstated on every run directly above the tables it had just deleted. **The first regression
+  test written for this was vacuous** — it called `renderWebSections` directly, so removing the
+  call from `renderMarkdown` left it green while the doc lost every lane; rewritten to assert on
+  the produced document, after which the same mutation kills 5 of 7 tests.
 
 - **On-device Android web lane (`bench:web:android`)** (2026-08-18). Real phone numbers, built on
   the corrected sampler rather than before it. `apps/bench-web/scripts/android-driver.mjs` +

@@ -5,13 +5,15 @@
 Flare is versioned in lockstep across the whole `@flare-engine/*` scope. Security
 fixes land on the latest minor line only.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.3.x   | :white_check_mark: |
-| < 0.3.0 | :x:                |
+| Version                     | Supported          |
+| --------------------------- | ------------------ |
+| latest published minor      | :white_check_mark: |
+| any earlier pre-1.0 minor   | :x:                |
 
-Releases before `0.3.0` were early pre-1.0 previews and are superseded by
-`0.3.0`. Please upgrade to the latest `0.3.x` before reporting.
+The line is deliberately not pinned to a number: the scope ships in lockstep and
+pre-1.0 minors supersede each other, so a pinned table goes stale on every
+release. Earlier minors were pre-1.0 previews. Please upgrade to the latest
+published minor before reporting.
 
 ## Reporting a vulnerability
 

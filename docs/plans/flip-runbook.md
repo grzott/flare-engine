@@ -5,7 +5,7 @@ The step-by-step to take Flare from restricted/private to public. Executed in th
 verdaccio in **OSS-F2** before the real thing. Check each box in this file as you go.
 
 > **This is effectively ONE-WAY.** npm package visibility is **retroactive across
-> every published version** (0.1.0, 0.2.x, 0.3.0) and cannot be cleanly undone.
+> every published version** (0.1.0, 0.2.x, 0.3.x, 0.4.0) and cannot be cleanly undone.
 > Do the dry-runs, complete the freeze (H1) and the two-week manual window first,
 > and only start step 3 once you are committed to launching.
 
@@ -25,7 +25,7 @@ no clean rollback.
 
 ## Pre-flight (before flip day — completed by freeze, Oct 5)
 
-- [ ] **H1 done:** `0.3.0` published **restricted**; the two-week manual window
+- [ ] **H1 done:** `0.4.0` published **restricted**; the two-week manual window
       (Oct 5–18) passed with no launch-blockers (road-to-oss §11).
 - [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
       `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
@@ -107,10 +107,10 @@ publish` would skip the 40 already-published scoped packages (only
       `false`.
 - [ ] Agent: add a version-bump-only lockstep **patch** changeset (all
       `@flare-engine/*` + `create-flare-app`) so the fixed group cuts a fresh
-      release. (H1 already shipped the `0.3.0` minor; this is the patch bump that
+      release. (H1 already shipped the `0.4.0` minor; this is the patch bump that
       re-cuts the group public.)
 - [ ] Agent: also fold in the step-2 `NPM_CONFIG_PROVENANCE` edit.
-- [ ] Owner: commit + tag (e.g. `git tag v0.3.x-public`), do **not** push yet.
+- [ ] Owner: commit + tag (e.g. `git tag v0.4.x-public`), do **not** push yet.
 
 **Rollback:** revert the commit (npm access from step 3 stays flipped — that part
 is done).
@@ -176,4 +176,4 @@ Run the full battery — see road-to-oss §12 / the OSS-I2 row:
 
 **Abort points:** cleanly abortable through **step 2**. Step 3 is the point of no
 return. If something is wrong at step 4+, you finish the launch rather than
-un-launch — fixes go out as `0.3.x` patches.
+un-launch — fixes go out as `0.4.x` patches.

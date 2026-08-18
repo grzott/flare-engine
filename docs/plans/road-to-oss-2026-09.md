@@ -31,9 +31,18 @@ disagree, this doc wins (it post-dates and re-verified them).
 4. **Versioning: lockstep `fixed` stays** (matches `.changeset/config.json` + shipping practice since
    0.1.0). All docs claiming "independent SemVer per package" are wrong and get rewritten (D4).
    `create-flare-app` joins the fixed group (B13) so its version tracks the engine.
-5. **Everything pre-flip ships as one 0.3.0** (restricted) at freeze; the peer-floor bump alone forces
-   the minor. Manual-window fixes ship as 0.3.x restricted. The flip makes existing versions public;
+5. **Everything pre-flip ships as one 0.4.0** (restricted) at freeze; the peer-floor bump alone forces
+   the minor. Manual-window fixes ship as 0.4.x restricted. The flip makes existing versions public;
    the first post-flip publish re-adds provenance.
+   **Renumbered 2026-08-18 (owner):** this was 0.3.0 until the consumer-enablement release was
+   resequenced pre-freeze ([consumer-enablement-2026-08.md](consumer-enablement-2026-08.md)). That
+   cut consumes the pending changesets as **0.3.0 in August**, restricted, so the two live consumers
+   bake against a real registry install for the weeks before the freeze — which leaves **0.4.0** as
+   the freeze/launch cut. Every version reference in this doc, `flip-runbook.md`,
+   `manual-test-protocol.md` and `SECURITY.md` was swept the same day. Two references deliberately
+   kept 0.3.0: the third-party `react-native-audio-api >=0.3.0` peer floor (§5), and the MIT→Apache
+   boundary (§ license) — 0.3.0 is still the first Apache-2.0 version published, which the August
+   cut makes true rather than false.
 6. **Module adjudications (from the deep audit, owner-ratified):** planck.js rigid-body = post-flip,
    opt-in package (`planck` v1.5.x, never `planck-js`); C++/Nitro = no (perf gate untripped);
    devtools live-tweak inspector = first post-flip arc; in-browser live editor = never (playground +
@@ -49,10 +58,10 @@ disagree, this doc wins (it post-dates and re-verified them).
 |---|---|---|
 | Plan accepted, hygiene arc starts | week of **Jul 6** | OSS-A0 + Arc B begin |
 | Arc B (bugs) done | ~**Aug 28** | all P0/P1 bug rows landed |
-| Arc C + M (packaging + modules) done | ~**Sep 18** | 0.3.0 feature-complete; Arc D may start during the M tail |
+| Arc C + M (packaging + modules) done | ~**Sep 18** | 0.4.0 feature-complete; Arc D may start during the M tail |
 | Arc D + E (truth pass + governance) done | ~**Sep 29** | docs describe reality |
 | Arc F (rehearsal + runbook + audits) done | ~**Oct 2** | flip mechanics proven on verdaccio |
-| **FREEZE + 0.3.0 restricted publish** | **Mon Oct 5** | code-complete; only manual-test fixes after |
+| **FREEZE + 0.4.0 restricted publish** | **Mon Oct 5** | code-complete; only manual-test fixes after |
 | **Manual test window (owner)** | **Oct 5 – Oct 18** | the requested two weeks; protocol in §11 |
 | **Flip week** | **Oct 19 – Oct 23** (target Tue Oct 20) | runbook execution, §12 |
 | Buffer | after the actual flip day → Oct 28 | absorbs slip while staying "October" |
@@ -96,8 +105,8 @@ commit block — never leave a half-row uncommitted across sessions.
 3. Full gate green per row (`lint → typecheck → test → build` via verify.sh) **plus** root
    `tsc -p tsconfig.json` (test files) and biome on changed `tests/`/`scripts/` (the two known gate
    blind spots).
-4. Public-surface changes are allowed without back-compat shims — 0.2.x → 0.3.0 is a sanctioned
-   breaking window. Record every intentional break in the row's todo entry on completion (the 0.3.0
+4. Public-surface changes are allowed without back-compat shims — every pre-1.0 minor from 0.2.x
+   on is a sanctioned breaking window. Record every intentional break in the row's todo entry on completion (the launch-cut
    changelog is assembled from those).
 5. No changesets per row; one minor changeset lands in OSS-H1 (lockstep). No publishes mid-arc —
    **exemption:** F2's local-verdaccio publishes (registry-scoped, discarded) and I1's flip-day
@@ -410,7 +419,7 @@ actually `{{FLARE_VERSION}}`.
   publish); `publishConfig.access` is already `public` there, correct.
 
 **Done when:** scaffold test asserts the stamped range equals `^<package version>` (which is
-`^0.2.1` after the hand-bump, `^0.3.0` after H1 — assert against the live package.json, never a
+`^0.2.1` after the hand-bump, `^0.4.0` after H1 — assert against the live package.json, never a
 literal);
 `--version` prints the real version (both CLIs); spawn paths covered by a platform-matrix unit test
 (win32 shell:true / posix shell:false); tiled-to-flare without `-o` writes next to the input;
@@ -513,7 +522,7 @@ open entries the open set corrupts (NaN bubbles).
   rewrite JPS corner rules here.
 - Label the package honestly wherever it's listed (root README package table row + package README):
   "beta — no production consumer yet". The phantom documented signatures get fixed in Arc D.
-- **Cut rule:** if the calendar is red, ship ONLY the honesty label pre-flip; heap fix lands 0.3.x.
+- **Cut rule:** if the calendar is red, ship ONLY the honesty label pre-flip; heap fix lands 0.4.x.
 
 **Done when:** worst-case fixture (open-set > 4096 — e.g. a large serpentine maze) returns a valid
 optimal path with no NaN; growth covered by a unit test on the heap primitive.
@@ -542,12 +551,12 @@ the public surface.
 
 **Scope:** `packages/ui-shop/src/`, README, api-specs, tests.
 From the findings ledger: `ShopPanel` collides with ui's different `ShopPanel` (two exports, same
-name, different APIs — must be resolved inside the 0.3.0 breaking window, after which it's frozen);
+name, different APIs — must be resolved inside the pre-1.0 breaking window, after which it's frozen);
 `PaywallModal.tsx:71` lets the backdrop dismiss mid-purchase (only the buttons are gated).
 
 - Rename ui-shop's component (recommend `ShopScreen`; keep a deprecated alias export only if the
   rename would break PT — check PT's imports via its public dep usage, and note the break in the
-  0.3.0 changelog either way).
+  launch-cut changelog either way).
 - Gate backdrop dismissal on the same in-flight-purchase state that gates the buttons.
 - Replace the self-parity tests touched by the rename with behavioral ones (purchase-in-flight →
   backdrop press is a no-op).
@@ -557,7 +566,7 @@ impossible in test; changelog note recorded in the todo row.
 
 ---
 
-## 5. Arc C — packaging correctness (the 0.3.0 shape)
+## 5. Arc C — packaging correctness (the 0.4.0 shape)
 
 ### OSS-C1 · peer-dependency bump + skia decoupling + render-web export (P0, 1-2 sessions — seam: C1a manifests + render-web export / C1b validation fixtures; runs after B14)
 
@@ -858,7 +867,7 @@ link/install/date mechanics, which the D-pass may still normalize anywhere). If 
 a README fix was cut (M8 particles being the known case), the D-pass makes the docs-only fix
 itself — the `check:readme` criterion never waits on a P2 row.
 
-**D4 extras (verified drift list):** root README — status block rewrite (0.3.0, October, public
+**D4 extras (verified drift list):** root README — status block rewrite (0.4.0, October, public
 quickstart via `npm create flare-app@latest`, delete the "Consuming from npm (restricted)" section
 `:126-136` incl. its .npmrc setup instructions, fix `:49` "independently versioned" + `:159`
 "independent SemVer" → lockstep story, add the flarerpg.org disambiguation line, October at `:14`/`:129`);
@@ -956,7 +965,7 @@ just the READMEs), or, if that harness extension slips, the four named sections 
 **Scope:** repo root + `.github/`.
 
 - `SECURITY.md` — GitHub private vulnerability reporting as the channel; supported-versions table
-  (0.3.x). `CODE_OF_CONDUCT.md` — Contributor Covenant 2.1, contact = the commit author email
+  (the latest published minor). `CODE_OF_CONDUCT.md` — Contributor Covenant 2.1, contact = the commit author email
   unless the owner supplies a different address at review; fix `CONTRIBUTING.md:114`'s "lands at
   0.1.0-rc" promise to link it (whichever of D4/E1 runs second verifies the link resolves).
 - `.github/ISSUE_TEMPLATE/bug_report.yml` (engine version, platform RN/web, repro), `feature_request.yml`,
@@ -989,7 +998,7 @@ just the READMEs), or, if that harness extension slips, the four named sections 
   `access: "public"` + create-flare-app `private: false` **+ a version-bump-only lockstep patch
   changeset** in ONE tagged commit (without the changeset, `changeset publish` would skip the 40
   already-published scoped packages and only create-flare-app would ship — no fresh
-  provenance-stamped release would exist); **(5)** `bun run version` + publish — the fresh 0.3.x
+  provenance-stamped release would exist); **(5)** `bun run version` + publish — the fresh 0.4.x
   lockstep release for all 41, now public + provenance-stamped, via `bun run release`
   (ENABLE_RELEASE already gates release.yml on push to main); **(6)** docs-site domain bind + final
   deploy; **(7)** verification battery (I2). Abort points + what is/isn't reversible at each step
@@ -1024,7 +1033,7 @@ branch discarded.
 
 **Scope:** `scripts/audit-tarballs.mjs` (new), report to `docs/plans/_local/`.
 The access flip exposes **all previously published versions** (0.1.0, 0.2.0, 0.2.1) retroactively —
-audit them, not just 0.3.0.
+audit them, not just 0.4.0.
 
 - Script: `npm pack` every workspace package at HEAD **and** fetch published tarballs for each
   released version of all 40 names (authenticated); extract; scan for private-project vocabulary,
@@ -1069,7 +1078,7 @@ audit them, not just 0.3.0.
   architecture.mdx:134, packages.mdx:34, getting-started.mdx:14, overview.mdx:119); getting-started
   rewrite to the public install (drop the restricted-token install block). The 6 links into the
   currently-private engine repo go LIVE at flip — keep, they're correct post-flip. **At freeze:**
-  bump the page's 8 `@flare-engine/*` deps to `^0.3.0` (the H1/H2 prerequisite — same move as
+  bump the page's 8 `@flare-engine/*` deps to `^0.4.0` (the H1/H2 prerequisite — same move as
   PT2/BK1).
 - **G3 (post-flip OK):** the page repo's own dogfood rows PAGE-D1 browser-verify + PAGE-D2–D5
   (distinct from this doc's D-rows; already defined in that repo's todo — closes the
@@ -1079,10 +1088,10 @@ audit them, not just 0.3.0.
 - **PT1 (pre-freeze):** declare `@flare-engine/debug` (real src imports ×3) — the phantom dep that
   breaks on strict install; move the test-only `@flare-engine/input` use to a devDep or drop;
   remove dead deps `particles` + `tilemap` (declared, never imported).
-- **PT2 (manual window):** bump all 32 deps to `^0.3.0` at freeze; full gate + the §11 device sweep.
+- **PT2 (manual window):** bump all 32 deps to `^0.4.0` at freeze; full gate + the §11 device sweep.
 - **PT3 (post-flip):** wire haptics (M6's adapter) — PT's own docs call it "the one true engine gap".
 
-**Berek:** **BK1 (manual window):** bump 7 deps to `^0.3.0` (the 0.2.1 migration is confirmed
+**Berek:** **BK1 (manual window):** bump 7 deps to `^0.4.0` (the 0.2.1 migration is confirmed
 committed at 2b1733f); fix README:23's reference to deleted `src/movement.ts` (folded into
 `@flare-engine/physics` at 0.2.1); gate + a short play check.
 
@@ -1094,14 +1103,14 @@ engine integration); the `dynamics` lift stays a post-flip option and must not b
 
 ## 11. Freeze + the two-week manual test window (Oct 5–18)
 
-### OSS-H1 · freeze + 0.3.0 restricted publish (P0, 1 session + owner publish, [main-thread])
+### OSS-H1 · freeze + 0.4.0 restricted publish (P0, 1 session + owner publish, [main-thread])
 
 - Last pre-freeze commit lands; author ONE changeset (minor, lockstep — summary assembled from the
   Arc B/C/M intentional-change notes in todo rows); `bun run version` (concretize runs
-  automatically — verify no `workspace:*` survives, the S5 landmine); owner publishes 0.3.0
-  **restricted** (owner session); PT2/BK1/G2 bump their repos to `^0.3.0`.
+  automatically — verify no `workspace:*` survives, the S5 landmine); owner publishes 0.4.0
+  **restricted** (owner session); PT2/BK1/G2 bump their repos to `^0.4.0`.
 - From freeze to flip: **only fixes for manual-window findings.** No API changes, no new features,
-  no docs restructuring. Each fix ships as a lockstep 0.3.x restricted patch when a consumer needs
+  no docs restructuring. Each fix ships as a lockstep 0.4.x restricted patch when a consumer needs
   it re-tested.
 
 #### Perf gate (single source)
@@ -1148,11 +1157,11 @@ Written as `docs/plans/manual-test-protocol.md` by an agent session; the checkli
    true tokenless PUBLIC-registry run is deliberately I2's job on flip day); `bun install` +
    `bunx expo run:android` for topdown on a real device; every root-README quickstart executed
    verbatim (same registry override).
-2. **PT** on the reference device at ^0.3.0: full campaign sweep (saves/settings round-trip, shop,
+2. **PT** on the reference device at ^0.4.0: full campaign sweep (saves/settings round-trip, shop,
    locale PL↔EN, reduced-motion, colorblind atlas), plus the B5 scene-restart and B12 IAP-restore
    paths explicitly.
-3. **Berek** walk on 0.3.0 (tilemap + solid-grid path).
-4. **Web:** page hero demos at ^0.3.0 on desktop Chrome/Firefox/Safari + Android Chrome + iOS
+3. **Berek** walk on 0.4.0 (tilemap + solid-grid path).
+4. **Web:** page hero demos at ^0.4.0 on desktop Chrome/Firefox/Safari + Android Chrome + iOS
    Safari (real devices), WASM load on throttled 4G, Lighthouse 100 re-check.
 5. **New surfaces:** keyboard demo on desktop web (M1); headless bun script (M2); a Tiled map
    authored fresh in Tiled 1.12 through cli → template (B8/M4); haptics on device (M6).
@@ -1215,7 +1224,7 @@ Credential specifics, per-hit audit dispositions, and anything business-candid l
 | Jul (A0 lands) | Confirm private-docs disposition | `docs/plans/_local/` gitignored; nothing candid gets committed. |
 | Aug (F3 report) | Disposition of any flagged OLD published versions | Options + per-hit ledger in `_local/`. |
 | Oct 2–5 | Ratify F4 exposure report | incl. author-email stance + `.claude/`-goes-public + SESSION_LOG-goes-public (the AI-transparency asset decision). |
-| **Oct 5** | Publish 0.3.0 restricted | Owner session; S5-style flow. |
+| **Oct 5** | Publish 0.4.0 restricted | Owner session; S5-style flow. |
 | Oct 5–18 | Execute §11 manual protocol | The requested two weeks. |
 | **Oct 20 (flip)** | GitHub repo → public; run flip-access script; flip commit + fresh public release; bind flareengine.dev; enable Discussions | I1 pairing session; runbook is the checklist. |
 | Post-flip | Blog/announce whenever ready | Decoupled by design; reconcile any pre-existing public blog schedule titles at leisure. |
@@ -1355,7 +1364,7 @@ not shader output), so GPU-visual validation of the three effects is deferred to
 window; z-order test proves cross-texture ordering preserved; stretch-with-effect test drives a
 `stretch:true`+effect command through the frame-renderer (not just the batch key); dead-zone follow
 test; api-specs updated to match. **If the calendar is red, the water/fog/fire binding + the z-order
-fix are the launch-critical subset (the headline claim); stretch/dead-zone can slip to 0.3.x.**
+fix are the launch-critical subset (the headline claim); stretch/dead-zone can slip to 0.4.x.**
 
 #### OSS-E2 · MIT → Apache-2.0 relicense (P0, 1 session, [MT]) — the missing owning row
 
@@ -1429,7 +1438,7 @@ gates updated. **Run E2 with E1 (both [MT] governance) — one session.**
   Apache-2.0 relicense unblocked. (Recommend one `license-checker --production` run at freeze to
   seal the transitive layer; direct surface is clean.)
 - **api-consistency: consistent surface,** 3 barrel collisions (folded into B20/M2 above) + one
-  `…Opts`→`Options` P2 (0.3.0 breaking window).
+  `…Opts`→`Options` P2 (pre-1.0 breaking window).
 - **deps lane:** `engines` field missing on 39/41 packages; exports maps point ESM consumers at the
   CJS `.d.ts` (unused `.d.mts` never referenced — nested types conditions fix); stale
   `packageManager bun@1.2.0`; unused root `maxrects-packer` devDep; 10 packages carry dead

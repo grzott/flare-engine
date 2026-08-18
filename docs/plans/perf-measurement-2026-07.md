@@ -311,7 +311,7 @@ Roughly 10 weeks to the October 5 freeze. Effort is ~10.5 working days.
    r/reactnative and LinkedIn questions with data.
 
 If time runs short, P0 + P1 + P2 is a defensible release: current numbers, honest scope
-labels, and a gate that keeps them current. P3 and P4 can land as `0.3.x` follow-ups **provided**
+labels, and a gate that keeps them current. P3 and P4 can land as `0.4.x` follow-ups **provided**
 `PERFORMANCE.md` says plainly that device and web are unmeasured — which is exactly what the
 2026-07-27 devlog already told readers.
 

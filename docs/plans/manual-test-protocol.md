@@ -1,14 +1,14 @@
 # Manual-test protocol — the two-week freeze window (Oct 5–18)
 
-**Owner-executed** after OSS-H1 (freeze + `0.3.0` restricted publish), before OSS-I1 (flip, target Oct 20).
+**Owner-executed** after OSS-H1 (freeze + `0.4.0` restricted publish), before OSS-I1 (flip, target Oct 20).
 Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
 
 ## How to use this doc
 
 - Walk every box in order. Check `[x]` on pass; on fail, log a row in **§7 Findings** and keep going
   (don't stop the sweep — collect everything, then triage).
-- **Everything runs against `^0.3.0` RESTRICTED**, not the public registry. `create-flare-app` and the
-  public `@flare-engine/*@0.3.0` versions do **not** exist on npmjs until flip day — the tokenless
+- **Everything runs against `^0.4.0` RESTRICTED**, not the public registry. `create-flare-app` and the
+  public `@flare-engine/*@0.4.0` versions do **not** exist on npmjs until flip day — the tokenless
   *public*-registry cold scaffold is deliberately **I2's** job (flip day), not this window's.
 - **First-run + web consumption use the F2 verdaccio harness** (local registry at
   `http://localhost:4873`). Reuse the exact setup rehearsed in
@@ -16,7 +16,7 @@ Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
   `create-flare-app` is not routed by a `@flare-engine:registry` scope config:
 
   ```bash
-  # start verdaccio + publish 0.3.0 to it exactly as the F2 rehearsal did (flip-runbook F2), then:
+  # start verdaccio + publish 0.4.0 to it exactly as the F2 rehearsal did (flip-runbook F2), then:
   npm config set registry http://localhost:4873/
   # ...run the §1 / §4-web consumption tests...
   npm config delete registry   # restore npmjs when done
@@ -50,10 +50,10 @@ The path a stranger hits first. A break here is a launch blocker. Run against ve
       exactly as written against the same registry override (`npm create flare-app@latest my-game`, the
       install/build lines). Any command that errors or drifts from its documented output = a finding.
 
-## §2 — Pan Tvardowski at `^0.3.0`
+## §2 — Pan Tvardowski at `^0.4.0`
 
 PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski)); bump it to
-`@flare-engine/*@^0.3.0`, `bun install` from the restricted registry, build to the reference device.
+`@flare-engine/*@^0.4.0`, `bun install` from the restricted registry, build to the reference device.
 
 - [ ] **Full campaign sweep** — zones 1→8 playable start to finish; no crash, no stuck scene.
 - [ ] **Saves + settings round-trip** — quit mid-run, relaunch: progress/settings restored intact
@@ -75,17 +75,17 @@ PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardo
       env-background shader, confirm it **renders** (not blank/black), **animates over time** (not
       frozen at t=0), and that effect sprites layer in correct **global z-order** against normal sprites.
 
-## §3 — Berek at `0.3.0`
+## §3 — Berek at `0.4.0`
 
-Second-genre proof (top-down). Bump to `^0.3.0`, install from restricted registry, run.
+Second-genre proof (top-down). Bump to `^0.4.0`, install from restricted registry, run.
 
 - [ ] Tilemap renders; **solid-grid** movement/collision behaves (the XP5 physics + tilemap lift path
       — the exact code B33 just de-referenced).
 - [ ] A representative level walk: no crash, no regression vs the last known-good engine version.
 
-## §4 — Web (page hero demos) at `^0.3.0`
+## §4 — Web (page hero demos) at `^0.4.0`
 
-`flare-engine-page` repo (CanvasKit-WASM backend, `render-web`). Bump to `^0.3.0`, deploy the preview.
+`flare-engine-page` repo (CanvasKit-WASM backend, `render-web`). Bump to `^0.4.0`, deploy the preview.
 
 - [ ] **Desktop browser matrix** — hero demos render + animate on **Chrome**, **Firefox**, **Safari**.
 - [ ] **Mobile browsers** — **Android Chrome** + **iOS Safari** (real devices): demos render, touch works.
@@ -132,11 +132,11 @@ finding, fixed in priority order; non-blocking items → the post-flip backlog (
 ### Exit criteria (all must hold before OSS-I1 / flip)
 
 - [ ] §1 first-run funnel is **green on both OSes, all three templates** (zero blockers).
-- [ ] PT + Berek run on `0.3.0` with no blocker/major regression.
+- [ ] PT + Berek run on `0.4.0` with no blocker/major regression.
 - [ ] Web matrix + Lighthouse 100 hold; docs getting-started is followable cold.
 - [ ] **§5 new surfaces** (M1 keyboard, M2 headless, B8/M4 Tiled, M6 haptics) each executed on its real
       target and green — or every failure logged in §7 and triaged (blockers closed).
-- [ ] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.3.x` restricted patch and
+- [ ] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.4.x` restricted patch and
       re-tested); majors closed or explicitly accepted; minors triaged to the post-flip backlog.
 - [ ] **Perf gate still green after the last FREEZE-FIX patch** — every hard item in the "Perf gate
       (single source)" block of road-to-oss §11 / OSS-H1. Not restated here on purpose. A fix that

@@ -10425,3 +10425,94 @@ or calendar-dependent. The queue reverts to Arc OSS, where the only required row
 **OSS-F4** (date-bound Oct 2–5) and **OSS-H1** (the freeze itself, Oct 5, owner-paired), plus an
 optional P2 cut-line of seven feature rows.
 ---
+
+## Session 271 — 2026-08-18 (scope: engine)
+
+**Goal:** clear the perf-freshness gate and prep the consumer-enablement release cut
+
+**Bookkeeping gap, recorded honestly:** this log has no blocks for 2026-08-04 → 2026-08-16.
+Roughly twenty commits landed in that window without a `/close`: the harness fixes
+(`df1e3de` hook paths via `CLAUDE_PROJECT_DIR`, `c32c20e` bash guard inverted to an allowlist,
+`b073b29` dead Write rules pruned), the consumer-enablement design + task plans, then W1
+(`6a10aa9`), W2 (`c57f760`, `42ec8ea`), W3/DYN-1 (`d5286bc`, `623b992`, `71fda81`), W5
+(`f4b0cd5`, `c5f1af0`), and the whole PERF-6 web-bench lane (`9d2b812` → `f030217`). No
+first-hand blocks are reconstructed for those sessions — inventing per-session prose nobody
+wrote is exactly the failure mode this repo's docs guard against. What the commits and plan SoTs
+record has been folded into `todo.md`'s `## Done`, labelled as reconstructed. `todo.md` was also
+actively wrong: it still listed DYN-1 and PERF-6 as pending, so `/start` would have routed a
+builder to rebuild the dynamics package.
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `docs/references/benchmarks.md`
+- `docs/plans/todo.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green (87 tasks)
+- build: green
+- deps / changeset / readme / exports / nodenext: green
+- **perf-freshness: RED → GREEN** — this session's purpose.
+
+**Outcome**
+
+`check:perf-freshness` was the only red gate at HEAD, and correctly so: the scenario-SoT
+extraction changed `benchmarks/src`, so every number had been taken by a different instrument,
+and `Vec2.perp`/`crossSV` changed `math`, which stales all five suites through the dep graph.
+
+**The load guard earned its keep on the first run.** Capture 1 recorded
+`foreignLoadPercent 19.04` against a 15% ceiling — Discord, Razer Synapse + ChromaVisualizer,
+CefSharp, four VS Code windows, Steam and EA Desktop resident, plus Claude Code itself, which is
+foreign load from the bench's point of view. Owner closed what they could; the next five runs
+read 9.58 / 3.07 / 6.50 / 9.26 / 9.69, and `promote`'s `slice(-5)` window excludes the contended
+one by construction. The 3.07% run sits below the 4.36-5.43% "ordinary working state" floor
+PERF-11 calibrated against, which is what a genuinely quiet machine looks like here.
+
+Numbers moved by less than the spread, which is the result C1 needed: `ecs.step 1000` 23.2 →
+23.1 µs, `render.flush 1000 / 1 atlas` 55.6 → 56.3 µs. The scenario-SoT extraction moved
+nothing measurable. One caveat on the record: `render.flush 1000 / 1 atlas`'s band widened to
+54.8-81.0 µs (was 54.5-56.1) — one run in five reached the top of that band, under the
+`MIN_DEVIANT_RUNS` threshold, so promote accepted it.
+
+**Findings**
+
+- **`bun run bench:md` silently destroyed the entire Web (CanvasKit) section** — payload table,
+  cold start, CPU-raster suite, and GPU suite, ~150 lines shipped in `ed579be` and `f030217`.
+  The generator owns `docs/references/benchmarks.md` and rewrites it wholesale; the web content
+  had been hand-appended into that machine-owned file. The section's own text warned it was
+  "hand-maintained … not produced by `bun run bench:md`" — a documented hazard with no guard,
+  which is not a guard. It fired on the first routine recapture after the web numbers landed,
+  and would have fired identically in the owner's hands before the freeze.
+- The same regeneration reinstated `benchmarks/src/index.ts:376`'s **"No web/CanvasKit numbers
+  exist yet. The web backend has never been benchmarked."** — printed directly above the web
+  tables it had just deleted. The template still carried the pre-web-bench claim.
+- Both restored by hand and verified byte-identical to HEAD. **The defect is unfixed** — filed
+  as **PERF-12**. Any real fix edits `benchmarks/src`, which is the freshness `instrument` path,
+  so it re-stales all five suites and carries its own 5-run recapture; that is why it is a
+  separate row rather than folded in here.
+- Gate state is otherwise strong: 47 pending changesets, all minor/patch with no major (a major
+  would force 1.0.0), and check:readme / check:exports (publint + attw, 42 packages) /
+  check:nodenext all green. The tree is ready for the release cut modulo the owner's publish.
+
+**Decisions taken (owner, this session)**
+
+- **Release N = `0.3.0`; the October launch cut becomes `0.4.0`.** 47 minor changesets under
+  lockstep `fixed` produce 0.3.0 now, but `road-to-oss-2026-09.md` (24 refs),
+  `manual-test-protocol.md` (11) and `flip-runbook.md` (3) all hardcode 0.3.0 as *the launch
+  version*, as does the page's public copy. npm versions are immutable, so this was settled
+  before the publish, not after. The 38-reference sweep is CE-W6 prep.
+- **Pixel 9 over adb, web lane first, then `apps/bench-native`.** adb is installed; no device
+  attached yet. The bench-web runner, its GPU mode and the 18-scenario set already exist, so the
+  mobile web lane is a new driver rather than a new bench, and it fills the gap
+  `benchmarks.md` currently states outright ("one desktop machine's WebGL implementation, not a
+  mobile GPU"). This likely retires the TestingBot spend; **C6 is parked, not cancelled**, with
+  its plan-tier question still unanswered and owner-only.
+
+**Frictions:** corr:0 / deny:0 / gate:1 / fixup:2 / drift:1
+
+**Next:** CE-W6 — the 0.3.0 → 0.4.0 doc sweep, then `bun run version` + the publish-safety
+battery, up to the owner-run restricted publish. PERF-12 and the Pixel 9 web lane follow.
+---

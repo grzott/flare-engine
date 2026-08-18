@@ -13,35 +13,69 @@ const getProductsMock = mock(async (_ids: string[], _category?: string) => [
     productType: 'CONSUMABLE',
   },
 ]);
-const purchaseMock = mock(async (_product: unknown) => ({
-  customerInfo: {
-    originalPurchaseDate: '2024-01-01T00:00:00Z',
-    entitlements: { all: {}, active: {} },
-    nonSubscriptionTransactions: [],
-  },
-}));
-const restoreMock = mock(async () => ({
-  originalPurchaseDate: null,
+/**
+ * The RevenueCat customer-info shape these mocks stand in for. Declared explicitly because the
+ * mocks' return types were otherwise inferred from whichever object literal happened to be written
+ * first, which froze the entitlement keys of that one example (`premium`) and the empty
+ * `nonSubscriptionTransactions` array into the contract — so a `mockImplementationOnce` using any
+ * other entitlement id, or any transaction at all, failed to typecheck against a shape that was
+ * never intended to be that narrow.
+ */
+type RcEntitlement = {
+  identifier: string;
+  productIdentifier: string;
+  purchaseDateMillis: number;
+  expirationDate: string | null;
+};
+
+type RcTransaction = {
+  transactionIdentifier: string;
+  productIdentifier: string;
+  purchaseDateMillis: number;
+};
+
+type RcCustomerInfo = {
+  originalPurchaseDate: string | null;
   entitlements: {
-    active: {
-      premium: {
-        identifier: 'premium',
-        productIdentifier: 'x',
-        purchaseDateMillis: 1700000000000,
-        expirationDate: null,
+    active: Record<string, RcEntitlement>;
+    all: Record<string, RcEntitlement>;
+  };
+  nonSubscriptionTransactions: RcTransaction[];
+};
+
+const purchaseMock = mock(
+  async (_product: unknown): Promise<{ customerInfo: RcCustomerInfo }> => ({
+    customerInfo: {
+      originalPurchaseDate: '2024-01-01T00:00:00Z',
+      entitlements: { all: {}, active: {} },
+      nonSubscriptionTransactions: [],
+    },
+  }),
+);
+const restoreMock = mock(
+  async (): Promise<RcCustomerInfo> => ({
+    originalPurchaseDate: null,
+    entitlements: {
+      active: {
+        premium: {
+          identifier: 'premium',
+          productIdentifier: 'x',
+          purchaseDateMillis: 1700000000000,
+          expirationDate: null,
+        },
+      },
+      all: {
+        premium: {
+          identifier: 'premium',
+          productIdentifier: 'x',
+          purchaseDateMillis: 1700000000000,
+          expirationDate: null,
+        },
       },
     },
-    all: {
-      premium: {
-        identifier: 'premium',
-        productIdentifier: 'x',
-        purchaseDateMillis: 1700000000000,
-        expirationDate: null,
-      },
-    },
-  },
-  nonSubscriptionTransactions: [],
-}));
+    nonSubscriptionTransactions: [],
+  }),
+);
 const addListenerMock = mock((_listener: unknown) => {});
 const removeListenerMock = mock((_listener: unknown) => {});
 

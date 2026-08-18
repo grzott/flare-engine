@@ -46,7 +46,7 @@ describe('loadCanvasKit resilience', () => {
 
     // Drive a rejection that genuinely propagates. A bare fetch error does NOT: init() falls back
     // to locateFile and the shared canvaskit-wasm mock resolves it. The deadline does.
-    globalThis.fetch = (() => new Promise<Response>(() => {})) as typeof fetch;
+    globalThis.fetch = (() => new Promise<Response>(() => {})) as unknown as typeof fetch;
     await expect(
       loadCanvasKit('/hang/canvaskit.wasm', undefined, { deadlineMs: 30, stallMs: 500 }),
     ).rejects.toThrow(/exceeded/);
@@ -56,7 +56,7 @@ describe('loadCanvasKit resilience', () => {
     globalThis.fetch = (() => {
       secondCallFetched = true;
       return Promise.reject(new Error('still down'));
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     await loadCanvasKit('/hang/canvaskit.wasm', undefined, { deadlineMs: 200 }).catch(() => {});
 
     expect(secondCallFetched).toBe(true);
@@ -64,7 +64,7 @@ describe('loadCanvasKit resilience', () => {
 
   it('rejects when the load exceeds the deadline', async () => {
     const { loadCanvasKit } = await freshLoader();
-    globalThis.fetch = (() => new Promise<Response>(() => {})) as typeof fetch;
+    globalThis.fetch = (() => new Promise<Response>(() => {})) as unknown as typeof fetch;
 
     await expect(
       loadCanvasKit('/hang/canvaskit.wasm', undefined, { deadlineMs: 40, stallMs: 20 }),
@@ -79,7 +79,7 @@ describe('loadCanvasKit resilience', () => {
         aborted = true;
       });
       return new Promise<Response>(() => {});
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     await loadCanvasKit('/stall/canvaskit.wasm', undefined, {
       stallMs: 20,
@@ -100,7 +100,11 @@ describe('loadCanvasKit resilience', () => {
       },
     });
     globalThis.fetch = (() =>
-      Promise.resolve({ ok: true, body, headers: new Headers() } as Response)) as typeof fetch;
+      Promise.resolve({
+        ok: true,
+        body,
+        headers: new Headers(),
+      } as Response)) as unknown as typeof fetch;
 
     await loadCanvasKit('/nolen/canvaskit.wasm', (f) => fractions.push(f)).catch(() => {});
 

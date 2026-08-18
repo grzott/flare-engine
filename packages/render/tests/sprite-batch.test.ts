@@ -345,7 +345,7 @@ describe('SpriteBatch — z-order / consecutive-run flush', () => {
 
     const order: string[] = [];
     batch.flush((img) => {
-      order.push((img as { id: string }).id);
+      order.push((img as unknown as { id: string }).id);
     });
 
     expect(order).toHaveLength(3);
@@ -364,7 +364,7 @@ describe('SpriteBatch — z-order / consecutive-run flush', () => {
 
     const calls: { id: string; count: number }[] = [];
     batch.flush((img, commands) => {
-      calls.push({ id: (img as { id: string }).id, count: commands.length });
+      calls.push({ id: (img as unknown as { id: string }).id, count: commands.length });
     });
 
     expect(calls).toHaveLength(2);
@@ -471,7 +471,7 @@ describe('SpriteBatch — draw order follows insertion order (regression)', () =
 
     const order: string[] = [];
     batch.flush((img) => {
-      order.push((img as { id: string }).id);
+      order.push((img as unknown as { id: string }).id);
     });
 
     expect(order).toEqual(['a', 'b', 'a', 'b']);

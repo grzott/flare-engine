@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { World } from '@flare-engine/ecs';
 import * as RealReact from 'react';
-import { World } from '../../ecs/src/index.js';
 import type { DevtoolsContextValue } from '../src/context.js';
 
 // useEntityInspector only reads world/selectedEntity/select off the context, so a

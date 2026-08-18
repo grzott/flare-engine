@@ -489,7 +489,9 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
           if (!real) return real;
           const orig = real.makeShader.bind(real) as typeof real.makeShader;
           real.makeShader = (uniforms: Parameters<typeof orig>[0]) => {
-            const arr = Array.isArray(uniforms) ? [...uniforms] : [...(uniforms as number[])];
+            const arr = Array.isArray(uniforms)
+              ? [...uniforms]
+              : [...(uniforms as unknown as number[])];
             capturedUniforms.push(arr);
             return orig(uniforms);
           };

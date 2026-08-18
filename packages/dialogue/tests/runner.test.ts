@@ -420,16 +420,19 @@ describe('runner prototype safety', () => {
       start: { kind: 'line', speaker: 'A', text: 'Hi', next: '__proto__' },
     };
     const graph = createDialogueGraph('proto_test', 'start', nodes);
-    let errorReceived: DialogueError | null = null;
+    // Container rather than a bare `let`: control-flow analysis cannot see the callback assignment
+    // and narrows a `let` back to `null` at the assertions below, which is what forced the cast
+    // this replaces. A property read is not narrowed that way.
+    const captured: { error: DialogueError | null } = { error: null };
     const runner = createDialogueRunner({
       onError: (err) => {
-        errorReceived = err;
+        captured.error = err;
       },
     });
     runner.start(graph);
     runner.advance();
     expect(runner.state).toBe('ended');
-    expect(errorReceived).toBeInstanceOf(DialogueError);
-    expect((errorReceived as DialogueError).code).toBe('missing-node');
+    expect(captured.error).toBeInstanceOf(DialogueError);
+    expect(captured.error?.code).toBe('missing-node');
   });
 });

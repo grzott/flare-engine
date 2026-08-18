@@ -8,6 +8,7 @@
     "dev": "bun run scripts/server.ts",
     "bench:web": "bun run scripts/run.ts",
     "bench:web:gpu": "BENCH_WEB_MODE=gpu bun run scripts/run.ts",
+    "bench:web:android": "BENCH_WEB_MODE=android bun run scripts/run.ts",
     "lint": "biome check src/ scripts/ tests/",
     "typecheck": "tsc --noEmit",
     "test": "bun test"

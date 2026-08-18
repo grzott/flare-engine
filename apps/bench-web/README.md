@@ -3,6 +3,40 @@
 Headless CanvasKit runner for the render microbench suite, driven by Playwright
 (`bun run bench:web`, see `scripts/run.ts`). Private app, not published.
 
+## On-device Android lane
+
+`bun run bench:web:android` runs the same 18 render scenarios on a USB-attached Android phone and
+writes `benchmarks/results/web-android.json` + `web-android-history.ndjson`.
+
+**Requirements**
+
+- Exactly one device listed as `device` in `adb devices`. The lane refuses zero, and refuses to pick
+  between several — a capture that silently chose a phone has provenance nobody can check. States
+  other than `device` (`unauthorized`, `offline`, `no permissions`) are ignored, so an unaccepted RSA
+  prompt reads as "no device" up front rather than failing mid-capture.
+- USB debugging enabled and the RSA prompt accepted.
+- Screen unlocked for the whole run (roughly a minute).
+
+**How it connects.** The bench server runs on the host; `adb reverse tcp:<port> tcp:<port>` makes
+`localhost:<port>` on the phone resolve back to it. The driver then attaches to the phone's Chrome
+through its `@chrome_devtools_remote` abstract socket via `adb forward` + `connectOverCDP`.
+
+Chrome is **attached to, never launched.** `playwright._android`'s `launchBrowser()` was tried first
+and hangs indefinitely against retail Chrome here. Because the browser belongs to whoever is holding
+the phone, the driver closes only the page it opened; the CDP session close leaves Chrome running
+with its pid intact (verified on-device). Both adb tunnels are removed on the way out, including
+after a failure.
+
+**Provenance comes from the hardware.** `ro.product.model` / `ro.product.device` / `ro.soc.model` /
+`ro.build.version.release` are read via `getprop` at capture time and recorded on every row, so a
+capture names the phone it actually ran on. The driver also refuses to write a result whose
+`UNMASKED_RENDERER_WEBGL` reads as a software rasterizer — the same guard the desktop GPU lane uses.
+
+**Known flake:** Bun can panic with `integer overflow` during process teardown after a run
+completes. Observed once in two runs; it is a Bun bug (its own crash message says so), it happens
+*after* every result file is written, and re-running is clean. If the exit code is non-zero, check
+whether the three result files were written before assuming the capture was lost.
+
 ## TestingBot probe
 
 `scripts/testingbot-probe.mjs` verifies the owner's TestingBot account/plan/device catalogue

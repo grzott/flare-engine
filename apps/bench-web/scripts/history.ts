@@ -33,7 +33,21 @@ import type { NetworkProfile, PayloadByte } from './payload.js';
 
 /** `web-cpu-raster` = the offscreen `CanvasKit.MakeSurface` lane (no `<canvas>`/WebGL, CPU-backed
  *  by construction). `web-gpu` = the on-screen WebGL lane via `@flare-engine/render-web`. */
-export type WebRuntimeLabel = 'web-cpu-raster' | 'web-gpu';
+export type WebRuntimeLabel = 'web-cpu-raster' | 'web-gpu' | 'web-android-gpu';
+
+/** Hardware identity for the on-device lane, read from `getprop` at capture time rather than
+ *  typed in — a capture must name the phone it actually ran on, never the one anyone intended.
+ *  Absent on both desktop lanes. */
+export type AndroidDeviceInfo = {
+  /** `ro.product.model`, e.g. "Pixel 7". */
+  readonly model: string;
+  /** `ro.product.device` board codename, e.g. "panther". */
+  readonly codename: string;
+  /** `ro.soc.model`, e.g. "GS201". */
+  readonly soc: string;
+  /** `ro.build.version.release`. */
+  readonly androidRelease: string;
+};
 
 export type Provenance = {
   readonly commit: string;
@@ -43,6 +57,8 @@ export type Provenance = {
   readonly browserName: string;
   readonly browserVersion: string;
   readonly capturedAt: string;
+  /** Present only on `web-android-gpu` records. */
+  readonly device?: AndroidDeviceInfo;
   /** `UNMASKED_RENDERER_WEBGL` (or the best available fallback) — present only on `web-gpu`
    *  records. A GPU number without the GPU named is not reproducible. */
   readonly rendererString?: string;
@@ -148,6 +164,7 @@ export function buildProvenance(input: {
   browserVersion: string;
   capturedAt: string;
   rendererString?: string;
+  device?: AndroidDeviceInfo;
 }): Provenance {
   return { ...input };
 }
@@ -231,6 +248,17 @@ export function gpuHistoryFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web-gpu-history.ndjson');
 }
 
+/** The on-device lane's append-only history — its own file, for the same reason the GPU lane has
+ *  one: a phone's numbers and a desktop's must never share a series. */
+export function androidHistoryFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-android-history.ndjson');
+}
+
+/** The on-device lane's "latest capture" baseline. */
+export function androidWebBaselineFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-android.json');
+}
+
 /** The GPU lane's "latest capture" baseline — a separate file from `webBaselineFilePath()`. */
 export function gpuWebBaselineFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web-gpu.json');
@@ -283,6 +311,39 @@ export function appendGpuHistory(records: readonly RenderHistoryRecord[]): strin
   mkdirSync(dirname(file), { recursive: true });
   const lines = records.map((r) => `${JSON.stringify(r)}\n`).join('');
   appendFileSync(file, lines, 'utf8');
+  return file;
+}
+
+/**
+ * The on-device lane's capture. Render scenarios only, for the same reason as `WebGpuCapture`:
+ * payload bytes are backend-agnostic and cold-start is defined against the CPU-raster surface, so
+ * neither gains meaning from being re-run through a phone.
+ */
+export type WebAndroidCapture = {
+  readonly schemaVersion: 1;
+  readonly generated: string;
+  readonly render: readonly RenderHistoryRecord[];
+};
+
+export function buildWebAndroidCapture(input: {
+  generated: string;
+  render: readonly RenderHistoryRecord[];
+}): WebAndroidCapture {
+  return { schemaVersion: 1, ...input };
+}
+
+/** Append-only, mirroring `appendHistory` for the on-device lane's own file. */
+export function appendAndroidHistory(records: readonly RenderHistoryRecord[]): string {
+  const file = androidHistoryFilePath();
+  mkdirSync(dirname(file), { recursive: true });
+  appendFileSync(file, records.map((r) => `${JSON.stringify(r)}\n`).join(''), 'utf8');
+  return file;
+}
+
+/** Overwrites the on-device lane's "latest capture" file. */
+export function writeAndroidWebBaseline(capture: WebAndroidCapture): string {
+  const file = androidWebBaselineFilePath();
+  writeJsonAtomic(file, `${JSON.stringify(capture, null, 2)}\n`);
   return file;
 }
 

@@ -35,14 +35,18 @@
  *    unit}` plus `browserName` / `browserVersion` / `capturedAt` (and `rendererString` for GPU
  *    records) — see scripts/history.ts.
  */
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
 import config, { type BenchMode, launchArgsForMode } from '../playwright.config.js';
 import { RENDER_SCENARIO_NAMES, type ScenarioResult } from '../src/runner.js';
 import {
+  type AndroidDeviceInfo,
   allRecords,
+  appendAndroidHistory,
   appendGpuHistory,
   appendHistory as appendWebHistory,
   buildProvenance,
+  buildWebAndroidCapture,
   buildWebCapture,
   buildWebGpuCapture,
   type ColdStartEntry,
@@ -51,6 +55,7 @@ import {
   toColdStartRecords,
   toPayloadRecords,
   toRenderRecords,
+  writeAndroidWebBaseline,
   writeGpuWebBaseline,
   writeWebBaseline,
 } from './history.js';
@@ -61,16 +66,25 @@ import { startServer } from './server.js';
  *  src/runner.ts), never a bare `'web'`. GPU records use `RUNTIME_LABEL_GPU` instead. */
 const RUNTIME_LABEL = 'web-cpu-raster';
 const RUNTIME_LABEL_GPU = 'web-gpu';
+const RUNTIME_LABEL_ANDROID = 'web-android-gpu';
+
+/** Local port the CDP tunnel to the phone's Chrome is bound to. Only this process uses it. */
+const ANDROID_CDP_PORT = 9222;
+
+/** Modes this script accepts. `android` is not a `BenchMode`: the page still runs `?mode=gpu` (the
+ *  on-screen WebGL path), so only the *driver* and the result label differ. */
+type RunMode = BenchMode | 'android';
 
 /** Selects the render mode: `BENCH_WEB_MODE=gpu bun run scripts/run.ts` (or the `bench:web:gpu`
  *  package.json script) for the on-screen WebGL lane. Unset, or `cpu-raster` explicitly, keeps
  *  `bun run bench:web`'s existing behaviour unchanged. */
-function parseMode(): BenchMode {
+function parseMode(): RunMode {
   const raw = process.env.BENCH_WEB_MODE;
   if (raw === undefined || raw === 'cpu-raster') return 'cpu-raster';
   if (raw === 'gpu') return 'gpu';
+  if (raw === 'android') return 'android';
   throw new Error(
-    `bench-web: BENCH_WEB_MODE must be "cpu-raster" or "gpu", got ${JSON.stringify(raw)}`,
+    `bench-web: BENCH_WEB_MODE must be "cpu-raster", "gpu" or "android", got ${JSON.stringify(raw)}`,
   );
 }
 
@@ -158,6 +172,135 @@ function validateScenarioNames(gotNames: readonly string[]): void {
         `  want: ${JSON.stringify(wantNames)}`,
     );
   }
+}
+
+type AndroidDriverPayload = RenderDriverPayload & {
+  readonly device: AndroidDeviceInfo;
+};
+
+/**
+ * Serials of authorised devices in `adb devices` output. Split out from the adb call so its parsing
+ * is testable: only lines ending in the literal `device` state count, which excludes the `offline`,
+ * `unauthorized` (RSA prompt not accepted) and `no permissions` states that would otherwise look
+ * like a usable phone and fail much later, mid-capture.
+ */
+export function parseAdbDevices(out: string): string[] {
+  return out
+    .split('\n')
+    .slice(1)
+    .map((line) => line.trim())
+    .filter((line) => line.endsWith('\tdevice'))
+    .map((line) => line.split('\t')[0] as string);
+}
+
+/** The single attached device's adb serial. Refuses on zero or many rather than picking one — a
+ *  capture that silently chose a phone is a capture whose provenance nobody can trust. */
+function resolveAndroidSerial(): string {
+  const serials = parseAdbDevices(execFileSync('adb', ['devices'], { encoding: 'utf8' }));
+
+  if (serials.length === 0) {
+    throw new Error(
+      'bench-web: no authorised Android device attached. Connect one over USB with debugging ' +
+        'enabled and confirm the RSA prompt, then check `adb devices`.',
+    );
+  }
+  if (serials.length > 1) {
+    throw new Error(
+      `bench-web: ${serials.length} Android devices attached (${serials.join(', ')}). Detach all ` +
+        'but the one to measure — this lane will not guess which phone the numbers belong to.',
+    );
+  }
+  return serials[0] as string;
+}
+
+/**
+ * The on-device lane. The phone reaches this machine's bench server through
+ * `adb reverse tcp:<port> tcp:<port>`, which makes `localhost:<port>` on the device resolve here —
+ * set up before the driver starts and removed after, so a failed run leaves no tunnel behind.
+ */
+async function runAndroidMode(
+  server: { readonly url: string },
+  renderRawPath: string,
+): Promise<void> {
+  const serial = resolveAndroidSerial();
+  const port = new URL(server.url).port;
+  if (port === '') throw new Error('bench-web: server URL carries no port to reverse-tunnel');
+
+  execFileSync('adb', ['-s', serial, 'reverse', `tcp:${port}`, `tcp:${port}`], { stdio: 'pipe' });
+  console.log(`bench-web: adb reverse tcp:${port} -> host (device ${serial})`);
+
+  let render: AndroidDriverPayload;
+  try {
+    const configJson = JSON.stringify({
+      cdpPort: ANDROID_CDP_PORT,
+      waitTimeoutMs: config.waitTimeoutMs,
+      serial,
+    });
+    render = await runNodeDriver<AndroidDriverPayload>(
+      `${import.meta.dir}/android-driver.mjs`,
+      `http://localhost:${port}`,
+      configJson,
+      renderRawPath,
+    );
+  } finally {
+    try {
+      execFileSync('adb', ['-s', serial, 'reverse', '--remove', `tcp:${port}`], { stdio: 'pipe' });
+    } catch {
+      // Leaving a stale reverse behind is untidy, not a reason to discard a completed capture.
+    }
+  }
+
+  validateScenarioNames(render.results.map((r) => r.name));
+
+  const { commit } = collectHostAndCommit();
+  const appVersion = await readAppVersion();
+  const capturedAt = new Date().toISOString();
+  const { device } = render;
+  const provenance = buildProvenance({
+    commit,
+    // `host` names the machine the work ran on, and for this lane that is the phone, not the
+    // desktop driving it. Recording the desktop here would attribute a Mali number to an i9.
+    host: `android ${device.model} (${device.codename}, ${device.soc}, Android ${device.androidRelease})`,
+    runtime: RUNTIME_LABEL_ANDROID,
+    appVersion,
+    browserName: render.browserName,
+    browserVersion: render.browserVersion,
+    capturedAt,
+    rendererString: render.rendererString ?? undefined,
+    device,
+  });
+
+  const capture = buildWebAndroidCapture({
+    generated: capturedAt,
+    render: toRenderRecords(render.results, provenance),
+  });
+
+  const outPath = `${import.meta.dir}/../results/web-android-bench.json`;
+  await Bun.write(
+    outPath,
+    `${JSON.stringify(capture, null, 2)}
+`,
+  );
+  const historyFile = appendAndroidHistory(capture.render);
+  const baselineFile = writeAndroidWebBaseline(capture);
+
+  console.log(
+    `
+bench-web: ${capture.render.length} scenario(s), runtime=${RUNTIME_LABEL_ANDROID} ` +
+      `(CPU-side submission cost on device hardware), renderer="${provenance.rendererString}", ` +
+      `${provenance.browserName} ${provenance.browserVersion}, commit ${commit}
+`,
+  );
+  console.log(['scenario', 'samples', 'p50Ms', 'p95Ms', 'p99Ms'].join('\t'));
+  for (const r of capture.render) {
+    console.log(
+      [r.name, r.samples, r.p50Ms.toFixed(3), r.p95Ms.toFixed(3), r.p99Ms.toFixed(3)].join('\t'),
+    );
+  }
+  console.log(`
+bench-web: wrote ${outPath}`);
+  console.log(`bench-web: appended ${capture.render.length} record(s) to ${historyFile}`);
+  console.log(`bench-web: wrote ${baselineFile}`);
 }
 
 async function runGpuMode(server: { readonly url: string }, renderRawPath: string): Promise<void> {
@@ -281,7 +424,9 @@ async function main(): Promise<void> {
   const coldStartRawPath = `${outDir}/.web-bench-coldstart-raw.json`;
 
   try {
-    if (mode === 'gpu') {
+    if (mode === 'android') {
+      await runAndroidMode(server, renderRawPath);
+    } else if (mode === 'gpu') {
       await runGpuMode(server, renderRawPath);
     } else {
       await runCpuRasterMode(server, renderRawPath, coldStartRawPath);
@@ -293,7 +438,11 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err: unknown) => {
-  console.error(err);
-  process.exit(1);
-});
+// Guarded because this module also exports `parseAdbDevices` for its tests: without the check, a
+// plain `import` of that helper would start the dev server and begin a capture as a side effect.
+if (import.meta.main) {
+  main().catch((err: unknown) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

@@ -48,6 +48,7 @@ import {
   findContractViolations,
   HEADLINE_PREFIXES,
 } from './scenario-contract.js';
+import { renderWebSections } from './web-sections.js';
 
 type Group = { title: string; results: BenchStats[] };
 
@@ -373,7 +374,7 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     '- **No Skia rasterization, no GPU, no bridge, no device.** The draw path runs to the point where the engine hands a batch to Skia; what Skia then does with it is not measured here, and these are pure JS costs under Bun on one desktop machine.',
   );
   lines.push(
-    '- **No web/CanvasKit numbers exist yet.** The web backend has never been benchmarked.',
+    '- **Web/CanvasKit numbers exist in three lanes: CPU-raster, desktop GPU, and an on-device Android GPU lane.** See [Web (CanvasKit)](#web-canvaskit). Both GPU-backed lanes measure **CPU-side submission cost**, not GPU execution time — WebGL/CanvasKit calls queue work and return, and reading true GPU time from page script is not available to this harness. Every web figure published before 2026-08-18 was quantized to the display refresh interval and must not be cited.',
   );
   lines.push(
     '- **The ECS suite is deliberately unbounded.** Its entities integrate off the field forever, because nothing in `world.step` branches on position and holding that suite byte-identical across the 2026-07 rework keeps it usable as the control row that made the render regression conclusive. The physics and integration suites wrap at the field edge instead, and a probe fails the capture if any entity escapes.',
@@ -482,6 +483,8 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     );
     lines.push('');
   }
+
+  renderWebSections(lines);
 
   lines.push('## Notes on interpretation');
   lines.push('');

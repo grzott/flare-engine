@@ -190,6 +190,36 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **On-device Android web lane (`bench:web:android`)** (2026-08-18). Real phone numbers, built on
+  the corrected sampler rather than before it. `apps/bench-web/scripts/android-driver.mjs` +
+  `runAndroidMode` in `run.ts`: the bench server stays on the host, `adb reverse tcp:<port>` makes
+  `localhost:<port>` on the phone resolve back to it, and the driver **attaches** to the phone's
+  Chrome through its `@chrome_devtools_remote` socket via `adb forward` + `connectOverCDP`.
+  `playwright._android`'s `launchBrowser()` was tried first and **hangs indefinitely** against
+  retail Chrome — the attach path is the one that works (probed end to end before any driver was
+  written). The browser belongs to the phone's owner, so only the page this driver opened is
+  closed; Chrome keeps its pid, verified. Provenance is read from the hardware via `getprop`
+  (`ro.product.model` / `ro.product.device` / `ro.soc.model` / `ro.build.version.release`) and
+  recorded per row, so a capture names the phone it ran on — which mattered immediately: the device
+  on the desk is a **Pixel 7** (panther, Tensor GS201, Mali-G710), not the Pixel 9 it was expected
+  to be. Same software-rasterizer refusal as the desktop GPU lane. Own label
+  (`runtime: "web-android-gpu"`) and own files (`web-android.json` / `web-android-history.ndjson`),
+  never merged into a desktop series. **First capture: 0/18 rows quantized at either 60 Hz or
+  90 Hz**, confirming the sampler fix holds on device. The phone costs **1.2x-2.0x** the desktop's
+  submission time on flush scenarios but only **1.1x-1.3x** on `render.sort` — pure JS with no
+  surface, isolating single-thread throughput, where the Tensor lands near a desktop i9.
+  `parseAdbDevices` split out and tested (7 cases) because the states that are *not* usable —
+  `unauthorized`, `offline`, `no permissions` — otherwise look like a ready phone and fail
+  mid-capture; the lane refuses zero devices and refuses to guess between several. Exporting from
+  `run.ts` exposed a module-level `main()` that ran a whole capture on import, now behind
+  `import.meta.main`. **Known flake recorded, not papered over:** Bun panicked with
+  `integer overflow` during teardown on the first run (once in two), *after* every result file was
+  written; it is a Bun bug by its own crash message, and the README says to check for the files
+  before assuming a capture was lost. **Not done:** repeat-and-fold (no `bench:promote` equivalent,
+  so a device row is one sample from a warm phone), no thermal/governor control, and
+  `web-android.json` is not wired into `apps/bench-dashboard` — neither is `web-gpu.json`, which
+  has never had a dashboard surface.
+
 - **Web sampler: vsync quantization fixed + both lanes re-captured** (2026-08-18). Found while
   scoping the Pixel lane. `sampleRafDeltas` took the `requestAnimationFrame` frame-to-frame delta
   as its sample and divided by `innerIters`; rAF is vsync-locked, so every published web figure was

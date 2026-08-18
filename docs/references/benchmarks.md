@@ -37,7 +37,7 @@ Treat a change smaller than the run-to-run spread as noise.  The render and inte
 ## What these numbers do not measure
 
 - **No Skia rasterization, no GPU, no bridge, no device.** The draw path runs to the point where the engine hands a batch to Skia; what Skia then does with it is not measured here, and these are pure JS costs under Bun on one desktop machine.
-- **Web/CanvasKit numbers exist in two lanes, CPU-raster and GPU.** See [Web (CanvasKit)](#web-canvaskit). The GPU lane measures **CPU-side submission cost**, not GPU execution time — WebGL/CanvasKit calls queue and return, and reading true GPU time from page script is not available to this harness. Both lanes were re-captured 2026-08-18 on a corrected sampler; every web figure published before that date was quantized to the display refresh interval and must not be cited.
+- **Web/CanvasKit numbers exist in three lanes: CPU-raster, desktop GPU, and an on-device Android GPU lane.** See [Web (CanvasKit)](#web-canvaskit). The GPU lane measures **CPU-side submission cost**, not GPU execution time — WebGL/CanvasKit calls queue and return, and reading true GPU time from page script is not available to this harness. Both lanes were re-captured 2026-08-18 on a corrected sampler; every web figure published before that date was quantized to the display refresh interval and must not be cited.
 - **The ECS suite is deliberately unbounded.** Its entities integrate off the field forever, because nothing in `world.step` branches on position and holding that suite byte-identical across the 2026-07 rework keeps it usable as the control row that made the render regression conclusive. The physics and integration suites wrap at the field edge instead, and a probe fails the capture if any entity escapes.
 - **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.
 - **Every number here was captured on a machine that was 9.7% busy with other work.** `bench:promote` refuses a window above 15% foreign load, or one where 2 or more runs sit further than 10% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).
@@ -174,13 +174,14 @@ _Captured: 2026-04-22 — stale_
 
 ## Web (CanvasKit)
 
-Two lanes over the same 18 render scenarios (frozen in `scenario-contract.ts`) on the same machine,
-bound to real CanvasKit through `@flare-engine/render-web` instead of the node lane's counting Skia
-stub: **CPU-raster** renders through an offscreen `CanvasKit.MakeSurface`, CPU-backed by
-construction, which is the driver-independent baseline a CI runner can also produce; **GPU** renders
-through a real on-screen `<canvas>` + WebGL surface. Every record carries
-`runtime: "web-cpu-raster"` or `"web-gpu"`, never a bare `"web"`, so the two lanes can never be
-folded into one series.
+Three lanes over the same 18 render scenarios (frozen in `scenario-contract.ts`), bound to real
+CanvasKit through `@flare-engine/render-web` instead of the node lane's counting Skia stub:
+**CPU-raster** renders through an offscreen `CanvasKit.MakeSurface`, CPU-backed by construction,
+which is the driver-independent baseline a CI runner can also produce; **GPU** renders through a
+real on-screen `<canvas>` + WebGL surface on this desktop; **Android device** runs that same
+on-screen path on a USB-attached phone. Every record carries `runtime: "web-cpu-raster"`,
+`"web-gpu"` or `"web-android-gpu"`, never a bare `"web"`, and each lane writes its own results and
+history files, so they can never be folded into one series.
 
 > **Measurement correction, 2026-08-18 — every web number published before this date was wrong.**
 > The original sampler ran the work once per `requestAnimationFrame` callback and took the
@@ -196,7 +197,7 @@ folded into one series.
 > were re-captured on the corrected instrument, and no row in either is a multiple of the refresh
 > interval any more. **Nothing below is comparable to a web capture published before 2026-08-18.**
 
-**The GPU lane measures CPU-side submission cost, not GPU execution time.** WebGL and CanvasKit
+**Both GPU lanes measure CPU-side submission cost, not GPU execution time.** WebGL and CanvasKit
 calls queue work and return — `GrDirectContext.flush()` submits, it does not wait — so a clock
 bracket captures everything the CPU does to build and hand off the frame and none of what the GPU
 then does with it. Reading true GPU time from page script needs `EXT_disjoint_timer_query_webgl2`
@@ -326,6 +327,61 @@ another across both lanes, as expected. **Under the old sampler they read *ident
 previous version of this document credited that to the shared code path. The real cause was that
 both lanes pinned those rows to the vsync floor.** Freed of it they differ slightly, which is
 ordinary run-to-run variation on identical work.
+
+### Render suite — Android device (on-device GPU)
+
+_Captured: 2026-08-18 · Commit: e1cfbbc12548 · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine
+version: 0.2.1 · Browser: chrome-android 151.0.7922.137 · Renderer:
+`ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
+
+The same 18 scenarios on real phone hardware. The page runs the identical on-screen `<canvas>` +
+WebGL path as the desktop GPU lane, so the caveat there applies unchanged: **this is CPU-side
+submission cost, not GPU execution time.**
+
+How it runs: `bun run bench:web:android` in `apps/bench-web` starts the bench server on this
+machine, opens `adb reverse tcp:<port> tcp:<port>` so `localhost:<port>` on the phone resolves back
+to it, then attaches to the phone's Chrome over its `@chrome_devtools_remote` socket via
+`adb forward` + `connectOverCDP` and drives the existing page. Chrome is **attached to, never
+launched** — `playwright._android`'s `launchBrowser()` hangs against retail Chrome on this device,
+and the browser belongs to whoever is holding the phone. The driver refuses to write a capture whose
+`UNMASKED_RENDERER_WEBGL` reads as a software rasterizer, the same guard the desktop GPU lane uses,
+so a silent SwiftShader fallback cannot be published as device hardware.
+
+Requirements: exactly one authorised device in `adb devices` (the lane refuses zero, and refuses to
+guess between several), USB debugging accepted, and the screen unlocked for the duration.
+
+| Scenario | p50 | p95 | p99 | Ops/batch | vs desktop GPU |
+|---|---:|---:|---:|---:|---:|
+| render.flush    100 sprites / 1 atlas | 0.127 ms | 0.210 ms | 0.350 ms | 158 | 2.0x |
+| render.flush    500 sprites / 1 atlas | 0.242 ms | 0.258 ms | 0.461 ms | 83 | 1.4x |
+| render.flush   1000 sprites / 1 atlas | 0.437 ms | 0.558 ms | 1.035 ms | 46 | 1.3x |
+| render.flush   5000 sprites / 1 atlas | 1.864 ms | 1.964 ms | 4.020 ms | 11 | 1.2x |
+| render.flush    500 sprites / 4 atlas interleaved | 2.525 ms | 2.800 ms | 5.175 ms | 8 | 1.4x |
+| render.flush    500 sprites / 4 atlas clustered | 0.289 ms | 0.323 ms | 0.615 ms | 70 | 1.6x |
+| render.flush   1000 sprites / 8 atlas interleaved | 5.500 ms | 5.700 ms | 6.025 ms | 4 | 1.4x |
+| render.flush   1000 sprites / 8 atlas clustered | 0.481 ms | 0.505 ms | 1.176 ms | 42 | 1.4x |
+| render.flush   1000 sprites / 50% rotated | 0.453 ms | 0.483 ms | 1.133 ms | 44 | 1.5x |
+| render.flush   1000 sprites / 100% rotated | 0.466 ms | 0.513 ms | 1.063 ms | 43 | 1.4x |
+| render.flush   1000 sprites / 4 alpha runs | 0.461 ms | 0.571 ms | 1.000 ms | 44 | 1.5x |
+| render.flush   1000 sprites / tint effect | 0.455 ms | 0.481 ms | 1.150 ms | 44 | 1.6x |
+| render.flush   1000 sprites / outline effect | 3.071 ms | 3.143 ms | 4.300 ms | 7 | 1.5x |
+| render.flush   1000 sprites / stretch path | 2.563 ms | 2.713 ms | 4.080 ms | 8 | 1.5x |
+| render.flush   1000 sprites / zone-bg path | 2.300 ms | 2.456 ms | 3.650 ms | 9 | 1.6x |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.004 ms | 0.010 ms | 11905 | 1.3x |
+| render.sort     500 items (5 swaps) | 0.005 ms | 0.015 ms | 0.035 ms | 4154 | 1.1x |
+| render.sort    1000 items (10 swaps) | 0.018 ms | 0.075 ms | 0.131 ms | 1090 | 1.1x |
+
+The phone costs **1.2x-2.0x** of the desktop's submission time on the flush scenarios and
+**1.1x-1.3x** on `render.sort`. That split is the informative part: `render.sort` is pure JS
+with no surface involved, so it isolates raw single-thread JS throughput, where a Tensor GS201
+lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is
+where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per
+operation, which is what a frame budget on this device actually contends with.
+
+Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. A
+sustained run can clock down, and nothing in this harness pins the CPU/GPU governor or reads
+thermal state. Treat a single device capture as one sample from a warm phone, not a stable
+baseline, until this lane grows a repeat-and-fold step like the node lane's `bench:promote`.
 
 ## Notes on interpretation
 

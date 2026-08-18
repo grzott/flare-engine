@@ -98,14 +98,30 @@ export type DeviceReport = {
  * never touches GL) label, kept only so already-committed `web.json` / `web-history.ndjson`
  * records captured before the rename still parse. Never emitted by a fresh capture.
  */
+/** Every lane's label. `web-swiftshader` is the pre-rename spelling of `web-cpu-raster` and is
+ *  accepted only where that lane is expected — see `parseWebProvenance`, which takes the set valid
+ *  for the lane being parsed rather than accepting any of these anywhere. */
+export type WebRuntimeLabel = 'web-cpu-raster' | 'web-swiftshader' | 'web-gpu' | 'web-android-gpu';
+
+/** Hardware identity, read from `getprop` at capture time. Present only on on-device records. */
+export type WebDeviceInfo = {
+  model: string;
+  codename: string;
+  soc: string;
+  androidRelease: string;
+};
+
 export type WebProvenance = {
   commit: string;
   host: string;
-  runtime: 'web-cpu-raster' | 'web-swiftshader';
+  runtime: WebRuntimeLabel;
   appVersion: string;
   browserName: string;
   browserVersion: string;
   capturedAt: string;
+  /** `UNMASKED_RENDERER_WEBGL`. Present on the GPU-backed lanes, absent on CPU-raster. */
+  rendererString?: string;
+  device?: WebDeviceInfo;
 };
 
 export type WebRenderResult = WebProvenance & {
@@ -152,4 +168,15 @@ export type WebReport = {
   render: WebRenderResult[];
   payload: WebPayloadResult[];
   coldStart: WebColdStartResult[];
+};
+
+/**
+ * The desktop-GPU and on-device lanes. Render scenarios only, by design: payload bytes are
+ * backend-agnostic and cold start is defined against the CPU-raster surface, so re-running either
+ * through a different target would duplicate the CPU-raster figures under a misleading label.
+ */
+export type WebRenderOnlyReport = {
+  schemaVersion: number;
+  generated: string;
+  render: WebRenderResult[];
 };

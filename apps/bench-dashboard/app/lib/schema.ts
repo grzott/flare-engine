@@ -5,11 +5,14 @@ import type {
   MicrobenchReport,
   MicrobenchResult,
   WebColdStartResult,
+  WebDeviceInfo,
   WebNetworkProfile,
   WebPayloadResult,
   WebProvenance,
+  WebRenderOnlyReport,
   WebRenderResult,
   WebReport,
+  WebRuntimeLabel,
 } from './types';
 
 /**
@@ -203,35 +206,61 @@ export function parseDeviceReport(raw: unknown): DeviceReport {
 }
 
 /**
- * Accepts both the current CPU-raster label and its old, factually-wrong predecessor
- * (`'web-swiftshader'` — SwiftShader is a GL implementation; this surface never touches GL) so
- * already-committed `web.json` / `web-history.ndjson` records captured before the rename still
- * parse without being silently rewritten. A fresh capture never emits the old label.
+ * The CPU-raster lane's accepted labels: the current one and its old, factually-wrong predecessor
+ * (`'web-swiftshader'` — SwiftShader is a GL implementation; this surface never touches GL), so
+ * already-committed records captured before the rename still parse without being silently
+ * rewritten. A fresh capture never emits the old label.
  */
-function requireWebCpuRasterRuntime(
+const CPU_RASTER_RUNTIMES: readonly WebRuntimeLabel[] = ['web-cpu-raster', 'web-swiftshader'];
+
+/**
+ * Asserts a record carries a runtime valid **for the lane being parsed**, not merely one of the
+ * known labels. Each lane passes its own set, so a `web-gpu` row cannot be rendered inside the
+ * CPU-raster table even though both labels are individually legitimate — mixing incomparable
+ * series into one table is the defect this field exists to prevent, and accepting every label
+ * everywhere would reintroduce it while looking stricter than before.
+ */
+function requireWebRuntime(
   value: unknown,
   where: string,
-): 'web-cpu-raster' | 'web-swiftshader' {
-  if (value !== 'web-cpu-raster' && value !== 'web-swiftshader') {
+  allowed: readonly WebRuntimeLabel[],
+): WebRuntimeLabel {
+  if (typeof value !== 'string' || !allowed.includes(value as WebRuntimeLabel)) {
     throw new SchemaError(
-      `${where}: expected "web-cpu-raster" (or the pre-rename "web-swiftshader"), got ` +
-        `${describe(value)}. A web-lane record with any other runtime would be indistinguishable ` +
-        'from the node lane once rendered, which is exactly the mixed-series defect this field ' +
-        'exists to prevent.',
+      `${where}: expected one of ${allowed.map((a) => `"${a}"`).join(', ')}, got ` +
+        `${describe(value)}. This lane's table must contain only its own runtime.`,
     );
   }
-  return value;
+  return value as WebRuntimeLabel;
 }
 
-function parseWebProvenance(o: Record<string, unknown>, where: string): WebProvenance {
+function parseWebDeviceInfo(raw: unknown, where: string): WebDeviceInfo {
+  const o = requireObject(raw, where);
+  return {
+    model: requireString(o.model, `${where}.model`),
+    codename: requireString(o.codename, `${where}.codename`),
+    soc: requireString(o.soc, `${where}.soc`),
+    androidRelease: requireString(o.androidRelease, `${where}.androidRelease`),
+  };
+}
+
+function parseWebProvenance(
+  o: Record<string, unknown>,
+  where: string,
+  allowed: readonly WebRuntimeLabel[],
+): WebProvenance {
   return {
     commit: requireString(o.commit, `${where}.commit`),
     host: requireString(o.host, `${where}.host`),
-    runtime: requireWebCpuRasterRuntime(o.runtime, `${where}.runtime`),
+    runtime: requireWebRuntime(o.runtime, `${where}.runtime`, allowed),
     appVersion: requireString(o.appVersion, `${where}.appVersion`),
     browserName: requireString(o.browserName, `${where}.browserName`),
     browserVersion: requireString(o.browserVersion, `${where}.browserVersion`),
     capturedAt: requireString(o.capturedAt, `${where}.capturedAt`),
+    ...(o.rendererString === undefined
+      ? {}
+      : { rendererString: requireString(o.rendererString, `${where}.rendererString`) }),
+    ...(o.device === undefined ? {} : { device: parseWebDeviceInfo(o.device, `${where}.device`) }),
   };
 }
 
@@ -242,12 +271,16 @@ function requireLiteralUnit<U extends string>(value: unknown, unit: U, where: st
   return unit;
 }
 
-function parseWebRenderResult(raw: unknown, where: string): WebRenderResult {
+function parseWebRenderResult(
+  raw: unknown,
+  where: string,
+  allowed: readonly WebRuntimeLabel[],
+): WebRenderResult {
   const o = requireObject(raw, where);
   const name = requireString(o.name, `${where}.name`);
   const at = `${where} ("${name}")`;
   return {
-    ...parseWebProvenance(o, at),
+    ...parseWebProvenance(o, at, allowed),
     kind: 'render',
     name,
     samples: requireNumber(o.samples, `${at}.samples`),
@@ -261,12 +294,16 @@ function parseWebRenderResult(raw: unknown, where: string): WebRenderResult {
   };
 }
 
-function parseWebPayloadResult(raw: unknown, where: string): WebPayloadResult {
+function parseWebPayloadResult(
+  raw: unknown,
+  where: string,
+  allowed: readonly WebRuntimeLabel[],
+): WebPayloadResult {
   const o = requireObject(raw, where);
   const name = requireString(o.name, `${where}.name`);
   const at = `${where} ("${name}")`;
   return {
-    ...parseWebProvenance(o, at),
+    ...parseWebProvenance(o, at, allowed),
     kind: 'payload',
     name,
     bytes: requireNumber(o.bytes, `${at}.bytes`),
@@ -289,12 +326,16 @@ function parseWebNetworkProfile(raw: unknown, where: string): WebNetworkProfile 
   };
 }
 
-function parseWebColdStartResult(raw: unknown, where: string): WebColdStartResult {
+function parseWebColdStartResult(
+  raw: unknown,
+  where: string,
+  allowed: readonly WebRuntimeLabel[],
+): WebColdStartResult {
   const o = requireObject(raw, where);
   const name = requireString(o.name, `${where}.name`);
   const at = `${where} ("${name}")`;
   return {
-    ...parseWebProvenance(o, at),
+    ...parseWebProvenance(o, at, allowed),
     kind: 'coldStart',
     name,
     ms: requireNumber(o.ms, `${at}.ms`),
@@ -318,13 +359,13 @@ export function parseWebReport(raw: unknown): WebReport {
   const o = requireObject(raw, 'web.json');
 
   const render = requireArray(o.render, 'web.json.render').map((r, i) =>
-    parseWebRenderResult(r, `web.json.render[${i}]`),
+    parseWebRenderResult(r, `web.json.render[${i}]`, CPU_RASTER_RUNTIMES),
   );
   const payload = requireArray(o.payload, 'web.json.payload').map((p, i) =>
-    parseWebPayloadResult(p, `web.json.payload[${i}]`),
+    parseWebPayloadResult(p, `web.json.payload[${i}]`, CPU_RASTER_RUNTIMES),
   );
   const coldStart = requireArray(o.coldStart, 'web.json.coldStart').map((c, i) =>
-    parseWebColdStartResult(c, `web.json.coldStart[${i}]`),
+    parseWebColdStartResult(c, `web.json.coldStart[${i}]`, CPU_RASTER_RUNTIMES),
   );
 
   const expectedRender = EXPECTED_SCENARIOS.Render ?? [];
@@ -350,6 +391,43 @@ export function parseWebReport(raw: unknown): WebReport {
     render,
     payload,
     coldStart,
+  };
+}
+
+/**
+ * The render-only lanes (desktop GPU, on-device Android). Same row validation and the same frozen
+ * scenario-contract check as `parseWebReport` — a lane that quietly rendered a shorter table than
+ * the contract froze would understate coverage exactly where a reader cannot see it.
+ *
+ * `label` names the source file in every error, so a failure says which lane is malformed rather
+ * than which shape.
+ */
+export function parseWebRenderOnlyReport(
+  raw: unknown,
+  label: string,
+  runtime: WebRuntimeLabel,
+): WebRenderOnlyReport {
+  const o = requireObject(raw, label);
+
+  const render = requireArray(o.render, `${label}.render`).map((r, i) =>
+    parseWebRenderResult(r, `${label}.render[${i}]`, [runtime]),
+  );
+
+  const gotNames = render.map((r) => r.name);
+  const wantNames = [...(EXPECTED_SCENARIOS.Render ?? [])];
+  if (JSON.stringify(gotNames) !== JSON.stringify(wantNames)) {
+    throw new SchemaError(
+      `${label}.render scenario names do not match the frozen Render contract.\n` +
+        `  got:  ${JSON.stringify(gotNames)}
+` +
+        `  want: ${JSON.stringify(wantNames)}`,
+    );
+  }
+
+  return {
+    schemaVersion: requireNumber(o.schemaVersion, `${label}.schemaVersion`),
+    generated: requireString(o.generated, `${label}.generated`),
+    render,
   };
 }
 

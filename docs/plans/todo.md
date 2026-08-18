@@ -58,6 +58,15 @@ release reaching the restricted registry, not on the public flip.
 Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze. **Full specs in the SoT: [perf-measurement-2026-07.md](perf-measurement-2026-07.md)** — §1–§8 first-pass audit, §9–§10 second-pass verification (18-agent adversarial, 2026-07-28: render 3.1× regression re-confirmed live; secondary drift table withdrawn; B11–B26 new findings), **§11 row specs** — rows here are lean pointers (one-source-per-fact); the builder reads the row's §11 section before planning. Routing: PERF-3, PERF-9 and PERF-10 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset each); all other rows touch benchmarks/`scripts/`/`.github/`/`apps/bench-*`/`docs/plans/` → **[MT] main-thread**. Sequencing below is the execution order; **PERF-1→5 are the pre-freeze must** (the §7 "defensible release" core + gates), PERF-8 is cheap and pre-freeze-preferred, PERF-6/7 slide post-flip if the calendar tightens (PERFORMANCE.md then declares web/device unmeasured, §8). Owner-OOB items (portfolio corrections, TestingBot account check, EAS bench project, engine-repo secrets) are ledgered per-row in §11, never blocking. Pick top → `/start`.
 
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
+- **PERF-13 — repeat-and-fold for the web lanes (esp. on-device) [MT].** The node lane folds 5 runs
+  via `bench:promote` with two independent refusals (foreign CPU load > 15%, and 2+ runs deviating
+  > 10% from the folded median). The three web lanes have no equivalent: every published web figure
+  is a **single run**, and on a phone that run is also thermally and governor-dependent in ways
+  nothing here measures or pins. Needs a promote step per lane plus a device-side quiet/thermal
+  signal. **Thresholds must be calibrated against real captures across thermal states, not chosen**
+  — PERF-11 is the precedent: its first spread gate was written to a guess and immediately refused
+  healthy data, and the fix came from replaying it over every recorded window. That calibration is
+  measurement work, which is why this is a row and not a same-session follow-on.
 - **PERF-12 — `bench:md` destroys the hand-maintained Web sections (found 2026-08-18) [MT].**
   `bun run bench:md` rewrites `docs/references/benchmarks.md` wholesale, so the routine recapture
   step silently deleted the entire Web (CanvasKit) section — payload table, cold start, CPU-raster
@@ -159,7 +168,12 @@ Order: S4a→S4b →gate→ S5→**S6**→S7(+setup)→S8→S9. Hard rules: S5 b
 
 - **TH1 — clear root-tsc test-file type errors (typecheck-gate-skips-tests backlog). DONE (2026-07-01, #195).** Surfaced during XP4's root-tsc diligence: `tsc -p tsconfig.json` (which includes `packages/*/tests`, unlike the per-package src-only /close gate) flagged **56 type errors across 19 test files in 11 packages** — a latent backlog the gate structurally can't see ([[typecheck-gate-skips-tests]]). Cleared all 56 **test-side only** (19 test files + 1 new `packages/render-web/tests/canvaskit-bin.d.ts` ambient decl; **zero `src/` changes**). Patterns: `.ts`→`.js`/package imports (kills TS5097 + the downstream src-vs-dist `World` identity TS2345 in `testing`), `readPixels` stubs on mock `SkImageLike` (render/tilemap), `!` / `=== true` narrowing for `noUncheckedIndexedAccess` + bun-types `toBe(<classInstance>)` (postfx/iap/share/ecs), canvaskit-wasm ambient decl + param annotations (render-web), CFA-defeating container objects for closure-assigned `let` (deep-links/iap). 12-agent workflow (10 parallel per-package fixers + root-tsc clean-check + diff weakening-audit): **no `any`/`@ts-ignore`/`.skip`, no assertion weakened, no src touched** (audit verdict clean; the few `as unknown as T` are last-resort structural bridges). Root tsc now 0; full gate green. Note: agents' `biome check src/` self-checks miss `tests/` formatting → ran `biome check --write` on the changed tests to pre-empt husky ([[lint-gate-skips-scripts]]).
 
-- **TH2 — root-tsc test-file type errors redux (typecheck-gate-skips-tests backlog).** OSS-C4's TS-5.9 root-tsc diligence surfaced **9 pre-existing test-file type errors**, proven present at HEAD under TS 5.5.4 (so NOT bump-induced; C4 is root-tsc-neutral): src-vs-dist `World` identity (`devtools/hooks.test.ts` ×2), `null`→`DialogueError` cast (`dialogue/runner.test.ts`), entitlements-mock shape + `never[]` (`iap-revenuecat/provider.test.ts` ×2), mock-cast `SkImageLike`/`Float32Array`→`number[]`/`{id}` (`render/sprite-batch.test.ts` ×3, `render-web/conformance.test.ts`). Same class TH1 (#195) cleared; deferred out of the C4 toolchain row per the "no drive-by" rule. Fix test-side only — no `any`/`@ts-ignore`/`.skip`, no assertion weakening — following TH1's `as unknown as T` / import-from-package patterns.
+- **TH2 — root-tsc test-file type errors redux (typecheck-gate-skips-tests backlog).** OSS-C4's TS-5.9 root-tsc diligence surfaced **9 pre-existing test-file type errors**, proven present at HEAD under TS 5.5.4 (so NOT bump-induced; C4 is root-tsc-neutral): src-vs-dist `World` identity (`devtools/hooks.test.ts` ×2), `null`→`DialogueError` cast (`dialogue/runner.test.ts`), entitlements-mock shape + `never[]` (`iap-revenuecat/provider.test.ts` ×2), mock-cast `SkImageLike`/`Float32Array`→`number[]`/`{id}` (`render/sprite-batch.test.ts` ×3, `render-web/conformance.test.ts`). **Re-counted 2026-08-18: now
+  13, not 9** — `c57f760` (render-web context-loss hardening, CE-W2) added four in
+  `render-web/tests/loader.test.ts`, all the same `as typeof fetch` cast class (a stub missing
+  `fetch.preconnect`). The count grows silently precisely because the `/close` gate is per-package
+  and src-only, so nothing red ever appears; run `bunx tsc -p tsconfig.json --noEmit` to re-count
+  before starting. Same class TH1 (#195) cleared; deferred out of the C4 toolchain row per the "no drive-by" rule. Fix test-side only — no `any`/`@ts-ignore`/`.skip`, no assertion weakening — following TH1's `as unknown as T` / import-from-package patterns.
 
 Research-flagged (ws337exio) modernizations the current harness predates — apply opportunistically: migrate `.claude/commands/{start,close}` → `.claude/skills/`; promote `verify.sh` to a Stop hook; swap the python-dependent hooks (`pre-bash-guard.sh`/`post-edit-lint.sh`) to `jq` (Windows/Bun-safe); add a PreToolUse Conventional-Commit validator; path-scoped `.claude/rules/` for heavy package context; **fix the stale folio-SoT claim in root `CLAUDE.md`/`roadmap.md` → `src/visual-spec/`**. The manual commit-block flow is deliberate — keep unless determinism is wanted.
 
@@ -215,10 +229,15 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   `import.meta.main`. **Known flake recorded, not papered over:** Bun panicked with
   `integer overflow` during teardown on the first run (once in two), *after* every result file was
   written; it is a Bun bug by its own crash message, and the README says to check for the files
-  before assuming a capture was lost. **Not done:** repeat-and-fold (no `bench:promote` equivalent,
-  so a device row is one sample from a warm phone), no thermal/governor control, and
-  `web-android.json` is not wired into `apps/bench-dashboard` — neither is `web-gpu.json`, which
-  has never had a dashboard surface.
+  before assuming a capture was lost. **Dashboard wired the same session:** all three web lanes now render at
+  `/web`, `web-gpu.json` and `web-android.json` gained package exports, and the validator's runtime
+  check became **per-lane** rather than global — each lane asserts only its own label, so a
+  `web-gpu` row cannot render inside the CPU-raster table even though that label is legitimate
+  elsewhere (mutation-verified: relabelling one android row fails the build naming the lane). The
+  three identical tables collapsed into one `WebRenderTable`, which is what makes the `Ops/batch`
+  column present on every lane instead of one. **Still not done:** repeat-and-fold — no
+  `bench:promote` equivalent, so a device row is one sample from a warm phone — and no
+  thermal/governor control. Row **PERF-13** below.
 
 - **Web sampler: vsync quantization fixed + both lanes re-captured** (2026-08-18). Found while
   scoping the Pixel lane. `sampleRafDeltas` took the `requestAnimationFrame` frame-to-frame delta

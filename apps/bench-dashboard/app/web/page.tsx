@@ -1,6 +1,9 @@
+import { WebRenderTable } from '../components/WebRenderTable';
 import {
   assertPublishable,
   freshnessOf,
+  getWebAndroidReport,
+  getWebGpuReport,
   getWebReport,
   STALE_FAIL_DAYS,
   STALE_WARN_DAYS,
@@ -13,14 +16,26 @@ import { fmtBytes, fmtMs } from '../lib/units';
  * CPU-raster figures — CanvasKit's `MakeSurface` is a CPU-backed offscreen surface by
  * construction, not GPU-backed frame costs; see `runtime: "web-cpu-raster"` on every record.
  * Valid for relative comparison (scaling curves, batching strategy, effect cost) — not for
- * predicting real-device fps. A separate GPU lane exists (`apps/bench-web`'s `?mode=gpu` /
- * `web-gpu.json`) but is not wired into this dashboard.
+ * predicting real-device fps.
+ *
+ * Two further lanes render below it — the desktop GPU lane and the on-device Android lane, both
+ * running the on-screen `<canvas>` + WebGL path. Both measure **CPU-side submission cost**, not GPU
+ * execution time: WebGL/CanvasKit calls queue work and return, so a clock bracket cannot see what
+ * the GPU then does with it. Each lane keeps its own capture file and its own `runtime` label, so
+ * the three can never be folded into one series.
  */
 export default function WebPage() {
   const report = getWebReport();
+  const gpu = getWebGpuReport();
+  const android = getWebAndroidReport();
   assertPublishable(report);
   const { render, payload, coldStart } = report;
   const provenance = render[0] ?? payload[0] ?? coldStart[0];
+  const dev = android.render[0]?.device;
+  const androidLabel =
+    dev === undefined
+      ? 'device not recorded'
+      : `${dev.model} (${dev.codename}, ${dev.soc}, Android ${dev.androidRelease})`;
   const { level, ageDays } = freshnessOf(report.generated);
   const days = Math.max(0, Math.floor(ageDays));
 
@@ -196,36 +211,7 @@ export default function WebPage() {
         <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-800 pb-2">
           Render suite ({render.length} scenarios)
         </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-left">
-                <th className="py-2 pr-4 font-medium">Scenario</th>
-                <th className="py-2 pr-4 font-medium text-right">p50</th>
-                <th className="py-2 pr-4 font-medium text-right">p95</th>
-                <th className="py-2 pr-4 font-medium text-right">p99</th>
-                <th className="py-2 font-medium text-right">Samples</th>
-              </tr>
-            </thead>
-            <tbody>
-              {render.map((r) => (
-                <tr key={r.name} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                  <td className="py-2 pr-4 text-slate-200">{r.name}</td>
-                  <td className="py-2 pr-4 text-right font-mono text-amber-300">
-                    {r.p50Ms.toFixed(3)} ms
-                  </td>
-                  <td className="py-2 pr-4 text-right font-mono text-slate-300">
-                    {r.p95Ms.toFixed(3)} ms
-                  </td>
-                  <td className="py-2 pr-4 text-right font-mono text-slate-300">
-                    {r.p99Ms.toFixed(3)} ms
-                  </td>
-                  <td className="py-2 text-right font-mono text-slate-400 text-xs">{r.samples}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <WebRenderTable rows={render} />
         <p className="text-xs text-slate-500">
           Same scenario set as the node lane&apos;s Render suite (see{' '}
           <a href="/micro" className="underline hover:text-slate-300">
@@ -234,6 +220,40 @@ export default function WebPage() {
           ), bound here to real CanvasKit instead of a counting Skia stub — the two are comparable
           in shape, not in magnitude, because they measure different pipelines under different
           runtimes.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          Render suite — desktop GPU ({gpu.render.length} scenarios)
+        </h2>
+        <p className="text-xs text-slate-500">
+          {gpu.render[0]?.rendererString ?? 'renderer not recorded'} · captured{' '}
+          {gpu.generated.slice(0, 10)}
+        </p>
+        <WebRenderTable rows={gpu.render} />
+        <p className="text-xs text-slate-500">
+          The same scenarios through a real on-screen <code>&lt;canvas&gt;</code> + WebGL surface.
+          These are <strong>CPU-side submission costs</strong>, not GPU execution time. The driver
+          refuses to write a capture whose reported renderer is a software rasterizer, so the string
+          above is the evidence that the host GPU was actually used.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          Render suite — Android device ({android.render.length} scenarios)
+        </h2>
+        <p className="text-xs text-slate-500">
+          {androidLabel} · {android.render[0]?.rendererString ?? 'renderer not recorded'} · captured{' '}
+          {android.generated.slice(0, 10)}
+        </p>
+        <WebRenderTable rows={android.render} />
+        <p className="text-xs text-slate-500">
+          Captured on a USB-attached phone over <code>adb</code>, driving the same on-screen WebGL
+          path. Hardware identity is read from the device with <code>getprop</code> at capture time,
+          so a row names the phone it actually ran on. This is one capture from a warm device — the
+          lane has no repeat-and-fold step yet, and nothing here pins the thermal governor.
         </p>
       </section>
     </div>

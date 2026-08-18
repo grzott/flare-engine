@@ -18,6 +18,8 @@
     "./results/microbench.json": "./results/microbench.json",
     "./results/device.json": "./results/device.json",
     "./results/web.json": "./results/web.json",
+    "./results/web-gpu.json": "./results/web-gpu.json",
+    "./results/web-android.json": "./results/web-android.json",
     "./scenarios": "./src/scenarios/index.ts",
     "./harness": "./src/harness.ts",
     "./scenario-contract": "./src/scenario-contract.ts"

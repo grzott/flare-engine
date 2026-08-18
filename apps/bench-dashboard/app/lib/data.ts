@@ -1,8 +1,15 @@
 import deviceJson from '@flare-engine/benchmarks/results/device.json';
 import microbenchJson from '@flare-engine/benchmarks/results/microbench.json';
 import webJson from '@flare-engine/benchmarks/results/web.json';
-import { parseDeviceReport, parseMicrobenchReport, parseWebReport } from './schema';
-import type { DeviceReport, MicrobenchReport, WebReport } from './types';
+import webAndroidJson from '@flare-engine/benchmarks/results/web-android.json';
+import webGpuJson from '@flare-engine/benchmarks/results/web-gpu.json';
+import {
+  parseDeviceReport,
+  parseMicrobenchReport,
+  parseWebRenderOnlyReport,
+  parseWebReport,
+} from './schema';
+import type { DeviceReport, MicrobenchReport, WebRenderOnlyReport, WebReport } from './types';
 
 /**
  * Imported through the package export, not read from a `../../` path.
@@ -33,6 +40,14 @@ export function getDeviceReport(): DeviceReport {
 
 export function getWebReport(): WebReport {
   return parseWebReport(webJson);
+}
+
+export function getWebGpuReport(): WebRenderOnlyReport {
+  return parseWebRenderOnlyReport(webGpuJson, 'web-gpu.json', 'web-gpu');
+}
+
+export function getWebAndroidReport(): WebRenderOnlyReport {
+  return parseWebRenderOnlyReport(webAndroidJson, 'web-android.json', 'web-android-gpu');
 }
 
 // --- Staleness ---------------------------------------------------------------

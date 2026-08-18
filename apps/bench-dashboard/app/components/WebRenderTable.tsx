@@ -19,10 +19,11 @@ export function WebRenderTable({ rows }: { rows: readonly WebRenderResult[] }) {
           <tr className="border-b border-slate-800 text-slate-400 text-left">
             <th className="py-2 pr-4 font-medium">Scenario</th>
             <th className="py-2 pr-4 font-medium text-right">p50</th>
+            <th className="py-2 pr-4 font-medium text-right">Spread</th>
             <th className="py-2 pr-4 font-medium text-right">p95</th>
             <th className="py-2 pr-4 font-medium text-right">p99</th>
             <th className="py-2 pr-4 font-medium text-right">Ops/batch</th>
-            <th className="py-2 font-medium text-right">Samples</th>
+            <th className="py-2 font-medium text-right">Runs</th>
           </tr>
         </thead>
         <tbody>
@@ -31,6 +32,9 @@ export function WebRenderTable({ rows }: { rows: readonly WebRenderResult[] }) {
               <td className="py-2 pr-4 text-slate-200">{r.name}</td>
               <td className="py-2 pr-4 text-right font-mono text-amber-300">
                 {r.p50Ms.toFixed(3)} ms
+              </td>
+              <td className="py-2 pr-4 text-right font-mono text-slate-400 text-xs">
+                {r.bandMinMs.toFixed(3)} – {r.bandMaxMs.toFixed(3)}
               </td>
               <td className="py-2 pr-4 text-right font-mono text-slate-300">
                 {r.p95Ms.toFixed(3)} ms
@@ -41,7 +45,7 @@ export function WebRenderTable({ rows }: { rows: readonly WebRenderResult[] }) {
               <td className="py-2 pr-4 text-right font-mono text-slate-400 text-xs">
                 {r.opsPerBatch}
               </td>
-              <td className="py-2 text-right font-mono text-slate-400 text-xs">{r.samples}</td>
+              <td className="py-2 text-right font-mono text-slate-400 text-xs">{r.runs}</td>
             </tr>
           ))}
         </tbody>

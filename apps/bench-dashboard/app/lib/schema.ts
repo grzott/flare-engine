@@ -290,6 +290,9 @@ function parseWebRenderResult(
     opsPerBatch: requireNumber(o.opsPerBatch, `${at}.opsPerBatch`),
     batchMs: requireNumber(o.batchMs, `${at}.batchMs`),
     frameDeltaMs: requireNumber(o.frameDeltaMs, `${at}.frameDeltaMs`),
+    bandMinMs: requireNumber(o.bandMinMs, `${at}.bandMinMs`),
+    bandMaxMs: requireNumber(o.bandMaxMs, `${at}.bandMaxMs`),
+    runs: requireNumber(o.runs, `${at}.runs`),
     unit: requireLiteralUnit(o.unit, 'ms', `${at}.unit`),
   };
 }

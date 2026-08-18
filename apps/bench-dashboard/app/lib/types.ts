@@ -137,6 +137,12 @@ export type WebRenderResult = WebProvenance & {
   opsPerBatch: number;
   batchMs: number;
   frameDeltaMs: number;
+  /** Observed min/max across the folded runs, and how many were folded. Required: a row without
+   *  them is a single capture, which is the coin-flip-inside-an-invisible-band this lane's fold
+   *  exists to replace. Such a row must not render. */
+  bandMinMs: number;
+  bandMaxMs: number;
+  runs: number;
   unit: 'ms';
 };
 

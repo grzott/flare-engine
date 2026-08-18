@@ -252,8 +252,9 @@ export default function WebPage() {
         <p className="text-xs text-slate-500">
           Captured on a USB-attached phone over <code>adb</code>, driving the same on-screen WebGL
           path. Hardware identity is read from the device with <code>getprop</code> at capture time,
-          so a row names the phone it actually ran on. This is one capture from a warm device — the
-          lane has no repeat-and-fold step yet, and nothing here pins the thermal governor.
+          so a row names the phone it actually ran on. Figures are folded across runs, and the fold
+          refuses any window in which the device reported thermal throttling. Nothing here pins the
+          CPU/GPU governor.
         </p>
       </section>
     </div>

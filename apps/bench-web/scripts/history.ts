@@ -38,6 +38,19 @@ export type WebRuntimeLabel = 'web-cpu-raster' | 'web-gpu' | 'web-android-gpu';
 /** Hardware identity for the on-device lane, read from `getprop` at capture time rather than
  *  typed in — a capture must name the phone it actually ran on, never the one anyone intended.
  *  Absent on both desktop lanes. */
+/**
+ * Device thermal state either side of a capture. `status` is Android's own throttling level
+ * (0 = NONE ... 6 = SHUTDOWN) from `dumpsys thermalservice`; battery temperature is the continuous
+ * signal beside it, because status is a step function that reads 0 right up until it does not.
+ * `null` means the device did not report the value — distinct from reporting zero.
+ */
+export type AndroidThermal = {
+  readonly statusBefore: number | null;
+  readonly statusAfter: number | null;
+  readonly batteryTempCBefore: number | null;
+  readonly batteryTempCAfter: number | null;
+};
+
 export type AndroidDeviceInfo = {
   /** `ro.product.model`, e.g. "Pixel 7". */
   readonly model: string;
@@ -59,6 +72,8 @@ export type Provenance = {
   readonly capturedAt: string;
   /** Present only on `web-android-gpu` records. */
   readonly device?: AndroidDeviceInfo;
+  /** Present only on `web-android-gpu` records. */
+  readonly thermal?: AndroidThermal;
   /** `UNMASKED_RENDERER_WEBGL` (or the best available fallback) — present only on `web-gpu`
    *  records. A GPU number without the GPU named is not reproducible. */
   readonly rendererString?: string;
@@ -165,6 +180,7 @@ export function buildProvenance(input: {
   capturedAt: string;
   rendererString?: string;
   device?: AndroidDeviceInfo;
+  thermal?: AndroidThermal;
 }): Provenance {
   return { ...input };
 }

@@ -6,6 +6,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "bench:web:promote": "bun src/web-promote-cli.ts",
     "bench": "bun run src/index.ts",
     "bench:baseline": "bun run src/index.ts --write-baseline",
     "bench:promote": "bun run src/index.ts --promote",

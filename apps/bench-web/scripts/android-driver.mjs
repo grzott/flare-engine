@@ -41,6 +41,28 @@ function adb(serial, args) {
   return execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8', stdio: 'pipe' }).trim();
 }
 
+/**
+ * Android's own throttling state (`0` = NONE ... `6` = SHUTDOWN) plus battery temperature in
+ * degrees C. Both read without root on a retail device.
+ *
+ * Thermal status is the load-bearing one: it is the OS reporting whether it is currently throttling,
+ * which is the on-device analogue of the node lane's foreign-CPU-load guard. Battery temperature is
+ * recorded alongside as a continuous signal, because status is a coarse step function that stays at
+ * 0 right up until it does not.
+ */
+function readThermal(serial) {
+  const dump = adb(serial, ['shell', 'dumpsys', 'thermalservice']);
+  const statusMatch = /Thermal Status:\s*(\d+)/.exec(dump);
+  const battery = adb(serial, ['shell', 'dumpsys', 'battery']);
+  const tempMatch = /temperature:\s*(-?\d+)/.exec(battery);
+  return {
+    // `null` rather than a fallback number: "not reported" and "reported as not throttling" are
+    // different claims, and a fold that cannot tell them apart would accept an unmeasured device.
+    thermalStatus: statusMatch?.[1] === undefined ? null : Number(statusMatch[1]),
+    batteryTempC: tempMatch?.[1] === undefined ? null : Number(tempMatch[1]) / 10,
+  };
+}
+
 function getprop(serial, key) {
   const value = adb(serial, ['shell', 'getprop', key]).trim();
   if (value === '') throw new Error(`android-driver: getprop ${key} returned nothing`);
@@ -66,6 +88,11 @@ async function main() {
   };
   console.error(
     `[android] ${device.model} (${device.codename}, ${device.soc}, Android ${device.androidRelease})`,
+  );
+
+  const thermalBefore = readThermal(serial);
+  console.error(
+    `[android] thermal before: status=${thermalBefore.thermalStatus} battery=${thermalBefore.batteryTempC}C`,
   );
 
   adb(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
@@ -107,6 +134,10 @@ async function main() {
     }
 
     const version = browser.version();
+    const thermalAfter = readThermal(serial);
+    console.error(
+      `[android] thermal after:  status=${thermalAfter.thermalStatus} battery=${thermalAfter.batteryTempC}C`,
+    );
     await writeFile(
       outFile,
       JSON.stringify({
@@ -115,6 +146,12 @@ async function main() {
         browserVersion: version,
         rendererString,
         device,
+        thermal: {
+          statusBefore: thermalBefore.thermalStatus,
+          statusAfter: thermalAfter.thermalStatus,
+          batteryTempCBefore: thermalBefore.batteryTempC,
+          batteryTempCAfter: thermalAfter.batteryTempC,
+        },
       }),
       'utf8',
     );

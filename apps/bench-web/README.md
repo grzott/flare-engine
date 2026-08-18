@@ -32,10 +32,13 @@ after a failure.
 capture names the phone it actually ran on. The driver also refuses to write a result whose
 `UNMASKED_RENDERER_WEBGL` reads as a software rasterizer — the same guard the desktop GPU lane uses.
 
-**Known flake:** Bun can panic with `integer overflow` during process teardown after a run
-completes. Observed once in two runs; it is a Bun bug (its own crash message says so), it happens
-*after* every result file is written, and re-running is clean. If the exit code is non-zero, check
-whether the three result files were written before assuming the capture was lost.
+**Known flake — and the exit code is not a reliable success signal because of it.** Bun panics with
+`integer overflow` during process teardown, *after* every result file has been written. Measured
+frequency across 17 runs on this machine: **CPU-raster 4/5, Android 1/7, desktop GPU 0/5** — so it
+is common on the long-lived CPU-raster lane and rare elsewhere, not the one-off it first looked
+like. It is a Bun bug by its own crash message, and it cannot cost a capture (the writes precede
+teardown). Check for the written result files rather than trusting `$?`; a wrapper that gates on
+exit status alone will report false failures on the CPU-raster lane most of the time.
 
 ## TestingBot probe
 

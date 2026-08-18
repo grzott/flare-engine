@@ -41,6 +41,7 @@ import config, { type BenchMode, launchArgsForMode } from '../playwright.config.
 import { RENDER_SCENARIO_NAMES, type ScenarioResult } from '../src/runner.js';
 import {
   type AndroidDeviceInfo,
+  type AndroidThermal,
   allRecords,
   appendAndroidHistory,
   appendGpuHistory,
@@ -176,6 +177,7 @@ function validateScenarioNames(gotNames: readonly string[]): void {
 
 type AndroidDriverPayload = RenderDriverPayload & {
   readonly device: AndroidDeviceInfo;
+  readonly thermal: AndroidThermal;
 };
 
 /**
@@ -268,6 +270,7 @@ async function runAndroidMode(
     capturedAt,
     rendererString: render.rendererString ?? undefined,
     device,
+    thermal: render.thermal,
   });
 
   const capture = buildWebAndroidCapture({

@@ -24,6 +24,11 @@ public copy. Swept as CE-W6 prep. npm versions are immutable, so this is settled
   `concretize-workspace-deps` (`workspace:*` → `^version`, the stale-`bun.lock` publish landmine);
   then check:publish-safety / exports / nodenext / perf / perf-bytes / perf-freshness plus the full
   gate; owner runs the restricted publish. Spec: §10 W6.
+- **CE-W8 — consumer docs/fact sync, both sibling repos (cross-repo, owner-scheduled).** Runs
+  **after** the 0.3.0 publish. Page: `dynamics` needs a `docs-sync/layer-map.json` entry before
+  `sync:docs` or it ships "Unclassified"; 17 export surfaces changed since the committed catalog.
+  Portfolio: six stale `NUMBERS.md` rows, and it stops being a non-consumer the moment DYN-2 lands.
+  Session plan: [consumer-docs-sync-2026-08.md](consumer-docs-sync-2026-08.md).
 - **CE-W7 — `flare-engine-page` swap (cross-repo, own harness).** Bump deps, execute the page's D3 —
   `canvaskit-loader.ts` becomes a shim keeping the `?url` import, `postfx/surface.ts` becomes the
   adapter delegating to the engine; both local files then delete. Drop the local `smoothstep` for
@@ -184,6 +189,32 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **Web sampler: vsync quantization fixed + both lanes re-captured** (2026-08-18). Found while
+  scoping the Pixel lane. `sampleRafDeltas` took the `requestAnimationFrame` frame-to-frame delta
+  as its sample and divided by `innerIters`; rAF is vsync-locked, so every published web figure was
+  `k x 16.667 ms / innerIters` for integer `k` — **all 36 rows across both lanes**, with **13 of 18
+  GPU rows at exactly k = 1**, reporting the display refresh rate and nothing about the engine.
+  Work cheaper than one refresh interval could not be represented at all. New
+  `apps/bench-web/src/sampler.ts` brackets the work with `performance.now()` and uses rAF only to
+  schedule, growing each batch to a ~20 ms window (dominating Chrome's 100 us Spectre clamp) rather
+  than a fixed `innerIters` sized for the node bench — which also self-calibrates across
+  CPU-raster / GPU / mobile, the property the Pixel lane needs. Fail-closed: a batch whose clock
+  never advances is **refused by name**, never published as zero. 8 new tests are known-answer
+  oracles (synthetic work of exactly known cost, recovered to 6 decimals) plus a quantization
+  regression; **mutation-verified** — reverting to frame-delta timing makes `k - round(k)` read
+  exactly 0 and fails 3 of them. `ScenarioResult`/history gain `opsPerBatch`/`batchMs`/
+  `frameDeltaMs`, **required** in the dashboard validator so a pre-fix capture cannot render
+  (mutation-verified: dropping the field fails the build, naming row and field). **Numbers moved a
+  lot:** GPU `render.flush 1000 / 1 atlas` 0.642 → **0.333 ms**, `render.sort 500 (0 swaps)`
+  0.017 → **0.001 ms** (17x), CPU-raster `render.sort 500 (0 swaps)` 0.017 → **0.002 ms**; the
+  headline CPU-raster-vs-GPU ratio moves 41x → **87x**. The GPU lane is also **relabelled as
+  CPU-side submission cost** — `GrDirectContext.flush()` submits without waiting, so a clock
+  bracket cannot see GPU execution, and claiming "GPU frame cost" was wrong independent of the
+  quantization. `benchmarks.md`'s claim that the three `render.sort` rows read identically across
+  lanes "because they touch neither surface" was **wrong about the mechanism** — both lanes had
+  pinned them to the floor; corrected in place. Published in `ed579be`/`f030217` and already
+  propagated to the portfolio's fact ledger — flagged for CE-W8.
 
 _Rows below dated 2026-08-13 → 2026-08-16 were reconstructed on 2026-08-18 from commits and the
 plan SoTs — they were implemented without a `/close`, so SESSION_LOG has no first-hand block for

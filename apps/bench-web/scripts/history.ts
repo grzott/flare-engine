@@ -55,6 +55,13 @@ export type RenderHistoryRecord = Provenance & {
   readonly p50Ms: number;
   readonly p95Ms: number;
   readonly p99Ms: number;
+  /** Median repetitions per measured batch. */
+  readonly opsPerBatch: number;
+  /** Median measured wall time per batch. Recorded so a reader can reconstruct the window each
+   *  per-op figure was divided out of — the check that catches a clock-quantized reading. */
+  readonly batchMs: number;
+  /** Median rAF delta across a batch: the frame-budget diagnostic, never the timing source. */
+  readonly frameDeltaMs: number;
   readonly unit: 'ms';
 };
 
@@ -157,6 +164,9 @@ export function toRenderRecords(
     p50Ms: r.p50Ms,
     p95Ms: r.p95Ms,
     p99Ms: r.p99Ms,
+    opsPerBatch: r.opsPerBatch,
+    batchMs: r.batchMs,
+    frameDeltaMs: r.frameDeltaMs,
     unit: 'ms',
   }));
 }

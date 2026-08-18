@@ -115,6 +115,12 @@ export type WebRenderResult = WebProvenance & {
   p50Ms: number;
   p95Ms: number;
   p99Ms: number;
+  /** Median repetitions per measured batch. Required: a row without it predates the 2026-08-18
+   *  sampler fix, when web figures were quantized to the display refresh interval and the cheap
+   *  rows reported the refresh rate rather than any cost. Such a row must not render. */
+  opsPerBatch: number;
+  batchMs: number;
+  frameDeltaMs: number;
   unit: 'ms';
 };
 

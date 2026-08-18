@@ -193,7 +193,7 @@ async function runGpuMode(server: { readonly url: string }, renderRawPath: strin
 
   console.log(
     `\nbench-web: ${capture.render.length} scenario(s), runtime=${RUNTIME_LABEL_GPU} ` +
-      `(real GPU frame cost — hardware acceleration confirmed), renderer="${provenance.rendererString}", ` +
+      `(CPU-side submission cost on confirmed hardware acceleration), renderer="${provenance.rendererString}", ` +
       `${provenance.browserName} ${provenance.browserVersion}, commit ${commit}\n`,
   );
   console.log(['scenario', 'samples', 'p50Ms', 'p95Ms', 'p99Ms'].join('\t'));

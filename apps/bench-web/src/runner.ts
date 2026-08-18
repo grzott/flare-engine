@@ -18,9 +18,17 @@
  *    never displayed, so there is nothing to flush.
  *  - `createGpuTarget` — a real on-screen `<canvas>` + WebGL surface via
  *    `@flare-engine/render-web`'s `createPostFxSurface` (passthrough `EffectChain`, so no shader
- *    passes run — just the scene snapshot + blit + flush every real consumer pays). This is the
- *    GPU-backed frame cost the CPU-raster lane above cannot measure by design; see
+ *    passes run — just the scene snapshot + blit + flush every real consumer pays). See
  *    `playwright.config.ts` for the launch-arg side of making this mode actually use hardware.
+ *
+ *    **What this lane measures is CPU-side submission cost, not GPU execution time.** WebGL and
+ *    CanvasKit calls queue work and return; `GrDirectContext.flush()` submits, it does not wait.
+ *    A synchronous clock bracket therefore captures everything the CPU does to build and hand off
+ *    the frame, and none of what the GPU then does with it. Reading true GPU time from page script
+ *    needs `EXT_disjoint_timer_query_webgl2` (generally not exposed) or a forced
+ *    `finish()`/`readPixels` sync, which distorts the number by serializing the pipeline. The
+ *    honest framing is "what the engine costs the main thread on hardware", which is also the
+ *    figure a consumer's frame budget actually contends with.
  */
 
 import { DEFAULT_WARMUP_MS, P99_MIN_SAMPLES, percentile } from '@flare-engine/benchmarks/harness';
@@ -47,6 +55,12 @@ import {
 import { createPostFxSurface, createWebFrameRenderer } from '@flare-engine/render-web';
 import { createBenchSession } from '@flare-engine/testing';
 import type { CanvasKit, Canvas as CKCanvas, Image as CKImage, SkPicture } from 'canvaskit-wasm';
+import {
+  type BatchSample,
+  DEFAULT_TARGET_BATCH_MS,
+  type SamplerOptions,
+  sampleBatches,
+} from './sampler.js';
 
 export { FLUSH_SCENARIOS, SORT_SCENARIOS };
 
@@ -62,6 +76,13 @@ export type ScenarioResult = {
   readonly p50Ms: number;
   readonly p95Ms: number;
   readonly p99Ms: number;
+  /** Median repetitions per measured batch — see `sampler.ts` for why batches are time-sized. */
+  readonly opsPerBatch: number;
+  /** Median measured wall time per batch. Together with `opsPerBatch` this shows the measurement
+   *  window a per-op figure was divided out of, which is what makes a quantized reading visible. */
+  readonly batchMs: number;
+  /** Median rAF delta across a batch — the retained frame-budget signal, never the clock. */
+  readonly frameDeltaMs: number;
 };
 
 export const VIEW_W = 800;
@@ -322,59 +343,34 @@ function sortOnce(state: SortRunnerState): void {
   sortByDrawOrder<Drawable>(items);
 }
 
-/**
- * Runs `work` once per `requestAnimationFrame` callback, recording the elapsed time between
- * consecutive callbacks as one sample — the actual browser frame-to-frame cost, not a synchronous
- * `performance.now()` bracket. Discards samples collected during the warm-up window.
- */
-function sampleRafDeltas(
-  work: () => void,
-  minSamples: number,
-  warmupMs: number,
-): Promise<number[]> {
-  return new Promise((resolve) => {
-    const samples: number[] = [];
-    let lastTs: number | null = null;
-    let warmupStart: number | null = null;
-    let warmedUp = warmupMs <= 0;
-
-    const tick = (ts: number): void => {
-      if (!warmedUp) {
-        if (warmupStart === null) warmupStart = ts;
-        work();
-        if (ts - warmupStart >= warmupMs) {
-          warmedUp = true;
-          lastTs = null;
-        }
-        requestAnimationFrame(tick);
-        return;
-      }
-      if (lastTs !== null) samples.push(ts - lastTs);
-      lastTs = ts;
-      work();
-      if (samples.length >= minSamples) {
-        resolve(samples);
-        return;
-      }
-      requestAnimationFrame(tick);
-    };
-
-    requestAnimationFrame(tick);
-  });
+/** Sampler settings shared by both scenario kinds — one place, so the two cannot drift apart. */
+function samplerOptions(label: string): SamplerOptions {
+  return {
+    minSamples: P99_MIN_SAMPLES,
+    warmupMs: DEFAULT_WARMUP_MS,
+    targetBatchMs: DEFAULT_TARGET_BATCH_MS,
+    label,
+  };
 }
 
-function toResult(
-  name: string,
-  rafSamplesMs: readonly number[],
-  innerIters: number,
-): ScenarioResult {
-  const perOp = rafSamplesMs.map((ms) => ms / innerIters).sort((a, b) => a - b);
+function median(values: readonly number[]): number {
+  return percentile(
+    [...values].sort((x, y) => x - y),
+    0.5,
+  );
+}
+
+function toResult(name: string, batches: readonly BatchSample[]): ScenarioResult {
+  const perOp = batches.map((s) => s.perOpMs).sort((a, b) => a - b);
   return {
     name,
     samples: perOp.length,
     p50Ms: percentile(perOp, 0.5),
     p95Ms: percentile(perOp, 0.95),
     p99Ms: percentile(perOp, 0.99),
+    opsPerBatch: median(batches.map((s) => s.ops)),
+    batchMs: median(batches.map((s) => s.elapsedMs)),
+    frameDeltaMs: median(batches.map((s) => s.frameDeltaMs)),
   };
 }
 
@@ -385,13 +381,12 @@ async function runFlushScenario(
   scenario: FlushScenario,
 ): Promise<ScenarioResult> {
   const state = buildFlushRunnerState(kit, scenario);
-  const innerIters = scenario.innerIters;
   try {
     const work = (): void => {
-      for (let i = 0; i < innerIters; i++) flushOnce(state, renderer, target);
+      flushOnce(state, renderer, target);
     };
-    const rafSamplesMs = await sampleRafDeltas(work, P99_MIN_SAMPLES, DEFAULT_WARMUP_MS);
-    return toResult(scenario.name, rafSamplesMs, innerIters);
+    const batches = await sampleBatches(work, samplerOptions(scenario.name));
+    return toResult(scenario.name, batches);
   } finally {
     disposeFlushRunnerState(state);
   }
@@ -399,12 +394,11 @@ async function runFlushScenario(
 
 async function runSortScenario(scenario: SortScenario): Promise<ScenarioResult> {
   const state = buildSortRunnerState(scenario);
-  const innerIters = scenario.innerIters;
   const work = (): void => {
-    for (let i = 0; i < innerIters; i++) sortOnce(state);
+    sortOnce(state);
   };
-  const rafSamplesMs = await sampleRafDeltas(work, P99_MIN_SAMPLES, DEFAULT_WARMUP_MS);
-  return toResult(scenario.name, rafSamplesMs, innerIters);
+  const batches = await sampleBatches(work, samplerOptions(scenario.name));
+  return toResult(scenario.name, batches);
 }
 
 /** Fired after each scenario finishes, with the result just produced — lets a caller render

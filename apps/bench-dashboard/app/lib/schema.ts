@@ -254,6 +254,9 @@ function parseWebRenderResult(raw: unknown, where: string): WebRenderResult {
     p50Ms: requireNumber(o.p50Ms, `${at}.p50Ms`),
     p95Ms: requireNumber(o.p95Ms, `${at}.p95Ms`),
     p99Ms: requireNumber(o.p99Ms, `${at}.p99Ms`),
+    opsPerBatch: requireNumber(o.opsPerBatch, `${at}.opsPerBatch`),
+    batchMs: requireNumber(o.batchMs, `${at}.batchMs`),
+    frameDeltaMs: requireNumber(o.frameDeltaMs, `${at}.frameDeltaMs`),
     unit: requireLiteralUnit(o.unit, 'ms', `${at}.unit`),
   };
 }

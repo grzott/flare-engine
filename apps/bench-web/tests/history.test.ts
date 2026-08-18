@@ -51,6 +51,9 @@ describe('toRenderRecords / toPayloadRecords / toColdStartRecords', () => {
           p50Ms: 2.2,
           p95Ms: 2.4,
           p99Ms: 2.6,
+          opsPerBatch: 5000,
+          batchMs: 20.1,
+          frameDeltaMs: 16.7,
         },
       ],
       p,
@@ -100,7 +103,21 @@ describe('buildWebCapture / allRecords', () => {
     const p = buildProvenance(PROVENANCE_INPUT);
     const capture = buildWebCapture({
       generated: PROVENANCE_INPUT.capturedAt,
-      render: toRenderRecords([{ name: 'r', samples: 100, p50Ms: 1, p95Ms: 2, p99Ms: 3 }], p),
+      render: toRenderRecords(
+        [
+          {
+            name: 'r',
+            samples: 100,
+            p50Ms: 1,
+            p95Ms: 2,
+            p99Ms: 3,
+            opsPerBatch: 100,
+            batchMs: 20,
+            frameDeltaMs: 16.7,
+          },
+        ],
+        p,
+      ),
       payload: toPayloadRecords([{ name: 'canvaskit.default.raw', bytes: 1 }], p),
       coldStart: toColdStartRecords([{ name: 'coldStart.cold', ms: 1, network: null }], p),
     });

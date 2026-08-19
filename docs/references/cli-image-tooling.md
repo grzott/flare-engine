@@ -88,7 +88,7 @@ Use maxrects-packer for bin-packing logic (it only needs `{width, height}` input
 ### Suggested Architecture
 
 ```
-flare pack-atlas src/sprites/ -o atlas.png --format webp
+flare pack-atlas src/sprites/ -o dist/atlas -n atlas --format webp
 
 1. fs.readdir() -> list .png files
 2. sharp(file).metadata() -> get {width, height} per sprite

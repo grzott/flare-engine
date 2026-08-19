@@ -33,12 +33,12 @@ The original proposal was validated against current 2026 research (Skia/RN Skia 
 
 No published RN Skia or CanvasKit game implements runtime 2D dynamic lighting in 2026 (researcher found none after surveying GitHub, npm, blog posts). Flare would be the first. Treat as either opportunity or warning sign — strengthens the "PT prototype before package" gate below.
 
-**Two adjacent free wins (do these first, independent of lighting package):**
+**Two adjacent free wins — both SHIPPED, ahead of any lighting work:**
 
-These are postfx-only effects with disproportionate visual leverage. Both extend the existing `@flare-engine/postfx` `EffectChain` and require no new package:
+These are postfx-only effects with disproportionate visual leverage. Both extend the existing `@flare-engine/postfx` `EffectChain` and required no new package:
 
-- **God rays** — single-pass volumetric light scattering per [GPU Gems 3 Ch. 13](https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-13-volumetric-light-scattering-post-process). ~20 lines of SkSL, occlusion texture can be downsampled. Boss intros, sky scenes.
-- **Color grading LUT** — sample 64×64×64 LUT (flattened to 2D strip, ~48KB texture). ~15 lines of SkSL, zero CPU overhead. Zone/boss mood shift via texture swap.
+- **God rays** — `createGodRays`, exported from `@flare-engine/postfx`. Single-pass volumetric light scattering per [GPU Gems 3 Ch. 13](https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-13-volumetric-light-scattering-post-process). Boss intros, sky scenes.
+- **Color grading LUT** — `createColorGradingLut` + `createNeutralLutBytes`, exported from `@flare-engine/postfx`. Zone/boss mood shift via texture swap.
 
 Both are higher-leverage-per-line than starting the lighting package and ship without gating on the uniform spike or PT prototype. Recommend scheduling these into a postfx-extension session ahead of any lighting work.
 
@@ -179,7 +179,7 @@ These belong to a future renderer tier, not this proposal:
 |---|---|---|
 | GPU-compute particles | Skia has no compute path | Add `@flare-engine/render-wgpu` adapter |
 | Tiled/clustered light culling for >16 lights | Mobile budget rarely supports this many anyway | If a game design demands it |
-| Volumetric / god-rays | Multi-pass; better as postfx, not lighting | After postfx 2.0 (Redraw-class single-pass) |
+| ~~Volumetric / god-rays~~ | ~~Multi-pass; better as postfx, not lighting~~ | **Shipped as postfx `createGodRays`** — single-pass, no postfx 2.0 needed |
 | Real shadow maps | Requires depth buffer | Out of scope — that's 3D, not 2.5D |
 
 ---

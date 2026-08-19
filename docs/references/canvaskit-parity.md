@@ -6,7 +6,7 @@
 
 ## Summary
 
-Every Skia API that Flare uses on native has a direct counterpart in CanvasKit-WASM. No blockers found. RuntimeEffect (SkSL shaders) requires the `full` CanvasKit bundle. One minor risk: `drawAtlas` WebGL performance may differ from native Metal/Vulkan — benchmark in the stage 11.1 spike.
+Every Skia API that Flare uses on native has a direct counterpart in CanvasKit-WASM. No blockers found. RuntimeEffect (SkSL shaders) requires the `full` CanvasKit bundle. The `drawAtlas` WebGL-vs-native performance question this document opened with has since been measured — see [benchmarks.md § Web (CanvasKit)](benchmarks.md#web-canvaskit) for three folded lanes (CPU-raster, desktop GPU, on-device Android).
 
 ---
 
@@ -55,7 +55,7 @@ React Native Skia (JS API)
                   +-- WebGL 1/2 or WebGPU (experimental)
 ```
 
-Flare does NOT call CanvasKit directly. It calls `@shopify/react-native-skia`'s JS API, which on web delegates to CanvasKit. The web bridge maps:
+**Updated 2026-08:** `@flare-engine/render-web` is now a first-party CanvasKit consumer — it imports `canvaskit-wasm` directly (`loader.ts` loads `canvaskit-wasm/bin/full`; `postfx-surface.ts` types against it) with no react-native-skia in the path. The mapping below describes the *native* route, where Flare calls `@shopify/react-native-skia`'s JS API and Skia delegates on web. Both routes exist, and the maps are still accurate for the RN one:
 
 - `Skia.RSXform(scos, ssin, tx, ty)` -> flat `Float32Array` for `InputFlattenedRSXFormArray`
 - `Skia.XYWHRect(x, y, w, h)` -> flat `Float32Array` for `InputFlattenedRectangleArray`
@@ -84,7 +84,7 @@ Browsers limit WebGL contexts to 16 per page. Flare uses one `<Canvas>` per game
 | -------------------------------------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `drawAtlas` WebGL perf < native Metal/Vulkan | Medium   | Medium     | Benchmark in 11.1 spike. If <30 fps at 500 sprites on mid-tier device, implement per-sprite `drawImageRect` fallback. Build plan budgets 3 extra days in M5. |
 | RuntimeEffect not compiled in default bundle | Low      | Low        | Force `full` bundle in web config. RN Skia's `setup-skia-web` copies the full bundle by default. Flare's postfx `supported` flag degrades gracefully.        |
-| CanvasKit-WASM load time on slow connections | Low      | Medium     | 2.9 MB gzipped is ~1s on 3G. Acceptable for a game. Use CDN with long cache. `<LoadingScreen>` covers the wait.                                              |
+| CanvasKit-WASM load time on slow connections | Low      | **High**   | **Measured, and worse than estimated:** the `full` bundle is **3.05 MB gzipped**, and cold load-to-first-frame under a 4 Mbit/s throttle is **16.55 s**, not ~1 s ([benchmarks.md § Cold start](benchmarks.md#cold-start-to-first-rendered-frame)). CDN with long cache still applies; `<LoadingScreen>` must cover a genuinely long wait. |
 | WebGPU path immature                         | Info     | N/A        | CanvasKit exposes `MakeGPUDeviceContext(device)` + `MakeGPUCanvasSurface()` for WebGPU. Not stable yet — stay on WebGL for 0.1.0. Monitor for 0.2.0.         |
 | RN Skia web bridge bugs                      | Low      | Low        | RN Skia is Shopify-maintained with 708K DL/week. Web support is documented and tested. File upstream bugs with repros per Phase 12 community plan.           |
 
@@ -122,7 +122,10 @@ Throwaway branch. Verify each row in the test matrix above with a minimal Canvas
 
 ## Spike Results
 
-> _To be filled after the stage 11.1 spike._
+**Superseded by real measurement (2026-08-18).** This table was never filled; the live-browser run it
+waited for became the three web benchmark lanes. Every figure it would have carried now lives in
+[benchmarks.md § Web (CanvasKit)](benchmarks.md#web-canvaskit), captured on a corrected instrument —
+read the vsync-quantization correction recorded there before citing any earlier web number.
 
 | Test                               | Result | FPS / Notes |
 | ---------------------------------- | ------ | ----------- |
@@ -143,7 +146,7 @@ Throwaway branch. Verify each row in the test matrix above with a minimal Canvas
 
 ## Decision
 
-**Proceed with CanvasKit web path.** No API blockers. Performance TBD from spike. Fallback plan (per-sprite rendering or delayed web path) is documented in build plan stage 11.11.
+**Proceed with CanvasKit web path.** No API blockers. Performance measured 2026-08-18, three lanes. Fallback plan (per-sprite rendering or delayed web path) is documented in build plan stage 11.11.
 
 > **XP1 sprite-path resolution (2026-06-30, read-only).** The matrix above is API-_presence_
 > parity. The engine's retained `drawAtlas` sprite path has one _shape_ difference a web backend
@@ -152,8 +155,8 @@ Throwaway branch. Verify each row in the test matrix above with a minimal Canvas
 > `InputFlattenedRSXFormArray` (4·n floats). `CanvasLike` itself needs **no change** — it is only
 > the `Renderer` transform contract and maps 1:1 to CanvasKit `Canvas`. Full analysis + the A1/A2
 > adapter routes live in the extraction-audit SoT
-> ([§1, XP1 resolution](../plans/extraction-audit-2026-06.md)). **Performance is still the only
-> unverified row** — the Spike Results table below stays empty until a live-browser run.
+> ([§1, XP1 resolution](../plans/extraction-audit-2026-06.md)). _Performance was the only unverified
+> row when this note was written; it was measured on 2026-08-18 — see § Spike Results below._
 
 ---
 

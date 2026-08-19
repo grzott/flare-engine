@@ -13,7 +13,7 @@
 
 **Public OSS launch: October 2026.** The `@flare-engine/*` scope cuts a `0.4.0` lockstep release and flips from restricted to public npm access during the launch window.
 
-- 40 scoped `@flare-engine/*` packages + `create-flare-app`, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
+- 41 scoped `@flare-engine/*` packages + `create-flare-app`, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
 - [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). Lives in its own repo since 2026-06-10 and consumes the engine from npm — proof it works as a real dependency, not just a workspace
 - Not affiliated with [FLARE (flarerpg.org)](https://flarerpg.org), a separate action-RPG game engine — this project is the `@flare-engine/*` TypeScript packages for React Native + Web
 - Full roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md)
@@ -22,7 +22,7 @@
 
 ## Architecture
 
-41 package dirs (40 scoped `@flare-engine/*` + `create-flare-app`), strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
+42 package dirs (41 scoped `@flare-engine/*` + `create-flare-app`), strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
 
 ```
 ┌───────────┬────────────────┬──────────────────────────────────────────────────────┐
@@ -34,8 +34,8 @@
 │           │                │  debug  ·  pathfinding  ·  dialogue                  │
 │  2.5      │  Persistence   │  storage  ·  errors  ·  testing  ·  a11y             │
 │           │                │  localization  ·  deep-links  ·  share               │
-│  2        │  Systems       │  render  ·  input  ·  physics  ·  audio  ·  assets   │
-│           │                │  shapes  ·  simulation  ·  progression               │
+│  2        │  Systems       │  render  ·  input  ·  physics  ·  dynamics  ·  audio │
+│           │                │  assets  ·  shapes  ·  simulation  ·  progression    │
 │  1        │  Runtime       │  core  ·  ecs                                        │
 │  0        │  Foundation    │  math  ·  events                                     │
 ├───────────┼────────────────┼──────────────────────────────────────────────────────┤
@@ -66,6 +66,7 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 | `@flare-engine/shapes`       | 2     | shipping                 | Procedural 2D shape primitives + SVG path escape hatch — prototype without art |
 | `@flare-engine/simulation`   | 2     | shipping                 | N-body gravity, Verlet/leapfrog integrators, wave-packet ripple pool           |
 | `@flare-engine/progression`  | 2     | shipping                 | Upgrade tracks, pity-aware drop tables, unlock DAG, tier + collectible registry |
+| `@flare-engine/dynamics`     | 2     | shipping                 | 2D rigid bodies — OBB contact manifolds, sequential-impulse solver, friction   |
 | `@flare-engine/storage`      | 2.5   | shipping                 | Typed KV persistence — MMKV / IndexedDB / memory adapters                      |
 | `@flare-engine/errors`       | 2.5   | shipping                 | Error boundary + structured crash payload + pluggable transport                |
 | `@flare-engine/testing`      | 2.5   | shipping                 | Deterministic fake clock, test world, mock input, scene snapshots              |
@@ -87,7 +88,7 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 | `@flare-engine/engine`       | 4     | shipping                 | `createGame()` convenience + umbrella re-exports                               |
 | `@flare-engine/cli`          | —     | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
 | `@flare-engine/devtools`     | —     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-0.1.0)      |
-| `create-flare-app`           | —     | shipping                 | `npm create flare-app@latest` — blank / topdown / shmup templates              |
+| `create-flare-app`           | —     | pre-launch (unpublished) | `npm create flare-app@latest` — blank / topdown / shmup templates; publishes at the October 2026 flip |
 | `@flare-engine/leaderboards` | —     | shipping                 | Interface + no-op + in-memory provider (`createMemoryLeaderboards`); platform adapters post-launch |
 | `@flare-engine/achievements` | —     | shipping                 | Interface + no-op + in-memory / storage-backed providers; platform adapters post-launch |
 | `@flare-engine/iap`          | —     | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
@@ -115,11 +116,14 @@ git clone https://github.com/grzott/Pan-Tvardowski
 cd Pan-Tvardowski && bun install && bun run start
 ```
 
-A fresh project scaffolds via:
+From the October 2026 public launch, a fresh project scaffolds via:
 
 ```bash
 npm create flare-app@latest my-game
 ```
+
+The scaffolder is not on npm yet — it is `private` until the flip, so that command does not resolve
+today. Until then, clone the repo and run `bun packages/create-flare-app/src/bin.ts my-game`.
 
 ---
 
@@ -130,7 +134,7 @@ npm create flare-app@latest my-game
 | Runtime            | [Bun](https://bun.sh)                                                                              |
 | Monorepo           | [Turborepo](https://turbo.build)                                                                   |
 | Lint + Format      | [Biome](https://biomejs.dev)                                                                       |
-| Build              | [tsup](https://tsup.egoist.dev) (dual CJS/ESM + `.d.ts`)                                           |
+| Build              | [tsdown](https://tsdown.dev) (dual CJS/ESM + `.d.ts`)                                              |
 | Test               | Bun test                                                                                           |
 | Commits            | Conventional Commits (commitlint + Husky)                                                          |
 | Versioning         | [Changesets](https://github.com/changesets/changesets) (lockstep — one shared version across `@flare-engine/*` + `create-flare-app`) |

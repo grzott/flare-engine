@@ -8,7 +8,7 @@
 
 Flare is a modular, TypeScript-first 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
 
-The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`). The repository now holds **41 package dirs — 40 scoped `@flare-engine/*` plus `create-flare-app`**. Dependency edges flow strictly downward; lower layers never import from higher ones.
+The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`, `dynamics`). The repository now holds **42 package dirs — 41 scoped `@flare-engine/*` plus `create-flare-app`**. Dependency edges flow strictly downward; lower layers never import from higher ones.
 
 ---
 
@@ -134,7 +134,7 @@ graph TD
 | -------------------------- | -------------------------------------------------------------------------------- | ----------- |
 | `@flare-engine/react`      | `<GameView>`, `useGame()`, `useEntity()`, `<VirtualJoystick>`, `<VirtualButton>` | < 10KB      |
 | `@flare-engine/render-web` | Web analog of `react`; composes `render` + `postfx` via CanvasKit (`loadCanvasKit`, `createWebSurface`, `createWebSkiaModule`, `createPostFxSurface`) | < 12KB |
-| `@flare-engine/engine`     | `createGame()` convenience, re-exports all packages                              | < 2KB       |
+| `@flare-engine/engine`     | `createGame()` convenience, curated re-exports (see api-specs § engine)          | < 2KB       |
 
 ---
 
@@ -276,7 +276,7 @@ Capabilities that appear in older design sketches but are **not shipping** in th
 | Aspect        | Choice                                | Alternative considered  | Why chosen                                                   |
 | ------------- | ------------------------------------- | ----------------------- | ------------------------------------------------------------ |
 | Runtime + PM  | **Bun**                               | Node + pnpm             | Faster install/test, built-in test runner, TypeScript-native |
-| Monorepo      | **Turborepo**                         | Nx, Bun workspaces only | Simple, fast, works with Bun; 41 packages need orchestration |
+| Monorepo      | **Turborepo**                         | Nx, Bun workspaces only | Simple, fast, works with Bun; 42 packages need orchestration |
 | Lint + Format | **Biome**                             | ESLint + Prettier       | Single Rust binary, ~100× faster, lint + format in one tool  |
 | Commits       | **Conventional Commits** (commitlint) | No enforcement          | Clean changelogs, semantic-versioning automation             |
 | Versioning    | **Changesets** (SemVer)               | semantic-release        | Manual control over coordinated multi-package releases       |
@@ -308,4 +308,4 @@ Base (`tsconfig.base.json`) — `strict`, `target: ES2022`, `module: ESNext`, `m
 
 ### Changesets
 
-Public npm access, main branch, patch-bump consumers on internal dep change, independent versioning per package, `@changesets/changelog-github` changelog format.
+**Restricted** npm access (public at the October 2026 flip), main branch, patch-bump consumers on internal dep change, **lockstep (`fixed`) versioning** across `@flare-engine/*` + `create-flare-app` — never a single-package bump — and the `@changesets/changelog-github` changelog format.

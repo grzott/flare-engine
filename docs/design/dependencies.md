@@ -10,10 +10,7 @@
 
 | Package                        | DL/week | Stars | Role in Flare                                  | Required by                                                                                 |
 | ------------------------------ | ------- | ----- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `@shopify/react-native-skia`   | 708K    | 8.3K  | GPU rendering, Atlas API, Canvas               | `@flare-engine/render`, `@flare-engine/react`                                               |
-| `react-native-gesture-handler` | —       | —     | Touch/gesture input on native thread           | `@flare-engine/input`                                                                       |
-| `react-native-reanimated`      | —       | —     | UI thread worklets for rendering               | `@flare-engine/render`                                                                      |
-| `planck.js`                    | 142K    | —     | Box2D physics (optional tier; deferred)        | `@flare-engine/physics` (optional)                                                          |
+| `@shopify/react-native-skia`   | 708K    | 8.3K  | GPU rendering, Atlas API, Canvas               | `@flare-engine/engine`, `@flare-engine/react`, `@flare-engine/postfx`, `@flare-engine/shapes` |
 | `react-native-audio-api`       | 37K     | —     | Native C++ audio engine (Software Mansion)     | `@flare-engine/audio`                                                                       |
 | `canvaskit-wasm`               | —       | —     | Skia CanvasKit-WASM backend for the web (optional — tree-shaken when unused) | `@flare-engine/render-web` (peer `>=0.40.0`)                                   |
 | `react`, `react-native`        | —       | —     | Required by every Layer 4 / UI / React package | `@flare-engine/react`, `@flare-engine/ui`, `@flare-engine/errors`, `@flare-engine/devtools`, `@flare-engine/haptics` |
@@ -38,9 +35,9 @@
 
 ## Internal Dependencies (bundled/used at build)
 
-| Package | DL/week | Role                                   | Used by                 |
-| ------- | ------- | -------------------------------------- | ----------------------- |
-| `rbush` | 4.3M    | R-tree 2D spatial index for broadphase | `@flare-engine/physics` |
+_None._ No package bundles a third-party runtime dependency; the broadphase is first-party
+(`SpatialIndex` in `@flare-engine/physics`). `rbush` was evaluated and not adopted — see
+[architecture.md](architecture.md).
 
 ### 0.2.0 package dependencies (internal, workspace)
 
@@ -48,7 +45,7 @@
 | --------------------------- | ----------------- | ------------------------------- |
 | `@flare-engine/simulation`  | `@flare-engine/math` | —                            |
 | `@flare-engine/progression` | `@flare-engine/math` | —                            |
-| `@flare-engine/haptics`     | —                 | `react` (`>=18.0.0`)            |
+| `@flare-engine/haptics`     | —                 | `react` (`>=19.0.0`)            |
 | `@flare-engine/render-web`  | `@flare-engine/render`, `@flare-engine/postfx` | `canvaskit-wasm >=0.40.0` (optional) |
 
 ---
@@ -72,7 +69,10 @@
 | matter.js | 267K    | No       | JS, community @types. DOM assumptions. 2yr since publish. | Aging, DOM-coupled    |
 | rapier2d  | 839     | Bindings | Rust/WASM. Hermes WASM support limited.                   | Not viable on RN      |
 
-**Decision:** Two-tier physics. Built-in AABB (zero deps) for simple games. planck.js integration as optional peer dep for full Box2D.
+**Decision (superseded 2026-08-16):** Two-tier physics, both tiers first-party and zero-dep. Built-in
+AABB detection in `@flare-engine/physics`; rigid-body response in `@flare-engine/dynamics` (OBB
+contact manifolds + sequential-impulse solver), lifted from a real consumer rather than wrapping
+planck.js. **No planck.js dependency or peer dependency was ever added**, and none is planned.
 
 ---
 
@@ -147,5 +147,5 @@ MMKV is the standard for game save data on RN. Synchronous reads mean no async l
 | Bun        | Runtime, PM, test runner | Fast, built-in test runner, Zig-based                 |
 | Turborepo  | Monorepo orchestrator    | Simple, fast, works with Bun                          |
 | Biome      | Lint + format            | Single Rust binary, ~100x faster than ESLint+Prettier |
-| tsup       | Package bundler          | Mature dual CJS+ESM, .d.ts generation                 |
-| Changesets | SemVer versioning        | Manual control, independent versioning per package    |
+| tsdown     | Package bundler          | Rolldown-based; dual CJS+ESM + .d.ts generation       |
+| Changesets | SemVer versioning        | Manual control, lockstep (`fixed`) across the scope   |

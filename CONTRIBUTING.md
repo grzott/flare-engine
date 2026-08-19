@@ -14,7 +14,9 @@ bun run build        # Build all packages (turbo, dependency-ordered)
 bun run test         # Run the full test suite
 ```
 
-First-time setup needs [Bun](https://bun.sh) 1.1+.
+First-time setup needs [Bun](https://bun.sh) 1.3.11 — the version pinned in the root
+`package.json` `packageManager` field and used by CI. The committed `bun.lock` is the text
+lockfile format, which older Bun releases cannot read.
 
 ---
 
@@ -45,7 +47,11 @@ First-time setup needs [Bun](https://bun.sh) 1.1+.
    bun changeset
    ```
 7. Commit using Conventional Commits (enforced by commitlint): `feat(math): add Vec2.lerp`.
-8. Push and open a Pull Request. The CI workflow runs the same four checks as step 5.
+8. Push and open a Pull Request. CI runs more than step 5 does — on top of lint / typecheck /
+   test / build it gates `check:deps`, `check:changeset`, `check:exports`, `check:nodenext`,
+   `check:readme`, `check:perf`, `check:perf-bytes` and `check:perf-freshness`. Run
+   `bun run check:deps && bun run check:changeset && bun run check:exports && bun run check:nodenext && bun run check:readme`
+   locally if you want the same answer before pushing.
 
 After a publish, the [Pan Tvardowski repo](https://github.com/grzott/Pan-Tvardowski)'s nightly
 `Engine Compat` workflow is the post-publish drift signal — it floats `@flare-engine/*` to the
@@ -57,7 +63,7 @@ ranges is part of every minor release.
 
 ## Project Layout
 
-- [packages/](packages/) — the 36 `@flare-engine/*` packages + the `create-flare-app` scaffolder. See [README.md](README.md#packages) for the layer map.
+- [packages/](packages/) — the 41 `@flare-engine/*` packages + the `create-flare-app` scaffolder. See [README.md](README.md#packages) for the layer map.
 - [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — device-verified Expo consumer game in its own repo; canonical end-to-end reference consuming `@flare-engine/*` from npm.
 - [apps/bench-dashboard/](apps/bench-dashboard/) — Next.js visualizer for benchmark results.
 - [benchmarks/](benchmarks/) — perf harness.
@@ -69,7 +75,7 @@ Each package follows the same layout:
 packages/<name>/
 ├── package.json
 ├── tsconfig.json
-├── tsup.config.ts
+├── tsdown.config.ts
 ├── src/
 │   ├── index.ts         # Barrel — named exports only
 │   └── <module>.ts      # One file per concept

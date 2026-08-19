@@ -1,6 +1,6 @@
 # @flare-engine/a11y
 
-Central accessibility state for `@flare-engine/animation`, `@flare-engine/postfx`, and `@flare-engine/ui` to dampen or neutralize motion / contrast / scale per user preference. Includes WCAG 2.x contrast-ratio classification and OKLab ΔE color-distinguishability audit. Light surface — full screen-reader pass deferred to 0.3.0. Hosts bridge OS prefs (`AccessibilityInfo.isReduceMotionEnabled`, `prefers-reduced-motion`) by calling `update()` on startup.
+Central accessibility state for `@flare-engine/animation`, `@flare-engine/postfx`, and `@flare-engine/ui` to dampen or neutralize motion / contrast / scale per user preference. Includes WCAG 2.x contrast-ratio classification and OKLab ΔE color-distinguishability audit. Light surface — full screen-reader pass deferred post-launch. Hosts bridge OS prefs (`AccessibilityInfo.isReduceMotionEnabled`, `prefers-reduced-motion`) by calling `update()` on startup.
 
 ## Install
 

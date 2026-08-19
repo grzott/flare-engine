@@ -39,7 +39,7 @@ function isZone4Unlocked(): boolean {
 }
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineiap--1kb-raw-interface-only).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineiap--1kb-raw).
 
 ## License
 

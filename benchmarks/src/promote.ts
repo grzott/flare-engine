@@ -1,5 +1,6 @@
 import type { AllocRow } from './alloc.js';
 import { MAX_FOREIGN_LOAD_PERCENT, MAX_RUN_DEVIATION_PERCENT, MIN_DEVIANT_RUNS } from './load.js';
+import { judgePowerScheme } from './power.js';
 import type {
   MicrobenchHeap,
   MicrobenchReport,
@@ -188,13 +189,25 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   // level. The incident that produced this guard had one capture fail each test.
   const environment: string[] = [];
   for (const run of runs) {
+    const verdict = judgePowerScheme(
+      run.powerSchemeGuid === undefined
+        ? null
+        : { guid: run.powerSchemeGuid, label: run.powerSchemeLabel ?? '' },
+    );
+    if (verdict.kind === 'refuse') {
+      problems.push(`run captured under a refused power plan — ${verdict.message.split('\n')[0]}`);
+    }
+  }
+
+  for (const run of runs) {
     if (run.foreignLoadPercent === undefined) {
       environment.push(
         `run ${run.generated} does not record machine load — it predates the B29 guard, and "unrecorded" is not "quiet". Re-capture rather than publish a window that cannot be shown to be clean.`,
       );
     } else if (run.foreignLoadPercent > MAX_FOREIGN_LOAD_PERCENT) {
       environment.push(
-        `run ${run.generated} was captured while ${run.foreignLoadPercent.toFixed(1)}% of the machine was busy with other processes (ceiling ${MAX_FOREIGN_LOAD_PERCENT}%) — it measures the neighbours as much as the engine.`,
+        `run ${run.generated} was captured while ${run.foreignLoadPercent.toFixed(1)}% of the machine was busy with other processes (ceiling ${MAX_FOREIGN_LOAD_PERCENT}%)
+      — it measures the neighbours as much as the engine.`,
       );
     }
   }

@@ -21,6 +21,7 @@ import {
 } from './load.js';
 import { particlesBenches } from './particles.bench.js';
 import { physicsBenches } from './physics.bench.js';
+import { judgePowerScheme, readPowerScheme } from './power.js';
 import { aggregateRuns } from './promote.js';
 import { renderBenches } from './render.bench.js';
 import {
@@ -383,6 +384,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     '- **Heap figures are a footprint proxy, not a retention measurement.** See the heap section.',
   );
   lines.push(
+    '- **Correction, 2026-08-19: every node figure published before this date was ~2.5x too slow.** The capture machine was running the Windows "Power saver" plan. Re-capturing the identical commit under "High performance" made **all 38 scenarios faster by 2.42x-2.58x, median 2.49x** - a band that tight across ECS, physics, particles, render and integration is a clock-rate effect, not a code one. Nothing in the harness could see it: the machine was quiet, so the load guard passed, and the spread guard passed whenever five runs happened to land in one clock state. Captures now record the active power plan in their provenance, and `bench:promote` refuses a window taken under Power saver. Balanced is warned about rather than refused - its effect has never been measured here.',
+  );
+  lines.push(
     `- **Every number here was captured on a machine that was ${capture.foreignLoadPercent === undefined ? 'not measured for' : `${capture.foreignLoadPercent.toFixed(1)}% busy with`} other work.** \`bench:promote\` refuses a window above ${MAX_FOREIGN_LOAD_PERCENT}% foreign load, or one where ${MIN_DEVIANT_RUNS} or more runs sit further than ${MAX_RUN_DEVIATION_PERCENT}% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).`,
   );
   lines.push(
@@ -696,6 +700,15 @@ const load = measureLoad(cpuBefore, sampleCpu());
 const alloc = allocRows();
 const heap = runHeapProbes();
 const report = buildReport(groups, heap, alloc, load);
+
+const powerVerdict = judgePowerScheme(readPowerScheme());
+if (powerVerdict.kind !== 'ok') {
+  // Same shape as the foreign-load guard below: warn here, refuse at promote. The capture is
+  // still appended to history as evidence of the condition it was taken under.
+  console.error(
+    `\n${powerVerdict.kind === 'refuse' ? 'WARNING' : 'NOTE'}: ${powerVerdict.message}\n`,
+  );
+}
 
 if (load.foreignPercent > MAX_FOREIGN_LOAD_PERCENT) {
   console.error(

@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import type { AllocRow } from './alloc.js';
 import type { BenchStats } from './harness.js';
 import type { HeapProbeResult } from './heap-probe.js';
+import { readPowerScheme } from './power.js';
 
 /**
  * Bumped whenever a capture's shape changes in a way that makes old rows
@@ -100,6 +101,13 @@ export type Provenance = {
    * than judged, since "unrecorded" is not "quiet".
    */
   foreignLoadPercent?: number;
+  /**
+   * Active OS power plan GUID and its (localised) label at capture time. Absent on captures taken
+   * before 2026-08-19, and `null`-ish on hosts that cannot report one. Recorded because Windows
+   * "Power saver" was measured to make every scenario ~2.5x slower here — see `power.ts`.
+   */
+  powerSchemeGuid?: string;
+  powerSchemeLabel?: string;
 };
 
 export type MicrobenchReport = Provenance & {
@@ -222,6 +230,7 @@ function gitOutput(args: string[]): string | null {
 
 export function collectProvenance(): Provenance {
   const cores = cpus();
+  const scheme = readPowerScheme();
   const sha = gitOutput(['rev-parse', '--short=12', 'HEAD']);
   // Scoped to what can actually change a measurement. An unscoped probe would
   // see this run's own history.ndjson append and report every capture after the
@@ -233,6 +242,7 @@ export function collectProvenance(): Provenance {
     totalMemMB: Math.round(totalmem() / (1024 * 1024)),
     gitSha: sha ?? 'unknown',
     gitDirty: status === null ? false : status.length > 0,
+    ...(scheme === null ? {} : { powerSchemeGuid: scheme.guid, powerSchemeLabel: scheme.label }),
   };
 }
 

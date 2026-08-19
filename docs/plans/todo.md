@@ -58,6 +58,23 @@ release reaching the restricted registry, not on the public flip.
 Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze. **Full specs in the SoT: [perf-measurement-2026-07.md](perf-measurement-2026-07.md)** — §1–§8 first-pass audit, §9–§10 second-pass verification (18-agent adversarial, 2026-07-28: render 3.1× regression re-confirmed live; secondary drift table withdrawn; B11–B26 new findings), **§11 row specs** — rows here are lean pointers (one-source-per-fact); the builder reads the row's §11 section before planning. Routing: PERF-3, PERF-9 and PERF-10 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset each); all other rows touch benchmarks/`scripts/`/`.github/`/`apps/bench-*`/`docs/plans/` → **[MT] main-thread**. Sequencing below is the execution order; **PERF-1→5 are the pre-freeze must** (the §7 "defensible release" core + gates), PERF-8 is cheap and pre-freeze-preferred, PERF-6/7 slide post-flip if the calendar tightens (PERFORMANCE.md then declares web/device unmeasured, §8). Owner-OOB items (portfolio corrections, TestingBot account check, EAS bench project, engine-repo secrets) are ledgered per-row in §11, never blocking. Pick top → `/start`.
 
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
+- **PERF-14 — captures run under Windows Power Saver (found 2026-08-19) [MT, owner action first].**
+  `powercfg /getactivescheme` on the capture machine returns
+  `a1841308-3541-4fab-bc81-f71556f20b4a` — **Power saver** — on an i9-13900KF. Every number this
+  repo has published from this machine was captured under it. Measured consequence: node results
+  are **bimodal with a ~2x swing** (`integration.frame 1000` ranged 6,364-12,897 us across 25
+  captures in one sitting at one commit), and the correlation runs *backwards* — a capture at 5.8%
+  foreign load read 12.5 ms while one at 14.6% read 6.4 ms, because a busier machine makes the
+  governor raise clocks. A pause between captures drops it back to the slow mode; bypassing turbo
+  changes nothing. `bench:promote` correctly refused every window on 2026-08-19, which is how this
+  surfaced. **The worry is the windows that did NOT get refused:** the guard only fires when 2+ of 5
+  runs deviate >10%, so a window whose runs all happened to land in one mode passes and publishes a
+  number from whichever mode it caught — which is the likeliest reading of the 2026-07-30 and
+  2026-08-18 baselines, and plausibly of PERF-2's unexplained "render.flush swings 76-124 us between
+  identical runs". **Owner action first** (it is a machine setting, not a repo one): set High
+  performance, confirm with `powercfg /getactivescheme`, then recapture 5x and compare against the
+  committed baseline to size the error. Then decide whether the protocol pins the plan, asserts it
+  at capture time, or records it as provenance beside `cpuModel`.
 - **PERF-7 — native bench app + device-lane revival (P3) [MT + owner OOB, 2 sessions].** `apps/bench-native` engine scenarios (sprite/rotation/postfx/particles + texture-eviction/resume-from-background + cold start); lift harness from **PT HEAD only** (absolute-ceiling gate) with the B20 fails-green hardening (matrix validation, staleness gate, zero-combo fails, absolute-delta floor, one scenario-id namespace, artifact-path fix); revive per B21 order — TestingBot account verification FIRST, not a fresh APK; weekly cron with window ≥4× cadence + per-release anchor; bridge device data to the dashboard (kills dead device.json — B22); rewrite the parked particle-storm gate below. Spec: §11.7.
 - **PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, `packages/**`, post-freeze).** `SpatialIndex.update`'s per-entity closure + O(n) find; `entries` destructuring in the broadphase loop; the reused pair-`Set` that costs ~38× the heap footprint of a fresh one under JSC (verify on Hermes FIRST — RN is the primary target). One lockstep minor changeset. Spec: §11.9.
 

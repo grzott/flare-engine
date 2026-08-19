@@ -58,6 +58,21 @@ release reaching the restricted registry, not on the public flip.
 Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze. **Full specs in the SoT: [perf-measurement-2026-07.md](perf-measurement-2026-07.md)** — §1–§8 first-pass audit, §9–§10 second-pass verification (18-agent adversarial, 2026-07-28: render 3.1× regression re-confirmed live; secondary drift table withdrawn; B11–B26 new findings), **§11 row specs** — rows here are lean pointers (one-source-per-fact); the builder reads the row's §11 section before planning. Routing: PERF-3, PERF-9 and PERF-10 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset each); all other rows touch benchmarks/`scripts/`/`.github/`/`apps/bench-*`/`docs/plans/` → **[MT] main-thread**. Sequencing below is the execution order; **PERF-1→5 are the pre-freeze must** (the §7 "defensible release" core + gates), PERF-8 is cheap and pre-freeze-preferred, PERF-6/7 slide post-flip if the calendar tightens (PERFORMANCE.md then declares web/device unmeasured, §8). Owner-OOB items (portfolio corrections, TestingBot account check, EAS bench project, engine-repo secrets) are ledgered per-row in §11, never blocking. Pick top → `/start`.
 
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
+- **PERF-15 — web lanes have no staleness guard (found 2026-08-19) [MT].** `check:perf-freshness`
+  covers only the five node suites (`freshness.suites`), and nothing in `scripts/` or CI watches
+  `web.json` / `web-gpu.json` / `web-android.json` at all — a web capture can go arbitrarily stale,
+  or be deleted, with every gate still green. The node lane's own history is the argument: the
+  freshness canary is what caught the instrument change that started this arc. Assert each lane's
+  capture exists, carries `runs >= 2`, and names a commit reachable from HEAD; stale it on
+  `render-web`/`render`/`postfx` src changes since that commit. Wire into the jobs already running
+  `check:perf-freshness` (`ci.yml:52`, `release.yml:47`). Spec:
+  [benchmarking-completion-2026-08.md](benchmarking-completion-2026-08.md) §3.
+- **PERF-16 — PERFORMANCE.md states two things that are no longer true [MT].** It is launch-facing
+  and leads with what is *not* measured. "Web / CanvasKit — never benchmarked" is now wrong (three
+  lanes exist), and "Android device frame rates — stale, and unrefreshable" needs splitting: the
+  2026-04-22 `device.json` is still dead and must stay said so, but engine-owned web-on-device
+  measurement now exists. Add the pre-2026-08-18 vsync correction to the honesty list. Spec:
+  [benchmarking-completion-2026-08.md](benchmarking-completion-2026-08.md) §2.
 - **PERF-14 — captures run under Windows Power Saver (found 2026-08-19) [MT, owner action first].**
   `powercfg /getactivescheme` on the capture machine returns
   `a1841308-3541-4fab-bc81-f71556f20b4a` — **Power saver** — on an i9-13900KF. Every number this

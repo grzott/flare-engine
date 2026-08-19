@@ -2,7 +2,7 @@
 <!-- flare-capture: f03021783367 -->
 # Flare Engine — Benchmarks
 
-> **Captured: 2026-08-18** (median of 5 runs) · Rendered: 2026-08-18 · Runtime: Bun 1.3.11 · Platform: win32 x64 · CPU: 13th Gen Intel(R) Core(TM) i9-13900KF (32 cores) · Foreign load: 9.7% · Commit: f03021783367
+> **Captured: 2026-08-18** (median of 5 runs) · Rendered: 2026-08-19 · Runtime: Bun 1.3.11 · Platform: win32 x64 · CPU: 13th Gen Intel(R) Core(TM) i9-13900KF (32 cores) · Foreign load: 9.7% · Commit: f03021783367
 
 > Every number below comes from the committed baseline captured on the date above — not from the day this page was rendered. Re-capture with `bun run bench` ×N then `bun run bench:promote`, and re-render with `bun run bench:md`.
 
@@ -297,7 +297,7 @@ The same 18 scenarios on real phone hardware, through the identical on-screen `<
 
 The phone costs **1.0x-2.0x** of the desktop's submission time on the flush scenarios and **0.8x-1.0x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
 
-Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. A sustained run can clock down, and nothing in this harness pins the CPU/GPU governor or reads thermal state. Treat a single device capture as one sample from a warm phone, not a stable baseline, until this lane grows a repeat-and-fold step like the node lane's `bench:promote` (todo row PERF-13).
+Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. The fold reads Android's own throttling state (`dumpsys thermalservice`) either side of every capture and **refuses any window in which the device reported throttling**, or in which the status was not reported at all — unrecorded is not the same claim as not-throttling. Battery temperature is recorded beside it (23.4 -> 25.7 C across the five folded runs) but deliberately **not** gated: no throttled capture has ever been measured with this instrument, so any drift threshold would be invented rather than calibrated. Nothing here pins the CPU/GPU governor.
 
 ## Notes on interpretation
 

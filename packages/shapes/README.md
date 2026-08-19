@@ -112,7 +112,9 @@ Three ways, in order of friction:
    3. Add a bounds branch in `singleShapeRadius` (`src/bounds.ts`)
    4. Add tests in `tests/draw.test.ts` and `tests/bounds.test.ts`
 
-   Tsc enforces exhaustiveness — forgetting any of these fails the build.
+   Tsc catches a missing step 3: `singleShapeRadius` returns `number`, so an unhandled kind fails to
+   compile. It does **not** catch a missing step 2 — `drawShape` returns `void` and its switch has no
+   `default`, so a new kind without a draw branch compiles and silently draws nothing.
 
 ## Glow tags
 

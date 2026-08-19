@@ -1,6 +1,6 @@
 # @flare-engine/render
 
-GPU sprite rendering on Skia — `Renderer` (canvas lifecycle), `SpriteBatch` (Atlas-backed batching), `Camera2D` (smooth follow + shake), `SpriteEffects` (tint / flash / grayscale / outline / custom shader), bitmap font text, `createRenderSystem` for ECS integration.
+GPU sprite rendering on Skia — `Renderer` (canvas lifecycle), `SpriteBatch` (Atlas-backed batching), `Camera2D` (smooth follow + shake), sprite effects (`tint` / `flash` / `grayscale` / `outline` / `custom` shader, typed as `SpriteEffect` / `AnySpriteEffect`), bitmap font text, `createRenderSystem` for ECS integration.
 
 ## Install
 

@@ -2,7 +2,7 @@
 
 Pre-allocated particle pool + emitter — particles are recycled rather than reallocated, so a steady-state emitter does not allocate per particle per frame. Target: 200–500 alive particles at 60 fps. This package owns particle data and lifecycle; rendering happens via the host's immediate-mode Skia layer (PictureRecorder).
 
-Measured integrate cost per frame is published in [benchmarks](https://github.com/grzott/flare-engine/blob/main/docs/references/benchmarks.md), with the capture date and run-to-run spread on every row. Allocation counts are not yet instrumented, so treat the recycling above as a structural property of the pool rather than a measured zero-GC guarantee.
+Measured integrate cost per frame is published in [benchmarks](https://github.com/grzott/flare-engine/blob/main/docs/references/benchmarks.md), with the capture date and run-to-run spread on every row. Allocation is instrumented, not assumed: the draw-path counter suite reads `ParticlePool.created` growth per frame and `bun run check:perf` fails the build if a steady-state emitter calls the factory even once. The exact integers are published in the same document.
 
 ## Install
 

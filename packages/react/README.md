@@ -5,10 +5,10 @@ React Native integration — `<GameView>` (Skia Canvas + game loop + input), `<V
 ## Install
 
 ```sh
-bun add @flare-engine/react @shopify/react-native-skia
+bun add @flare-engine/react @shopify/react-native-skia react-native-safe-area-context
 ```
 
-Peer deps: `react`, `react-native`.
+Peer deps: `react` (>=19), `react-native` (>=0.79), `@shopify/react-native-skia` (>=2), `react-native-safe-area-context` (>=4). The last one is a value import in `<GameView>` (`useSafeAreaInsets`), not type-only — a project without it fails to resolve at runtime.
 
 ## Usage
 

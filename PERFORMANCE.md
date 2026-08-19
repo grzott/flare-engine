@@ -2,23 +2,31 @@
 
 What Flare measures, how, and — the part that matters most — **what it does not measure at all.**
 
-Numbers below are quoted from the committed baseline
-[`benchmarks/results/microbench.json`](benchmarks/results/microbench.json); the full tables live in
-[`docs/references/benchmarks.md`](docs/references/benchmarks.md), which is machine-generated and
-carries its own capture date under every table. If this page and that one disagree, that one is
-right and this one is stale — [open an issue](../../issues).
+**This page carries no numbers.** Every figure lives in
+[`docs/references/benchmarks.md`](docs/references/benchmarks.md), which is generated from the
+committed baseline [`benchmarks/results/microbench.json`](benchmarks/results/microbench.json) and
+the per-lane web captures beside it, and carries its own capture date, commit and spread under every
+table. This page describes what those measurements are, how they are taken, and where the gaps are.
 
 ---
 
 ## Read this first
 
-**Every published Flare number is a pure-JavaScript cost, measured on one desktop machine under
-Bun.** No Skia rasterization, no GPU, no bridge, no device, no browser. The draw path is measured
-up to the point where the engine hands a batch to Skia; what Skia then does with it is not
-measured anywhere in this repository.
+**The node lane — where the headline numbers come from — is a pure-JavaScript cost, measured on one
+desktop machine under Bun.** No Skia rasterization, no GPU, no bridge, no device, no browser. The
+draw path is measured up to the point where the engine hands a batch to Skia; what Skia then does
+with it is not measured in that lane at all.
 
-That is a real limit, not a disclaimer. A frame that costs 12.6 ms of engine time here can miss
-60 fps on a phone for reasons none of these benchmarks can see.
+Three web lanes go further: they bind real CanvasKit through `@flare-engine/render-web` and add
+software rasterization, two GPU-backed lanes on real drivers, a browser, and one phone. **Both GPU
+lanes measure CPU-side submission cost, not GPU execution time** — WebGL and CanvasKit calls queue
+work and return, so a clock bracket sees everything the CPU does to build and hand off the frame and
+none of what the GPU then does with it.
+
+Nothing in this repository measures **native** rendering — React Native + Skia on a device — at all.
+
+That is a real limit, not a disclaimer. A frame that costs 5 ms of engine time here can miss 60 fps
+on a phone for reasons none of these benchmarks can see.
 
 ---
 
@@ -30,23 +38,22 @@ That is a real limit, not a disclaimer. A frame that costs 12.6 ms of engine tim
 | Draw-path allocation counters | exact integers against a counting Skia stub — allocations, draw calls, batch runs, transform writes | **current, gated in CI** |
 | Published package size | gzipped tarball bytes per package, ceilinged | **current, gated in CI** |
 | Integration heap footprint | isolated subprocess per scenario, warmed to the allocation plateau | **current** |
+| Web render — CPU-raster | 18 scenarios through real CanvasKit on an offscreen `MakeSurface`, driver-independent by construction | **current** |
+| Web render — desktop GPU | the same 18 scenarios on an on-screen `<canvas>` + WebGL surface (ANGLE/D3D11, RTX 4070 Ti); **CPU-side submission cost** | **current** |
+| Web render — Android device | the same 18 scenarios on a USB-attached Pixel 7 (Mali-G710), same submission-cost caveat | **current** |
+| CanvasKit WASM payload | raw and gzipped bytes read off the installed package, never hardcoded | **current** |
+| Web cold start to first rendered frame | plain and throttled (4 Mbit/s) network profiles, cold and warm | **current** |
 
 ### Headline numbers
 
-Captured 2026-07-30 at `b1b21c1`, 5 runs, 13th Gen Intel Core i9-13900KF, `__DEV__ = false`,
-4.6% of the machine busy with other work.
+The current figures — with capture date, commit, machine and per-row spread — live in one place:
+[`docs/references/benchmarks.md`](docs/references/benchmarks.md#headline-numbers). That page is
+regenerated from the committed baseline by `bun run bench:md`, and this page deliberately does not
+restate it: a hand-copied table here went 2.5× stale the moment the baseline was re-captured, which
+is exactly the failure the one-source-per-fact rule exists to prevent.
 
-| Scenario | Median | Spread across runs |
-|---|---:|---|
-| `ecs.step` 1 000 entities | 23.2 µs | 22.9–23.5 µs |
-| `particles.update` 1 000 integrate-only | 9.0 µs | 8.9–9.1 µs |
-| `render.flush` 1 000 sprites / 1 atlas | 55.6 µs | 54.5–56.1 µs |
-| `render.flush` 1 000 sprites / outline effect | 123.6 µs | 118.4–129.4 µs |
-| `physics.step` 500 AABB sparse | 2.77 ms | 2.43–2.83 ms |
-| `integration.frame` 1 000 entities + 300 particles | 12.62 ms | 12.31–12.71 ms |
-
-**The spread column is not decoration.** A number without it cannot tell a regression from this
-machine having a bad minute, and for three months this repository published single-run figures
+**The spread column there is not decoration.** A number without it cannot tell a regression from
+this machine having a bad minute, and for three months this repository published single-run figures
 that turned out to be 3.1× optimistic. Treat any change inside the band as noise.
 
 ### Zero-allocation claims
@@ -76,25 +83,38 @@ point. The blocker is an Apple Developer Program subscription, and it has never 
 you are shipping to iOS, this repository gives you no performance information whatsoever — budget
 accordingly and measure it yourself.
 
-### Web / CanvasKit — never benchmarked
+### GPU execution time — on any lane
 
-`@flare-engine/render-web` has test coverage and zero benchmarks. The CanvasKit parity notes
-flagged that `drawAtlas` WebGL performance may differ materially from the native path and that it
-should be benchmarked; that never happened. Web bundle size, WASM load time and cold start are
-likewise unmeasured.
+The two GPU-backed web lanes measure what the **CPU** spends building and submitting a frame, not
+what the GPU spends drawing it. Reading true GPU time from page script needs a timer-query
+extension that is generally not exposed, or a forced pipeline sync that distorts the number it is
+trying to measure. Submission cost is the figure a main-thread frame budget contends with, which is
+why it is the one published — but it is not "how long the GPU took".
 
-### Android device frame rates — stale, and unrefreshable
+### Native (React Native + Skia) rendering — never benchmarked
 
-The only on-device capture in this repository is from **2026-04-22** — one Android handset,
+The web lanes bind real CanvasKit; the **native** Skia path has no benchmark of any kind. Nothing
+here tells you what `@shopify/react-native-skia` costs on a device, and web CanvasKit numbers must
+not be read as a proxy for it.
+
+### Android **native** frame rates — stale, and unrefreshable
+
+The only native on-device capture in this repository is from **2026-04-22** — one Android handset,
 running a bench scene from a game app that now lives in a separate repository. It measures that
-game, not the engine. The copy-CSV-from-logcat pipeline behind it no longer exists anywhere, so
-the file is marked `stale` in its own metadata and cannot be refreshed. Rebuilding engine-owned
-device measurement is planned work; until it lands, treat every device figure as a historical
+game, not the engine. The copy-CSV-from-logcat pipeline behind it no longer exists anywhere, so the
+file is marked `stale` in its own metadata and cannot be refreshed. Rebuilding engine-owned native
+device measurement is planned work; until it lands, treat every native device figure as a historical
 record of one build on one handset.
+
+This is **not** refreshed by the on-device web lane. That lane is a different measurement on a
+different phone (Pixel 7) through a different renderer (Chrome + WebGL), and it is current; the
+2026-04-22 native capture stays dead regardless.
 
 ### Packages with no benchmark at all
 
-Benchmarks measure four packages directly — `ecs`, `physics`, `particles`, `render` — plus `core` indirectly through the pools, out of 41. These have per-frame hot paths and **no coverage at all**:
+Benchmarks measure five packages directly — `ecs`, `physics`, `particles`, `render` and
+`render-web` (the three web lanes drive its real surface) — plus `core` indirectly through the
+pools, out of 41. These have per-frame hot paths and **no coverage at all**:
 
 `animation` · `postfx` · `tilemap` · `pathfinding` · `math` · `scene` · `simulation` · `ui` ·
 `shapes` · `input` · `a11y`
@@ -103,7 +123,8 @@ Their cost is not known to be small. It is not known.
 
 ### Other unmeasured surfaces
 
-- **Cold start / time-to-first-frame** on any platform.
+- **Cold start / time-to-first-frame on native (iOS, Android).** Measured for web only — see the
+  cold-start section of [`benchmarks.md`](docs/references/benchmarks.md#cold-start-to-first-rendered-frame).
 - **Memory ceilings** — peak RSS under sustained load, texture eviction, resume-from-background.
 - **Garbage-collection pauses.** Nothing in this repository can currently measure GC pause time,
   which is why no package README claims "no GC during gameplay".
@@ -133,10 +154,27 @@ and recorded; a window above 15%, or one where two or more runs sit further than
 folded median, cannot be published. Both exist because two captures taken beside a fleet of
 background processes once read a headline row 23% low and only a human noticing caught it.
 
+**Captures are refused under a power-saving plan.** Every number this repository published before
+2026-08-19 was captured on a machine running Windows *Power saver*, which made results bimodal with
+a ~2.5× swing on an i9-13900KF. The capture now reads the active power scheme, records it beside
+`cpuModel` as provenance, and refuses outright to run under Power saver.
+
 **Freshness is mechanically enforced.** `check:perf-freshness` fails CI when any source a suite
 measures has changed since the capture commit — comparing reachability, not dates, because a
 sixty-day-old capture against untouched sources still describes the code, and a capture from this
 morning against an edited source does not.
+
+### Published figures that were withdrawn
+
+Both of these were wrong in this repository's own published tables, and both are stated here rather
+than quietly overwritten:
+
+- **Every web figure published before 2026-08-18 was quantized to the display refresh interval** and
+  must not be cited. The sampler took a frame-to-frame `requestAnimationFrame` delta as its sample,
+  so every value was an integer multiple of 16.667 ms; 13 of the 18 GPU rows reported the refresh
+  rate itself and nothing about the engine.
+- **Every node figure published before 2026-08-19 was captured under Windows Power saver** and reads
+  roughly 2.5× slow against the same code on the same machine under High performance.
 
 ### Reproducing
 

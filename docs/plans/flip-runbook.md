@@ -78,11 +78,11 @@ Provenance was removed in S4b; re-add it now that the repo is public.
 
 ## Step 3 — npm access flip **(owner, `--otp`)**
 
-Flip the **40 scoped** `@flare-engine/*` packages from restricted → public. This
+Flip the **41 scoped** `@flare-engine/*` packages from restricted → public. This
 exposes every already-published version.
 
 - [ ] Owner (dry-run): `bun scripts/flip-access.mjs` → confirm it lists **exactly
-      40** `@flare-engine/*` names and mutates nothing.
+      41** `@flare-engine/*` names and mutates nothing.
 - [ ] Owner (live): `bun scripts/flip-access.mjs --execute --otp <code>`.
       Serial + resumable — already-public packages are skipped, so on an
       expired-OTP / network failure just re-run with a fresh `--otp`.
@@ -117,7 +117,7 @@ is done).
 
 ## Step 5 — Version + publish **(owner)**
 
-Cut and ship the fresh, public, provenance-stamped lockstep release for all 41.
+Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (41 scoped + `create-flare-app`, un-privated in step 4).
 
 - [ ] Owner: `bun run version` — runs `changeset version` **and**
       `concretize-workspace-deps` (rewrites internal `workspace:*` → `^<version>`;

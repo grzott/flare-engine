@@ -77,6 +77,9 @@ Key points:
 - **Assert the migrated output shape**, not just that it doesn't throw.
 - **Cover each version individually** (v1→current, v2→current, …) to catch regressions when a new step is added.
 - Use `runMigrations(fixture, storedVersion, CURRENT_VERSION, migrations)` directly in tests so you cover the same code path as production.
+- **`runMigrations` does not stamp `version`.** It applies each step's `migrate` and returns the
+  result; writing the new version onto the save is the caller's job (or each step's). Assert on a
+  field the migration actually produced, not on `version`, unless your chain sets it.
 
 ```ts
 import { describe, expect, test } from 'bun:test';
@@ -88,7 +91,10 @@ const v1Fixture = { version: 1, slots: [null, null, null], settings: {} };
 describe('save migrator', () => {
   test('v1 → current', () => {
     const result = runMigrations(v1Fixture, 1, CURRENT_VERSION, migrations);
-    expect((result as { version: number }).version).toBe(CURRENT_VERSION);
+    expect((result as { privacy: unknown }).privacy).toEqual({
+      analyticsOptIn: false,
+      crashOptIn: false,
+    });
   });
 });
 ```

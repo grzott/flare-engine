@@ -5161,7 +5161,9 @@ None — audit-only close per row allowance.
 - typecheck: green
 - test: green
 
-**Next:** see `docs/plans/todo.md`.
+**Next:** BIOS update, then the re-capture (`bench` x5 → `promote` → `bench:md`) — that clears
+perf-freshness and settles PERF-14b. Then PERF-15 (web lanes have no staleness guard), the last
+critical-path item in the benchmarking runbook, and CE-W6's 0.3.0 cut.
 
 ---
 
@@ -6959,6 +6961,71 @@ None — audit-only close per row allowance.
 - typecheck: green
 - test: green
 - build: green
+- deps / changeset / readme / perf counters: green
+- **perf-freshness: RED, overridden.** One reason only: `5be8ce7` changed `benchmarks/src`, so the
+  baseline was taken by a different instrument. Unfixable today — the re-capture waits on a BIOS
+  update. The gate's second complaint (page rendered from an older capture than the baseline) was
+  cleared this session by re-running `bun run bench:md`.
+
+**Outcome**
+
+A 14-agent audit (7 readers over disjoint doc groups, each followed by a skeptic prompted to refute
+its findings by default) over the launch-facing corpus: 9 root docs, 42 package READMEs,
+`docs/design`, `docs/references`, `docs/recipes`, and plan-status drift. **53 raw findings, 49
+confirmed, 4 refuted.** Every confirmed finding was re-verified by hand against the cited source
+before its doc was edited, and all 49 are fixed here.
+
+The biggest class was perf: **`PERFORMANCE.md`'s headline table was 2.5x wrong on all six rows**,
+because `f457e82` re-captured the baseline and regenerated `benchmarks.md` but never touched the
+hand-copied duplicate. Owner's call was to delete the duplicate rather than re-type it — the page
+now carries **no numbers at all** and points at the generated one, which is the one-source-per-fact
+fix for a mirror that has now gone stale twice. Web/CanvasKit "never benchmarked" and Android
+"stale and unrefreshable" were rewritten (PERF-16), a "Published figures that were withdrawn"
+section now carries both the vsync and power-plan corrections, and the remaining false negations in
+"Read this first" were scoped to the node lane.
+
+The rest: phantom dependencies in `dependencies.md` (`rbush`, `planck.js`, `react-native-reanimated`,
+`react-native-gesture-handler` — none exist in any manifest), `tsup` still named as the bundler in
+three places after the tsdown migration, package counts wrong in five docs (40/41/36 against a real
+41 scoped + `create-flare-app`), `dynamics` missing from the README tier map and both barrel specs,
+Changesets described as public + independently versioned when it is restricted + `fixed`, a
+`create-flare-app` install command that cannot resolve (the package is `private`), a Bun floor of
+1.1+ against a pinned 1.3.11 and a lockfile 1.1 cannot read, a save-migration recipe whose sample
+test fails against its own sample chain, and two dead api-specs anchors.
+
+**Findings**
+
+- **The published benchmark page was never re-rendered after the re-capture.** `f457e82` rewrote
+  636 lines of `microbench.json` and hand-edited two lines of `benchmarks.md`, leaving the generated
+  page quoting the superseded Power-saver numbers. `check:perf-freshness` had been saying so in
+  plain words the whole time. Re-rendering was a one-command fix; nobody had run it.
+- **PERF-14 did not close the swing — filed as PERF-14b.** The 11 captures the crash left
+  uncommitted are the evidence: all at `f457e82`, all under High performance, all at 0.97-1.92%
+  foreign load. Runs 1-8 read `ecs.step 1000` 8.9-9.8 µs / `render.flush` 21.1-22.9 µs /
+  `integration.frame` 4.91-5.19 ms; runs 9-11 step together to **16.4-16.5 / 44.9-45.5 µs /
+  6.29-6.54 ms**. A coherent ~1.8x mode change on a quiet machine after eight back-to-back runs —
+  the opposite of the runbook's "no pauses" instruction, which has been struck. `promote` refuses a
+  window straddling it, but a five-run window landing wholly inside the slow mode still publishes
+  silently. Candidate causes not separated: turbo/thermal budget under sustained load, or the known
+  WHEA-corrected microcode instability (BIOS 1611 / microcode 0x11F).
+- **The skeptic pass earned its keep at the margin, not the middle.** 4 of 53 refuted — a low kill
+  rate, which is itself worth noting: a docs-truth audit grounded in file:line evidence is a much
+  easier target than a bug hunt, so the confirm rate should be read as "the finders stayed inside
+  what they could prove", not as "the skeptics were lenient". Each finding was still re-checked by
+  hand before editing.
+- **`bench:md` preserved the web sections.** The PERF-12 regression (generator deleting the
+  hand-appended web content) is genuinely fixed by `70ab33e`; the regeneration touched 55 lines and
+  left all six web sections and the thermal-guard paragraph intact.
+
+**Decisions taken (owner, this session)**
+
+- **`PERFORMANCE.md` carries no numbers.** Pointer to the generated page instead of a duplicated
+  headline table — the duplicate is what went stale, and it would have gone stale again tomorrow.
+- **Re-render now rather than wait.** `bun run bench:md` was run against the committed `d9d2746`
+  baseline so the launch-facing page stops being 2.5x wrong today; tomorrow's re-capture regenerates
+  it again.
+- **Gate override accepted.** `FLARE_PERF_ALLOW_STALE=1` for this close only, with the reason in the
+  frictions line. The staleness is real, understood, documented in three places, and scheduled.
 
 **Frictions:** deny:1 (PowerShell-via-Bash blocked by classifier; used Glob); gate:1 (PT lint red pre-existing on main — kenney script formatting from ws-paths commit, biome --write fixed)
 
@@ -10515,4 +10582,58 @@ nothing measurable. One caveat on the record: `render.flush 1000 / 1 atlas`'s ba
 
 **Next:** CE-W6 — the 0.3.0 → 0.4.0 doc sweep, then `bun run version` + the publish-safety
 battery, up to the owner-run restricted publish. PERF-12 and the Pixel 9 web lane follow.
+---
+
+## Session 272 — 2026-08-19 (scope: mixed)
+
+**Goal:** pre-0.3.0 docs truth audit: 49 false claims fixed, PERF-16 done, bench deferred
+
+**Bookkeeping gap, recorded honestly:** four commits landed earlier today (`16d57df`, `d9d2746`,
+`5be8ce7`, `f457e82` — the power-plan discovery, the runbook, the assert guard, the re-capture)
+with no `/close`; the machine crashed mid-session. This block covers the docs session that
+followed, and folds in what that session's commits established. The 11 extra captures left
+uncommitted by the crash are committed here as run-log history, not promoted.
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `CONTRIBUTING.md`
+- `docs/design/api-specs.md`
+- `docs/design/architecture.md`
+- `docs/design/dependencies.md`
+- `docs/design/lighting-2-5d.md`
+- `docs/design/native-acceleration.md`
+- `docs/plans/benchmarking-completion-2026-08.md`
+- `docs/plans/dynamics-lift-2026-08.md`
+- `docs/plans/flip-runbook.md`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+- `docs/README.md`
+- `docs/recipes/save-migrations.md`
+- `docs/references/benchmarks.md`
+- `docs/references/canvaskit-parity.md`
+- `docs/references/cli-image-tooling.md`
+- `packages/a11y/README.md`
+- `packages/create-flare-app/README.md`
+- `packages/dynamics/README.md`
+- `packages/engine/README.md`
+- `packages/iap/README.md`
+- `packages/particles/README.md`
+- `packages/physics/README.md`
+- `packages/react/README.md`
+- `packages/render/README.md`
+- `packages/shapes/README.md`
+- `PERFORMANCE.md`
+- `README.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 / deny:0 / gate:1 (perf-freshness, overridden with FLARE_PERF_ALLOW_STALE — re-capture is BIOS-blocked until 2026-08-20) / fixup:0 / drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
 ---

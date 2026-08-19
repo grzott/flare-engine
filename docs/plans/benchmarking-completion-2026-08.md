@@ -3,18 +3,32 @@
 What is left before the benchmark story can ship with 0.3.0, in execution order. Steps marked
 **OWNER** cannot be done by an agent (machine settings, or a judgement call about scope).
 
-State at the time of writing: everything green except `check:perf-freshness`, which is RED because
-`benchmarks/src` changed in PERF-12/13. Root tsc 0. Three web lanes captured and folded.
+State 2026-08-19 (updated): §1 PERF-14 and §2 PERFORMANCE.md are **done**. `check:perf-freshness` is
+still RED, now for one reason only — `benchmarks/src` changed in `5be8ce7`, so the baseline was taken
+by a different instrument and needs a re-capture. The second complaint it used to carry (the
+published page rendered from an older capture than the baseline) is cleared: `bun run bench:md` was
+re-run against the `d9d2746` baseline. Root tsc 0. Three web lanes captured and folded. Remaining
+critical path: §3 (web staleness guard) and the re-capture in §1c.
 
 ---
 
 ## Critical path — these block publishing
 
-### 1. PERF-14 — settle the power-plan finding **OWNER first**
+### 1. PERF-14 — settle the power-plan finding — **DONE 2026-08-19**
 
-This is the keystone. Until it is answered, **no published node number is known to be trustworthy**,
-because the capture machine runs Windows *Power saver* and results are bimodal with a ~2x swing
-(full evidence in the PERF-14 row in [todo.md](todo.md)).
+**Resolved.** Owner set High performance and re-captured; the error came out at **~2.5x on every
+headline row** (`integration.frame` 12.62 → 5.01 ms, `render.flush 1000 / 1 atlas` 55.6 → 23.1 µs —
+full table in todo.md `## Done`). Protocol decision: **assert**, implemented in
+`benchmarks/src/power.ts` — the scheme is recorded in capture provenance and a capture under Power
+saver is refused. Landed `5be8ce7` + `f457e82`; withdrawal notice published in `PERFORMANCE.md`.
+
+**What it did not settle — carried forward as PERF-14b.** The ~2x straddle still happens under High
+performance. Eleven captures at `f457e82`, all at ~1-2% foreign load: the first eight are tight
+(`render.flush` 21.1-22.9 µs), the last three step to 44.9-45.5 µs together. Read §"Known conditions"
+below before capturing — the back-to-back instruction in 1c is what walked the machine into it.
+
+The original steps are kept below as the re-capture procedure, since they are run again after any
+`benchmarks/src` change.
 
 **1a. OWNER — set the plan and confirm.**
 
@@ -41,8 +55,12 @@ bun run bench:md
 bun run check:perf-freshness    # must print OK
 ```
 
-Run the five captures **without pauses between them** — a gap lets the CPU drop back to a low clock
-state and reintroduces the straddle that refused every window on 2026-08-19.
+**Superseded 2026-08-19 — do not follow blindly.** This step used to say "run the five without
+pauses, a gap lets the CPU drop back to a low clock state". Under Power saver that was the observed
+behaviour; under High performance the opposite showed up — eight uninterrupted runs were tight and
+runs nine through eleven stepped ~1.8x slower together. Until PERF-14b separates the cause, capture
+the five, then **check the run log before promoting**: if the five do not sit in one mode, discard
+the window rather than letting `promote`'s 2-of-5 deviation guard decide for you.
 
 **1d. Size the error — this is the actual deliverable of PERF-14.** Compare the new folded baseline
 against the committed one and record the delta per suite. If the numbers move materially, then the
@@ -62,7 +80,14 @@ neighbourhood plus `PERFORMANCE.md` § Methodology:
 
 Recommended: **assert**, matching the existing load guard. Record the choice in the row.
 
-### 2. PERFORMANCE.md — two sections are now materially false
+### 2. PERFORMANCE.md — two sections are now materially false — **DONE 2026-08-19**
+
+**Resolved**, and wider than specified: the audit found the headline table itself was 2.5x stale, so
+the table was removed rather than re-typed — `PERFORMANCE.md` now carries **no numbers at all** and
+points at the generated page for every figure, which is the one-source-per-fact fix for a duplicate
+that has now gone stale twice. The web/Android rewrites below were done as specified, plus a new
+"Published figures that were withdrawn" section carrying both the vsync and the power-plan
+corrections. Original spec kept below.
 
 `PERFORMANCE.md` is launch-facing and leads with what is *not* measured. Two of its claims stopped
 being true on 2026-08-16/18:
@@ -143,5 +168,10 @@ The critical path is the defensible minimum. Everything in it is either a live f
   on the long lane — check for the written result files instead.
 - **Device is a Pixel 7** (panther, Tensor GS201, Mali-G710), not a Pixel 9. Captures record this
   correctly from `getprop`; prose should match.
-- **Back-to-back matters.** Gaps between captures let the CPU downclock. Run the five in one
-  uninterrupted batch.
+- **~~Back-to-back matters.~~ The machine changes mode mid-batch, in both directions.** Under Power
+  saver a gap let the CPU downclock; under High performance, runs 9-11 of an uninterrupted batch
+  stepped ~1.8x *slower* than runs 1-8 at the same 1-2% foreign load (`f457e82`, 2026-08-19). Treat
+  "all five runs sat in one mode" as something to verify in `history.ndjson`, not something the
+  batching style guarantees. Tracked as PERF-14b.
+- **BIOS 1611 / microcode 0x11F, with WHEA-corrected machine-check events under load.** A BIOS
+  update is scheduled; a capture session before it lands carries this as a known confound.

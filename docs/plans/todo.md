@@ -67,41 +67,32 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
   `render-web`/`render`/`postfx` src changes since that commit. Wire into the jobs already running
   `check:perf-freshness` (`ci.yml:52`, `release.yml:47`). Spec:
   [benchmarking-completion-2026-08.md](benchmarking-completion-2026-08.md) §3.
-- **PERF-16 — PERFORMANCE.md states two things that are no longer true [MT].** It is launch-facing
-  and leads with what is *not* measured. "Web / CanvasKit — never benchmarked" is now wrong (three
-  lanes exist), and "Android device frame rates — stale, and unrefreshable" needs splitting: the
-  2026-04-22 `device.json` is still dead and must stay said so, but engine-owned web-on-device
-  measurement now exists. Add the pre-2026-08-18 vsync correction to the honesty list. Spec:
-  [benchmarking-completion-2026-08.md](benchmarking-completion-2026-08.md) §2.
-- **PERF-14 — captures run under Windows Power Saver (found 2026-08-19) [MT, owner action first].**
-  `powercfg /getactivescheme` on the capture machine returns
-  `a1841308-3541-4fab-bc81-f71556f20b4a` — **Power saver** — on an i9-13900KF. Every number this
-  repo has published from this machine was captured under it. Measured consequence: node results
-  are **bimodal with a ~2x swing** (`integration.frame 1000` ranged 6,364-12,897 us across 25
-  captures in one sitting at one commit), and the correlation runs *backwards* — a capture at 5.8%
-  foreign load read 12.5 ms while one at 14.6% read 6.4 ms, because a busier machine makes the
-  governor raise clocks. A pause between captures drops it back to the slow mode; bypassing turbo
-  changes nothing. `bench:promote` correctly refused every window on 2026-08-19, which is how this
-  surfaced. **The worry is the windows that did NOT get refused:** the guard only fires when 2+ of 5
-  runs deviate >10%, so a window whose runs all happened to land in one mode passes and publishes a
-  number from whichever mode it caught — which is the likeliest reading of the 2026-07-30 and
-  2026-08-18 baselines, and plausibly of PERF-2's unexplained "render.flush swings 76-124 us between
-  identical runs". **Owner action first** (it is a machine setting, not a repo one): set High
-  performance, confirm with `powercfg /getactivescheme`, then recapture 5x and compare against the
-  committed baseline to size the error. Then decide whether the protocol pins the plan, asserts it
-  at capture time, or records it as provenance beside `cpuModel`.
+- **PERF-14b — the ~2x straddle survives the power-plan fix (found 2026-08-19) [MT].** PERF-14 is
+  done (see `## Done`) and the correction was real, but the run log shows the bimodality is **not**
+  fully explained by the power plan. Of the 11 captures taken at `f457e82` under High performance at
+  0.97-1.92% foreign load, the first eight read `ecs.step 1000` 8.9-9.8 µs / `render.flush` 21.1-22.9
+  µs / `integration.frame` 4.91-5.19 ms, and the last three — consecutive, on the same quiet machine
+  — step to **16.4-16.5 µs / 44.9-45.5 µs / 6.29-6.54 ms**. A coherent ~1.8x mode change after eight
+  back-to-back runs, which is the *opposite* of what the runbook's "run the five back-to-back with no
+  pauses" instruction assumes. `bench:promote` would refuse a window straddling it (3 of 5 deviant),
+  but a five-run window landing wholly inside the slow mode publishes silently — the original PERF-14
+  hazard, still live. Candidate causes not yet separated: turbo/thermal budget exhaustion under
+  sustained load, or the machine's known WHEA-corrected microcode instability (BIOS 1611, microcode
+  0x11F — a BIOS update is scheduled). **Do this before trusting the next capture:** decide whether
+  the protocol pauses between runs or asserts mode-coherence across the window, and record which.
+
 - **PERF-7 — native bench app + device-lane revival (P3) [MT + owner OOB, 2 sessions].** `apps/bench-native` engine scenarios (sprite/rotation/postfx/particles + texture-eviction/resume-from-background + cold start); lift harness from **PT HEAD only** (absolute-ceiling gate) with the B20 fails-green hardening (matrix validation, staleness gate, zero-combo fails, absolute-delta floor, one scenario-id namespace, artifact-path fix); revive per B21 order — TestingBot account verification FIRST, not a fresh APK; weekly cron with window ≥4× cadence + per-release anchor; bridge device data to the dashboard (kills dead device.json — B22); rewrite the parked particle-storm gate below. Spec: §11.7.
 - **PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, `packages/**`, post-freeze).** `SpatialIndex.update`'s per-entity closure + O(n) find; `entries` destructuring in the broadphase loop; the reused pair-`Set` that costs ~38× the heap footprint of a fresh one under JSC (verify on Hermes FIRST — RN is the primary target). One lockstep minor changeset. Spec: §11.9.
 
 ### Arc OSS — road to the October 2026 public flip (ACTIVE 2026-07-03)
 
-Goal: public flip in October 2026 — npm public + repo public + docs live. **Full row specs, dates, freeze protocol, and the owner ledger live in the SoT: [road-to-oss-2026-09.md](road-to-oss-2026-09.md)** — rows here are lean pointers (one-source-per-fact); the builder reads the row's spec section (§) before planning. Rows scoped to `packages/**` (+ api-specs) route **engine-builder**; rows tagged **[MT]** touch root docs/`scripts/`/`.changeset/`/`.github/`/`.claude/`/`docs/plans/` and run **main-thread** (engine-builder's scope guard forbids those paths — same per-row gate + commit block). Full gate green per row **plus** root tsc + biome on changed tests/scripts (execution contract: road-to-oss §2). Every bug site below was re-verified at HEAD with file:line on 2026-07-03. Milestones: **FREEZE + 0.3.0 restricted publish Mon Oct 5 → owner manual-test window Oct 5–18 → flip week Oct 19–23 (target Tue Oct 20).** Sequencing below is the execution order; pick top → `/start`.
+Goal: public flip in October 2026 — npm public + repo public + docs live. **Full row specs, dates, freeze protocol, and the owner ledger live in the SoT: [road-to-oss-2026-09.md](road-to-oss-2026-09.md)** — rows here are lean pointers (one-source-per-fact); the builder reads the row's spec section (§) before planning. Rows scoped to `packages/**` (+ api-specs) route **engine-builder**; rows tagged **[MT]** touch root docs/`scripts/`/`.changeset/`/`.github/`/`.claude/`/`docs/plans/` and run **main-thread** (engine-builder's scope guard forbids those paths — same per-row gate + commit block). Full gate green per row **plus** root tsc + biome on changed tests/scripts (execution contract: road-to-oss §2). Every bug site below was re-verified at HEAD with file:line on 2026-07-03. Milestones: **FREEZE + 0.4.0 restricted publish Mon Oct 5 → owner manual-test window Oct 5–18 → flip week Oct 19–23 (target Tue Oct 20).** Sequencing below is the execution order; pick top → `/start`.
 
 _2026-07-05 deep audit folded in (ledger: [_local/deep-audit-2026-07-05.md](_local/deep-audit-2026-07-05.md); row specs: road-to-oss §17). Every plan version-floor validated CORRECT vs current official docs (Skia 2.x→RN≥0.79/react≥19; Expo 57/RN 0.86/React 19.2; gesture-handler-drop safe). New pre-freeze rows: correctness **B25–B31**, packaging/CI/toolchain **C2–C4**. Design-quality cleanup → post-flip **Arc HYG** (below the P2 line). Env fixes already landed this session: turbo `globalDependencies`, check-deps LAYER_MAP fill + unmapped-scoped hard-error, biome `noDefaultExport`._ 
 Capacity: ~49–55 sessions (~46 launch rows + B25–C4; B8/B14/M1 are two-session; B13/C1/M2/M5/D5/F2 run 1–2) against 13 wk × ~5 = ~65 available — lands by Oct 5 with slack, not without.
 
 - **OSS-F4 — history/exposure re-scan at freeze (P0, run Oct 2–5) [MT].** Full-history secret re-scan; `_local/` untracked; `.claude/` publish set ratified; author-email stance recorded. Spec: §9 F4.
-- **OSS-H1 — FREEZE: one lockstep minor changeset + 0.3.0 restricted publish (P0, Oct 5, owner-paired) [MT].** After this: fix-only until the flip. Spec: §11 H1.
+- **OSS-H1 — FREEZE: one lockstep minor changeset + 0.4.0 restricted publish (P0, Oct 5, owner-paired) [MT].** After this: fix-only until the flip. Spec: §11 H1.
 - **OSS-I1 — flip execution (Oct 20, owner-paired).** Walk the rehearsed runbook; each step checked off in-file. Spec: §12.
 - **OSS-I2 — post-flip verification battery (P0).** Tokenless cold scaffold from the public registry; provenance visible; docs links resolve; CI badge; plan docs flipped to shipped state. Spec: §12.
 
@@ -202,7 +193,11 @@ _(Prior arcs closed: Postfx tail (shadow-rim cut #152 + high-DPI scene texture #
 
 ## Deferred (needs a balance pass, not a refactor)
 
-- **PT — WEAPON_DEFS + BULLET_DEFS damage to runtime.** Investigated session #136, **reverted, deferred**. The row's premise was false: the old `WEAPON_PROJECTILE_SPECS` spec table in `config/gameplay.ts` (`damagePerBullet`/`cooldownMs`) was **unwired dead data** with zero combat consumers — confirmed and deleted in CL1 (#171). The actual shipped balance is hardcoded: every player bullet does `damage: 1` ([spawn.ts:227](../../apps/pan-tvardowski/src/spawn.ts#L227), applied at [collision.ts:41](../../apps/pan-tvardowski/src/systems/collision.ts#L41) `hp.current -= bullet.damage`), and fire cadence is `ship.fireRate = 0.18` ([spawn.ts:62](../../apps/pan-tvardowski/src/spawn.ts#L62)), never reset from any spec. `WEAPON_DEFS` values (damage 10/18/25/22, iskry cooldown 120ms) match that removed spec table, not live play — so wiring them to the runtime is a **~10× damage + ~1.5× fire-rate buff**, not a provably-equivalent refactor. There is no zero-drift path that also makes `WEAPON_DEFS` a meaningful source of truth (the only zero-drift authoring is all-damage=1 / iskry-cooldown=180, which makes the table trivial). Reopen only as part of an explicit balance/retune pass with enemy-HP rescaling and on-device playtest — out of scope for the visual-spec arc.
+_The PT row below is kept as the written-up conclusion of an investigation run here; the app itself moved
+to [grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) on 2026-06-10, so its file
+references are paths in **that** repo, not this one, and the work is tracked there._
+
+- **PT — WEAPON_DEFS + BULLET_DEFS damage to runtime.** Investigated session #136, **reverted, deferred**. The row's premise was false: the old `WEAPON_PROJECTILE_SPECS` spec table in `config/gameplay.ts` (`damagePerBullet`/`cooldownMs`) was **unwired dead data** with zero combat consumers — confirmed and deleted in CL1 (#171). The actual shipped balance is hardcoded: every player bullet does `damage: 1` (`src/spawn.ts:227`, applied at `src/systems/collision.ts:41` `hp.current -= bullet.damage`), and fire cadence is `ship.fireRate = 0.18` (`src/spawn.ts:62`), never reset from any spec. `WEAPON_DEFS` values (damage 10/18/25/22, iskry cooldown 120ms) match that removed spec table, not live play — so wiring them to the runtime is a **~10× damage + ~1.5× fire-rate buff**, not a provably-equivalent refactor. There is no zero-drift path that also makes `WEAPON_DEFS` a meaningful source of truth (the only zero-drift authoring is all-damage=1 / iskry-cooldown=180, which makes the table trivial). Reopen only as part of an explicit balance/retune pass with enemy-HP rescaling and on-device playtest — out of scope for the visual-spec arc.
 
 ## Future tracks
 
@@ -222,6 +217,34 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **PERF-16 — PERFORMANCE.md stated things that were no longer true** (2026-08-19). Scoped wider
+  than filed, because a 14-agent docs audit found the page's own headline table was **2.5x stale**
+  on all six rows — `f457e82` re-captured the baseline and regenerated `benchmarks.md` but never
+  touched the hand-copied duplicate. Owner's call: delete the duplicate. `PERFORMANCE.md` now
+  carries **no numbers**, pointing at the generated page for every figure — the one-source-per-fact
+  fix for a mirror that had gone stale twice. Also: the three web lanes added to "What is measured";
+  "Web / CanvasKit — never benchmarked" replaced by honest sections on GPU-execution-time and
+  **native** Skia (both genuinely unmeasured); the Android section split so the dead 2026-04-22
+  native capture stays dead and is not confused with the live Pixel 7 web lane; a new "Published
+  figures that were withdrawn" section carrying both the vsync and power-plan corrections; the
+  power-plan guard added to Methodology; cold-start and directly-measured-package claims narrowed.
+  `bun run bench:md` re-run so the published page matches the committed baseline. The same audit
+  fixed 42 further confirmed false claims across root docs, `docs/design`, `docs/references`,
+  `docs/recipes` and ten package READMEs — see session #272.
+
+- **PERF-14 — captures ran under Windows Power Saver** (2026-08-19). Owner set High performance
+  (`8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c`) and re-captured; the error it was there to size came out
+  at **~2.5x across every headline row**: `ecs.step 1000` 23.2 → 9.4 µs, `particles.update 1000`
+  9.0 → 3.6 µs, `render.flush 1000 / 1 atlas` 55.6 → 23.1 µs, `render.flush 1000 / outline` 123.6 →
+  49.8 µs, `physics.step 500 AABB sparse` 2.77 → 1.11 ms, `integration.frame` 12.62 → 5.01 ms. So
+  every node number this repository published before 2026-08-19 read roughly 2.5x slow. Protocol
+  decision: **assert**, matching the load guard — `benchmarks/src/power.ts` reads the active scheme,
+  records it in capture provenance beside `cpuModel` (`powerSchemeGuid` / `powerSchemeLabel`),
+  refuses a capture under Power saver, and `promote` refuses a window whose runs disagree on it.
+  Landed `5be8ce7` (guard) + `f457e82` (re-capture); withdrawal notices in `PERFORMANCE.md`.
+  Residual, not closed by this row: **PERF-14b** above — the straddle still occurs under High
+  performance after ~8 back-to-back runs.
 
 - **PERF-13 — repeat-and-fold for all three web lanes** (2026-08-18). Every published web figure
   was a **single run** until now. New `benchmarks/src/web-promote.ts` (pure, 16 tests) folds N

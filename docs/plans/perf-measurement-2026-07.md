@@ -111,7 +111,7 @@ anyone will install.
 | **B3** | **Device harness paused.** Cron disabled 2026-06-24 after failing on-device **every night 06-13 → 06-24**, masked green by `continue-on-error`, burning ~58 device-min/night for zero rows. Last data row: **2026-06-12** | `PT/.github/workflows/perf-bench.yml:16-25` |
 | **B4** | **The device harness measures the game, not the engine.** All 6 scenarios are Pan Tvardowski content (bosses, zones). Useful as a showcase datapoint; not an engine spec | `PT/maestro/perf-*.yml` |
 | **B5** | **Bench coverage is 4 of 41 packages.** ecs, physics, particles, render (+ an integration composite). Nothing for animation, postfx, tilemap, pathfinding, scene, simulation, ui, math | `benchmarks/src/*.bench.ts` |
-| **B6** | **Web is entirely unmeasured.** `packages/render-web` has 4 test files and zero benchmarks. `canvaskit-parity.md` flagged "`drawAtlas` WebGL performance may differ — benchmark in the stage 11.1 spike"; that spike never produced numbers | `docs/references/canvaskit-parity.md:11` |
+| **B6** | ~~**Web is entirely unmeasured.**~~ **CLOSED 2026-08-16/18 (PERF-6 + PERF-13).** Three folded lanes now published — CPU-raster, desktop GPU (ANGLE/D3D11), on-device Android (Pixel 7) — plus WASM payload bytes and cold start. Original finding: `packages/render-web` has 4 test files and zero benchmarks. `canvaskit-parity.md` flagged "`drawAtlas` WebGL performance may differ — benchmark in the stage 11.1 spike"; that spike never produced numbers | `docs/references/canvaskit-parity.md:11` |
 | **B7** | ~~**No gate anywhere.**~~ **CLOSED 2026-07-29 (PERF-5).** ci.yml and release.yml both run `check:perf` + `check:perf-bytes` + `check:perf-freshness`; verify.sh runs the counter half on engine/mixed rows; flip-runbook and manual-test-protocol each reference the H1 perf gate | ci.yml, release.yml, verify.sh |
 | **B8** | ~~**`.perf-baseline.json` is `{}`**~~ **CLOSED 2026-07-29 (PERF-5).** Populated: 11 counter rows + 41 byte ceilings. An empty `counters` or `bundleBytes` block is now an explicit failure, so it cannot silently return to `{}` | .perf-baseline.json |
 | **B9** | **Duplicate stale infra.** `flare-engine/scripts/perf/` + `docs/perf/` are a dead fork left by the PT extraction — engine data stops 2026-05-26, PT's runs to 06-12, and the engine has no `perf-bench.yml` so its copy can never run | both trees |
@@ -244,9 +244,10 @@ PT measures a game. An engine release needs engine numbers.
 **Exit:** a per-device table of engine frame cost vs sprite count that is not entangled with
 Pan Tvardowski's content.
 
-### P4 — Web bench (3 days) — currently a total blank
+### P4 — Web bench (3 days) — **DELIVERED 2026-08-16/18 (PERF-6, PERF-13)**
 
-The engine is positioned as web + React Native. Web has zero numbers.
+The engine is positioned as web + React Native, and web had zero numbers when this was written. Three
+lanes now exist; see `docs/references/benchmarks.md` § Web (CanvasKit). Original scope below.
 
 1. Create `apps/bench-web` — CanvasKit, the **same scenario definitions** as P3 so native and
    web are directly comparable. Shared scenario module, two runners.

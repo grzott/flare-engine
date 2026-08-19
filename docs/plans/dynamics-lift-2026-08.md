@@ -291,8 +291,8 @@ nothing the swap does not.
    consumer that uses `perp` for something not sign-symmetric (a one-sided constraint, a directional
    effect) would care. Do not spend time chasing this as a suspected bug.
 2. **`dynamics`** — the XL row: lift, zero-alloc pass, tests, packaging, docs, `LAYER_MAP`, umbrella
-   re-export, changeset. **Unblocked; this is now the next row.**
-3. **Portfolio swap** — delete `apps/web/src/lib/dynamics/`, repoint the single import at
+   re-export, changeset. ✅ DONE 2026-08-16 (DYN-1).
+3. **Portfolio swap** (= DYN-2, **this is now the next row**) — delete `apps/web/src/lib/dynamics/`, repoint the single import at
    `collapse-engine.ts:17` to `@flare-engine/dynamics`. Not a re-export shim: one consumer, one
    line, and the portfolio's KISS rule bans one-thing wrappers. Then reword the trigger copy a
    second time — this time to something true.

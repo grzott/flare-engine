@@ -58,13 +58,14 @@ function streamingEmitter(cap: number): ParticleEmitter {
 }
 
 export function particlesBenches(overrides?: BenchOverrides): BenchStats[] {
-  return PARTICLES_SCENARIOS.map(({ name, n, kind, innerIters }) =>
+  return PARTICLES_SCENARIOS.map(({ name, n, kind, innerIters, warmupMs }) =>
     runBench(
       {
         name,
         setup: () => (kind === 'integrate' ? steadyStateEmitter(n) : streamingEmitter(n)),
         run: (em) => em.update(DT),
         innerIters,
+        warmupMs,
       },
       overrides,
     ),

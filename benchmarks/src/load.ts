@@ -102,6 +102,47 @@ export const MAX_FOREIGN_LOAD_PERCENT = 15;
  */
 export const MAX_RUN_DEVIATION_PERCENT = 10;
 
+export type ScenarioDeviation = {
+  /** Tolerance for this row, replacing `MAX_RUN_DEVIATION_PERCENT`. */
+  readonly percent: number;
+  /** Why this row is less reproducible, and why that is not a machine-state straddle. */
+  readonly reason: string;
+};
+
+/**
+ * Rows whose run-to-run reproducibility is measurably worse than the global tolerance, listed
+ * individually with the evidence. **This is a disclosure, not a silencer** — an overridden row is
+ * still folded, still published, and is marked as less reproducible in the generated document.
+ *
+ * Adding a row here requires showing that its spread is a property of the measurement rather than
+ * a state of the machine, because the global guard exists to catch the latter. The bar is the
+ * investigation below, not a failing gate someone wanted to pass.
+ */
+export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation> = new Map([
+  [
+    'particles.update  2000 integrate-only',
+    {
+      percent: 30,
+      reason:
+        'Bimodal at ~6.8 us and ~8.5 us (1.25x) with each state internally tight. Investigated ' +
+        '2026-08-20 against five candidate causes, all refuted by measurement: it splits with the ' +
+        'process pinned to P-cores, at every warm-up budget from 300 to 6000 ms, with turbo ' +
+        'disabled, after a forced full GC, and when it is the only scenario a freshly-started ' +
+        'process ever runs. It is therefore not core placement, warm-up, clock state, GC or JIT ' +
+        'history. The remaining hypothesis is per-process JIT code placement, which nothing in ' +
+        'this harness can control. The other three rows of the same size sweep (500 / 1000 / 5000) ' +
+        'are stable inside 1.06x, so a real regression in this code path would still be caught by ' +
+        'them — which is what makes a wider tolerance on this one point acceptable rather than a ' +
+        'blind spot.',
+    },
+  ],
+]);
+
+/** The tolerance that applies to a scenario, global unless it carries an override. */
+export function deviationLimitFor(scenario: string): number {
+  return SCENARIO_DEVIATION_OVERRIDES.get(scenario)?.percent ?? MAX_RUN_DEVIATION_PERCENT;
+}
+
 /**
  * How many deviant runs make a window unpublishable.
  *

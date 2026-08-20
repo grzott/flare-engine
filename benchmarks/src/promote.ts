@@ -1,6 +1,11 @@
 import { judgeAffinity } from './affinity.js';
 import type { AllocRow } from './alloc.js';
-import { MAX_FOREIGN_LOAD_PERCENT, MAX_RUN_DEVIATION_PERCENT, MIN_DEVIANT_RUNS } from './load.js';
+import {
+  deviationLimitFor,
+  MAX_FOREIGN_LOAD_PERCENT,
+  MAX_RUN_DEVIATION_PERCENT,
+  MIN_DEVIANT_RUNS,
+} from './load.js';
 import { judgePowerScheme } from './power.js';
 import type {
   MicrobenchHeap,
@@ -249,17 +254,18 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
         (run) =>
           (run.suites[suiteIdx]?.results[resultIdx] as MicrobenchResult | undefined)?.medianNs,
       );
+      const limit = deviationLimitFor(r.scenario);
       const deviant = perRun.filter(
-        (ns) =>
-          ns !== undefined &&
-          (Math.abs(ns - r.medianNs) / r.medianNs) * 100 > MAX_RUN_DEVIATION_PERCENT,
+        (ns) => ns !== undefined && (Math.abs(ns - r.medianNs) / r.medianNs) * 100 > limit,
       );
       if (deviant.length >= MIN_DEVIANT_RUNS) {
         const worst = Math.max(
           ...deviant.map((ns) => (Math.abs((ns as number) - r.medianNs) / r.medianNs) * 100),
         );
+        const override =
+          limit === MAX_RUN_DEVIATION_PERCENT ? '' : ' (this row has its own, wider, limit)';
         unstable.push(
-          `"${r.scenario}": ${deviant.length} of ${runs.length} runs sit more than ${MAX_RUN_DEVIATION_PERCENT}% from the folded median of ${(r.medianNs / 1000).toFixed(1)} µs (worst ${worst.toFixed(0)}%) — the median is straddling two states of the machine, not describing one.`,
+          `"${r.scenario}": ${deviant.length} of ${runs.length} runs sit more than ${limit}%${override} from the folded median of ${(r.medianNs / 1000).toFixed(1)} µs (worst ${worst.toFixed(0)}%) — the median is straddling two states of the machine, not describing one.`,
         );
       }
     }

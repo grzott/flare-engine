@@ -327,3 +327,41 @@ describe('aggregateRuns', () => {
     expect(r.bandMaxNs).toBe(42);
   });
 });
+
+describe('per-scenario deviation overrides', () => {
+  /** A window where only `scenario` moves; every other row is held constant and stable. */
+  const window = (scenario: string, perRunUs: readonly number[]): MicrobenchReport[] =>
+    perRunUs.map((us) => {
+      const run = runAt(1000);
+      for (const suite of run.suites) {
+        for (const result of suite.results) {
+          if (result.scenario === scenario) result.medianNs = us * 1000;
+        }
+      }
+      return run;
+    });
+
+  const OVERRIDDEN = 'particles.update  2000 integrate-only';
+  const PLAIN = 'particles.update  1000 integrate-only';
+
+  test('accepts an overridden row inside its own wider limit', () => {
+    // 6.8 / 8.5 us is this row's real bimodality: 25% apart, so it is deviant under the global
+    // 10% limit and inside its own 30% one.
+    const outcome = aggregateRuns(window(OVERRIDDEN, [6.8, 8.5, 6.8, 8.5, 6.8]));
+    expect(outcome.ok).toBe(true);
+  });
+
+  test('still refuses an overridden row once it exceeds even the wider limit', () => {
+    const outcome = aggregateRuns(window(OVERRIDDEN, [6.8, 12, 6.8, 12, 6.8]));
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((problem) => problem.includes('wider, limit'))).toBe(true);
+  });
+
+  test('holds a row without an override to the global limit', () => {
+    // The identical spread on a neighbouring row is still refused — the override is one row, not
+    // a relaxation of the guard.
+    const outcome = aggregateRuns(window(PLAIN, [6.8, 8.5, 6.8, 8.5, 6.8]));
+    expect(outcome.ok).toBe(false);
+  });
+});

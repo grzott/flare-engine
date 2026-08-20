@@ -41,7 +41,8 @@
     "@flare-engine/benchmarks#bench:pinned": {
       "dependsOn": ["^build"],
       "cache": false,
-      "env": ["FLARE_BENCH_NO_RECORD"]
+      "env": ["FLARE_BENCH_NO_RECORD"],
+      "envMode": "loose"
     },
     "@flare-engine/benchmarks#bench:baseline": {
       "dependsOn": ["^build"],

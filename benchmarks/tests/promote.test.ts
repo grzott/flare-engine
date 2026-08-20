@@ -342,7 +342,8 @@ describe('per-scenario deviation overrides', () => {
     });
 
   const OVERRIDDEN = 'particles.update  2000 integrate-only';
-  const PLAIN = 'particles.update  1000 integrate-only';
+  // A sibling in the same package that is NOT overridden — the emit sweep keeps the strict limit.
+  const PLAIN = 'particles.update  1000 emit+integrate';
 
   test('accepts an overridden row inside its own wider limit', () => {
     // 6.8 / 8.5 us is this row's real bimodality: 25% apart, so it is deviant under the global

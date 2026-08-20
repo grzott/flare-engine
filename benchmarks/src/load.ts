@@ -118,30 +118,46 @@ export type ScenarioDeviation = {
  * a state of the machine, because the global guard exists to catch the latter. The bar is the
  * investigation below, not a failing gate someone wanted to pass.
  *
- * **These two rows are not a blind spot, and the reason is the sweep.** They are two points of a
- * four-point size sweep over one code path; `500` and `1000` hold inside 1.15x and 1.08x and keep
- * the global tolerance. A real regression in particle integration moves all four, so it is still
- * caught — what is given up here is only the ability of these two points to catch it *first*.
+ * **What is given up, stated plainly.** These rows can no longer catch a regression smaller than
+ * 35% on their own. What still guards `@flare-engine/particles` is the `emit+integrate` sweep,
+ * which drives the same `ParticleEmitter.update` at the strict 10% tolerance, plus the exact
+ * allocation counters in `check:perf`, which are integers and fail in both directions. A real
+ * regression in particle integration shows up there.
  */
-const BIMODAL_INTEGRATE = (low: string, high: string, ratio: string, split: string): string =>
-  `Bimodal at ~${low} and ~${high} (${ratio}) with each state internally tight, and split ${split} ` +
-  'across the 10 pinned captures recorded on 2026-08-20 — so the folded median lands in whichever ' +
-  'state that window caught, and moves between them. Investigated against five candidate causes, ' +
-  'all refuted by measurement: it splits with the process pinned to P-cores, at every warm-up ' +
-  'budget from 300 to 6000 ms, with turbo disabled, after a forced full GC, and when it is the ' +
-  'only scenario a freshly-started process ever runs. It is therefore not core placement, ' +
-  'warm-up, clock state, GC or JIT history. The remaining hypothesis is per-process JIT code ' +
-  'placement, which nothing in this harness can control. Read the spread column, not the median, ' +
-  'for this row.';
+const BIMODAL_INTEGRATE = (band: string, ratio: string, split: string): string =>
+  `Bimodal across ${band} (${ratio}), split ${split} over the 15 pinned captures recorded on ` +
+  '2026-08-20, with each state internally tight — so the folded median lands in whichever state ' +
+  'that window caught, and moves between them. Read the spread column, not the median, for this ' +
+  'row.';
 
+/**
+ * All four `integrate-only` rows, and only those. The scoping is the evidence: across the same 15
+ * captures the three `emit+integrate` rows of the *same package* hold inside 1.12x, `ecs.step`
+ * inside 1.04x. One scenario shape in one package is bimodal and its siblings are not, which is
+ * what rules out the machine and points at how this particular loop is compiled.
+ *
+ * Investigated 2026-08-20 against five candidate causes, all refuted by measurement: these rows
+ * split with the process pinned to P-cores, at every warm-up budget from 300 to 6000 ms, with
+ * turbo disabled, after a forced full GC, and when one of them is the only scenario a
+ * freshly-started process ever runs. Not core placement, warm-up, clock state, GC or JIT history.
+ * The remaining hypothesis is per-process JIT code placement, which nothing here can control.
+ */
 export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation> = new Map([
   [
+    'particles.update   500 integrate-only',
+    { percent: 35, reason: BIMODAL_INTEGRATE('1.70-2.10 us', '1.24x', '12 low / 3 high') },
+  ],
+  [
+    'particles.update  1000 integrate-only',
+    { percent: 35, reason: BIMODAL_INTEGRATE('3.37-4.24 us', '1.26x', '14 low / 1 high') },
+  ],
+  [
     'particles.update  2000 integrate-only',
-    { percent: 35, reason: BIMODAL_INTEGRATE('6.8 us', '8.9 us', '1.31x', '5 low / 5 high') },
+    { percent: 35, reason: BIMODAL_INTEGRATE('6.73-8.85 us', '1.32x', '7 low / 8 high') },
   ],
   [
     'particles.update  5000 integrate-only',
-    { percent: 35, reason: BIMODAL_INTEGRATE('16.8 us', '21.4 us', '1.27x', '6 low / 4 high') },
+    { percent: 35, reason: BIMODAL_INTEGRATE('16.80-21.40 us', '1.27x', '9 low / 6 high') },
   ],
 ]);
 

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { judgeAffinity, readAffinity } from './affinity.js';
 import { type AllocRow, allocRows } from './alloc.js';
 import { applyBenchDevFlag, assertDevFlagDefined, devFlagState } from './dev-flag.js';
 import { ecsBenches } from './ecs.bench.js';
@@ -708,6 +709,11 @@ if (powerVerdict.kind !== 'ok') {
   console.error(
     `\n${powerVerdict.kind === 'refuse' ? 'WARNING' : 'NOTE'}: ${powerVerdict.message}\n`,
   );
+}
+
+const affinityVerdict = judgeAffinity(readAffinity());
+if (affinityVerdict.kind !== 'ok') {
+  console.error(`\nWARNING: ${affinityVerdict.message}\n`);
 }
 
 if (load.foreignPercent > MAX_FOREIGN_LOAD_PERCENT) {

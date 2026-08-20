@@ -38,6 +38,11 @@
       "cache": false,
       "env": ["FLARE_BENCH_NO_RECORD"]
     },
+    "@flare-engine/benchmarks#bench:pinned": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["FLARE_BENCH_NO_RECORD"]
+    },
     "@flare-engine/benchmarks#bench:baseline": {
       "dependsOn": ["^build"],
       "cache": false

@@ -8,6 +8,7 @@
   "scripts": {
     "bench:web:promote": "bun src/web-promote-cli.ts",
     "bench": "bun run src/index.ts",
+    "bench:pinned": "bun scripts/bench-pinned.mjs",
     "bench:baseline": "bun run src/index.ts --write-baseline",
     "bench:promote": "bun run src/index.ts --promote",
     "bench:md": "bun run src/index.ts --markdown",

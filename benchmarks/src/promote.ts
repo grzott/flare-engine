@@ -1,3 +1,4 @@
+import { judgeAffinity } from './affinity.js';
 import type { AllocRow } from './alloc.js';
 import { MAX_FOREIGN_LOAD_PERCENT, MAX_RUN_DEVIATION_PERCENT, MIN_DEVIANT_RUNS } from './load.js';
 import { judgePowerScheme } from './power.js';
@@ -196,6 +197,29 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
     );
     if (verdict.kind === 'refuse') {
       problems.push(`run captured under a refused power plan — ${verdict.message.split('\n')[0]}`);
+    }
+  }
+
+  for (const run of runs) {
+    // Absent on pre-2026-08-20 captures and on hosts that cannot report a mask; both read as
+    // "unknown", which is judged as ok rather than refused. Only a recorded unpinned mask on a
+    // recorded hybrid host is refused, because only that combination was measured.
+    if (
+      run.affinityMask === undefined ||
+      run.affinityCpus === undefined ||
+      run.hostPhysicalCores === undefined ||
+      run.hostLogicalCpus === undefined
+    ) {
+      continue;
+    }
+    const verdict = judgeAffinity({
+      mask: run.affinityMask,
+      selected: run.affinityCpus,
+      physical: run.hostPhysicalCores,
+      logical: run.hostLogicalCpus,
+    });
+    if (verdict.kind === 'refuse') {
+      problems.push(`run captured without CPU pinning — ${verdict.message.split('\n')[0]}`);
     }
   }
 

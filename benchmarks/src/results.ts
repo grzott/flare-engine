@@ -10,6 +10,7 @@ import {
 import { cpus, totalmem } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readAffinity } from './affinity.js';
 import type { AllocRow } from './alloc.js';
 import type { BenchStats } from './harness.js';
 import type { HeapProbeResult } from './heap-probe.js';
@@ -108,6 +109,17 @@ export type Provenance = {
    */
   powerSchemeGuid?: string;
   powerSchemeLabel?: string;
+  /**
+   * CPU affinity the capture ran under, as lower-case hex, plus how many logical processors that
+   * selects. Absent on captures taken before 2026-08-20, and on hosts that cannot report one.
+   * Recorded because an unpinned capture on a hybrid P+E host was measured to alternate between
+   * two states run to run — see `affinity.ts`.
+   */
+  affinityMask?: string;
+  affinityCpus?: number;
+  /** Physical cores / logical processors the host reports, so `affinityMask` can be interpreted. */
+  hostPhysicalCores?: number;
+  hostLogicalCpus?: number;
 };
 
 export type MicrobenchReport = Provenance & {
@@ -231,6 +243,7 @@ function gitOutput(args: string[]): string | null {
 export function collectProvenance(): Provenance {
   const cores = cpus();
   const scheme = readPowerScheme();
+  const affinity = readAffinity();
   const sha = gitOutput(['rev-parse', '--short=12', 'HEAD']);
   // Scoped to what can actually change a measurement. An unscoped probe would
   // see this run's own history.ndjson append and report every capture after the
@@ -243,6 +256,14 @@ export function collectProvenance(): Provenance {
     gitSha: sha ?? 'unknown',
     gitDirty: status === null ? false : status.length > 0,
     ...(scheme === null ? {} : { powerSchemeGuid: scheme.guid, powerSchemeLabel: scheme.label }),
+    ...(affinity === null
+      ? {}
+      : {
+          affinityMask: affinity.mask,
+          affinityCpus: affinity.selected,
+          hostPhysicalCores: affinity.physical,
+          hostLogicalCpus: affinity.logical,
+        }),
   };
 }
 

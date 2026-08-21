@@ -17,13 +17,12 @@ Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lock
 each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
 and §6 rows are post-publish. Pick top → `/start`.
 
-- **WEB-1 — boot spike, timeboxed to one session [MT].** Throwaway in-repo app on `workspace:*`,
-  wired for web, booted in Chrome running a real game loop. Output is a gap list; the app is
-  deleted. WEB-2/WEB-3 are specced from what it finds. Spec: §4.
-- **WEB-2 — `packages/react` web enablement.** Optional peer deps + any `.web.tsx` sibling WEB-1
-  proved necessary + the web contract in `api-specs.md`. Spec: §4.
-- **WEB-3 — spillover, spec written after WEB-1.** §1 predicts this is empty; it closes as an
-  explicit no-op rather than being silently dropped. Spec: §4.
+- **WEB-2 — fix `GameView`'s per-frame WebGL context leak on web + peer deps.** WEB-1 found a real
+  engine defect: `setPicture` every frame re-fires `usePictureAsTexture`, whose web `MakeOffscreen`
+  allocates an unreleased WebGL context per frame; Chrome evicts at 16 and kills the on-screen
+  canvas. Nothing renders. Spec: §12 + §4.
+- **WEB-3 — postfx on web.** Not the no-op it was reserved as: the postfx chain samples the very
+  scene texture WEB-2 has to stop allocating per frame. Needs its own on-screen proof. Spec: §12.
 - **WEB-4 — scaffolder templates ×3 [MT].** `web` script, three installs, `LoadSkiaWeb()` entry,
   wasm copy step. No changeset — `cfa` is `private: true`. Spec: §4.
 - **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only real
@@ -253,6 +252,20 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-1 — boot spike: a Flare game ran in a browser, and found a real engine defect**
+  (2026-08-21). Throwaway `apps/web-spike` (Expo 55 / RN 0.83.6 / RN-Skia 2.4.18 / react-native-web
+  0.21.2), Metro web, Chrome. **Works:** Metro bundles the workspace engine packages with no
+  export-map trouble; `LoadSkiaWeb` + a served `bin/full/canvaskit.wasm` loads; bare RN-Skia
+  renders; `GameLoop`, ECS, `createProceduralAtlas` and `input`'s keyboard all run — the loop
+  ticked 1029 frames. **Blocker found:** `GameView` leaks one WebGL context per frame on web —
+  `setPicture` every frame re-fires `usePictureAsTexture`, whose web `MakeOffscreen` allocates an
+  `OffscreenCanvas` context that is never released; Chrome evicts at 16 (measured: on-screen canvas
+  lost at iteration 15) and kills the visible canvas, so nothing renders while the loop keeps
+  running. Fix direction `<Picture>` proven for an empty postfx chain (2474 frames, live context)
+  but **not** for postfx — which is why WEB-3 is no longer a no-op. Spike deleted; findings are the
+  only output. Also corrected two stale claims in the SoT (templates *are* typechecked; the
+  `bun.lock` optional-peer drift). Full record: [web-target-2026-08.md](web-target-2026-08.md) §12.
 
 - **PERF-15 — the three web lanes had no staleness guard** (2026-08-21). `check:perf-freshness`
   watched only the five node suites; `web.json` / `web-gpu.json` / `web-android.json` could go

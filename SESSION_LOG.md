@@ -10637,3 +10637,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 273 — 2026-08-21 (scope: engine)
+
+**Goal:** WEB-1 — boot spike: prove a Flare game runs in a browser, spec WEB-2/3 from what breaks
+
+**Touched files**
+- `bun.lock`
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (owner: publish 0.3.0 with web changes, do not gate cut on PT); deny:4 (guard: npm-in-heredoc, python-mentions-git; permission: rm -rf x2); drift:1 (corrected SoT template-typecheck + lockfile claims beyond the planned findings append); fixup:1 (owner ran the rm -rf I could not)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

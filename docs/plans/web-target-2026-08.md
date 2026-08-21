@@ -99,14 +99,22 @@ multiple of this arc's cost.
   gap list, not kept code** — the spike app is deleted. WEB-2/WEB-3 are specced from what it hits,
   not from what this document predicts. Timebox: one session.
 - **WEB-2 — `packages/react` web enablement.** `react-native-web` + `canvaskit-wasm` as optional
-  peer deps (`peerDependenciesMeta.optional`); `.web.tsx` siblings only where WEB-1 proved need;
-  the web contract documented in `docs/design/api-specs.md`. One lockstep minor changeset.
-- **WEB-3 — spillover row, spec written after WEB-1.** Exists so a gap in `input` / `storage` /
-  `assets` / `audio` / `ui` has a home. §1 predicts this row is empty; if WEB-1 confirms that, it
-  closes as a no-op and says so in the SESSION_LOG rather than being silently dropped.
+  peer deps (`peerDependenciesMeta.optional`); the web contract documented in
+  `docs/design/api-specs.md`. One lockstep minor changeset. **Scope set by WEB-1 (§12): the row's
+  substance is fixing `GameView`'s per-frame WebGL context leak on web** — it is a real engine
+  defect, not a wiring gap, and the peer-dep/doc work is trivial next to it. Read §12 in full
+  before planning; it names the mechanism, the measurement, and the two candidate fixes.
+- **WEB-3 — postfx on web (specced by WEB-1, 2026-08-21; NOT empty).** WEB-1 predicted this row
+  might close as a no-op. It does not: `GameView`'s postfx chain is fed by the very scene texture
+  whose per-frame allocation is the WEB-2 blocker, so the postfx case needs its own decision and
+  its own on-screen proof. Full statement in §12 "Fix direction". `input` / `assets` / `audio` /
+  `storage` did come back clean, as §1 predicted.
 - **WEB-4 — scaffolder templates.** All three of `blank` / `topdown` / `shmup`: a `web` script, the
   three installs, a `LoadSkiaWeb()`-gated web entry, a `canvaskit.wasm` copy step, and README
   coverage. Read §11.4 before planning.
+
+  Template TS is covered by `tsconfig.templates.json` (see WEB-5) — plan against that, not against
+  the "templates are unchecked" assumption.
 
   **`create-flare-app` is `private: true` today** (verified 2026-08-21), so it publishes in no
   release until that flips at launch, and `check-changeset` exempts private packages outright.
@@ -115,9 +123,17 @@ multiple of this arc's cost.
   pre-cut because WEB-5 is how the *engine's* web contract gets executed end to end (§8), not
   because the templates ship in that release.
 - **WEB-5 — real-scaffold browser boot [MT].** Scaffold via `create-flare-app` → `bun run web` →
-  renders in Chrome, for one template. Manual/scripted, **not** a typecheck: `create-flare-app`'s
-  tsconfig excludes `templates/`, so the gate is structurally blind to template errors. This row
-  plus WEB-1 are what the publish gates on.
+  renders in Chrome, for one template. This row plus WEB-1 are what the publish gates on.
+
+  **What the existing gate already covers (corrected 2026-08-21):** `create-flare-app`'s
+  `typecheck` script runs `tsc --noEmit -p tsconfig.templates.json`, which **does** include
+  `templates/*/src`, `templates/*/tests` and `templates/*/index.ts`. Templates are not a
+  typecheck blind spot. What that check deliberately does *not* cover, per its own shim file, is
+  the templates' **pinned** versions — it resolves against the monorepo's hoisted deps (the
+  Expo-55-era stack), with an ambient shim standing in for `expo`. So WEB-5 is still required, and
+  for a sharper reason than "the gate is blind": it is the only check that exercises the
+  templates' pinned Expo-57 stack, the `canvaskit.wasm` serving, the `LoadSkiaWeb` gate and the
+  Metro web config — none of which a `tsc` pass can see.
 
 ## 5. PT rows (PT repo, its own harness — record in PT's `SESSION_LOG.md` / `todo.md`)
 
@@ -217,15 +233,102 @@ fix.
    `attw` guard Node resolution, not a bundler's. WEB-1 exercises the real thing.
 3. **CanvasKit's wasm payload** is large enough to dominate cold start. It is the reason for the
    separate hosting project (decision 5) and for WEB-H3's budget.
-4. **The template blindspot.** `create-flare-app`'s tsconfig excludes `templates/`; the gate cannot
-   see errors there. WEB-5 is the only real check, and it must run against a genuine scaffold.
+4. **The template *version* gap (corrected 2026-08-21 — this is not the "typecheck is blind to
+   templates" risk it was first written as).** `tsconfig.templates.json` does typecheck all three
+   templates, but against the monorepo's hoisted deps rather than their pinned Expo-57 versions.
+   Version-specific breakage, and everything non-type (wasm serving, `LoadSkiaWeb`, Metro config),
+   still escapes it. WEB-5 against a genuine scaffold is the only check that closes that gap.
 5. **Autoplay policy** (WEB-P4) — silent-game failure mode, easy to ship by accident.
 6. **`makeNonTextureImage()` per frame on web.** The web path in `usePictureAsTexture` copies the
    snapshot off the GPU. This is a perf characteristic, not a correctness one, but PT's postfx
    chain is the heaviest consumer of that path and may read slower on web than the bench lanes
    suggest. WEB-H3 measures it rather than assuming.
 
-## 12. Cut under YAGNI
+## 12. WEB-1 findings (spike run 2026-08-21)
+
+Spike: `apps/web-spike`, Expo SDK 55 / RN 0.83.6 / RN-Skia 2.4.18 / react-native-web 0.21.2 /
+`@expo/metro-runtime` 55.0.12, Metro web, Chrome, NVIDIA RTX 4070 Ti via ANGLE D3D11. App deleted
+at row close; these findings are its only output.
+
+### What works, proven in a browser
+
+- **Expo web + Metro bundles the workspace engine packages.** Risk §11.2 does not materialize —
+  no export-map or dual-format failure. `metro.config.js` needs the standard monorepo block
+  (`watchFolders` + `nodeModulesPaths` + `disableHierarchicalLookup`); with it, `workspace:*`
+  engine imports resolve.
+- **`LoadSkiaWeb` + a `public/canvaskit.wasm` served at `/` works.** `LoadSkiaWeb` imports
+  `canvaskit-wasm/bin/full/canvaskit`, so the served binary must be `bin/full/canvaskit.wasm`
+  (8.0 MB), **not** `bin/canvaskit.wasm` (7.1 MB). Serving the wrong one is an ABI mismatch.
+- **Bare RN-Skia renders correctly on web** — `<Canvas><Fill/></Canvas>` fills the viewport.
+- **The engine's non-React tiers all run.** `GameLoop`, ECS `World`/`Position`/`Sprite`,
+  `createProceduralAtlas`, and `input`'s `createKeyboard` + `attachKeyboardListeners` all worked;
+  the loop ticked 1029 frames while rendering was dead. §1's prediction that `input` / `assets`
+  need no change held.
+
+### The blocker: `GameView` kills its own WebGL context on web
+
+**Symptom.** `TypeError: Cannot read properties of null (reading 'rangeMin')` thrown from
+`WebGLRenderer.onResize` → `MakeWebGLCanvasSurface` → `_MakeGrContext`. Nothing renders. The game
+loop keeps running, so the app looks alive and paints nothing.
+
+**Root cause, confirmed by direct experiment — a per-frame WebGL context leak:**
+
+1. [`game-view.tsx:183`](../../packages/react/src/game-view.tsx#L183) calls `setPicture(pic)` inside
+   `onPreRender` — a fresh `SkPicture` **every frame**.
+2. That re-fires `usePictureAsTexture`'s effect (deps `[picture, size, texture]`) every frame,
+   which calls `Skia.Surface.MakeOffscreen(...)`.
+3. RN-Skia's **web** `MakeOffscreen` (`skia/web/JsiSkSurfaceFactory.js`) does
+   `new OffscreenCanvas(w, h)` → `GetWebGLContext` → `MakeWebGLContext`: **a new WebGL context per
+   call, released nowhere.** On native the equivalent is a JSI-managed private Gr context, which is
+   why this is invisible on device.
+4. Chrome caps live WebGL contexts per page at **16** and evicts the oldest. Measured directly:
+   creating unreleased `OffscreenCanvas` contexts in a loop, the on-screen canvas went
+   `isContextLost: false → true` at **iteration 15**; of 24 created, 16 alive / 8 lost.
+5. The evicted context is the on-screen `<Canvas>`'s. `WebGLRenderer.onResize` then rebuilds
+   against a dead context, where `getShaderPrecisionFormat()` returns `null` — the `rangeMin` read.
+
+Causality was proven both directions: the failing `GameView` canvas was measured lost while a fresh
+canvas built a surface fine, and a **healthy** bare-Skia canvas was then killed on demand by
+replaying step 4 alone.
+
+**Note the instrumentation trap for whoever works WEB-2:** patching
+`HTMLCanvasElement.prototype.getContext` logs nothing here. `MakeOffscreen` goes through
+`OffscreenCanvas.prototype.getContext`, a different prototype.
+
+### Fix direction for WEB-2 — partly proven, one open question
+
+Compositing the per-frame picture with RN-Skia's `<Picture picture={…}/>` instead of the texture
+indirection **works and is stable**: 2474 frames with the context alive, against context death
+within ~16 frames on the texture path. Per-frame `SkPicture`s are not themselves the problem.
+
+**But that only covers an empty postfx chain, and the spike did not resolve the postfx case.**
+`GameView` feeds the scene texture into `<Image>` with `<RuntimeShader>` children — the texture
+*is* the postfx input, so a `<Picture>` fast path has nothing for the passes to sample. Two
+candidate shapes, to be decided at WEB-2 with a real postfx pass on screen:
+
+- **`<Picture>` when `passes.length === 0`, texture path otherwise** — smallest change, but leaves
+  the leak live for any game that uses postfx. PT uses postfx, so this alone does not unblock §5.
+- **A size-keyed offscreen surface reused across frames** (allocate on size change, not per frame),
+  replacing the `usePictureAsTexture` call on web. Preserves postfx and fixes the leak at its
+  source. More engine code; likely the real answer.
+
+This is the one item §4's WEB-3 was reserved for, and it is not empty after all.
+
+### Lockfile consequence WEB-2 must expect
+
+Adding `react-native-web` to the workspace is **not** lock-neutral, and it does not revert when the
+dependency is removed. `react-native-purchases@10.0.1` — pulled in by `@flare-engine/iap-revenuecat`
+— declares `react-native-web` as an **optional peer** (`optionalPeers: ["react-native-web"]`). The
+moment `react-native-web` exists in the workspace, bun satisfies that optional peer and records it,
+and a later `bun install` after removing the spike **kept** it: 26 residual lines
+(`react-native-web` plus `fbjs`, `cross-fetch`, `inline-style-prefixer`, `css-in-js-utils`,
+`hyphenate-style-name`, `setimmediate`, …). Restoring required `git checkout -- bun.lock`.
+
+WEB-2 should expect its `bun.lock` diff to be larger than "one optional peer dep", and should check
+that the new entries are intentional rather than incidental — the concretize/publish path
+(`bun run version`) reads this lockfile.
+
+## 13. Cut under YAGNI
 
 - **A web host layer on `render-web`** — §3.
 - **A `@flare-engine/react/web` barrel** — §3.

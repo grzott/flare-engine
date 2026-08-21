@@ -61,15 +61,19 @@ mock.module('react/jsx-runtime', () => jsxMock);
 mock.module('react/jsx-dev-runtime', () => jsxMock);
 
 let _mockPixelRatio = 1;
+let _mockPlatformOS = 'ios';
 
 mock.module('react-native', () => ({
   View: 'View',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
   PixelRatio: { get: () => _mockPixelRatio },
-  // GameView branches its scene-capture path on this; 'ios' exercises the
-  // native path these tests assert on (see scene-texture.test.ts for the web
-  // path's surface-reuse contract).
-  Platform: { OS: 'ios' },
+  // GameView branches both scene-capture and postfx-pass paths on Platform.OS.
+  // Tests that exercise the web path set _mockPlatformOS = 'web' before mount.
+  Platform: {
+    get OS() {
+      return _mockPlatformOS;
+    },
+  },
 }));
 
 mock.module('react-native-safe-area-context', () => ({
@@ -401,6 +405,7 @@ beforeEach(() => {
   _batchInstance = null;
   _inputInstance = null;
   _mockPixelRatio = 1;
+  _mockPlatformOS = 'ios';
   _viewportOverride = null;
   _usePictureAsTextureArgs = [];
   _beginRecordingBounds = [];
@@ -836,6 +841,43 @@ describe('GameView — frame time forwarded to beginFrame', () => {
 
     expect(_beginFrameTimeArgs[0]).toBe(1.0);
     expect(_beginFrameTimeArgs[1]).toBe(2.0);
+    unmountAll();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WEB-3: postfx pass gate on web.
+// On web, RuntimeShader image filters are unavailable (RN-Skia 2.4.18 throws
+// "Not implemented on React Native Web" from both Skia.RuntimeShaderBuilder and
+// ImageFilter.MakeRuntimeShaderWithChildren). GameView must never call
+// buildPostFxPasses or setPasses on web — even when the hook supplies a chain —
+// to avoid a per-frame throw.
+// ---------------------------------------------------------------------------
+
+describe('GameView — web postfx gate (WEB-3)', () => {
+  it('setPasses is never called on web even when the chain is non-empty', () => {
+    _mockPlatformOS = 'web';
+    const shader = {};
+    _buildPasses = () => [
+      { id: 'flash', source: shader, uniforms: { intensity: 1 }, children: [] },
+    ];
+    mount();
+    tick();
+    tick();
+    tick();
+    expect(_setPassesCount).toBe(0);
+    unmountAll();
+  });
+
+  it('setPasses fires on native when the chain is non-empty (baseline unchanged)', () => {
+    _mockPlatformOS = 'ios';
+    const shader = {};
+    _buildPasses = () => [
+      { id: 'flash', source: shader, uniforms: { intensity: 1 }, children: [] },
+    ];
+    mount();
+    tick();
+    expect(_setPassesCount).toBe(1);
     unmountAll();
   });
 });

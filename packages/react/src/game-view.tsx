@@ -197,10 +197,20 @@ export function GameView({
       ctx.renderer.end();
       const pic = bridge.endFrame() as SkPicture | null;
       if (pic !== null) setPicture(pic);
-      const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
-      if (!samePasses(prevBuilt, built)) {
-        prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
-        setPasses(prevBuilt);
+      if (!isWeb) {
+        const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
+        if (!samePasses(prevBuilt, built)) {
+          prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
+          setPasses(prevBuilt);
+        }
+      } else if (!_webPostFxWarned) {
+        console.warn(
+          'postfx chain skipped: RuntimeShader image filters are unavailable on React Native Web' +
+            ' in RN-Skia 2.4.18 (Skia.RuntimeShaderBuilder and' +
+            ' ImageFilter.MakeRuntimeShaderWithChildren both throw' +
+            ' "Not implemented on React Native Web").',
+        );
+        _webPostFxWarned = true;
       }
       canvasRef.current?.redraw();
     });
@@ -293,6 +303,14 @@ function returnTrue(): boolean {
 /** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses
  *  to this so the `passes` state never changes for a postfx-free GameView. */
 const EMPTY_PASSES: readonly PostFxPassDescriptor[] = [];
+
+/**
+ * Emitted once when a web GameView first encounters postfx.
+ * `Skia.RuntimeShaderBuilder` and `ImageFilter.MakeRuntimeShaderWithChildren`
+ * both throw "Not implemented on React Native Web" in RN-Skia 2.4.18, so the
+ * pass chain is skipped entirely on web rather than throwing every frame.
+ */
+let _webPostFxWarned = false;
 
 /**
  * Shallow structural equality of two pass lists. The signature is length +

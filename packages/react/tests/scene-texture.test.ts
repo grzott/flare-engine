@@ -193,22 +193,41 @@ describe('createSceneCapture', () => {
     expect(cpu[0]?.disposed).toBe(false);
   });
 
-  it('releases the previous frame image only on the next capture', () => {
+  it('image at frame N is still alive after frames N+1 and N+2 (ring depth 3)', () => {
     const { module, images } = makeCaptureStub();
     const capture = createSceneCapture(module);
 
-    capture.capture({}, 800, 600);
-    const cpuAfterFirst = images.filter((i) => i.kind === 'cpu');
-    expect(cpuAfterFirst[0]?.disposed).toBe(false);
+    capture.capture({}, 800, 600); // frame 0 → cpu[0]
+    capture.capture({}, 800, 600); // frame 1 → cpu[1]
+    capture.capture({}, 800, 600); // frame 2 → cpu[2]
 
-    capture.capture({}, 800, 600);
+    const cpu = images.filter((i) => i.kind === 'cpu');
+    expect(cpu[0]?.disposed).toBe(false);
+    expect(cpu[1]?.disposed).toBe(false);
+    expect(cpu[2]?.disposed).toBe(false);
+  });
+
+  it('image at frame N is released when frame N+3 is captured', () => {
+    const { module, images } = makeCaptureStub();
+    const capture = createSceneCapture(module);
+
+    capture.capture({}, 800, 600); // frame 0 → cpu[0]
+    capture.capture({}, 800, 600); // frame 1 → cpu[1]
+    capture.capture({}, 800, 600); // frame 2 → cpu[2]
+
+    const cpuBeforeRelease = images.filter((i) => i.kind === 'cpu');
+    expect(cpuBeforeRelease[0]?.disposed).toBe(false);
+
+    capture.capture({}, 800, 600); // frame 3 → cpu[3]; ring overflows, cpu[0] released
 
     const cpu = images.filter((i) => i.kind === 'cpu');
     expect(cpu[0]?.disposed).toBe(true);
     expect(cpu[1]?.disposed).toBe(false);
+    expect(cpu[2]?.disposed).toBe(false);
+    expect(cpu[3]?.disposed).toBe(false);
   });
 
-  it('holds at most two frame images across a long run', () => {
+  it('holds at most three frame images across a long run (ring depth 3)', () => {
     const { module, images } = makeCaptureStub();
     const capture = createSceneCapture(module);
 
@@ -218,7 +237,7 @@ describe('createSceneCapture', () => {
 
     const liveCpu = images.filter((i) => i.kind === 'cpu' && !i.disposed);
     const liveSnapshots = images.filter((i) => i.kind === 'snapshot' && !i.disposed);
-    expect(liveCpu.length).toBe(1);
+    expect(liveCpu.length).toBe(3);
     expect(liveSnapshots.length).toBe(0);
   });
 
@@ -230,6 +249,19 @@ describe('createSceneCapture', () => {
     capture.dispose();
 
     expect(images.filter((i) => !i.disposed).length).toBe(0);
+  });
+
+  it('dispose() releases all images still in the ring', () => {
+    const { module, images } = makeCaptureStub();
+    const capture = createSceneCapture(module);
+
+    capture.capture({}, 800, 600);
+    capture.capture({}, 800, 600);
+    capture.capture({}, 800, 600);
+    capture.dispose();
+
+    const liveCpu = images.filter((i) => i.kind === 'cpu' && !i.disposed);
+    expect(liveCpu.length).toBe(0);
   });
 
   it('returns null and captures nothing for a zero-sized viewport', () => {

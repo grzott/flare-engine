@@ -121,21 +121,30 @@ export interface SceneCapture<TImage> {
  *    caps a page at 16 live contexts and evicts the on-screen canvas. Hence the
  *    surface cache.
  * 2. **Per-frame images.** `makeNonTextureImage()` reads the whole viewport back
- *    into the wasm heap. Leaving the GPU snapshot and the previous CPU image
- *    unreleased exhausts that heap and CanvasKit throws `Aborted()` — measured
- *    at frame 566 of a 1280x720 run. Releasing both survives 1500 frames at
- *    2560x1215.
+ *    into the wasm heap. Leaving old CPU images unreleased exhausts that heap.
+ *    A single-slot release strategy is not enough: RN-Skia's web `<Canvas>`
+ *    paints on its own rAF, which fires *after* the capture, so the image handed
+ *    to React on frame N is still in use when frame N+1 runs. Releasing it
+ *    immediately causes `BindingError: Cannot pass deleted object as a pointer of
+ *    type Image const*` from `JsiSkImage.width` every frame and a blank canvas.
+ *    Measured at 2560×1215 / Chrome (WEB-3):
+ *      hold=1 (one slot — what shipped at WEB-2) → blank, BindingError every frame
+ *      hold=2                                     → blank
+ *      hold=3                                     → 1378 frames, zero errors
+ *    A FIFO ring of depth 3 is the measured minimum.
  *
- * The snapshot is released as soon as it has been copied. The frame image is
- * released one capture later, never immediately: the caller has just handed it
- * to React, and it must stay alive until the frame that replaces it has been
- * rendered.
+ * The snapshot is released as soon as it has been copied. Frame images are
+ * released once the ring exceeds depth 3, ensuring the canvas's rAF always has
+ * a live image to paint from.
  */
+
+const RETENTION_DEPTH = 3;
+
 export function createSceneCapture<TImage>(
   Skia: SceneSurfaceModuleLike<TImage>,
 ): SceneCapture<TImage> {
   const surfaces = createSceneSurfaceCache(Skia);
-  let held: TImage | null = null;
+  const ring: TImage[] = [];
 
   return {
     capture(picture: unknown, width: number, height: number): TImage | null {
@@ -150,15 +159,17 @@ export function createSceneCapture<TImage>(
       const detached = detachable.makeNonTextureImage ? detachable.makeNonTextureImage() : snapshot;
 
       if (detached !== snapshot) releaseSkiaObject(snapshot);
-      if (held !== null) releaseSkiaObject(held);
-      held = detached;
+      ring.push(detached);
+      if (ring.length > RETENTION_DEPTH) {
+        releaseSkiaObject(ring.shift()!);
+      }
       return detached;
     },
     dispose(): void {
-      if (held !== null) {
-        releaseSkiaObject(held);
-        held = null;
+      for (const img of ring) {
+        releaseSkiaObject(img);
       }
+      ring.length = 0;
       surfaces.dispose();
     },
   };

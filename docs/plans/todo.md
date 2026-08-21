@@ -57,16 +57,28 @@ release reaching the restricted registry, not on the public flip.
 
 Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze. **Full specs in the SoT: [perf-measurement-2026-07.md](perf-measurement-2026-07.md)** — §1–§8 first-pass audit, §9–§10 second-pass verification (18-agent adversarial, 2026-07-28: render 3.1× regression re-confirmed live; secondary drift table withdrawn; B11–B26 new findings), **§11 row specs** — rows here are lean pointers (one-source-per-fact); the builder reads the row's §11 section before planning. Routing: PERF-3, PERF-9 and PERF-10 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset each); all other rows touch benchmarks/`scripts/`/`.github/`/`apps/bench-*`/`docs/plans/` → **[MT] main-thread**. Sequencing below is the execution order; **PERF-1→5 are the pre-freeze must** (the §7 "defensible release" core + gates), PERF-8 is cheap and pre-freeze-preferred, PERF-6/7 slide post-flip if the calendar tightens (PERFORMANCE.md then declares web/device unmeasured, §8). Owner-OOB items (portfolio corrections, TestingBot account check, EAS bench project, engine-repo secrets) are ledgered per-row in §11, never blocking. Pick top → `/start`.
 
+- **PERF-17 — the device lane drifts ~18% with no throttle ever reported (found 2026-08-21) [MT].**
+  Five back-to-back Pixel 7 captures degraded monotonically on *every* scenario — `render.flush 1000
+  / 1 atlas` 0.432 / 0.441 / 0.441 / 0.541 / 0.526 ms, `5000 / 1 atlas` 1.873 → 2.333 — while
+  `dumpsys thermalservice` reported `status=0` on both sides of all five. PERF-13's thermal guard
+  only refuses a *reported* throttle, so it saw nothing; the fold's deviation guard caught it only
+  because the drift was large. Re-capturing with 100 s between runs produced a clean window
+  (0.426-0.457 ms), and battery temperature still **rose** across it (32.2 → 34.2 C) — the pause
+  buys a thermal plateau, not a cool phone. Decide what the lane asserts: a minimum gap between
+  captures, a battery-temperature delta ceiling calibrated against these numbers, or a monotonic
+  trend test across the window. Whatever is chosen, `bench:web:android` should enforce it rather
+  than leaving it to whoever remembers.
+
+- **PERF-18 — `bench:web:gpu` / `bench:web:android` have no root passthrough (found 2026-08-21) [MT].**
+  Only `bench:web` exists in the root `package.json`; the other two lanes are reachable solely from
+  `apps/bench-web`. Running them from the repo root fails instantly with `Script not found`, and on
+  2026-08-21 that produced five "captures" in one second that wrote nothing — after which
+  `bench:web:promote` folded the *previous* month's history and republished it as current. The
+  fold cannot tell "no new captures" from "captures that already existed". Add the two root
+  scripts, and make the fold refuse a window whose newest capture predates the lane's committed
+  baseline.
+
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
-- **PERF-15 — web lanes have no staleness guard (found 2026-08-19) [MT].** `check:perf-freshness`
-  covers only the five node suites (`freshness.suites`), and nothing in `scripts/` or CI watches
-  `web.json` / `web-gpu.json` / `web-android.json` at all — a web capture can go arbitrarily stale,
-  or be deleted, with every gate still green. The node lane's own history is the argument: the
-  freshness canary is what caught the instrument change that started this arc. Assert each lane's
-  capture exists, carries `runs >= 2`, and names a commit reachable from HEAD; stale it on
-  `render-web`/`render`/`postfx` src changes since that commit. Wire into the jobs already running
-  `check:perf-freshness` (`ci.yml:52`, `release.yml:47`). Spec:
-  [benchmarking-completion-2026-08.md](benchmarking-completion-2026-08.md) §3.
 - **PERF-14b — the ~2x straddle survives the power-plan fix (found 2026-08-19) [MT].** PERF-14 is
   done (see `## Done`) and the correction was real, but the run log shows the bimodality is **not**
   fully explained by the power plan. Of the 11 captures taken at `f457e82` under High performance at
@@ -217,6 +229,19 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **PERF-15 — the three web lanes had no staleness guard** (2026-08-21). `check:perf-freshness`
+  watched only the five node suites; `web.json` / `web-gpu.json` / `web-android.json` could go
+  stale, thin to one run, or be deleted with every gate green. Now watched by seven rules — file
+  present, non-empty, `runs >= 2`, one runtime, one capture commit, that commit an ancestor of
+  HEAD, and no change since to `render-web`/`render`/`postfx` src or the web instrument
+  (`apps/bench-web/src` + `scripts`, `harness.ts`, the render scenarios). Machine provenance is
+  judged **per lane**: the two desktop lanes must name their power plan, the device lane must name
+  the phone and show it was not throttling — demanding a desktop power plan from a capture whose
+  subject is a phone would refuse it for an irrelevant reason. The pure half lives in
+  `perf-gate.mjs` under `selftest()` and was mutation-tested: breaking a rule makes the gate refuse
+  to report at all. Paired with host machine-condition recording in `apps/bench-web` and a
+  re-capture of all three lanes on the fixed machine.
 
 - **PERF-16 — PERFORMANCE.md stated things that were no longer true** (2026-08-19). Scoped wider
   than filed, because a 14-agent docs audit found the page's own headline table was **2.5x stale**

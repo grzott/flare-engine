@@ -2,7 +2,7 @@
 <!-- flare-capture: efa602efb5e4 -->
 # Flare Engine — Benchmarks
 
-> **Captured: 2026-08-20** (median of 5 runs) · Rendered: 2026-08-20 · Runtime: Bun 1.3.11 · Platform: win32 x64 · CPU: 13th Gen Intel(R) Core(TM) i9-13900KF (32 cores) · Foreign load: 4.6% · Commit: efa602efb5e4
+> **Captured: 2026-08-20** (median of 5 runs) · Rendered: 2026-08-21 · Runtime: Bun 1.3.11 · Platform: win32 x64 · CPU: 13th Gen Intel(R) Core(TM) i9-13900KF (32 cores) · Foreign load: 4.6% · Commit: efa602efb5e4
 
 > Every number below comes from the committed baseline captured on the date above — not from the day this page was rendered. Re-capture with `bun run bench` ×N then `bun run bench:promote`, and re-render with `bun run bench:md`.
 
@@ -206,8 +206,8 @@ Read straight off the installed `canvaskit-wasm` package on disk (raw = file siz
 
 | Cache | Plain network | Throttled 4G |
 |---|---:|---:|
-| cold | 128.0 ms | 16.55 s |
-| warm | 71.4 ms | 16.48 s |
+| cold | 57.5 ms | 16.33 s |
+| warm | 34.3 ms | 16.36 s |
 
 4G throttle profile (Chrome DevTools Protocol `Network.emulateNetworkConditions`, a flare-engine-defined profile stated here for reproducibility — not a copy of any external tool's preset): **download 4 Mbit/s (524288 B/s), upload 3 Mbit/s (393216 B/s), latency 20 ms**.
 
@@ -215,65 +215,65 @@ The throttled cold/warm pair reads nearly identical. Measured directly (via CDP 
 
 ### Render suite — CPU-raster
 
-_Captured: 2026-08-18 · Median of 5 run(s) · Commit: 48ff6bd232b9 · Runtime: web-cpu-raster · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34_
+_Captured: 2026-08-21 · Median of 5 run(s) · Commit: 6dda34758d6b · Runtime: web-cpu-raster · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34_
 
 Comparable to the node [Render](#render) suite in **shape**, not in **magnitude** — different pipeline, different runtime. CanvasKit's software rasterizer does real per-pixel work the node lane's counting stub never performs.
 
 | Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 2.871 ms | 2.871 – 2.900 ms | 2.971 ms | 3.043 ms | 7 |
-| render.flush    500 sprites / 1 atlas | 14.400 ms | 14.400 – 14.400 ms | 14.700 ms | 15.050 ms | 2 |
-| render.flush   1000 sprites / 1 atlas | 28.800 ms | 28.700 – 29.100 ms | 29.400 ms | 30.100 ms | 1 |
-| render.flush   5000 sprites / 1 atlas | 142.900 ms | 142.400 – 143.300 ms | 145.000 ms | 145.500 ms | 1 |
-| render.flush    500 sprites / 4 atlas interleaved | 16.100 ms | 16.100 – 16.250 ms | 16.550 ms | 16.950 ms | 2 |
-| render.flush    500 sprites / 4 atlas clustered | 14.350 ms | 14.300 – 14.400 ms | 14.650 ms | 15.200 ms | 2 |
-| render.flush   1000 sprites / 8 atlas interleaved | 32.200 ms | 32.000 – 32.200 ms | 33.000 ms | 34.000 ms | 1 |
-| render.flush   1000 sprites / 8 atlas clustered | 28.800 ms | 28.700 – 28.900 ms | 29.400 ms | 29.800 ms | 1 |
-| render.flush   1000 sprites / 50% rotated | 29.500 ms | 29.300 – 29.600 ms | 30.100 ms | 30.800 ms | 1 |
-| render.flush   1000 sprites / 100% rotated | 30.100 ms | 30.000 – 30.200 ms | 30.800 ms | 32.200 ms | 1 |
-| render.flush   1000 sprites / 4 alpha runs | 31.200 ms | 31.000 – 31.300 ms | 31.800 ms | 32.400 ms | 1 |
-| render.flush   1000 sprites / tint effect | 36.700 ms | 34.200 – 36.800 ms | 37.400 ms | 37.900 ms | 1 |
-| render.flush   1000 sprites / outline effect | 322.700 ms | 307.000 – 323.900 ms | 326.100 ms | 327.900 ms | 1 |
-| render.flush   1000 sprites / stretch path | 25.100 ms | 25.000 – 25.200 ms | 25.900 ms | 26.700 ms | 1 |
-| render.flush   1000 sprites / zone-bg path | 150.900 ms | 150.100 – 151.300 ms | 152.200 ms | 153.200 ms | 1 |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.002 ms | 0.003 ms | 11514 |
-| render.sort     500 items (5 swaps) | 0.006 ms | 0.006 – 0.006 ms | 0.006 ms | 0.008 ms | 3355 |
-| render.sort    1000 items (10 swaps) | 0.023 ms | 0.023 – 0.023 ms | 0.024 ms | 0.027 ms | 880 |
+| render.flush    100 sprites / 1 atlas | 1.089 ms | 1.079 – 1.105 ms | 1.128 ms | 1.150 ms | 19 |
+| render.flush    500 sprites / 1 atlas | 5.400 ms | 5.375 – 5.450 ms | 5.525 ms | 5.700 ms | 4 |
+| render.flush   1000 sprites / 1 atlas | 10.750 ms | 10.750 – 10.900 ms | 11.150 ms | 11.400 ms | 2 |
+| render.flush   5000 sprites / 1 atlas | 53.700 ms | 53.600 – 53.900 ms | 55.300 ms | 56.600 ms | 1 |
+| render.flush    500 sprites / 4 atlas interleaved | 6.025 ms | 6.000 – 6.100 ms | 6.225 ms | 6.375 ms | 4 |
+| render.flush    500 sprites / 4 atlas clustered | 5.400 ms | 5.375 – 5.450 ms | 5.625 ms | 5.675 ms | 4 |
+| render.flush   1000 sprites / 8 atlas interleaved | 12.000 ms | 12.000 – 12.050 ms | 12.500 ms | 12.700 ms | 2 |
+| render.flush   1000 sprites / 8 atlas clustered | 10.800 ms | 10.750 – 10.800 ms | 11.100 ms | 11.450 ms | 2 |
+| render.flush   1000 sprites / 50% rotated | 11.050 ms | 11.000 – 11.150 ms | 11.450 ms | 11.650 ms | 2 |
+| render.flush   1000 sprites / 100% rotated | 11.300 ms | 11.250 – 11.400 ms | 11.750 ms | 12.100 ms | 2 |
+| render.flush   1000 sprites / 4 alpha runs | 11.650 ms | 11.650 – 11.750 ms | 12.050 ms | 12.300 ms | 2 |
+| render.flush   1000 sprites / tint effect | 13.700 ms | 13.650 – 13.800 ms | 14.150 ms | 14.500 ms | 2 |
+| render.flush   1000 sprites / outline effect | 121.100 ms | 120.900 – 122.200 ms | 124.400 ms | 125.900 ms | 1 |
+| render.flush   1000 sprites / stretch path | 9.400 ms | 9.367 – 9.500 ms | 9.733 ms | 10.100 ms | 3 |
+| render.flush   1000 sprites / zone-bg path | 82.600 ms | 78.100 – 88.500 ms | 89.400 ms | 91.500 ms | 1 |
+| render.sort     500 items (0 swaps) | 0.001 ms | 0.001 – 0.001 ms | 0.001 ms | 0.001 ms | 28525 |
+| render.sort     500 items (5 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.002 ms | 0.002 ms | 8900 |
+| render.sort    1000 items (10 swaps) | 0.009 ms | 0.009 – 0.009 ms | 0.009 ms | 0.009 ms | 2336 |
 
 ### Render suite — desktop GPU
 
-_Captured: 2026-08-18 · Median of 5 run(s) · Commit: 48ff6bd232b9 · Runtime: web-gpu · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34 · Renderer: `ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002782) Direct3D11 vs_5_0 ps_5_0, D3D11)`_
+_Captured: 2026-08-21 · Median of 5 run(s) · Commit: 6dda34758d6b · Runtime: web-gpu · Host: win32 x64 (13th Gen Intel(R) Core(TM) i9-13900KF) · Engine version: 0.2.1 · Browser: chromium 151.0.7922.34 · Renderer: `ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002782) Direct3D11 vs_5_0 ps_5_0, D3D11)`_
 
 Headless Chromium does **not** default to hardware acceleration — with no GPU-related launch flags it silently reports SwiftShader for `UNMASKED_RENDERER_WEBGL` even without `--disable-gpu` — so `playwright.config.ts` pins `--use-angle=d3d11` for this mode, and `browser-driver.mjs` refuses to write a result whose reported renderer still matches `/swiftshader/i`. The renderer string above (`WEBGL_debug_renderer_info`) is the proof this capture used the host GPU.
 
 | Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 0.064 ms | 0.063 – 0.069 ms | 0.092 ms | 0.128 ms | 311 |
-| render.flush    500 sprites / 1 atlas | 0.175 ms | 0.172 – 0.180 ms | 0.186 ms | 0.202 ms | 114 |
-| render.flush   1000 sprites / 1 atlas | 0.330 ms | 0.327 – 0.338 ms | 0.348 ms | 0.372 ms | 61 |
-| render.flush   5000 sprites / 1 atlas | 1.543 ms | 1.514 – 1.569 ms | 1.638 ms | 1.775 ms | 13 |
-| render.flush    500 sprites / 4 atlas interleaved | 2.512 ms | 2.344 – 2.550 ms | 2.650 ms | 3.043 ms | 8 |
-| render.flush    500 sprites / 4 atlas clustered | 0.209 ms | 0.204 – 0.213 ms | 0.220 ms | 0.236 ms | 96 |
-| render.flush   1000 sprites / 8 atlas interleaved | 5.325 ms | 5.100 – 5.550 ms | 5.500 ms | 6.200 ms | 4 |
-| render.flush   1000 sprites / 8 atlas clustered | 0.402 ms | 0.392 – 0.404 ms | 0.419 ms | 0.430 ms | 50 |
-| render.flush   1000 sprites / 50% rotated | 0.379 ms | 0.370 – 0.379 ms | 0.394 ms | 0.419 ms | 53 |
-| render.flush   1000 sprites / 100% rotated | 0.410 ms | 0.402 – 0.414 ms | 0.423 ms | 0.444 ms | 49 |
-| render.flush   1000 sprites / 4 alpha runs | 0.365 ms | 0.361 – 0.372 ms | 0.385 ms | 0.419 ms | 55 |
-| render.flush   1000 sprites / tint effect | 0.351 ms | 0.345 – 0.357 ms | 0.374 ms | 0.455 ms | 57 |
-| render.flush   1000 sprites / outline effect | 2.625 ms | 2.600 – 2.675 ms | 2.775 ms | 3.171 ms | 8 |
-| render.flush   1000 sprites / stretch path | 2.256 ms | 2.110 – 2.278 ms | 2.322 ms | 2.575 ms | 9 |
-| render.flush   1000 sprites / zone-bg path | 1.918 ms | 1.900 – 1.982 ms | 2.010 ms | 2.110 ms | 11 |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.002 ms | 0.002 ms | 11418 |
-| render.sort     500 items (5 swaps) | 0.006 ms | 0.006 – 0.006 ms | 0.006 ms | 0.007 ms | 3350 |
-| render.sort    1000 items (10 swaps) | 0.023 ms | 0.023 – 0.023 ms | 0.023 ms | 0.026 ms | 878 |
+| render.flush    100 sprites / 1 atlas | 0.023 ms | 0.023 – 0.024 ms | 0.033 ms | 0.044 ms | 851 |
+| render.flush    500 sprites / 1 atlas | 0.069 ms | 0.068 – 0.070 ms | 0.073 ms | 0.075 ms | 288 |
+| render.flush   1000 sprites / 1 atlas | 0.123 ms | 0.120 – 0.126 ms | 0.130 ms | 0.132 ms | 162 |
+| render.flush   5000 sprites / 1 atlas | 0.612 ms | 0.606 – 0.624 ms | 0.673 ms | 0.773 ms | 33 |
+| render.flush    500 sprites / 4 atlas interleaved | 0.945 ms | 0.936 – 0.967 ms | 0.971 ms | 0.986 ms | 22 |
+| render.flush    500 sprites / 4 atlas clustered | 0.083 ms | 0.082 – 0.085 ms | 0.087 ms | 0.089 ms | 242 |
+| render.flush   1000 sprites / 8 atlas interleaved | 2.080 ms | 2.050 – 2.120 ms | 2.140 ms | 2.180 ms | 10 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.158 ms | 0.157 – 0.163 ms | 0.164 ms | 0.166 ms | 127 |
+| render.flush   1000 sprites / 50% rotated | 0.147 ms | 0.144 – 0.147 ms | 0.153 ms | 0.156 ms | 137 |
+| render.flush   1000 sprites / 100% rotated | 0.154 ms | 0.153 – 0.161 ms | 0.165 ms | 0.168 ms | 130 |
+| render.flush   1000 sprites / 4 alpha runs | 0.145 ms | 0.143 – 0.145 ms | 0.148 ms | 0.153 ms | 138 |
+| render.flush   1000 sprites / tint effect | 0.137 ms | 0.135 – 0.138 ms | 0.145 ms | 0.147 ms | 147 |
+| render.flush   1000 sprites / outline effect | 1.005 ms | 0.981 – 1.010 ms | 1.045 ms | 1.068 ms | 20 |
+| render.flush   1000 sprites / stretch path | 0.812 ms | 0.808 – 0.842 ms | 0.846 ms | 0.874 ms | 25 |
+| render.flush   1000 sprites / zone-bg path | 0.714 ms | 0.697 – 0.732 ms | 0.741 ms | 0.773 ms | 28 |
+| render.sort     500 items (0 swaps) | 0.001 ms | 0.001 – 0.001 ms | 0.001 ms | 0.001 ms | 30556 |
+| render.sort     500 items (5 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.002 ms | 0.002 ms | 8910 |
+| render.sort    1000 items (10 swaps) | 0.009 ms | 0.009 – 0.009 ms | 0.009 ms | 0.009 ms | 2340 |
 
-`render.flush 1000 sprites / 1 atlas` costs **0.330 ms** submitting on the GPU path against **28.800 ms** rasterizing on the CPU path — a factor of **87x** on this one desktop machine. Read that as "CanvasKit's software rasterizer is enormously more expensive than handing the same frame to a GPU driver", not as a figure that generalizes to other hardware or to a mobile GPU.
+`render.flush 1000 sprites / 1 atlas` costs **0.123 ms** submitting on the GPU path against **10.750 ms** rasterizing on the CPU path — a factor of **87x** on this one desktop machine. Read that as "CanvasKit's software rasterizer is enormously more expensive than handing the same frame to a GPU driver", not as a figure that generalizes to other hardware or to a mobile GPU.
 
 The three `render.sort` rows touch neither surface — pure JS array sorting — and read close to one another across both lanes, as expected. **Under the old sampler they read *identically*, and an earlier version of this document credited that to the shared code path. The real cause was that both lanes pinned those rows to the vsync floor.** Freed of it they differ slightly, which is ordinary run-to-run variation on identical work.
 
 ### Render suite — Android device (on-device GPU)
 
-_Captured: 2026-08-18 · Median of 5 run(s) · Commit: 48ff6bd232b9 · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.2.1 · Browser: chrome-android 151.0.7922.137 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
+_Captured: 2026-08-21 · Median of 5 run(s) · Commit: 6dda34758d6b · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.2.1 · Browser: chrome-android 151.0.7922.169 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
 
 The same 18 scenarios on real phone hardware, through the identical on-screen `<canvas>` + WebGL path as the desktop GPU lane, so the submission-cost caveat above applies here too.
 
@@ -281,26 +281,26 @@ The same 18 scenarios on real phone hardware, through the identical on-screen `<
 
 | Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 0.127 ms | 0.123 – 0.127 ms | 0.233 ms | 0.402 ms | 158 |
-| render.flush    500 sprites / 1 atlas | 0.244 ms | 0.238 – 0.248 ms | 0.283 ms | 0.437 ms | 82 |
-| render.flush   1000 sprites / 1 atlas | 0.435 ms | 0.426 – 0.443 ms | 0.505 ms | 0.981 ms | 46 |
-| render.flush   5000 sprites / 1 atlas | 1.882 ms | 1.845 – 1.936 ms | 2.209 ms | 3.467 ms | 11 |
-| render.flush    500 sprites / 4 atlas interleaved | 2.587 ms | 2.500 – 2.613 ms | 2.775 ms | 4.400 ms | 8 |
-| render.flush    500 sprites / 4 atlas clustered | 0.274 ms | 0.268 – 0.285 ms | 0.335 ms | 0.574 ms | 73 |
-| render.flush   1000 sprites / 8 atlas interleaved | 5.650 ms | 5.425 – 5.650 ms | 5.875 ms | 6.000 ms | 4 |
-| render.flush   1000 sprites / 8 atlas clustered | 0.500 ms | 0.479 – 0.502 ms | 0.518 ms | 1.206 ms | 40 |
-| render.flush   1000 sprites / 50% rotated | 0.459 ms | 0.453 – 0.474 ms | 0.495 ms | 0.976 ms | 44 |
-| render.flush   1000 sprites / 100% rotated | 0.470 ms | 0.467 – 0.484 ms | 0.510 ms | 1.111 ms | 43 |
-| render.flush   1000 sprites / 4 alpha runs | 0.459 ms | 0.449 – 0.479 ms | 0.483 ms | 1.206 ms | 44 |
-| render.flush   1000 sprites / tint effect | 0.451 ms | 0.437 – 0.465 ms | 0.479 ms | 1.144 ms | 45 |
-| render.flush   1000 sprites / outline effect | 3.086 ms | 3.014 – 3.171 ms | 3.157 ms | 4.400 ms | 7 |
-| render.flush   1000 sprites / stretch path | 2.600 ms | 2.512 – 2.650 ms | 2.763 ms | 4.460 ms | 8 |
-| render.flush   1000 sprites / zone-bg path | 2.289 ms | 2.222 – 2.333 ms | 2.378 ms | 3.600 ms | 9 |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.006 ms | 0.013 ms | 11894 |
-| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.017 ms | 0.035 ms | 4118 |
-| render.sort    1000 items (10 swaps) | 0.018 ms | 0.018 – 0.018 ms | 0.065 ms | 0.131 ms | 1096 |
+| render.flush    100 sprites / 1 atlas | 0.127 ms | 0.122 – 0.129 ms | 0.224 ms | 0.388 ms | 157 |
+| render.flush    500 sprites / 1 atlas | 0.250 ms | 0.242 – 0.256 ms | 0.270 ms | 0.441 ms | 80 |
+| render.flush   1000 sprites / 1 atlas | 0.449 ms | 0.426 – 0.457 ms | 0.549 ms | 0.976 ms | 45 |
+| render.flush   5000 sprites / 1 atlas | 2.030 ms | 1.873 – 2.140 ms | 2.150 ms | 3.433 ms | 10 |
+| render.flush    500 sprites / 4 atlas interleaved | 2.775 ms | 2.525 – 2.825 ms | 2.943 ms | 3.883 ms | 8 |
+| render.flush    500 sprites / 4 atlas clustered | 0.299 ms | 0.274 – 0.303 ms | 0.345 ms | 0.488 ms | 67 |
+| render.flush   1000 sprites / 8 atlas interleaved | 6.325 ms | 5.600 – 6.400 ms | 6.500 ms | 6.800 ms | 4 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.543 ms | 0.490 – 0.556 ms | 0.567 ms | 1.045 ms | 37 |
+| render.flush   1000 sprites / 50% rotated | 0.508 ms | 0.459 – 0.513 ms | 0.546 ms | 0.971 ms | 40 |
+| render.flush   1000 sprites / 100% rotated | 0.543 ms | 0.470 – 0.551 ms | 0.571 ms | 0.990 ms | 37 |
+| render.flush   1000 sprites / 4 alpha runs | 0.532 ms | 0.465 – 0.543 ms | 0.567 ms | 1.053 ms | 38 |
+| render.flush   1000 sprites / tint effect | 0.518 ms | 0.464 – 0.529 ms | 0.556 ms | 0.957 ms | 39 |
+| render.flush   1000 sprites / outline effect | 3.483 ms | 3.143 – 3.617 ms | 3.750 ms | 4.320 ms | 6 |
+| render.flush   1000 sprites / stretch path | 2.957 ms | 2.587 – 3.000 ms | 3.171 ms | 4.280 ms | 7 |
+| render.flush   1000 sprites / zone-bg path | 2.600 ms | 2.322 – 2.675 ms | 2.825 ms | 3.650 ms | 8 |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.007 ms | 0.013 ms | 10802 |
+| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.017 ms | 0.036 ms | 3870 |
+| render.sort    1000 items (10 swaps) | 0.019 ms | 0.019 – 0.020 ms | 0.064 ms | 0.132 ms | 1026 |
 
-The phone costs **1.0x-2.0x** of the desktop's submission time on the flush scenarios and **0.8x-1.0x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
+The phone costs **2.9x-5.4x** of the desktop's submission time on the flush scenarios and **2.3x-2.8x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
 
 Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. The fold reads Android's own throttling state (`dumpsys thermalservice`) either side of every capture and **refuses any window in which the device reported throttling**, or in which the status was not reported at all — unrecorded is not the same claim as not-throttling. Battery temperature is recorded beside it (23.4 -> 25.7 C across the five folded runs) but deliberately **not** gated: no throttled capture has ever been measured with this instrument, so any drift threshold would be invented rather than calibrated. Nothing here pins the CPU/GPU governor.
 

@@ -374,6 +374,7 @@
       "minRuns": 2,
       "instrument": [
         "apps/bench-web/src",
+        "apps/bench-web/scripts",
         "benchmarks/src/harness.ts",
         "benchmarks/src/scenarios/render.ts",
         "benchmarks/src/scenarios/index.ts"

@@ -317,6 +317,21 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 ### `@flare-engine/react` (< 10KB gzip)
 
+**Web target.** The package runs on web unchanged — same import, same `<GameView>`, no `/web`
+subpath and no platform-specific build output (the package ships a single bundled entry, so
+`.web.tsx` file resolution is not available to it). `react-native-web >=0.20.0` and
+`canvaskit-wasm >=0.40.0` are **optional** peer deps. A web host must `await LoadSkiaWeb(...)`
+before mounting `<GameView>` and serve `canvaskit-wasm/bin/full/canvaskit.wasm` (the `full` build —
+`LoadSkiaWeb` imports the `full` glue, so the base build is an ABI mismatch).
+
+Scene capture is platform-branched internally: native uses RN-Skia's `usePictureAsTexture`
+unchanged, while web captures into **one reused offscreen surface** and detaches the snapshot with
+`makeNonTextureImage()`. This is a correctness requirement on web, not a tuning choice — RN-Skia's
+web `MakeOffscreen` allocates an unreleased WebGL context per call, and a per-frame allocation trips
+Chrome's 16-live-context cap and evicts the on-screen canvas. Both hooks run on both platforms (each
+inert via a null picture) so hook order never varies. Postfx composition is identical on both
+platforms. Background: `docs/plans/web-target-2026-08.md` §12.
+
 | API                     | Description                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `<GameView>`            | Root component. Skia Canvas + game loop + input. Props: `config`, `onReady`, `style`, `children`, `safeArea?`. If `safeArea` is omitted, insets are resolved from `react-native-safe-area-context` (optional peer dep) and fall back to zero. `GameConfig.onRenderPostFx` is typed as `PostFxRenderHook` (receives `bridge` as 3rd arg). |

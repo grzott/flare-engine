@@ -6,7 +6,7 @@ import { Position, World } from '@flare-engine/ecs';
 import { InputManager } from '@flare-engine/input';
 import { Camera2D, createRenderSystem, Renderer, Sprite, SpriteBatch } from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
-import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
+import type { CanvasRef, SkImage, SkPicture } from '@shopify/react-native-skia';
 import {
   Canvas,
   Image,
@@ -18,10 +18,11 @@ import {
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
-import { PixelRatio, StyleSheet, View } from 'react-native';
+import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
+import { useWebSceneTexture } from './scene-texture.js';
 import { createSkiaFrameRenderer, type PostFxPassDescriptor } from './skia-bridge.js';
 
 /** Render hook invoked during the frame — receives the game context and
@@ -118,7 +119,22 @@ export function GameView({
     () => ({ width: viewportSize.w * pd, height: viewportSize.h * pd }),
     [viewportSize.w, viewportSize.h, pd],
   );
-  const sceneTexture = usePictureAsTexture(picture, sceneSize);
+  // Web and native capture the scene differently, but BOTH hooks run on both
+  // platforms so hook order never varies — each is made inert by passing a null
+  // picture. RN-Skia's usePictureAsTexture calls MakeOffscreen per picture,
+  // which on web allocates an unreleased WebGL context every frame and gets the
+  // on-screen canvas evicted at Chrome's 16-context cap; the web path reuses one
+  // surface instead. Native keeps RN-Skia's hook byte-for-byte.
+  // See docs/plans/web-target-2026-08.md §12.
+  const isWeb = Platform.OS === 'web';
+  const nativeTexture = usePictureAsTexture(isWeb ? null : picture, sceneSize);
+  const webTexture = useWebSceneTexture<SkImage>(
+    Skia,
+    isWeb ? picture : null,
+    sceneSize.width,
+    sceneSize.height,
+  );
+  const sceneTexture = isWeb ? webTexture : nativeTexture;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   const ctx = useMemo<GameContextValue>(() => {

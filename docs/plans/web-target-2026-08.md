@@ -314,6 +314,29 @@ candidate shapes, to be decided at WEB-2 with a real postfx pass on screen:
 
 This is the one item §4's WEB-3 was reserved for, and it is not empty after all.
 
+### What WEB-2 then found (2026-08-21)
+
+The surface-reuse fix exposed a **second** per-frame leak that only appears once the first is gone.
+`makeNonTextureImage()` reads the whole viewport back into CanvasKit's wasm heap; leaving the GPU
+snapshot and the previous CPU image unreleased exhausts that heap and CanvasKit throws
+`Aborted()` — reproduced in-browser at **frame 566** of a 1280x720 run, matching the ~800-frame
+death first seen in the app. Releasing the snapshot immediately and the previous frame image one
+capture later survives 1500 frames at 2560x1215.
+
+Two corrections to §3's stated mechanics, both proven at WEB-2:
+
+1. **`.web.tsx` siblings are not available to these packages.** `packages/react` builds a single
+   bundled entry (`tsdown`, `entry: ['src/index.ts']` → `dist/index.mjs`), so a `.web.tsx` source
+   file is bundled away and a consumer's Metro never sees it. Shipping platform variants would
+   need a second build entry plus a new exports condition, which `check-exports` / `attw` /
+   `check-nodenext` all police. WEB-2 used a **runtime `Platform.OS` branch inside one bundle**
+   instead, with both hooks always called (each inert via a null picture) so hook order is stable.
+   §9's conditional `.web.tsx` parity check is therefore dropped — there are no siblings to check.
+2. **A GL-context-currency theory was wrong.** It looked as though a reused offscreen surface would
+   need its context made current (and `CanvasKit.setCurrentContext` is `undefined` in this build,
+   which would have killed the approach). Measured: a surface reads back correctly after another
+   context becomes current. Reuse is sound. Do not re-derive this.
+
 ### Lockfile consequence WEB-2 must expect
 
 Adding `react-native-web` to the workspace is **not** lock-neutral, and it does not revert when the

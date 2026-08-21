@@ -66,6 +66,10 @@ mock.module('react-native', () => ({
   View: 'View',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
   PixelRatio: { get: () => _mockPixelRatio },
+  // GameView branches its scene-capture path on this; 'ios' exercises the
+  // native path these tests assert on (see scene-texture.test.ts for the web
+  // path's surface-reuse contract).
+  Platform: { OS: 'ios' },
 }));
 
 mock.module('react-native-safe-area-context', () => ({

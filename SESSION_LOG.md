@@ -10658,3 +10658,31 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 274 — 2026-08-21 (scope: engine)
+
+**Goal:** WEB-2 — fix GameView's per-frame WebGL context leak on web
+
+**Touched files**
+- `.changeset/react-web-scene-texture-leak.md`
+- `.expo/`
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `packages/react/package.json`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/scene-texture.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/scene-texture.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:1 (rm -rf apps/web-spike denied, owner ran it); gate:1 (biome format on scene-texture.ts); fixup:1 (owner ran the harness rm); drift:0 — plus one wrong hypothesis (GL context currency) disproved by experiment before any code changed
+
+**Next:** see `docs/plans/todo.md`.
+
+---

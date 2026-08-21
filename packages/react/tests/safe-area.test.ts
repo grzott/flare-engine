@@ -57,6 +57,7 @@ mock.module('react/jsx-dev-runtime', () => jsxMock);
 mock.module('react-native', () => ({
   View: 'View',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  Platform: { OS: 'ios' },
 }));
 
 mock.module('@shopify/react-native-skia', () => ({

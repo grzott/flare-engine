@@ -17,12 +17,9 @@ Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lock
 each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
 and §6 rows are post-publish. Pick top → `/start`.
 
-- **WEB-2 — fix `GameView`'s per-frame WebGL context leak on web + peer deps.** WEB-1 found a real
-  engine defect: `setPicture` every frame re-fires `usePictureAsTexture`, whose web `MakeOffscreen`
-  allocates an unreleased WebGL context per frame; Chrome evicts at 16 and kills the on-screen
-  canvas. Nothing renders. Spec: §12 + §4.
-- **WEB-3 — postfx on web.** Not the no-op it was reserved as: the postfx chain samples the very
-  scene texture WEB-2 has to stop allocating per frame. Needs its own on-screen proof. Spec: §12.
+- **WEB-3 — postfx on web.** Not the no-op it was reserved as: the postfx chain samples the scene
+  texture, and WEB-2 shipped that texture path with a full-viewport readback every frame. Needs its
+  own on-screen proof, and a decision on whether `<Group layer>` replaces the readback. Spec: §12.
 - **WEB-4 — scaffolder templates ×3 [MT].** `web` script, three installs, `LoadSkiaWeb()` entry,
   wasm copy step. No changeset — `cfa` is `private: true`. Spec: §4.
 - **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only real
@@ -252,6 +249,20 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-2 — `GameView` now renders on web; fixed two per-frame leaks** (2026-08-21). Scene capture
+  is platform-branched inside `packages/react`: native keeps RN-Skia's `usePictureAsTexture`
+  byte-for-byte, web captures into one reused offscreen surface. Both hooks run on both platforms
+  (each inert via a null picture) so hook order never varies; postfx composition untouched. **Two
+  leaks, both measured in Chrome:** (1) the WEB-1 context leak — per-frame `MakeOffscreen` evicting
+  the on-screen canvas at Chrome's 16-context cap; (2) a second one found only by running the fix —
+  leaving the GPU snapshot and previous CPU image unreleased exhausts CanvasKit's wasm heap and
+  throws `Aborted()`, reproduced at frame 566. Verified with the real `GameView` in a browser:
+  sprites render, keyboard moves the entity, **1892 frames** with the context alive and the heap
+  flat at 128 MB. One `.web.tsx` sibling was NOT used — `packages/react` bundles to a single
+  `dist/index.mjs`, so file-based platform resolution is unavailable to it; the branch is a runtime
+  `Platform.OS` check instead. Minor changeset; `react-native-web` + `canvaskit-wasm` added as
+  optional peers. Detail: [web-target-2026-08.md](web-target-2026-08.md) §12.
 
 - **WEB-1 — boot spike: a Flare game ran in a browser, and found a real engine defect**
   (2026-08-21). Throwaway `apps/web-spike` (Expo 55 / RN 0.83.6 / RN-Skia 2.4.18 / react-native-web

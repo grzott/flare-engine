@@ -231,6 +231,13 @@ minor; `concretize-workspace-deps` (`workspace:*` → `^version`, the stale-`bun
 landmine); then `check:publish-safety`, `check:exports`, `check:nodenext`, `check:perf`,
 `check:perf-bytes`, `check:perf-freshness`, and the full lint → typecheck → test → build gate.
 
+**Amended 2026-08-21 (owner):** release N also carries the Arc WEB engine rows (WEB-2, and WEB-3
+if non-empty), and its gate additionally requires **WEB-1 and WEB-5 green** — the engine's web
+contract must have executed in a browser at least once before W7/W8 consume it and W8 syncs
+export surfaces into the page's public docs. It does **not** gate on Pan Tvardowski; PT runs
+after the publish and its findings land in 0.3.x. Rationale and row specs:
+[web-target-2026-08.md](web-target-2026-08.md) §8.
+
 **W7 — consumers.**
 
 - *Portfolio*: add `.npmrc` + deps, delete `apps/web/src/lib/dynamics/`, repoint the single import

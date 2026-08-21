@@ -6,6 +6,29 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
+### Arc WEB — run a Flare game in a browser (ACTIVE 2026-08-21, pre-cut)
+
+Goal: back the `roadmap.md:11` positioning claim at the app level — PT and all three scaffolder
+templates run in a browser from the same source that builds the native app. **Full design in the
+SoT: [web-target-2026-08.md](web-target-2026-08.md)** — §1 is a verified state-of-the-world table,
+read it before planning any row; §4/§5/§6 are the row specs. Approach: platform resolution, no new
+engine surface (§3). WEB-1 and WEB-5 **gate the 0.3.0 publish**; everything else does not (§8).
+Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset
+each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
+and §6 rows are post-publish. Pick top → `/start`.
+
+- **WEB-1 — boot spike, timeboxed to one session [MT].** Throwaway in-repo app on `workspace:*`,
+  wired for web, booted in Chrome running a real game loop. Output is a gap list; the app is
+  deleted. WEB-2/WEB-3 are specced from what it finds. Spec: §4.
+- **WEB-2 — `packages/react` web enablement.** Optional peer deps + any `.web.tsx` sibling WEB-1
+  proved necessary + the web contract in `api-specs.md`. Spec: §4.
+- **WEB-3 — spillover, spec written after WEB-1.** §1 predicts this is empty; it closes as an
+  explicit no-op rather than being silently dropped. Spec: §4.
+- **WEB-4 — scaffolder templates ×3 [MT].** `web` script, three installs, `LoadSkiaWeb()` entry,
+  wasm copy step. No changeset — `cfa` is `private: true`. Spec: §4.
+- **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only real
+  check on template work: the typecheck gate cannot see `templates/`. Spec: §4.
+
 ### Arc CE — consumer-enablement release (ACTIVE; engine half COMPLETE 2026-08-16)
 
 Goal: the first public release must ship packages that have real external consumers — at the prior
@@ -23,7 +46,8 @@ public copy. Swept as CE-W6 prep. npm versions are immutable, so this is settled
   a major would force 1.0.0) fold into one lockstep minor. `bun run version` runs
   `concretize-workspace-deps` (`workspace:*` → `^version`, the stale-`bun.lock` publish landmine);
   then check:publish-safety / exports / nodenext / perf / perf-bytes / perf-freshness plus the full
-  gate; owner runs the restricted publish. Spec: §10 W6.
+  gate; owner runs the restricted publish. Spec: §10 W6. **Now also carries the Arc WEB engine
+  rows and gates on WEB-1 + WEB-5** — [web-target-2026-08.md](web-target-2026-08.md) §8.
 - **CE-W8 — consumer docs/fact sync, both sibling repos (cross-repo, owner-scheduled).** Runs
   **after** the 0.3.0 publish. Page: `dynamics` needs a `docs-sync/layer-map.json` entry before
   `sync:docs` or it ships "Unclassified"; 17 export surfaces changed since the committed catalog.

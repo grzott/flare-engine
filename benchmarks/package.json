@@ -24,7 +24,9 @@
     "./results/web-android.json": "./results/web-android.json",
     "./scenarios": "./src/scenarios/index.ts",
     "./harness": "./src/harness.ts",
-    "./scenario-contract": "./src/scenario-contract.ts"
+    "./scenario-contract": "./src/scenario-contract.ts",
+    "./power": "./src/power.ts",
+    "./affinity": "./src/affinity.ts"
   },
   "dependencies": {
     "@flare-engine/core": "workspace:*",

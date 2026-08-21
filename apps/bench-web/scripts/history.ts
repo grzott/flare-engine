@@ -25,9 +25,12 @@
  * into the CPU-raster series above: the two measure different pipelines and are not comparable
  * row-for-row the way two CPU-raster captures are.
  */
+
 import { appendFileSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { readAffinity } from '@flare-engine/benchmarks/affinity';
+import { readPowerScheme } from '@flare-engine/benchmarks/power';
 import type { ScenarioResult } from '../src/runner.js';
 import type { NetworkProfile, PayloadByte } from './payload.js';
 
@@ -77,6 +80,14 @@ export type Provenance = {
   /** `UNMASKED_RENDERER_WEBGL` (or the best available fallback) — present only on `web-gpu`
    *  records. A GPU number without the GPU named is not reproducible. */
   readonly rendererString?: string;
+  /** Host machine conditions, on the lanes where the host is what is being measured. Absent on
+   *  `web-android-gpu`, where the phone is the subject and `device` + `thermal` carry this
+   *  instead. Recorded because the node lane published ~2.5x-wrong numbers for three months with
+   *  nothing able to say what power plan they were taken under. */
+  readonly powerSchemeGuid?: string;
+  readonly powerSchemeLabel?: string;
+  readonly affinityMask?: string;
+  readonly affinityCpus?: number;
 };
 
 export type RenderHistoryRecord = Provenance & {
@@ -149,12 +160,25 @@ function gitOutput(args: string[]): string | null {
 /** Mirrors `benchmarks/src/results.ts`'s `collectProvenance` shape (short git SHA, no literal
  *  hostname — this repo goes public and a machine name adds nothing the CPU model does not
  *  already say), but under the field names the web provenance schema specifies. */
-export function collectHostAndCommit(): { commit: string; host: string } {
+export function collectHostAndCommit(): {
+  commit: string;
+  host: string;
+  powerSchemeGuid?: string;
+  powerSchemeLabel?: string;
+  affinityMask?: string;
+  affinityCpus?: number;
+} {
   const sha = gitOutput(['rev-parse', '--short=12', 'HEAD']);
   const cpuModel = cpus()[0]?.model.trim() ?? 'unknown';
+  // Reused from the node lane rather than reimplemented: two independent readings of the same
+  // machine state that could quietly disagree is the defect these fields exist to prevent.
+  const scheme = readPowerScheme();
+  const affinity = readAffinity();
   return {
     commit: sha ?? 'unknown',
     host: `${process.platform} ${process.arch} (${cpuModel})`,
+    ...(scheme === null ? {} : { powerSchemeGuid: scheme.guid, powerSchemeLabel: scheme.label }),
+    ...(affinity === null ? {} : { affinityMask: affinity.mask, affinityCpus: affinity.selected }),
   };
 }
 
@@ -181,6 +205,10 @@ export function buildProvenance(input: {
   rendererString?: string;
   device?: AndroidDeviceInfo;
   thermal?: AndroidThermal;
+  powerSchemeGuid?: string;
+  powerSchemeLabel?: string;
+  affinityMask?: string;
+  affinityCpus?: number;
 }): Provenance {
   return { ...input };
 }

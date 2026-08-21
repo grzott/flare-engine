@@ -313,12 +313,13 @@ async function runGpuMode(server: { readonly url: string }, renderRawPath: strin
     throw new Error('bench-web: gpu mode produced no renderer string');
   }
 
-  const { commit, host } = collectHostAndCommit();
+  const { commit, host, ...machine } = collectHostAndCommit();
   const appVersion = await readAppVersion();
   const capturedAt = new Date().toISOString();
   const provenance = buildProvenance({
     commit,
     host,
+    ...machine,
     runtime: RUNTIME_LABEL_GPU,
     appVersion,
     browserName: render.browserName,
@@ -367,12 +368,13 @@ async function runCpuRasterMode(
   console.log('bench-web: measuring cold start (plain + throttled 4G)…');
   const coldStart = await runColdStartDriver(server.url, coldStartRawPath);
 
-  const { commit, host } = collectHostAndCommit();
+  const { commit, host, ...machine } = collectHostAndCommit();
   const appVersion = await readAppVersion();
   const capturedAt = new Date().toISOString();
   const provenance = buildProvenance({
     commit,
     host,
+    ...machine,
     runtime: RUNTIME_LABEL,
     appVersion,
     browserName: render.browserName,

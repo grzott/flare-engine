@@ -279,6 +279,76 @@ export function reconcileReviews({ baselineTouched, srcTouched, oldReviews, newR
  * fact. Uncommitted edits count because the local gate runs before the commit
  * exists, and that is the last cheap moment to re-capture.
  */
+/**
+ * Judges one web lane's folded capture, for everything that can be decided from the file alone.
+ *
+ * Split out from `check-perf-freshness` so it runs under `selftest()` like every other rule here:
+ * the git-dependent half (is the commit an ancestor, what changed since) stays in the script,
+ * because it cannot be evaluated without a repository.
+ *
+ * The three lanes went unwatched entirely until PERF-15 — `freshness.suites` covers only the five
+ * node suites, so a web capture could go stale, thin out to a single run, or be deleted with every
+ * gate green.
+ */
+export function judgeWebLane(file, laneJson, lane, opts = {}) {
+  const problems = [];
+  const minRuns = opts.minRuns ?? 2;
+  const rows = Array.isArray(laneJson?.render) ? laneJson.render : [];
+
+  if (rows.length === 0) {
+    problems.push(`web lane ${file} records no render rows.`);
+    return problems;
+  }
+
+  const runtimes = [...new Set(rows.map((r) => r.runtime))];
+  if (runtimes.length !== 1 || runtimes[0] !== lane.runtime) {
+    problems.push(
+      `web lane ${file} should record runtime "${lane.runtime}" but records ${runtimes
+        .map((r) => `"${r}"`)
+        .join(', ')} — lanes must never be folded into one series.`,
+    );
+  }
+
+  const thin = rows.filter((r) => (r.runs ?? 0) < minRuns);
+  if (thin.length > 0) {
+    problems.push(
+      `web lane ${file} has ${thin.length} row(s) folded from fewer than ${minRuns} runs — a fold ` +
+        'of one reports a spread band of zero, which reads as precision it does not have.',
+    );
+  }
+
+  // "Unrecorded" is not "clean" — the node lane's numbers were ~2.5x wrong because nothing
+  // recorded the power plan they were taken under. Which provenance matters is per lane, because
+  // the lanes do not measure the same machine: on the two desktop lanes the host IS the subject,
+  // so its power plan governs; on the device lane the phone is the subject and the desktop merely
+  // drives CDP, so what governs is the device identity and its thermal state either side.
+  if (lane.machineProvenance === 'host') {
+    if (rows.some((r) => r.powerSchemeGuid === undefined && r.powerScheme === undefined)) {
+      problems.push(
+        `web lane ${file} records no power plan for its capture — it predates machine-condition ` +
+          'provenance, so it cannot be shown to have been taken under the conditions the node ' +
+          'baseline was. Land provenance recording in apps/bench-web, then re-capture the lane.',
+      );
+    }
+  } else if (lane.machineProvenance === 'device') {
+    if (rows.some((r) => r.device === undefined || r.thermal === undefined)) {
+      problems.push(
+        `web lane ${file} records no device identity or thermal state — an on-device number must ` +
+          'name the phone it ran on and show it was not throttling.',
+      );
+    }
+  }
+
+  const commits = [...new Set(rows.map((r) => r.commit).filter(Boolean))];
+  if (commits.length !== 1) {
+    problems.push(
+      `web lane ${file} mixes ${commits.length} capture commit(s) — it is not one measurement.`,
+    );
+  }
+
+  return problems;
+}
+
 export function reconcileFreshness({ suiteTitles, freshness, commitsBySuite, instrumentCommits }) {
   const problems = [];
 
@@ -408,6 +478,97 @@ export function selftest() {
       `${label} (got: ${problems.length === 0 ? 'nothing' : problems.join(' | ')})`,
       problems.some((p) => p.includes(needle)),
     );
+
+  // --- web lanes (PERF-15) ---------------------------------------------------
+  const webLane = { runtime: 'web-cpu-raster', machineProvenance: 'host' };
+  const webDeviceLane = { runtime: 'web-android-gpu', machineProvenance: 'device' };
+  const webRow = (over = {}) => ({
+    runtime: 'web-cpu-raster',
+    runs: 5,
+    commit: 'abc123abc123',
+    powerSchemeGuid: '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c',
+    ...over,
+  });
+  const webOpts = { minRuns: 2 };
+
+  expect(
+    'a complete web lane judges clean',
+    judgeWebLane('web.json', { render: [webRow()] }, webLane, webOpts).length === 0,
+  );
+  fires(
+    'a deleted/empty web lane fails',
+    judgeWebLane('web.json', { render: [] }, webLane, webOpts),
+    'records no render rows',
+  );
+  fires(
+    'a web lane folded from one run fails',
+    judgeWebLane('web.json', { render: [webRow({ runs: 1 })] }, webLane, webOpts),
+    'fewer than 2 runs',
+  );
+  fires(
+    'a web lane recording the wrong runtime fails',
+    judgeWebLane('web.json', { render: [webRow({ runtime: 'web-gpu' })] }, webLane, webOpts),
+    'never be folded into one series',
+  );
+  fires(
+    'a web lane mixing capture commits fails',
+    judgeWebLane(
+      'web.json',
+      { render: [webRow(), webRow({ commit: 'def456def456' })] },
+      webLane,
+      webOpts,
+    ),
+    'is not one measurement',
+  );
+  fires(
+    'a web lane without machine provenance fails',
+    judgeWebLane(
+      'web.json',
+      { render: [webRow({ powerSchemeGuid: undefined })] },
+      webLane,
+      webOpts,
+    ),
+    'records no power plan',
+  );
+  expect(
+    'machine provenance is not demanded when a lane declares none',
+    judgeWebLane(
+      'web.json',
+      { render: [webRow({ powerSchemeGuid: undefined })] },
+      { runtime: 'web-cpu-raster' },
+      webOpts,
+    ).length === 0,
+  );
+  // The device lane is judged on the phone's provenance, not the desktop's: the desktop only
+  // drives CDP there, so demanding its power plan would refuse a capture for an irrelevant reason.
+  expect(
+    'the device lane accepts device identity + thermal instead of a host power plan',
+    judgeWebLane(
+      'web-android.json',
+      {
+        render: [
+          webRow({
+            runtime: 'web-android-gpu',
+            powerSchemeGuid: undefined,
+            device: { model: 'Pixel 7' },
+            thermal: { statusBefore: 0, statusAfter: 0 },
+          }),
+        ],
+      },
+      webDeviceLane,
+      webOpts,
+    ).length === 0,
+  );
+  fires(
+    'the device lane fails without thermal state',
+    judgeWebLane(
+      'web-android.json',
+      { render: [webRow({ runtime: 'web-android-gpu', device: { model: 'Pixel 7' } })] },
+      webDeviceLane,
+      webOpts,
+    ),
+    'not throttling',
+  );
 
   const rows = [baseRow('alloc.render 1000 / 1 atlas')];
   const clean = { 'alloc.render 1000 / 1 atlas': baseCounters() };

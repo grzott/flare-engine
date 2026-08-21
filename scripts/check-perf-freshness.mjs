@@ -36,7 +36,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dirtyPaths, git, gitOk } from './lib/git.mjs';
 import { REPO_ROOT, workspaceClosure } from './lib/pack.mjs';
-import { assertSelftest, reconcileFreshness } from './lib/perf-gate.mjs';
+import { assertSelftest, judgeWebLane, reconcileFreshness } from './lib/perf-gate.mjs';
 
 const BASELINE_PATH = join(REPO_ROOT, '.perf-baseline.json');
 const CAPTURE_PATH = join(REPO_ROOT, 'benchmarks', 'results', 'microbench.json');
@@ -189,10 +189,89 @@ try {
   docProblems.push('docs/references/benchmarks.md is missing — re-render: bun run bench:md');
 }
 
+/**
+ * The three web lanes, which nothing watched until PERF-15.
+ *
+ * `freshness.suites` covers the five node suites only, so `web.json`,
+ * `web-gpu.json` and `web-android.json` could go arbitrarily stale — or be
+ * deleted outright — with every gate green. That is the same hole this script
+ * exists to close for the node lane, left open for the lane whose numbers are
+ * hardest to re-take (one of them needs a phone on adb).
+ *
+ * Each lane must exist, agree on one commit that is an ancestor of HEAD, carry
+ * enough runs to have a spread at all, and name the runtime it claims to be.
+ */
+const webConfig = freshness?.webLanes;
+const webProblems = [];
+for (const [file, lane] of Object.entries(webConfig?.lanes ?? {})) {
+  const path = join(REPO_ROOT, 'benchmarks', 'results', file);
+  let laneJson;
+  try {
+    laneJson = JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    webProblems.push(
+      `web lane capture benchmarks/results/${file} is missing or unreadable — the published ` +
+        `${lane.runtime} numbers have no capture behind them. Re-capture it, or remove the lane ` +
+        'from freshness.webLanes if it is deliberately retired.',
+    );
+    continue;
+  }
+
+  const laneProblems = judgeWebLane(file, laneJson, lane, {
+    minRuns: webConfig.minRuns,
+    requireMachineProvenance: webConfig.requireMachineProvenance,
+  });
+  webProblems.push(...laneProblems);
+
+  const rows = Array.isArray(laneJson.render) ? laneJson.render : [];
+  const commits = [...new Set(rows.map((r) => r.commit).filter(Boolean))];
+  // The git-dependent half. A lane that already failed the file-only rules has nothing
+  // locatable to check against history, so it is not double-reported.
+  if (laneProblems.length > 0 || commits.length !== 1) continue;
+  const laneSha = commits[0];
+  if (!git('rev-parse', '--verify', '--quiet', `${laneSha}^{commit}`)) {
+    webProblems.push(`web lane ${file} names commit ${laneSha}, which is not in this checkout.`);
+    continue;
+  }
+  if (!gitOk('merge-base', '--is-ancestor', laneSha, 'HEAD')) {
+    webProblems.push(
+      `web lane ${file} was captured at ${laneSha}, which is not an ancestor of HEAD.`,
+    );
+    continue;
+  }
+
+  const closure = workspaceClosure(lane.packages ?? []);
+  if (closure.unknown.length > 0) {
+    webProblems.push(
+      `freshness.webLanes maps ${file} to unknown package(s) ${closure.unknown.join(', ')}.`,
+    );
+    continue;
+  }
+  const watched = [
+    ...closure.dirs.map((d) => `packages/${d}/src`),
+    ...(webConfig.instrument ?? []),
+  ];
+  const since = [
+    ...git('log', '--format=%h %s', `${laneSha}..HEAD`, '--', ...watched)
+      .split('\n')
+      .filter(Boolean),
+    ...dirtyPaths(watched).map((p) => `${p} (uncommitted)`),
+  ];
+  if (since.length > 0) {
+    webProblems.push(
+      `web lane ${file} was captured at ${laneSha}, and ${since.length} change(s) have touched ` +
+        `what it measures since — first: ${since[0]}. Re-capture with ` +
+        `\`bun run bench:web${file === 'web.json' ? '' : file === 'web-gpu.json' ? ':gpu' : ':android'}\`` +
+        ' then fold with `bun run bench:web:promote`.',
+    );
+  }
+}
+
 const problems = [
   ...reconcileFreshness({ suiteTitles, freshness, commitsBySuite, instrumentCommits }),
   ...heapProblems,
   ...docProblems,
+  ...webProblems,
 ];
 
 if (problems.length > 0) {

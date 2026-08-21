@@ -369,6 +369,32 @@
     },
     "heapSuites": {
       "integration.heap": "Integration"
+    },
+    "webLanes": {
+      "minRuns": 2,
+      "instrument": [
+        "apps/bench-web/src",
+        "benchmarks/src/harness.ts",
+        "benchmarks/src/scenarios/render.ts",
+        "benchmarks/src/scenarios/index.ts"
+      ],
+      "lanes": {
+        "web.json": {
+          "runtime": "web-cpu-raster",
+          "packages": ["@flare-engine/render-web", "@flare-engine/render", "@flare-engine/postfx"],
+          "machineProvenance": "host"
+        },
+        "web-gpu.json": {
+          "runtime": "web-gpu",
+          "packages": ["@flare-engine/render-web", "@flare-engine/render", "@flare-engine/postfx"],
+          "machineProvenance": "host"
+        },
+        "web-android.json": {
+          "runtime": "web-android-gpu",
+          "packages": ["@flare-engine/render-web", "@flare-engine/render", "@flare-engine/postfx"],
+          "machineProvenance": "device"
+        }
+      }
     }
   },
   "reviews": [

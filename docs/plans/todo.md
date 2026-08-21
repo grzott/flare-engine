@@ -17,9 +17,15 @@ Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lock
 each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
 and §6 rows are post-publish. Pick top → `/start`.
 
-- **WEB-3 — postfx on web.** Not the no-op it was reserved as: the postfx chain samples the scene
-  texture, and WEB-2 shipped that texture path with a full-viewport readback every frame. Needs its
-  own on-screen proof, and a decision on whether `<Group layer>` replaces the readback. Spec: §12.
+- **WEB-6 — `useWebSceneTexture` drives a setState-in-effect loop (found 2026-08-21).** Every web
+  load logs React's `Maximum update depth exceeded` once: `setImage` runs inside a `useEffect`
+  keyed on a `picture` that changes every frame, so each frame schedules a render that schedules an
+  effect that sets state again. Dev-mode only and not fatal — 944-2353 frame runs all completed
+  clean — but it is a real per-frame render-scheduling loop in the shipped web path, and it is the
+  kind of thing that turns into a hard stop under a slower device or a heavier scene. Fix is
+  probably to push the capture out of the effect and into the frame callback that already runs.
+  Spec: [web-target-2026-08.md](web-target-2026-08.md) §14.
+
 - **WEB-4 — scaffolder templates ×3 [MT].** `web` script, three installs, `LoadSkiaWeb()` entry,
   wasm copy step. No changeset — `cfa` is `private: true`. Spec: §4.
 - **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only real
@@ -249,6 +255,28 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-3 — postfx cannot run on web; fixed the web path that never rendered** (2026-08-21). The
+  row's question — does `<Group layer>` replace the readback — is answered **no**, and not for perf
+  reasons: RN-Skia 2.4.18 cannot bind a runtime shader as an image filter on web at all.
+  `Skia.RuntimeShaderBuilder` (`skia/web/JsiSkia.js:38`) and
+  `ImageFilter.MakeRuntimeShaderWithChildren` (`skia/web/JsiSkImageFilterFactory.js:8`) both throw
+  `Not implemented on React Native Web` unconditionally, and `<RuntimeShader>` is an image-filter
+  node. Proven by ladder in Chrome: layer + `opacity` composites, layer + `<Blur>` renders correctly,
+  layer + `<RuntimeShader>` paints nothing and throws. Since every postfx SkSL binds the scene via
+  `uniform shader src`, the readback is not optional on web.
+  **Correcting the WEB-2 row below:** its "sprites render … 1892 frames" claim does not hold for the
+  code that shipped. `createSceneCapture` released each frame image at the next capture, while
+  RN-Skia's web canvas paints on a later rAF — so `<Image image={sceneTexture}>` threw
+  `BindingError: Cannot pass deleted object` every frame and the canvas stayed blank. Retention
+  sweep: 1 image → blank, 2 → blank, 3 → renders, 1378 frames, zero errors. Shipped fix is a
+  depth-3 FIFO ring plus a web gate that skips the postfx chain with a one-time warning instead of
+  throwing; native untouched. Re-verified in Chrome after the fix: **2353 frames, 0 context losses,
+  no abort, 11.7 ms median** at 2560x1215 with a chain configured. A working web shape does exist
+  (nested `<Shader>` over `<ImageShader>` — proven on screen, two passes composing) but is blocked
+  upstream: RN-Skia's web `<ImageShader>` leaks per paint, `Aborted()` at frame ~330 regardless of
+  retention depth or pass count. Full write-up in
+  [web-target-2026-08.md](web-target-2026-08.md) §14; spawned WEB-6.
 
 - **WEB-2 — `GameView` now renders on web; fixed two per-frame leaks** (2026-08-21). Scene capture
   is platform-branched inside `packages/react`: native keeps RN-Skia's `usePictureAsTexture`

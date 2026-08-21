@@ -312,7 +312,9 @@ candidate shapes, to be decided at WEB-2 with a real postfx pass on screen:
   replacing the `usePictureAsTexture` call on web. Preserves postfx and fixes the leak at its
   source. More engine code; likely the real answer.
 
-This is the one item §4's WEB-3 was reserved for, and it is not empty after all.
+This is the one item §4's WEB-3 was reserved for, and it is not empty after all. **Answered at
+WEB-3 — see §14: neither candidate survives, because RN-Skia cannot bind a runtime shader as an
+image filter on web at all.**
 
 ### What WEB-2 then found (2026-08-21)
 
@@ -360,3 +362,109 @@ that the new entries are intentional rather than incidental — the concretize/p
 - **Web builds for `Berek` or a second template beyond WEB-5's one.** WEB-4 wires all three
   templates; proving one in a browser is enough to prove the wiring.
 - **The `.web.tsx` parity check when no `.web.tsx` exists** — §9.
+
+## 14. WEB-3 findings (browser run 2026-08-21)
+
+Spike: `apps/web-spike` rebuilt on the §12 stack (Expo 55.0.29 / RN 0.83.6 / RN-Skia 2.4.18 /
+react-native-web 0.21.2 / canvaskit-wasm 0.40.0), Chrome, viewport 2560x1215, devicePixelRatio 1.
+Deleted at row close. Three render paths were compared over one identical 64-sprite scene and a
+real two-pass chain (`createVignette` + `createGrayscaleFlash`, the flash intensity animating so
+the uniforms change every frame).
+
+### The row's question, answered: `<Group layer>` does not replace the readback
+
+Not for perf reasons — **RN-Skia 2.4.18 cannot express a runtime shader as an image filter on web
+at all.** `<RuntimeShader>` is an image-filter node (`NodeType.RuntimeShaderImageFilter`), and both
+call sites it needs throw `Not implemented on React Native Web` unconditionally:
+`Skia.RuntimeShaderBuilder` (`skia/web/JsiSkia.js:38-40`) and
+`ImageFilter.MakeRuntimeShaderWithChildren` (`skia/web/JsiSkImageFilterFactory.js:8-10`).
+
+The layer mechanism itself is sound on web — proven by ladder, cheapest first:
+
+| Layer paint | Result |
+| --- | --- |
+| none (`<Picture>` alone) | renders, 587 frames, 0 context losses |
+| `<Paint opacity={0.5}>` | renders, composites correctly |
+| `<Paint><Blur/></Paint>` | renders, correctly blurred — image filters DO work in a layer paint |
+| `<Paint><RuntimeShader/></Paint>` | **paints nothing**, throws `Not implemented on React Native Web` |
+
+So `<Group layer>` can carry a blur but never the postfx chain, and the readback is not optional on
+web: every postfx SkSL binds the scene through `uniform shader src`, which needs an `SkImage`.
+
+### The shipped web path renders nothing
+
+**This is a defect in what WEB-2 landed, not a limitation.** `createSceneCapture`
+(`packages/react/src/scene-texture.ts`) releases the previous frame image at the moment of the next
+capture. RN-Skia's web `<Canvas>` paints on its own rAF, strictly later, so that image is still in
+use: `BindingError: Cannot pass deleted object as a pointer of type Image const*` is thrown from
+`JsiSkImage.width` **every frame**, and the canvas stays blank. Retention sweep:
+
+| Frame images held before release | Result |
+| --- | --- |
+| 1 (what shipped) | blank, `BindingError` every frame |
+| 2 | blank |
+| 3 | renders correctly — 1378 frames, zero console errors, no abort |
+
+WEB-2's "survives 1500 frames" measurement was a survival check, not a render check; nothing
+asserted that a pixel appeared. That is precisely the gap this row's "own on-screen proof" existed
+to close, and it is why a browser proof cannot be replaced by a frame counter.
+
+### A working web postfx shape exists, and is still not shippable
+
+`RuntimeEffect.makeShaderWithChildren` **is** implemented on web, so the chain can be applied as
+nested paint *shaders* instead of image filters — `<Fill>` wrapping `<Shader source={passN}>` …
+`<Shader source={pass1}>` with `<ImageShader image={scene}>` innermost. Each `<Shader>`'s first
+child fills the effect's first `uniform shader` slot, which is exactly Convention A that
+`packages/postfx/src/runtime.ts:74-85` already documents. Proven on screen: the vignette darkened
+the corners, and a two-pass chain composed correctly.
+
+It is blocked by an upstream leak. RN-Skia's web `<ImageShader>` leaks a Skia object per paint when
+its image changes each frame, and the CanvasKit wasm heap hits `Aborted()` at frame **~330** — 336,
+333 and 327 at retention depths 3, 6 and 12 respectively, and 333 with two passes. Independent of
+our retention depth and of pass count, so it is not ours to fix. The contrast is the proof: the same
+scene drawn through `<Image image={scene}>` with no shader node ran **1378 frames clean**.
+
+### What WEB-3 therefore lands
+
+1. The retention ring fix, so the web path actually renders (`scene-texture.ts`, depth 3).
+2. A web gate on postfx in `GameView` — the chain is skipped with a one-time warning instead of
+   throwing every frame. Native is untouched.
+3. No adoption of `<Group layer>`, and no adoption of the `<Shader>` shape until the upstream leak
+   is fixed.
+
+**Consequence for §5 and the roadmap:** PT uses postfx, so PT's browser pass renders unfiltered on
+web until RN-Skia fixes the `<ImageShader>` per-paint leak. The `roadmap.md:11` positioning claim
+(§10 correction 2) stays unbacked for postfx-using games regardless of WEB-H4.
+
+### Verified after the fix (same session, same spike)
+
+`GameView` on web renders: **2353 frames, 0 context losses, no abort, 11.7 ms median** at
+2560x1215, with a two-effect chain configured — drawn unfiltered, and with no
+`Not implemented on React Native Web` throw, which is the gate working. Before the fix the same
+build painted solid background and threw `BindingError` every frame.
+
+**One defect left open, and it is WEB-2's architecture rather than this fix.** Every load logs React's
+`Maximum update depth exceeded` exactly once, from `useWebSceneTexture`: it calls `setImage` inside a
+`useEffect` whose `picture` dependency changes every frame, so each frame schedules a render that
+schedules an effect that sets state again. It is a dev-mode error, it does not stop rendering
+(944-2353 frame runs all completed clean), and it reproduced on every load tested. Not folded into
+WEB-3 — the row's scope is postfx, and the render defect above is already fixed. Queued as **WEB-6**.
+
+### Two traps for WEB-4 / WEB-5
+
+- **`GameView` throws on web without a `<SafeAreaProvider>` ancestor.** `useSafeAreaInsets()` raises
+  `No safe area value available`; the prop JSDoc at `packages/react/src/game-view.tsx:91-93` claims
+  it "falls back to zero insets when no provider is mounted". That is false on
+  `react-native-safe-area-context` 5.6.2. A scaffolded template that omits the provider is a blank
+  page plus a stack trace — WEB-4's three templates must each wrap it.
+- **A backgrounded Chrome tab pauses the whole render path.** `visibilityState: hidden` stops rAF,
+  and RN-Skia's web `<Canvas>` paints from rAF, so the app looks exactly like "the engine renders
+  nothing" while the game loop still ticks. Any WEB-5 browser boot must assert
+  `document.visibilityState === 'visible'` before believing a blank canvas.
+
+### Lockfile note, correcting §12
+
+The spike needed **no `bun install`** — every pinned dep was already hoisted at the workspace root
+from the WEB-1 run, and Metro resolves them through `nodeModulesPaths`. `bun.lock` was untouched by
+this row, so §12's "Lockfile consequence" hazard did not apply. It still applies to any row that
+adds a dependency.

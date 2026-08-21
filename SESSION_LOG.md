@@ -10686,3 +10686,30 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 275 — 2026-08-21 (scope: engine)
+
+**Goal:** WEB-3 — postfx on web
+
+**Touched files**
+- `.changeset/react-web-postfx-gate.md`
+- `bun.lock`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/scene-texture.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/scene-texture.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** deny:3 (cp to scratchpad, .git/info/exclude write, rm -rf); gate:1 (lint format on new mock, caught pre-gate); blocked 3x on a hidden Chrome tab pausing rAF — on-screen proofs need a foregrounded window
+
+**Next:** see `docs/plans/todo.md`.
+
+---

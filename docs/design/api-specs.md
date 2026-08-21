@@ -329,8 +329,20 @@ unchanged, while web captures into **one reused offscreen surface** and detaches
 `makeNonTextureImage()`. This is a correctness requirement on web, not a tuning choice — RN-Skia's
 web `MakeOffscreen` allocates an unreleased WebGL context per call, and a per-frame allocation trips
 Chrome's 16-live-context cap and evicts the on-screen canvas. Both hooks run on both platforms (each
-inert via a null picture) so hook order never varies. Postfx composition is identical on both
-platforms. Background: `docs/plans/web-target-2026-08.md` §12.
+inert via a null picture) so hook order never varies. The web capture path holds a FIFO retention
+ring of 3 images rather than a single slot: RN-Skia's web `<Canvas>` paints on its own rAF, which
+fires after the capture, so releasing the image on the next capture frees an object the canvas is
+still reading (BindingError + blank canvas). Measured minimum safe depth is 3 (hold=1 and hold=2
+both blank; hold=3 stable at 1378 frames). Background: `docs/plans/web-target-2026-08.md` §12.
+
+**PostFx on web.** The postfx chain is **unavailable on web** in this release and is silently
+skipped. `Skia.RuntimeShaderBuilder` (used inside `buildPostFxPasses`) and
+`ImageFilter.MakeRuntimeShaderWithChildren` (used to compose the `<RuntimeShader>` children) both
+throw `Not implemented on React Native Web` unconditionally in RN-Skia 2.4.18. `GameView` detects
+`Platform.OS === 'web'` and skips `buildPostFxPasses` and the `setPasses` state update entirely,
+keeping the scene rendering unfiltered. A one-time `console.warn` is emitted naming both throwing
+call sites. `onRenderPostFx` still fires on web (the hook receives the bridge), but any
+`setPostFxBinding` call has no visible effect. Native postfx is unchanged.
 
 | API                     | Description                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |

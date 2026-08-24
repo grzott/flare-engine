@@ -120,20 +120,24 @@ export function GameView({
     [viewportSize.w, viewportSize.h, pd],
   );
   // Web and native capture the scene differently, but BOTH hooks run on both
-  // platforms so hook order never varies — each is made inert by passing a null
-  // picture. RN-Skia's usePictureAsTexture calls MakeOffscreen per picture,
-  // which on web allocates an unreleased WebGL context every frame and gets the
-  // on-screen canvas evicted at Chrome's 16-context cap; the web path reuses one
-  // surface instead. Native keeps RN-Skia's hook byte-for-byte.
+  // platforms so hook order never varies.
+  //
+  // Native: usePictureAsTexture converts the SkPicture → texture each frame.
+  // Web: useWebSceneTexture is now imperative — GameView's onPreRender frame
+  // callback calls its capture(picture, width, height) directly instead of
+  // pushing the picture through React state. The old reactive approach
+  // (setState-in-a-passive-effect) tripped React's NESTED_PASSIVE_UPDATE_LIMIT
+  // (50) and logged "Maximum update depth exceeded" on every web load. It also
+  // cost two React renders per frame and added one hop of image latency. The
+  // web hook is inert on native because nothing calls capture there.
+  //
+  // usePictureAsTexture calls MakeOffscreen per picture on web, allocating an
+  // unreleased WebGL context every frame and evicting the on-screen canvas at
+  // Chrome's 16-context cap; the web path reuses one surface instead.
   // See docs/plans/web-target-2026-08.md §12.
   const isWeb = Platform.OS === 'web';
   const nativeTexture = usePictureAsTexture(isWeb ? null : picture, sceneSize);
-  const webTexture = useWebSceneTexture<SkImage>(
-    Skia,
-    isWeb ? picture : null,
-    sceneSize.width,
-    sceneSize.height,
-  );
+  const { image: webTexture, capture: captureWebScene } = useWebSceneTexture<SkImage>(Skia);
   const sceneTexture = isWeb ? webTexture : nativeTexture;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
@@ -196,7 +200,10 @@ export function GameView({
       if (onRenderPostFx) onRenderPostFx(ctx, ctx.renderer.canvas, bridge);
       ctx.renderer.end();
       const pic = bridge.endFrame() as SkPicture | null;
-      if (pic !== null) setPicture(pic);
+      if (pic !== null) {
+        if (isWeb) captureWebScene(pic, w * pd, h * pd);
+        else setPicture(pic);
+      }
       if (!isWeb) {
         const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
         if (!samePasses(prevBuilt, built)) {

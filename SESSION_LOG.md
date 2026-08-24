@@ -10713,3 +10713,29 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 276 — 2026-08-24 (scope: engine)
+
+**Goal:** WEB-6 — move web scene capture out of the passive effect into the frame callback
+
+**Touched files**
+- `.changeset/react-web-scene-capture-in-frame.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/scene-texture.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,5 +1,5 @@
 import type { SkImageLike } from '@flare-engine/assets';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Structural offscreen surface — the subset `GameView`'s scene capture needs.
@@ -176,17 +176,39 @@ export function createSceneCapture<TImage>(
 }
 
 /**
- * Web scene texture: capture `picture` into a **reused** offscreen surface and
- * return an image detached from that surface's GL context.
+ * Returned by `useWebSceneTexture`. `image` is the latest captured frame (null
+ * until the first capture). `capture` is the imperative callback `GameView`'s
+ * frame callback invokes directly each frame.
+ */
+export interface WebSceneTexture<TImage> {
+  image: TImage | null;
+  capture(picture: unknown, width: number, height: number): void;
+}
+
+/**
+ * Web scene texture (imperative form): expose a `capture` callback that
+ * `GameView`'s `onPreRender` frame callback invokes directly instead of pushing
+ * a picture through React state.
  *
- * `makeNonTextureImage()` is what makes reuse safe — it copies the snapshot off
- * the GPU, so next frame's draw into the same surface cannot disturb the image
- * React still holds. It is also required regardless of reuse: the offscreen
- * surface has its own WebGL context, and a texture-backed image cannot be
- * sampled by the on-screen canvas's context.
+ * The previous reactive form called `setImage` from a `useEffect` keyed on
+ * `[Skia, picture, width, height]`. `onPreRender` would call `setPicture`,
+ * React would re-render, the effect would re-run, `setImage` would re-render
+ * again. That is a setState-in-a-passive-effect cascade; React's
+ * NESTED_PASSIVE_UPDATE_LIMIT (50) trips and logs `Maximum update depth
+ * exceeded` on every web load. It also costs two React renders per frame and
+ * delays the captured image by two hops.
  *
- * Pass `picture: null` to make this hook inert — that is how `GameView` keeps
- * hook order identical on native while paying none of this cost.
+ * `GameLoop` schedules via `requestAnimationFrame`, so calling `setImage`
+ * directly from `onPreRender` is an ordinary root update that never touches the
+ * passive-update counter. Both hooks still run on both platforms so hook order
+ * never varies, but this hook is now inert on native simply because nothing
+ * calls `capture` on that platform.
+ *
+ * `makeNonTextureImage()` is required regardless of reuse: the offscreen surface
+ * has its own WebGL context, and a texture-backed image cannot be sampled by the
+ * on-screen canvas's context. It also makes reuse safe — the snapshot is copied
+ * off the GPU so next frame's draw into the same surface cannot disturb the image
+ * React still holds.
  *
  * The surface is never cleared here: `Renderer.begin()` records
  * `canvas.clear(clearColor)` into the picture itself (packages/render
@@ -194,10 +216,7 @@ export function createSceneCapture<TImage>(
  */
 export function useWebSceneTexture<TImage>(
   Skia: SceneSurfaceModuleLike<TImage>,
-  picture: unknown,
-  width: number,
-  height: number,
-): TImage | null {
+): WebSceneTexture<TImage> {
   const captureRef = useRef<SceneCapture<TImage> | null>(null);
   const [image, setImage] = useState<TImage | null>(null);
 
@@ -208,18 +227,17 @@ export function useWebSceneTexture<TImage>(
     };
   }, []);
 
-  useEffect(() => {
-    if (picture === null || picture === undefined) return;
+  const capture = useCallback(
+    (picture: unknown, width: number, height: number): void => {
+      if (picture === null || picture === undefined) return;
+      if (captureRef.current === null) {
+        captureRef.current = createSceneCapture(Skia);
+      }
+      const next = captureRef.current.capture(picture, width, height);
+      if (next !== null) setImage(next);
+    },
+    [Skia],
+  );
 
-    let capture = captureRef.current;
-    if (capture === null) {
-      capture = createSceneCapture(Skia);
-      captureRef.current = capture;
-    }
-
-    const next = capture.capture(picture, width, height);
-    if (next !== null) setImage(next);
-  }, [Skia, picture, width, height]);
-
-  return image;
+  return { image, capture };
 }

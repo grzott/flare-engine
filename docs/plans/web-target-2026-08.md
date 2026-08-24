@@ -468,3 +468,54 @@ The spike needed **no `bun install`** — every pinned dep was already hoisted a
 from the WEB-1 run, and Metro resolves them through `nodeModulesPaths`. `bun.lock` was untouched by
 this row, so §12's "Lockfile consequence" hazard did not apply. It still applies to any row that
 adds a dependency.
+
+## 15. WEB-6 findings (2026-08-24)
+
+The §14 diagnosis held exactly: `useWebSceneTexture` called `setImage` from a `useEffect` keyed on
+a `picture` that changes every frame, and `GameView`'s `onPreRender` fed that dep with
+`setPicture(pic)`. React's `NESTED_PASSIVE_UPDATE_LIMIT` is 50, so the cascade trips at roughly the
+50th frame and logs `Maximum update depth exceeded` once per load.
+
+Two consequences beyond the warning, neither previously recorded: the web path paid **two React
+renders per frame** rather than one, and the captured image reached the canvas **one hop later**
+than it needed to.
+
+### The fix
+
+`useWebSceneTexture(Skia)` is now imperative — it returns `{ image, capture }` and `GameView`'s
+`onPreRender` calls `captureWebScene(pic, w * pd, h * pd)` directly. `GameLoop` schedules through
+`requestAnimationFrame` (`packages/core/src/game-loop.ts:142`), so a `setImage` from that callback
+is an ordinary root update and never touches the passive-update counter. The retention ring, the
+surface cache and `makeNonTextureImage()` are untouched — WEB-2 and WEB-3's fixes are unchanged.
+
+Two smaller things fell out of it:
+
+- **`picture` state is now dead on web.** Only the native branch calls `setPicture`, which is what
+  `usePictureAsTexture(isWeb ? null : picture, sceneSize)` already assumed.
+- **The size source moved.** The capture takes `w * pd` from `ctx.camera.viewportWidth` instead of
+  the `sceneSize` memo. Both derive from the same `onLayout` event, so the value is identical, but
+  the camera read has no React-state hop in front of it.
+
+### Evidence, and its limit
+
+Six tests in `packages/react/tests/game-view.test.ts`; four fail against the pre-fix source
+(3-ticks-3-captures 0→3, `setPicture` on web 3→0, one-surface-per-run 0→1, physical-pixel
+dimensions undefined→800×1200), one covers unmount disposal (0→1), and the native-path test is a
+regression guard that passes on both.
+
+**What the unit tests cannot show is the console.** The warning is React dev-mode output; only a
+browser proves it gone, and `apps/web-spike` was deleted at the end of WEB-3. The structural claim
+is deductive — no setState in a passive effect means nothing increments the passive-update counter —
+but it is not the on-screen proof §14 asked for. **Folded into WEB-5**: that row already has to boot
+a scaffold in Chrome, so it additionally asserts the console is clean of
+`Maximum update depth exceeded`. Rebuilding a throwaway spike for one console line was judged not
+worth a session (owner-approved 2026-08-24).
+
+### Mock-pollution note for future react rows
+
+`packages/react/tests/game-view.test.ts` and `tests/safe-area.test.ts` both call
+`mock.module('@shopify/react-native-skia', …)`, and Bun's registry is global / last-writer-wins, so
+which stub `GameView` actually sees is load-order dependent — safe-area's copy already omits
+`usePictureAsTexture`. This row added `Skia.Surface.MakeOffscreen` to **both** rather than only the
+file that needs it. Any future row that reaches a new `Skia.*` member from `GameView` has to do the
+same.

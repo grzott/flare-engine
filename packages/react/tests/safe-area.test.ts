@@ -66,6 +66,13 @@ mock.module('@shopify/react-native-skia', () => ({
   Image: 'Image',
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
   Skia: {
+    Surface: {
+      MakeOffscreen: (_width: number, _height: number) => ({
+        getCanvas: () => ({ drawPicture: () => {} }),
+        flush: () => {},
+        makeImageSnapshot: () => ({ makeNonTextureImage: () => ({}) }),
+      }),
+    },
     XYWHRect: () => ({ setXYWH: () => {} }),
     RSXform: () => ({ set: () => {} }),
     Paint: () => ({}),

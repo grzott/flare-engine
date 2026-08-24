@@ -328,12 +328,17 @@ Scene capture is platform-branched internally: native uses RN-Skia's `usePicture
 unchanged, while web captures into **one reused offscreen surface** and detaches the snapshot with
 `makeNonTextureImage()`. This is a correctness requirement on web, not a tuning choice — RN-Skia's
 web `MakeOffscreen` allocates an unreleased WebGL context per call, and a per-frame allocation trips
-Chrome's 16-live-context cap and evicts the on-screen canvas. Both hooks run on both platforms (each
-inert via a null picture) so hook order never varies. The web capture path holds a FIFO retention
-ring of 3 images rather than a single slot: RN-Skia's web `<Canvas>` paints on its own rAF, which
-fires after the capture, so releasing the image on the next capture frees an object the canvas is
-still reading (BindingError + blank canvas). Measured minimum safe depth is 3 (hold=1 and hold=2
-both blank; hold=3 stable at 1378 frames). Background: `docs/plans/web-target-2026-08.md` §12.
+Chrome's 16-live-context cap and evicts the on-screen canvas. Both hooks still run on both platforms
+so hook order never varies, but the web hook is now **imperative**: `GameView`'s `onPreRender` frame
+callback calls its `capture(picture, width, height)` method directly instead of pushing the picture
+through React state, and it is inert on native because nothing calls it there. The old reactive form
+(a passive effect keyed on the picture value) caused a setState-in-a-passive-effect cascade that
+tripped React's `NESTED_PASSIVE_UPDATE_LIMIT` and logged `Maximum update depth exceeded` on every
+web load. The web capture path holds a FIFO retention ring of 3 images rather than a single slot:
+RN-Skia's web `<Canvas>` paints on its own rAF, which fires after the capture, so releasing the
+image on the next capture frees an object the canvas is still reading (BindingError + blank canvas).
+Measured minimum safe depth is 3 (hold=1 and hold=2 both blank; hold=3 stable at 1378 frames).
+Background: `docs/plans/web-target-2026-08.md` §12.
 
 **PostFx on web.** The postfx chain is **unavailable on web** in this release and is silently
 skipped. `Skia.RuntimeShaderBuilder` (used inside `buildPostFxPasses`) and

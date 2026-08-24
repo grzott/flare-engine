@@ -17,19 +17,12 @@ Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lock
 each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
 and §6 rows are post-publish. Pick top → `/start`.
 
-- **WEB-6 — `useWebSceneTexture` drives a setState-in-effect loop (found 2026-08-21).** Every web
-  load logs React's `Maximum update depth exceeded` once: `setImage` runs inside a `useEffect`
-  keyed on a `picture` that changes every frame, so each frame schedules a render that schedules an
-  effect that sets state again. Dev-mode only and not fatal — 944-2353 frame runs all completed
-  clean — but it is a real per-frame render-scheduling loop in the shipped web path, and it is the
-  kind of thing that turns into a hard stop under a slower device or a heavier scene. Fix is
-  probably to push the capture out of the effect and into the frame callback that already runs.
-  Spec: [web-target-2026-08.md](web-target-2026-08.md) §14.
-
 - **WEB-4 — scaffolder templates ×3 [MT].** `web` script, three installs, `LoadSkiaWeb()` entry,
   wasm copy step. No changeset — `cfa` is `private: true`. Spec: §4.
 - **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only real
-  check on template work: the typecheck gate cannot see `templates/`. Spec: §4.
+  check on template work: the typecheck gate cannot see `templates/`. **Also carries WEB-6's
+  on-screen proof** — assert the console is clean of `Maximum update depth exceeded`; WEB-6
+  landed on unit evidence because `apps/web-spike` no longer exists (§15). Spec: §4.
 
 ### Arc CE — consumer-enablement release (ACTIVE; engine half COMPLETE 2026-08-16)
 
@@ -255,6 +248,20 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-6 — web scene capture moved out of the passive effect** (2026-08-24). §14's diagnosis held:
+  `useWebSceneTexture` called `setImage` from a `useEffect` keyed on a per-frame `picture`, so
+  `onPreRender`'s `setPicture` started a render → effect → setState cascade that trips React's
+  `NESTED_PASSIVE_UPDATE_LIMIT` (50) around frame 50. The hook is now imperative — it returns
+  `{ image, capture }` and `onPreRender` calls `captureWebScene(pic, w * pd, h * pd)` directly;
+  `GameLoop` runs on rAF, so that is an ordinary root update. Two unrecorded costs also went away:
+  the web path was paying **two React renders per frame**, and the image reached the canvas one hop
+  late. `picture` state is now dead on web, and the capture size comes from `camera.viewportWidth`
+  rather than the `sceneSize` memo (same value, no state hop). Retention ring, surface cache and
+  `makeNonTextureImage()` untouched. Four of six new tests fail against the pre-fix source.
+  **The console itself is not proven** — that is dev-mode browser output and `apps/web-spike` was
+  deleted at the end of WEB-3, so the assertion is folded into WEB-5 rather than rebuilt here
+  (owner-approved). Findings: [web-target-2026-08.md](web-target-2026-08.md) §15.
 
 - **WEB-3 — postfx cannot run on web; fixed the web path that never rendered** (2026-08-21). The
   row's question — does `<Group layer>` replace the readback — is answered **no**, and not for perf

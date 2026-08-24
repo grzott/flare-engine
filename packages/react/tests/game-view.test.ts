@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
+// Symbol.dispose runtime lookup — mirrors the pattern in scene-texture.ts.
+const DISPOSE = (Symbol as unknown as { dispose?: symbol }).dispose;
+
 // Collected cleanup fns from mocked useEffect — cleared before each test.
 const _effectCleanups: Array<() => void> = [];
 
@@ -14,6 +17,18 @@ let _buildPasses: () => readonly unknown[] = () => [];
 let _setPassesCount = 0;
 let _lastPasses: unknown = null;
 
+// Call-index tracking for useState — lets tests count setPicture (index 0) calls
+// separately from the other state setters. Reset in mount() because useState call
+// order is per-mount, not per-file.
+let _useStateIdx = 0;
+let _setPictureCount = 0;
+
+// Skia.Surface.MakeOffscreen call log — tracks how many offscreen surfaces were
+// allocated and at what dimensions, and whether their dispose hooks ran.
+let _makeOffscreenCalls: Array<{ width: number; height: number }> = [];
+let _drawPictureCount = 0;
+let _surfaceDisposeCount = 0;
+
 // Mock all external deps before import
 mock.module('react', () => ({
   createElement: () => null,
@@ -27,6 +42,7 @@ mock.module('react', () => ({
     if (typeof cleanup === 'function') _effectCleanups.push(cleanup);
   },
   useState: (init: unknown) => {
+    const idx = _useStateIdx++;
     // If this is the viewportSize state (initial value has w/h), allow override.
     if (
       _viewportOverride !== null &&
@@ -45,6 +61,16 @@ mock.module('react', () => ({
         (val: unknown) => {
           _setPassesCount++;
           _lastPasses = val;
+        },
+      ];
+    }
+    // Index 0 is the picture state; track setPicture calls separately from the
+    // hook's image state (both are seeded with null, so shape cannot distinguish).
+    if (idx === 0) {
+      return [
+        typeof init === 'function' ? (init as () => unknown)() : init,
+        () => {
+          _setPictureCount++;
         },
       ];
     }
@@ -98,6 +124,26 @@ mock.module('@shopify/react-native-skia', () => ({
     return { value: null };
   },
   Skia: {
+    Surface: {
+      MakeOffscreen: (width: number, height: number) => {
+        _makeOffscreenCalls.push({ width, height });
+        const surface: Record<string, unknown> = {
+          getCanvas: () => ({
+            drawPicture: () => {
+              _drawPictureCount++;
+            },
+          }),
+          flush: () => {},
+          makeImageSnapshot: () => ({ makeNonTextureImage: () => ({}) }),
+        };
+        if (DISPOSE !== undefined) {
+          (surface as unknown as Record<symbol, unknown>)[DISPOSE] = () => {
+            _surfaceDisposeCount++;
+          };
+        }
+        return surface;
+      },
+    },
     XYWHRect: (x: number, y: number, w: number, h: number) => {
       const r = {
         x,
@@ -387,6 +433,7 @@ mock.module('@flare-engine/scene', () => ({
 const reactModule = await import('../src/game-view.js');
 
 function mount(props: Parameters<typeof reactModule.GameView>[0] = {}): void {
+  _useStateIdx = 0;
   reactModule.GameView(props);
 }
 
@@ -414,6 +461,10 @@ beforeEach(() => {
   _setPassesCount = 0;
   _lastPasses = null;
   _beginFrameTimeArgs.length = 0;
+  _setPictureCount = 0;
+  _makeOffscreenCalls = [];
+  _drawPictureCount = 0;
+  _surfaceDisposeCount = 0;
 });
 
 describe('GameView', () => {
@@ -879,5 +930,115 @@ describe('GameView — web postfx gate (WEB-3)', () => {
     tick();
     expect(_setPassesCount).toBe(1);
     unmountAll();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WEB-6: scene capture driven from the frame callback, not a passive effect.
+//
+// The old reactive approach: onPreRender → setPicture(pic) → React render →
+// useEffect keyed on [picture] → capture → setImage → React render.
+// That setState-in-a-passive-effect cascade trips React's
+// NESTED_PASSIVE_UPDATE_LIMIT (50) and logs "Maximum update depth exceeded"
+// on every web load. It also costs two React renders per frame and delays the
+// captured image by one hop.
+//
+// The new imperative approach: onPreRender → captureWebScene(pic, w*pd, h*pd)
+// → capture → setImage (one render, no passive-effect chain).
+// Native is unchanged: the else branch still calls setPicture(pic).
+// ---------------------------------------------------------------------------
+
+describe('GameView — web scene capture (WEB-6)', () => {
+  it('web: each frame captures — 3 ticks produce 3 captures (fail-old: zero)', () => {
+    // Old code: setPicture is a no-op in the mock, so picture stays null, the
+    // passive effect never re-runs, and drawPicture is never called.
+    // New code: captureWebScene is called directly in onPreRender each tick.
+    _mockPlatformOS = 'web';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    expect(_drawPictureCount).toBe(3);
+    unmountAll();
+  });
+
+  it('web: setPicture is never called — the picture state is dead on web', () => {
+    // Old code: setPicture(pic) was called unconditionally (no isWeb branch) → 3.
+    // New code: isWeb branch routes to captureWebScene instead → 0.
+    _mockPlatformOS = 'web';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    expect(_setPictureCount).toBe(0);
+    unmountAll();
+  });
+
+  it('web: one offscreen surface across a long run', () => {
+    // Proves the WEB-2 surface-reuse logic survives the new call path.
+    // Old code: capture never fires → MakeOffscreen never called → length 0.
+    // New code: surface cached at first capture → length 1 across 60 ticks.
+    _mockPlatformOS = 'web';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    for (let i = 0; i < 60; i++) tick();
+    expect(_makeOffscreenCalls.length).toBe(1);
+    unmountAll();
+  });
+
+  it('web: capture receives physical pixels', () => {
+    // Guards w*pd replacing sceneSize: MakeOffscreen must be called with the
+    // physical (DPR-scaled) viewport dimensions, not the logical CSS dimensions.
+    // Old code: capture never fires → _makeOffscreenCalls[0] is undefined.
+    _mockPlatformOS = 'web';
+    _mockPixelRatio = 2;
+    _viewportOverride = { w: 400, h: 600 };
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    tick();
+    expect(_makeOffscreenCalls[0]).toEqual({ width: 800, height: 1200 });
+    unmountAll();
+  });
+
+  it('native: setPicture fires per tick and no offscreen surface is allocated', () => {
+    // Regression guard: proves the native path is untouched by WEB-6.
+    // This test passes on both old and new source (native path unchanged).
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    expect(_setPictureCount).toBe(3);
+    expect(_makeOffscreenCalls.length).toBe(0);
+    unmountAll();
+  });
+
+  it('unmount releases the offscreen surface', () => {
+    // Proves the mount-only dispose effect (captureRef.current?.dispose()) still
+    // runs and releases the surface via Symbol.dispose.
+    // Old code: capture never fires, no surface allocated → disposeCount stays 0.
+    _mockPlatformOS = 'web';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    unmountAll();
+    if (DISPOSE !== undefined) {
+      expect(_surfaceDisposeCount).toBe(1);
+    }
   });
 });

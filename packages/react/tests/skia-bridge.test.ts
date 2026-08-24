@@ -1477,6 +1477,58 @@ describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
     expect(buildPassArgs).toHaveLength(1);
     expect(buildPassArgs[0]).toEqual([400, 600]);
   });
+
+  it('hasPostFxBinding returns false when nothing has been bound', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    expect(bridge.hasPostFxBinding()).toBe(false);
+  });
+
+  it('hasPostFxBinding returns false when runtime is bound but chain is null', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [] };
+    bridge.setPostFxBinding(runtime, null);
+    expect(bridge.hasPostFxBinding()).toBe(false);
+  });
+
+  it('hasPostFxBinding returns false when chain is bound but runtime.supported is false', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = { supported: false, buildPass: () => [] };
+    bridge.setPostFxBinding(runtime, makeMockChain());
+    expect(bridge.hasPostFxBinding()).toBe(false);
+  });
+
+  it('hasPostFxBinding returns false when runtime + chain are bound but buildPass is absent', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = { supported: true };
+    bridge.setPostFxBinding(runtime, makeMockChain());
+    expect(bridge.hasPostFxBinding()).toBe(false);
+  });
+
+  it('hasPostFxBinding returns true when runtime (supported, with buildPass) and chain are both bound', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [] };
+    bridge.setPostFxBinding(runtime, makeMockChain());
+    expect(bridge.hasPostFxBinding()).toBe(true);
+  });
+
+  it('hasPostFxBinding does not call runtime.buildPass (safe on web — building would throw)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = {
+      supported: true,
+      buildPass: (): never => {
+        throw new Error('buildPass must not be called');
+      },
+    };
+    bridge.setPostFxBinding(runtime, makeMockChain());
+    expect(() => bridge.hasPostFxBinding()).not.toThrow();
+    expect(bridge.hasPostFxBinding()).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

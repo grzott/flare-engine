@@ -251,6 +251,12 @@ export interface FrameRenderer {
     runtime: FrameRendererPostFxRuntime | null,
     chain: FrameRendererPostFxChain | null,
   ): void;
+  /**
+   * Whether `buildPostFxPasses` would attempt to build passes from the bound
+   * runtime and chain. Pure null/flag checks — never calls `runtime.buildPass`,
+   * so it is safe on platforms where building throws (React Native Web).
+   */
+  hasPostFxBinding(): boolean;
   endFrame(): PictureLike | null;
 }
 
@@ -859,6 +865,15 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     setPostFxBinding(runtime, chain): void {
       _boundRuntime = runtime;
       _boundChain = chain;
+    },
+
+    hasPostFxBinding(): boolean {
+      return (
+        _boundRuntime !== null &&
+        !!_boundRuntime.supported &&
+        _boundRuntime.buildPass !== undefined &&
+        _boundChain !== null
+      );
     },
 
     buildPostFxPasses(runtime, chain, width, height): readonly FrameRendererPostFxDescriptor[] {

@@ -10814,3 +10814,30 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 279 — 2026-08-24 (scope: engine)
+
+**Goal:** WEB-7 — gate the web postfx warn on an actual binding
+
+**Touched files**
+- `.changeset/react-render-web-postfx-warn-gate.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/render/src/frame-renderer.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness STALE on frame-renderer.ts — overridden with FLARE_PERF_ALLOW_STALE: the change is 15 added lines / 0 modified, hasPostFxBinding is on no measured path, and the machine is under load so a capture now would be untrustworthy; re-capture owed before CE-W6); fixup:0; drift:1 (Arc WEB header rewritten to complete state now that its last row landed)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

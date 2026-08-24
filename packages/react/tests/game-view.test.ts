@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 // Symbol.dispose runtime lookup — mirrors the pattern in scene-texture.ts.
 const DISPOSE = (Symbol as unknown as { dispose?: symbol }).dispose;
@@ -28,6 +28,13 @@ let _setPictureCount = 0;
 let _makeOffscreenCalls: Array<{ width: number; height: number }> = [];
 let _drawPictureCount = 0;
 let _surfaceDisposeCount = 0;
+
+// Controls what the mocked bridge's hasPostFxBinding() returns.
+let _hasPostFxBinding = false;
+
+// Captured console.warn messages — installed/cleared per test.
+let _warnMessages: string[] = [];
+let _origWarn: typeof console.warn | null = null;
 
 // Mock all external deps before import
 mock.module('react', () => ({
@@ -374,6 +381,7 @@ mock.module('@flare-engine/render', () => ({
       drawAtlas: () => {},
       buildPostFxPasses: () => _buildPasses(),
       setPostFxBinding: () => {},
+      hasPostFxBinding: () => _hasPostFxBinding,
       endFrame: () => {
         if (cur === null) return null;
         cur = null;
@@ -447,6 +455,12 @@ function unmountAll(): void {
 beforeEach(() => {
   _effectCleanups.length = 0;
   _loopInstance = null;
+  _hasPostFxBinding = false;
+  _warnMessages = [];
+  _origWarn = console.warn;
+  console.warn = (...args: Parameters<typeof console.warn>) => {
+    _warnMessages.push(String(args[0]));
+  };
   _cameraInstance = null;
   _rendererInstance = null;
   _batchInstance = null;
@@ -465,6 +479,13 @@ beforeEach(() => {
   _makeOffscreenCalls = [];
   _drawPictureCount = 0;
   _surfaceDisposeCount = 0;
+});
+
+afterEach(() => {
+  if (_origWarn !== null) {
+    console.warn = _origWarn;
+    _origWarn = null;
+  }
 });
 
 describe('GameView', () => {
@@ -1040,5 +1061,118 @@ describe('GameView — web scene capture (WEB-6)', () => {
     if (DISPOSE !== undefined) {
       expect(_surfaceDisposeCount).toBe(1);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WEB-7: postfx warn gate — gated on binding, per-instance, no version literal.
+//
+// Two defects fixed:
+//   1. The warn fired unconditionally on web even when no postfx binding
+//      exists (the blank scaffolder template has no chain and still warned).
+//   2. The warn hardcoded "RN-Skia 2.4.18" while templates ship 2.6.0.
+//
+// The fix:
+//   - Warn only when bridge.hasPostFxBinding() is true (safe: never calls
+//     runtime.buildPass, so it cannot throw on web).
+//   - Move the warn-once flag from module scope to a per-<GameView> useRef,
+//     so each independently mounted instance with a chain warns once.
+//   - Remove the version literal from the message.
+//
+// Note on fail-old verification: the pre-fix flag (_webPostFxWarned) is
+// module-level and never resets between tests. The WEB-3 suite above runs
+// first and mounts a web GameView, which trips the flag. By the time the
+// WEB-7 suite runs, the flag is already true on the old source — meaning
+// tests 1 and 3 may see NO warning on old source for that reason, not
+// because the binding gate works. That flag-pollution hazard is precisely
+// why the plan moves it to a per-instance ref; it is reported in the
+// implementation notes rather than claimed as a clean fail-old.
+// ---------------------------------------------------------------------------
+
+describe('GameView — web postfx warn gate (WEB-7)', () => {
+  it('web: no postfx binding — never warns across frames (fail-old: warned on the first tick)', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = false;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
+    expect(postfxWarns).toHaveLength(0);
+    unmountAll();
+  });
+
+  it('web: with a postfx binding — warns exactly once across frames', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
+    expect(postfxWarns).toHaveLength(1);
+    unmountAll();
+  });
+
+  it('the warning names no RN-Skia version (fail-old: said 2.4.18)', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
+    expect(postfxWarns).toHaveLength(1);
+    const msg = postfxWarns[0] as string;
+    expect(msg).not.toMatch(/\d+\.\d+\.\d+/);
+    expect(msg).toContain('Skia.RuntimeShaderBuilder');
+    expect(msg).toContain('ImageFilter.MakeRuntimeShaderWithChildren');
+    unmountAll();
+  });
+
+  it('native: never warns even with a binding', () => {
+    _mockPlatformOS = 'ios';
+    _hasPostFxBinding = true;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
+    expect(postfxWarns).toHaveLength(0);
+    unmountAll();
+  });
+
+  it('warn-once is per GameView instance', () => {
+    // Each independently mounted <GameView> with a binding should warn once.
+    // On the old source the flag was module-level: the second mount reused
+    // the already-set flag and emitted no second warning — only one total.
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    mount();
+    const cam1 = _cameraInstance!;
+    cam1.viewportWidth = 320;
+    cam1.viewportHeight = 240;
+    tick();
+    unmountAll();
+
+    mount();
+    const cam2 = _cameraInstance!;
+    cam2.viewportWidth = 320;
+    cam2.viewportHeight = 240;
+    tick();
+    unmountAll();
+
+    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
+    expect(postfxWarns).toHaveLength(2);
   });
 });

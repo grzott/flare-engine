@@ -637,16 +637,22 @@ making both platforms bootstrap asynchronously.
 the WEB-3 postfx gate warning. **No `Maximum update depth exceeded`.** No `BindingError`, no
 `Aborted`, no context loss.
 
-### Two defects found in the shipped postfx gate (WEB-3), not fixed here
+### Two defects found in the shipped postfx gate (WEB-3) — fixed at WEB-7, same day
 
-Both are `packages/react` scope and want their own lockstep changeset, so they are recorded rather
-than folded into a templates row:
+Both were `packages/react` scope and wanted their own lockstep changeset, so they were queued out of
+this templates row rather than folded in:
 
 1. **The gate warns when there is no postfx at all.** `game-view.tsx`'s `else if (!_webPostFxWarned)`
    fires on web unconditionally, not only when a chain exists. The `blank` template configures no
    postfx and still tells the user "postfx chain skipped" on every web load.
 2. **The warning hardcodes "RN-Skia 2.4.18".** Templates ship 2.6.0, so the message names a version
    the user does not have. It should not state a version it cannot verify.
+
+**Resolved by WEB-7.** `@flare-engine/render`'s `FrameRenderer` gained `hasPostFxBinding()` — a
+pure null/flag check over the same guards `buildPostFxPasses` applies before calling
+`runtime.buildPass`, so it answers "is a chain bound" without touching the call that throws on web.
+`GameView` warns only when it returns true, the version literal is gone, and warn-once moved from a
+module flag to a per-instance `useRef`.
 
 ### Method notes for whoever runs a scaffold check again
 

@@ -16,7 +16,7 @@ import {
   usePictureAsTexture,
 } from '@shopify/react-native-skia';
 import type React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -158,6 +158,10 @@ export function GameView({
     return { world, camera, input, audio, assets, scenes, loop, renderer, batch };
   }, []);
 
+  // Warn once per <GameView> instance (not per page load) so each independently
+  // mounted instance with a postfx binding gets its own one-time notice.
+  const webPostFxWarnedRef = useRef(false);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   useEffect(() => {
     const bridge = createSkiaFrameRenderer(Skia);
@@ -210,14 +214,13 @@ export function GameView({
           prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
           setPasses(prevBuilt);
         }
-      } else if (!_webPostFxWarned) {
+      } else if (bridge.hasPostFxBinding() && !webPostFxWarnedRef.current) {
         console.warn(
-          'postfx chain skipped: RuntimeShader image filters are unavailable on React Native Web' +
-            ' in RN-Skia 2.4.18 (Skia.RuntimeShaderBuilder and' +
+          'postfx chain skipped: Skia.RuntimeShaderBuilder and' +
             ' ImageFilter.MakeRuntimeShaderWithChildren both throw' +
-            ' "Not implemented on React Native Web").',
+            ' "Not implemented on React Native Web".',
         );
-        _webPostFxWarned = true;
+        webPostFxWarnedRef.current = true;
       }
       canvasRef.current?.redraw();
     });
@@ -310,14 +313,6 @@ function returnTrue(): boolean {
 /** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses
  *  to this so the `passes` state never changes for a postfx-free GameView. */
 const EMPTY_PASSES: readonly PostFxPassDescriptor[] = [];
-
-/**
- * Emitted once when a web GameView first encounters postfx.
- * `Skia.RuntimeShaderBuilder` and `ImageFilter.MakeRuntimeShaderWithChildren`
- * both throw "Not implemented on React Native Web" in RN-Skia 2.4.18, so the
- * pass chain is skipped entirely on web rather than throwing every frame.
- */
-let _webPostFxWarned = false;
 
 /**
  * Shallow structural equality of two pass lists. The signature is length +

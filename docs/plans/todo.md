@@ -6,24 +6,21 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
-### Arc WEB — run a Flare game in a browser (ACTIVE 2026-08-21, pre-cut)
+### Arc WEB — run a Flare game in a browser (engine half COMPLETE 2026-08-24)
 
 Goal: back the `roadmap.md:11` positioning claim at the app level — PT and all three scaffolder
 templates run in a browser from the same source that builds the native app. **Full design in the
-SoT: [web-target-2026-08.md](web-target-2026-08.md)** — §1 is a verified state-of-the-world table,
-read it before planning any row; §4/§5/§6 are the row specs. Approach: platform resolution, no new
-engine surface (§3). WEB-1 and WEB-5 **gate the 0.3.0 publish**; everything else does not (§8).
-Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lockstep minor changeset
-each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
-and §6 rows are post-publish. Pick top → `/start`.
+SoT: [web-target-2026-08.md](web-target-2026-08.md)**; findings in §12/§14/§15/§16/§17.
 
-- **WEB-7 — the web postfx gate warns when there is no postfx (found 2026-08-24).** On web
-  `game-view.tsx`'s `else if (!_webPostFxWarned)` branch fires unconditionally, not only when a
-  chain exists, so the `blank` template — which configures no postfx — still logs "postfx chain
-  skipped" on every web load. The same message hardcodes "RN-Skia 2.4.18" while the templates ship
-  2.6.0, naming a version the user does not have. Gate on a non-empty chain and drop the version
-  literal. `packages/react` → engine-builder, one lockstep minor changeset.
-  Spec: [web-target-2026-08.md](web-target-2026-08.md) §17.
+**Every in-repo row is done (WEB-1..WEB-7, see `## Done`), and the 0.3.0 publish gate is met** —
+§8 gates the cut on WEB-1 + WEB-5, both green: a real `create-flare-app` scaffold renders in Chrome
+from a registry install. What remains is not in this repo and not before the cut:
+
+- **§5 — PT's browser pass** runs in the PT repo's own harness, against `^0.3.0` from the registry
+  *after* the publish. Expect it to render unfiltered: postfx is gated off on web (§14), and the
+  `roadmap.md:11` claim stays unbacked for postfx-using games until RN-Skia fixes the upstream
+  `<ImageShader>` per-paint leak.
+- **§6 — hosting + the web perf bar** is post-publish (WEB-H1..H4).
 
 ### Arc CE — consumer-enablement release (ACTIVE; engine half COMPLETE 2026-08-16)
 
@@ -249,6 +246,19 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-7 — the web postfx warn is gated on an actual binding** (2026-08-24). The gate WEB-3 added
+  fired on *every* web load regardless of whether a postfx chain existed — the `blank` template
+  configures none and still logged "postfx chain skipped" — and the message named "RN-Skia 2.4.18"
+  while templates ship 2.6.0. The warn could not simply call `buildPostFxPasses` to find out,
+  because that call is what throws on web; so `@flare-engine/render`'s `FrameRenderer` gained
+  **`hasPostFxBinding()`**, a pure null/flag check over exactly the guards `buildPostFxPasses`
+  applies *before* reaching `runtime.buildPass`. `GameView` warns only when it returns true, and the
+  version literal is gone — the message still names both throwing APIs, which are facts the code can
+  stand behind. Warn-once also moved from a module flag to a per-`<GameView>` `useRef`: the module
+  flag never reset between tests and would have silently poisoned fail-old verification, and
+  per-instance is defensible on its own. One lockstep minor changeset covering both packages.
+  Spec: [web-target-2026-08.md](web-target-2026-08.md) §17.
 
 - **WEB-5 — real scaffold booted in Chrome; two WEB-4 bugs found and fixed** (2026-08-24). A
   `create-flare-app` scaffold of `blank`, installed from a registry, run with `bun run web`, renders

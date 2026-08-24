@@ -3,6 +3,7 @@ import type { GameContextValue } from "@flare-engine/engine";
 import { GameView, skiaAtlasModule } from "@flare-engine/react";
 import type React from "react";
 import { StyleSheet, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // One cyan square rendered at world origin.
 // Camera default is also (0, 0), so worldToScreen(0, 0) = screen center.
@@ -30,9 +31,11 @@ function onReady(ctx: GameContextValue): void {
 
 export function App(): React.ReactElement {
   return (
-    <View style={styles.root}>
-      <GameView onReady={onReady} style={styles.game} />
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        <GameView onReady={onReady} style={styles.game} />
+      </View>
+    </SafeAreaProvider>
   );
 }
 

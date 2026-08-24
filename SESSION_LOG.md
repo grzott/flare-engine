@@ -10739,3 +10739,44 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 277 — 2026-08-24 (scope: engine)
+
+**Goal:** WEB-4 — web support in all three scaffolder templates
+
+**Touched files**
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+- `packages/create-flare-app/templates/blank/app.json`
+- `packages/create-flare-app/templates/blank/gitignore`
+- `packages/create-flare-app/templates/blank/index.ts`
+- `packages/create-flare-app/templates/blank/package.json`
+- `packages/create-flare-app/templates/blank/README.md`
+- `packages/create-flare-app/templates/blank/scripts/`
+- `packages/create-flare-app/templates/blank/src/App.tsx`
+- `packages/create-flare-app/templates/shmup/app.json`
+- `packages/create-flare-app/templates/shmup/gitignore`
+- `packages/create-flare-app/templates/shmup/index.ts`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/shmup/README.md`
+- `packages/create-flare-app/templates/shmup/scripts/`
+- `packages/create-flare-app/templates/shmup/src/App.tsx`
+- `packages/create-flare-app/templates/topdown/app.json`
+- `packages/create-flare-app/templates/topdown/gitignore`
+- `packages/create-flare-app/templates/topdown/index.ts`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `packages/create-flare-app/templates/topdown/README.md`
+- `packages/create-flare-app/templates/topdown/scripts/`
+- `packages/create-flare-app/templates/topdown/src/App.tsx`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:1 (corrected a stale typecheck claim on the WEB-5 row while editing it)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

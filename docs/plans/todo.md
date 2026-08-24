@@ -17,12 +17,15 @@ Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lock
 each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
 and §6 rows are post-publish. Pick top → `/start`.
 
-- **WEB-4 — scaffolder templates ×3 [MT].** `web` script, three installs, `LoadSkiaWeb()` entry,
-  wasm copy step. No changeset — `cfa` is `private: true`. Spec: §4.
-- **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only real
-  check on template work: the typecheck gate cannot see `templates/`. **Also carries WEB-6's
+- **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only check
+  that exercises the templates' *pinned* Expo-57 stack, the wasm serving, the `LoadSkiaWeb` gate
+  and the Metro web config — `tsconfig.templates.json` does typecheck all three templates, but
+  against the monorepo's hoisted deps (§4 correction, §11.4). **Also carries WEB-6's
   on-screen proof** — assert the console is clean of `Maximum update depth exceeded`; WEB-6
-  landed on unit evidence because `apps/web-spike` no longer exists (§15). Spec: §4.
+  landed on unit evidence because `apps/web-spike` no longer exists (§15). **Also must run
+  `npx expo install --check`** — WEB-4's four web dependency pins are inferred, not verified,
+  and the templates typecheck resolves against the monorepo's Expo-55-era deps (§16).
+  Spec: §4.
 
 ### Arc CE — consumer-enablement release (ACTIVE; engine half COMPLETE 2026-08-16)
 
@@ -248,6 +251,18 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-4 — web support in all three scaffolder templates** (2026-08-24). `blank` / `topdown` /
+  `shmup` each gained a `web` script, four web dependencies, a `LoadSkiaWeb()`-gated `index.ts`, a
+  `scripts/copy-canvaskit.mjs` wasm copy step, `web` in `app.json` platforms, a `public/canvaskit.wasm`
+  ignore, and README coverage. **WEB-3's safe-area trap was live in all three** — none wrapped its
+  tree in `<SafeAreaProvider>`, so every scaffolded app would have thrown
+  `No safe area value available` on first web render; all three are now wrapped. The related false
+  claim in `GameView`'s shipped JSDoc (`game-view.tsx:91-93`, "falls back to zero insets") is
+  **left open** — it is `packages/react` scope and wants its own changeset. The four version pins
+  are inferred rather than verified and WEB-5 now carries `expo install --check` to settle them.
+  No changeset: `create-flare-app` is `private: true`. Findings:
+  [web-target-2026-08.md](web-target-2026-08.md) §16.
 
 - **WEB-6 — web scene capture moved out of the passive effect** (2026-08-24). §14's diagnosis held:
   `useWebSceneTexture` called `setImage` from a `useEffect` keyed on a per-frame `picture`, so

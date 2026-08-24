@@ -15,6 +15,7 @@ import { GameView, VirtualJoystick, skiaAtlasModule } from "@flare-engine/react"
 import type React from "react";
 import { useMemo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TILE_SIZE, loadMap } from "./map";
 
 const SPEED = 96;
@@ -108,11 +109,13 @@ export function App(): React.ReactElement {
   };
 
   return (
-    <View style={styles.root}>
-      <GameView config={config} onReady={handleReady} style={styles.game}>
-        <VirtualJoystick style={styles.joystick} onStateChange={handleJoystick} />
-      </GameView>
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        <GameView config={config} onReady={handleReady} style={styles.game}>
+          <VirtualJoystick style={styles.joystick} onStateChange={handleJoystick} />
+        </GameView>
+      </View>
+    </SafeAreaProvider>
   );
 }
 

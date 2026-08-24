@@ -20,6 +20,7 @@ import { GameView, VirtualJoystick, skiaAtlasModule } from "@flare-engine/react"
 import type React from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   createShmupState,
   setupShmup,
@@ -150,13 +151,15 @@ export function App(): React.ReactElement {
   }, []);
 
   return (
-    <View style={styles.root}>
-      <GameView config={config} onReady={handleReady} style={styles.game}>
-        {/* Score overlay — updated only on kills, not per-frame */}
-        <Text style={styles.score}>Score: {score}</Text>
-        <VirtualJoystick style={styles.joystick} onStateChange={handleJoystick} />
-      </GameView>
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        <GameView config={config} onReady={handleReady} style={styles.game}>
+          {/* Score overlay — updated only on kills, not per-frame */}
+          <Text style={styles.score}>Score: {score}</Text>
+          <VirtualJoystick style={styles.joystick} onStateChange={handleJoystick} />
+        </GameView>
+      </View>
+    </SafeAreaProvider>
   );
 }
 

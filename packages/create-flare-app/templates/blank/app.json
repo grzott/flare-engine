@@ -4,7 +4,7 @@
     "slug": "{{APP_NAME}}",
     "version": "0.1.0",
     "orientation": "portrait",
-    "platforms": ["android", "ios"],
+    "platforms": ["android", "ios", "web"],
     "newArchEnabled": true
   }
 }

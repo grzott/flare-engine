@@ -11,10 +11,29 @@ bun run start
 
 Press `a` for Android or `i` for iOS once the Metro bundler is ready.
 
+## Run in a browser
+
+```bash
+bun run web
+```
+
+The `web` script copies CanvasKit's wasm binary into `public/` before starting
+Metro, because Skia on web is CanvasKit and it has to be served alongside the
+bundle. Starting the dev server any other way — `bun run start` then pressing
+`w` — skips that copy and the canvas stays blank.
+
+The binary is ~8 MB and is `.gitignore`d: it is a copy of
+`canvaskit-wasm/bin/full/canvaskit.wasm`, reproduced by the script on demand.
+It must be the `full` build; the smaller default build is ABI-incompatible with
+the loader.
+
 ## Layout
 
 - `src/App.tsx` — root component; mounts `<GameView>` and configures the Flare game loop.
-- `index.ts` — Expo entry that registers `App` as the root component.
+- `index.ts` — Expo entry that registers `App` as the root component; on web it
+  awaits `LoadSkiaWeb()` first.
+- `scripts/copy-canvaskit.mjs` — copies the CanvasKit wasm into `public/` for the
+  web build.
 - `app.json` — Expo configuration.
 
 ## Docs

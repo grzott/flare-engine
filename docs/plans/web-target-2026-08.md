@@ -519,3 +519,57 @@ which stub `GameView` actually sees is load-order dependent — safe-area's copy
 `usePictureAsTexture`. This row added `Skia.Surface.MakeOffscreen` to **both** rather than only the
 file that needs it. Any future row that reaches a new `Skia.*` member from `GameView` has to do the
 same.
+
+## 16. WEB-4 findings (2026-08-24)
+
+All three templates now carry: a `web` script, the four web installs, a `LoadSkiaWeb()`-gated
+entry, a wasm copy step, and README coverage. Two things turned up that the row spec did not
+predict.
+
+### Every template was missing `<SafeAreaProvider>`
+
+WEB-3 recorded this as a trap for WEB-4 (§14, "Two traps") and it was live in **all three**
+templates, not one: none of `blank` / `topdown` / `shmup` wrapped its tree, so every scaffolded app
+would have thrown `No safe area value available` on its first web render. `GameView` calls
+`useSafeAreaInsets()` unconditionally. All three are now wrapped.
+
+**Still open, and deliberately not fixed here:** `GameView`'s own JSDoc
+(`packages/react/src/game-view.tsx:91-93`) claims the `safeArea` prop "falls back to zero insets
+when no provider is mounted". That is false on `react-native-safe-area-context` 5.6.2 and it ships
+in the published `.d.ts`. Fixing it is `packages/react` scope and wants its own lockstep changeset,
+so it is not smuggled into a templates row.
+
+### The web dependency pins are provisional
+
+Added as `dependencies` (not dev — `LoadSkiaWeb` does a runtime
+`import CanvasKitInit from "canvaskit-wasm/bin/full/canvaskit"`, which Metro bundles):
+
+| Package | Pin | Basis |
+| --- | --- | --- |
+| `react-dom` | `19.2.3` | must match the template's `react` exactly |
+| `react-native-web` | `~0.21.0` | the hoisted monorepo copy is 0.21.2 |
+| `@expo/metro-runtime` | `~57.0.0` | SDK-major convention (spike ran 55.0.12 on SDK 55) |
+| `canvaskit-wasm` | `^0.40.0` | matches `@flare-engine/react`'s optional peer range |
+
+These are inferred, not verified: the templates pin the Expo-57 stack while the monorepo hoists the
+Expo-55-era one, and `tsconfig.templates.json` resolves against the hoisted copy by design (§11.4).
+So the typecheck passing says nothing about whether these four versions are the right ones for
+Expo 57. **WEB-5 must run `npx expo install --check` against the real scaffold and correct them** —
+added to that row.
+
+### Verified here
+
+- `tsc --noEmit -p tsconfig.templates.json` clean with the new `index.ts`, which imports
+  `@shopify/react-native-skia/lib/module/web`. That subpath resolves because RN-Skia ships **no
+  `exports` map**, and its `lib/module/web/index.d.ts` is present.
+- `scripts/copy-canvaskit.mjs` run against a scratch cwd produces `public/canvaskit.wasm` at
+  **8,001,100 bytes** — the `full` build §12 requires, not the 7,094,511-byte default.
+- `canvaskit-wasm` exports `./bin/full/canvaskit.wasm` as a direct path, so the script resolves the
+  binary through `require.resolve` rather than guessing at a `node_modules` layout.
+
+### Note for anyone reading the template diff
+
+`biome.json:51` excludes `packages/create-flare-app/templates` from linting outright. Template
+sources use double quotes against the repo's single, and no formatter enforces anything inside that
+tree — the lint gate will not catch style drift in templates. New template files match the existing
+template style, not the engine style.

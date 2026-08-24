@@ -1,4 +1,5 @@
 node_modules
+public/canvaskit.wasm
 .expo
 dist
 *.log

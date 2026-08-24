@@ -1,10 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "noEmit": true, "rootDir": ".", "jsx": "react-jsx", "types": ["bun"] },
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "types": ["bun"]
+  },
   "include": [
     "templates/*/src",
     "templates/*/tests",
     "templates/*/index.ts",
+    "templates/*/index.web.ts",
     "templates-typecheck-shims.d.ts"
   ]
 }

@@ -40,8 +40,11 @@ A top-down starter that wires the full tilemap pipeline:
 
 - `src/App.tsx` — root component; mounts `<GameView>` and configures the Flare game loop.
 - `src/map.ts` — ASCII-art map, Tiled JSON builder, and `loadMap()`.
-- `index.ts` — Expo entry that registers `App` as the root component; on web it
-  awaits `LoadSkiaWeb()` first.
+- `index.ts` — Expo entry that registers `App` as the root component (native).
+- `index.web.ts` — web entry; awaits `LoadSkiaWeb()` **before** importing `App`.
+  `package.json`'s `main` is extensionless so Metro resolves the right entry per
+  platform. The split is required: RN-Skia's web module reads `global.CanvasKit`
+  when it is first imported, so importing `App` any earlier leaves Skia hollow.
 - `scripts/copy-canvaskit.mjs` — copies the CanvasKit wasm into `public/` for the
   web build.
 - `app.json` — Expo configuration.

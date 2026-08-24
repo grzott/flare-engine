@@ -549,7 +549,7 @@ Added as `dependencies` (not dev — `LoadSkiaWeb` does a runtime
 | `react-dom` | `19.2.3` | must match the template's `react` exactly |
 | `react-native-web` | `~0.21.0` | the hoisted monorepo copy is 0.21.2 |
 | `@expo/metro-runtime` | `~57.0.0` | SDK-major convention (spike ran 55.0.12 on SDK 55) |
-| `canvaskit-wasm` | `^0.40.0` | matches `@flare-engine/react`'s optional peer range |
+| `canvaskit-wasm` | ~~`^0.40.0`~~ → `0.41.0` | **wrong; corrected at WEB-5** — RN-Skia 2.6.0 pins `0.41.0` exactly (§17) |
 
 These are inferred, not verified: the templates pin the Expo-57 stack while the monorepo hoists the
 Expo-55-era one, and `tsconfig.templates.json` resolves against the hoisted copy by design (§11.4).
@@ -562,8 +562,10 @@ added to that row.
 - `tsc --noEmit -p tsconfig.templates.json` clean with the new `index.ts`, which imports
   `@shopify/react-native-skia/lib/module/web`. That subpath resolves because RN-Skia ships **no
   `exports` map**, and its `lib/module/web/index.d.ts` is present.
-- `scripts/copy-canvaskit.mjs` run against a scratch cwd produces `public/canvaskit.wasm` at
-  **8,001,100 bytes** — the `full` build §12 requires, not the 7,094,511-byte default.
+- `scripts/copy-canvaskit.mjs` run against a scratch cwd produces `public/canvaskit.wasm` — the
+  `full` build §12 requires, not the smaller ABI-incompatible default. (The 8,001,100-byte
+  figure first recorded here was canvaskit-wasm **0.40.0**; WEB-5 corrected the pin to 0.41.0,
+  whose full build is **8,076,553** bytes. §17.)
 - `canvaskit-wasm` exports `./bin/full/canvaskit.wasm` as a direct path, so the script resolves the
   binary through `require.resolve` rather than guessing at a `node_modules` layout.
 
@@ -573,3 +575,95 @@ added to that row.
 sources use double quotes against the repo's single, and no formatter enforces anything inside that
 tree — the lint gate will not catch style drift in templates. New template files match the existing
 template style, not the engine style.
+
+## 17. WEB-5 findings (real scaffold booted in Chrome, 2026-08-24)
+
+**The row's assertion is met.** A `create-flare-app` scaffold of `blank`, installed from a registry,
+run with `bun run web`, renders its cyan sprite in Chrome at 3440×1215 with the WebGL context alive
+and a clean console over a 67-second run. This is the check WEB-1 and WEB-5 gate the 0.3.0 publish
+on (§8), and it is now green — but only after the row found and fixed **two real bugs shipped by
+WEB-4 the day before**.
+
+### Bug 1 — the `canvaskit-wasm` pin split the dependency
+
+WEB-4 pinned `^0.40.0`, taken from `@flare-engine/react`'s optional-peer *floor*. **RN-Skia 2.6.0
+depends on `canvaskit-wasm@0.41.0` exactly.** The two ranges do not unify, so bun installed 0.40.0
+at the top level and nested a second copy under `@shopify/react-native-skia/node_modules/` — which
+extracted as an empty husk (`package.json` only, `bin/` and `types/` empty directories). Metro
+compiled the bundle fine and then **died at serve time**:
+
+```
+Error: ENOENT ... @shopify/react-native-skia/node_modules/canvaskit-wasm/bin/full/canvaskit.js
+```
+
+Invisible to `tsc`, invisible to the bundle compile, fatal at runtime. Fixed by pinning all three
+templates to `0.41.0`; the tree then holds one deduped copy. `canvaskit-wasm@0.41.0` installs
+correctly on its own (25 files), so the husk was a bun nested-install artifact of the version split,
+not a broken upstream package.
+
+**Rule this establishes:** the template's `canvaskit-wasm` pin must track RN-Skia's exact
+dependency, not the engine's peer floor. Re-check it on every RN-Skia bump.
+
+### Bug 2 — the web entry imported Skia before CanvasKit existed
+
+WEB-4's `index.ts` branched on `Platform.OS` but kept a **static** `import { App }`, deliberately,
+"so native registration stays synchronous". That static import evaluates
+`@shopify/react-native-skia` — whose web module builds its `Skia` object from `global.CanvasKit` at
+**module-eval time** — before `LoadSkiaWeb()` has run. CanvasKit then loads fine and far too late;
+`Skia` is already permanently hollow:
+
+```
+TypeError: Cannot read properties of undefined (reading 'Paint')
+    at createFrameRenderer → createSkiaFrameRenderer → <GameView>
+```
+
+Nothing mounted: `rootChildren: 0`, no canvas, while `canvasKitLoaded` was `true`. A blank page with
+a loaded CanvasKit is the signature of this bug.
+
+**Fix, and why this shape:** the entry is split into `index.ts` (native, unchanged and still
+synchronous) and `index.web.ts` (awaits `LoadSkiaWeb()`, *then* dynamically imports `App`), with
+`package.json`'s `main` made **extensionless** (`"index"`) so Metro resolves per platform. Verified
+directly: with `main: "index.ts"` Expo serves `/index.ts.bundle` and ignores `index.web.ts`
+entirely; with `main: "index"` it serves `/index.web.ts.bundle`. Extensionless `main` is the load-
+bearing part — an `index.web.ts` alongside `main: "index.ts"` is silently dead code.
+
+The native path is byte-identical to what shipped before WEB-4, which is why this was preferred over
+making both platforms bootstrap asynchronously.
+
+### WEB-6's deferred proof, now discharged
+
+§15 landed WEB-6 on unit evidence and deferred the console check here. **Confirmed:** across a clean
+67-second run the console holds three lines — React DevTools info, `Running application "main"`, and
+the WEB-3 postfx gate warning. **No `Maximum update depth exceeded`.** No `BindingError`, no
+`Aborted`, no context loss.
+
+### Two defects found in the shipped postfx gate (WEB-3), not fixed here
+
+Both are `packages/react` scope and want their own lockstep changeset, so they are recorded rather
+than folded into a templates row:
+
+1. **The gate warns when there is no postfx at all.** `game-view.tsx`'s `else if (!_webPostFxWarned)`
+   fires on web unconditionally, not only when a chain exists. The `blank` template configures no
+   postfx and still tells the user "postfx chain skipped" on every web load.
+2. **The warning hardcodes "RN-Skia 2.4.18".** Templates ship 2.6.0, so the message names a version
+   the user does not have. It should not state a version it cannot verify.
+
+### Method notes for whoever runs a scaffold check again
+
+- **The tarball fixture cannot work off the public registry.** The local engine depends on
+  `@flare-engine/dynamics`, which has never been published — `bun install` 404s on it, and *hangs
+  indefinitely at "Resolving dependencies"* when the same manifest carries an `overrides` block
+  rather than reporting the failure. Published `engine@0.2.1` has 15 deps and no dynamics, so
+  nothing is wrong on the registry; the local set is simply ahead of it. Use a local registry.
+- **verdaccio must be bound to `0.0.0.0`.** Started with `--listen 4874` it binds IPv6 `::1` only;
+  bun then hangs on `localhost` and gets `ConnectionRefused` on `127.0.0.1`. `--listen 0.0.0.0:4874`
+  plus an app-level `.npmrc` scoping only `@flare-engine` to it installs 530 packages in 35 s.
+- **`bun publish --registry=<url>` does override `publishConfig.registry`** — confirmed by dry-run
+  before publishing (`Registry: http://localhost:4874`). Worth re-confirming rather than assuming,
+  given every package points `publishConfig` at npmjs.
+- **`expo start` rewrites the scaffold's `tsconfig.json`** on first run (`extends` becomes
+  `expo/tsconfig.base`). The template ships a tsconfig Expo immediately replaces.
+- **`expo install --check` flags six pre-existing template pins** — Skia 2.6.2, RN 0.86.2,
+  reanimated 4.5.1, safe-area-context ~5.7.0, worklets 0.10.1, typescript ~6.0.3. None are WEB-4's
+  web additions, all four of which it accepts. The boot above ran on the pins as they ship; whether
+  to move to Expo's expectations is a separate call.

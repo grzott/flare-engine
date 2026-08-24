@@ -17,15 +17,13 @@ Routing: WEB-2/WEB-3 are the `packages/**` rows → **engine-builder** (one lock
 each); WEB-1, WEB-4, WEB-5 are **[MT] main-thread**; §5 rows run in the **PT repo's own harness**
 and §6 rows are post-publish. Pick top → `/start`.
 
-- **WEB-5 — real-scaffold browser boot [MT].** A genuine scaffold booted in Chrome. The only check
-  that exercises the templates' *pinned* Expo-57 stack, the wasm serving, the `LoadSkiaWeb` gate
-  and the Metro web config — `tsconfig.templates.json` does typecheck all three templates, but
-  against the monorepo's hoisted deps (§4 correction, §11.4). **Also carries WEB-6's
-  on-screen proof** — assert the console is clean of `Maximum update depth exceeded`; WEB-6
-  landed on unit evidence because `apps/web-spike` no longer exists (§15). **Also must run
-  `npx expo install --check`** — WEB-4's four web dependency pins are inferred, not verified,
-  and the templates typecheck resolves against the monorepo's Expo-55-era deps (§16).
-  Spec: §4.
+- **WEB-7 — the web postfx gate warns when there is no postfx (found 2026-08-24).** On web
+  `game-view.tsx`'s `else if (!_webPostFxWarned)` branch fires unconditionally, not only when a
+  chain exists, so the `blank` template — which configures no postfx — still logs "postfx chain
+  skipped" on every web load. The same message hardcodes "RN-Skia 2.4.18" while the templates ship
+  2.6.0, naming a version the user does not have. Gate on a non-empty chain and drop the version
+  literal. `packages/react` → engine-builder, one lockstep minor changeset.
+  Spec: [web-target-2026-08.md](web-target-2026-08.md) §17.
 
 ### Arc CE — consumer-enablement release (ACTIVE; engine half COMPLETE 2026-08-16)
 
@@ -251,6 +249,22 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **WEB-5 — real scaffold booted in Chrome; two WEB-4 bugs found and fixed** (2026-08-24). A
+  `create-flare-app` scaffold of `blank`, installed from a registry, run with `bun run web`, renders
+  its sprite in Chrome at 3440×1215 — context alive, clean console over 67 s. **This closes the
+  0.3.0 publish gate (§8) together with WEB-1.** It got there by finding two real defects WEB-4
+  shipped the day before: (1) `canvaskit-wasm: ^0.40.0` did not unify with RN-Skia 2.6.0's exact
+  `0.41.0`, so bun nested an empty second copy and Metro died at serve time with ENOENT on
+  `bin/full/canvaskit.js` — invisible to typecheck and to the bundle compile; (2) `index.ts`'s
+  static `import { App }` evaluated RN-Skia before `LoadSkiaWeb()`, leaving `Skia` permanently
+  hollow (`Skia.Paint` undefined inside `GameView`) — a blank page with CanvasKit loaded. Fixed by
+  pinning `0.41.0` and splitting the entry into `index.ts` (native, unchanged) + `index.web.ts`,
+  with an **extensionless `main`** so Metro resolves per platform — verified that `main: "index.ts"`
+  makes `index.web.ts` dead code. **WEB-6's deferred console proof is discharged here**: no
+  `Maximum update depth exceeded`, no `BindingError`, no context loss. Two postfx-gate defects found
+  and queued as WEB-7 rather than folded in. No changeset: `cfa` is `private: true`. Findings:
+  [web-target-2026-08.md](web-target-2026-08.md) §17.
 
 - **WEB-4 — web support in all three scaffolder templates** (2026-08-24). `blank` / `topdown` /
   `shmup` each gained a `web` script, four web dependencies, a `LoadSkiaWeb()`-gated `index.ts`, a

@@ -10780,3 +10780,37 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 278 — 2026-08-24 (scope: engine)
+
+**Goal:** WEB-5 — real scaffold booted in Chrome; fixed two WEB-4 bugs
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+- `packages/create-flare-app/templates/blank/index.ts`
+- `packages/create-flare-app/templates/blank/index.web.ts`
+- `packages/create-flare-app/templates/blank/package.json`
+- `packages/create-flare-app/templates/blank/README.md`
+- `packages/create-flare-app/templates/shmup/index.ts`
+- `packages/create-flare-app/templates/shmup/index.web.ts`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/shmup/README.md`
+- `packages/create-flare-app/templates/topdown/index.ts`
+- `packages/create-flare-app/templates/topdown/index.web.ts`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `packages/create-flare-app/templates/topdown/README.md`
+- `packages/create-flare-app/tsconfig.templates.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:1 (rm -rf scratch dir); gate:1 (biome format on tsconfig.templates.json after a json.dumps rewrite); fixup:0; drift:2 (fixed WEB-4's canvaskit pin + web entry from the prior session; corrected the stale typecheck claim on the WEB-5 row)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

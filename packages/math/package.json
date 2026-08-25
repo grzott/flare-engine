@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/math",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Vec2, Rect, Transform, Color, easings, intersection tests",
   "keywords": ["flare-engine", "math", "vec2", "2d"],
   "license": "Apache-2.0",

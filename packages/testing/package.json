@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/testing",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Deterministic World factory, fake Clock, mock InputManager, and scene snapshot helpers",
   "keywords": ["flare-engine", "testing", "ecs", "fake-clock", "snapshot"],
   "license": "Apache-2.0",
@@ -37,10 +37,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/core": "^0.2.1",
-    "@flare-engine/ecs": "^0.2.1",
-    "@flare-engine/input": "^0.2.1",
-    "@flare-engine/math": "^0.2.1"
+    "@flare-engine/core": "^0.3.0",
+    "@flare-engine/ecs": "^0.3.0",
+    "@flare-engine/input": "^0.3.0",
+    "@flare-engine/math": "^0.3.0"
   },
   "engines": {
     "node": ">=20"

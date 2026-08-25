@@ -10963,3 +10963,157 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 285 — 2026-08-25 (scope: engine)
+
+**Goal:** CE-W6 — 0.3.0 version bump, lockstep across 42 packages
+
+**Touched files**
+- `.changeset/config.json`
+- `.changeset/dynamics-rigid-body-package.md`
+- `.changeset/math-vec2-perp-crosssv.md`
+- `.changeset/oss-b10-dialogue-dangling-ids-cycles.md`
+- `.changeset/oss-b11-physics-input-dup-add-pointer-delta.md`
+- `.changeset/oss-b12-iap-revenuecat-money-path.md`
+- `.changeset/oss-b13-cli-create-flare-app-mechanics.md`
+- `.changeset/oss-b14a-react-skia-atlas-module.md`
+- `.changeset/oss-b15-ui-reactive-focus.md`
+- `.changeset/oss-b16-react-gameview-passes-gate.md`
+- `.changeset/oss-b17-audio-rate-suspend.md`
+- `.changeset/oss-b19-postfx-correctness-surface-scrub.md`
+- `.changeset/oss-b1-events-emit-hardening.md`
+- `.changeset/oss-b20-ui-shop-shopscreen-rename.md`
+- `.changeset/oss-b22-private-vocab-scrub-src.md`
+- `.changeset/oss-b23-input-validation-prototype-safety.md`
+- `.changeset/oss-b24-render-shader-zorder.md`
+- `.changeset/oss-b25-share-deeplinks-adapter-correctness.md`
+- `.changeset/oss-b26-shapes-ship-bounds-weapons-engine.md`
+- `.changeset/oss-b27-iap-revenuecat-configure-once-race.md`
+- `.changeset/oss-b28-ui-shop-focus-refetch.md`
+- `.changeset/oss-b2-ecs-query-dispose.md`
+- `.changeset/oss-b30-api-freeze-alignment.md`
+- `.changeset/oss-b31-web-devtools-correctness.md`
+- `.changeset/oss-b33-physics-drop-berek-comment.md`
+- `.changeset/oss-b3-share-format-codes.md`
+- `.changeset/oss-b4-camera-rotation-degrees.md`
+- `.changeset/oss-b5-scene-restart-async-preload.md`
+- `.changeset/oss-b6-storage-import-safety.md`
+- `.changeset/oss-b7-core-particles-alpha-pool-caps-seeds.md`
+- `.changeset/oss-b8-tilemap-flip-bits-ldtk.md`
+- `.changeset/oss-b9-deeplinks-scheme-url-parsing.md`
+- `.changeset/oss-c1-peer-bump-skia-decouple-render-web-export.md`
+- `.changeset/oss-c2-packaging-manifest-polish.md`
+- `.changeset/oss-c4-toolchain-upgrade.md`
+- `.changeset/oss-d2-readme-truth-a.md`
+- `.changeset/oss-d3-readme-truth-b.md`
+- `.changeset/oss-d4-readme-truth-c.md`
+- `.changeset/oss-d5-design-docs-honesty.md`
+- `.changeset/oss-m1-keyboard-focus-driver.md`
+- `.changeset/oss-m2-engine-headless-barrel.md`
+- `.changeset/oss-m3-assets-default-loaders.md`
+- `.changeset/oss-m4-tilemap-authoring-entities.md`
+- `.changeset/oss-m5-tier2-local-providers.md`
+- `.changeset/oss-m6-haptics-real-adapter.md`
+- `.changeset/perf-10-dev-flag-property-read.md`
+- `.changeset/perf-3-observability-counters.md`
+- `.changeset/react-render-web-postfx-warn-gate.md`
+- `.changeset/react-web-postfx-gate.md`
+- `.changeset/react-web-scene-capture-in-frame.md`
+- `.changeset/react-web-scene-texture-leak.md`
+- `.changeset/render-web-context-lifecycle.md`
+- `packages/a11y/CHANGELOG.md`
+- `packages/a11y/package.json`
+- `packages/achievements/CHANGELOG.md`
+- `packages/achievements/package.json`
+- `packages/analytics/CHANGELOG.md`
+- `packages/analytics/package.json`
+- `packages/animation/CHANGELOG.md`
+- `packages/animation/package.json`
+- `packages/assets/CHANGELOG.md`
+- `packages/assets/package.json`
+- `packages/audio/CHANGELOG.md`
+- `packages/audio/package.json`
+- `packages/cli/CHANGELOG.md`
+- `packages/cli/package.json`
+- `packages/core/CHANGELOG.md`
+- `packages/core/package.json`
+- `packages/create-flare-app/CHANGELOG.md`
+- `packages/create-flare-app/package.json`
+- `packages/debug/CHANGELOG.md`
+- `packages/debug/package.json`
+- `packages/deep-links/CHANGELOG.md`
+- `packages/deep-links/package.json`
+- `packages/devtools/CHANGELOG.md`
+- `packages/devtools/package.json`
+- `packages/dialogue/CHANGELOG.md`
+- `packages/dialogue/package.json`
+- `packages/dynamics/CHANGELOG.md`
+- `packages/dynamics/package.json`
+- `packages/ecs/CHANGELOG.md`
+- `packages/ecs/package.json`
+- `packages/engine/CHANGELOG.md`
+- `packages/engine/package.json`
+- `packages/errors/CHANGELOG.md`
+- `packages/errors/package.json`
+- `packages/events/CHANGELOG.md`
+- `packages/events/package.json`
+- `packages/haptics/CHANGELOG.md`
+- `packages/haptics/package.json`
+- `packages/iap/CHANGELOG.md`
+- `packages/iap/package.json`
+- `packages/iap-revenuecat/CHANGELOG.md`
+- `packages/iap-revenuecat/package.json`
+- `packages/input/CHANGELOG.md`
+- `packages/input/package.json`
+- `packages/leaderboards/CHANGELOG.md`
+- `packages/leaderboards/package.json`
+- `packages/localization/CHANGELOG.md`
+- `packages/localization/package.json`
+- `packages/math/CHANGELOG.md`
+- `packages/math/package.json`
+- `packages/particles/CHANGELOG.md`
+- `packages/particles/package.json`
+- `packages/pathfinding/CHANGELOG.md`
+- `packages/pathfinding/package.json`
+- `packages/physics/CHANGELOG.md`
+- `packages/physics/package.json`
+- `packages/postfx/CHANGELOG.md`
+- `packages/postfx/package.json`
+- `packages/progression/CHANGELOG.md`
+- `packages/progression/package.json`
+- `packages/react/CHANGELOG.md`
+- `packages/react/package.json`
+- `packages/render/CHANGELOG.md`
+- `packages/render/package.json`
+- `packages/render-web/CHANGELOG.md`
+- `packages/render-web/package.json`
+- `packages/scene/CHANGELOG.md`
+- `packages/scene/package.json`
+- `packages/shapes/CHANGELOG.md`
+- `packages/shapes/package.json`
+- `packages/share/CHANGELOG.md`
+- `packages/share/package.json`
+- `packages/simulation/CHANGELOG.md`
+- `packages/simulation/package.json`
+- `packages/storage/CHANGELOG.md`
+- `packages/storage/package.json`
+- `packages/testing/CHANGELOG.md`
+- `packages/testing/package.json`
+- `packages/tilemap/CHANGELOG.md`
+- `packages/tilemap/package.json`
+- `packages/ui/CHANGELOG.md`
+- `packages/ui/package.json`
+- `packages/ui-shop/CHANGELOG.md`
+- `packages/ui-shop/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (biome format on the 42 package.json files changeset version rewrote in its own style); fixup:0; drift:1 (changeset changelog switched to the built-in generator — owner-approved after finding changeset version had never actually run here; every prior release was a hand bump with a hand-written changelog, which is why no token was ever needed)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

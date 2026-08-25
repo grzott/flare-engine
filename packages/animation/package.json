@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/animation",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Sprite animation, tweens, springs, step sequences",
   "keywords": ["flare-engine", "animation", "tween", "spring"],
   "license": "Apache-2.0",
@@ -37,8 +37,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/assets": "^0.2.1",
-    "@flare-engine/math": "^0.2.1"
+    "@flare-engine/assets": "^0.3.0",
+    "@flare-engine/math": "^0.3.0"
   },
   "engines": {
     "node": ">=20"

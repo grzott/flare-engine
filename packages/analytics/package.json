@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/analytics",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Analytics provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "analytics", "provider", "interface"],
   "license": "Apache-2.0",

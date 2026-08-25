@@ -10919,3 +10919,28 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 283 — 2026-08-25 (scope: engine)
+
+**Goal:** bench re-capture — all five lanes fresh on a quiet machine, no overrides
+
+**Touched files**
+- `benchmarks/results/web.json`
+- `benchmarks/results/web-android.json`
+- `benchmarks/results/web-android-history.ndjson`
+- `benchmarks/results/web-gpu.json`
+- `benchmarks/results/web-gpu-history.ndjson`
+- `benchmarks/results/web-history.ndjson`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0 — one android capture was refused by the new Chrome-foreground preflight when the phone was unplugged mid-window; re-taken after reconnect
+
+**Next:** see `docs/plans/todo.md`.
+
+---

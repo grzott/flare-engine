@@ -10944,3 +10944,22 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 284 — 2026-08-25 (scope: engine)
+
+**Goal:** CE-W6 prep — full pre-publish check battery green
+
+**Touched files**
+- `.perf-baseline.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:2 (check:perf-bytes refused react at +17% over ceiling — investigated, attributed to Arc WEB across exactly two files, owner-authorized raise 51558->66349 with a dated review line; then biome format on .perf-baseline.json); fixup:0; drift:0 — my first baseline write ascii-escaped the file's em-dashes and section marks, caught in the diff and rewritten
+
+**Next:** see `docs/plans/todo.md`.
+
+---

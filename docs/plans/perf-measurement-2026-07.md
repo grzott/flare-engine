@@ -1064,3 +1064,40 @@ unfolded baseline, or write it to a distinct path, is the real fix and belongs w
   (worst 5.3% from median on any row, fold limit 10%), with **no monotonic degradation** — the two
   warmer runs were not slower, and the warmest was the fastest. Against the row's failure case of
   0.432 -> 0.541 and its own reference clean window of 0.426-0.457, this is tighter than either.
+
+### F5 — the host can be quiet and still wrong (PERF-20, same day)
+
+Re-capturing after the F1-F4 guards landed produced host-side numbers **1.6x-2.1x** the committed
+baselines while CPU load read 7-11%, then 3.2%, then 1.8%. The node lane's foreign-load guard would
+have passed every one of those. The cause was `ChromaVisualizer`, an RGB **visualiser** saturating
+the GPU: it barely registers on CPU (0.69 CPU-s per 6 s, ~6% of one core) and is invisible to every
+CPU-percentage check in the harness. Closing it restored exact agreement — `render.flush 1000 /
+1 atlas` back to 11.300 ms against a committed 11.300.
+
+Two guards, because neither alone is sufficient:
+
+- **`classifyHostLoad`** samples host CPU via `os.cpus()` deltas before every capture and refuses at
+  >=15% (the bar the node fold already enforces), warning from 8%. `BENCH_WEB_ALLOW_BUSY=1`
+  overrides. Cheap, and catches plain CPU contention — **but it did not catch this incident**, and
+  the code says so where someone changing it will read it.
+- **`compareToBaseline`** compares every capture's per-row p50 against the lane's published fold and
+  reports divergence >25%. This is the check that catches GPU contention, thermal state, driver
+  changes — anything that moves the numbers without moving the CPU. It **reports rather than
+  refuses**: a real engine change looks identical, and the harness cannot tell them apart. Rows whose
+  baseline p50 is under 0.01 ms are skipped, because one unit in the last decimal of a 0.004 ms row
+  is a meaningless 25% "shift" — those same rows refused a fold earlier that day on quantisation
+  alone.
+
+**Two bugs in these guards, both found by testing them live against the real fault, both of which
+had passing unit tests and looked like clean passes:**
+
+1. *It compared each capture against itself.* `run.ts` rewrites the lane baseline (F4) before the
+   check read it, so `readBaselineP50` returned the numbers just written. Fixed by reading the
+   baseline **before** spawning the capture.
+2. *The warnings were skipped on the common path.* The non-zero-exit branch ended in an early
+   `return`, so the drift and unfolded-baseline notices never printed — and the cpu-raster lane exits
+   non-zero on nearly every capture. Both notices now sit after the branch.
+
+The lesson is F3's in a new place: a silent guard and a working guard look identical from the
+outside. Neither bug was visible from unit tests or from a green run; both took a live capture
+against a machine that was genuinely in the bad state.

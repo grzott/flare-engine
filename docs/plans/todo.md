@@ -247,6 +247,20 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **PERF-20 — host-load + baseline-drift guards for the web lanes** (2026-08-25). Follow-on to
+  PERF-19, forced by a real incident: after the F1-F4 guards landed, the host-side lanes read
+  **1.6x-2.1x** their committed baselines while CPU load looked innocent (7-11%, then 3.2%). The
+  cause was `ChromaVisualizer`, an RGB visualiser saturating the **GPU** — ~6% of one CPU core, and
+  therefore invisible to every CPU-percentage check the harness had. `capture.ts` now samples host
+  CPU before each capture (refuse >=15%, warn >=8%, `BENCH_WEB_ALLOW_BUSY=1` to override) **and**
+  compares every capture's per-row p50 against the published fold, reporting divergence >25% — the
+  latter is what actually catches this class, and it reports rather than refuses because a genuine
+  engine change looks the same. Both guards shipped broken first and were caught by live-testing
+  against the real fault: one compared each capture against itself (F4 clobbers the baseline before
+  the check reads it), the other sat behind an early `return` on the non-zero-exit path that the
+  cpu-raster lane takes almost every run. Closing ChromaVisualizer restored exact agreement
+  (11.300 vs 11.300). Spec: [perf-measurement-2026-07.md](perf-measurement-2026-07.md) §12 F5.
+
 - **PERF-19 — capture-integrity guards for the bench-web lanes** (2026-08-25). Four ways the
   harness could report something other than what happened, all hit while re-capturing for CE-W6.
   **(1)** The Android lane needs Chrome *foregrounded* on the phone — backgrounded it keeps its

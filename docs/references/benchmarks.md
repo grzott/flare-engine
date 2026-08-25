@@ -273,7 +273,7 @@ The three `render.sort` rows touch neither surface — pure JS array sorting —
 
 ### Render suite — Android device (on-device GPU)
 
-_Captured: 2026-08-25 · Median of 5 run(s) · Commit: 44514781e072 · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.2.1 · Browser: chrome-android 151.0.7922.169 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
+_Captured: 2026-08-25 · Median of 5 run(s) · Commit: 8e5fbc5b16dd · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.2.1 · Browser: chrome-android 151.0.7922.169 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
 
 The same 18 scenarios on real phone hardware, through the identical on-screen `<canvas>` + WebGL path as the desktop GPU lane, so the submission-cost caveat above applies here too.
 
@@ -281,24 +281,24 @@ The same 18 scenarios on real phone hardware, through the identical on-screen `<
 
 | Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 0.118 ms | 0.113 – 0.120 ms | 0.209 ms | 0.311 ms | 168 |
-| render.flush    500 sprites / 1 atlas | 0.235 ms | 0.233 – 0.240 ms | 0.259 ms | 0.467 ms | 85 |
-| render.flush   1000 sprites / 1 atlas | 0.425 ms | 0.419 – 0.430 ms | 0.551 ms | 1.156 ms | 47 |
-| render.flush   5000 sprites / 1 atlas | 1.900 ms | 1.882 – 2.000 ms | 2.190 ms | 3.517 ms | 11 |
-| render.flush    500 sprites / 4 atlas interleaved | 2.525 ms | 2.513 – 2.550 ms | 2.929 ms | 4.360 ms | 8 |
-| render.flush    500 sprites / 4 atlas clustered | 0.272 ms | 0.267 – 0.277 ms | 0.305 ms | 0.591 ms | 74 |
-| render.flush   1000 sprites / 8 atlas interleaved | 5.475 ms | 5.450 – 5.500 ms | 5.750 ms | 6.125 ms | 4 |
-| render.flush   1000 sprites / 8 atlas clustered | 0.476 ms | 0.472 – 0.483 ms | 0.526 ms | 1.010 ms | 42 |
-| render.flush   1000 sprites / 50% rotated | 0.449 ms | 0.444 – 0.455 ms | 0.505 ms | 1.063 ms | 45 |
-| render.flush   1000 sprites / 100% rotated | 0.464 ms | 0.457 – 0.467 ms | 0.483 ms | 1.150 ms | 44 |
-| render.flush   1000 sprites / 4 alpha runs | 0.457 ms | 0.451 – 0.465 ms | 0.498 ms | 1.182 ms | 44 |
-| render.flush   1000 sprites / tint effect | 0.449 ms | 0.447 – 0.453 ms | 0.477 ms | 1.005 ms | 45 |
-| render.flush   1000 sprites / outline effect | 3.114 ms | 3.086 – 3.257 ms | 3.229 ms | 4.340 ms | 7 |
-| render.flush   1000 sprites / stretch path | 2.588 ms | 2.563 – 2.675 ms | 2.700 ms | 3.883 ms | 8 |
-| render.flush   1000 sprites / zone-bg path | 2.289 ms | 2.278 – 2.322 ms | 2.411 ms | 3.783 ms | 9 |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.007 ms | 0.013 ms | 11970 |
-| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.017 ms | 0.036 ms | 4159 |
-| render.sort    1000 items (10 swaps) | 0.018 ms | 0.018 – 0.018 ms | 0.057 ms | 0.132 ms | 1093 |
+| render.flush    100 sprites / 1 atlas | 0.120 ms | 0.116 – 0.122 ms | 0.242 ms | 0.342 ms | 166 |
+| render.flush    500 sprites / 1 atlas | 0.238 ms | 0.230 – 0.238 ms | 0.260 ms | 0.408 ms | 85 |
+| render.flush   1000 sprites / 1 atlas | 0.421 ms | 0.419 – 0.426 ms | 0.580 ms | 1.144 ms | 48 |
+| render.flush   5000 sprites / 1 atlas | 1.845 ms | 1.845 – 1.864 ms | 1.973 ms | 3.243 ms | 11 |
+| render.flush    500 sprites / 4 atlas interleaved | 2.525 ms | 2.500 – 2.525 ms | 2.700 ms | 4.220 ms | 8 |
+| render.flush    500 sprites / 4 atlas clustered | 0.268 ms | 0.258 – 0.269 ms | 0.303 ms | 0.586 ms | 75 |
+| render.flush   1000 sprites / 8 atlas interleaved | 5.450 ms | 5.425 – 5.475 ms | 5.725 ms | 6.000 ms | 4 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.474 ms | 0.467 – 0.486 ms | 0.510 ms | 1.212 ms | 43 |
+| render.flush   1000 sprites / 50% rotated | 0.444 ms | 0.441 – 0.455 ms | 0.483 ms | 1.084 ms | 45 |
+| render.flush   1000 sprites / 100% rotated | 0.459 ms | 0.453 – 0.467 ms | 0.505 ms | 0.971 ms | 44 |
+| render.flush   1000 sprites / 4 alpha runs | 0.457 ms | 0.447 – 0.461 ms | 0.490 ms | 0.981 ms | 44 |
+| render.flush   1000 sprites / tint effect | 0.443 ms | 0.435 – 0.447 ms | 0.541 ms | 1.156 ms | 46 |
+| render.flush   1000 sprites / outline effect | 3.014 ms | 3.000 – 3.071 ms | 3.129 ms | 4.560 ms | 7 |
+| render.flush   1000 sprites / stretch path | 2.513 ms | 2.467 – 2.587 ms | 2.650 ms | 4.300 ms | 8 |
+| render.flush   1000 sprites / zone-bg path | 2.244 ms | 2.222 – 2.311 ms | 2.378 ms | 4.000 ms | 9 |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.007 ms | 0.014 ms | 11965 |
+| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.017 ms | 0.035 ms | 4167 |
+| render.sort    1000 items (10 swaps) | 0.018 ms | 0.018 – 0.018 ms | 0.064 ms | 0.132 ms | 1107 |
 
 The phone costs **2.6x-5.0x** of the desktop's submission time on the flush scenarios and **2.0x-2.4x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
 

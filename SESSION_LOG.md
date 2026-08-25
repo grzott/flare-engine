@@ -10892,3 +10892,30 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 282 — 2026-08-25 (scope: engine)
+
+**Goal:** PERF-20 — host-load + baseline-drift guards for the web lanes
+
+**Touched files**
+- `apps/bench-web/scripts/capture.ts`
+- `apps/bench-web/tests/capture.test.ts`
+- `benchmarks/results/web-android.json`
+- `benchmarks/results/web-android-history.ndjson`
+- `benchmarks/results/web-gpu-history.ndjson`
+- `benchmarks/results/web-history.ndjson`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness STALE on web+gpu — overridden: the capture that clears it must come from a clean tree, so it follows this commit); fixup:0; drift:0 — both new guards shipped broken and were caught by live-testing against the real fault, not by their unit tests
+
+**Next:** see `docs/plans/todo.md`.
+
+---

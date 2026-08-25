@@ -989,3 +989,78 @@ Files: packages/physics/src/{collision-world.ts,spatial-index.ts}, tests.
 **Exit:** the integration heap plateau falls materially at 1000 entities with no change to
 enter/exit signal behaviour, or the row is closed with the Hermes measurement that refutes
 the premise.
+
+---
+
+## 12. Capture-integrity findings + guards (2026-08-25, PERF-19)
+
+Surfaced while re-capturing all five lanes to clear the freshness gate ahead of CE-W6. Four
+distinct ways the harness could report something other than what happened, all observed on the same
+day. Three are now guarded in `apps/bench-web/scripts/capture.ts`; the fourth is warned about.
+
+### F1 — the Android lane needs Chrome *foregrounded*, and said so only by failing five times
+
+The driver attaches to Chrome rather than launching it (its own header explains why), so Chrome must
+be open **and in the foreground** on the phone. Backgrounded, Chrome keeps its process — a `pidof`
+check passes — but stops publishing `@chrome_devtools_remote`, and every capture then dies at
+`connectOverCDP` having appended nothing. Five consecutive captures failed this way, each slow
+enough to look like real work, and the battery temperature *falling* across the window was the only
+hint that the phone had done nothing.
+
+**Guard:** `preflightAndroid()` reads `/proc/net/unix` over adb and refuses before the server or the
+tunnel start, naming the foreground requirement. One refusal in seconds instead of five silent
+failures over twenty minutes.
+
+### F2 — Chrome's DevTools endpoint wedges, and the error pointed at the tunnel
+
+After repeated connect/disconnect cycles the endpoint stops answering while the socket stays
+published. Playwright reports `connectOverCDP: Timeout 30000ms exceeded ... retrieving websocket url
+from http://127.0.0.1:9222`, which reads like a tunnel fault; the tunnel is fine and only a Chrome
+restart clears it.
+
+**Guard:** the driver now catches that failure and rethrows naming the wedge, stating explicitly
+that the socket *is* published so this is not the F1 case, and giving the fix (restart Chrome on the
+phone). F1's preflight is what makes that disambiguation sound.
+
+### F3 — the runner's exit code is wrong in both directions
+
+- **Nonzero after success.** `bench:web:gpu` writes its baseline, appends all 18 records, then Bun
+  panics with `integer overflow` during teardown and exits 3. Two Android captures did the same. The
+  data was complete every time. **Intermittent**, not deterministic — a later run through the new
+  wrapper did not panic at all.
+- **Failure that looks like a run.** The F1 captures exited 1 having measured nothing.
+
+A batch loop cannot tell these apart from the exit code, and folding the second kind republishes the
+previous window as current — PERF-18's hazard reached through a different door.
+
+**Guard:** every `bench:web*` script now runs through `scripts/capture.ts`, which snapshots the
+lane's history, runs the capture, and decides success from **what landed**: zero records appended is
+a hard failure regardless of exit code; a nonzero exit *with* records is reported as success with
+the crash noted. It also refuses a truncated write, a record missing `capturedAt`, and a window
+spanning two `capturedAt` values (two runs interleaved as one). `bench:web:unguarded` keeps the raw
+runner for debugging.
+
+### F4 — a single capture silently replaces a folded baseline (warned, not guarded)
+
+Every capture rewrites its lane baseline from that one run, so one verification capture turns a
+committed 5-run fold into a 1-run snapshot with nothing downstream saying so. This is B11's
+"bench overwrites baseline" reaching the web lanes. It bit this session directly: a single GPU
+capture clobbered a freshly committed fold, and it only surfaced because `bench:web:promote` later
+refused a window whose commits disagreed — **at the same commit it would have published silently.**
+
+`capture.ts` now prints the baseline-is-one-run notice with the exact `bench:web:promote` command
+after every successful capture. That is a warning, not a guard: making the runner refuse to write an
+unfolded baseline, or write it to a distinct path, is the real fix and belongs with PERF-18.
+
+### Measurement results from the same session
+
+- **PERF-14b:** a 5-run back-to-back window at `4451478` was **mode-coherent** — `ecs.step 1000`
+  spread 1.018x, `render.flush 1000` 1.088x, `integration.frame 1000` 1.027x, all in the fast state,
+  4.13-4.50% foreign load, pinned to 16 P-core threads under High performance. No straddle. This does
+  not close PERF-14b (its mode change appeared past run 8) but it does establish that a 5-run window
+  is trustworthy here.
+- **PERF-17:** the 100 s inter-run gap holds, and starting from a cool phone improves on it. Five
+  device captures read 0.426 / 0.425 / 0.425 / 0.430 / 0.419 ms on `render.flush 1000 / 1 atlas`
+  (worst 5.3% from median on any row, fold limit 10%), with **no monotonic degradation** — the two
+  warmer runs were not slower, and the warmest was the fastest. Against the row's failure case of
+  0.432 -> 0.541 and its own reference clean window of 0.426-0.457, this is tighter than either.

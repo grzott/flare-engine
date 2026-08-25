@@ -247,6 +247,24 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **PERF-19 — capture-integrity guards for the bench-web lanes** (2026-08-25). Four ways the
+  harness could report something other than what happened, all hit while re-capturing for CE-W6.
+  **(1)** The Android lane needs Chrome *foregrounded* on the phone — backgrounded it keeps its
+  process but drops `@chrome_devtools_remote`, and five captures failed in a row having measured
+  nothing; a preflight now refuses in seconds instead. **(2)** Chrome's DevTools endpoint wedges
+  after repeated connect cycles and Playwright's timeout reads like a tunnel fault; the driver now
+  names the wedge and the fix. **(3)** The runner's exit code is wrong in *both* directions — the
+  GPU lane writes all 18 records then panics Bun at teardown (exit 3, intermittent), while the F1
+  failures exited 1 having written nothing — so every `bench:web*` script now runs through
+  `scripts/capture.ts`, which decides success from what actually landed in the lane history and
+  also refuses truncated writes, missing `capturedAt`, and two runs interleaved as one.
+  **(4)** A single capture silently replaces a folded baseline (B11 reaching the web lanes) — it
+  clobbered a freshly committed 5-run fold during this very session and only surfaced because the
+  fold later refused on disagreeing commits; at the same commit it would have published silently.
+  That one is **warned, not guarded** — the real fix belongs with PERF-18. Also recorded: PERF-14b's
+  5-run window is mode-coherent, and PERF-17's 100 s gap holds with no monotonic drift.
+  Spec: [perf-measurement-2026-07.md](perf-measurement-2026-07.md) §12.
+
 - **WEB-7 — the web postfx warn is gated on an actual binding** (2026-08-24). The gate WEB-3 added
   fired on *every* web load regardless of whether a postfx chain existed — the `blank` template
   configures none and still logged "postfx chain skipped" — and the message named "RN-Skia 2.4.18"

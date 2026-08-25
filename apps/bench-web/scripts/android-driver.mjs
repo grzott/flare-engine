@@ -100,7 +100,25 @@ async function main() {
   let browser;
   let page;
   try {
-    browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdpPort}`, { timeout: 30_000 });
+    try {
+      browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdpPort}`, { timeout: 30_000 });
+    } catch (cause) {
+      // Two different faults reach this point and Playwright words them almost identically, but
+      // the operator response differs. `run.ts` has already refused the case where Chrome is not
+      // publishing the socket at all, so by here the socket exists and the endpoint itself is
+      // unresponsive — measured 2026-08-25, it wedges after repeated connect/disconnect cycles
+      // and stays wedged until Chrome restarts. A bare Playwright timeout sends the reader
+      // looking at the tunnel, which is fine.
+      throw new Error(
+        "android-driver: Chrome's DevTools endpoint on the device accepted the tunnel but never " +
+          'answered.\n' +
+          '  The abstract socket IS published, so this is not a backgrounded-Chrome problem — the ' +
+          'endpoint itself is wedged.\n' +
+          '  It does this after repeated connect/disconnect cycles and does not recover on its own.\n' +
+          '  Fix: restart Chrome on the phone (swipe it from recents, reopen), then re-run.\n' +
+          `  Underlying: ${cause instanceof Error ? cause.message : String(cause)}`,
+      );
+    }
     const context = browser.contexts()[0];
     if (context === undefined) throw new Error('android-driver: Chrome exposed no browser context');
 

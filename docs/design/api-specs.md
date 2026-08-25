@@ -145,7 +145,10 @@ source per fact, so this section states the surface, not the reasoning.
 | `addBody(world, body)`      | Pushes a `Body` onto `world.bodies`. Returns the same `body`.                                       |
 | `createBody(opts)`          | `opts: { position, half, density?, velocity?, angle?, angularVelocity?, restitution?, friction?, static? }`. Derives mass/inertia from `half` × `density`; `static: true` yields `invMass = invInertia = 0`. |
 | `step(world, dt)`           | Advances the world by `dt` seconds: integrate velocities → broadphase (AABB) + narrowphase (SAT + face clip) → sequential-impulse solve (Coulomb friction, restitution, Baumgarte bias) → integrate positions. No-op for `dt <= 0`. Zero-alloc in steady state — all per-step scratch is pooled per `World`. |
-| `Body`                      | `{ position: Vec2; velocity: Vec2; angle: number; angularVelocity: number; half: Vec2; invMass: number; invInertia: number; restitution: number; friction: number }`. `position` / `velocity` are mutable plain objects written in place every `step()`, not getters. |
+| `Body`                      | `{ position: Vec2; velocity: Vec2; angle: number; angularVelocity: number; half: Vec2; invMass: number; invInertia: number; restitution: number; friction: number }`. `position` / `velocity` are mutable plain objects written in place every `step()`, not getters. `angle` accumulates `ω·dt` and is **never** wrapped to `[-π, π]`, so a consumer may lerp between recorded angles across multi-turn spins. |
+| `isStatic(body)`            | `true` when `invMass === 0`. The supported way to test staticness — `static` is a `createBody` input, not a `Body` field.                            |
+| `BodyOptions`               | The `createBody` input type, exported so consumers can name it.                                     |
+| `WorldOptions`              | The `createWorld` input type, exported so consumers can name it.                                    |
 
 ```ts
 import { addBody, createBody, createWorld, step } from '@flare-engine/dynamics';

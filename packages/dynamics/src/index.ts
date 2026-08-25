@@ -1,2 +1,2 @@
-export { type Body, createBody } from './body.js';
-export { addBody, createWorld, step, type World } from './world.js';
+export { type Body, type BodyOptions, createBody, isStatic } from './body.js';
+export { addBody, createWorld, step, type World, type WorldOptions } from './world.js';

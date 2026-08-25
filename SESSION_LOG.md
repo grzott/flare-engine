@@ -10841,3 +10841,30 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 280 — 2026-08-25 (scope: engine)
+
+**Goal:** bench re-capture — all five lanes refreshed at HEAD
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `benchmarks/results/web.json`
+- `benchmarks/results/web-android.json`
+- `benchmarks/results/web-android-history.ndjson`
+- `benchmarks/results/web-gpu.json`
+- `benchmarks/results/web-gpu-history.ndjson`
+- `benchmarks/results/web-history.ndjson`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0 — android lane needed 3 attempts: the CDP driver needs Chrome foregrounded on the phone and its devtools endpoint wedges after repeated connect cycles (owner restarted Chrome)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

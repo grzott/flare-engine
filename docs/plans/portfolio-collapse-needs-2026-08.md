@@ -9,7 +9,7 @@ in `apps/web`, vendored as committed tarballs (see §5):
 
 | Package | Where | Runtime? |
 |---|---|---|
-| `dynamics` | the collapse solver — `collapse-engine.ts:17` | yes |
+| `dynamics` | the collapse solver — `collapse-engine.ts:18-25` | yes |
 | `errors` | `<ErrorBoundary>` + crash payloads around the collapse island | yes |
 | `storage` | remembered transport playback speed | yes |
 | `share` | blog-post share control with a clipboard fallback | yes |
@@ -45,7 +45,7 @@ That is not a request to change anything. It is a fact the OSS-launch narrative 
 
 ## 2. What the portfolio still hand-rolls
 
-The collapse is 1,795 LOC across five files. Most of it is legitimately portfolio-specific — DOM
+The collapse is 1,811 LOC across five files (was 1,795 when this doc was first written; see the changelog at the foot for why, and note that nothing engine-facing moved). Most of it is legitimately portfolio-specific — DOM
 harvest, freeze/restore, scroll lock, `transform` writing, the transport UI — and the engine should
 **not** absorb any of that (§4). Four pieces are different.
 
@@ -97,7 +97,7 @@ state) or a `@flare-engine/replay` tier-2 package if it should stay solver-agnos
 
 ### 2.2 Rest detection — a workaround for a known engine limitation
 
-`collapse-engine.ts:573-585`:
+`collapse-engine.ts:108-109` (the constants) and `:573-584` (the predicate), spliced here for readability — they are ~460 lines apart in the file:
 
 ```ts
 const REST_LINEAR = 14;    // px/s
@@ -236,10 +236,33 @@ Named so no one generalises portfolio code that should not be generalised:
 
 ## 5. How this consumer installs, and what that constrains
 
-`grzott-portfolio` does **not** install from npm. The `@flare-engine` scope is unpublished
-(`dynamics` has never reached registry.npmjs.org at any version; `0.3.0` was version-bumped in git
-without a publish), so the portfolio vendors committed `npm pack` tarballs in `vendor/flare-engine/`
-redirected by a root `pnpm.overrides` block, with a manifest recording the engine commit SHA.
+`grzott-portfolio` does **not** install from npm. It vendors committed `npm pack` tarballs in
+`vendor/flare-engine/`, redirected by a root `pnpm.overrides` block, with a manifest recording the
+engine commit SHA.
+
+> **CORRECTION (2026-08-26).** An earlier revision of this section said the scope "is unpublished"
+> and that `dynamics` "has never reached registry.npmjs.org at any version". **That is wrong**, and
+> the same claim is repeated in the portfolio's own `CLAUDE.md`. Measured today:
+>
+> | Package | `npm view` (authenticated) | Unauthenticated registry |
+> |---|---|---|
+> | `dynamics`, `errors`, `storage`, `share`, `math`, `a11y`, `events`, `core`, `render-web` | all `0.3.0` | all **404** |
+>
+> The scope **is** published at `0.3.0` — as **restricted** packages. So the accurate statement is
+> "published but not public", not "unpublished".
+>
+> What that does and does not imply:
+> - It **does** mean the registry half of the migration in
+>   `grzott-portfolio/docs/flare-engine-registry-migration.md` is already satisfied: there is a real
+>   publish to migrate to.
+> - It **does not** by itself vindicate the `.npmrc` + `${NPM_TOKEN}` recipe in
+>   `dynamics-lift-2026-08.md` §8 for this consumer. Restricted installs need a token with read
+>   access present at install time — in CI, and on the Cloudflare Pages build. Vendoring deliberately
+>   needs no secret anywhere and keeps forks buildable, which is a property worth losing on purpose
+>   rather than by accident.
+> - Anyone reviving that recipe should verify a token-based install end-to-end on the Pages build
+>   before deleting `vendor/flare-engine/`, and say so in writing. The previous "Verified 2026-08-14"
+>   note was verified against `flare-engine-page`, not the portfolio.
 
 Currently pinned: **engine `8701b58`**, 7 packages (`a11y`, `dynamics`, `errors`, `events`, `math`,
 `share`, `storage`).
@@ -274,3 +297,45 @@ tagged releases:
 The donor-vs-engine swap measured **6.8e-13** maximum divergence over 480 frames — eight orders of
 magnitude below the consumer's `toFixed(2)` paint rounding — which is why the determinism gate passed
 unchanged. That is the bar any future solver change should clear, or announce loudly.
+
+---
+
+## 7. Consumer changelog since this doc was written (2026-08-26, later same day)
+
+Recorded so an engine agent reading this is not confused by line numbers or the LOC delta, and does
+not go looking for an engine cause behind them. **Nothing engine-facing changed.** The `dynamics`
+contract, the determinism gate and the vendored pin are all exactly as §5 and §6 describe.
+
+Two correctness fixes inside the collapse, both purely consumer-side:
+
+- **`page-collapse.tsx` — `mountedRef` was never re-armed.** It was initialised once at
+  `useRef(true)` and only ever cleared in the teardown effect's cleanup. With `reactStrictMode: true`
+  React runs setup → cleanup → setup on first mount in dev, so after that first cleanup the flag
+  stayed `false` and every later `activate()` aborted at its mounted check: the collapse silently did
+  nothing under `pnpm dev`. Now armed at the top of the same effect. Production was unaffected
+  (StrictMode double-invoke is dev-only), which is why it survived this long.
+- **`collapse-controls.tsx` — keyboard scrubbing read a deliberately stale value.**
+  `currentProgress()` parsed `aria-valuenow` off the track element, but `paintUI` deliberately stops
+  writing that attribute while playing (to avoid ~60 fps `valuenow` churn at a screen reader), and it
+  starts pinned at `0`. So an arrow key mid-fall seeked to `0.02` instead of nudging from the current
+  position. It now reads the island's `progressRef`; `aria-valuenow` went back to being output only.
+
+Neither touches the solver, the bake loop, `collapse-timeline.ts`, or any `@flare-engine/*` call.
+The rest-detection thresholds in §2.2 and the `MAX_FRAMES` cap are untouched, so the DYN-3 ask and
+its calibration warning stand exactly as written.
+
+### Re-verifying this consumer after an engine change
+
+From the portfolio repo root, after `pnpm vendor:flare:commit`:
+
+```
+pnpm check:vendor     # tarball integrity + records the engine SHA
+pnpm typecheck
+pnpm test             # includes dynamics-contract (10) + collapse determinism
+pnpm build
+pnpm check:bundle     # catches an engine import becoming eager
+```
+
+`pnpm test` is the one that matters for a solver change: `collapse-engine.test.ts` compares painted
+`transform` strings across 21 `seek()` samples, so any divergence above the consumer's `toFixed(2)`
+paint rounding fails it. The donor-vs-engine swap cleared that by eight orders of magnitude (§6).

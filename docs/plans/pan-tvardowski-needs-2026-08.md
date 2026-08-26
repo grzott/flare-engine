@@ -303,3 +303,75 @@ If any §2/§3 item lands, these are the gates that will catch a regression. All
 - **Locale parity:** 509 keys, EN/PL, scripted.
 
 2,392 tests, 0 failing, on `@flare-engine/*@^0.3.0` as of 2026-08-26.
+
+---
+
+## 9. Addendum 2026-08-26 — two blockers found in an owner playtest
+
+An owner zone-1 playtest surfaced eight defects. Six are PT's own. **Two are engine-side and PT
+cannot fix them from the consumer.** Both are player-facing.
+
+### 9.1 `VirtualButton` + `VirtualJoystick` cannot be used simultaneously *(blocker)*
+
+**Symptom on device:** while a finger holds the movement joystick, pressing the bomb button does
+nothing. The controls do not work together.
+
+**Traced cause.** `virtual-button.tsx:51-54`, `virtual-joystick.tsx:85-90` and `game-view.tsx:277-281`
+all build on React Native's **legacy single-responder Gesture Responder System**
+(`onStartShouldSetResponder` / `onResponderGrant` / `onResponderTerminate`), and none implements
+`onResponderTerminationRequest`.
+
+Verified against `react-native@0.83.6`'s negotiation code
+(`ReactNativeRenderer-dev.js:16910-16944`): when a second finger touches a button while the joystick
+holds the responder, RN grants the button **and force-terminates the joystick** — the termination
+request is default-permitted precisely *because* the handler is unimplemented. The joystick snaps to
+zero via `releaseJoystick`, and the still-down finger becomes an orphaned touch that will not resume
+driving movement until it is lifted and re-pressed.
+
+**This also breaks a second feature.** PT's dash multiplies the *current* joystick vector by
+`DASH_SPEED_MUL`. Because the joystick has just been zeroed by the termination, the dash multiplies
+zero — the player spends stamina and does not move. One engine defect, two broken mechanics.
+
+**Ask:** per-control pointer tracking, so each control owns its own touch id. Either
+- implement `onResponderTerminationRequest` returning `false` on both controls (smallest change), or
+- move to `react-native-gesture-handler` with `Gesture.Simultaneous` (PT already has RNGH installed
+  as a dependency; **it is currently used nowhere** — zero `GestureDetector`/`Simultaneous`/`Race`
+  hits in PT `src/` or in any engine package).
+
+**Not related to the 0.3.0 pointer-delta change.** `packages/input/src/pointer.ts` touches
+`InputManager.pointer` (single primary pointer, id 0); `VirtualJoystick`/`VirtualButton` never route
+through `InputManager` at all. This is longstanding, not a regression.
+
+**If declined:** PT has no workaround at the consumer layer — the responder negotiation happens
+inside the engine components. A twin-stick or button-while-moving game cannot ship on these controls.
+
+### 9.2 `Label` cannot truncate — blocks overflow control in every scaffolded overlay
+
+**Symptom on device:** HUD panel text overflows its container; no ellipsis.
+
+`@flare-engine/ui`'s `Label` accepts `{ children, variant, tone, mono, style }` and never forwards
+`numberOfLines` or `ellipsizeMode` to the underlying RN `Text`. A consumer therefore **cannot**
+truncate a label without abandoning `Label` and hand-rolling a `Text`, which loses the variant/tone
+theming that is the component's whole purpose.
+
+This bites hardest in localized builds: PT ships EN + PL, and Polish runs 15–100% longer
+(`"Stats"` → `"Statystyki"`). Ten PT overlays route through a shared scaffold built on `Label`.
+
+**Ask:** forward `numberOfLines` and `ellipsizeMode` (and ideally `adjustsFontSizeToFit`) from
+`Label` to `Text`. Additive, non-breaking.
+
+**If declined:** document that `Label` is for text of known length, so consumers know to drop to raw
+`Text` for anything user- or locale-variable.
+
+### 9.3 For calibration — what the other six were
+
+Recorded so the engine can see the consumer-side/engine-side split honestly. **None of these are
+engine asks:** procedural-vs-Kenney bullet routing in PT's own spawn path; an unconditional 42 px
+HUD band reserved for a boss bar that is usually absent; PT edge bars not applying safe-area insets;
+first-run shop/loadout screens that are correctly all-locked but say nothing about why; and a
+zone-pacing gap (~62 s of dead air in zone 1, up to ~161 s in zones 6 and 8) caused by PT's own
+fixed boss timer never being re-derived after PT replaced hand-authored waves with a value-budget
+composer.
+
+The engine came out of this playtest well. Two defects, both in the touch/UI layer, both additive
+to fix.

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Button } from './button.js';
 import { Label } from './label.js';
 import { Panel } from './panel.js';
@@ -30,7 +30,7 @@ export interface DialoguePanelProps {
   readonly choices?: readonly DialogueChoice[];
   /** Advance callback — used only when `choices` is empty / omitted. */
   readonly onAdvance?: () => void;
-  readonly style?: ViewStyle;
+  readonly style?: StyleProp<ViewStyle>;
 }
 
 /**

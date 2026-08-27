@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { Button } from './button.js';
 import { Label } from './label.js';
 import { Panel } from './panel.js';
@@ -33,7 +33,7 @@ export interface ShopPanelProps {
   readonly ownedLabel?: string;
   /** Localized label for the purchase action. Defaults to the item's price. */
   readonly purchaseLabelFor?: (item: ShopItem) => string;
-  readonly style?: ViewStyle;
+  readonly style?: StyleProp<ViewStyle>;
 }
 
 /**

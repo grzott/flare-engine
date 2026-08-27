@@ -11150,3 +11150,34 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 287 — 2026-08-27 (scope: engine)
+
+**Goal:** CW7-2/7 — Label truncation + StyleProp widening for 0.3.1
+
+**Touched files**
+- `.changeset/ui-label-truncation-props.md`
+- `.changeset/ui-style-prop-widening.md`
+- `docs/design/api-specs.md`
+- `packages/ui/src/button.tsx`
+- `packages/ui/src/dialogue-panel.tsx`
+- `packages/ui/src/label.tsx`
+- `packages/ui/src/list.tsx`
+- `packages/ui/src/main-menu-kit.tsx`
+- `packages/ui/src/panel.tsx`
+- `packages/ui/src/progress-bar.tsx`
+- `packages/ui/src/shop-panel.tsx`
+- `packages/ui/tests/label-truncation.test.ts`
+- `packages/ui/tests/style-prop.type-probe.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness overridden — packages/ui is not measured by any perf suite; the single node re-capture for this arc runs after the last row); fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

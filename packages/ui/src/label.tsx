@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text, type TextStyle } from 'react-native';
+import { type StyleProp, Text, type TextProps, type TextStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
 export type LabelVariant = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -10,7 +10,11 @@ export interface LabelProps {
   variant?: LabelVariant;
   tone?: LabelTone;
   mono?: boolean;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  ellipsizeMode?: TextProps['ellipsizeMode'];
+  adjustsFontSizeToFit?: boolean;
+  minimumFontScale?: number;
 }
 
 export function Label({
@@ -19,6 +23,10 @@ export function Label({
   tone = 'default',
   mono = false,
   style,
+  numberOfLines,
+  ellipsizeMode,
+  adjustsFontSizeToFit,
+  minimumFontScale,
 }: LabelProps): ReactNode {
   const theme = useTheme();
   const sizeMap = {
@@ -43,5 +51,15 @@ export function Label({
     fontFamily: mono ? theme.typography.fontFamilyMono : theme.typography.fontFamily,
   };
 
-  return <Text style={[base, style]}>{children}</Text>;
+  return (
+    <Text
+      numberOfLines={numberOfLines}
+      ellipsizeMode={ellipsizeMode}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      minimumFontScale={minimumFontScale}
+      style={[base, style]}
+    >
+      {children}
+    </Text>
+  );
 }

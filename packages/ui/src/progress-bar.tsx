@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
 export interface ProgressBarProps {
@@ -11,7 +11,7 @@ export interface ProgressBarProps {
   trackColor?: string;
   /** Fill color override. Defaults to theme.colors.accent. */
   fillColor?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function ProgressBar({

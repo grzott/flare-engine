@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { Button, type ButtonVariant } from './button.js';
 import { Label } from './label.js';
 import { useTheme } from './theme.js';
@@ -26,7 +26,7 @@ export interface MainMenuKitProps {
    * or a version/build string.
    */
   readonly footer?: ReactNode;
-  readonly style?: ViewStyle;
+  readonly style?: StyleProp<ViewStyle>;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useId } from 'react';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Pressable, type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { useFocusedId, useFocusManager } from './focus-context.js';
 import { useTheme } from './theme.js';
 
@@ -14,7 +14,7 @@ export interface ButtonProps {
   tabIndex?: number;
   /** Stable focus id. If omitted, a generated id is used. */
   focusId?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Button({

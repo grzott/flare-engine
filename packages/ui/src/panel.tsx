@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
 export interface PanelProps {
@@ -10,7 +10,7 @@ export interface PanelProps {
   padding?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   /** Corner radius token. Defaults to 'md'. */
   radius?: 'none' | 'sm' | 'md' | 'lg' | 'pill';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Panel({

@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
 export interface ListProps {
@@ -7,7 +7,7 @@ export interface ListProps {
   /** Gap between items in pixels. Defaults to theme.spacing.sm. */
   gap?: number;
   direction?: 'column' | 'row';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 /**

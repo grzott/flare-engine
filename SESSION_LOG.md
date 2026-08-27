@@ -11250,3 +11250,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 291 — 2026-08-27 (scope: engine)
+
+**Goal:** CW7 bookkeeping — seed the 8 queued rows, write PT's broadphase correction
+
+**Touched files**
+- `docs/plans/consumer-needs-audit-2026-08.md`
+- `docs/plans/pan-tvardowski-needs-2026-08.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness overridden — docs-only session; the physics re-capture is owed and runs when the owner's machine is quiet, before 0.3.1 publishes); fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

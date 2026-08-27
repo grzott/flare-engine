@@ -145,6 +145,48 @@ performance grounds.
 **Ask:** grid or spatial-hash broadphase. **If declined:** say so in the README so consumers stop
 treating `SpatialIndex` as a broadphase.
 
+---
+
+**ANSWERED 2026-08-27 — shipped in 0.3.1, and your justifying number was retired.**
+
+`SpatialIndex` now uses a uniform spatial hash. The public surface is unchanged — same methods, same
+`SpatialEntry<T>`, no new constructor parameters — so no consumer edit is required beyond taking
+`^0.3.1`.
+
+**Your mechanism claims were all correct at HEAD**: `setPosition` O(n), `step()` O(n²), and the source
+comment inviting the upgrade. All three reproduced verbatim.
+
+**Your measurement was not.** The quoted *"11.8–13.2 ms at 1,000 colliders"* comes from a capture taken
+before `f457e82`, on a machine running the Windows **Power saver** plan — an instrument fault that made
+every node figure ~2.5x too slow, corrected engine-side on 2026-08-19. The pre-fix number at HEAD was
+**4.82 ms sparse / 5.38 ms dense**, not 11.8–13.2. That dissolves the "past a 16.6 ms frame on physics
+alone" framing `hitbox-model.md:79` builds the priority on, and it is worth re-checking any other PT
+plan that cites a pre-2026-08-19 engine benchmark for the same reason.
+
+**The conclusion held anyway, by a wider margin than claimed.** Measured end-to-end on the published
+`physics.step` benchmark:
+
+| scenario | before | after | speedup |
+| --- | --- | --- | --- |
+| 1000 AABB sparse | 4.82 ms | **0.18 ms** | 27x |
+| 1000 AABB dense | 5.38 ms | **0.60 ms** | 8.9x |
+| 500 AABB sparse | 1.14 ms | 0.072 ms | 15.7x |
+| 100 AABB sparse | 33.2 us | 10.5 us | 3.2x |
+
+**Two things to act on your side:**
+
+1. **`query` result order is now formally unspecified** (documented at `docs/design/api-specs.md:126`).
+   It was undocumented before and happened to be insertion-ordered; a grid changes it. If any PT code
+   relies on the order results come back in, it will break **silently** — no exception, no type error.
+   Worth a grep before you take 0.3.1.
+2. **Re-evaluate `systems/homing.ts`.** You kept a brute-force nearest-enemy scan specifically because
+   "adopting `SpatialIndex` would not be an improvement — it is brute-force too." That premise no
+   longer holds. This is the one place you declined an engine adoption on performance grounds, and the
+   grounds are gone.
+
+`update`/`remove` are also O(1) now (item->slot map), so the O(n) `setPosition` cost you reported is
+gone independently of the query path.
+
 ### 3.2 Collider readback on `CollisionWorld`
 
 There is no way to read back a collider's actual AABB. **Every collider assertion in PT is a

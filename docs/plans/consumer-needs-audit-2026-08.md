@@ -80,6 +80,26 @@ deletes an `as unknown as` bridge from a consumer that bans `any`.
 CW7-7 widens a published type. Widening is source-compatible for every caller passing a plain
 `ViewStyle`; it is only observable to code that *reads* the prop type.
 
+## Shipped after this doc was written
+
+**PT-3.1 grid/hash broadphase landed in 0.3.1** (row CW7-8), despite being queued here. The audit's
+correction — that the consumer's justifying figure of 11.8-13.2 ms was a retired Power-Saver-era
+number, and HEAD read 4.82/5.38 ms — was right, but the conclusion held anyway and by a wider margin:
+end-to-end on the published benchmark, `physics.step 1000 AABB sparse` went **4.82 ms -> 0.18 ms (27x)**
+and dense **5.38 ms -> 0.60 ms (8.9x)**. Public surface frozen (diffed byte-identical against HEAD), so
+it stayed a patch and reaches both consumers on `^0.3.0`.
+
+Two properties worth keeping in mind for anyone touching it again: `query` result order is now formally
+**unspecified** (`api-specs.md:126`) — it was undocumented and incidentally insertion-ordered before,
+so a consumer relying on it breaks silently; and the six characterization tests were deliberately
+written **before** the swap and verified to pass against the brute-force implementation, so they pin
+behaviour both implementations satisfy rather than merely describing the new one.
+
+The correction was written back into the consumer's own doc
+([pan-tvardowski-needs-2026-08.md](pan-tvardowski-needs-2026-08.md) §3.1), including a flag that PT's
+`systems/homing.ts` kept a brute-force scan on the explicit premise that "adopting `SpatialIndex` would
+not be an improvement" — a premise that no longer holds.
+
 ## Queued, not now
 
 Grid/hash broadphase (PT's top gameplay ask, M — the binding limit for a bullet-hell), DYN-3 sleeping,
@@ -94,3 +114,9 @@ lists are load-bearing and were passed verbatim to every agent: the portfolio fo
 transport UI, a dynamics DOM renderer and rendering of any kind; PT forbids absorbing `visual-spec/`,
 the value-budget economy, the Kenney pipeline, its localization, and explicitly does **not** want
 `CoroutineManager` fixed or adopted.
+
+## Rows
+
+The queued items are seeded as **Arc CW7-Q** in [todo.md](todo.md) (CW7-Q1..Q8) so they are visible to
+`/start` rather than living only in this document. CW7-Q8 is docs-only — PT-10.1 was refuted as a
+defect and needs a testing recipe, not an engine change.

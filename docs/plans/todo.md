@@ -6,6 +6,40 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
+### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
+
+Seeded so they do not decay into prose. Findings + the reasoning for each verdict are in the SoT:
+[consumer-needs-audit-2026-08.md](consumer-needs-audit-2026-08.md). **Neither consumer is blocked by
+anything here** — both docs say so explicitly and both ship today. All are `packages/**` ->
+**engine-builder** unless marked [MT]. Level: **patch while 0.3.x is the line**, minor once 0.4.0 opens.
+
+- **CW7-Q1 — timeline recorder donation (portfolio §2.1).** Bake-once-scrub-often body recorder.
+  Absorb into `packages/dynamics/src/timeline.ts` — NOT a new package; the new-package tax
+  (LAYER_MAP, manifest, README + registered snippet, api-specs, exports/attw/nodenext coverage) is
+  larger than the ~100 LOC. Ship `createTimeline(elementCount, dt, opts?)` with a **parameterised
+  stride** (the donor hardcodes 3) and an explicit termination contract on `record` — the consumer's
+  stated interface describes bake-until-settled but exposes no settle hook. Resolve it as a
+  caller-supplied predicate; building settle detection in would inherit the rest-threshold guessing
+  DYN-3 exists to remove, and fuse the two rows. Do NOT absorb the donor's transport UI, DOM
+  harvest/restore, or its `isSettled` thresholds — all three are on the consumer's hard non-goal list.
+- **CW7-Q2 — `stepUntil` budget stepper (portfolio §2.3).** Cooperative time-sliced stepping, ~15
+  lines at the consumer. Small, additive.
+- **CW7-Q3 — `shapeBoundsBox` per-axis bounds (PT §3.3).** Sibling of `shapeBoundsRadius`. PT's bosses
+  use Kenney art so the value is low there today; medium for other consumers.
+- **CW7-Q4 — `createBenchSession` reachable from app code (PT §3.4).** Currently unreachable outside
+  the bench harness. PT has a working local copy, so low value there; the ask is discoverability.
+- **CW7-Q5 — procedural SFX synthesiser (PT §3.5).** PT's own works; medium value to others.
+- **CW7-Q6 — `SystemDef._worldFn` is an underscore member on a public interface (PT §2.4).** Confirmed
+  at HEAD. Either make it properly private or document it as public API — an underscore member that
+  consumers must touch is neither.
+- **CW7-Q7 — `createHeadlessContext()` donation (PT §10.4).** PT built a headless loop harness and is
+  offering it. Subsumes the §10.3 camera-surface discoverability ask if taken.
+- **CW7-Q8 — PT-10.1 testing recipe [MT, docs-only].** **Not an engine defect** — two skeptics refuted
+  it. `packages/ui` value-imports `react-native` at module scope so a bare import dies under `bun test`,
+  but that is the documented peer-dependency contract and PT's success criterion is already reachable
+  at HEAD with zero source change. What is missing is a documented recipe. Write it in the `ui` README
+  + `docs/recipes/`, using the mocking pattern `packages/ui/tests/` already uses.
+
 ### Arc CW7 — consumer needs from PT + portfolio (ACTIVE 2026-08-25, ships as 0.3.1)
 
 Goal: absorb what the two consumer-needs docs actually justify, after a 38-agent audit that killed two

@@ -375,3 +375,146 @@ composer.
 
 The engine came out of this playtest well. Two defects, both in the touch/UI layer, both additive
 to fix.
+
+
+---
+
+## 10. Addendum 2026-08-27 — a testability blocker, an API-shape trap, and one thing to take
+
+Seven PT sessions (93-99) since the last addendum. **Thirteen rows closed, none of which needed an
+engine change** — that split is recorded honestly in 10.5. What follows is the residue PT genuinely
+cannot fix from the consumer side, ordered by value to this consumer.
+
+Nothing here supersedes §3. **§3.1 (grid/hash broadphase for `SpatialIndex`) remains PT's single
+highest-value gameplay ask** and is unchanged: a brute-force linear scan measured at 11.8-13.2 ms
+per 1000 colliders binds a bullet-hell harder than anything below.
+
+### 10.1 `@flare-engine/ui` and `@flare-engine/ui-shop` cannot be imported under `bun test` *(highest test-value ask)*
+
+**Reproduced 2026-08-27**, both packages, identically and immediately:
+
+```
+import typeof * as ReactNativePublicAPI from './index.js.flow';
+       ^
+error: Unexpected typeof
+    at node_modules/react-native/index.js:27:8
+```
+
+`react-native`'s entry point is Flow-typed. Bun's transpiler rejects that syntax, so **any engine
+package importing `react-native` at module scope is unimportable in a Bun test runner.** Six
+packages currently do: `devtools`, `engine`, `iap-revenuecat`, `react`, `ui`, `ui-shop`.
+
+**What it costs this consumer.** No engine-UI component can be RENDER-tested. PT's HUD guards are
+therefore source-shape checks — regex over file text — and `tests/hud/framed-panel.test.ts` says so
+in its own docstring: *"This is a source-shape check rather than a render, because the panels cannot
+be mounted under `bun test` (`@flare-engine/ui-shop` fails to load)."* Three PT test files are
+written this way for no reason other than this.
+
+That weakness is not theoretical. It is exactly what let a vacuous guard ship: a test asserting
+`expect(src).toContain('pointerEvents="none"')` passed because the literal also appeared in the
+component's own doc comment, so deleting the prop left the suite green. A render test could not have
+been fooled — it would assert the rendered tree, not the file's text. PT has since fixed that guard,
+but it can only ever be a better regex.
+
+**The ask, deliberately narrow.** PT is not asking for React Native to be dropped. It asks that the
+UI packages be importable **without executing RN's entry module** — for example a `./testing` subpath
+export that omits the RN-touching surface, or making the RN import lazy so module-scope evaluation
+never reaches `react-native/index.js`. Any shape works if `await import('@flare-engine/ui')` succeeds
+under `bun test`.
+
+**Precedent that this is achievable:** `src/audio/init.ts` is the only PT module that reaches
+react-native, and it does so behind a dynamic import. That single choice is why PT's entire gameplay
+layer *is* testable headlessly (see 10.4). The same move on the UI packages would unlock the rest.
+
+Same family as §3.4 (`createBenchSession` unreachable from app code): engine code a consumer cannot
+reach from its test runner.
+
+### 10.2 `PanelProps.style` is `ViewStyle`, not `StyleProp<ViewStyle>`
+
+Verified in `@flare-engine/ui/dist/index.d.ts:274-284`. `Panel` composes its style as
+`[{ backgroundColor: theme.surface, padding, borderRadius }, style]` — caller LAST, so a caller's
+`backgroundColor` overrides the theme surface. That precedence is fine and probably intended.
+
+The trap is the TYPE. Because `style` is a single `ViewStyle` rather than RN's usual
+`StyleProp<ViewStyle>`, a wrapper component cannot pass a style ARRAY through; it must spread into a
+new object. PT wrote a `FramedPanel` wrapper, forwarded the caller's `style` to its own outer `View`
+— the obvious thing — and handed `Panel` only its own width/height. Eight overlay panels silently
+repainted from PT's `UI_COLORS.panelBg` to the engine's `darkTheme.colors.surface`, with `panelBg`
+surviving as four square corners behind a 16 px rounded panel.
+
+**This was PT's bug, not the engine's**, and it is fixed. It is reported because the API shape made
+the wrong thing the easy thing, and because the token test pinning `panelBg` stayed green throughout
+— it asserted the literal sat in a style object, never that the panel wore it.
+
+**Ask:** widen `style` to `StyleProp<ViewStyle>` on `Panel` and its siblings so wrappers can compose
+without spreading. Additive and non-breaking — every current call site still type-checks.
+
+### 10.3 The `Camera2D` surface the FX layer calls is not discoverable *(minor)*
+
+Building a headless harness, PT had to discover `camera.shake` and `camera.shakePerlin` by running
+into them: each missing method threw at the first damage or boss-phase event rather than at
+construction, several minutes apart. Small, but it makes stubbing the context a guessing game.
+
+**Ask (small, and 10.4 is the better version of it):** either document the camera surface the FX
+layer depends on, or export a no-op/headless camera for tests.
+
+### 10.4 Offered, not asked — PT built a headless loop harness the engine may want
+
+PT now drives its **real** per-frame update loop with no device and no React Native:
+`tests/_helpers/play-loop.ts`. Measured on this machine: the static graph imports under `bun test`
+in ~45 ms, and the harness runs **9000 real frames in ~113 ms**, bit-identical across runs. It builds
+state through the real `startZone` rather than a parallel setup path, so it cannot drift from the
+game.
+
+Before it existed, `playOnUpdate` — 693 lines wiring ~15 subsystems — had **zero** test coverage, and
+the standing reason was that the loop was too entangled to drive headlessly. That was false.
+
+What it has to stub is the interesting part for the engine:
+
+- the engine context down to `world`, `camera`, `loop`, `scenes` — **`ctx.loop.clock.rawDt` is not
+  optional**; a missing clock throws on frame one;
+- a camera with `shake` / `shakePerlin` (10.3);
+- an atlas whose `frameMap.get()` always resolves, so no sprite lookup can throw;
+- a save store.
+
+**If `@flare-engine/testing` shipped a `createHeadlessContext()` covering the first three, every
+consumer would get this instead of hand-rolling it.** PT would adopt it on the next bump and delete
+its own stub. The harness paid for itself immediately on its first real use: a refactor read a field
+from a half-built state object and every zone threw `Cannot access 'state' before initialization` —
+caught in seconds by 12 red tests, where nothing else imports that entry point and it would otherwise
+have reached a device.
+
+### 10.5 Calibration — what PT fixed on its own side
+
+Recorded so the consumer-side/engine-side split stays honest. **None of these were engine asks:**
+
+- `src/scenes/play/update.ts` taken from 784 to 512 lines by hoisting eight per-frame dependency bags
+  out of the loop — applying the engine's own hoisting rule, which PT had been following half-way.
+- **Three separate cases of a guard measuring spec fields nothing drew.** A zone-background colour
+  that stopped being rendered when PT swapped terrain shaders for starfields; per-phase boss bullet
+  and accent colours that never had a runtime reader at all; and a QA report feeding those fabricated
+  numbers to an LLM critic panel as ground truth. All three guards looked rigorous — one even had a
+  discriminator test proving its metric was sound. The metric was sound; the inputs were dead. The
+  question that generalises, and PT now asks it first of any spec-derived assertion: *does anything
+  actually read this?*
+- A `try { require } catch {}` trapdoor over five IAP/paywall suites that failed OPEN: renaming an
+  engine export took a suite from 12 assertions to 8 and it still reported "4 pass, 0 fail". Removing
+  it deleted all 38 `noExplicitAny` suppressions in PT's tree, which existed only to serve it.
+  **Worth the engine's attention only as a warning**: a consumer defending itself against engine
+  churn with a permissive guard ends up worse off than one that fails loudly.
+- An 800-line file cap, previously an unwritten convention, now enforced in PT's gate with a
+  documented-exception list.
+
+One fact for the engine's own bookkeeping: **`@flare-engine/particles` is declared in PT's
+`package.json` but never imported** (`check:deps` reports it every run). Not a defect — PT will
+likely drop the dependency. Flagged so the engine does not read PT as a particles consumer when
+weighing that package's priorities.
+
+### 10.6 Priority from this consumer
+
+1. **§3.1 grid/hash broadphase** — unchanged, still the top gameplay ask.
+2. **10.1 UI packages importable under a test runner** — top *testing* ask; it is the reason a whole
+   class of PT guards are weaker than they should be.
+3. **10.2 `StyleProp<ViewStyle>`** — small, additive, removes a trap that already cost PT a session.
+4. **10.4 `createHeadlessContext()`** — PT has the working shape and is happy to hand it over.
+5. **10.3 camera surface docs** — subsumed by 10.4 if that happens.

@@ -11271,3 +11271,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 292 — 2026-08-27 (scope: engine)
+
+**Goal:** bench: re-capture the node lane after the spatial hash
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness: node suites now FRESH; the 3 web lanes remain stale on 1645606, a type-only commit whose emitted dist is byte-identical — decision on whether to capture them anyway is with the owner); fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

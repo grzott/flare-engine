@@ -11292,3 +11292,28 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 293 — 2026-08-28 (scope: engine)
+
+**Goal:** bench: re-capture all three web lanes — every suite fresh, no overrides
+
+**Touched files**
+- `benchmarks/results/web.json`
+- `benchmarks/results/web-android.json`
+- `benchmarks/results/web-android-history.ndjson`
+- `benchmarks/results/web-gpu.json`
+- `benchmarks/results/web-gpu-history.ndjson`
+- `benchmarks/results/web-history.ndjson`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (I first advised skipping the web lanes on byte-identical-dist proof; revised because bun run release chains check:perf-freshness, so skipping would have required overriding a safety gate on a one-way immutable publish — worse than 35 minutes of quiet-machine time); deny:0; gate:0; fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

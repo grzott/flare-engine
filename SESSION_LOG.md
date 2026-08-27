@@ -11205,3 +11205,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 289 — 2026-08-27 (scope: engine)
+
+**Goal:** bench: re-capture the node lane after the CW7 engine fixes
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness: the 4 node suites are now FRESH; the 3 web lanes are overridden on proof rather than argument — their only offender is 1645606, whose web-measured change is two lines both inside export interface declarations, and rebuilding render with and without that line produces a byte-identical dist/index.mjs (sha 1284f26f01c5404b), so the browser executes unchanged code); fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

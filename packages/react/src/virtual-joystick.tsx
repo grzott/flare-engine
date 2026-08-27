@@ -88,6 +88,7 @@ export function VirtualJoystick({
       onResponderMove={handleTouch}
       onResponderRelease={handleRelease}
       onResponderTerminate={handleRelease}
+      onResponderTerminationRequest={returnFalse}
     >
       {base ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -112,6 +113,10 @@ export function VirtualJoystick({
 
 function returnTrue(): boolean {
   return true;
+}
+
+function returnFalse(): boolean {
+  return false;
 }
 
 const styles = StyleSheet.create({

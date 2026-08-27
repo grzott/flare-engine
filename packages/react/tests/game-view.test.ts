@@ -36,6 +36,10 @@ let _hasPostFxBinding = false;
 let _warnMessages: string[] = [];
 let _origWarn: typeof console.warn | null = null;
 
+// Captures the first container View's responder props so tests can call them directly.
+// Populated during mount(); reset in beforeEach.
+let _capturedContainerProps: Record<string, unknown> | null = null;
+
 // Mock all external deps before import
 mock.module('react', () => ({
   createElement: () => null,
@@ -84,10 +88,22 @@ mock.module('react', () => ({
     return [typeof init === 'function' ? (init as () => unknown)() : init, () => {}];
   },
 }));
+function captureContainerView(type: unknown, props: Record<string, unknown> | null): null {
+  if (
+    _capturedContainerProps === null &&
+    type === 'View' &&
+    props !== null &&
+    'onStartShouldSetResponder' in props
+  ) {
+    _capturedContainerProps = props;
+  }
+  return null;
+}
+
 const jsxMock = {
-  jsx: () => null,
-  jsxs: () => null,
-  jsxDEV: () => null,
+  jsx: captureContainerView,
+  jsxs: captureContainerView,
+  jsxDEV: captureContainerView,
   Fragment: null,
 };
 mock.module('react/jsx-runtime', () => jsxMock);
@@ -409,8 +425,33 @@ let _inputInstance: MockInput | null = null;
 
 class MockInput {
   updateCalls = 0;
+  pointerDownCalls: Array<{ id: number; x: number; y: number }> = [];
+  pointerMoveCalls: Array<{ id: number; x: number; y: number }> = [];
+  pointerUpCalls: Array<{ id: number; x: number; y: number }> = [];
+  touches: Array<{ id: number }> = [];
+
   update(): void {
     this.updateCalls++;
+  }
+
+  onPointerDown(id: number, x: number, y: number): void {
+    this.pointerDownCalls.push({ id, x, y });
+    if (!this.touches.some((t) => t.id === id)) {
+      this.touches.push({ id });
+    }
+  }
+
+  onPointerMove(id: number, x: number, y: number): void {
+    this.pointerMoveCalls.push({ id, x, y });
+    if (!this.touches.some((t) => t.id === id)) {
+      this.touches.push({ id });
+    }
+  }
+
+  onPointerUp(id: number, _x: number, _y: number): void {
+    this.pointerUpCalls.push({ id, x: _x, y: _y });
+    const idx = this.touches.findIndex((t) => t.id === id);
+    if (idx !== -1) this.touches.splice(idx, 1);
   }
 }
 
@@ -465,6 +506,7 @@ beforeEach(() => {
   _rendererInstance = null;
   _batchInstance = null;
   _inputInstance = null;
+  _capturedContainerProps = null;
   _mockPixelRatio = 1;
   _mockPlatformOS = 'ios';
   _viewportOverride = null;
@@ -1174,5 +1216,140 @@ describe('GameView — web postfx warn gate (WEB-7)', () => {
 
     const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
     expect(postfxWarns).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CW7-1: multi-touch routing through GameView's responder.
+//
+// GameView must route concurrent touches to InputManager with their real
+// pointer identifiers — not hardcoded id 0. Two simultaneous touches must
+// produce two distinct entries in InputManager.touches, and releasing one
+// must leave the other intact.
+//
+// The container View's responder handlers are captured from the JSX via
+// captureContainerView() above. Fail-old: pre-fix code always called
+// onPointerDown/Move/Up with id=0, collapsing all touches to a single entry.
+// ---------------------------------------------------------------------------
+
+function makeTouch(identifier: string, locationX: number, locationY: number) {
+  return { identifier, locationX, locationY, pageX: locationX, pageY: locationY };
+}
+
+function grantEvent(identifier: string, locationX: number, locationY: number) {
+  return {
+    nativeEvent: {
+      identifier,
+      locationX,
+      locationY,
+      changedTouches: [makeTouch(identifier, locationX, locationY)],
+      touches: [makeTouch(identifier, locationX, locationY)],
+    },
+  };
+}
+
+function moveEvent(identifier: string, locationX: number, locationY: number) {
+  return {
+    nativeEvent: {
+      identifier,
+      locationX,
+      locationY,
+      changedTouches: [makeTouch(identifier, locationX, locationY)],
+      touches: [makeTouch(identifier, locationX, locationY)],
+    },
+  };
+}
+
+function releaseEvent(identifier: string, locationX: number, locationY: number) {
+  return {
+    nativeEvent: {
+      identifier,
+      locationX,
+      locationY,
+      changedTouches: [makeTouch(identifier, locationX, locationY)],
+      touches: [],
+    },
+  };
+}
+
+describe('GameView — multi-touch routing (CW7-1)', () => {
+  it('onResponderGrant routes changedTouches to onPointerDown with real identifier (fail-old: always id 0)', () => {
+    mount();
+    const grant = _capturedContainerProps?.onResponderGrant as (e: unknown) => void;
+    expect(grant).toBeDefined();
+
+    grant(grantEvent('5', 80, 120));
+
+    expect(_inputInstance?.pointerDownCalls).toEqual([{ id: 5, x: 80, y: 120 }]);
+    unmountAll();
+  });
+
+  it('onResponderMove routes changedTouches to onPointerMove with real identifier (fail-old: always id 0)', () => {
+    mount();
+    const move = _capturedContainerProps?.onResponderMove as (e: unknown) => void;
+    expect(move).toBeDefined();
+
+    move(moveEvent('2', 40, 60));
+
+    expect(_inputInstance?.pointerMoveCalls).toEqual([{ id: 2, x: 40, y: 60 }]);
+    unmountAll();
+  });
+
+  it('onResponderRelease routes changedTouches to onPointerUp with real identifier (fail-old: always id 0)', () => {
+    mount();
+    const release = _capturedContainerProps?.onResponderRelease as (e: unknown) => void;
+    expect(release).toBeDefined();
+
+    release(releaseEvent('3', 10, 20));
+
+    expect(_inputInstance?.pointerUpCalls).toEqual([{ id: 3, x: 10, y: 20 }]);
+    unmountAll();
+  });
+
+  it('two concurrent touches produce distinct entries — not collapsed to id 0 (fail-old: both id 0)', () => {
+    mount();
+    const grant = _capturedContainerProps?.onResponderGrant as (e: unknown) => void;
+    const move = _capturedContainerProps?.onResponderMove as (e: unknown) => void;
+
+    grant(grantEvent('1', 50, 50));
+    move(moveEvent('2', 200, 300));
+
+    const input = _inputInstance!;
+    expect(input.touches).toHaveLength(2);
+    expect(input.touches.some((t) => t.id === 1)).toBe(true);
+    expect(input.touches.some((t) => t.id === 2)).toBe(true);
+    unmountAll();
+  });
+
+  it('releasing one touch leaves the other intact (fail-old: single id 0 entry removed for both)', () => {
+    mount();
+    const grant = _capturedContainerProps?.onResponderGrant as (e: unknown) => void;
+    const move = _capturedContainerProps?.onResponderMove as (e: unknown) => void;
+    const release = _capturedContainerProps?.onResponderRelease as (e: unknown) => void;
+
+    grant(grantEvent('1', 50, 50));
+    move(moveEvent('2', 200, 300));
+    release(releaseEvent('1', 50, 50));
+
+    const input = _inputInstance!;
+    expect(input.touches).toHaveLength(1);
+    expect(input.touches[0]?.id).toBe(2);
+    unmountAll();
+  });
+
+  it('falls back to primary event identifier when changedTouches is empty', () => {
+    mount();
+    const grant = _capturedContainerProps?.onResponderGrant as (e: unknown) => void;
+    grant({
+      nativeEvent: {
+        identifier: '7',
+        locationX: 11,
+        locationY: 22,
+        changedTouches: [],
+        touches: [],
+      },
+    });
+    expect(_inputInstance?.pointerDownCalls).toEqual([{ id: 7, x: 11, y: 22 }]);
+    unmountAll();
   });
 });

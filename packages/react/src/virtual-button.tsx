@@ -23,8 +23,9 @@ export interface VirtualButtonProps {
 /**
  * VirtualButton — an on-screen button overlay component.
  *
- * Claims the React Native touch responder so press/release fire reliably
- * even when an ancestor (e.g. <GameView>) also claims the responder.
+ * Uses raw `onTouchStart`/`onTouchEnd` so press and release fire regardless
+ * of which ancestor holds the RN responder — enabling simultaneous use with
+ * `<VirtualJoystick>` without responder conflicts.
  */
 export function VirtualButton({
   onStateChange,
@@ -48,18 +49,13 @@ export function VirtualButton({
   return (
     <View
       style={[styles.button, style]}
-      onStartShouldSetResponder={returnTrue}
-      onResponderGrant={handlePress}
-      onResponderRelease={handleRelease}
-      onResponderTerminate={handleRelease}
+      onTouchStart={handlePress}
+      onTouchEnd={handleRelease}
+      onTouchCancel={handleRelease}
     >
       {children}
     </View>
   );
-}
-
-function returnTrue(): boolean {
-  return true;
 }
 
 const styles = StyleSheet.create({

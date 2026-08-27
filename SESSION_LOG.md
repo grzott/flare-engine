@@ -11181,3 +11181,27 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 288 — 2026-08-27 (scope: engine)
+
+**Goal:** CW7-1 — multi-touch blocker: route concurrent touches through GameView's responder
+
+**Touched files**
+- `.changeset/react-multitouch-routing.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/virtual-button.tsx`
+- `packages/react/src/virtual-joystick.tsx`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/virtual-controls-multitouch.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (agent reported fail-old as logical inference because the repo guard blocks git stash; I re-verified by reverting src to HEAD and observed 13 real failures); deny:0; gate:1 (perf-freshness overridden — carried from the 1645606 engine commit; the single node re-capture for this arc runs next); fixup:0; drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

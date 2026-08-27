@@ -245,19 +245,46 @@ export function GameView({
 
   const onGrant = useCallback(
     (e: GestureResponderEvent): void => {
-      ctx.input.onPointerDown(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
+      const { changedTouches, identifier, locationX, locationY } = e.nativeEvent;
+      if (changedTouches.length === 0) {
+        ctx.input.onPointerDown(Number(identifier), locationX, locationY);
+        return;
+      }
+      for (let i = 0; i < changedTouches.length; i++) {
+        const t = changedTouches[i];
+        if (t === undefined) continue;
+        ctx.input.onPointerDown(Number(t.identifier), t.locationX, t.locationY);
+      }
     },
     [ctx],
   );
   const onMove = useCallback(
     (e: GestureResponderEvent): void => {
-      ctx.input.onPointerMove(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
+      const { changedTouches, identifier, locationX, locationY } = e.nativeEvent;
+      if (changedTouches.length === 0) {
+        ctx.input.onPointerMove(Number(identifier), locationX, locationY);
+        return;
+      }
+      for (let i = 0; i < changedTouches.length; i++) {
+        const t = changedTouches[i];
+        if (t === undefined) continue;
+        ctx.input.onPointerMove(Number(t.identifier), t.locationX, t.locationY);
+      }
     },
     [ctx],
   );
   const onRelease = useCallback(
     (e: GestureResponderEvent): void => {
-      ctx.input.onPointerUp(0, e.nativeEvent.locationX, e.nativeEvent.locationY);
+      const { changedTouches, identifier, locationX, locationY } = e.nativeEvent;
+      if (changedTouches.length === 0) {
+        ctx.input.onPointerUp(Number(identifier), locationX, locationY);
+        return;
+      }
+      for (let i = 0; i < changedTouches.length; i++) {
+        const t = changedTouches[i];
+        if (t === undefined) continue;
+        ctx.input.onPointerUp(Number(t.identifier), t.locationX, t.locationY);
+      }
     },
     [ctx],
   );

@@ -134,7 +134,8 @@ export class CollisionWorld {
     const newPairs = this.activePairs === this.pairBufA ? this.pairBufB : this.pairBufA;
     newPairs.clear();
 
-    for (const [entityA, entryA] of this.entries) {
+    for (const entryA of this.entries.values()) {
+      const entityA = entryA.entity;
       shapeBoundsInto(entryA.shape, entryA.x, entryA.y, this.boundsBuf);
       this.queryBuf.length = 0;
       this.spatial.query(this.boundsBuf, this.queryBuf);

@@ -11226,3 +11226,27 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 290 — 2026-08-27 (scope: engine)
+
+**Goal:** CW7-8 — uniform spatial hash for SpatialIndex, public surface frozen
+
+**Touched files**
+- `.changeset/physics-spatial-hash-broadphase.md`
+- `benchmarks/results/history.ndjson`
+- `docs/design/api-specs.md`
+- `packages/physics/src/collision-world.ts`
+- `packages/physics/src/spatial-index.ts`
+- `packages/physics/tests/spatial-index.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness overridden to reach a clean tree — the physics numbers moved enormously and legitimately, 4.82ms -> 0.18ms at 1000 sparse; the full 5-run re-capture runs immediately after this commit and is required before 0.3.1 publishes); fixup:0; drift:0 — independently re-verified the 6 characterization tests pass on the pre-swap brute-force code (15/15) and that the exported surface is byte-identical to HEAD
+
+**Next:** see `docs/plans/todo.md`.
+
+---

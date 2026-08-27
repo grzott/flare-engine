@@ -35,7 +35,7 @@ export interface SkImageLike {
 const EMPTY_CHILDREN: readonly SkImageLike[] = Object.freeze([]);
 
 export interface SkiaRuntimeEffectLike {
-  makeShaderWithChildren(uniforms: Float32Array, children?: unknown[]): unknown | null;
+  makeShaderWithChildren(uniforms: Float32Array | number[], children?: unknown[]): unknown | null;
   /** Optional diagnostic — total float count expected by makeShaderWithChildren. */
   getUniformFloatCount?(): number;
 }

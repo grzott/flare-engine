@@ -526,3 +526,97 @@ describe('SceneManager — dev warning', () => {
     warnSpy.mockRestore();
   });
 });
+
+describe('SceneManager — overlapping transitions / stall fix', () => {
+  it('activates superseding scene when its preload settles even if update() stops', async () => {
+    let resolveCPreload!: () => void;
+    const cPreload = new Promise<void>((r) => {
+      resolveCPreload = r;
+    });
+
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', () => ({ name: 'a', world: null!, camera: null! }));
+    // b has a never-resolving preload, simulating a long concurrent load
+    mgr.register('b', () => ({
+      name: 'b',
+      world: null!,
+      camera: null!,
+      onPreload: () => new Promise<void>(() => {}),
+    }));
+    mgr.register('c', () => ({
+      name: 'c',
+      world: null!,
+      camera: null!,
+      onPreload: () => cPreload,
+    }));
+
+    await mgr.go('a');
+    void mgr.go('b'); // first animated go (gen 1)
+    void mgr.go('c'); // supersedes b (gen 2, pendingScene = c)
+
+    // Drive out-phase to completion with a large dt
+    mgr.update(2.0);
+
+    // Out-phase done but c's preload not resolved — held at the guard
+    expect(mgr.current?.name).toBe('a');
+
+    // update() stops (simulating backgrounding). Resolve c's preload.
+    resolveCPreload();
+    await Promise.resolve();
+
+    // Settle handler must re-drive activation without a further update() call.
+    expect(mgr.current?.name).toBe('c');
+  });
+
+  it('stale handler from superseded go() does not resolve the guard for the live transition', async () => {
+    let resolveBPreload!: () => void;
+    let resolveCPreload!: () => void;
+    const bPreload = new Promise<void>((r) => {
+      resolveBPreload = r;
+    });
+    const cPreload = new Promise<void>((r) => {
+      resolveCPreload = r;
+    });
+    const log: string[] = [];
+
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', () => ({ name: 'a', world: null!, camera: null! }));
+    mgr.register('b', () => ({
+      name: 'b',
+      world: null!,
+      camera: null!,
+      onPreload: () => bPreload,
+    }));
+    mgr.register('c', () => ({
+      name: 'c',
+      world: null!,
+      camera: null!,
+      onPreload: () => cPreload,
+      onEnter: () => log.push('c:enter'),
+    }));
+
+    await mgr.go('a');
+    void mgr.go('b'); // gen 1
+    void mgr.go('c'); // gen 2 — supersedes b
+
+    // Resolve b's stale preload first
+    resolveBPreload();
+    await Promise.resolve();
+
+    // Drive out-phase to completion
+    mgr.update(2.0);
+
+    // c must NOT have entered — its own preload is still pending
+    expect(log).not.toContain('c:enter');
+    expect(mgr.current?.name).not.toBe('c');
+
+    // Resolve c's preload — activation should complete via settle handler
+    resolveCPreload();
+    await Promise.resolve();
+
+    expect(mgr.current?.name).toBe('c');
+    expect(log).toContain('c:enter');
+  });
+});

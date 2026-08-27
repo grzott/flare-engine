@@ -1,4 +1,5 @@
 import { Follower, Lifetime, Position, Velocity } from './components.js';
+import type { Query } from './query.js';
 import type { SystemDef } from './system.js';
 import { defineSystem } from './system.js';
 import type { World } from './world.js';
@@ -42,12 +43,18 @@ export function createMovementSystem(world: World): SystemDef {
  * The scratch array is closure-owned and grow-only — zero steady-state alloc.
  *
  * @param onExpire  Destroy / pool policy — ecs never destroys on its own.
+ * @param query     Optional caller-supplied Query. When omitted the system
+ *                  registers world.query(Lifetime) itself. Pass a narrower
+ *                  query to avoid scanning unrelated Lifetime holders and to
+ *                  share an already-registered query (eliminates duplicate
+ *                  World.query registration cost).
  */
 export function createLifetimeSystem(
   world: World,
   onExpire: (entity: number, world: World) => void,
+  query?: Query,
 ): SystemDef {
-  const q = world.query(Lifetime);
+  const q = query ?? world.query(Lifetime);
   const scratch: number[] = [];
   return defineSystem(q, (entities, dt, w) => {
     scratch.length = 0;
@@ -75,13 +82,20 @@ export function createLifetimeSystem(
  *
  * @param bounds   Mutable bounding box read each frame.
  * @param onCull   Destroy / pool policy — ecs never destroys on its own.
+ * @param query    Optional caller-supplied Query. When omitted the system
+ *                 registers world.query(Position) itself, scanning all
+ *                 Position holders. Pass a narrower query (e.g. bullets
+ *                 only) to avoid scanning unrelated entities such as
+ *                 scrolling backgrounds, and to share an already-registered
+ *                 query with the caller.
  */
 export function createBoundsCullSystem(
   world: World,
   bounds: CullBounds,
   onCull: (entity: number, world: World) => void,
+  query?: Query,
 ): SystemDef {
-  const q = world.query(Position);
+  const q = query ?? world.query(Position);
   const scratch: number[] = [];
   return defineSystem(q, (entities, _dt, w) => {
     scratch.length = 0;

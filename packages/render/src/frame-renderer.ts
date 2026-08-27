@@ -192,7 +192,7 @@ export interface FrameRendererModule {
 export interface FrameRendererCompiledPass {
   readonly id: string;
   readonly shader: {
-    makeShaderWithChildren(uniforms: number[], children: unknown[]): unknown | null;
+    makeShaderWithChildren(uniforms: Float32Array | number[], children: unknown[]): unknown | null;
     getUniformCount?(): number;
     getUniformName?(index: number): string;
     getUniform?(index: number): { columns: number; rows: number; slot: number };

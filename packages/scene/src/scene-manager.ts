@@ -25,6 +25,7 @@ export class SceneManager {
   private _pendingScene: Scene | null = null;
   private _pendingData: unknown = undefined;
   private _preloadResolved = true;
+  private _preloadGen = 0;
 
   /** The currently active scene (top of stack). */
   get current(): Scene | undefined {
@@ -78,15 +79,19 @@ export class SceneManager {
       // Start preload concurrently with the fade-out.
       this._initialized.add(scene.name);
       this._preloadResolved = false;
+      const gen = ++this._preloadGen;
       const preload = scene.onPreload?.();
       if (preload == null) {
         this._preloadResolved = true;
       } else {
         void preload.then(
           () => {
+            if (gen !== this._preloadGen) return;
             this._preloadResolved = true;
+            this._finishOutPhase();
           },
           (err) => {
+            if (gen !== this._preloadGen) return;
             this._preloadResolved = true;
             if (typeof __DEV__ !== 'undefined' && __DEV__) {
               console.error(
@@ -94,6 +99,7 @@ export class SceneManager {
                 err,
               );
             }
+            this._finishOutPhase();
           },
         );
       }
@@ -222,6 +228,35 @@ export class SceneManager {
     this._stack.length = 0;
   }
 
+  private _finishOutPhase(): void {
+    if (!this._transitionState?.done || this._transitionState.phase !== 'out') return;
+
+    const pending = this._pendingScene;
+    const data = this._pendingData;
+    this._pendingScene = null;
+    this._pendingData = undefined;
+
+    if (pending) {
+      for (let i = this._stack.length - 1; i >= 0; i--) {
+        const s = this._stack[i]!;
+        s.onExit?.();
+        s.onDestroy?.();
+        this._scenes.delete(s.name);
+        this._initialized.delete(s.name);
+      }
+      this._stack.length = 0;
+
+      // Preload already ran in go(); call onInit then enter.
+      this._scenes.set(pending.name, pending);
+      this._initialized.add(pending.name);
+      pending.onInit?.();
+      this._stack.push(pending);
+      pending.onEnter?.(data);
+    }
+
+    this._transitionState = this._transition.start('in');
+  }
+
   private _updateTransition(dt: number): void {
     if (!this._transitionState) return;
 
@@ -236,31 +271,7 @@ export class SceneManager {
           return;
         }
 
-        const pending = this._pendingScene;
-        const data = this._pendingData;
-        this._pendingScene = null;
-        this._pendingData = undefined;
-
-        if (pending) {
-          // Destroy current stack
-          for (let i = this._stack.length - 1; i >= 0; i--) {
-            const s = this._stack[i]!;
-            s.onExit?.();
-            s.onDestroy?.();
-            this._scenes.delete(s.name);
-            this._initialized.delete(s.name);
-          }
-          this._stack.length = 0;
-
-          // Preload already awaited in go(); call onInit then enter.
-          this._scenes.set(pending.name, pending);
-          this._initialized.add(pending.name);
-          pending.onInit?.();
-          this._stack.push(pending);
-          pending.onEnter?.(data);
-        }
-
-        this._transitionState = this._transition.start('in');
+        this._finishOutPhase();
       } else {
         // Phase 'in' done — transition complete
         this._transitionState = null;

@@ -441,3 +441,101 @@ describe('createOrphanCullSystem', () => {
     expect(() => world.step(1)).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// caller-supplied query (CW7-3)
+// ---------------------------------------------------------------------------
+describe('createLifetimeSystem — caller-supplied query', () => {
+  it('default (no query arg) still expires all Lifetime entities', () => {
+    const world = new World();
+    const a = world.spawn();
+    world.add(a, Lifetime, { remaining: 0.1 });
+
+    const expired: number[] = [];
+    const sys = createLifetimeSystem(world, (id) => expired.push(id));
+    world.addSystem(sys._worldFn);
+    world.step(1);
+
+    expect(expired).toContain(a);
+  });
+
+  it('injected narrower query limits entities visited', () => {
+    const world = new World();
+
+    const wideOnly = world.spawn();
+    world.add(wideOnly, Lifetime, { remaining: 0.1 });
+
+    const narrow = world.spawn();
+    world.add(narrow, Lifetime, { remaining: 0.1 });
+    world.add(narrow, Velocity, { x: 0, y: 0 });
+
+    const narrowQuery: Query = world.query(Lifetime, Velocity);
+
+    const expired: number[] = [];
+    const sys = createLifetimeSystem(world, (id) => expired.push(id), narrowQuery);
+    world.addSystem(sys._worldFn);
+    world.step(1);
+
+    expect(expired).toContain(narrow);
+    expect(expired).not.toContain(wideOnly);
+  });
+
+  it('injected query is used at construction time, not per-frame', () => {
+    const world = new World();
+    const e = world.spawn();
+    world.add(e, Lifetime, { remaining: 0.1 });
+    world.add(e, Velocity, { x: 0, y: 0 });
+
+    const narrowQuery: Query = world.query(Lifetime, Velocity);
+    const sys = createLifetimeSystem(world, () => {}, narrowQuery);
+
+    expect(sys.query === narrowQuery).toBe(true);
+  });
+});
+
+describe('createBoundsCullSystem — caller-supplied query', () => {
+  it('default (no query arg) still culls all out-of-bounds Position entities', () => {
+    const world = new World();
+    const e = world.spawn();
+    world.add(e, Position, { x: -999, y: 0 });
+
+    const culled: number[] = [];
+    const bounds: CullBounds = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+    const sys = createBoundsCullSystem(world, bounds, (id) => culled.push(id));
+    world.addSystem(sys._worldFn);
+    world.step(1);
+
+    expect(culled).toContain(e);
+  });
+
+  it('injected narrower query limits entities culled', () => {
+    const world = new World();
+
+    const wideOnly = world.spawn();
+    world.add(wideOnly, Position, { x: -999, y: 0 });
+
+    const narrow = world.spawn();
+    world.add(narrow, Position, { x: -999, y: 0 });
+    world.add(narrow, Velocity, { x: 0, y: 0 });
+
+    const narrowQuery: Query = world.query(Position, Velocity);
+
+    const culled: number[] = [];
+    const bounds: CullBounds = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+    const sys = createBoundsCullSystem(world, bounds, (id) => culled.push(id), narrowQuery);
+    world.addSystem(sys._worldFn);
+    world.step(1);
+
+    expect(culled).toContain(narrow);
+    expect(culled).not.toContain(wideOnly);
+  });
+
+  it('injected query is used at construction time, not per-frame', () => {
+    const world = new World();
+    const narrowQuery: Query = world.query(Position, Velocity);
+    const bounds: CullBounds = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+    const sys = createBoundsCullSystem(world, bounds, () => {}, narrowQuery);
+
+    expect(sys.query === narrowQuery).toBe(true);
+  });
+});

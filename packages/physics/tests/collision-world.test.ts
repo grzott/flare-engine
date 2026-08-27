@@ -222,4 +222,57 @@ describe('CollisionWorld', () => {
     expect(starts.length).toBe(1);
     expect(ends.length).toBe(1);
   });
+
+  describe('getColliderBoundsInto / getColliderBounds', () => {
+    it('returns null for an absent entity (Into form)', () => {
+      const world = new CollisionWorld();
+      const out = { x: 0, y: 0, width: 0, height: 0 };
+      expect(world.getColliderBoundsInto(99, out)).toBeNull();
+    });
+
+    it('returns null for an absent entity (allocating form)', () => {
+      const world = new CollisionWorld();
+      expect(world.getColliderBounds(99)).toBeNull();
+    });
+
+    it('returns correct AABB bounds for a registered AABB collider', () => {
+      const world = new CollisionWorld();
+      world.add(1, AABB(20, 10), 5, 8);
+      const out = { x: 0, y: 0, width: 0, height: 0 };
+      const result = world.getColliderBoundsInto(1, out);
+      expect(result).toBe(out);
+      expect(out.x).toBe(-5);
+      expect(out.y).toBe(3);
+      expect(out.width).toBe(20);
+      expect(out.height).toBe(10);
+    });
+
+    it('returns correct bounds for a circle collider', () => {
+      const world = new CollisionWorld();
+      world.add(2, CircleShape(15), 10, 20);
+      const result = world.getColliderBounds(2);
+      expect(result).not.toBeNull();
+      expect(result!.x).toBe(-5);
+      expect(result!.y).toBe(5);
+      expect(result!.width).toBe(30);
+      expect(result!.height).toBe(30);
+    });
+
+    it('Into form returns the same out object (not a new allocation)', () => {
+      const world = new CollisionWorld();
+      world.add(3, AABB(4, 4), 0, 0);
+      const out = { x: 0, y: 0, width: 0, height: 0 };
+      const result = world.getColliderBoundsInto(3, out);
+      expect(result).toBe(out);
+    });
+
+    it('reflects position after setPosition', () => {
+      const world = new CollisionWorld();
+      world.add(4, AABB(10, 10), 0, 0);
+      world.setPosition(4, 50, 30);
+      const result = world.getColliderBounds(4);
+      expect(result!.x).toBe(45);
+      expect(result!.y).toBe(25);
+    });
+  });
 });

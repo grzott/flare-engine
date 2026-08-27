@@ -6,6 +6,42 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
+### Arc CW7 — consumer needs from PT + portfolio (ACTIVE 2026-08-25, ships as 0.3.1)
+
+Goal: absorb what the two consumer-needs docs actually justify, after a 38-agent audit that killed two
+asks and corrected a third. **Full findings + the version-line reasoning in the SoT:
+[consumer-needs-audit-2026-08.md](consumer-needs-audit-2026-08.md)** — read the row's section before
+planning. All rows are `packages/**` -> **engine-builder**, each with a **patch** changeset (0.3.1, not
+0.4.0: both consumers pin `^0.3.0`, so a minor bump reaches neither). Pick top -> `/start`.
+
+- **CW7-1 — PT-9.1 multi-touch blocker: route through the engine's own responder.** Owner-playtest
+  blocker. `VirtualButton` + `VirtualJoystick` cannot be used together: RN negotiates from
+  LCA = GameView's container and traverses upward only, so the button is never asked; GameView wins,
+  the joystick is terminated and zeroes its vector. **The doc's own Option A fixes only half and
+  Option B reverses OSS-C1/OSS-B32** — adopt Option C: stop hard-coding pointer id 0 at
+  `packages/react/src/game-view.tsx:246-263`, read `Number(e.nativeEvent.identifier)`. Widest blast
+  radius in the set; GameView pointer routing is the thinnest-covered area. Spec: SoT "Corrected".
+- **CW7-2 — PT-9.2 `Label` truncation.** Owner-playtest blocker. Add `numberOfLines`,
+  `ellipsizeMode`, `adjustsFontSizeToFit`, `minimumFontScale` to `LabelProps`
+  (`packages/ui/src/label.tsx:8-14`) and forward to the `Text` at :46. Type `ellipsizeMode` by indexing
+  RN's `TextProps` so it cannot drift from the peer floor.
+- **CW7-3 — PT-2.1 / E11 caller-supplied `Query` on cull systems.** Optional trailing `query?: Query`
+  on `createLifetimeSystem` and `createBoundsCullSystem` in `packages/ecs/src/systems.ts`, defaulting
+  to today's internal query. Guard at construction, never in the loop — the hot path must not change.
+- **CW7-4 — PT-2.2 / E9 align the two `.d.ts`.** Widen `uniforms` to `Float32Array | number[]` at
+  exactly two lines: `packages/postfx/src/runtime.ts:38` and
+  `packages/render/src/frame-renderer.ts:195`. Deletes an `as unknown as` bridge from a consumer that
+  bans `any`. Highest value-per-line in the arc.
+- **CW7-5 — PT-2.3 / E10 activation stall.** In `packages/scene/src/scene-manager.ts`: extract the
+  activation body at :239-263, replace the shared `_preloadResolved` boolean with a generation token,
+  bail stale handlers.
+- **CW7-6 — PT-3.2 collider readback.** `getColliderBoundsInto(entity, out)` + allocating
+  `getColliderBounds(entity)` on `CollisionWorld`, mirroring `Camera2D.getBounds`/`getBoundsInto`.
+  Makes every PT collider assertion direct instead of a proxy.
+- **CW7-7 — PT-10.2 `StyleProp<ViewStyle>`.** Widen `style` across the 8 prop declarations in
+  `packages/ui/src` (+ `TextStyle` on Label). Zero component-body changes. Widening is
+  source-compatible for callers; only type-readers observe it.
+
 ### Arc WEB — run a Flare game in a browser (engine half COMPLETE 2026-08-24)
 
 Goal: back the `roadmap.md:11` positioning claim at the app level — PT and all three scaffolder

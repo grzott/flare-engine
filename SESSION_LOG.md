@@ -11117,3 +11117,36 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 286 — 2026-08-27 (scope: engine)
+
+**Goal:** CW7-3/4/5/6 — consumer-needs fixes for 0.3.1
+
+**Touched files**
+- `.changeset/ecs-caller-supplied-query-cull-systems.md`
+- `.changeset/physics-collider-bounds-readback.md`
+- `.changeset/postfx-render-uniforms-widening.md`
+- `.changeset/scene-manager-stall-generation-token.md`
+- `docs/design/api-specs.md`
+- `packages/ecs/src/systems.ts`
+- `packages/ecs/tests/systems.test.ts`
+- `packages/physics/src/collision-world.ts`
+- `packages/physics/tests/collision-world.test.ts`
+- `packages/postfx/src/runtime.ts`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render-web/tests/postfx-assignability.ts`
+- `packages/render-web/tsconfig.tests.json`
+- `packages/scene/src/scene-manager.ts`
+- `packages/scene/tests/scene-manager.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness STALE — overridden ONLY to get a clean tree for the capture, which follows immediately in this session; no measured runtime path changed: render+postfx are 4 lines of interface declaration i.e. type-only, physics is 15 insertions/0 deletions, ecs resolves the query at construction with the per-frame closure untouched); fixup:0; drift:1 (CW7-6's agent fixed a lint error CW7-3's agent left in packages/ecs/tests/systems.test.ts — parallel rows touching one file)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

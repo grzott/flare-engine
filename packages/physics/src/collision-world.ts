@@ -193,6 +193,21 @@ export class CollisionWorld {
     this.activePairs = newPairs;
   }
 
+  /** Zero-alloc collider bounds — writes the AABB of entity's shape into `out`. Returns null when entity is absent. */
+  getColliderBoundsInto(entity: number, out: Rect): Rect | null {
+    const entry = this.entries.get(entity);
+    if (!entry) return null;
+    shapeBoundsInto(entry.shape, entry.x, entry.y, out);
+    return out;
+  }
+
+  /** Allocating convenience wrapper — returns a fresh Rect or null when entity is absent. */
+  getColliderBounds(entity: number): Rect | null {
+    const entry = this.entries.get(entity);
+    if (!entry) return null;
+    return shapeBoundsInto(entry.shape, entry.x, entry.y, { x: 0, y: 0, width: 0, height: 0 });
+  }
+
   /** Remove all entities. */
   clear(): void {
     this.entries.clear();

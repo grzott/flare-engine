@@ -1,5 +1,12 @@
 # @flare-engine/ui
 
+## 0.3.1
+
+### Patch Changes
+
+- e7947fe: Add `numberOfLines`, `ellipsizeMode`, `adjustsFontSizeToFit`, `minimumFontScale` to `LabelProps` and forward them to the underlying RN `Text`. `ellipsizeMode` is typed via `TextProps['ellipsizeMode']` so it tracks the `react-native >=0.79.0` peer floor automatically. Omitting any prop preserves existing rendered output.
+- e7947fe: Widen `style` from `ViewStyle` to `StyleProp<ViewStyle>` (and `TextStyle` to `StyleProp<TextStyle>` on `Label`) across all eight component prop interfaces in `@flare-engine/ui`. Source-compatible for every caller passing a plain object; only code that reads the prop type observes this change (e.g. wrapper components that forward a style array).
+
 ## 0.3.0
 
 ### Minor Changes

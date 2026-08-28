@@ -1,6 +1,6 @@
 {
   "name": "create-flare-app",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "One-shot scaffolder for Flare engine apps — `npm create flare-app@latest`",
   "keywords": ["flare-engine", "scaffold", "create-app", "expo", "react-native"],
@@ -44,12 +44,12 @@
     "commander": "^13.1.0"
   },
   "devDependencies": {
-    "@flare-engine/ecs": "^0.3.0",
-    "@flare-engine/engine": "^0.3.0",
-    "@flare-engine/physics": "^0.3.0",
-    "@flare-engine/react": "^0.3.0",
-    "@flare-engine/render": "^0.3.0",
-    "@flare-engine/tilemap": "^0.3.0"
+    "@flare-engine/ecs": "^0.3.1",
+    "@flare-engine/engine": "^0.3.1",
+    "@flare-engine/physics": "^0.3.1",
+    "@flare-engine/react": "^0.3.1",
+    "@flare-engine/render": "^0.3.1",
+    "@flare-engine/tilemap": "^0.3.1"
   },
   "engines": {
     "node": ">=20"

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/events",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Type-safe EventEmitter and Signal",
   "keywords": ["flare-engine", "events", "signal", "emitter"],
   "license": "Apache-2.0",

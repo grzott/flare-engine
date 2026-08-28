@@ -1,5 +1,17 @@
 # @flare-engine/tilemap
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [1645606]
+- Updated dependencies [b617e49]
+- Updated dependencies [1645606]
+  - @flare-engine/physics@0.3.1
+  - @flare-engine/render@0.3.1
+  - @flare-engine/assets@0.3.1
+  - @flare-engine/math@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # @flare-engine/physics
 
+## 0.3.1
+
+### Patch Changes
+
+- 1645606: Add `getColliderBoundsInto` (zero-alloc) and `getColliderBounds` (allocating) to `CollisionWorld` for direct AABB readback by entity id.
+- b617e49: Replace brute-force linear scan in `SpatialIndex` with a uniform spatial hash: O(1) `remove`/`update` via item-to-slot map, O(cells-touched) `query` via cell buckets, zero-alloc duplicate suppression via monotone stamp counter. Also drops the per-entity 2-element array allocation in `CollisionWorld.step` by iterating `entries.values()`.
+  - @flare-engine/events@0.3.1
+  - @flare-engine/math@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @flare-engine/scene
 
+## 0.3.1
+
+### Patch Changes
+
+- 1645606: Fix scene activation stall: extract `_finishOutPhase()` from `_updateTransition`, add a generation token so superseded `go()` settle handlers bail early, and re-drive activation from the surviving settle handler so the scene activates even when `update()` has stopped.
+- Updated dependencies [1645606]
+- Updated dependencies [1645606]
+  - @flare-engine/ecs@0.3.1
+  - @flare-engine/render@0.3.1
+  - @flare-engine/math@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

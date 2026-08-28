@@ -1,5 +1,13 @@
 # @flare-engine/devtools
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [1645606]
+  - @flare-engine/ecs@0.3.1
+  - @flare-engine/core@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

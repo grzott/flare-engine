@@ -1,5 +1,12 @@
 # @flare-engine/particles
 
+## 0.3.1
+
+### Patch Changes
+
+- @flare-engine/core@0.3.1
+- @flare-engine/math@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

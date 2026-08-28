@@ -1,5 +1,15 @@
 # @flare-engine/render
 
+## 0.3.1
+
+### Patch Changes
+
+- 1645606: Widen `makeShaderWithChildren` uniforms parameter to `Float32Array | number[]` in both `SkiaRuntimeEffectLike` (postfx) and `FrameRendererCompiledPass.shader` (render), making `PostFxRuntime` structurally assignable to `FrameRendererPostFxRuntime` without a type bridge.
+- Updated dependencies [1645606]
+  - @flare-engine/ecs@0.3.1
+  - @flare-engine/assets@0.3.1
+  - @flare-engine/math@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

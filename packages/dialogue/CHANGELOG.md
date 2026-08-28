@@ -1,5 +1,11 @@
 # @flare-engine/dialogue
 
+## 0.3.1
+
+### Patch Changes
+
+- @flare-engine/events@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

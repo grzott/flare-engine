@@ -1,5 +1,34 @@
 # @flare-engine/engine
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [8701b58]
+- Updated dependencies [1645606]
+- Updated dependencies [1645606]
+- Updated dependencies [b617e49]
+- Updated dependencies [1645606]
+- Updated dependencies [9a58db7]
+- Updated dependencies [1645606]
+  - @flare-engine/dynamics@0.3.1
+  - @flare-engine/ecs@0.3.1
+  - @flare-engine/physics@0.3.1
+  - @flare-engine/postfx@0.3.1
+  - @flare-engine/render@0.3.1
+  - @flare-engine/react@0.3.1
+  - @flare-engine/scene@0.3.1
+  - @flare-engine/animation@0.3.1
+  - @flare-engine/assets@0.3.1
+  - @flare-engine/audio@0.3.1
+  - @flare-engine/core@0.3.1
+  - @flare-engine/debug@0.3.1
+  - @flare-engine/events@0.3.1
+  - @flare-engine/input@0.3.1
+  - @flare-engine/math@0.3.1
+  - @flare-engine/particles@0.3.1
+  - @flare-engine/tilemap@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

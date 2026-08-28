@@ -1,5 +1,13 @@
 # @flare-engine/render-web
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [1645606]
+  - @flare-engine/postfx@0.3.1
+  - @flare-engine/render@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

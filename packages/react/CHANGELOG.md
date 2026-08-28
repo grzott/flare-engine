@@ -1,5 +1,23 @@
 # @flare-engine/react
 
+## 0.3.1
+
+### Patch Changes
+
+- 9a58db7: Fix simultaneous VirtualJoystick + VirtualButton use (PT-9.1 blocker). GameView routes all concurrent touches to InputManager using real pointer identifiers from `nativeEvent.changedTouches` instead of hardcoded id 0. VirtualJoystick adds `onResponderTerminationRequest={false}` so it retains its vector when a second finger touches the screen. VirtualButton switches from the single-owner responder system to raw `onTouchStart`/`onTouchEnd`/`onTouchCancel` events, which fire regardless of who holds the responder — enabling both controls to operate simultaneously without interference.
+- Updated dependencies [1645606]
+- Updated dependencies [1645606]
+- Updated dependencies [1645606]
+  - @flare-engine/ecs@0.3.1
+  - @flare-engine/render@0.3.1
+  - @flare-engine/scene@0.3.1
+  - @flare-engine/assets@0.3.1
+  - @flare-engine/audio@0.3.1
+  - @flare-engine/core@0.3.1
+  - @flare-engine/events@0.3.1
+  - @flare-engine/input@0.3.1
+  - @flare-engine/math@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

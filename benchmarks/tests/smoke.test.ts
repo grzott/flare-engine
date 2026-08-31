@@ -1,5 +1,17 @@
-import { describe, expect, test } from 'bun:test';
+import { afterAll, describe, expect, test } from 'bun:test';
 import { resolve } from 'node:path';
+import {
+  _resetComponentIds,
+  defineComponent,
+  Follower,
+  Lifetime,
+  Parent,
+  Position,
+  Rotation,
+  Scale,
+  Velocity,
+} from '@flare-engine/ecs';
+import { Sprite } from '@flare-engine/render';
 import { ecsBenches } from '../src/ecs.bench.js';
 import { type BenchStats, P99_MIN_SAMPLES, SMOKE_OVERRIDES } from '../src/harness.js';
 import { runHeapProbe } from '../src/heap-probe.js';
@@ -32,6 +44,29 @@ import {
  * this the bench stack only ever ran when a human typed the command, which is
  * how a 3x regression sat unnoticed for three months.
  */
+
+// ecs.bench.ts and integration.bench.ts call _resetComponentIds() inside their
+// buildWorld/buildState helpers, which leaves nextComponentId=0 after all bench
+// tests complete.  Any module that defines components at module scope and loads
+// in the same Bun worker after this file would get IDs starting at 0, colliding
+// with built-in components (Position=0, Velocity=1, etc.).
+// Re-advance the counter past every existing module-scope component definition.
+afterAll(() => {
+  const maxId = Math.max(
+    Position.id,
+    Velocity.id,
+    Rotation.id,
+    Scale.id,
+    Parent.id,
+    Lifetime.id,
+    Follower.id,
+    Sprite.id,
+  );
+  _resetComponentIds();
+  for (let i = 0; i <= maxId; i++) {
+    defineComponent(`__bench_realign_${i}`);
+  }
+});
 
 const SUITES: Record<string, () => BenchStats[]> = {
   ECS: () => ecsBenches(SMOKE_OVERRIDES),

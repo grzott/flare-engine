@@ -1,6 +1,17 @@
-import { describe, expect, test } from 'bun:test';
+import { afterAll, describe, expect, test } from 'bun:test';
 import { Pool } from '@flare-engine/core';
-import { createFrameRenderer } from '@flare-engine/render';
+import {
+  _resetComponentIds,
+  defineComponent,
+  Follower,
+  Lifetime,
+  Parent,
+  Position,
+  Rotation,
+  Scale,
+  Velocity,
+} from '@flare-engine/ecs';
+import { createFrameRenderer, Sprite } from '@flare-engine/render';
 import { allocRows } from '../src/alloc.js';
 import { buildFlushState, flushRun } from '../src/render.bench.js';
 import { findAllocViolations } from '../src/scenario-contract.js';
@@ -12,6 +23,28 @@ import { createCountingSkiaStub, KNOWN_SURFACE_MEMBERS } from '../src/skia-stub.
  * exactly, so this file is a real gate rather than a smoke test — it runs in CI
  * on every PR through `turbo test`.
  */
+
+// allocRows() calls buildState() from integration.bench.ts, which calls
+// _resetComponentIds(), leaving nextComponentId=0 after setup runs.
+// Any module that defines components at module scope and loads in the same Bun
+// worker after this file would get IDs starting at 0, colliding with built-in
+// components.  Re-advance the counter past all existing module-scope definitions.
+afterAll(() => {
+  const maxId = Math.max(
+    Position.id,
+    Velocity.id,
+    Rotation.id,
+    Scale.id,
+    Parent.id,
+    Lifetime.id,
+    Follower.id,
+    Sprite.id,
+  );
+  _resetComponentIds();
+  for (let i = 0; i <= maxId; i++) {
+    defineComponent(`__bench_realign_${i}`);
+  }
+});
 
 describe('draw-path allocation counters', () => {
   const rows = allocRows();

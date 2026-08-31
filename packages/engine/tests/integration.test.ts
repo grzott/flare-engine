@@ -15,7 +15,6 @@ import {
 import { createSpriteSheet } from '@flare-engine/assets';
 import { GameLoop } from '@flare-engine/core';
 import {
-  _resetComponentIds,
   defineComponent,
   defineSystem,
   World as ECSWorld,
@@ -29,11 +28,31 @@ import { Camera2D } from '@flare-engine/render';
 import type { Scene } from '@flare-engine/scene';
 import { SceneManager } from '@flare-engine/scene';
 
+// ─── Module-scope setup for the ECS+Animation test ───────────────────────────
+// Anim is defined once here rather than inside the test body.  Defining it
+// inside the test and also calling _resetComponentIds() would reassign id=0
+// to Anim, colliding with the built-in Position component and corrupting any
+// test file loaded afterwards in the same Bun process.
+
+const _animSheet = createSpriteSheet();
+_animSheet.frames.push(
+  { name: 'f0', x: 0, y: 0, w: 16, h: 16 },
+  { name: 'f1', x: 16, y: 0, w: 16, h: 16 },
+  { name: 'f2', x: 32, y: 0, w: 16, h: 16 },
+);
+_animSheet.animations.set('walk', {
+  name: 'walk',
+  frameIndices: [0, 1, 2],
+  frameDuration: 0.1,
+  loop: true,
+});
+
+const Anim = defineComponent('Anim', () => createSpriteAnimator(_animSheet));
+
 // ─── 1. ECS + Physics ────────────────────────────────────────────────────────
 
 describe('ECS + Physics: entity positions drive collision world', () => {
   it('collision fires when ECS positions overlap', () => {
-    _resetComponentIds();
     const world = new World();
     const cworld = new CollisionWorld();
 
@@ -54,7 +73,6 @@ describe('ECS + Physics: entity positions drive collision world', () => {
   });
 
   it('collision end fires when ECS entity destroyed', () => {
-    _resetComponentIds();
     const world = new World();
     const cworld = new CollisionWorld();
 
@@ -79,7 +97,6 @@ describe('ECS + Physics: entity positions drive collision world', () => {
   });
 
   it('move system syncs ECS positions into collision world', () => {
-    _resetComponentIds();
     const world = new World();
     const cworld = new CollisionWorld();
 
@@ -118,23 +135,6 @@ describe('ECS + Physics: entity positions drive collision world', () => {
 
 describe('ECS + Animation: SpriteAnimator ticks via world', () => {
   it('animator frame advances when world steps', () => {
-    _resetComponentIds();
-
-    const sheet = createSpriteSheet();
-    // Add 3 frames
-    sheet.frames.push(
-      { name: 'f0', x: 0, y: 0, w: 16, h: 16 },
-      { name: 'f1', x: 16, y: 0, w: 16, h: 16 },
-      { name: 'f2', x: 32, y: 0, w: 16, h: 16 },
-    );
-    sheet.animations.set('walk', {
-      name: 'walk',
-      frameIndices: [0, 1, 2],
-      frameDuration: 0.1,
-      loop: true,
-    });
-
-    const Anim = defineComponent('Anim', () => createSpriteAnimator(sheet));
     const world = new World();
     const e = world.spawn();
     world.add(e, Anim);
@@ -272,8 +272,6 @@ describe('SceneManager: lifecycle hooks fire in order', () => {
 
 describe('Full loop: GameLoop drives ECS + physics + tweens in one frame', () => {
   it('all systems update in a single loop.step()', () => {
-    _resetComponentIds();
-
     const loop = new GameLoop({ fixedDt: 1 / 60, maxDt: 2.0 }); // maxDt high enough for 1s step
     const world = new World();
     const cworld = new CollisionWorld();

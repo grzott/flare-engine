@@ -11,15 +11,16 @@ const { serializeScene, snapshotsEqual } = await import('../src/scene-snapshot.j
 // live-binding cache keeps the export shape of the originally-cached mock
 // (only { World, Position }) and silently drops exports absent from it.
 const World = _realEcs.World;
-const _resetComponentIds = _realEcs._resetComponentIds;
 const defineComponent = _realEcs.defineComponent;
+
+// Components are defined once at module scope.  Each test creates a fresh World,
+// so the WeakMap-based query memoization in serializeScene starts empty per test.
+const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
+const Vel = defineComponent<{ dx: number; dy: number }>('Vel', () => ({ dx: 0, dy: 0 }));
+const Tag = defineComponent<undefined>('Tag');
 
 describe('serializeScene', () => {
   test('entities are sorted by id and include only present components', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
-    const Vel = defineComponent<{ dx: number; dy: number }>('Vel', () => ({ dx: 0, dy: 0 }));
-
     const w = new World();
     const b = w.spawn();
     const a = w.spawn();
@@ -35,10 +36,6 @@ describe('serializeScene', () => {
   });
 
   test('skips entities with none of the requested components', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
-    const Tag = defineComponent<undefined>('Tag');
-
     const w = new World();
     const e = w.spawn();
     w.add(e, Tag);
@@ -48,8 +45,6 @@ describe('serializeScene', () => {
   });
 
   test('is JSON-serializable', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
     const w = new World();
     const id = w.spawn();
     w.add(id, Pos, { x: 1, y: 2 });
@@ -58,9 +53,6 @@ describe('serializeScene', () => {
   });
 
   test('memoizes queries — repeat serializeScene registers no new queries', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
-    const Vel = defineComponent<{ dx: number; dy: number }>('Vel', () => ({ dx: 0, dy: 0 }));
     const w = new World();
     const e = w.spawn();
     w.add(e, Pos, { x: 1, y: 2 });
@@ -88,8 +80,6 @@ describe('serializeScene', () => {
 
 describe('snapshotsEqual', () => {
   test('deep equality matches identical snapshots', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
     const w1 = new World();
     const w2 = new World();
     for (const w of [w1, w2]) {
@@ -100,8 +90,6 @@ describe('snapshotsEqual', () => {
   });
 
   test('detects value differences', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
     const w1 = new World();
     const w2 = new World();
     const a = w1.spawn();
@@ -112,8 +100,6 @@ describe('snapshotsEqual', () => {
   });
 
   test('detects length differences', () => {
-    _resetComponentIds();
-    const Pos = defineComponent<{ x: number; y: number }>('Pos', () => ({ x: 0, y: 0 }));
     const w1 = new World();
     const w2 = new World();
     w1.add(w1.spawn(), Pos, { x: 1, y: 2 });

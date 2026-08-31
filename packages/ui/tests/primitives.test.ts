@@ -81,6 +81,7 @@ mock.module('react-native', () => ({
   Text: 'Text',
   Pressable: 'Pressable',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  PixelRatio: { get: () => 1 },
 }));
 
 const { createFocusManager } = await import('../src/focus.js');

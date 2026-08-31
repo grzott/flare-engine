@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { SafeArea } from '../src/safe-area.js';
 
 // Controls what useContext returns — tests override this per scenario.
@@ -255,4 +255,12 @@ describe('GameView safe-area integration', () => {
     expect(values.length).toBeGreaterThan(0);
     expect(values[0]).toEqual(fallback);
   });
+});
+
+// Restore the real @flare-engine/ecs so test files loaded in the same Bun
+// worker after this one are not affected by the limited ecs stub above
+// (which omits Velocity, Rotation, Scale, etc.).
+afterAll(async () => {
+  const ecsSrc = await import('../../ecs/src/index.js');
+  mock.module('@flare-engine/ecs', () => ({ ...ecsSrc }));
 });

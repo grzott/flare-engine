@@ -1456,4 +1456,9 @@ describe('GameView — XR-1: shared-value scene capture', () => {
 afterAll(async () => {
   const renderSrc = await import('../../render/src/index.js');
   mock.module('@flare-engine/render', () => ({ ...renderSrc }));
+  // Restore real @flare-engine/ecs so test files that load in the same Bun
+  // worker after this one are not affected by the limited ecs stub above
+  // (which omits Velocity, Rotation, Scale, etc.).
+  const ecsSrc = await import('../../ecs/src/index.js');
+  mock.module('@flare-engine/ecs', () => ({ ...ecsSrc }));
 });

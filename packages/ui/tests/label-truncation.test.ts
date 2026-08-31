@@ -41,6 +41,7 @@ mock.module('react-native', () => ({
   Text: 'Text',
   Pressable: 'Pressable',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  PixelRatio: { get: () => 1 },
 }));
 
 const { Label } = await import('../src/label.js');

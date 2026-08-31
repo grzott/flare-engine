@@ -614,8 +614,9 @@ NEW-2 into one row.
    New-Architecture-only.)
 2. **Own the shared value.** Replace `usePictureAsTexture` + `setPicture` with
    `useSharedValue<SkImage | null>(null)`, assigned directly from the `onPreRender` frame callback.
-   `<Image image={…}>` already accepts that shape — it is exactly what `usePictureAsTexture` returns
-   today, so the JSX at `game-view.tsx:317` is unchanged.
+   The `image` prop at `game-view.tsx:317` changes from `sceneTexture` to `sceneImage`, and the
+   `sceneTexture == null` guard at `:316` is dropped — a `SharedValue` object is never null, so
+   the `viewportSize.w === 0` check alone is sufficient to suppress the `<Image>` before first capture.
 3. **Reuse the engine's own capture.** `createSceneCapture` (`scene-texture.ts:143`) is already
    surface-cached, leak-fixed and covered. Feeding it on native kills the per-frame `MakeOffscreen`
    (NEW-2) and deletes the `isWeb` branch at `game-view.tsx:139-141` and `:208-209` — web and native

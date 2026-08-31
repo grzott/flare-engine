@@ -11317,3 +11317,32 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 294 — 2026-08-31 (scope: engine)
+
+**Goal:** XR-1a: reanimated peer + shared-value scene capture
+
+**Touched files**
+- `.changeset/xr1-reanimated-peer.md`
+- `docs/plans/external-review-2026-08.md`
+- `docs/plans/todo.md`
+- `packages/engine/README.md`
+- `packages/react/package.json`
+- `packages/react/README.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/scene-texture.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/react/tests/scene-texture.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 / deny:0 / gate:1 / fixup:3 / drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

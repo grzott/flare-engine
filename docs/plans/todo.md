@@ -22,8 +22,10 @@ Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root doc
 CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
 **never major**.
 
-- **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~2 sessions:
-  XR-1a spike + native/negative verification, XR-1b implement). Scope: `packages/react/src/game-view.tsx`,
+- **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~3 sessions:
+  XR-1a source+tests+desktop-negative; XR-1b vehicle build — `create-flare-app` scaffold → Gradle →
+  device install; XR-1c device validation — logcat render-count, `retentionDepth: 2` soak, and the
+  native `nonTextureImage: false` sampling assumption). Scope: `packages/react/src/game-view.tsx`,
   `packages/react/src/scene-texture.ts`, `packages/react/package.json`, `packages/react/README.md`,
   `packages/engine/README.md`, `packages/react/tests/game-view.test.ts`. **Closes E-R1 + NEW-1 + NEW-2
   in one row.** `<GameView>` reaches `react-native-reanimated` transitively through rn-skia's

@@ -5,7 +5,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](./tsconfig.base.json)
 
-**Flare** is a modular 2D engine that runs the same TypeScript on iOS, Android, and the browser — for high-performance animation, gamification, interactive UI, and games. Zero-alloc hot paths, hybrid ECS, GPU sprite batching, and a device-verified end-to-end loop, all under the `@flare-engine/*` npm scope. It lives inside your React Native and web apps — not a Unity/Godot/Unreal competitor.
+**Flare** is a modular 2D engine that runs the same TypeScript on iOS, Android, and the browser — for high-performance animation, gamification, interactive UI, and games. Zero-alloc hot paths, an archetype-bitmask ECS, GPU sprite batching, and a device-verified end-to-end loop, all under the `@flare-engine/*` npm scope. It lives inside your React Native and web apps — not a Unity/Godot/Unreal competitor.
 
 ---
 
@@ -57,7 +57,7 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 | `@flare-engine/math`         | 0     | shipping                 | Vec2, Rect, Transform, Mat3, Color, 42 easings, seeded RNG, intersections      |
 | `@flare-engine/events`       | 0     | shipping                 | Type-safe `EventEmitter` and `Signal`                                          |
 | `@flare-engine/core`         | 1     | shipping                 | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool         |
-| `@flare-engine/ecs`          | 1     | shipping                 | Hybrid ECS — `World`, `Query`, systems, prefabs, FSM                        |
+| `@flare-engine/ecs`          | 1     | shipping                 | Archetype-bitmask ECS — `World`, `Query`, systems, prefabs, FSM (32-type cap) |
 | `@flare-engine/render`       | 2     | shipping                 | Skia Atlas `SpriteBatch`, `Camera2D`, sprite effects, BMFont text              |
 | `@flare-engine/input`        | 2     | shipping                 | `InputManager`, pointer/touch, gestures, joystick/button state                 |
 | `@flare-engine/physics`      | 2     | shipping                 | AABB `CollisionWorld`, spatial index, raycasting                               |
@@ -98,6 +98,8 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 | `@flare-engine/haptics`      | —     | shipping                 | `HapticsProvider` interface + Noop / Expo / Web-Vibration providers + context  |
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).
+
+**One constraint to know before adopting `@flare-engine/ecs`:** it supports a maximum of **32 component types**, and the component-id bitmask is **module-global — shared across every `World` in the process**, not per-`World`. Two worlds in one process draw on the same 32-slot budget. Seven slots are spent by the built-ins (`Position`, `Velocity`, `Rotation`, `Scale`, `Parent`, `Lifetime`, `Follower`), leaving 25. Defining a 33rd throws at definition time and names the offending component — it never corrupts silently. For scale, the canonical showcase game uses 16, so it sits at 23 of 32.
 
 ---
 
@@ -154,6 +156,18 @@ Tooling rationale: see the Tooling section of [docs/design/architecture.md](docs
 - [docs/design/](docs/design/) — architecture, API specs, dependencies, ecosystem
 - [docs/plans/roadmap.md](docs/plans/roadmap.md) — roadmap
 - [docs/references/](docs/references/) — benchmarks, CanvasKit parity, CLI tooling
+
+---
+
+## Support
+
+Flare is built and maintained by one person. Support is **best-effort, and there is no SLA**:
+
+- **Issues** are triaged on a roughly weekly cadence. Reports with a minimal reproduction get looked at first.
+- **Pull requests** are welcome, and review may be slow. For anything larger than a bug fix, open an issue first so the design can be agreed before you write the code.
+- **Security** reports follow [SECURITY.md](SECURITY.md) — please don't open a public issue for a vulnerability.
+
+This is stated up front so expectations are set: quiet stretches are normal for a project this size and are not a sign it has been abandoned.
 
 ---
 

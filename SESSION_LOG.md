@@ -11346,3 +11346,22 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 295 — 2026-08-31 (scope: engine)
+
+**Goal:** XR-5: README truth pass — support posture, ECS wording, 32-component cap
+
+**Touched files**
+- `README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

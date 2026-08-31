@@ -74,16 +74,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   for the hook in these suites rather than the warning. **Do not redesign the cap here** (that is
   XR-8), and note `_resetComponentIds` also has two non-test callers in `benchmarks/src` (NEW-5).
   Spec: external §4.1 mechanism B, §8.6.1, §11.3 NEW-5.
-- **XR-5 — README truth pass: support posture, ECS wording, the cap** (P0, 1 session, `[MT]`). Scope:
-  root `README.md`. Three edits, minutes each, closing E-R6 + E-R7 + §8.6.2/3. (a) A **support-posture
-  paragraph** written before anyone opens an issue: best-effort, no SLA, stated triage cadence, PRs
-  welcome but review may be slow. An OSS repo with three-week-old unanswered issues reads worse than a
-  private one. (b) Replace "hybrid ECS" (`README.md:8`, `:60`) with `packages/ecs/README.md:3`'s own
-  exact phrasing — storage is `Map<componentId, Map<entityId, data>>` plus a bitmask, with zero typed
-  arrays anywhere in `packages/ecs/src`; against bitECS's struct-of-arrays, "hybrid" invites a reading
-  the code does not support. (c) Surface the **32-component cap and that it is process-global, not
-  per-`World`** where an adopter reads it, not on definition 33. Precision already exists in the
-  package README; it is simply not where the first reader looks. Spec: external §5, §6, §7, §8.6.
 - **XR-6 — root CHANGELOG + dependabot** (P2, 1 session, `[MT]`). Scope: `CHANGELOG.md` (new),
   `.github/dependabot.yml` (new). 42/42 per-package CHANGELOGs exist but the repo root has no single
   "what changed" view; Changesets can generate one, or a short pointer file suffices. A public
@@ -422,6 +412,26 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-5 — README truth pass: support posture, ECS wording, the 32-type cap** (2026-08-31,
+  session #295). Arc XR row; `[MT]`, root `README.md` only, **no changeset** — root docs are not
+  package `src`, so `check-changeset` correctly does not demand one ([[changeset_gate_src_only]]).
+  Closes external-review **E-R6 + E-R7 + §8.6.2/3**. **(a) Support posture:** new `## Support`
+  section — best-effort with no SLA, roughly weekly issue triage, PRs welcome but review may be slow,
+  security routed to `SECURITY.md`, and an explicit line that quiet stretches are normal rather than
+  abandonment. The launch risk it closes: a public repo found with three-week-old unanswered issues
+  reads worse than a private one. **(b) ECS wording:** `README.md:8` and the packages-table row both
+  said "Hybrid ECS", looser than `packages/ecs/README.md:3` and than the published blog post. Storage
+  is `Map<componentId, Map<entityId, data>>` plus a bitmask for query matching, with **zero** typed
+  arrays in `packages/ecs/src` (grep-verified at HEAD); against bitECS's struct-of-arrays, "hybrid"
+  invited a reading the code does not support. Now "archetype-bitmask ECS" — the package README's own
+  phrasing. **(c) Cap surfaced:** a note after the packages table states the 32-component maximum,
+  that the bitmask is **module-global, shared across every `World` in the process** (not per-`World`
+  — the surprising half, previously documented only in the package README's final clause), the 7
+  built-in slots leaving 25, that a 33rd definition throws at definition time naming the offending
+  component rather than corrupting silently, and PT's 16 as a scale reference (23 of 32). Every
+  number re-measured at HEAD, not copied from the review. Gate green (lint / typecheck / test / build
+  43 FULL TURBO / deps / changeset / perf 11 counters / perf-freshness). SESSION_LOG #295 canonical.
 
 - **PERF-20 — host-load + baseline-drift guards for the web lanes** (2026-08-25). Follow-on to
   PERF-19, forced by a real incident: after the F1-F4 guards landed, the host-side lanes read

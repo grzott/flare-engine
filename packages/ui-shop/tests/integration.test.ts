@@ -30,6 +30,7 @@ mock.module('react-native', () => ({
   Text: 'Text',
   Pressable: 'Pressable',
   StyleSheet: { create: (s: unknown) => s },
+  PixelRatio: { get: () => 1 },
 }));
 
 mock.module('@flare-engine/ui', () => ({

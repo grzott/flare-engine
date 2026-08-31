@@ -62,6 +62,7 @@ mock.module('react-native', () => ({
   Text: 'Text',
   Pressable: 'Pressable',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  PixelRatio: { get: () => 1 },
 }));
 
 import { createEntitlementStore, createProductCatalog } from '@flare-engine/iap';

@@ -96,6 +96,7 @@ mock.module('react-native', () => ({
   Text: 'Text',
   Pressable: 'Pressable',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  PixelRatio: { get: () => 1 },
 }));
 
 import { createRevenueCatProvider } from '../src/provider.js';

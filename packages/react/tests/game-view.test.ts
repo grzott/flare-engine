@@ -17,11 +17,14 @@ let _buildPasses: () => readonly unknown[] = () => [];
 let _setPassesCount = 0;
 let _lastPasses: unknown = null;
 
-// Call-index tracking for useState — lets tests count setPicture (index 0) calls
-// separately from the other state setters. Reset in mount() because useState call
-// order is per-mount, not per-file.
-let _useStateIdx = 0;
-let _setPictureCount = 0;
+// Reanimated shared value assignment tracking — set by the useSharedValue mock.
+// _sharedValueSetCount increments on every sceneImage.value = img assignment.
+let _sharedValueSetCount = 0;
+let _sharedValueLastSet: unknown;
+
+// makeNonTextureImage call tracking — incremented inside the MakeOffscreen stub's
+// makeImageSnapshot return value, so tests can assert the GPU→CPU gating.
+let _makeNonTextureImageCount = 0;
 
 // Skia.Surface.MakeOffscreen call log — tracks how many offscreen surfaces were
 // allocated and at what dimensions, and whether their dispose hooks ran.
@@ -53,7 +56,6 @@ mock.module('react', () => ({
     if (typeof cleanup === 'function') _effectCleanups.push(cleanup);
   },
   useState: (init: unknown) => {
-    const idx = _useStateIdx++;
     // If this is the viewportSize state (initial value has w/h), allow override.
     if (
       _viewportOverride !== null &&
@@ -72,16 +74,6 @@ mock.module('react', () => ({
         (val: unknown) => {
           _setPassesCount++;
           _lastPasses = val;
-        },
-      ];
-    }
-    // Index 0 is the picture state; track setPicture calls separately from the
-    // hook's image state (both are seeded with null, so shape cannot distinguish).
-    if (idx === 0) {
-      return [
-        typeof init === 'function' ? (init as () => unknown)() : init,
-        () => {
-          _setPictureCount++;
         },
       ];
     }
@@ -129,23 +121,31 @@ mock.module('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
-let _usePictureAsTextureArgs: Array<{ width: number; height: number }> = [];
 let _beginRecordingBounds: Array<{ width: number; height: number }> = [];
 let _beginFramePdArgs: number[] = [];
 const _beginFrameTimeArgs: number[] = [];
+
+mock.module('react-native-reanimated', () => ({
+  useSharedValue: (init: unknown) => {
+    let _val = init;
+    return {
+      get value() {
+        return _val;
+      },
+      set value(v: unknown) {
+        _val = v;
+        _sharedValueSetCount++;
+        _sharedValueLastSet = v;
+      },
+    };
+  },
+}));
 
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
   Image: 'Image',
   RuntimeShader: 'RuntimeShader',
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
-  // usePictureAsTexture returns a SharedValue-shaped object with a null image stub.
-  // In tests there is no Reanimated; we return a plain object that satisfies
-  // the <Image image={sceneTexture}/> null-check in GameView.
-  usePictureAsTexture: (_pic: unknown, size: { width: number; height: number }) => {
-    _usePictureAsTextureArgs.push({ width: size.width, height: size.height });
-    return { value: null };
-  },
   Skia: {
     Surface: {
       MakeOffscreen: (width: number, height: number) => {
@@ -157,7 +157,12 @@ mock.module('@shopify/react-native-skia', () => ({
             },
           }),
           flush: () => {},
-          makeImageSnapshot: () => ({ makeNonTextureImage: () => ({}) }),
+          makeImageSnapshot: () => ({
+            makeNonTextureImage: () => {
+              _makeNonTextureImageCount++;
+              return {};
+            },
+          }),
         };
         if (DISPOSE !== undefined) {
           (surface as unknown as Record<symbol, unknown>)[DISPOSE] = () => {
@@ -482,7 +487,6 @@ mock.module('@flare-engine/scene', () => ({
 const reactModule = await import('../src/game-view.js');
 
 function mount(props: Parameters<typeof reactModule.GameView>[0] = {}): void {
-  _useStateIdx = 0;
   reactModule.GameView(props);
 }
 
@@ -510,14 +514,15 @@ beforeEach(() => {
   _mockPixelRatio = 1;
   _mockPlatformOS = 'ios';
   _viewportOverride = null;
-  _usePictureAsTextureArgs = [];
   _beginRecordingBounds = [];
   _beginFramePdArgs = [];
   _buildPasses = () => [];
   _setPassesCount = 0;
   _lastPasses = null;
   _beginFrameTimeArgs.length = 0;
-  _setPictureCount = 0;
+  _sharedValueSetCount = 0;
+  _sharedValueLastSet = null;
+  _makeNonTextureImageCount = 0;
   _makeOffscreenCalls = [];
   _drawPictureCount = 0;
   _surfaceDisposeCount = 0;
@@ -685,13 +690,16 @@ describe('GameView — PostFxRenderHook', () => {
 });
 
 describe('GameView — high-DPI scene texture', () => {
-  it('usePictureAsTexture receives physical dimensions when PixelRatio=2 and layout=400×600', () => {
+  it('capture uses physical pixels — PixelRatio=2, layout=400×600 → MakeOffscreen at 800×1200', () => {
+    _mockPlatformOS = 'ios';
     _mockPixelRatio = 2;
     _viewportOverride = { w: 400, h: 600 };
     mount();
-    // usePictureAsTexture is called during render (sceneSize memo); pick the last call.
-    const last = _usePictureAsTextureArgs[_usePictureAsTextureArgs.length - 1];
-    expect(last).toEqual({ width: 800, height: 1200 });
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    tick();
+    expect(_makeOffscreenCalls[0]).toEqual({ width: 800, height: 1200 });
     unmountAll();
   });
 
@@ -1028,9 +1036,10 @@ describe('GameView — web scene capture (WEB-6)', () => {
     unmountAll();
   });
 
-  it('web: setPicture is never called — the picture state is dead on web', () => {
-    // Old code: setPicture(pic) was called unconditionally (no isWeb branch) → 3.
-    // New code: isWeb branch routes to captureWebScene instead → 0.
+  it('web: shared value assigned per frame — zero React renders (fail-old)', () => {
+    // Old code: useWebSceneTexture called setImage (React state) each frame;
+    // useSharedValue was never called → _sharedValueSetCount = 0 → assertion fails.
+    // New code: sceneImage.value = img in onPreRender → _sharedValueSetCount = 3.
     _mockPlatformOS = 'web';
     mount();
     const camera = _cameraInstance!;
@@ -1039,7 +1048,7 @@ describe('GameView — web scene capture (WEB-6)', () => {
     tick();
     tick();
     tick();
-    expect(_setPictureCount).toBe(0);
+    expect(_sharedValueSetCount).toBe(3);
     unmountAll();
   });
 
@@ -1073,9 +1082,11 @@ describe('GameView — web scene capture (WEB-6)', () => {
     unmountAll();
   });
 
-  it('native: setPicture fires per tick and no offscreen surface is allocated', () => {
-    // Regression guard: proves the native path is untouched by WEB-6.
-    // This test passes on both old and new source (native path unchanged).
+  it('native: shared value assigned per frame, one surface reused (fail-old)', () => {
+    // Old code: native used setPicture + usePictureAsTexture (no MakeOffscreen
+    // in the tracked path, no useSharedValue) → _sharedValueSetCount = 0 and
+    // _makeOffscreenCalls.length = 0. Both assertions fail on old code.
+    // New code: sceneImage.value = img per tick, one cached surface → 3 and 1.
     _mockPlatformOS = 'ios';
     mount();
     const camera = _cameraInstance!;
@@ -1084,8 +1095,8 @@ describe('GameView — web scene capture (WEB-6)', () => {
     tick();
     tick();
     tick();
-    expect(_setPictureCount).toBe(3);
-    expect(_makeOffscreenCalls.length).toBe(0);
+    expect(_sharedValueSetCount).toBe(3);
+    expect(_makeOffscreenCalls.length).toBe(1);
     unmountAll();
   });
 
@@ -1351,5 +1362,83 @@ describe('GameView — multi-touch routing (CW7-1)', () => {
     });
     expect(_inputInstance?.pointerDownCalls).toEqual([{ id: 7, x: 11, y: 22 }]);
     unmountAll();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// XR-1: shared-value scene capture — zero React renders, surface reuse, gating.
+//
+// Central claim: both platforms write frames into a Reanimated shared value
+// (no React setState). The shared value mock's setter increments
+// _sharedValueSetCount; useSharedValue never being called → count stays 0
+// on old source, making assertions of N fail-old.
+// ---------------------------------------------------------------------------
+
+describe('GameView — XR-1: shared-value scene capture', () => {
+  it('native: zero React renders per frame — shared value set per tick (fail-old)', () => {
+    // Old code: setPicture called per frame; useSharedValue never called → 0.
+    // New code: sceneImage.value = img per tick → 3.
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    expect(_sharedValueSetCount).toBe(3);
+    unmountAll();
+  });
+
+  it('native: one offscreen surface allocated and reused across 60 frames (NEW-2, fail-old)', () => {
+    // Old code: usePictureAsTexture mock does not call MakeOffscreen → 0.
+    // New code: createSceneCapture caches one surface → 1 across 60 ticks.
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    for (let i = 0; i < 60; i++) tick();
+    expect(_makeOffscreenCalls.length).toBe(1);
+    unmountAll();
+  });
+
+  it('native: makeNonTextureImage not called — no GPU→CPU readback', () => {
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    expect(_makeNonTextureImageCount).toBe(0);
+    unmountAll();
+  });
+
+  it('web: makeNonTextureImage called each frame — cross-context isolation', () => {
+    _mockPlatformOS = 'web';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    tick();
+    expect(_makeNonTextureImageCount).toBe(3);
+    unmountAll();
+  });
+
+  it('native: unmount releases the offscreen surface via captureRef dispose', () => {
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    unmountAll();
+    if (DISPOSE !== undefined) {
+      expect(_surfaceDisposeCount).toBe(1);
+    }
   });
 });

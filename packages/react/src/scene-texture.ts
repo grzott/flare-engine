@@ -1,5 +1,4 @@
 import type { SkImageLike } from '@flare-engine/assets';
-import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Structural offscreen surface — the subset `GameView`'s scene capture needs.
@@ -110,6 +109,24 @@ export interface SceneCapture<TImage> {
 }
 
 /**
+ * Options for `createSceneCapture`.
+ *
+ * `nonTextureImage` defaults to `true` (web semantics: call
+ * `makeNonTextureImage()` to copy the snapshot off the surface's GL context
+ * so the on-screen canvas can sample it). Pass `false` on native to skip the
+ * GPU→CPU readback — the snapshot is a true copy on native and the Reanimated
+ * shared value keeps it alive across UI-thread commits.
+ *
+ * `retentionDepth` defaults to 3 (the web-measured minimum). Set to 2 on
+ * native: Reanimated commits within one vsync, so one frame of extra headroom
+ * is sufficient.
+ */
+export interface SceneCaptureOptions {
+  nonTextureImage?: boolean;
+  retentionDepth?: number;
+}
+
+/**
  * Capture the scene into a reused offscreen surface, releasing Skia objects as
  * it goes.
  *
@@ -138,11 +155,12 @@ export interface SceneCapture<TImage> {
  * a live image to paint from.
  */
 
-const RETENTION_DEPTH = 3;
-
 export function createSceneCapture<TImage>(
   Skia: SceneSurfaceModuleLike<TImage>,
+  opts?: SceneCaptureOptions,
 ): SceneCapture<TImage> {
+  const useNonTexture = opts?.nonTextureImage ?? true;
+  const retentionDepth = opts?.retentionDepth ?? 3;
   const surfaces = createSceneSurfaceCache(Skia);
   const ring: TImage[] = [];
 
@@ -156,11 +174,14 @@ export function createSceneCapture<TImage>(
 
       const snapshot = surface.makeImageSnapshot();
       const detachable = snapshot as DetachableImage<TImage>;
-      const detached = detachable.makeNonTextureImage ? detachable.makeNonTextureImage() : snapshot;
+      const detached =
+        useNonTexture && detachable.makeNonTextureImage
+          ? detachable.makeNonTextureImage()
+          : snapshot;
 
       if (detached !== snapshot) releaseSkiaObject(snapshot);
       ring.push(detached);
-      if (ring.length > RETENTION_DEPTH) {
+      if (ring.length > retentionDepth) {
         releaseSkiaObject(ring.shift()!);
       }
       return detached;
@@ -173,71 +194,4 @@ export function createSceneCapture<TImage>(
       surfaces.dispose();
     },
   };
-}
-
-/**
- * Returned by `useWebSceneTexture`. `image` is the latest captured frame (null
- * until the first capture). `capture` is the imperative callback `GameView`'s
- * frame callback invokes directly each frame.
- */
-export interface WebSceneTexture<TImage> {
-  image: TImage | null;
-  capture(picture: unknown, width: number, height: number): void;
-}
-
-/**
- * Web scene texture (imperative form): expose a `capture` callback that
- * `GameView`'s `onPreRender` frame callback invokes directly instead of pushing
- * a picture through React state.
- *
- * The previous reactive form called `setImage` from a `useEffect` keyed on
- * `[Skia, picture, width, height]`. `onPreRender` would call `setPicture`,
- * React would re-render, the effect would re-run, `setImage` would re-render
- * again. That is a setState-in-a-passive-effect cascade; React's
- * NESTED_PASSIVE_UPDATE_LIMIT (50) trips and logs `Maximum update depth
- * exceeded` on every web load. It also costs two React renders per frame and
- * delays the captured image by two hops.
- *
- * `GameLoop` schedules via `requestAnimationFrame`, so calling `setImage`
- * directly from `onPreRender` is an ordinary root update that never touches the
- * passive-update counter. Both hooks still run on both platforms so hook order
- * never varies, but this hook is now inert on native simply because nothing
- * calls `capture` on that platform.
- *
- * `makeNonTextureImage()` is required regardless of reuse: the offscreen surface
- * has its own WebGL context, and a texture-backed image cannot be sampled by the
- * on-screen canvas's context. It also makes reuse safe — the snapshot is copied
- * off the GPU so next frame's draw into the same surface cannot disturb the image
- * React still holds.
- *
- * The surface is never cleared here: `Renderer.begin()` records
- * `canvas.clear(clearColor)` into the picture itself (packages/render
- * `renderer.ts:75`), so replaying the picture repaints the full surface.
- */
-export function useWebSceneTexture<TImage>(
-  Skia: SceneSurfaceModuleLike<TImage>,
-): WebSceneTexture<TImage> {
-  const captureRef = useRef<SceneCapture<TImage> | null>(null);
-  const [image, setImage] = useState<TImage | null>(null);
-
-  useEffect(() => {
-    return () => {
-      captureRef.current?.dispose();
-      captureRef.current = null;
-    };
-  }, []);
-
-  const capture = useCallback(
-    (picture: unknown, width: number, height: number): void => {
-      if (picture === null || picture === undefined) return;
-      if (captureRef.current === null) {
-        captureRef.current = createSceneCapture(Skia);
-      }
-      const next = captureRef.current.capture(picture, width, height);
-      if (next !== null) setImage(next);
-    },
-    [Skia],
-  );
-
-  return { image, capture };
 }

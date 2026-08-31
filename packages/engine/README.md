@@ -37,9 +37,9 @@ See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-
 
 ## React Native New Architecture
 
-Flare's engine packages are architecture-agnostic pure TypeScript — they run on both the legacy and the New Architecture, so the engine itself imposes no New-Architecture requirement. The `react-native >= 0.79` peer floor still admits old-architecture apps: the New Architecture has been the default since RN 0.76, but 0.79-0.81 still allow an explicit `newArchEnabled: false` opt-out, and Flare runs either way.
+Flare's headless packages are architecture-agnostic pure TypeScript. `@flare-engine/react` requires `react-native-reanimated >= 3.19.1` (matching rn-skia's own floor). Reanimated 3.x works on both old and new architecture, so old-architecture apps remain viable. The `react-native >= 0.79` peer floor still admits old-architecture apps: the New Architecture has been the default since RN 0.76, but 0.79-0.81 still allow an explicit `newArchEnabled: false` opt-out.
 
-The requirement comes from your app's *other* native dependencies, not from Flare. Notably, `react-native-reanimated` v4 is New-Architecture-only — if you pin Reanimated 4 (or any other New-Arch-only native module), enable the New Architecture. The Flare engine works either way.
+Notably, `react-native-reanimated` v4 is New-Architecture-only (it additionally peers `react-native-worklets`) — if you pin Reanimated 4, enable the New Architecture. Reanimated 3.x is the declared floor and works either way.
 
 ## License
 

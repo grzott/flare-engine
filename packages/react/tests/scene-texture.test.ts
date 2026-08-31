@@ -271,4 +271,36 @@ describe('createSceneCapture', () => {
     expect(capture.capture({}, 0, 0)).toBeNull();
     expect(images.length).toBe(0);
   });
+
+  it('nonTextureImage: false — snapshot returned directly, makeNonTextureImage never called', () => {
+    const { module, images } = makeCaptureStub();
+    const capture = createSceneCapture(module, { nonTextureImage: false });
+
+    capture.capture({}, 800, 600);
+
+    const cpuImages = images.filter((i) => i.kind === 'cpu');
+    expect(cpuImages.length).toBe(0);
+
+    const snapshots = images.filter((i) => i.kind === 'snapshot');
+    expect(snapshots.length).toBe(1);
+    expect(snapshots[0]?.disposed).toBe(false);
+  });
+
+  it('retentionDepth: 2 — image at frame N released when frame N+2 is captured', () => {
+    const { module, images } = makeCaptureStub();
+    const capture = createSceneCapture(module, { retentionDepth: 2 });
+
+    capture.capture({}, 800, 600); // frame 0 → cpu[0]
+    capture.capture({}, 800, 600); // frame 1 → cpu[1]
+
+    const cpuBefore = images.filter((i) => i.kind === 'cpu');
+    expect(cpuBefore[0]?.disposed).toBe(false);
+
+    capture.capture({}, 800, 600); // frame 2 → cpu[2]; ring overflows, cpu[0] released
+
+    const cpu = images.filter((i) => i.kind === 'cpu');
+    expect(cpu[0]?.disposed).toBe(true);
+    expect(cpu[1]?.disposed).toBe(false);
+    expect(cpu[2]?.disposed).toBe(false);
+  });
 });

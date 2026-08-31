@@ -6,23 +6,17 @@ import { Position, World } from '@flare-engine/ecs';
 import { InputManager } from '@flare-engine/input';
 import { Camera2D, createRenderSystem, Renderer, Sprite, SpriteBatch } from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
-import type { CanvasRef, SkImage, SkPicture } from '@shopify/react-native-skia';
-import {
-  Canvas,
-  Image,
-  RuntimeShader,
-  Skia,
-  useCanvasRef,
-  usePictureAsTexture,
-} from '@shopify/react-native-skia';
+import type { CanvasRef, SkImage } from '@shopify/react-native-skia';
+import { Canvas, Image, RuntimeShader, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
-import { useWebSceneTexture } from './scene-texture.js';
+import { createSceneCapture, type SceneCapture } from './scene-texture.js';
 import { createSkiaFrameRenderer, type PostFxPassDescriptor } from './skia-bridge.js';
 
 /** Render hook invoked during the frame — receives the game context and
@@ -111,34 +105,18 @@ export function GameView({
   const insets = useSafeAreaInsets();
   const resolvedSafeArea: SafeArea = safeArea ?? insets;
   const canvasRef = useCanvasRef();
-  const [picture, setPicture] = useState<SkPicture | null>(null);
   const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>(EMPTY_PASSES);
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
   const pd = PixelRatio.get();
-  const sceneSize = useMemo(
-    () => ({ width: viewportSize.w * pd, height: viewportSize.h * pd }),
-    [viewportSize.w, viewportSize.h, pd],
-  );
-  // Web and native capture the scene differently, but BOTH hooks run on both
-  // platforms so hook order never varies.
-  //
-  // Native: usePictureAsTexture converts the SkPicture → texture each frame.
-  // Web: useWebSceneTexture is now imperative — GameView's onPreRender frame
-  // callback calls its capture(picture, width, height) directly instead of
-  // pushing the picture through React state. The old reactive approach
-  // (setState-in-a-passive-effect) tripped React's NESTED_PASSIVE_UPDATE_LIMIT
-  // (50) and logged "Maximum update depth exceeded" on every web load. It also
-  // cost two React renders per frame and added one hop of image latency. The
-  // web hook is inert on native because nothing calls capture there.
-  //
-  // usePictureAsTexture calls MakeOffscreen per picture on web, allocating an
-  // unreleased WebGL context every frame and evicting the on-screen canvas at
-  // Chrome's 16-context cap; the web path reuses one surface instead.
-  // See docs/plans/web-target-2026-08.md §12.
   const isWeb = Platform.OS === 'web';
-  const nativeTexture = usePictureAsTexture(isWeb ? null : picture, sceneSize);
-  const { image: webTexture, capture: captureWebScene } = useWebSceneTexture<SkImage>(Skia);
-  const sceneTexture = isWeb ? webTexture : nativeTexture;
+  // Both platforms write captured frames into a Reanimated shared value so
+  // rn-skia's <Image> reads the latest frame on the UI thread without a React
+  // re-render. createSceneCapture reuses one offscreen surface per viewport
+  // size (fixing per-frame MakeOffscreen on native, NEW-2) and gates the
+  // GPU→CPU makeNonTextureImage() copy to web only, where cross-context
+  // sampling requires it (web: nonTextureImage true, native: false).
+  const sceneImage = useSharedValue<SkImage | null>(null);
+  const captureRef = useRef<SceneCapture<SkImage> | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   const ctx = useMemo<GameContextValue>(() => {
@@ -203,10 +181,16 @@ export function GameView({
       ctx.batch.flush(bridge.drawAtlas, ctx.renderer);
       if (onRenderPostFx) onRenderPostFx(ctx, ctx.renderer.canvas, bridge);
       ctx.renderer.end();
-      const pic = bridge.endFrame() as SkPicture | null;
+      const pic = bridge.endFrame();
       if (pic !== null) {
-        if (isWeb) captureWebScene(pic, w * pd, h * pd);
-        else setPicture(pic);
+        if (captureRef.current === null) {
+          captureRef.current = createSceneCapture(Skia, {
+            nonTextureImage: isWeb,
+            retentionDepth: isWeb ? 3 : 2,
+          });
+        }
+        const img = captureRef.current.capture(pic, w * pd, h * pd);
+        if (img !== null) sceneImage.value = img;
       }
       if (!isWeb) {
         const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
@@ -230,6 +214,8 @@ export function GameView({
     return () => {
       unsubscribeLate();
       unsubscribePre();
+      captureRef.current?.dispose();
+      captureRef.current = null;
       ctx.loop.stop();
     };
   }, []);
@@ -313,9 +299,9 @@ export function GameView({
             pointerEvents="none"
             opaque={config?.opaque ?? false}
           >
-            {viewportSize.w === 0 || sceneTexture == null ? null : (
+            {viewportSize.w === 0 ? null : (
               <Image
-                image={sceneTexture}
+                image={sceneImage}
                 x={0}
                 y={0}
                 width={viewportSize.w}

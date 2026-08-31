@@ -5,10 +5,12 @@ React Native integration — `<GameView>` (Skia Canvas + game loop + input), `<V
 ## Install
 
 ```sh
-bun add @flare-engine/react @shopify/react-native-skia react-native-safe-area-context
+bun add @flare-engine/react @shopify/react-native-skia react-native-reanimated react-native-safe-area-context
 ```
 
-Peer deps: `react` (>=19), `react-native` (>=0.79), `@shopify/react-native-skia` (>=2), `react-native-safe-area-context` (>=4). The last one is a value import in `<GameView>` (`useSafeAreaInsets`), not type-only — a project without it fails to resolve at runtime.
+Peer deps: `react` (>=19), `react-native` (>=0.79), `@shopify/react-native-skia` (>=2), `react-native-reanimated` (>=3.19.1), `react-native-safe-area-context` (>=4). Both `react-native-reanimated` and `react-native-safe-area-context` are value imports in `<GameView>` — a project without either fails to resolve at runtime.
+
+> **Reanimated 4 note:** Reanimated 4 additionally peers `react-native-worklets` and is New-Architecture-only. Reanimated 3.x satisfies the `>=3.19.1` floor and works on both old and new architecture.
 
 ## Usage
 

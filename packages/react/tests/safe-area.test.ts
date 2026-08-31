@@ -183,6 +183,10 @@ mock.module('@flare-engine/input', () => ({
 mock.module('@flare-engine/assets', () => ({ AssetManager: class {} }));
 mock.module('@flare-engine/scene', () => ({ SceneManager: class {} }));
 
+mock.module('react-native-reanimated', () => ({
+  useSharedValue: (init: unknown) => ({ value: init }),
+}));
+
 const RN_SAC_INSETS: SafeArea = { top: 44, right: 0, bottom: 34, left: 0 };
 
 mock.module('react-native-safe-area-context', () => ({

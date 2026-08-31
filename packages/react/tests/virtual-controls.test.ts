@@ -49,47 +49,21 @@ mock.module('@shopify/react-native-skia', () => ({
   useCanvasRef: () => ({ current: null }),
 }));
 
-mock.module('@flare-engine/core', () => ({
-  GameLoop: class {
-    onPreRender = { add: () => () => {} };
-    onUpdate = { add: () => () => {} };
-    start() {}
-    stop() {}
-  },
-}));
-
-mock.module('@flare-engine/ecs', () => ({
-  World: class {},
-  Position: { id: 0, bit: 1, name: 'Position', create: () => ({ x: 0, y: 0 }) },
-  defineComponent: () => ({}),
-  definePrefab: () => ({}),
-  defineSystem: () => ({}),
-  _resetComponentIds: () => {},
-}));
-
-mock.module('@flare-engine/render', () => ({
-  Camera2D: class {},
-  Renderer: class {
-    setCanvas() {}
-    begin() {}
-    end() {}
-  },
-}));
-
-mock.module('@flare-engine/audio', () => ({
-  AudioManager: class {},
-}));
-
-mock.module('@flare-engine/assets', () => ({
-  AssetManager: class {},
-}));
-
-mock.module('@flare-engine/scene', () => ({
-  SceneManager: class {},
-}));
+// VirtualJoystick and VirtualButton import only from @flare-engine/input,
+// react, and react-native — no first-party render/core/ecs/audio/assets/scene
+// deps.  Those stubs were installing a stub Camera2D that leaked process-wide
+// and broke packages/tilemap and packages/render-web tests which run later in
+// the same Bun process.
 
 const { VirtualJoystick } = await import('../src/virtual-joystick.js');
 const { VirtualButton } = await import('../src/virtual-button.js');
+
+// Restore the full real @flare-engine/render so later packages in the same Bun
+// process (tilemap, render-web) see real Camera2D.getBoundsInto and real
+// SpriteBatch.  Source-path import bypasses the mock cache and always returns
+// the real compiled module.
+const _realRenderForRestore = await import('../../render/src/index.js');
+mock.module('@flare-engine/render', () => ({ ..._realRenderForRestore }));
 
 // Helper — reset spy state and invoke the component function.
 function render(props: Parameters<typeof VirtualJoystick>[0]): void {

@@ -11365,3 +11365,23 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 296 — 2026-08-31 (scope: engine)
+
+**Goal:** XR-3: stop first-party module mocks leaking across the root test process
+
+**Touched files**
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/virtual-controls.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** two-file experiment required to find correct afterAll+source-path pattern; Bun in-place namespace mutation not documented
+
+**Next:** see `docs/plans/todo.md`.
+
+---

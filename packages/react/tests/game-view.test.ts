@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 // Symbol.dispose runtime lookup — mirrors the pattern in scene-texture.ts.
 const DISPOSE = (Symbol as unknown as { dispose?: symbol }).dispose;
@@ -1441,4 +1441,19 @@ describe('GameView — XR-1: shared-value scene capture', () => {
       expect(_surfaceDisposeCount).toBe(1);
     }
   });
+});
+
+// Restore @flare-engine/render after all game-view tests complete so that later
+// files in the same Bun process (packages/tilemap, packages/render-web) see the
+// real Camera2D (with getBoundsInto) instead of the MockCamera2D stub installed
+// above.
+//
+// Bun 1.3.11 mutates module namespace objects in-place when mock.module replaces
+// a module, so `await import('@flare-engine/render')` captured before mocking
+// returns a reference that has already been mutated to point at the stub.
+// A source-path import bypasses the mock cache and always delivers the original
+// file-level module; spreading it gives a plain object with the real exports.
+afterAll(async () => {
+  const renderSrc = await import('../../render/src/index.js');
+  mock.module('@flare-engine/render', () => ({ ...renderSrc }));
 });

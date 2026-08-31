@@ -53,16 +53,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   Reanimated *animation* API in engine source. Point 3 is where the argument is won and is currently
   invisible outside the repo — one code path for web and native, and a pure-TS loop testable under
   Bun with no RN runtime (2,887 engine tests, 2,522 PT). Spec: external §3, §11.5.
-- **XR-3 — root `bun test` green: kill first-party module mocks** (P1, 1 session). Scope:
-  `packages/react/tests/*`. Root `bun test` prints `16 fail`; that is a stranger's first command after
-  `git clone` and it is not a real defect — 12 of the 16 are `mock.module()` leaking process-wide from
-  `game-view.test.ts:251/260/333`, which replace `@flare-engine/core`, `/ecs` and `/render` for every
-  later file in the process. **Fix the class, not the instance:** mock only *external* modules (react,
-  react-native, rn-skia); first-party workspace packages are pure TS and should be imported for real.
-  Two-file repro in external §4.1. Note the external row's third disposition is already done — root
-  `"test"` is already `turbo test`, and `bun test` (the builtin) cannot be redirected. **Done when**
-  `bun test` at repo root is green, and `bun test packages/react packages/tilemap/tests/tilemap-renderer.test.ts`
-  is green. Spec: external §4.1 mechanism A, §11.2 correction 3.
 - **XR-4 — ECS boundary tests + retire the `_resetComponentIds` reset hook** (P1, 1 session). Scope:
   `packages/ecs/tests/`, `packages/engine/tests/integration.test.ts`,
   `packages/testing/tests/scene-snapshot.test.ts`. Two things, same root. (a) **Zero tests cover the
@@ -412,6 +402,33 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-3 — root `bun test` green: stop first-party module mocks leaking** (2026-08-31,
+  session #296). Arc XR row; `packages/react/tests/**` only, **no changeset** (test-only; the gate
+  counts `packages/<pkg>/src/**`). Closes external-review **E-R4 mechanism A**. Root `bun test` went
+  **2889 pass / 16 fail / 2 errors → 2902 pass / 3 fail / 2 errors**; all 12 mechanism-A failures
+  (11 `TilemapRenderer`, 1 `createWebSkiaModule conformance`) are gone. `packages/react` unchanged at
+  218 pass / 0 fail. The remaining 3 fails + 2 errors are mechanism B + a pre-existing `PixelRatio`
+  SyntaxError pair — **XR-4's**, deliberately untouched. **Two fixes, different kinds.**
+  (a) `virtual-controls.test.ts`: **deleted six unnecessary stubs** (`core`, `ecs`, `render`, `audio`,
+  `assets`, `scene`) — `VirtualJoystick`/`VirtualButton` import only `@flare-engine/input`, `react`
+  and `react-native`, so the stubs bought nothing and leaked a stub `Camera2D` process-wide. This is
+  the preferred shape of fix. (b) `game-view.test.ts`: the `render` stub is a genuine spy, so it
+  stays, with an `afterAll` that re-registers the real module. **The restore MUST import
+  `../../render/src/index.js`, not `dist` — verified the hard way:** Bun's `mock.module`
+  interception is keyed by *resolved path*, so `await import('../../render/dist/index.mjs')` returns
+  the stub itself (it is the mocked module) and the root run goes straight back to 16 fail. A
+  source-path import resolves elsewhere and is the only thing that bypasses the mock. Do not
+  "simplify" this to a dist import. **Two known costs, both currently harmless, both worth knowing:**
+  (1) `packages/render/src/render-system.ts:142` defines `Sprite` via `defineComponent` at module
+  scope, so the source-path import allocates a **second `Sprite`** off the module-global counter —
+  the same duplicate-state class as §11.3 NEW-3, spending one of the 32 slots during a root run.
+  Nothing compares `Sprite` ids across packages today. (2) The effective restore is
+  `virtual-controls.test.ts`'s, because `safe-area.test.ts` re-stubs `render` after `game-view`'s
+  `afterAll` runs, and `virtual-controls` happens to sort later. **A new `packages/react` test file
+  sorting after `virtual-joystick-knob` that stubs `render` would reopen the leak.** The durable fix
+  is to stop stubbing first-party modules at all; XR-4 should fold both costs in. Gate green.
+  SESSION_LOG #296 canonical.
 
 - **XR-5 — README truth pass: support posture, ECS wording, the 32-type cap** (2026-08-31,
   session #295). Arc XR row; `[MT]`, root `README.md` only, **no changeset** — root docs are not

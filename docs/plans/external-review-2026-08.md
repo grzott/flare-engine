@@ -491,3 +491,162 @@ with the **renderer-free leaf packages** (`dynamics`, `tilemap`, `pathfinding`, 
 demo is untouched by the threading argument and shows the engine paying off somewhere nobody
 expected. Keep "engine" as the umbrella rather than the headline — it invites a Phaser/Pixi
 comparison the project loses on maturity and does not need to have.
+
+---
+
+## 11. In-repo audit response (2026-08-31)
+
+Every claim above re-run against the working tree at `471ad14` — commands executed, not read. This
+section is the SoT for the verdicts, the corrections, and the design decisions that came out of
+them. The queue rows live in [todo.md](todo.md) **Arc XR** and are not restated here.
+
+### 11.1 Verdicts
+
+| Row | Verdict |
+| --- | --- |
+| E-R1 native re-render | Fact confirmed (`game-view.tsx:209`); three corrections in §11.2 |
+| E-R2 ECS churn | Confirmed; the remedy it describes as a pending ask **already shipped** in 0.3.1 (`systems.ts:55`, CW7-3) |
+| E-R3 no ADR | ADR absent, confirmed; **premise inverted** — see NEW-1 |
+| E-R4 root `bun test` | **Fully confirmed.** 2,903 ran / 2,887 pass / 16 fail / 2 errors, exact. Both two-file repros reproduce exactly. The correction of the portfolio's "resolution artifact" diagnosis is right |
+| E-R5 CHANGELOG / dependabot | Confirmed. No root `CHANGELOG.md`, no `.github/dependabot.yml`, no renovate config; 42/42 package CHANGELOGs present |
+| E-R6 support posture | Confirmed. Zero support / maintenance / SLA wording in `README.md` |
+| E-R7 root README wording | Confirmed. `README.md:8` and `:60` say "hybrid"; zero typed arrays in `packages/ecs/src`; `packages/ecs/README.md:3` is already exact |
+| E-R8 §8.2 measurements | All confirmed: 7 built-ins, PT exactly 16 (`= defineComponent` x16), 23/32, slot-31 bit `-2147483648`, zero boundary tests (the only `32` in `packages/ecs/tests` is `0.032` at `fsm.test.ts:69`) |
+| E-R8 §8.5 dual-build fork | **Upgraded from hypothesis to measured fact** — see NEW-3 |
+
+### 11.2 Corrections to the review
+
+1. **E-R1 "not tracked anywhere" is wrong.** [road-to-oss-2026-09.md:482](road-to-oss-2026-09.md)
+   (OSS-B16) states it verbatim: *"`setPicture` per frame is the RN-Skia render model — keep."*
+   [engine-deep-audit-2026-07.md:36](engine-deep-audit-2026-07.md) row 11 names it too. B16 shipped
+   2026-07-08 (session #222) and kept `setPicture` deliberately. This is a re-litigation, not a
+   discovery — which matters, because **B16 was closed on a false premise** (NEW-1).
+2. **E-R1 "the web path already solved this" is wrong.** `scene-texture.ts:237` still calls
+   `setImage(next)` every frame. Web went from *two* React renders per frame to *one*; it did not
+   remove per-frame rendering. There is **no in-repo precedent to copy**, so the review's
+   "bounded fix inside one file" sizing is optimistic.
+3. **E-R4 disposition 3 is already done.** Root `package.json` is already `"test": "turbo test"`.
+   The stranger's command is `bun test` — Bun's *builtin*, which bypasses package scripts entirely
+   and cannot be redirected. Separately, the `mock.module` surface is ~40 call sites across 12
+   packages, not just `packages/react`; isolating one package treats a symptom.
+
+### 11.3 New findings
+
+**NEW-1 (P0, launch blocker) — `@flare-engine/react` has an undeclared hard dependency on
+`react-native-reanimated`.**
+
+`game-view.tsx:16` imports `usePictureAsTexture` from `@shopify/react-native-skia`. That hook lives
+at `lib/module/external/reanimated/textures.js:53` and its first statement is
+`Rea.useSharedValue(null)`, where `Rea` is a lazy proxy that throws
+`OptionalDependencyNotInstalledError('react-native-reanimated')` on first property access. Hook
+rules mean it runs unconditionally — `usePictureAsTexture(isWeb ? null : picture, sceneSize)` — so
+**web crashes too**, not only native.
+
+rn-skia's real `dependencies` are `canvaskit-wasm` and `react-reconciler` only; reanimated is an
+**optional peer** (`bun.lock:991` → `"optionalPeers": ["react-native", "react-native-reanimated"]`).
+`packages/react/package.json:53-60` declares six peers and reanimated is not among them.
+
+**Why it was never caught, and the masking mechanism:** *bun installs optional peers; npm, pnpm and
+yarn skip them.* `react-native-reanimated@4.2.1` is present in this repo's `node_modules` while
+appearing in **no** engine manifest — a grep over root plus all 42 package.json files returns
+nothing outside the three `create-flare-app` templates. Every in-workspace consumer resolves it for
+free (templates pin `~4.5.0`; PT pins `4.2.1` + `worklets 0.7.4`), and
+`packages/react/tests/game-view.test.ts:137` stubs the whole of rn-skia with the comment
+*"In tests there is no Reanimated"* — the suite is blind by construction. **An F2 verdaccio
+rehearsal run under bun would not catch this either.**
+
+Two documents assert the opposite: `packages/react/README.md:11` enumerates the peers using exactly
+the right reasoning for safe-area-context (*"a value import … a project without it fails to resolve
+at runtime"*) and omits this one; `engine-deep-audit-2026-07.md:114` states the policy *"the engine
+has no reanimated peer anywhere; keep it that way."* The code has violated that policy since
+`usePictureAsTexture` was adopted.
+
+**This makes E-R3's ADR unwritable as drafted.** Its §3.1 decision ("no Reanimated peer") and its
+rationale ("avoiding a Reanimated peer is a real dependency-surface win") are both false today.
+
+**NEW-2 (P1) — native allocates a fresh offscreen GPU surface and snapshot every frame.**
+rn-skia's `createTexture` worklet calls `Skia.Surface.MakeOffscreen(size.width, size.height)` per
+invocation with no cache and no release, then `makeImageSnapshot()`. The effect re-fires on every
+`picture` change — 60/s. This is the **same** leak the engine measured and fixed *for web only*
+(`scene-texture.ts:63` `createSceneSurfaceCache`, written up in
+[web-target-2026-08.md](web-target-2026-08.md) §12). Native has no bypass. It does not blank the
+screen there (no Chrome 16-context cap), but it is a per-frame GPU allocation on the hottest seam in
+a repo that machine-gates zero-alloc.
+
+**NEW-3 (P1, correctness) — the §8.5 counter fork is real. Measured, not hypothesised.** Loading
+both built formats in one Node process:
+
+```
+esm.Position.id = 0 | cjs.Position.id = 0
+ESM new id = 7 bit 128 | CJS new id = 7 bit 128
+RESULT: COLLISION — two counters, both from 0
+```
+
+It is not only a CJS/ESM problem: **any** duplicate copy of `@flare-engine/ecs` in one graph forks
+the counter. The failure mode is silent wrong query results, not a throw. This promotes option C
+(per-`World` registry) from "independently valuable" to "the fix for a live correctness class".
+
+**NEW-4 (risk in E-R2's remedy) — swap-remove is not behaviour-preserving.** `query.ts:21`
+documents `entities` as a *sorted* array; `packages/render/src/render-system.ts:94` iterates the
+query directly into `SpriteBatch`, whose contract is *"preserving global insertion (z-sorted)
+order"* (`sprite-batch.ts:67`). Swap-remove perturbs z-order and atlas-run clustering on every
+destroy — changing rendered output, and plausibly moving the
+`alloc.render … 8 atlas interleaved` / `… clustered` counters. Either preserve order (tombstone +
+compaction) or accept and document it; the review presents it as a free win.
+
+**NEW-5 (blast radius) — `_resetComponentIds` has non-test consumers.**
+`benchmarks/src/ecs.bench.ts:1` and `benchmarks/src/integration.bench.ts:2` both import and call it.
+Removing the export (option C) drags in the perf suite and forces a re-capture — on a machine
+currently untrustworthy under load (WHEA corrected TLB machine-check, 2026-08-19).
+
+### 11.4 XR-1 design — do it the way rn-skia recommends (owner-approved 2026-08-31)
+
+Owner's call: adopt Reanimated properly rather than route around it. rn-skia's documented model is
+that the texture lives in a shared value and never in React state; the engine currently does the
+opposite and lets rn-skia's hook convert. Doing it the documented way collapses E-R1, NEW-1 and
+NEW-2 into one row.
+
+1. **Declare the peer.** `packages/react/package.json` gains
+   `"react-native-reanimated": ">=3.19.1"` — matching rn-skia's own floor, deliberately **not**
+   `>=4`, so Reanimated 3 stays viable and `packages/engine/README.md:42`'s old-architecture claim
+   stays true. (Reanimated 4 additionally peers `react-native-worklets`; that is reanimated's own
+   peer to resolve, not ours to declare — but it earns a documentation line, because Reanimated 4 is
+   New-Architecture-only.)
+2. **Own the shared value.** Replace `usePictureAsTexture` + `setPicture` with
+   `useSharedValue<SkImage | null>(null)`, assigned directly from the `onPreRender` frame callback.
+   `<Image image={…}>` already accepts that shape — it is exactly what `usePictureAsTexture` returns
+   today, so the JSX at `game-view.tsx:317` is unchanged.
+3. **Reuse the engine's own capture.** `createSceneCapture` (`scene-texture.ts:143`) is already
+   surface-cached, leak-fixed and covered. Feeding it on native kills the per-frame `MakeOffscreen`
+   (NEW-2) and deletes the `isWeb` branch at `game-view.tsx:139-141` and `:208-209` — web and native
+   converge on one path.
+4. **Net effect:** zero React renders per frame on *both* platforms, one cached surface instead of
+   60/s, and the threading story becomes true enough to write an ADR about.
+
+**Why this is a spike and not a copy-paste.** Two web-tuned details do not transfer unexamined:
+
+- `createSceneCapture` calls `makeNonTextureImage()` whenever it exists (`scene-texture.ts:159`). On
+  web that is mandatory (cross-context sampling). On native it also exists, and calling it forces a
+  full GPU→CPU readback every frame — a serious regression. It must be gated to web.
+- `RETENTION_DEPTH = 3` (`scene-texture.ts:141`) was derived against RN-Skia web's `<Canvas>`
+  painting on its own rAF *after* the capture. With a shared value on native the retention semantics
+  differ and have to be re-derived, not assumed.
+
+**Device verification (owner has a Pixel 7 connected, 2026-08-31).** This repo holds no game app, so
+the native check runs against a scaffolded `create-flare-app` shmup template or the PT repo. Two
+known local hazards: `bun run android` breaks on `react-native-audio-api` MAX_PATH (build with
+`PT_SKIP_NATIVE_AUDIO=1`), and a Metro-resolved workspace build must not silently pick up a stale
+`dist`. The check is: mount `<GameView>`, confirm frames render, and confirm React render count per
+frame is zero (a `console.count` in the component body, read back over `adb logcat`).
+
+**The negative test matters as much as the positive one.** A scaffold installed with **npm** (not
+bun) and *without* reanimated must reproduce the `OptionalDependencyNotInstalledError` on today's
+code, and must resolve cleanly once the peer is declared. That is the only check that actually
+proves NEW-1, because bun masks it.
+
+### 11.5 Sequencing note
+
+E-R3's ADR is deliberately sequenced *after* XR-1 rather than before it. Writing the ADR first would
+record the threading decision as it was believed to be; writing it second records what the code
+actually does. The ADR is cheap either way — the expensive part is being wrong in public about the
+one decision a reviewer will check first.

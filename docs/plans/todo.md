@@ -6,6 +6,110 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
+### Arc XR — external pre-flip review remediation (ACTIVE 2026-08-31, pre-freeze)
+
+Third-party audit findings, re-verified in-repo before filing. **Full evidence, the verdicts on each
+external row, the five new findings and the XR-1 design live in the SoT:
+[external-review-2026-08.md](external-review-2026-08.md) §11** — read the referenced subsection
+before planning a row. The review itself is an evidence ledger; these are the queue rows it produced.
+
+Three external rows were **not** filed: E-R1 is folded into XR-1 (it is the same defect seen from
+outside), E-R2 became XR-7, and E-R8's redesign half became XR-8. Two external claims were wrong and
+are corrected in §11.2 rather than actioned.
+
+Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root docs / `.github/` /
+`scripts/` and run main-thread. **Changeset level: patch while 0.3.x is the line** (same rule as Arc
+CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
+**never major**.
+
+- **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~2 sessions:
+  XR-1a spike + native/negative verification, XR-1b implement). Scope: `packages/react/src/game-view.tsx`,
+  `packages/react/src/scene-texture.ts`, `packages/react/package.json`, `packages/react/README.md`,
+  `packages/engine/README.md`, `packages/react/tests/game-view.test.ts`. **Closes E-R1 + NEW-1 + NEW-2
+  in one row.** `<GameView>` reaches `react-native-reanimated` transitively through rn-skia's
+  `usePictureAsTexture` and never declares it; bun installs optional peers and npm/pnpm/yarn do not,
+  so every in-workspace consumer masks a crash that an npm consumer hits on first render — on web as
+  well as native. Owner's call (2026-08-31): **adopt Reanimated the way rn-skia documents** rather
+  than route around it. Declare `"react-native-reanimated": ">=3.19.1"` (rn-skia's own floor, not
+  `>=4` — keeps Reanimated 3 and the old-architecture claim alive), own a
+  `useSharedValue<SkImage | null>` fed straight from `onPreRender`, and drop `usePictureAsTexture` +
+  `setPicture` for the engine's already-leak-fixed `createSceneCapture`. Web and native converge on
+  one path; the `isWeb` branch at `game-view.tsx:139-141`/`:208-209` deletes. **Spike first** — two
+  web-tuned constants do not transfer (`makeNonTextureImage()` must be gated to web or it forces a
+  per-frame GPU→CPU readback; `RETENTION_DEPTH = 3` needs re-deriving against shared-value
+  semantics). **Verification is two-sided and both halves are required:** (a) Pixel 7, scaffolded
+  shmup template or PT — frames render and per-frame React render count is zero; (b) an **npm**-
+  installed scaffold *without* reanimated reproduces `OptionalDependencyNotInstalledError` on today's
+  code and resolves clean after. (b) is the only check that proves the defect, because bun masks it.
+  Spec: §11.3 NEW-1/NEW-2, §11.4.
+- **XR-2 — renderer + threading ADR** (P0 for the flip, 1 session, `[MT]`). Creates
+  `docs/design/adr-0001-renderer-and-threading.md` and the `docs/design/adr-*` convention (no
+  `docs/decisions/` or `docs/adr/` exists today). **Runs after XR-1, never before** — §11.5: writing
+  it first records the decision as it was believed to be, writing it second records what the code
+  does. Content per the external §3.1 skeleton, with §2 rewritten to the post-XR-1 truth: worklet-
+  backed texture handoff, JS-thread simulation on `requestAnimationFrame` (`game-loop.ts:142`), no
+  Reanimated *animation* API in engine source. Point 3 is where the argument is won and is currently
+  invisible outside the repo — one code path for web and native, and a pure-TS loop testable under
+  Bun with no RN runtime (2,887 engine tests, 2,522 PT). Spec: external §3, §11.5.
+- **XR-3 — root `bun test` green: kill first-party module mocks** (P1, 1 session). Scope:
+  `packages/react/tests/*`. Root `bun test` prints `16 fail`; that is a stranger's first command after
+  `git clone` and it is not a real defect — 12 of the 16 are `mock.module()` leaking process-wide from
+  `game-view.test.ts:251/260/333`, which replace `@flare-engine/core`, `/ecs` and `/render` for every
+  later file in the process. **Fix the class, not the instance:** mock only *external* modules (react,
+  react-native, rn-skia); first-party workspace packages are pure TS and should be imported for real.
+  Two-file repro in external §4.1. Note the external row's third disposition is already done — root
+  `"test"` is already `turbo test`, and `bun test` (the builtin) cannot be redirected. **Done when**
+  `bun test` at repo root is green, and `bun test packages/react packages/tilemap/tests/tilemap-renderer.test.ts`
+  is green. Spec: external §4.1 mechanism A, §11.2 correction 3.
+- **XR-4 — ECS boundary tests + retire the `_resetComponentIds` reset hook** (P1, 1 session). Scope:
+  `packages/ecs/tests/`, `packages/engine/tests/integration.test.ts`,
+  `packages/testing/tests/scene-snapshot.test.ts`. Two things, same root. (a) **Zero tests cover the
+  32-component boundary** — add them before anyone refactors it: 32 definitions succeed, slot 31
+  round-trips through `add`/`has`/`query`/`remove` (its `bit` is `-2147483648` and that is fine —
+  every JS bitwise op is int32), the 33rd throws with the component named. (b) The remaining 4 root-
+  run failures are `_resetComponentIds()` in `beforeEach` colliding with defs already allocated at
+  import time — the exact hazard `logic.test.ts:7` warns about in its own header. Remove the *need*
+  for the hook in these suites rather than the warning. **Do not redesign the cap here** (that is
+  XR-8), and note `_resetComponentIds` also has two non-test callers in `benchmarks/src` (NEW-5).
+  Spec: external §4.1 mechanism B, §8.6.1, §11.3 NEW-5.
+- **XR-5 — README truth pass: support posture, ECS wording, the cap** (P0, 1 session, `[MT]`). Scope:
+  root `README.md`. Three edits, minutes each, closing E-R6 + E-R7 + §8.6.2/3. (a) A **support-posture
+  paragraph** written before anyone opens an issue: best-effort, no SLA, stated triage cadence, PRs
+  welcome but review may be slow. An OSS repo with three-week-old unanswered issues reads worse than a
+  private one. (b) Replace "hybrid ECS" (`README.md:8`, `:60`) with `packages/ecs/README.md:3`'s own
+  exact phrasing — storage is `Map<componentId, Map<entityId, data>>` plus a bitmask, with zero typed
+  arrays anywhere in `packages/ecs/src`; against bitECS's struct-of-arrays, "hybrid" invites a reading
+  the code does not support. (c) Surface the **32-component cap and that it is process-global, not
+  per-`World`** where an adopter reads it, not on definition 33. Precision already exists in the
+  package README; it is simply not where the first reader looks. Spec: external §5, §6, §7, §8.6.
+- **XR-6 — root CHANGELOG + dependabot** (P2, 1 session, `[MT]`). Scope: `CHANGELOG.md` (new),
+  `.github/dependabot.yml` (new). 42/42 per-package CHANGELOGs exist but the repo root has no single
+  "what changed" view; Changesets can generate one, or a short pointer file suffices. A public
+  Apache-2.0 repo with no automated dependency updates is a visible maintenance signal — and it makes
+  XR-5's best-effort posture read as deliberate rather than absent. Cheap; cut first if the calendar
+  slips. Spec: external §5.
+- **XR-7 — ECS churn benchmark + `Query._remove` complexity** (P2, post-flip acceptable, 1-2 sessions).
+  Scope: `benchmarks/src/scenarios/ecs.ts`, `benchmarks/src/ecs.bench.ts`, `packages/ecs/src/query.ts`.
+  `ECS_SCENARIOS` defines exactly one shape — `ecs.step {n} entities (Pos+Vel)`, steady-state
+  iteration across four sizes — so every published ECS number describes the fast path, while the path
+  PT reports as dominating its frame has no number. For a shmup engine churn *is* the hot path. Note
+  the caller-supplied `query?` remedy the external row treats as pending **already shipped**
+  (`systems.ts:55`, CW7-3, 0.3.1) and correctly does not fix the complexity. **Two blockers before
+  this is plannable:** swap-remove is *not* behaviour-preserving — `Query.entities` is documented
+  sorted and `render-system.ts:94` feeds `SpriteBatch`'s z-order contract from it, so it can move
+  rendered output and the `alloc.render … 8 atlas` counters (NEW-4); and a new wall-clock baseline row
+  needs a trustworthy capture, which this machine is not under load. Spec: external §2, §11.3 NEW-4.
+- **XR-8 — the 32-component ceiling: separate audit, not a flip-window row** (own session, **not**
+  flip scope). Do not attempt inside the freeze window: it touches the hottest path, the public
+  `ComponentDef` shape, and a lockstep-versioned scope where an `ecs` major moves all 42 packages.
+  The external §8.3/§8.4 brief stands — Q1 real requirement, Q2 does the hot path survive (run
+  `check:perf` on a spike branch **first**; it settles A-vs-B cheaply), Q3 public API — with one
+  change of weight: **§8.5 is no longer hypothetical.** Loading the CJS and ESM builds in one process
+  forks the counter, both starting at 0, ids colliding silently with no error (NEW-3), and *any*
+  duplicate copy of `@flare-engine/ecs` does the same. That makes option C (per-`World` registry) the
+  fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
+  so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
+
 ### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
 
 Seeded so they do not decay into prose. Findings + the reasoning for each verdict are in the SoT:

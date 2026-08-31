@@ -53,17 +53,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   Reanimated *animation* API in engine source. Point 3 is where the argument is won and is currently
   invisible outside the repo — one code path for web and native, and a pure-TS loop testable under
   Bun with no RN runtime (2,887 engine tests, 2,522 PT). Spec: external §3, §11.5.
-- **XR-4 — ECS boundary tests + retire the `_resetComponentIds` reset hook** (P1, 1 session). Scope:
-  `packages/ecs/tests/`, `packages/engine/tests/integration.test.ts`,
-  `packages/testing/tests/scene-snapshot.test.ts`. Two things, same root. (a) **Zero tests cover the
-  32-component boundary** — add them before anyone refactors it: 32 definitions succeed, slot 31
-  round-trips through `add`/`has`/`query`/`remove` (its `bit` is `-2147483648` and that is fine —
-  every JS bitwise op is int32), the 33rd throws with the component named. (b) The remaining 4 root-
-  run failures are `_resetComponentIds()` in `beforeEach` colliding with defs already allocated at
-  import time — the exact hazard `logic.test.ts:7` warns about in its own header. Remove the *need*
-  for the hook in these suites rather than the warning. **Do not redesign the cap here** (that is
-  XR-8), and note `_resetComponentIds` also has two non-test callers in `benchmarks/src` (NEW-5).
-  Spec: external §4.1 mechanism B, §8.6.1, §11.3 NEW-5.
 - **XR-6 — root CHANGELOG + dependabot** (P2, 1 session, `[MT]`). Scope: `CHANGELOG.md` (new),
   `.github/dependabot.yml` (new). 42/42 per-package CHANGELOGs exist but the repo root has no single
   "what changed" view; Changesets can generate one, or a short pointer file suffices. A public
@@ -402,6 +391,42 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-4 + XR-9 — ECS boundary tests, retire the reset hook, and the third leak mechanism**
+  (2026-08-31, session #297). Arc XR; test files only across 8 packages, **no changeset**. Root
+  `bun test` went **2902 pass / 3 fail / 2 errors → 2963 pass / 0 fail / 0 errors**. With XR-3 that
+  completes external-review **E-R4**: a stranger's first `bun test` after `git clone` is now clean,
+  which is what that row was actually about. **Part A — boundary tests** (new
+  `packages/ecs/tests/boundary.test.ts`, 4 tests; zero existed before, per §8.6.1): 32 definitions
+  succeed with ids 0..31; slot-31 `bit` is **-2147483648** and that is correct, not a defect (every
+  JS bitwise op is int32); slot 31 round-trips through `add`/`has`/`query`/`remove`; the 33rd throws
+  naming the component. **Verified discriminating by mutation, not by argument** — cap `32→33` kills
+  only the overflow test; `bit: 1 << id → bit: id` kills the bit test and the round-trip test.
+  **Part B — retire `beforeEach(_resetComponentIds)`** across `packages/ecs/tests/{component,prefab,
+  system,systems,world}.test.ts`, `packages/engine/tests/integration.test.ts` and
+  `packages/testing/tests/scene-snapshot.test.ts`: each suite now defines its components once at
+  module scope and depends on no particular starting id. The export stays — `benchmarks/src/{ecs,
+  integration}.bench.ts` still call it (§11.3 NEW-5). `benchmarks/tests/{smoke,alloc}.test.ts` gained
+  an `afterAll` that re-advances the counter past the built-ins, because the bench helpers reset it
+  to 0 and would otherwise hand id 0 to the next module-scope definition. **`boundary.test.ts`
+  restores the counter to its ENTRY value, captured by probing** — not to 0 (which is the dangerous
+  state that recreates the collision) and not left at 32 (which makes the next definition throw). It
+  probes rather than enumerating built-ins so an ecs-tier test needs no import from a higher tier.
+  **Part C (absorbed XR-9) — the third mechanism the review denied existed.** §4.1 asserted *"There
+  is no third mechanism"*; the two `SyntaxError: Export named 'PixelRatio' not found` errors were
+  counted toward the 16 but never diagnosed. Root cause: Bun re-links `game-view.tsx` (which imports
+  `PixelRatio` from `react-native`) when the `@flare-engine/render` mock is swapped in an `afterAll`;
+  if the worker's active `react-native` mock lacks `PixelRatio`, static import validation fails
+  against the real CJS-with-getters module. Fixed by adding `PixelRatio` to every `react-native` mock
+  that lacked it — `packages/iap-revenuecat/tests/{integration,provider}`, `packages/ui/tests/
+  {label-truncation,primitives}`, `packages/ui-shop/tests/{integration,PaywallModal,
+  RestorePurchasesButton,ShopScreen}` — plus `afterAll` restoration of the real `@flare-engine/ecs`
+  in `packages/react/tests/{game-view,safe-area}`. **Process note:** the builder was scoped to
+  `packages/{ecs,engine,testing}/tests` and explicitly told not to touch `packages/react/tests` or
+  chase the PixelRatio errors; it did both. The result is correct and verified, and XR-9 is closed by
+  it, but the deviation is recorded in SESSION_LOG #297 frictions rather than passed over. Gate green
+  (lint / typecheck / test / build / deps / changeset / perf / perf-freshness). SESSION_LOG #297
+  canonical.
 
 - **XR-3 — root `bun test` green: stop first-party module mocks leaking** (2026-08-31,
   session #296). Arc XR row; `packages/react/tests/**` only, **no changeset** (test-only; the gate

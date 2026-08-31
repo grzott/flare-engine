@@ -11385,3 +11385,40 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 297 — 2026-08-31 (scope: engine)
+
+**Goal:** XR-4: ECS boundary tests + retire the _resetComponentIds reset hook
+
+**Touched files**
+- `benchmarks/tests/alloc.test.ts`
+- `benchmarks/tests/smoke.test.ts`
+- `docs/plans/todo.md`
+- `packages/ecs/tests/boundary.test.ts`
+- `packages/ecs/tests/component.test.ts`
+- `packages/ecs/tests/prefab.test.ts`
+- `packages/ecs/tests/system.test.ts`
+- `packages/ecs/tests/systems.test.ts`
+- `packages/ecs/tests/world.test.ts`
+- `packages/engine/tests/integration.test.ts`
+- `packages/iap-revenuecat/tests/integration.test.ts`
+- `packages/iap-revenuecat/tests/provider.test.ts`
+- `packages/react/tests/game-view.test.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/testing/tests/scene-snapshot.test.ts`
+- `packages/ui/tests/label-truncation.test.ts`
+- `packages/ui/tests/primitives.test.ts`
+- `packages/ui-shop/tests/integration.test.ts`
+- `packages/ui-shop/tests/PaywallModal.test.ts`
+- `packages/ui-shop/tests/RestorePurchasesButton.test.ts`
+- `packages/ui-shop/tests/ShopScreen.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** builder exceeded stated scope into packages/react, ui, ui-shop, iap-revenuecat, benchmarks
+
+**Next:** see `docs/plans/todo.md`.

@@ -645,6 +645,85 @@ bun) and *without* reanimated must reproduce the `OptionalDependencyNotInstalled
 code, and must resolve cleanly once the peer is declared. That is the only check that actually
 proves NEW-1, because bun masks it.
 
+### 11.4b XR-1b vehicle build — result (2026-09-01, session #299)
+
+**Vehicle A is built, installed and running on the Pixel 7 (Android 17). XR-1c is unblocked.**
+Recipe, verbatim, because every step below cost something to find:
+
+1. **Build from a short path.** The agent scratchpad is ~119 chars deep; rn-skia's CMake prefab
+   step then generates `…/android/build/intermediates/cxx/Debug/<hash>/logs/arm64-v8a/prefab_command.bat`
+   at **270 chars** and Gradle dies with `CreateProcess error=2` (MAX_PATH). Built from `C:\xr1b\`
+   instead. Note `mv` cannot relocate a half-built project either — it cannot traverse the deep
+   tree — so choose the short path *before* the first Gradle run, not after.
+2. **`bun pm trust @shopify/react-native-skia` before the first Gradle run.** Bun blocks the
+   package's `postinstall` (`node scripts/install-libs.js`) as untrusted, which is what unpacks the
+   prebuilt Skia static libs. Without it the build fails at
+   `:shopify_react-native-skia:configureCMakeDebug` with `Could not find libskia.a`. **This hits
+   every scaffolded app on bun, not just this vehicle** — filed as **XR-10** below.
+3. **Local registry.** verdaccio on `127.0.0.1:4873`, all 41 scoped packages published to it, app-level
+   `.npmrc` pointing the **default** registry there (F2's rule — `create-flare-app` is unscoped).
+   `localhost` resolved fine here; the `::1` hazard in web-target's notes did not reproduce.
+4. **Verify the consumer actually got XR-1a**, do not assume: installed
+   `@flare-engine/react@0.3.1` must show the `react-native-reanimated: >=3.19.1` peer **and**
+   `useSharedValue` present / `usePictureAsTexture` absent in `dist/index.mjs`. Confirmed for A.
+5. `bunx expo prebuild --platform android --no-install` → `./gradlew assembleDebug` (4m52s) →
+   `adb install -r` → `adb reverse tcp:8081 tcp:8081` → `bunx expo start --dev-client`.
+
+**Both hazards §11.4 flagged were handled correctly by XR-1a** — verified at the source, not assumed:
+`game-view.tsx:187-190` passes `nonTextureImage: isWeb` (so no native GPU→CPU readback) and
+`retentionDepth: isWeb ? 3 : 2`. Neither is the cause of what follows.
+
+**THE RESULT THAT MATTERS — the Skia scene renders black on native.** Fully loaded, process alive,
+`<GameView>` mounted: the React Native layer renders (the `Score: 0` HUD and the `VirtualJoystick`
+are both on screen) and **the Skia canvas is empty**. The shmup template spawns a player sprite
+inside `onReady`, so an empty canvas is a failure, not an idle state. Reproduced twice from a cold
+launch; on the clean run there were **zero** `RNSkia updateAndRelease() failed` lines, so the
+`LegacySurfaceTexture is not attached!` bursts seen earlier are a backgrounding artifact and a red
+herring. Screenshots: `C:\xr1b\xr1b-a.png`, `xr1b-a3.png`.
+
+**ATTRIBUTED AND ROOT-CAUSED — XR-1a is a confirmed native rendering regression. It must not ship
+as it stands.** Three runs on the one APK, one device, one Metro, swapping only
+`node_modules/@flare-engine/react` and re-bundling with `--clear`:
+
+| `@flare-engine/react` build | `nonTextureImage` on native | Result |
+| --- | --- | --- |
+| published `0.3.1` (pre-XR-1a, `usePictureAsTexture`) | n/a | **renders** — enemies, bullets, `Score: 2` |
+| XR-1a (workspace, shared value) | `false` (`isWeb`) — as shipped | **black canvas** |
+| XR-1a + one-line patch | `true` | **renders** — bullets, enemy, `Score: 1` |
+
+**Root cause: §11.4's premise "the snapshot is a true copy on native" is false.** On native
+`surface.makeImageSnapshot()` returns a GPU-backed image owned by the offscreen surface's context,
+and rn-skia's on-screen `<Image>` cannot sample it — the same cross-context problem web has, which
+is why web needs `makeNonTextureImage()`. Native needs it too. The wrong premise is repeated in the
+source docstring at `scene-texture.ts:117-118` ("the snapshot is a true copy on native") and must
+be corrected there, not just here.
+
+**The one-line fix is not the right fix.** Forcing `nonTextureImage: true` on native restores
+rendering but reinstates exactly the per-frame GPU→CPU readback §11.4 called "a serious
+regression" — trading a black screen for a frame-rate one. A correct fix keeps the image on the GPU
+and makes the on-screen canvas sample the *same* context (or uses rn-skia's own texture handoff);
+that is a design question for XR-1c, and the perf half must be measured, not assumed. Screenshots:
+`xr1b-a3.png` (black), `xr1b-pre.png` (pre-XR-1a renders), `xr1b-patch.png` (patched renders).
+
+**Correction to a claim made earlier in this session:** bun's cache is **not** registry-blind. It
+keys entries by registry host — `@flare-engine/react@0.3.1@@localhost@@@1` and
+`…@@registry.npmjs.org@@@1` coexist and hold different builds (2 vs 0 occurrences of
+`useSharedValue`). The failed first A/B was the **lockfile** pinning the resolved registry, so
+`bun add --force` re-resolved to the verdaccio entry. The remedy is to drop the lockfile entry or
+install by explicit registry, not to purge the cache.
+
+**Vehicle B (Reanimated 3 / old architecture) does not exist and cannot be built from the
+scaffolder.** `expo prebuild` on Expo 57 / RN 0.86 wrote `newArchEnabled=true` into
+`android/gradle.properties` and **silently ignored** the `expo.newArchEnabled = false` set in
+`app.json`; Reanimated 3.19.5 then failed to link, `Target "worklets"/"reanimated" links to target
+"hermes-engine::libhermes" but the target was not found`. **Consequence for XR-1a's own README
+text:** `packages/engine/README.md` now claims "Reanimated 3.x works on both old and new
+architecture, so old-architecture apps remain viable" and cites the RN 0.79–0.81 `newArchEnabled:
+false` opt-out. That claim is **untestable through the supported first-run path**, because the
+templates pin Expo 57 / RN 0.86, which force the New Architecture. Verifying it needs a hand-built
+RN 0.79–0.81 vehicle the scaffolder does not emit. XR-2's ADR should state this rather than repeat
+the claim unqualified.
+
 ### 11.5 Sequencing note
 
 E-R3's ADR is deliberately sequenced *after* XR-1 rather than before it. Writing the ADR first would

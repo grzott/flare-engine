@@ -11443,3 +11443,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 299 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-1b: vehicle build — scaffold, Gradle, Pixel 7 install
+
+**Touched files**
+- `docs/plans/external-review-2026-08.md`
+- `docs/plans/todo.md`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (I filed XR-11 on a wrong mechanism — claimed bun's cache was registry-blind; it is registry-keyed and the real cause was the lockfile. Corrected in-session before commit); deny:2 (rm -rf scratch dir; verdaccio 0.0.0.0 bind — re-ran on 127.0.0.1); gate:0; fixup:0; drift:0 — no packages/** change; XR-1a confirmed a native regression by device A/B
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -35,7 +35,26 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   scaffold without reanimated reproducing `OptionalDependencyNotInstalledError` on pre-XR-1a code —
   is the half that proves the defect existed, and nothing in `packages/react/tests/**` can stand in
   for it: both suites `mock.module('react-native-reanimated', …)`, i.e. they assume it resolves.
-  **Next pick is XR-1b.** Scope: `packages/react/src/game-view.tsx`,
+  **XR-1b DONE 2026-09-01, session #299 — vehicle A built, installed and running on the Pixel 7
+  (Android 17); recipe in §11.4b.** It surfaced the row's real problem: **the Skia scene renders
+  black on native.** RN UI renders (HUD + `VirtualJoystick`), the canvas does not, and the shmup
+  template spawns a player sprite in `onReady` so that is a failure, not an idle state.
+  **CONFIRMED AS AN XR-1a REGRESSION AND ROOT-CAUSED (§11.4b).** One APK, one device, swapping only
+  `@flare-engine/react`: published pre-XR-1a **renders**; XR-1a **black**; XR-1a with
+  `nonTextureImage` forced `true` on native **renders**. §11.4's premise that "the snapshot is a
+  true copy on native" is **false** — the native snapshot is GPU-backed and owned by the offscreen
+  surface's context, so the on-screen `<Image>` cannot sample it, exactly as on web. The false
+  premise is also in the source docstring at `scene-texture.ts:117-118` and must be fixed there.
+  **XR-1a must not ship as it stands** — it is committed but unreleased
+  (`.changeset/xr1-reanimated-peer.md` still pending), which is why **PT is unaffected: PT runs the
+  published pre-XR-1a `0.3.1`.** The one-line fix is *not* the answer — forcing the readback back on
+  reinstates the per-frame GPU→CPU cost §11.4 called a serious regression, so **XR-1c owns the
+  design: keep the image on the GPU and sample from the same context (or use rn-skia's own texture
+  handoff), and measure the perf half rather than assuming it.** Vehicle B (Reanimated 3 / old arch) **cannot be built from
+  the scaffolder at all**: `expo prebuild` forces `newArchEnabled=true` on Expo 57 / RN 0.86,
+  ignoring `app.json`, and Reanimated 3.19.5 then fails to link `hermes-engine::libhermes` — so
+  `packages/engine/README.md`'s old-architecture claim is untestable through the supported path
+  and XR-2 must qualify it. Scope: `packages/react/src/game-view.tsx`,
   `packages/react/src/scene-texture.ts`, `packages/react/package.json`, `packages/react/README.md`,
   `packages/engine/README.md`, `packages/react/tests/game-view.test.ts`. **Closes E-R1 + NEW-1 + NEW-2
   in one row.** `<GameView>` reaches `react-native-reanimated` transitively through rn-skia's
@@ -90,6 +109,32 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   duplicate copy of `@flare-engine/ecs` does the same. That makes option C (per-`World` registry) the
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
+
+- **XR-10 — every scaffolded app fails its first Android build on bun** (found 2026-09-01 building
+  the XR-1b vehicle; **P1, pre-freeze, first-run funnel**, `[MT]` — 1 session). Scope:
+  `packages/create-flare-app/templates/{blank,topdown,shmup}/package.json`, plus the templates'
+  READMEs. Bun blocks `@shopify/react-native-skia`'s `postinstall`
+  (`node scripts/install-libs.js`) as an untrusted lifecycle script — it prints one line at install
+  time and exits 0. That script unpacks the prebuilt Skia static libs, so the next `gradlew
+  assembleDebug` dies at `:shopify_react-native-skia:configureCMakeDebug` with `Could not find
+  libskia.a`, ~5 minutes in, with nothing pointing back at the install. Fix: add
+  `"trustedDependencies": ["@shopify/react-native-skia"]` to all three template manifests (bun
+  honours it at install; npm/pnpm/yarn ignore the field harmlessly). **This is squarely
+  manual-test-protocol §1 territory** — every template, the documented package manager, a stranger's
+  first build — so it wants fixing before the freeze, not during the window.
+- **XR-11 — a verdaccio rehearsal can silently re-serve the local build** (found 2026-09-01, same
+  session; **P2, pre-freeze-preferred**, `[MT]` — 1 session, docs + a runbook step). **Diagnosis
+  corrected during the session — read this, not the first version.** Bun's cache is *not*
+  registry-blind: it keys by registry host, and
+  `@flare-engine/react@0.3.1@@localhost@@@1` / `…@@registry.npmjs.org@@@1` coexist holding
+  different builds. The real mechanism is the **lockfile**, which records the resolved registry, so
+  a re-install "from npmjs" — `--force` included — re-resolves to the verdaccio entry and returns
+  the local build while looking clean. Any rehearsal that publishes to verdaccio and then verifies
+  an install in the same tree is at risk of verifying its own artifact. Affects **F2**, the
+  **manual-test-protocol §1 first-run funnel**, and **OSS-I2**'s post-flip cold scaffold. Fix: the
+  runbooks must verify from a **fresh tree with no lockfile**, and prefer a throwaway version
+  suffix over republishing a live version number. Cache-purging is *not* the remedy and would have
+  masked the real cause.
 
 ### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
 

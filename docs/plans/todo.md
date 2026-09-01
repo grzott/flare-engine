@@ -22,6 +22,16 @@ Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root doc
 CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
 **never major**.
 
+- **XR-1c — long soak + `opaque` check on the native texture path** (P2, pre-freeze, ~1 session).
+  The XR-1c fix is **done and device-verified** (§11.4c) — this is the residue it left. The benign
+  RN-Skia `updateAndRelease` / `LegacySurfaceTexture` pair is pre-existing (2 840 per 30 s on the
+  shipping build) but the fix emits ~1.6× more (4 614). Rendering is correct and the process is
+  stable across repeated soaks, so this is not a blocker — but it is unexplained, and the native path
+  no longer keeps a retention ring: the worklet assigns `target.value` and never releases the prior
+  image, matching RN-Skia's own `createTexture`, which also does not. Do two things: a **multi-minute
+  soak watching native memory** (30 s proves nothing about a leak), and try **`opaque: true`**
+  (already in `GameConfig`) to move Android off TextureView onto SurfaceView and see if the messages
+  go. Spec: §11.4c.
 - **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~3 sessions:
   XR-1a source+tests+desktop-negative; XR-1b vehicle build — `create-flare-app` scaffold → Gradle →
   device install; XR-1c device validation — logcat render-count, `retentionDepth: 2` soak, and the
@@ -50,7 +60,15 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   published pre-XR-1a `0.3.1`.** The one-line fix is *not* the answer — forcing the readback back on
   reinstates the per-frame GPU→CPU cost §11.4 called a serious regression, so **XR-1c owns the
   design: keep the image on the GPU and sample from the same context (or use rn-skia's own texture
-  handoff), and measure the perf half rather than assuming it.** Vehicle B (Reanimated 3 / old arch) **cannot be built from
+  handoff), and measure the perf half rather than assuming it.**
+  **RESOLVED 2026-09-01, session #300 (§11.4c): the capture now runs in a `runOnUI` worklet, so the
+  surface is built on the UI thread in the canvas's own GL context.** Device-verified on the Pixel 7
+  — renders, and `GameView` re-renders **6 times across ~1800 frames**, which closes NEW-1 on device
+  rather than by argument. The readback workaround was rejected: it also fixes the black frame but
+  pays a GPU→CPU copy every frame, where the threading fix pays nothing. Residue tracked as the
+  **XR-1c** row above. **XR-1 is therefore no longer a launch-blocker**; what remains under it is
+  XR-1b's vehicle-B finding below, which is a documentation-accuracy problem, not a defect.
+  Vehicle B (Reanimated 3 / old arch) **cannot be built from
   the scaffolder at all**: `expo prebuild` forces `newArchEnabled=true` on Expo 57 / RN 0.86,
   ignoring `app.json`, and Reanimated 3.19.5 then fails to link `hermes-engine::libhermes` — so
   `packages/engine/README.md`'s old-architecture claim is untestable through the supported path

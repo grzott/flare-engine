@@ -724,6 +724,46 @@ templates pin Expo 57 / RN 0.86, which force the New Architecture. Verifying it 
 RN 0.79–0.81 vehicle the scaffolder does not emit. XR-2's ADR should state this rather than repeat
 the claim unqualified.
 
+### 11.4c XR-1c fix + device verification (2026-09-01, session #300)
+
+**Fixed and verified on the Pixel 7.** The native capture now runs in a `runOnUI` worklet
+(`game-view.tsx` `captureSceneOnUI`), so the offscreen surface is built on the UI thread in the same
+GL context as the on-screen `<Canvas>`. Web is untouched and keeps the single-threaded path
+WEB-1..WEB-7 verified. Screenshot: `xr1c-verified.png` — bullets, enemy, `Score: 2`, gameplay live.
+
+**Why this shape and not the alternatives.** RN-Skia's own `usePictureAsTexture` does *exactly* what
+XR-1a did — `MakeOffscreen` → `drawPicture` → `flush` → `makeImageSnapshot`, with
+`makeNonTextureImage()` **web-only** — and differs in one respect: it wraps the work in
+`Rea.runOnUI`. That single difference is the whole defect. Forcing the readback on native also
+"fixes" the black frame but pays a GPU→CPU copy every frame; the threading fix pays nothing. Note
+the fix is also strictly better than the code shipping today: pre-XR-1a dispatched via `runOnUI`
+too, but reached it through `setPicture` → a React render per frame.
+
+**Measured, not asserted** (30 s of gameplay each, identical procedure):
+
+| | pre-XR-1a (ships today) | XR-1c fix |
+| --- | --- | --- |
+| renders | **black** on XR-1a; renders here | **renders** |
+| `GameView` React renders / ~1800 frames | ~1 per frame (by construction) | **6 total** — mount + layout settles |
+| RN-Skia `updateAndRelease` msgs / 30 s | 2 840 | 4 614 |
+| process after repeated soaks | alive | alive |
+
+**NEW-1 is closed on device:** 6 React renders across ~1800 frames is mount plus a few state
+settles, not per-frame. Measured with a `console.log` injected into the shipped `GameView` body and
+counted over `adb logcat`.
+
+**One delta that is not clean, recorded rather than buried.** The benign RN-Skia pair
+(`updateTexImage: LegacySurfaceTexture is not attached!` + `updateAndRelease() failed. The exception
+above can safely be ignored`) is **pre-existing** — the shipping build emits 2 840 in the same
+window — but the fix emits **~1.6× more**. It is RN-Skia's own TextureView path and RN-Skia labels
+it ignorable, rendering is correct, and the process is stable; it is not a launch blocker. It is
+also not understood, and two things about the new native path plausibly bear on it: there is **no
+retention ring on native any more** (the worklet assigns `target.value` directly and never releases
+the previous image — matching RN-Skia's own `createTexture`, which also does not), and `GameConfig`
+already exposes `opaque` to move Android off TextureView onto SurfaceView. **Owed before the freeze:
+a long soak (minutes, not 30 s) watching native memory, and a check of whether `opaque: true`
+removes the messages.** `retentionDepth` no longer applies to native and is now web-only.
+
 ### 11.5 Sequencing note
 
 E-R3's ADR is deliberately sequenced *after* XR-1 rather than before it. Writing the ADR first would

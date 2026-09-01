@@ -11486,3 +11486,23 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 301 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-1c: device verification of the UI-thread scene capture
+
+**Touched files**
+- `docs/plans/external-review-2026-08.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0 — fix device-verified on Pixel 7 (renders; 6 React renders per ~1800 frames); one unexplained delta recorded and queued as a new XR-1c row rather than left in prose
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -128,18 +128,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
 
-- **XR-10 — every scaffolded app fails its first Android build on bun** (found 2026-09-01 building
-  the XR-1b vehicle; **P1, pre-freeze, first-run funnel**, `[MT]` — 1 session). Scope:
-  `packages/create-flare-app/templates/{blank,topdown,shmup}/package.json`, plus the templates'
-  READMEs. Bun blocks `@shopify/react-native-skia`'s `postinstall`
-  (`node scripts/install-libs.js`) as an untrusted lifecycle script — it prints one line at install
-  time and exits 0. That script unpacks the prebuilt Skia static libs, so the next `gradlew
-  assembleDebug` dies at `:shopify_react-native-skia:configureCMakeDebug` with `Could not find
-  libskia.a`, ~5 minutes in, with nothing pointing back at the install. Fix: add
-  `"trustedDependencies": ["@shopify/react-native-skia"]` to all three template manifests (bun
-  honours it at install; npm/pnpm/yarn ignore the field harmlessly). **This is squarely
-  manual-test-protocol §1 territory** — every template, the documented package manager, a stranger's
-  first build — so it wants fixing before the freeze, not during the window.
 - **XR-11 — a verdaccio rehearsal can silently re-serve the local build** (found 2026-09-01, same
   session; **P2, pre-freeze-preferred**, `[MT]` — 1 session, docs + a runbook step). **Diagnosis
   corrected during the session — read this, not the first version.** Bun's cache is *not*
@@ -457,6 +445,32 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-10 — every scaffolded app failed its first Android build, and the README sent strangers to
+  Expo Go** (2026-09-01, session #304). Arc XR, `[MT]`, all three templates, **no changeset** —
+  `create-flare-app` is `private: true` and `templates/` is not package `src`
+  ([[changeset_gate_src_only]]). **Two first-run defects, both manual-test-protocol §1 territory,
+  both found by actually building the XR-1b vehicle rather than by reading.**
+  **(a) The install silently half-completes.** Bun blocks `@shopify/react-native-skia`'s
+  `postinstall` (`node scripts/install-libs.js`) as an untrusted lifecycle script — it prints one
+  line and exits 0. That script unpacks Skia's prebuilt static libs, so `gradlew assembleDebug` dies
+  ~5 minutes later at `:shopify_react-native-skia:configureCMakeDebug` with `Could not find
+  libskia.a`, and nothing points back at the install. Fixed with
+  `"trustedDependencies": ["@shopify/react-native-skia"]` in all three manifests — bun honours it,
+  npm/pnpm/yarn ignore the field harmlessly. **PT has carried this fix since forever
+  (`package.json:124`); the templates never got it**, which is exactly the drift a scaffolder is
+  supposed to prevent.
+  **(b) The README told a stranger to press `a` into Expo Go.** rn-skia is a native module, so that
+  red-screens with a missing-native-module error — the mismatch
+  [manual-test-protocol.md](manual-test-protocol.md) §1 predicted verbatim. All three READMEs now
+  say `bun run android` (dev build) and explain that `bun run start` attaches *after* that first
+  build. They also carry the two things that cost this session an afternoon: build from a short path
+  (Skia's CMake generates paths ~120 chars longer than the project dir and Windows still fails at
+  260), and do not delete `trustedDependencies`.
+  **Verified end-to-end, not by inspection:** scaffolded `blank` fresh from the fixed template,
+  `bun install` → `bun pm untrusted` reports **none blocked** and
+  `libs/android/arm64-v8a/libskia.a` is present, with no manual `bun pm trust`. Before the fix the
+  same sequence reported `Blocked 1 postinstall` and no libskia.a. SESSION_LOG #304 canonical.
 
 - **XR-12 — the barrel re-exported `GameView` without declaring its reanimated peer**
   (2026-09-01, session #303). Arc XR, **P0 launch-blocker**, one patch changeset. Found while

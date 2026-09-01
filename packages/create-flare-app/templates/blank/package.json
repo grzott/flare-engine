@@ -29,5 +29,8 @@
     "@babel/core": "^7.25.0",
     "@types/react": "~19.2.0",
     "typescript": "^5.5.0"
-  }
+  },
+  "trustedDependencies": [
+    "@shopify/react-native-skia"
+  ]
 }

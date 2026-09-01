@@ -11550,3 +11550,28 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 304 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-10: templates trust the Skia postinstall, README drops Expo Go
+
+**Touched files**
+- `docs/plans/todo.md`
+- `packages/create-flare-app/templates/blank/package.json`
+- `packages/create-flare-app/templates/blank/README.md`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/shmup/README.md`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `packages/create-flare-app/templates/topdown/README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0 — fix verified by a real scaffold+install (no blocked postinstall, libskia.a present); second defect (README pointing at Expo Go) found in scope and fixed in the same pass
+
+**Next:** see `docs/plans/todo.md`.
+
+---

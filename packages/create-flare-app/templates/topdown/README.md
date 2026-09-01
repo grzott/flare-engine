@@ -6,10 +6,25 @@ A Flare engine app scaffolded from the `{{TEMPLATE_ID}}` template.
 
 ```bash
 bun install
-bun run start
+bun run android   # or: bun run ios
 ```
 
-Press `a` for Android or `i` for iOS once the Metro bundler is ready.
+`@shopify/react-native-skia` is a **native** module, so this template needs a
+dev build — it cannot run in Expo Go. `bun run start` then pressing `a`/`i`
+opens Expo Go and red-screens with a missing-native-module error. `bun run
+android` builds and installs a dev client instead; after that first build,
+`bun run start` attaches to it normally.
+
+The first Android build takes a few minutes and needs the Android SDK plus a
+JDK. Two things that will otherwise cost you an afternoon:
+
+- **Build from a short path.** Skia's CMake step generates paths ~120
+  characters longer than your project directory, and Windows still fails at 260
+  (`CreateProcess error=2`). `C:\src\my-app` is fine; a deep temp path is not.
+- **Do not remove `trustedDependencies` from `package.json`.** Bun blocks
+  install scripts it does not trust, and Skia's `postinstall` is what unpacks
+  its prebuilt binaries. Without it the install still succeeds and the Android
+  build fails minutes later with `Could not find libskia.a`.
 
 ## Run in a browser
 

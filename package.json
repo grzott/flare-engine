@@ -21,6 +21,7 @@
     "lint": "biome check .",
     "typecheck": "turbo typecheck",
     "check:deps": "bun scripts/check-deps-tiers.mjs",
+    "check:peers": "bun scripts/check-peer-completeness.mjs",
     "check:changeset": "bun scripts/check-changeset.mjs",
     "check:exports": "bun scripts/check-exports.mjs",
     "check:nodenext": "bun scripts/check-nodenext.mjs",

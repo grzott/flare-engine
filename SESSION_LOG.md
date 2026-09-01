@@ -11527,3 +11527,26 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 303 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-12: declare the reanimated peer on the engine barrel
+
+**Touched files**
+- `.changeset/xr12-engine-reanimated-peer.md`
+- `docs/plans/todo.md`
+- `package.json`
+- `packages/engine/package.json`
+- `scripts/check-peer-completeness.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:1 (npm blocked repo-wide by pre-bash-guard, by design — the behavioural peer-install check is owed to the owner in an unguarded shell); gate:0; fixup:1 (biome format on the new script); drift:0 — sweep confirmed engine is the only instance; new check:peers gate added but deliberately not wired into verify.sh
+
+**Next:** see `docs/plans/todo.md`.
+
+---

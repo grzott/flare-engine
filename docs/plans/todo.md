@@ -22,23 +22,6 @@ Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root doc
 CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
 **never major**.
 
-- **XR-12 — `@flare-engine/engine` re-exports `GameView` but never declares the reanimated peer**
-  (found 2026-09-01 while fact-checking ADR-0001; **P0 launch-blocker, pre-freeze**, engine-builder,
-  ~1 session incl. a patch changeset). **This is XR-1a's exact defect one layer up, and XR-1a did not
-  close it.** `packages/engine/src/index.ts:115` re-exports from `@flare-engine/react` — `GameView`
-  included — while `packages/engine/package.json`'s `peerDependencies` lists `react`,
-  `react-native`, `@shopify/react-native-skia`, `react-native-safe-area-context` and
-  `react-native-audio-api`, and **omits `react-native-reanimated`**. Since XR-1c the barrel's
-  `GameView` hard-requires it (`useSharedValue` + a `runOnUI` worklet), so an **npm/pnpm/yarn**
-  consumer of the *main package* — the one the README tells strangers to install — resolves without
-  it and dies on first render. Bun masks it exactly as it masked E-R1/NEW-1. That engine already
-  declares `react-native-safe-area-context`, which `game-view.tsx` value-imports the same way,
-  shows the omission is an oversight rather than a decision. Fix: add
-  `"react-native-reanimated": ">=3.19.1"` to engine's peers, matching `react`'s floor, and **sweep
-  every other package that re-exports a `react` symbol** for the same gap rather than patching this
-  one instance. **Verify the way XR-1a's (b) half never was:** an npm-installed scaffold of
-  `@flare-engine/engine` without reanimated must fail before and resolve after. Spec: ADR-0001 §2,
-  external-review §11.3 NEW-1.
 - **XR-1c — long soak + `opaque` check on the native texture path** (P2, pre-freeze, ~1 session).
   The XR-1c fix is **done and device-verified** (§11.4c) — this is the residue it left. The benign
   RN-Skia `updateAndRelease` / `LegacySurfaceTexture` pair is pre-existing (2 840 per 30 s on the
@@ -474,6 +457,34 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-12 — the barrel re-exported `GameView` without declaring its reanimated peer**
+  (2026-09-01, session #303). Arc XR, **P0 launch-blocker**, one patch changeset. Found while
+  fact-checking ADR-0001 — not by a gate, which is the point. `packages/engine/src/index.ts:115`
+  re-exports `@flare-engine/react`, `GameView` included, and since XR-1c that component hard-requires
+  Reanimated (`useSharedValue` + a `runOnUI` worklet). `packages/engine/package.json` declared
+  `react`, `react-native`, `@shopify/react-native-skia`, `react-native-safe-area-context` and
+  `react-native-audio-api` — and **not `react-native-reanimated`**. So an npm/pnpm/yarn consumer of
+  **the package the README tells strangers to install** resolved without it and crashed on first
+  render. **This is E-R1/NEW-1 exactly, one layer up: XR-1a fixed `react` and left the barrel.**
+  That engine already declared `react-native-safe-area-context`, which `game-view.tsx` value-imports
+  the same way, is what makes it an oversight rather than a decision.
+  **The sweep found it is the only instance, which is worth more than the one-line fix.** A scan of
+  all 42 packages for required peers of workspace deps that the outer package fails to re-declare
+  returned three hits; two are judged **false positives** and are recorded as such rather than
+  suppressed: `@flare-engine/react` → `react-native-audio-api` (packages/audio never imports it, it
+  types the context structurally at `audio-manager.ts:3` and the consumer injects it) and
+  `@flare-engine/iap-revenuecat` → `react` (the adapter touches no React surface).
+  **Now gated:** the scan is `scripts/check-peer-completeness.mjs`, wired as `bun run check:peers`,
+  with those two exceptions carrying their reasons in an `ALLOWED` map. Verified discriminating —
+  it exits 0 on the fixed tree and exits 1 naming the exact package on the pre-fix manifest.
+  **Not wired into `verify.sh`**: that is a harness change and the owner's call; today it must be run
+  deliberately. **Verification is partial and honestly so.** The packed tarball's manifest carries
+  the peer (`bun pm pack`, inspected). The behavioural half — npm auto-installing the declared peer
+  where it previously did not — could **not** be run: `pre-bash-guard.sh` blocks `npm` repo-wide, by
+  design. It is one command for the owner in an unguarded shell:
+  `npm install <engine tarball>` in an empty directory, then check `node_modules/react-native-reanimated`
+  exists. That is the same check XR-1a's (b) half still owes. SESSION_LOG #303 canonical.
 
 - **XR-4 + XR-9 — ECS boundary tests, retire the reset hook, and the third leak mechanism**
   (2026-08-31, session #297). Arc XR; test files only across 8 packages, **no changeset**. Root

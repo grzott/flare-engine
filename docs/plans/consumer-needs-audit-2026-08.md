@@ -63,6 +63,18 @@ asked. GameView returns true, the joystick receives a termination request it doe
 
 ## Adopted for 0.3.1
 
+**All seven SHIPPED in `0.3.1`, 2026-08-27** (sessions #286/#287/#288; release `516d313`). Queue
+rows closed and moved to `todo.md` `## Done` on 2026-09-01. One implementation note worth keeping,
+because the landed shape differs from how the row was worded and looks like an oversight when it is
+not: **CW7-5 keeps `_preloadResolved` *and* adds `_preloadGen`.** An earlier `todo.md` phrasing said
+*replace* the boolean with the token; that wording was wrong and the code is right. The two members
+do different jobs — `_preloadGen` (`scene-manager.ts:28`, guards at `:89`/`:94`) discards stale
+`onPreload` handlers from a superseded `go()`, while `_preloadResolved` (`:27`) is what
+`_updateTransition` reads at `:268` to hold the out-phase until preload lands. A token alone cannot
+answer "should I hold this frame". Do not "simplify" one of them away. (`_finishOutPhase` is
+double-call safe independently: it early-returns unless the transition is `done` + phase `out`, and
+nulls `_pendingScene` on first entry.)
+
 | row | ask | packages | effort |
 | --- | --- | --- | --- |
 | CW7-1 | PT-9.1 multi-touch via the engine's own responder (Option C) | react, input | M |

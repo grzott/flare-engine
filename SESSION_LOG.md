@@ -11428,8 +11428,9 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Goal:** bookkeeping: close Arc CW7 + CE-W6, refresh version/publish state
 
 **Touched files**
-- `docs/plans/roadmap.md`
+- `docs/plans/consumer-needs-audit-2026-08.md`
 - `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
 
 **Gates**
 - lint: green
@@ -11437,7 +11438,7 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 - test: green
 - build: green
 
-**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:5 (all pre-existing: sessions #285-#294 left no Done entries; CW7-1..7 + CE-W6 sat in Active after shipping; CW7-8 and the dynamics barrel fix ran with no queue row; four gates already met were still written as pending; roadmap stated 0.2.1/40-packages/^0.1.0)
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:6 (5 pre-existing bookkeeping gaps, listed in the prior run; +1 new: the 8701b58 dynamics barrel fix was treated as a one-off, but the declared-but-unexported class is live in debug/deep-links/input/share and no export gate catches it -> filed CW7-Q9)
 
 **Next:** see `docs/plans/todo.md`.
 

@@ -656,11 +656,17 @@ module flag to a per-instance `useRef`.
 
 ### Method notes for whoever runs a scaffold check again
 
-- **The tarball fixture cannot work off the public registry.** The local engine depends on
-  `@flare-engine/dynamics`, which has never been published — `bun install` 404s on it, and *hangs
-  indefinitely at "Resolving dependencies"* when the same manifest carries an `overrides` block
-  rather than reporting the failure. Published `engine@0.2.1` has 15 deps and no dynamics, so
-  nothing is wrong on the registry; the local set is simply ahead of it. Use a local registry.
+- **The tarball fixture cannot work off the public registry.** ~~The local engine depends on
+  `@flare-engine/dynamics`, which has never been published~~ — **SUPERSEDED 2026-08-25:**
+  `dynamics` shipped in the `0.3.0` cut and is on the registry at `0.3.1`, restricted. The
+  *symptom* below is still worth knowing and still reachable any time the local set runs ahead of
+  the registry (which it does again the moment a new package lands): `bun install` 404s on a
+  missing `@flare-engine/*` dep, and *hangs indefinitely at "Resolving dependencies"* rather than
+  reporting the failure when the same manifest carries an `overrides` block. The stated cause is
+  what expired, not the failure mode. Note the surrounding claim "published `engine@0.2.1` has 15
+  deps and no dynamics" is also frozen at `0.2.1`; the current line is `0.3.1`. Use a local
+  registry, or an authenticated install — the scope is published but restricted, so an
+  unauthenticated `bun install` still 404s.
 - **verdaccio must be bound to `0.0.0.0`.** Started with `--listen 4874` it binds IPv6 `::1` only;
   bun then hangs on `localhost` and gets `ConnectionRefused` on `127.0.0.1`. `--listen 0.0.0.0:4874`
   plus an app-level `.npmrc` scoping only `@flare-engine` to it installs 530 packages in 35 s.

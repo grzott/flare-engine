@@ -124,6 +124,30 @@ anything here** — both docs say so explicitly and both ship today. All are `pa
   but that is the documented peer-dependency contract and PT's success criterion is already reachable
   at HEAD with zero source change. What is missing is a documented recipe. Write it in the `ui` README
   + `docs/recipes/`, using the mocking pattern `packages/ui/tests/` already uses.
+- **CW7-Q9 — barrel completeness: exported functions whose parameter types a consumer cannot name**
+  (found 2026-09-01 while reconciling the 0.3.1 changeset count; P2, pre-freeze-preferred, 1 session).
+  Generalises the ad-hoc `dynamics` fix `8701b58`, which exported `BodyOptions` / `WorldOptions` /
+  `isStatic` for exactly this reason and was treated as a one-off. **It is not a one-off.** Scanning
+  every `packages/*/dist/index.d.mts` for types that are *declared but absent from the export list*
+  finds the same defect in five more packages, each one the **parameter type of an exported
+  function**, i.e. the consumer must construct a value they have no way to type:
+  `debug` — `createFrameBudget(opts: FrameBudgetOpts)` and `createPerfRecorder(opts?: PerfRecorderOpts)`
+  (plain options bags, the closest siblings of the `dynamics` case);
+  `deep-links` — `createWebSource(win: WebWindowLike)`;
+  `input` — `createWebGamepadSource(nav?: NavigatorLike)`, plus `WebGamepad`;
+  `share` — `createWebShareTransport(nav: WebNavigatorLike, fileCtor?: FileCtorLike)`, two in one
+  signature. **Two sub-questions, decide them rather than sweeping them in:** (a) `assets`'
+  `SkColorLike` and `react`'s `SkSurfaceLike` sit *nested inside* another interface's members
+  (`setColor(color: SkColorLike)`, `Make(...): SkSurfaceLike | null`) — holes only if that outer
+  Skia-module shape is itself public; (b) `shapes` emits **`type Skia$1 = typeof Skia`** — a
+  bundler-generated collision name that leaks into the published `.d.ts` and that no consumer could
+  write even if it were exported, so that one is a rename, not an export. `errors`'
+  `ErrorBoundaryState` is **correctly** internal (nobody names a component's state type) — do not
+  "fix" it. **The durable half is the gate, not the exports:** `check:exports`, `attw`, `publint`
+  and `check:nodenext` are all green on every one of these, because they check that what *is*
+  exported resolves, never that what is *reachable* is exported. Add the declared-vs-exported diff
+  over `dist/index.d.mts` to `scripts/`, or this recurs on the next package. Level: patch while
+  0.3.x is the line. Widening an export list is source-compatible — no consumer breaks.
 
 ### Arc WEB — run a Flare game in a browser (engine half COMPLETE 2026-08-24)
 
@@ -461,7 +485,9 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   already emitted into `dist/index.d.mts` but absent from the export list, so a consumer could not
   `import type { BodyOptions }` and had no supported staticness check, `static` being a `createBody`
   input rather than a `Body` field). That one carried **no queue row** — it was an ad-hoc consumer
-  fix, recorded here so the changeset count reconciles. **The re-captures are the interesting part.**
+  fix, recorded here so the changeset count reconciles. **It was also treated as a one-off, and it
+  is not one:** the same declared-but-unexported defect is live in `debug`, `deep-links`, `input`
+  and `share`, each on the parameter type of an exported function. Filed 2026-09-01 as **CW7-Q9**. **The re-captures are the interesting part.**
   `c3e8244` (#289) re-took the node lane after the CW7 fixes; `6549fa2` (#292) re-took it after the
   spatial hash; `f80b592` (#293) re-took **all three web lanes with zero gate overrides**, ~35
   minutes of quiet-machine time. #293 reversed a call worth keeping: skipping the web lanes on

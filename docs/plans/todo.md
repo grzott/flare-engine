@@ -25,7 +25,17 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
 - **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~3 sessions:
   XR-1a source+tests+desktop-negative; XR-1b vehicle build — `create-flare-app` scaffold → Gradle →
   device install; XR-1c device validation — logcat render-count, `retentionDepth: 2` soak, and the
-  native `nonTextureImage: false` sampling assumption). Scope: `packages/react/src/game-view.tsx`,
+  native `nonTextureImage: false` sampling assumption).
+  **XR-1a LANDED 2026-08-31, session #294, commit `c5b8c01`** — `"react-native-reanimated":
+  ">=3.19.1"` is declared as a **required** peer (`package.json:57`, not in
+  `peerDependenciesMeta`), `scene-texture.ts` lost 60 net lines to the shared-value path, and
+  `game-view.tsx` dropped the `isWeb` capture branch. `.changeset/xr1-reanimated-peer.md` (patch) is
+  the **only pending changeset in the repo**. **The row stays open and stays a launch-blocker:
+  neither required verification half has evidence yet.** (a) is XR-1c. (b) — the **npm**-installed
+  scaffold without reanimated reproducing `OptionalDependencyNotInstalledError` on pre-XR-1a code —
+  is the half that proves the defect existed, and nothing in `packages/react/tests/**` can stand in
+  for it: both suites `mock.module('react-native-reanimated', …)`, i.e. they assume it resolves.
+  **Next pick is XR-1b.** Scope: `packages/react/src/game-view.tsx`,
   `packages/react/src/scene-texture.ts`, `packages/react/package.json`, `packages/react/README.md`,
   `packages/engine/README.md`, `packages/react/tests/game-view.test.ts`. **Closes E-R1 + NEW-1 + NEW-2
   in one row.** `<GameView>` reaches `react-native-reanimated` transitively through rn-skia's
@@ -115,57 +125,23 @@ anything here** — both docs say so explicitly and both ship today. All are `pa
   at HEAD with zero source change. What is missing is a documented recipe. Write it in the `ui` README
   + `docs/recipes/`, using the mocking pattern `packages/ui/tests/` already uses.
 
-### Arc CW7 — consumer needs from PT + portfolio (ACTIVE 2026-08-25, ships as 0.3.1)
-
-Goal: absorb what the two consumer-needs docs actually justify, after a 38-agent audit that killed two
-asks and corrected a third. **Full findings + the version-line reasoning in the SoT:
-[consumer-needs-audit-2026-08.md](consumer-needs-audit-2026-08.md)** — read the row's section before
-planning. All rows are `packages/**` -> **engine-builder**, each with a **patch** changeset (0.3.1, not
-0.4.0: both consumers pin `^0.3.0`, so a minor bump reaches neither). Pick top -> `/start`.
-
-- **CW7-1 — PT-9.1 multi-touch blocker: route through the engine's own responder.** Owner-playtest
-  blocker. `VirtualButton` + `VirtualJoystick` cannot be used together: RN negotiates from
-  LCA = GameView's container and traverses upward only, so the button is never asked; GameView wins,
-  the joystick is terminated and zeroes its vector. **The doc's own Option A fixes only half and
-  Option B reverses OSS-C1/OSS-B32** — adopt Option C: stop hard-coding pointer id 0 at
-  `packages/react/src/game-view.tsx:246-263`, read `Number(e.nativeEvent.identifier)`. Widest blast
-  radius in the set; GameView pointer routing is the thinnest-covered area. Spec: SoT "Corrected".
-- **CW7-2 — PT-9.2 `Label` truncation.** Owner-playtest blocker. Add `numberOfLines`,
-  `ellipsizeMode`, `adjustsFontSizeToFit`, `minimumFontScale` to `LabelProps`
-  (`packages/ui/src/label.tsx:8-14`) and forward to the `Text` at :46. Type `ellipsizeMode` by indexing
-  RN's `TextProps` so it cannot drift from the peer floor.
-- **CW7-3 — PT-2.1 / E11 caller-supplied `Query` on cull systems.** Optional trailing `query?: Query`
-  on `createLifetimeSystem` and `createBoundsCullSystem` in `packages/ecs/src/systems.ts`, defaulting
-  to today's internal query. Guard at construction, never in the loop — the hot path must not change.
-- **CW7-4 — PT-2.2 / E9 align the two `.d.ts`.** Widen `uniforms` to `Float32Array | number[]` at
-  exactly two lines: `packages/postfx/src/runtime.ts:38` and
-  `packages/render/src/frame-renderer.ts:195`. Deletes an `as unknown as` bridge from a consumer that
-  bans `any`. Highest value-per-line in the arc.
-- **CW7-5 — PT-2.3 / E10 activation stall.** In `packages/scene/src/scene-manager.ts`: extract the
-  activation body at :239-263, replace the shared `_preloadResolved` boolean with a generation token,
-  bail stale handlers.
-- **CW7-6 — PT-3.2 collider readback.** `getColliderBoundsInto(entity, out)` + allocating
-  `getColliderBounds(entity)` on `CollisionWorld`, mirroring `Camera2D.getBounds`/`getBoundsInto`.
-  Makes every PT collider assertion direct instead of a proxy.
-- **CW7-7 — PT-10.2 `StyleProp<ViewStyle>`.** Widen `style` across the 8 prop declarations in
-  `packages/ui/src` (+ `TextStyle` on Label). Zero component-body changes. Widening is
-  source-compatible for callers; only type-readers observe it.
-
 ### Arc WEB — run a Flare game in a browser (engine half COMPLETE 2026-08-24)
 
 Goal: back the `roadmap.md:11` positioning claim at the app level — PT and all three scaffolder
 templates run in a browser from the same source that builds the native app. **Full design in the
 SoT: [web-target-2026-08.md](web-target-2026-08.md)**; findings in §12/§14/§15/§16/§17.
 
-**Every in-repo row is done (WEB-1..WEB-7, see `## Done`), and the 0.3.0 publish gate is met** —
-§8 gates the cut on WEB-1 + WEB-5, both green: a real `create-flare-app` scaffold renders in Chrome
-from a registry install. What remains is not in this repo and not before the cut:
+**Every in-repo row is done (WEB-1..WEB-7, see `## Done`), the §8 publish gate was met (WEB-1 +
+WEB-5 both green — a real `create-flare-app` scaffold renders in Chrome from a registry install),
+and the cut it gated has since shipped: `0.3.0` 2026-08-25, `0.3.1` 2026-08-27.** Both remaining
+items were written as waiting on that publish and are therefore **unblocked as of 2026-08-25** —
+neither is in this repo:
 
-- **§5 — PT's browser pass** runs in the PT repo's own harness, against `^0.3.0` from the registry
-  *after* the publish. Expect it to render unfiltered: postfx is gated off on web (§14), and the
-  `roadmap.md:11` claim stays unbacked for postfx-using games until RN-Skia fixes the upstream
-  `<ImageShader>` per-paint leak.
-- **§6 — hosting + the web perf bar** is post-publish (WEB-H1..H4).
+- **§5 — PT's browser pass** runs in the PT repo's own harness, against `^0.3.1` from the registry.
+  Expect it to render unfiltered: postfx is gated off on web (§14), and the `roadmap.md:11` claim
+  stays unbacked for postfx-using games until RN-Skia fixes the upstream `<ImageShader>` per-paint
+  leak.
+- **§6 — hosting + the web perf bar** (WEB-H1..H4) — post-publish, so now runnable.
 
 ### Arc CE — consumer-enablement release (ACTIVE; engine half COMPLETE 2026-08-16)
 
@@ -173,21 +149,18 @@ Goal: the first public release must ship packages that have real external consum
 plan it would have shipped with none. **Full design in the SoT:
 [consumer-enablement-2026-08.md](consumer-enablement-2026-08.md)**, owner-approved 2026-08-14 as
 **pre-freeze** (this overrides the post-flip framing in dynamics-lift §"Decisions taken" 2 and
-simulation-adoption §"Decisions taken" 3). W1-W5 landed 2026-08-15/16 — see `## Done`.
+simulation-adoption §"Decisions taken" 3). **W1-W6 have all landed** — W1-W5 2026-08-15/16, CE-W6
+(the 0.3.0 cut + restricted publish) 2026-08-25; see `## Done`. Only the two cross-repo rows remain.
 
-**Version decision (owner, 2026-08-18): release N = `0.3.0`; the October launch cut becomes
-`0.4.0`.** The freeze/flip docs hardcode 0.3.0 as *the launch version* in 38 places
-(`road-to-oss-2026-09.md` 24, `manual-test-protocol.md` 11, `flip-runbook.md` 3), plus the page's
-public copy. Swept as CE-W6 prep. npm versions are immutable, so this is settled before the publish.
+**Version decision (owner, 2026-08-18), now executed: release N = `0.3.0`; the October launch cut
+becomes `0.4.0`.** The 38-reference sweep across `road-to-oss-2026-09.md` (24),
+`manual-test-protocol.md` (11) and `flip-runbook.md` (3), plus the page's public copy, ran as CE-W6
+prep. `0.3.0` is on the registry as restricted and npm versions are immutable, so this is settled —
+the freeze row **OSS-H1 cuts `0.4.0`**, and `0.3.1` (2026-08-27) is the current line.
 
-- **CE-W6 — cut release N (owner-paired) [MT].** 47 pending changesets (all minor/patch, no major —
-  a major would force 1.0.0) fold into one lockstep minor. `bun run version` runs
-  `concretize-workspace-deps` (`workspace:*` → `^version`, the stale-`bun.lock` publish landmine);
-  then check:publish-safety / exports / nodenext / perf / perf-bytes / perf-freshness plus the full
-  gate; owner runs the restricted publish. Spec: §10 W6. **Now also carries the Arc WEB engine
-  rows and gates on WEB-1 + WEB-5** — [web-target-2026-08.md](web-target-2026-08.md) §8.
-- **CE-W8 — consumer docs/fact sync, both sibling repos (cross-repo, owner-scheduled).** Runs
-  **after** the 0.3.0 publish. Page: `dynamics` needs a `docs-sync/layer-map.json` entry before
+- **CE-W8 — consumer docs/fact sync, both sibling repos (cross-repo, owner-scheduled).** Gated on
+  the 0.3.0 publish, which landed 2026-08-25 — **unblocked**; note the current line is `0.3.1`, so
+  sync to that, not to 0.3.0. Page: `dynamics` needs a `docs-sync/layer-map.json` entry before
   `sync:docs` or it ships "Unclassified"; 17 export surfaces changed since the committed catalog.
   Portfolio: six stale `NUMBERS.md` rows, and it stops being a non-consumer the moment DYN-2 lands.
   Session plan: [consumer-docs-sync-2026-08.md](consumer-docs-sync-2026-08.md).
@@ -204,11 +177,15 @@ SoT: [dynamics-lift-2026-08.md](dynamics-lift-2026-08.md)**; task breakdown in
 [dynamics-lift-2026-08-tasks.md](dynamics-lift-2026-08-tasks.md). Rows are `packages/**` →
 engine-builder. Owner resequenced this pre-freeze 2026-08-14 (dynamics-lift-2026-08.md §7 decision
 2; consumer-enablement-2026-08.md "Decisions taken" 1) — it no longer sits behind Arc OSS or Arc
-PERF in `/start` order, which is why it leads this list. DYN-2 waits on the consumer-enablement
-release reaching the restricted registry, not on the public flip.
+PERF in `/start` order. **DYN-1 landed 2026-08-16 (see `## Done`) and DYN-2's gate — the
+consumer-enablement release reaching the restricted registry, never the public flip — was met
+2026-08-25.** Both remaining rows are therefore unblocked; Arc XR leads `/start` order pre-freeze.
 
 - **DYN-2 — consumer swap (cross-repo, `grzott-portfolio`).** Delete the local module, repoint the
-  one import, verify settle parity. Runs in the portfolio's own harness. Spec: §7.
+  one import, verify settle parity. Runs in the portfolio's own harness. **Unblocked** —
+  `@flare-engine/dynamics@0.3.1` is on the registry as restricted, so the swap can install rather
+  than vendor; the portfolio's committed `npm pack` tarballs in `vendor/flare-engine/` are the
+  thing this row retires (`edb8517` correction). Spec: §7.
 - **DYN-3 — sleeping / resting-velocity damping (v2, deliberate).** Resting bodies settle in
   *position* but keep a small bounded velocity oscillation (~2.6 units/s in the package's test
   scenario) at the penetration-slop equilibrium — inherent to a Baumgarte-biased sequential-impulse
@@ -263,7 +240,9 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
 Goal: public flip in October 2026 — npm public + repo public + docs live. **Full row specs, dates, freeze protocol, and the owner ledger live in the SoT: [road-to-oss-2026-09.md](road-to-oss-2026-09.md)** — rows here are lean pointers (one-source-per-fact); the builder reads the row's spec section (§) before planning. Rows scoped to `packages/**` (+ api-specs) route **engine-builder**; rows tagged **[MT]** touch root docs/`scripts/`/`.changeset/`/`.github/`/`.claude/`/`docs/plans/` and run **main-thread** (engine-builder's scope guard forbids those paths — same per-row gate + commit block). Full gate green per row **plus** root tsc + biome on changed tests/scripts (execution contract: road-to-oss §2). Every bug site below was re-verified at HEAD with file:line on 2026-07-03. Milestones: **FREEZE + 0.4.0 restricted publish Mon Oct 5 → owner manual-test window Oct 5–18 → flip week Oct 19–23 (target Tue Oct 20).** Sequencing below is the execution order; pick top → `/start`.
 
 _2026-07-05 deep audit folded in (ledger: [_local/deep-audit-2026-07-05.md](_local/deep-audit-2026-07-05.md); row specs: road-to-oss §17). Every plan version-floor validated CORRECT vs current official docs (Skia 2.x→RN≥0.79/react≥19; Expo 57/RN 0.86/React 19.2; gesture-handler-drop safe). New pre-freeze rows: correctness **B25–B31**, packaging/CI/toolchain **C2–C4**. Design-quality cleanup → post-flip **Arc HYG** (below the P2 line). Env fixes already landed this session: turbo `globalDependencies`, check-deps LAYER_MAP fill + unmapped-scoped hard-error, biome `noDefaultExport`._ 
-Capacity: ~49–55 sessions (~46 launch rows + B25–C4; B8/B14/M1 are two-session; B13/C1/M2/M5/D5/F2 run 1–2) against 13 wk × ~5 = ~65 available — lands by Oct 5 with slack, not without.
+Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25–C4; B8/B14/M1 are two-session; B13/C1/M2/M5/D5/F2 run 1–2) against 13 wk × ~5 = ~65 available — lands by Oct 5 with slack, not without.
+
+**Recomputed 2026-09-01 (session #297 is the last landed).** The B/C/D/M launch rows all shipped in `0.3.0`; what is left above the freeze line is **XR-1b, XR-1c, XR-2, XR-6, OSS-F4, OSS-H1** ≈ 6–7 sessions, against ~4.8 wk × ~5 ≈ **24 available**. The calendar is no longer the binding constraint — **XR-1c is**, because it needs a physical Pixel 7 and neither of XR-1's two required verification halves has evidence yet. Everything else still listed (XR-7, XR-8, the P2 cut-line, CW7-Q, PERF-4b/7/9/14b/17/18, CE-W7/W8, DYN-2/3, Arc HYG) is explicitly post-flip-acceptable or non-blocking; with this much slack the P2 cut-line rows are now affordable rather than conditional.
 
 - **OSS-F4 — history/exposure re-scan at freeze (P0, run Oct 2–5) [MT].** Full-history secret re-scan; `_local/` untracked; `.claude/` publish set ratified; author-email stance recorded. Spec: §9 F4.
 - **OSS-H1 — FREEZE: one lockstep minor changeset + 0.4.0 restricted publish (P0, Oct 5, owner-paired) [MT].** After this: fix-only until the flip. Spec: §11 H1.
@@ -293,7 +272,7 @@ Design-quality cleanup from the 2026-07-05 audit ([ledger](_local/deep-audit-202
 - **HYG7 — storage + debug + devtools + progression: dead writes + idiom.** Drop `__flare_doc_version`/`__flare_version` dead writes + dedupe `DocumentStore.load` first-run branch; shared `nowMs` + `StatsTracker`→factory; wire-or-drop `devtools.enabledOnNative` + shared TimeControl/TimeScrubber core; `resolveTier` via `resolveTierIndex`.
 - **HYG8 — react + cli + iap + render-web: shared factories.** One subsystem-wiring factory behind `GameView`+`createGame`; share `parseTemplateArg/parsePmArg` + single template-id source; `getGrantsForProduct` via `getCatalogEntry` + single `ProductType`; `createWebSurface` returns a `{flush,dispose}` handle (or fold into C1's `createWebFrameRenderer`).
 
-Owner-gated (never picked by `/start`; public schedule road-to-oss §14, specifics in the private ledger): rotate the npm publish credential (owner action; timing + specifics in the private ledger) — or pull Trusted Publishing OIDC forward; 0.3.0 restricted publish Oct 5; the two-week manual window; flip-day actions; portfolio copy alignment. Cross-repo lanes (flare-engine-page G1–G3, PT1–PT3, Berek BK1) run in their own repos with their own gates — road-to-oss §10.
+Owner-gated (never picked by `/start`; public schedule road-to-oss §14, specifics in the private ledger): rotate the npm publish credential (owner action; timing + specifics in the private ledger) — or pull Trusted Publishing OIDC forward; **0.4.0** restricted publish Oct 5 (0.3.0 was release N, published restricted 2026-08-25; 0.3.1 followed 2026-08-27 — the Oct 5 freeze cut is 0.4.0, per the CE version decision); the two-week manual window; flip-day actions; portfolio copy alignment. Cross-repo lanes (flare-engine-page G1–G3, PT1–PT3, Berek BK1) run in their own repos with their own gates — road-to-oss §10.
 
 ## Closed arcs (2026-06 → 2026-07; canonical history in SESSION_LOG.md — the harness-modernization notes in the docs+harness section below remain opportunistic, not closed)
 
@@ -474,6 +453,90 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   component rather than corrupting silently, and PT's 16 as a scale reference (23 of 32). Every
   number re-measured at HEAD, not copied from the review. Gate green (lint / typecheck / test / build
   43 FULL TURBO / deps / changeset / perf 11 counters / perf-freshness). SESSION_LOG #295 canonical.
+
+- **0.3.1 release cut + the three bench re-captures that gated it** (2026-08-27/28, sessions #289,
+  #292, #293; release commit `516d313`). **Nine** changesets folded into one lockstep patch across
+  42 packages (94 files, +470/-238): the seven CW7 rows below, plus `8701b58`
+  (`dynamics` — export `BodyOptions`, `WorldOptions` and `isStatic` from the barrel; all three were
+  already emitted into `dist/index.d.mts` but absent from the export list, so a consumer could not
+  `import type { BodyOptions }` and had no supported staticness check, `static` being a `createBody`
+  input rather than a `Body` field). That one carried **no queue row** — it was an ad-hoc consumer
+  fix, recorded here so the changeset count reconciles. **The re-captures are the interesting part.**
+  `c3e8244` (#289) re-took the node lane after the CW7 fixes; `6549fa2` (#292) re-took it after the
+  spatial hash; `f80b592` (#293) re-took **all three web lanes with zero gate overrides**, ~35
+  minutes of quiet-machine time. #293 reversed a call worth keeping: skipping the web lanes on
+  byte-identical-`dist` proof was defensible on the merits (the only offending commit `1645606`
+  changes two lines, both inside `export interface` declarations, and `render`'s `dist/index.mjs`
+  rebuilds byte-identical, sha `1284f26f01c5404b`) — but `bun run release` chains
+  `check:perf-freshness`, so taking that route would have meant overriding a safety gate on a
+  **one-way immutable publish**. Precedent for OSS-H1: do not argue a freshness gate down on the
+  release path, just re-capture. Sessions #286-#292 each carried a `gate:1` perf-freshness override
+  to reach a clean tree; #293 is the one that cleared them all. SESSION_LOG #289/#292/#293 canonical.
+
+- **CW7-8 — uniform spatial hash for `SpatialIndex`, public surface frozen** (2026-08-27,
+  session #290, commit `b617e49`). **Executed without ever being filed as a queue row** — it is not
+  in any arc list; logged here so the 0.3.1 contents reconcile. Replaced the brute-force broadphase
+  with a uniform spatial hash (`packages/physics/src/spatial-index.ts`: `_cells = Map<number,
+  _Entry<T>[]>` keyed by a packed cell key, `_key(cx, cy)`). **4.82 ms → 0.18 ms at 1000 sparse
+  bodies** — the largest single measured win in the arc, and the reason #292's re-capture was owed
+  immediately. Two guards make it safe rather than merely fast: the **exported surface is
+  byte-identical to the pre-swap HEAD**, and the 6 characterization tests were independently
+  re-verified to pass **on the brute-force code** (15/15) before the swap, so they test behaviour
+  rather than the new implementation. Still open against this file: **PERF-9** (B27) targets
+  `SpatialIndex.update`'s per-entity closure and O(n) find, which this row did not touch.
+  SESSION_LOG #290 canonical.
+
+- **CW7-1 … CW7-7 — consumer needs from PT + portfolio, shipped as 0.3.1** (2026-08-27, sessions
+  #286/#287/#288). Arc CW7, closed. All seven `packages/**` rows from the 38-agent audit
+  ([consumer-needs-audit-2026-08.md](consumer-needs-audit-2026-08.md)), each a patch changeset —
+  correctly patch, not minor: both consumers pin `^0.3.0`, so a minor would have reached neither.
+  Verified at HEAD, file:line:
+  **CW7-3/4/5/6** in `1645606` — `ecs/src/systems.ts:55,96` optional trailing `query?: Query`
+  resolved at construction with the per-frame closure untouched; `postfx/src/runtime.ts:38` +
+  `render/src/frame-renderer.ts:195` widened to `Float32Array | number[]`, deleting an
+  `as unknown as` bridge from a consumer that bans `any`; `scene/src/scene-manager.ts` gained
+  `_preloadGen` (`:28`) with stale-handler bails at `:89`/`:94` — note the row said *replace* the
+  `_preloadResolved` boolean and the landed shape **keeps both** (`:27` survives as the stall check,
+  the token guards staleness), which is the better factoring but is not what the row specified;
+  `physics/src/collision-world.ts:198` `getColliderBoundsInto(entity, out)` + `:206` allocating
+  `getColliderBounds`, mirroring `Camera2D.getBounds`/`getBoundsInto`.
+  **CW7-2/7** in `e7947fe` — `ui/src/label.tsx:14-17` adds `numberOfLines` / `ellipsizeMode` /
+  `adjustsFontSizeToFit` / `minimumFontScale`, `ellipsizeMode` typed by indexing RN's `TextProps` so
+  it cannot drift from the peer floor; `StyleProp<…>` widened across all 8 `packages/ui/src/*.tsx`
+  prop declarations with zero component-body changes.
+  **CW7-1** in `9a58db7` — the owner-playtest multi-touch blocker, Option C as specified: pointer id
+  0 is no longer hard-coded, `game-view.tsx:234-251` reads `Number(identifier)` and iterates
+  `changedTouches`, so `VirtualButton` and `VirtualJoystick` coexist. New
+  `packages/react/tests/virtual-controls-multitouch.test.ts`. **Two frictions worth carrying
+  forward.** (1) #288: the builder reported the fail-old check as *logical inference* because the
+  repo guard blocks `git stash`; it was re-verified properly by reverting `src` to HEAD, which
+  produced **13 real failures** — a guard that blocks the standard fail-old move will keep producing
+  inferred evidence unless the builder is told the revert path up front. (2) #286: two parallel rows
+  touched `packages/ecs/tests/systems.test.ts` and CW7-6's agent had to clean up a lint error CW7-3's
+  agent left. The 8 non-blocking follow-ups this audit surfaced are live above as **Arc CW7-Q**,
+  seeded in `e4c9e5a` (#291) together with PT's broadphase correction.
+  SESSION_LOG #286/#287/#288 canonical.
+
+- **CE-W6 — cut release N: `0.3.0` lockstep across 42 packages, published restricted** (2026-08-25,
+  session #285, commit `905d4d4`). Arc CE `[MT]`, owner-paired. **51** changesets — every OSS-B/C/D/M
+  row, PERF-3, PERF-10, DYN-1 and the Arc WEB engine rows — folded into one lockstep **minor** (137
+  files, +1650/-737). No major anywhere, which is the whole point: a single major would force 1.0.0
+  across all 42 ([[oss_changeset_bump_lockstep]]). `bun run version` ran `concretize-workspace-deps`
+  (`workspace:*` → `^version`) so the publish could not ship the stale-`bun.lock` broken-deps
+  landmine ([[engine_publish_concretize]]); check:publish-safety / exports / nodenext / perf /
+  perf-bytes / perf-freshness all green ahead of it (#284). The §8 gate held — WEB-1 + WEB-5 were
+  both green, i.e. a real `create-flare-app` scaffold rendered in Chrome from a registry install
+  before the cut. **The discovery that matters: `changeset version` had never actually run in this
+  repo.** Every prior release — 0.1.0, 0.2.0, 0.2.1 — was a hand bump with a hand-written changelog,
+  which is why no npm token had ever been needed for the versioning half. Switching to the built-in
+  generator was owner-approved mid-session; the only friction was biome reformatting the 42
+  `package.json` files changeset had rewritten in its own style. **Publish status, verified
+  independently 2026-08-26** (`edb8517`, correcting a wrong claim in
+  [portfolio-collapse-needs-2026-08.md](portfolio-collapse-needs-2026-08.md) that the scope was
+  unpublished): authenticated `npm view` returns **0.3.0** for `dynamics`, `errors`, `storage`,
+  `share`, `math`, `a11y`, `events`, `core` and `render-web`; unauthenticated returns **404** for all
+  nine. The accurate statement is **"published but not public"**, not "unpublished" — which is what
+  unblocks **DYN-2** and the registry half of the portfolio migration. SESSION_LOG #285 canonical.
 
 - **PERF-20 — host-load + baseline-drift guards for the web lanes** (2026-08-25). Follow-on to
   PERF-19, forced by a real incident: after the F1-F4 guards landed, the host-side lanes read

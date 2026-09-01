@@ -11422,3 +11422,23 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Frictions:** builder exceeded stated scope into packages/react, ui, ui-shop, iap-revenuecat, benchmarks
 
 **Next:** see `docs/plans/todo.md`.
+
+## Session 298 — 2026-09-01 (scope: engine)
+
+**Goal:** bookkeeping: close Arc CW7 + CE-W6, refresh version/publish state
+
+**Touched files**
+- `docs/plans/roadmap.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:5 (all pre-existing: sessions #285-#294 left no Done entries; CW7-1..7 + CE-W6 sat in Active after shipping; CW7-8 and the dynamics barrel fix ran with no queue row; four gates already met were still written as pending; roadmap stated 0.2.1/40-packages/^0.1.0)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -6,13 +6,13 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ---
 
-## State (2026-07-03)
+## State (2026-07-03; version + publish facts refreshed 2026-09-01)
 
 **Positioning (2026-07-03):** public framing = "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; not "the first RN game engine", not a Unity/Godot/Unreal competitor. Games (Pan Tvardowski, Berek, a planned platformer) are showcases/dogfooding.
 **License (2026-07-03 owner decision):** engine relicenses MIT → Apache-2.0 before the flip (patent grant + §6 name reservation); games licensed separately (PT = PolyForm Noncommercial). Owning row: **OSS-E2** (road-to-oss §16) — full scope is 41 per-package LICENSE files + 41 manifests + NOTICE + TRADEMARK.md + prose, not just the root LICENSE. license-compat is clean (zero copyleft). Name collision is LIVE (flarerpg's `flare-engine` shipped v1.15 2026-05).
 
-**Engine:** Feature-complete. **0.2.1 lockstep cut: all 40 scoped `@flare-engine/*@0.2.1` on npm, private/restricted** (publish owner-gated; public flip at OSS launch). **42** package dirs in-repo (**41** scoped + `create-flare-app`) since `@flare-engine/dynamics` landed 2026-08-16 (DYN-1) — it has never been published and first ships in the 0.3.0 consumer-enablement cut. The earlier new-in-repo packages `@flare-engine/simulation` (XP6) + `@flare-engine/progression` (XP8), plus `haptics` / `render-web`, all ship at 0.2.1.
-**Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm at `^0.1.0`. Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
+**Engine:** Feature-complete. **Current line `0.3.1` (2026-08-27, `516d313`)** — lockstep across all **42** package dirs (**41** scoped + `create-flare-app`, which is `private: true` and versioned but never published). `0.3.0` was release N, the consumer-enablement cut (2026-08-25, `905d4d4`, 51 changesets); `0.3.1` followed with the CW7 consumer-needs fixes + the physics spatial hash. **All 41 scoped packages are on npm as `restricted`, not public** — verified 2026-08-26 by authenticated `npm view` against unauthenticated 404s. `@flare-engine/dynamics` (DYN-1, 2026-08-16) first shipped in `0.3.0`, as planned; `simulation` (XP6), `progression` (XP8), `haptics` and `render-web` have shipped since `0.2.1`. **The Oct 5 freeze cut is `0.4.0`** (owner version decision 2026-08-18), and the public flip is what makes any of it public.
+**Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm; pins `^0.3.0` as of the 2026-08-25 consumer-needs audit (which is why the CW7 fixes shipped as patch `0.3.1`, not a minor). Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
 **Active focus:** **Road to OSS — the October 2026 public flip.** Single roadmap + full row specs: [road-to-oss-2026-09.md](road-to-oss-2026-09.md). Queue: `todo.md` Arc OSS. Freeze Oct 5 → two-week owner manual-test window Oct 5–18 → flip week Oct 19–23.
 
 ---
@@ -54,7 +54,7 @@ OSS launch: **October 2026 public flip** (freeze Oct 5, manual window Oct 5–18
 
 ## Pan Tvardowski (the game — own repo since 2026-06-10)
 
-Canonical end-to-end reference + integration smoke test, now at [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) consuming `@flare-engine/*@^0.1.0` from npm. Folklore-themed vertical shmup. Free zones 1–3, paid zones 4–8. License: PolyForm Noncommercial 1.0.0. Day-to-day PT work happens in that repo (own `.claude/` harness); this section keeps only the engine-facing summary.
+Canonical end-to-end reference + integration smoke test, now at [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) consuming `@flare-engine/*@^0.3.0` from npm (restricted). Folklore-themed vertical shmup. Free zones 1–3, paid zones 4–8. License: PolyForm Noncommercial 1.0.0. Day-to-day PT work happens in that repo (own `.claude/` harness); this section keeps only the engine-facing summary.
 
 | Element | Count | Notes |
 |---|---|---|
@@ -117,7 +117,7 @@ What PT produced that was promoted back to engine packages. Genre-agnostic only.
 Pick any — or none. None is the default.
 
 1. **Ship PT** — walk the PT repo's `docs/release-checklist.md`. ~$124 + weekend of submission work.
-2. **Second game** — top-down or deck-builder, separate private repo. Tests engine reusability. Consumes `@flare-engine/*@^0.1.0` from the restricted npm registry (Berek is already scaffolded this way).
+2. **Second game** — top-down or deck-builder, separate private repo. Tests engine reusability. Consumes `@flare-engine/*@^0.3.0` from the restricted npm registry (Berek is already scaffolded this way).
 3. **Engine feature** — e.g. 2.5D lighting via SkSL RuntimeEffect (notes in `docs/design/lighting-2-5d.md`), or snapshot-source postfx for scene-texture effects.
 4. **Pre-launch polish** — superseded by [road-to-oss-2026-09.md](road-to-oss-2026-09.md) (the active track).
 

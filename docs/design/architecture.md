@@ -184,7 +184,14 @@ Two modes:
 | Scene-scoped ECS Worlds                                   | Clean memory on scene switch, no entity leaks    |
 | Coroutines via generators                                 | Eliminates callback hell for game sequences      |
 | `__DEV__` guards for debug code                           | Tree-shaken in production                        |
-| Peer deps for Skia, gesture-handler, audio-api            | User controls versions; engine stays thin        |
+| Peer deps for Skia, Reanimated, audio-api                 | User controls versions; engine stays thin        |
+| Simulation on the JS thread; one UI-thread worklet        | See [ADR-0001](adr-0001-renderer-and-threading.md) |
+
+**Architecture Decision Records** live in `docs/design/adr-NNNN-*.md`:
+
+| ADR | Decision | Status |
+| --- | --- | --- |
+| [0001](adr-0001-renderer-and-threading.md) | Renderer and threading model — JS-thread simulation on `requestAnimationFrame`, a single Reanimated worklet for the scene-texture handoff, no Reanimated animation API | Accepted 2026-09-01 |
 
 ---
 

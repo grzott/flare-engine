@@ -22,6 +22,23 @@ Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root doc
 CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
 **never major**.
 
+- **XR-12 — `@flare-engine/engine` re-exports `GameView` but never declares the reanimated peer**
+  (found 2026-09-01 while fact-checking ADR-0001; **P0 launch-blocker, pre-freeze**, engine-builder,
+  ~1 session incl. a patch changeset). **This is XR-1a's exact defect one layer up, and XR-1a did not
+  close it.** `packages/engine/src/index.ts:115` re-exports from `@flare-engine/react` — `GameView`
+  included — while `packages/engine/package.json`'s `peerDependencies` lists `react`,
+  `react-native`, `@shopify/react-native-skia`, `react-native-safe-area-context` and
+  `react-native-audio-api`, and **omits `react-native-reanimated`**. Since XR-1c the barrel's
+  `GameView` hard-requires it (`useSharedValue` + a `runOnUI` worklet), so an **npm/pnpm/yarn**
+  consumer of the *main package* — the one the README tells strangers to install — resolves without
+  it and dies on first render. Bun masks it exactly as it masked E-R1/NEW-1. That engine already
+  declares `react-native-safe-area-context`, which `game-view.tsx` value-imports the same way,
+  shows the omission is an oversight rather than a decision. Fix: add
+  `"react-native-reanimated": ">=3.19.1"` to engine's peers, matching `react`'s floor, and **sweep
+  every other package that re-exports a `react` symbol** for the same gap rather than patching this
+  one instance. **Verify the way XR-1a's (b) half never was:** an npm-installed scaffold of
+  `@flare-engine/engine` without reanimated must fail before and resolve after. Spec: ADR-0001 §2,
+  external-review §11.3 NEW-1.
 - **XR-1c — long soak + `opaque` check on the native texture path** (P2, pre-freeze, ~1 session).
   The XR-1c fix is **done and device-verified** (§11.4c) — this is the residue it left. The benign
   RN-Skia `updateAndRelease` / `LegacySurfaceTexture` pair is pre-existing (2 840 per 30 s on the

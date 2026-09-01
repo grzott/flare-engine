@@ -11506,3 +11506,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 302 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-2: renderer + threading ADR
+
+**Touched files**
+- `docs/design/adr-0001-renderer-and-threading.md`
+- `docs/design/architecture.md`
+- `docs/plans/todo.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:1 (the external review's own ADR skeleton was stale — it specified 'no Reanimated peer, zero worklets', both false since XR-1a/XR-1c; ADR records measured HEAD instead). Fact-checking the ADR surfaced a P0: @flare-engine/engine re-exports GameView without declaring the reanimated peer — filed XR-12, not fixed here (docs-only row)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -11464,3 +11464,25 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 300 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-1c: build the native scene capture on the UI thread
+
+**Touched files**
+- `.changeset/xr1c-native-capture-ui-thread.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/src/scene-texture.ts`
+- `packages/react/tests/game-view.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0 — device validation still owed (Pixel 7 disconnected mid-row); unit tests verified fail-old by reverting src to HEAD
+
+**Next:** see `docs/plans/todo.md`.
+
+---

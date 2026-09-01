@@ -6,18 +6,58 @@ import { Position, World } from '@flare-engine/ecs';
 import { InputManager } from '@flare-engine/input';
 import { Camera2D, createRenderSystem, Renderer, Sprite, SpriteBatch } from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
-import type { CanvasRef, SkImage } from '@shopify/react-native-skia';
+import type { CanvasRef, SkImage, SkPicture, SkSurface } from '@shopify/react-native-skia';
 import { Canvas, Image, RuntimeShader, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
+import { runOnUI, type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
 import { createSceneCapture, type SceneCapture } from './scene-texture.js';
 import { createSkiaFrameRenderer, type PostFxPassDescriptor } from './skia-bridge.js';
+
+/**
+ * Capture the frame's picture into an offscreen surface **on the UI thread**.
+ *
+ * The thread is the entire point, and getting it wrong is invisible to every
+ * test in this repo. RN-Skia's own `usePictureAsTexture` does exactly this work
+ * inside `runOnUI` (`external/reanimated/textures.ts`), and it must: a surface
+ * built on the JS thread belongs to a different GL context than the on-screen
+ * `<Canvas>`, so the `<Image>` samples nothing and the app renders a black
+ * frame while the game loop runs happily. Building the surface here — same
+ * thread, same context as the canvas that samples it — is what makes the
+ * snapshot drawable without a `makeNonTextureImage()` GPU→CPU readback.
+ *
+ * Verified on device (Pixel 7 / Android 17): JS-thread capture → black canvas;
+ * this path → renders. See external-review-2026-08.md §11.4b.
+ *
+ * The surface is cached across frames in a shared value rather than rebuilt per
+ * frame (RN-Skia rebuilds it every call; that is NEW-2). `surfaceKey` packs the
+ * pixel size so a viewport change reallocates exactly once.
+ */
+const captureSceneOnUI = (
+  target: SharedValue<SkImage | null>,
+  surfaceSV: SharedValue<SkSurface | null>,
+  surfaceKey: SharedValue<number>,
+  picture: SkPicture,
+  w: number,
+  h: number,
+): void => {
+  'worklet';
+  const key = w * 65536 + h;
+  if (surfaceSV.value === null || surfaceKey.value !== key) {
+    surfaceSV.value = Skia.Surface.MakeOffscreen(w, h);
+    surfaceKey.value = key;
+  }
+  const surface = surfaceSV.value;
+  if (surface === null) return;
+  surface.getCanvas().drawPicture(picture);
+  surface.flush();
+  target.value = surface.makeImageSnapshot();
+};
 
 /** Render hook invoked during the frame — receives the game context and
  *  the active Skia canvas for direct draw calls. Hooks run between
@@ -117,6 +157,11 @@ export function GameView({
   // sampling requires it (web: nonTextureImage true, native: false).
   const sceneImage = useSharedValue<SkImage | null>(null);
   const captureRef = useRef<SceneCapture<SkImage> | null>(null);
+  // Native only: the offscreen surface lives on the UI thread, so it is held in
+  // shared values rather than a ref — a ref would put it back on the JS thread
+  // and reintroduce the black-frame regression captureSceneOnUI exists to fix.
+  const uiSurface = useSharedValue<SkSurface | null>(null);
+  const uiSurfaceKey = useSharedValue(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   const ctx = useMemo<GameContextValue>(() => {
@@ -183,14 +228,30 @@ export function GameView({
       ctx.renderer.end();
       const pic = bridge.endFrame();
       if (pic !== null) {
-        if (captureRef.current === null) {
-          captureRef.current = createSceneCapture(Skia, {
-            nonTextureImage: isWeb,
-            retentionDepth: isWeb ? 3 : 2,
-          });
+        if (isWeb) {
+          // Web has one thread, so the JS-thread capture is same-context by
+          // construction; this is the path WEB-1..WEB-7 verified in Chrome,
+          // including the surface cache that keeps Chrome from evicting the
+          // on-screen canvas (web-target-2026-08.md §12). Left untouched.
+          if (captureRef.current === null) {
+            captureRef.current = createSceneCapture(Skia, {
+              nonTextureImage: true,
+              retentionDepth: 3,
+            });
+          }
+          const img = captureRef.current.capture(pic, w * pd, h * pd);
+          if (img !== null) sceneImage.value = img;
+        } else {
+          // Native must build the surface on the UI thread — see captureSceneOnUI.
+          runOnUI(captureSceneOnUI)(
+            sceneImage,
+            uiSurface,
+            uiSurfaceKey,
+            pic as SkPicture,
+            w * pd,
+            h * pd,
+          );
         }
-        const img = captureRef.current.capture(pic, w * pd, h * pd);
-        if (img !== null) sceneImage.value = img;
       }
       if (!isWeb) {
         const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];

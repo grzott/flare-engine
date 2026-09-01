@@ -125,6 +125,12 @@ let _beginRecordingBounds: Array<{ width: number; height: number }> = [];
 let _beginFramePdArgs: number[] = [];
 const _beginFrameTimeArgs: number[] = [];
 
+// XR-1c: which thread the native scene capture runs on. Set by the reanimated mock.
+let _runOnUICount = 0;
+let _runOnUIDispatchCount = 0;
+let _runOnUILastFn: unknown = null;
+let _runOnUILastArgs: unknown[] = [];
+
 mock.module('react-native-reanimated', () => ({
   useSharedValue: (init: unknown) => {
     let _val = init;
@@ -137,6 +143,17 @@ mock.module('react-native-reanimated', () => ({
         _sharedValueSetCount++;
         _sharedValueLastSet = v;
       },
+    };
+  },
+  // runOnUI returns the dispatcher; the real one hops to the UI thread, so the
+  // worklet body is deliberately NOT run here — the assertion is about which
+  // thread the capture is scheduled on, not what it draws.
+  runOnUI: (fn: unknown) => {
+    _runOnUICount++;
+    _runOnUILastFn = fn;
+    return (...args: unknown[]) => {
+      _runOnUIDispatchCount++;
+      _runOnUILastArgs = args;
     };
   },
 }));
@@ -526,6 +543,10 @@ beforeEach(() => {
   _makeOffscreenCalls = [];
   _drawPictureCount = 0;
   _surfaceDisposeCount = 0;
+  _runOnUICount = 0;
+  _runOnUIDispatchCount = 0;
+  _runOnUILastFn = null;
+  _runOnUILastArgs = [];
 });
 
 afterEach(() => {
@@ -690,8 +711,25 @@ describe('GameView — PostFxRenderHook', () => {
 });
 
 describe('GameView — high-DPI scene texture', () => {
-  it('capture uses physical pixels — PixelRatio=2, layout=400×600 → MakeOffscreen at 800×1200', () => {
+  it('native: capture is dispatched at physical pixels — PixelRatio=2, 400×600 → 800×1200', () => {
+    // Since XR-1c the native surface is built inside the UI-thread worklet, so
+    // the physical-pixel size is asserted on the dispatch arguments rather than
+    // on MakeOffscreen (which no longer runs on this thread).
     _mockPlatformOS = 'ios';
+    _mockPixelRatio = 2;
+    _viewportOverride = { w: 400, h: 600 };
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    tick();
+    expect(_runOnUILastArgs[4]).toBe(800);
+    expect(_runOnUILastArgs[5]).toBe(1200);
+    unmountAll();
+  });
+
+  it('web: capture uses physical pixels — PixelRatio=2, layout=400×600 → MakeOffscreen at 800×1200', () => {
+    _mockPlatformOS = 'web';
     _mockPixelRatio = 2;
     _viewportOverride = { w: 400, h: 600 };
     mount();
@@ -1082,11 +1120,13 @@ describe('GameView — web scene capture (WEB-6)', () => {
     unmountAll();
   });
 
-  it('native: shared value assigned per frame, one surface reused (fail-old)', () => {
-    // Old code: native used setPicture + usePictureAsTexture (no MakeOffscreen
-    // in the tracked path, no useSharedValue) → _sharedValueSetCount = 0 and
-    // _makeOffscreenCalls.length = 0. Both assertions fail on old code.
-    // New code: sceneImage.value = img per tick, one cached surface → 3 and 1.
+  it('native: capture driven from the frame callback, once per tick (fail-old)', () => {
+    // Old code (pre-XR-1a): native used setPicture + usePictureAsTexture, i.e. a
+    // React render per frame and no frame-callback capture → 0 dispatches.
+    // Since XR-1c the per-frame work is a UI-thread dispatch, so the assertion
+    // moved off MakeOffscreen (which now runs on the UI thread, not here) onto
+    // the dispatch count. The shared value is assigned inside the worklet, which
+    // the mock deliberately does not execute, so it is not counted here either.
     _mockPlatformOS = 'ios';
     mount();
     const camera = _cameraInstance!;
@@ -1095,8 +1135,8 @@ describe('GameView — web scene capture (WEB-6)', () => {
     tick();
     tick();
     tick();
-    expect(_sharedValueSetCount).toBe(3);
-    expect(_makeOffscreenCalls.length).toBe(1);
+    expect(_runOnUIDispatchCount).toBe(3);
+    expect(_makeOffscreenCalls.length).toBe(0);
     unmountAll();
   });
 
@@ -1374,10 +1414,15 @@ describe('GameView — multi-touch routing (CW7-1)', () => {
 // on old source, making assertions of N fail-old.
 // ---------------------------------------------------------------------------
 
-describe('GameView — XR-1: shared-value scene capture', () => {
-  it('native: zero React renders per frame — shared value set per tick (fail-old)', () => {
-    // Old code: setPicture called per frame; useSharedValue never called → 0.
-    // New code: sceneImage.value = img per tick → 3.
+describe('GameView — XR-1c: the scene capture runs on the right thread', () => {
+  // The regression these tests exist to prevent is invisible to assertions about
+  // *what* the capture draws: XR-1a captured correctly and still rendered a black
+  // frame on device, because it built the offscreen surface on the JS thread,
+  // whose GL context the on-screen <Canvas> cannot sample. So these assert
+  // *where* the work is scheduled. Device evidence: external-review §11.4b.
+
+  it('native: the capture is dispatched to the UI thread (fail-old)', () => {
+    // Old code (XR-1a): captured inline on the JS thread → runOnUI never called.
     _mockPlatformOS = 'ios';
     mount();
     const camera = _cameraInstance!;
@@ -1386,24 +1431,47 @@ describe('GameView — XR-1: shared-value scene capture', () => {
     tick();
     tick();
     tick();
-    expect(_sharedValueSetCount).toBe(3);
+    expect(_runOnUIDispatchCount).toBe(3);
     unmountAll();
   });
 
-  it('native: one offscreen surface allocated and reused across 60 frames (NEW-2, fail-old)', () => {
-    // Old code: usePictureAsTexture mock does not call MakeOffscreen → 0.
-    // New code: createSceneCapture caches one surface → 1 across 60 ticks.
+  it('native: no offscreen surface is built on the JS thread (fail-old)', () => {
+    // The precise defect. XR-1a called MakeOffscreen here → 1; that surface
+    // belongs to the JS thread's context and renders black.
     _mockPlatformOS = 'ios';
     mount();
     const camera = _cameraInstance!;
     camera.viewportWidth = 320;
     camera.viewportHeight = 240;
     for (let i = 0; i < 60; i++) tick();
-    expect(_makeOffscreenCalls.length).toBe(1);
+    expect(_makeOffscreenCalls.length).toBe(0);
     unmountAll();
   });
 
+  it('native: a function — not an inline closure — is handed to runOnUI', () => {
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+    tick();
+    tick();
+    expect(typeof _runOnUILastFn).toBe('function');
+    unmountAll();
+  });
+
+  // NOT asserted here, deliberately: that the shipped function still carries its
+  // `'worklet'` directive. Bun's test transpile strips the directive from source
+  // (observed 2026-09-01 — `String(fn)` shows a bare arrow), while tsup's output
+  // keeps it, so any source-level assertion tests the transpiler rather than the
+  // artifact and would fail while the artifact is correct. Reanimated only hops a
+  // function to the UI thread if its Babel plugin saw that directive; lose it in
+  // bundling and native silently returns to the black frame with every test here
+  // still green. Guard it on `dist/index.mjs`, not from this file.
+
   it('native: makeNonTextureImage not called — no GPU→CPU readback', () => {
+    // Forcing the readback also fixes the black frame, at a per-frame cost.
+    // This asserts we took the threading fix, not the readback workaround.
     _mockPlatformOS = 'ios';
     mount();
     const camera = _cameraInstance!;
@@ -1416,7 +1484,10 @@ describe('GameView — XR-1: shared-value scene capture', () => {
     unmountAll();
   });
 
-  it('web: makeNonTextureImage called each frame — cross-context isolation', () => {
+  it('web: still captures on the JS thread — one context, no dispatch', () => {
+    // Web has a single thread, so the JS-thread capture is same-context by
+    // construction. This is the path WEB-1..WEB-7 verified in Chrome; the
+    // native fix must not drag it onto a dispatch it does not need.
     _mockPlatformOS = 'web';
     mount();
     const camera = _cameraInstance!;
@@ -1425,12 +1496,14 @@ describe('GameView — XR-1: shared-value scene capture', () => {
     tick();
     tick();
     tick();
+    expect(_runOnUIDispatchCount).toBe(0);
+    expect(_makeOffscreenCalls.length).toBe(1);
     expect(_makeNonTextureImageCount).toBe(3);
     unmountAll();
   });
 
-  it('native: unmount releases the offscreen surface via captureRef dispose', () => {
-    _mockPlatformOS = 'ios';
+  it('web: unmount releases the offscreen surface via captureRef dispose', () => {
+    _mockPlatformOS = 'web';
     mount();
     const camera = _cameraInstance!;
     camera.viewportWidth = 320;

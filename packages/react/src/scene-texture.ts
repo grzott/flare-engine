@@ -112,14 +112,20 @@ export interface SceneCapture<TImage> {
  * Options for `createSceneCapture`.
  *
  * `nonTextureImage` defaults to `true` (web semantics: call
- * `makeNonTextureImage()` to copy the snapshot off the surface's GL context
- * so the on-screen canvas can sample it). Pass `false` on native to skip the
- * GPU→CPU readback — the snapshot is a true copy on native and the Reanimated
- * shared value keeps it alive across UI-thread commits.
+ * `makeNonTextureImage()` to copy the snapshot off the surface's GL context so
+ * the on-screen canvas can sample it).
  *
- * `retentionDepth` defaults to 3 (the web-measured minimum). Set to 2 on
- * native: Reanimated commits within one vsync, so one frame of extra headroom
- * is sufficient.
+ * **This factory is web-only since XR-1c.** An earlier revision said the
+ * snapshot "is a true copy on native", so `false` was safe there. That is
+ * wrong: the native snapshot is GPU-backed and belongs to whichever context
+ * created the surface. What actually makes it sampleable is building the
+ * surface on the **UI thread**, which is a `runOnUI` worklet in
+ * `game-view.tsx`, not a call into this module. Passing `false` here on native
+ * yields a black frame; passing `true` fixes it only by forcing a per-frame
+ * GPU→CPU readback. Verified on a Pixel 7 — external-review-2026-08.md §11.4b.
+ *
+ * `retentionDepth` defaults to 3 — the web-measured minimum, and the only
+ * platform this runs on.
  */
 export interface SceneCaptureOptions {
   nonTextureImage?: boolean;

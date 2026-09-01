@@ -1,0 +1,57 @@
+# Automated dependency updates.
+#
+# Scope note: the `bun` entry at `/` covers the whole workspace, because the
+# workspace globs (`packages/*`, `benchmarks`, `apps/*`) resolve to one root
+# `bun.lock`. Bun is supported by Dependabot only via the text-format
+# `bun.lock` (>= bun 1.1.39); this repo is on bun 1.3.11.
+#
+# `packages/create-flare-app/templates/*` is deliberately NOT covered. Those
+# manifests are scaffolding fixtures, not workspace members — they appear in no
+# lockfile — and their pins are load-bearing: OSS-B32 fixed the template `react`
+# pin specifically to satisfy RN 0.86's peer range. An automated bump there would
+# silently reopen that. Template pins are reviewed by hand when the RN/Expo floor
+# moves.
+#
+# Grouped and weekly on purpose: the README declares a best-effort, no-SLA
+# support posture (XR-5), and a daily flood of single-dependency PRs would
+# contradict it.
+version: 2
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      dev-minor-patch:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      prod-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      major-updates:
+        update-types:
+          - "major"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"

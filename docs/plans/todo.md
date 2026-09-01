@@ -100,12 +100,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   Reanimated *animation* API in engine source. Point 3 is where the argument is won and is currently
   invisible outside the repo — one code path for web and native, and a pure-TS loop testable under
   Bun with no RN runtime (2,887 engine tests, 2,522 PT). Spec: external §3, §11.5.
-- **XR-6 — root CHANGELOG + dependabot** (P2, 1 session, `[MT]`). Scope: `CHANGELOG.md` (new),
-  `.github/dependabot.yml` (new). 42/42 per-package CHANGELOGs exist but the repo root has no single
-  "what changed" view; Changesets can generate one, or a short pointer file suffices. A public
-  Apache-2.0 repo with no automated dependency updates is a visible maintenance signal — and it makes
-  XR-5's best-effort posture read as deliberate rather than absent. Cheap; cut first if the calendar
-  slips. Spec: external §5.
 - **XR-7 — ECS churn benchmark + `Query._remove` complexity** (P2, post-flip acceptable, 1-2 sessions).
   Scope: `benchmarks/src/scenarios/ecs.ts`, `benchmarks/src/ecs.bench.ts`, `packages/ecs/src/query.ts`.
   `ECS_SCENARIOS` defines exactly one shape — `ecs.step {n} entities (Pos+Vel)`, steady-state
@@ -445,6 +439,30 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-6 — root CHANGELOG + dependabot** (2026-09-01, session #305). Arc XR, `[MT]`, closes
+  external-review **E-R5**. New `CHANGELOG.md`, new `.github/dependabot.yml`, one README link.
+  **No changeset** — neither file is package `src`.
+  **The CHANGELOG is an index, not a copy.** Lockstep means one version names all 41 scoped
+  packages, so the root file carries the release table + a headline per cut and defers to each
+  `packages/<name>/CHANGELOG.md` for detail — the one-source-per-fact rule would be broken by
+  duplicating 42 generated files. Release history reconstructed from git rather than memory: 0.1.0
+  (36 packages), 0.2.0 / 0.2.1 (40), 0.3.0 / 0.3.1 (41), package counts taken from the tag set. It
+  states up front that every release so far was published **restricted**, so a visitor does not
+  read the table as "available on npm".
+  **Dependabot needed a fact-check before it could be written.** Bun is supported only via the
+  text-format `bun.lock` (GA Feb 2025, bun >= 1.1.39 — this repo is on 1.3.11) and the ecosystem key
+  is `"bun"`, not `"npm"`. Verified against GitHub's docs rather than assumed, because a config that
+  silently matches nothing is *worse* than no config: it advertises maintenance that is not
+  happening, which is the opposite of what E-R5 asks for. One `bun` entry at `/` covers the whole
+  workspace (`packages/*`, `benchmarks`, `apps/*` resolve to a single root lockfile) plus a
+  `github-actions` entry for the three pinned actions. Weekly and **grouped** into
+  dev/prod/major batches with low PR limits, deliberately: a daily flood of single-dependency PRs
+  would contradict the best-effort, no-SLA posture XR-5 just put in the README.
+  **`packages/create-flare-app/templates/*` is deliberately excluded**, with the reason written into
+  the config: those manifests are scaffolding fixtures in no lockfile, and their pins are
+  load-bearing — OSS-B32 fixed the template `react` pin specifically to satisfy RN 0.86's peer
+  range, and an automated bump would silently reopen it. SESSION_LOG #305 canonical.
 
 - **XR-10 — every scaffolded app failed its first Android build, and the README sent strangers to
   Expo Go** (2026-09-01, session #304). Arc XR, `[MT]`, all three templates, **no changeset** —

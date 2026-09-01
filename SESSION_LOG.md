@@ -11575,3 +11575,25 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 305 — 2026-09-01 (scope: engine)
+
+**Goal:** XR-6: root CHANGELOG + dependabot
+
+**Touched files**
+- `.github/dependabot.yml`
+- `CHANGELOG.md`
+- `docs/plans/todo.md`
+- `README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:0; fixup:0; drift:0 — dependabot bun support + ecosystem key verified against GitHub docs before writing, not assumed; templates deliberately excluded with the reason in-config
+
+**Next:** see `docs/plans/todo.md`.
+
+---

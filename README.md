@@ -150,6 +150,7 @@ Tooling rationale: see the Tooling section of [docs/design/architecture.md](docs
 
 ## Documentation
 
+- [CHANGELOG.md](CHANGELOG.md) — what changed, per lockstep release
 - [AGENTS.md](AGENTS.md) — conventions, commands, architecture summary
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute
 - [docs/README.md](docs/README.md) — full documentation index

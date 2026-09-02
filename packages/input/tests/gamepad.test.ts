@@ -108,3 +108,35 @@ describe('gamepad state', () => {
     expect(getAxis(state, 99)).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// OSS-B23b — the dead-zone rescale divides by (1 - deadZone). The documented
+// contract is [0, 1), but nothing enforced it, so deadZone === 1 produced
+// ±Infinity (or NaN) for any axis past the zone.
+// ---------------------------------------------------------------------------
+
+describe('gamepad dead zone — out-of-contract values (B23b)', () => {
+  test('an axis beyond the [-1, 1] range stays finite at deadZone 1', () => {
+    const state = createGamepadState(0);
+    updateGamepadFromSnapshot(state, snap({ axes: [1.5, 0, 0, 0] }), 1);
+    expect(Number.isFinite(getAxis(state, 0))).toBe(true);
+  });
+
+  test('a NaN deadZone does not leak NaN into the axis', () => {
+    const state = createGamepadState(0);
+    updateGamepadFromSnapshot(state, snap({ axes: [0.5, 0, 0, 0] }), Number.NaN);
+    expect(Number.isFinite(getAxis(state, 0))).toBe(true);
+  });
+
+  test('a non-finite axis reads as 0 rather than NaN', () => {
+    const state = createGamepadState(0);
+    updateGamepadFromSnapshot(state, snap({ axes: [Number.NaN, 0, 0, 0] }), 0.1);
+    expect(getAxis(state, 0)).toBe(0);
+  });
+
+  test('a valid dead zone is unchanged by the guard', () => {
+    const state = createGamepadState(0);
+    updateGamepadFromSnapshot(state, snap({ axes: [0.5, 0, 0, 0] }), 0);
+    expect(getAxis(state, 0)).toBeCloseTo(0.5, 5);
+  });
+});

@@ -320,13 +320,12 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-B23b — deep-links + input-package input-hardening spillover (P2).** Web-surface siblings of B23's classes, surfaced + adversarially verified by the 2026-07-08 B23 scope-check: deep-links URL query/param prototype read-leak (`parse.ts:76` + `router.ts:38` → `Object.create(null)`); input-package hang-guards (`virtual-joystick.ts:74,77` NaN/Infinity + raw `gamepad.ts:82` DBZ). `sources.ts:48` popstate re-entrancy folded into B25; `postfx-surface.ts:185` NaN-resize is C1's (refuted as live). Spec: §17 B23b.
 - **OSS-B18 — pathfinding: heap growth + beta label (P2).** Grow past 4096 (no silent OOB corruption); corner-cut divergence documented; "beta — no production consumer" label. Spec: §4 B18.
 - **OSS-M7 — errors: global capture (P2).** `installGlobalErrorCapture` (structural web/RN targets) + early-error ring + web client transport. Spec: §6 M7.
 - **OSS-M8 — particles v2 (P2, 2 sessions).** Emitter shapes union + zero-alloc SpriteBatch render adapter; README phantom API replaced. Spec: §6 M8.
 - **OSS-M9 — math: curves + RNG state (P2).** bezier/catmull `*Into` + segment intersection + `SeededRNG` get/setState. Spec: §6 M9.
 - **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
-- **OSS-M11 — physics: detection upgrades (P2, 1-2 sessions).** MTV/overlap-depth helper; `CollisionWorld.raycast` with mask (pooled hits); grid spatial-hash broadphase behind the `SpatialIndex` surface; boundary-semantics alignment. Spec: §6 M11.
+- **OSS-M11 — physics: detection upgrades (P2, 1-2 sessions).** MTV/overlap-depth helper; `CollisionWorld.raycast` with mask (pooled hits); ~~grid spatial-hash broadphase behind the `SpatialIndex` surface~~ — **already shipped as CW7-8 in 0.3.1** (`spatial-index.ts`, surface frozen, 4.82 ms → 0.18 ms at 1000 sparse); boundary-semantics alignment. Re-scope before planning: the broadphase third of this row is done, and **PERF-9** separately owns `SpatialIndex.update`'s per-entity closure and O(n) find, which CW7-8 did not touch. Spec: §6 M11.
 
 ### Arc HYG — post-flip engine hygiene (SOLID/DRY/KISS/YAGNI; NOT before the flip)
 
@@ -439,6 +438,35 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-B23b — deep-links + input hardening** (2026-09-02, session #306). Arc OSS P2 cut-line, the
+  first row taken from it; `packages/**`, one patch changeset covering `deep-links` + `input`.
+  **The row's own spec named four sites; there were five.** `router.ts` builds `tryMatch`'s `out`
+  as a third `Params` literal, and that one holds the **path** params (`:id` segments) — as
+  URL-controlled as the query string the spec did name. All three now `Object.create(null)`
+  (`parse.ts` query, `router.ts` combined, `router.ts` path), with `Object.assign` rather than a
+  spread for the combined object, since a spread would rebuild it with `Object.prototype` and quietly
+  undo the guard one line later.
+  **input — non-finite propagation, two live paths reachable from valid config.** `updateJoystick`
+  divided by zero at `1 / dist` whenever `deadZone: 0` (a legal value) met a touch on centre, and
+  again at `(clampedDist - deadZone) / (maxRadius - deadZone)` when the two were equal; a NaN
+  `deadZone` also defeated the early return. Each wrote NaN into `state.direction`, and **the state
+  object is reused across frames**, so the stick stayed dead. `applyDeadZone` divided by
+  `(1 - deadZone)` with no enforcement of its documented `[0, 1)` contract.
+  **Owner decision (2026-09-02): clamp + `__DEV__` warn, not throw and not silent.** Throwing was
+  rejected because both functions run in the per-frame input path, where a config typo would take
+  down the game loop rather than degrade one frame; silent clamping was rejected because a wrong
+  dead zone then presents as "the feel is off" with no signal. The warn is warn-once and sits
+  **inside the branch that only runs when a clamp actually fires**, so the healthy path adds no
+  `__DEV__` read — and it uses the `globalThis` property form, not the bare identifier, per PERF-10's
+  measurement (~0.46 ns vs ~270 ns on JSC).
+  **11 new tests, every one verified discriminating** by reverting src to HEAD: 8 input + 3
+  deep-links fail on the old code. Two more were written, found **non**-discriminating, and
+  corrected rather than kept — a `deadZone: 1` case that never reached the division because
+  `abs <= deadZone` short-circuits first, and a "state recovers next frame" assertion whose premise
+  was wrong (every field is overwritten, so it recovered on old code too; rewritten to assert the
+  bad frame itself). A green test that cannot fail is worse than no test.
+  SESSION_LOG #306 canonical.
 
 - **XR-6 — root CHANGELOG + dependabot** (2026-09-01, session #305). Arc XR, `[MT]`, closes
   external-review **E-R5**. New `CHANGELOG.md`, new `.github/dependabot.yml`, one README link.

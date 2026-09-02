@@ -6,6 +6,19 @@
  * snapshots into `updateGamepadFromSnapshot`.
  */
 
+/**
+ * Dev-flag access for the dead-zone guard, which runs per axis per frame. Read
+ * as a `globalThis` property rather than a bare `__DEV__` identifier for the
+ * reason measured in PERF-10 (~0.46 ns vs ~270 ns on JSC).
+ */
+const G = globalThis as { __DEV__?: boolean };
+
+/** Warn at most once per process; a bad dead zone repeats every frame. */
+let _warnedDeadZone = false;
+
+/** Largest dead zone that still leaves the rescale well-defined. */
+const MAX_DEAD_ZONE = 0.99;
+
 /** W3C Standard Gamepad button indices. */
 export const GamepadButton = {
   A: 0,
@@ -75,11 +88,27 @@ export function createGamepadState(index = 0, buttonCount = 17, axisCount = 4): 
 }
 
 function applyDeadZone(value: number, deadZone: number): number {
+  // The documented contract is [0, 1). At exactly 1 the rescale below divides by
+  // zero and returns ±Infinity for any out-of-range axis, which then propagates
+  // into every consumer reading the stick. Correct rather than propagate.
+  let dz = deadZone;
+  if (!(dz >= 0 && dz < 1)) {
+    if (G.__DEV__ && !_warnedDeadZone) {
+      _warnedDeadZone = true;
+      console.warn(
+        `[flare-engine/input] deadZone=${deadZone} is outside [0, 1); clamping. ` +
+          'Values at or above 1 would suppress the axis entirely.',
+      );
+    }
+    dz = dz >= 1 ? MAX_DEAD_ZONE : 0;
+  }
   const abs = Math.abs(value);
-  if (abs <= deadZone) return 0;
+  // `!(abs > dz)` rather than `abs <= dz` so a non-finite axis returns 0 instead
+  // of falling through to produce NaN.
+  if (!(abs > dz)) return 0;
   const sign = value < 0 ? -1 : 1;
   // Rescale [deadZone, 1] -> [0, 1] so inputs remain smooth past the dead zone.
-  return sign * ((abs - deadZone) / (1 - deadZone));
+  return sign * ((abs - dz) / (1 - dz));
 }
 
 /**

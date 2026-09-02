@@ -11597,3 +11597,31 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 306 — 2026-09-02 (scope: engine)
+
+**Goal:** OSS-B23b: deep-links + input hardening
+
+**Touched files**
+- `.changeset/oss-b23b-input-hardening.md`
+- `docs/plans/todo.md`
+- `packages/deep-links/src/parse.ts`
+- `packages/deep-links/src/router.ts`
+- `packages/deep-links/tests/parse.test.ts`
+- `packages/deep-links/tests/router.test.ts`
+- `packages/input/src/gamepad.ts`
+- `packages/input/src/virtual-joystick.ts`
+- `packages/input/tests/gamepad.test.ts`
+- `packages/input/tests/virtual-joystick.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:2 (two of my own new tests were non-discriminating on fail-old — a deadZone:1 case short-circuited before the division, and a 'recovers next frame' premise that was false; both corrected before commit); deny:0; gate:1 (perf-freshness overridden on proof, not argument: the freshness map names physics/render/ecs/particles/testing, and input enters only via testing's dependency edge — mock-input.ts imports InputManager but never touches updateJoystick or applyDeadZone, the benches import only createBenchSession, and no scenario references InputManager/Joystick/Gamepad/deadZone, so the changed code is unreachable from every measured scenario); fixup:0; drift:1 (the row's spec named 4 sites, there were 5 — router.ts tryMatch builds a third Params literal holding path params; also flagged OSS-M11's broadphase third as already shipped by CW7-8)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -88,3 +88,31 @@ describe('parseUrl', () => {
     expect(relative?.host).not.toBe('');
   });
 });
+
+// ---------------------------------------------------------------------------
+// OSS-B23b — query keys come from the URL, so a plain object literal answers
+// `params.constructor` / `params.toString` with an inherited value for a link
+// that never carried that key. A consumer doing `if (params.constructor)` on a
+// route with no such param got a truthy function.
+// ---------------------------------------------------------------------------
+
+describe('parseUrl — null-prototype query (B23b)', () => {
+  test('does not expose inherited Object.prototype keys', () => {
+    const parsed = parseUrl('app://open?id=7');
+    expect(parsed).not.toBeNull();
+    const q = parsed!.query as Record<string, unknown>;
+    expect(q.id).toBe('7');
+    // Old: these returned Object's constructor / toString.
+    expect(q.constructor).toBeUndefined();
+    expect(q.toString).toBeUndefined();
+    expect(q.hasOwnProperty).toBeUndefined();
+    expect(Object.getPrototypeOf(parsed!.query)).toBeNull();
+  });
+
+  test('a __proto__ query key does not reach the prototype', () => {
+    const parsed = parseUrl('app://open?__proto__=polluted&ok=1');
+    expect(parsed).not.toBeNull();
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(parsed!.query.ok).toBe('1');
+  });
+});

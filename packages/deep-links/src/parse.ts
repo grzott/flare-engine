@@ -73,7 +73,10 @@ export function parseUrl(url: string): ParsedUrl | null {
     .split('/')
     .filter((s) => s.length > 0)
     .map(safeDecode);
-  const query: Params = {};
+  // Null-prototype: query keys come straight from the URL, so an object literal
+  // would answer `params.constructor` / `params.toString` with an inherited
+  // value for a link that never carried that key.
+  const query = Object.create(null) as Params;
   if (queryStr.length > 0) {
     for (const pair of queryStr.split('&')) {
       if (pair.length === 0) continue;

@@ -66,3 +66,32 @@ describe('DeepLinkRouter', () => {
     expect(m?.params.id).toBe('4');
   });
 });
+
+// ---------------------------------------------------------------------------
+// OSS-B23b — the router builds two more URL-controlled Params objects: the
+// path params from `:segment` matches, and the combined query+path object it
+// hands back. Both were object literals.
+// ---------------------------------------------------------------------------
+
+describe('DeepLinkRouter — null-prototype params (B23b)', () => {
+  test('matched params expose no inherited keys', () => {
+    const router = new DeepLinkRouter().register('/user/:id', 'profile');
+    const match = router.match('/user/42?ref=mail');
+    expect(match).not.toBeNull();
+    const p = match!.params as Record<string, unknown>;
+    expect(p.id).toBe('42');
+    expect(p.ref).toBe('mail');
+    // Old: both returned Object.prototype members.
+    expect(p.constructor).toBeUndefined();
+    expect(p.toString).toBeUndefined();
+    expect(Object.getPrototypeOf(match!.params)).toBeNull();
+  });
+
+  test('a route with no params still yields a null-prototype object', () => {
+    const router = new DeepLinkRouter().register('/home', 'home');
+    const match = router.match('/home');
+    expect(match).not.toBeNull();
+    expect(Object.getPrototypeOf(match!.params)).toBeNull();
+    expect((match!.params as Record<string, unknown>).valueOf).toBeUndefined();
+  });
+});

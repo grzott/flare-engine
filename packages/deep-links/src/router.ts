@@ -35,7 +35,10 @@ export class DeepLinkRouter {
     for (const route of this.routes) {
       const params = tryMatch(route, parsed.segments);
       if (!params) continue;
-      const combined: Params = { ...parsed.query, ...params };
+      // Null-prototype, and Object.assign rather than a spread literal: a
+      // spread would rebuild the object with Object.prototype and undo
+      // parse.ts's guard.
+      const combined = Object.assign(Object.create(null), parsed.query, params) as Params;
       return { scene: route.scene, params: combined, url };
     }
     return null;
@@ -54,7 +57,8 @@ function compile(pattern: string): CompiledRoute['segments'] {
 }
 
 function tryMatch(route: CompiledRoute, segs: readonly string[]): Params | null {
-  const out: Params = {};
+  // Path params (`:id`) are as URL-controlled as the query string.
+  const out = Object.create(null) as Params;
   const segCount = route.segments.length;
   for (let i = 0; i < segCount; i++) {
     const def = route.segments[i];

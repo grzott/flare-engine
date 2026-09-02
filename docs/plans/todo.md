@@ -320,7 +320,6 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-B18 — pathfinding: heap growth + beta label (P2).** Grow past 4096 (no silent OOB corruption); corner-cut divergence documented; "beta — no production consumer" label. Spec: §4 B18.
 - **OSS-M7 — errors: global capture (P2).** `installGlobalErrorCapture` (structural web/RN targets) + early-error ring + web client transport. Spec: §6 M7.
 - **OSS-M8 — particles v2 (P2, 2 sessions).** Emitter shapes union + zero-alloc SpriteBatch render adapter; README phantom API replaced. Spec: §6 M8.
 - **OSS-M9 — math: curves + RNG state (P2).** bezier/catmull `*Into` + segment intersection + `SeededRNG` get/setState. Spec: §6 M9.
@@ -438,6 +437,36 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-B18 — pathfinding heap growth, corner-cut divergence, beta label** (2026-09-02,
+  session #307). Arc OSS P2 cut-line; `packages/pathfinding`, one patch changeset. All three
+  deliverables shipped, so the spec's cut rule (label only, heap to 0.4.x) was not needed.
+  **The bug is worse than "OOB corruption" makes it sound, and the difference matters.** Both
+  `findPath` and `findPathJPS` allocated the heap at `min(total, 4096)` and pushed without a
+  capacity check. A typed-array out-of-range write does not throw — the store is **silently
+  dropped** — so past the cap `size` kept incrementing, nothing was written, and later comparisons
+  read `undefined`. **No crash, no NaN, no error reached the caller.** The search merely lost its
+  ordering guarantee and returned a contiguous, valid-looking, **non-optimal** path. Anyone
+  eyeballing the output would have accepted it.
+  **Sized from measurement, not guesswork.** Peak heap was instrumented across fixtures, and the
+  returned cost diverges from optimal at *exactly* the sizes whose true peak crosses 4096 —
+  512: 2623 (same cost), **640: 4843 (20706 vs 21201)**, 768: 3132 (same), 896: 3866 (same),
+  1024: 4699 (61271 vs 61305). The non-monotonic peak is just how the weighted maze shapes the
+  frontier. Note the *corrupted* heap under-reports its own peak (it plateaus at ~4100), so the
+  measurement had to be taken on the fixed build — measuring on the broken one would have concluded
+  the cap was never exceeded. JPS needed n=2048 (peak 6258) and diverges 3055.99 vs 3064.19.
+  Fix: `heapGrow` doubles both backing arrays, amortized O(1), allocation only at growth, never per
+  push. Applied to `astar.ts` and `jps.ts` **separately** — they hold byte-identical heap code, and
+  unifying them is HYG6's post-flip scope, not this row's.
+  **The corner-cut divergence is pinned as a test, not left in prose.** Verified empirically rather
+  than taken from the spec: on a 3×3 with `(0,1)` and `(1,0)` blocked, `findPath` returns **null**
+  and `findPathJPS` returns the diagonal. Same grid, same call, opposite answers — so swapping one
+  for the other "for speed" silently changes movement rules. Documented in the package README and
+  api-specs, pinned in `tests/jps.test.ts`.
+  **Beta label** on the root README package row and the package README, stating plainly that unlike
+  every other package in the scope this one has no shipping-game consumer.
+  Fail-old verified: both cost tests fail on HEAD, the contiguity test passes on both — which is the
+  point, since validity never broke. SESSION_LOG #307 canonical.
 
 - **OSS-B23b — deep-links + input hardening** (2026-09-02, session #306). Arc OSS P2 cut-line, the
   first row taken from it; `packages/**`, one patch changeset covering `deep-links` + `input`.

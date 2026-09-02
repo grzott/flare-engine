@@ -116,3 +116,37 @@ describe('findPathJPS', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// OSS-B18 — A* and JPS disagree about corner cutting, and the divergence is
+// pinned here rather than left to prose: `findPath` refuses a diagonal whose
+// two shared cardinal neighbours are both blocked, `findPathJPS` allows it.
+// Swapping one for the other to gain speed silently changes movement rules.
+// This test documents current behaviour; it is NOT an endorsement of either
+// rule, and the JPS corner rules are deliberately not rewritten here.
+// ---------------------------------------------------------------------------
+
+describe('corner cutting — A* vs JPS divergence (B18)', () => {
+  // . X .      start (0,0), goal (1,1); both cardinal neighbours of the
+  // X . .      diagonal step are blocked, so the step squeezes a corner.
+  // . . .
+  const cornerGrid = () => {
+    const data = new Uint8Array(9).fill(1);
+    data[1 * 3 + 0] = 0; // (0,1)
+    data[0 * 3 + 1] = 0; // (1,0)
+    return { width: 3, height: 3, data };
+  };
+
+  test('A* refuses the corner cut and reports no path', () => {
+    expect(findPath(cornerGrid(), 0, 0, 1, 1)).toBeNull();
+  });
+
+  test('JPS permits the corner cut and returns the diagonal', () => {
+    const result = findPathJPS(cornerGrid(), 0, 0, 1, 1);
+    expect(result).not.toBeNull();
+    expect(result!.path).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+    ]);
+  });
+});

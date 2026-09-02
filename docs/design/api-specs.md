@@ -278,6 +278,9 @@ Grid pathfinding (A\*), Jump-Point Search optimization for uniform-cost grids, a
 
 - Pure-data API: grids and navmeshes are plain objects, no classes. Heuristics are exported as named functions for tree-shake.
 - `findPath`/`findPathJPS` return `PathResult.path` as an array of `{ x, y }` grid-coordinate points from start to end inclusive — not a flat packed array. `findNavMeshPath` returns `NavMeshPathResult.path` as an array of smoothed `Vec2` world-space waypoints, plus `corridor: number[]`, the polygon ids traversed.
+- **`findPath` and `findPathJPS` are not interchangeable — they disagree on corner cutting.** `findPath` refuses a diagonal step whose two shared cardinal neighbours are both blocked; `findPathJPS` permits it. On the 3×3 grid with `(0,1)` and `(1,0)` blocked, `findPath(grid, 0, 0, 1, 1)` returns `null` while `findPathJPS` returns `[{x:0,y:0},{x:1,y:1}]`. Swapping one for the other to gain speed changes movement semantics, and on maps with tight diagonal gaps it changes which routes exist. Pinned by tests in `packages/pathfinding/tests/jps.test.ts`.
+- The open-set heap grows on demand (doubling). It was previously fixed at `min(width*height, 4096)` with unchecked pushes; because a typed-array out-of-range write is silently dropped, exceeding the cap corrupted the open set and returned a **valid-looking but non-optimal** path — no error, no NaN. Fixed in OSS-B18, regression-covered by `tests/heap-growth.test.ts`.
+- **Status: beta — no production consumer yet.** Correct and tested, but unlike the rest of the scope it is not exercised by a shipping game.
 - Not used by Pan Tvardowski (shmup) — verified by integration tests in `packages/pathfinding/tests/`.
 
 ---

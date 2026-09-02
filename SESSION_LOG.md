@@ -11625,3 +11625,30 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 307 — 2026-09-02 (scope: engine)
+
+**Goal:** OSS-B18: pathfinding heap growth + corner-cut divergence + beta label
+
+**Touched files**
+- `.changeset/oss-b18-pathfinding-heap-growth.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/pathfinding/README.md`
+- `packages/pathfinding/src/astar.ts`
+- `packages/pathfinding/src/jps.ts`
+- `packages/pathfinding/tests/heap-growth.test.ts`
+- `packages/pathfinding/tests/jps.test.ts`
+- `README.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness overridden — the staleness is INHERITED, not caused here: the gate names commit 4ac7c58 from the previous row, whose override was evidenced. This row touches only packages/pathfinding, which is not a dependency of any measured package (ecs/physics/render/particles/testing) and is referenced nowhere in benchmarks/src, so it cannot move a published number. The node lane now carries two rows of override debt and should be re-captured before the 0.4.0 freeze); fixup:0; drift:0 — fixture sized by instrumenting true peak heap on the FIXED build (the corrupted heap under-reports its own peak); corner-cut divergence verified empirically before documenting
+
+**Next:** see `docs/plans/todo.md`.
+
+---

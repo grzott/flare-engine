@@ -79,7 +79,7 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 | `@flare-engine/particles`    | 3     | shipping                 | Pooled emitters, immediate-mode Skia rendering                                 |
 | `@flare-engine/tilemap`      | 3     | shipping                 | Tiled `.tmj` + LDtk parsers, culled renderer, collider extraction              |
 | `@flare-engine/debug`        | 3     | shipping                 | FPS widget, stats, time controls, overlay                                      |
-| `@flare-engine/pathfinding`  | 3     | shipping                 | A\* grid + JPS, flow fields                                                    |
+| `@flare-engine/pathfinding`  | 3     | beta — no production consumer | A\* grid + JPS, flow fields. A\* and JPS differ on corner cutting — see the package README |
 | `@flare-engine/dialogue`     | 3     | shipping                 | Branching dialogue graph, runtime evaluator                                    |
 | `@flare-engine/ui`           | 3.5   | shipping                 | Skia-free UI kit: Panel / Button / Label / List / Modal / HUDBar + focus nav   |
 | `@flare-engine/postfx`       | 3.5   | shipping                 | Skia RuntimeEffect stack: CRT, bloom, vignette, grayscale-flash                |

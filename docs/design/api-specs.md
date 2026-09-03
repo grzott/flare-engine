@@ -227,7 +227,16 @@ Animation APIs are functional (state object + free functions), not class-based �
 | `ParticleEmitter` | `new ParticleEmitter(config, opts?)` — `EmitterOptions`: `maxParticles?` (hard cap, overrides `config.maxParticles`; default 256), `seed?` (LCG seed; default 1). Config: rate, lifetime, speed, direction, spread, gravity, start/end color/size/alpha. `reseed(seed)` restarts the deterministic random sequence. `maxParticles` is the enforced pool cap — `burst()` and `update()` stop spawning at cap, zero allocation past cap. |
 | `ParticlePool`    | Pre-allocated. No GC during gameplay. `acquire()`, `tryAcquire(): Particle \| null` (returns null at cap), `update(dt, gx, gy)`, `getSize(p)`, `getAlpha(p)`, `getColor(p)` (shared buffer), `getColorInto(p, out)` (caller buffer). `created` getter = cumulative factory calls from the internal pool's `acquire()`/`tryAcquire()` only; `prewarm()` is excluded. Snapshot before and after a frame — a non-zero delta in steady state means unexpected allocation. |
 
+| `EmitterShape` | Tagged union for `config.shape` — `{ kind: 'point' }` (default) · `{ kind: 'circle', radius, radial? }` · `{ kind: 'ring', radius, thickness?, radial? }` · `{ kind: 'rect', width, height }` · `{ kind: 'cone', radius, angle, radial? }`. Samples spawn **position** only; `direction`/`spread` continue to govern velocity. `radial: true` hands velocity to the shape's outward normal instead (`rect` has none). |
+| `sampleEmitterShape(shape, rand, out, direction?)` | Writes a spawn offset + outward normal into a caller-owned `ShapeSample` (`createShapeSample()`); allocates nothing, safe per-particle. `rand` returns `[0, 1)`. `direction` orients `cone` and is ignored otherwise. `hasRadialNormal(shape)` reports whether the normal is usable. |
+
 Uses immediate mode (PictureRecorder) at the draw layer — this package owns particle data and lifecycle, not rendering. Target: 200-500 particles at 60fps.
+
+**Implementation notes:**
+
+- `circle` and `cone` are uniform **by area** (`sqrt`-weighted radius); without that particles bunch toward the centre. `ring` is uniform across its band instead, because area-weighting a thin band buys nothing.
+- Every shape draws a **fixed** number of values from `rand` (`point` 0, all others 2), and shape sampling runs before the velocity draws. That ordering is what makes a seeded emitter replay exactly — a draw count that varied with output would shift the velocity sequence. `point` drawing zero is also why an emitter with no `shape` reproduces the pre-shape sequence bit for bit.
+- Degenerate and negative extents are clamped to 0, so a mis-sized shape collapses to the origin rather than emitting `NaN` positions.
 
 ### `@flare-engine/tilemap` (< 8KB gzip)
 

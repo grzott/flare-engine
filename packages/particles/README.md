@@ -29,6 +29,44 @@ const emitter = new ParticleEmitter({
 emitter.update(1 / 60);
 ```
 
+## Emitter shapes
+
+By default every particle spawns at the emitter's `x`/`y`. A `shape` samples a spawn offset
+instead — `point` (the default), `circle`, `ring`, `rect`, or `cone`:
+
+```ts
+import { ParticleEmitter } from '@flare-engine/particles';
+
+// An explosion: spawn on a ring, travel outward from the centre.
+const blast = new ParticleEmitter({
+  rate: 0, lifetime: 0.6,
+  speed: 120, speedMax: 200,
+  direction: 0, spread: 0.15,
+  shape: { kind: 'ring', radius: 24, radial: true },
+});
+blast.x = 160;
+blast.y = 120;
+blast.burst(48);
+```
+
+**Shape controls position; `direction` and `spread` still control velocity.** They compose rather
+than compete. A shape with a meaningful outward normal — `circle`, `ring`, `cone` — can hand
+velocity over to it with `radial: true`, which is what separates a ring of drifting particles from
+an explosion. Without it, a ring spawns on the ring and everything still flies along `direction`.
+
+| Shape | Position | Notes |
+| --- | --- | --- |
+| `{ kind: 'point' }` | the emitter origin | Default. Draws no random values, so an emitter without a shape produces the identical sequence to one before shapes existed. |
+| `{ kind: 'circle', radius, radial? }` | uniform inside the disc | Uniform **by area** — the radial term is `sqrt`-weighted, so particles do not bunch at the centre. |
+| `{ kind: 'ring', radius, thickness?, radial? }` | on the ring, `thickness` wide | `thickness` defaults to 0 (a bare ring), spread uniformly across the band. |
+| `{ kind: 'rect', width, height }` | uniform in the rect | Centred on the emitter, not anchored at a corner. No outward normal, so `radial` does not apply. |
+| `{ kind: 'cone', radius, angle }` | uniform in a wedge of half-angle `angle` | Oriented along `direction`. A wedge of *spawn points* — distinct from `spread`, which fans velocity out of a single point. |
+
+`sampleEmitterShape(shape, rand, out, direction?)` is exported if you want to place something other
+than particles. It writes into a caller-owned `ShapeSample` (`createShapeSample()`) and allocates
+nothing, so it is safe per-particle in a steady-state loop. Every shape draws a fixed number of
+values from `rand`, which is what keeps a seeded emitter replaying exactly.
+
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineparticles--4kb-gzip).
 
 ## License

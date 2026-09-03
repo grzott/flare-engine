@@ -320,7 +320,17 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-M8 — particles v2 (P2, 2 sessions).** Emitter shapes union + zero-alloc SpriteBatch render adapter; README phantom API replaced. Spec: §6 M8.
+- **OSS-M8b — particles: zero-alloc SpriteBatch render adapter (P2, remainder).** The second half of
+  M8; the shapes half landed 2026-09-03 (see `## Done`). Remaining: `drawParticles(pool, batch,
+  frame)` writing into a caller-owned batch via `drawRaw` (zero-alloc loop, the XP5 `drawInto`
+  idiom). **Type the batch and frame structurally — do NOT add `@flare-engine/render` to
+  `packages/particles`.** particles currently depends on `core` + `math` only; a render edge would be
+  tier-legal (3→2) but the repo's idiom for this is structural injection (`ErrorClientLike`,
+  `SceneSurfaceModuleLike`, `AudioContextLike`), and it keeps particles usable with no renderer.
+  `drawRaw`'s parameter list is at `packages/render/src/sprite-batch.ts:138-154`. **The README
+  phantom-API third of M8 needs no work: it was already fixed** in `fc0d9e0` — the README correctly
+  documents `speed`/`speedMax`, `Color` objects and config-owned gravity, so the spec's cut rule
+  protecting that fix is moot. Spec: §6 M8.
 - **OSS-M9 — math: curves + RNG state (P2).** bezier/catmull `*Into` + segment intersection + `SeededRNG` get/setState. Spec: §6 M9.
 - **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
 - **OSS-M11 — physics: detection upgrades (P2, 1-2 sessions).** MTV/overlap-depth helper; `CollisionWorld.raycast` with mask (pooled hits); ~~grid spatial-hash broadphase behind the `SpatialIndex` surface~~ — **already shipped as CW7-8 in 0.3.1** (`spatial-index.ts`, surface frozen, 4.82 ms → 0.18 ms at 1000 sparse); boundary-semantics alignment. Re-scope before planning: the broadphase third of this row is done, and **PERF-9** separately owns `SpatialIndex.update`'s per-entity closure and O(n) find, which CW7-8 did not touch. Spec: §6 M11.
@@ -436,6 +446,48 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-M8 (shapes half) — particle emitter shapes** (2026-09-03, session #309). Arc OSS P2
+  cut-line; `packages/particles`, one patch changeset. M8 is a 2-session row and this is session 1:
+  the render adapter is now **OSS-M8b** above.
+  **Two findings changed the row before any code was written.** (1) The third deliverable — "replace
+  the phantom documented API (speed ranges / packed colors / shared pool / texture field — none
+  exist)" — **was already done** in `fc0d9e0`; the README correctly documents `speed`/`speedMax`,
+  `Color` objects and config-owned gravity, and even carries a `Color.a is not read` correction. The
+  spec's cut rule protecting that fix is dead. (2) The adapter must not add `@flare-engine/render` to
+  particles: the edge would be tier-legal (3→2) but structural injection is the established idiom and
+  keeps the package renderer-free. Recorded on M8b.
+  **The design question the spec left open was `cone`, and it needed resolving rather than guessing.**
+  `EmitterConfig` already owns `direction` + `spread`, which *is* a velocity cone — so a `cone`
+  "shape" reads as a duplicate. Resolution: **a shape samples position only.** `cone` is a wedge of
+  *spawn points* (radius + half-angle, oriented along `direction`), which is genuinely distinct from
+  `spread` fanning velocity out of a single point. Shapes with a real outward normal — `circle`,
+  `ring`, `cone` — opt velocity into it with `radial: true`, exposed through `hasRadialNormal()` so a
+  caller need not destructure the union. That one flag is the difference between a ring of drifting
+  particles and an explosion. `rect` has no outward direction and does not offer it.
+  **Backward compatibility is asserted, not assumed.** `point` draws **zero** random values and shape
+  sampling runs *before* the velocity draws, so an emitter with no `shape` produces a bit-identical
+  sequence to one from before the change — covered by a test that compares no-shape against explicit
+  `point` at the same seed, and by the pre-existing 39 tests passing untouched. A companion test pins
+  the per-shape draw counts (0/2/2/2/2), because a count that varied with output would shift the
+  velocity sequence and silently break every seeded replay.
+  **Distributions are correct, not merely bounded.** `circle`/`cone` are uniform by *area*
+  (`sqrt`-weighted radius); the uniformity test was verified discriminating by deleting the `sqrt`,
+  which moves the inner-half fraction from ~0.25 to ~0.5 and fails. `ring` is uniform across its band
+  instead — area-weighting a thin band buys nothing. Degenerate and negative extents clamp to 0, so a
+  mis-sized shape collapses to the origin rather than emitting `NaN` positions.
+  Zero-alloc throughout: one `ShapeSample` and one bound `rand` per emitter, never per particle;
+  proven by a `pool.created` delta of 0 across 120 shaped frames. 18 new tests, 57 green in-package.
+  **The gate caught a barrel name collision the package-local typecheck could not.** The variants
+  were first named `CircleShape` / `RingShape` / `RectShape` / `ConeShape` / `PointShape`;
+  `packages/particles` typechecked clean, but `@flare-engine/engine` re-exports both particles and
+  physics, and physics already exports a `CircleShape` **value** (a collider constructor,
+  `physics/src/index.ts:8`) — TS2308 in the barrel. **Same class as OSS-B20's `ShopPanel`
+  collision, and the pre-1.0 window is the only time it is free to fix.** All five variants are now
+  `Emitter*`-prefixed, not just the one that collided: `RectShape` and `ConeShape` are equally
+  generic nouns and would have been the next collision, after the freeze. Worth remembering that a
+  green `tsc -p packages/<pkg>` proves nothing about the barrel — only the root typecheck sees this.
+  SESSION_LOG #309 canonical.
 
 - **OSS-M7 — errors: global capture** (2026-09-03, session #308). Arc OSS P2 cut-line; new
   `packages/errors/src/global-capture.ts` + README + api-specs + 18 tests. The first cut-line row

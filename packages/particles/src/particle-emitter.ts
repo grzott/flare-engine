@@ -1,4 +1,6 @@
 import type { Color } from '@flare-engine/math';
+import type { EmitterShape, ShapeSample } from './emitter-shape.js';
+import { createShapeSample, hasRadialNormal, sampleEmitterShape } from './emitter-shape.js';
 import type { Particle } from './particle-pool.js';
 import { ParticlePool } from './particle-pool.js';
 
@@ -36,6 +38,15 @@ export interface EmitterConfig {
   angularVelocityMax?: number;
   /** Maximum active particles (used as pool capacity default when no opts.maxParticles given). */
   maxParticles?: number;
+  /**
+   * Where particles spawn, relative to the emitter position. Defaults to
+   * `{ kind: 'point' }`, which is the pre-existing behaviour — every particle
+   * starts exactly at `x`/`y`.
+   *
+   * A shape samples position only; `direction` and `spread` still govern
+   * velocity, unless the shape sets `radial: true` (see `EmitterShape`).
+   */
+  shape?: EmitterShape;
 }
 
 /** Construction options for ParticleEmitter. */
@@ -72,6 +83,10 @@ export class ParticleEmitter {
 
   private _emitAccumulator = 0;
   private _seed = 0;
+  /** Reused spawn-offset buffer — one per emitter, never per particle. */
+  private readonly _sample: ShapeSample = createShapeSample();
+  /** Bound once at construction; binding per emit would allocate a closure. */
+  private readonly _rand = (): number => this._random();
 
   constructor(config: EmitterConfig, opts?: EmitterOptions) {
     this.config = config;
@@ -141,13 +156,30 @@ export class ParticleEmitter {
 
     const c = this.config;
 
-    p.x = this.x;
-    p.y = this.y;
-
-    const angle = c.direction + this._randomRange(-c.spread, c.spread);
-    const speed = c.speedMax ? this._randomRange(c.speed, c.speedMax) : c.speed;
-    p.vx = Math.cos(angle) * speed;
-    p.vy = Math.sin(angle) * speed;
+    // Shape sampling comes first so it consumes its random draws before the
+    // velocity draws below — that ordering is what makes a given seed replay
+    // identically, and it is why `point` deliberately draws nothing at all
+    // (an emitter with no shape produces the exact pre-shape sequence).
+    const shape = c.shape;
+    if (shape === undefined || shape.kind === 'point') {
+      p.x = this.x;
+      p.y = this.y;
+      const angle = c.direction + this._randomRange(-c.spread, c.spread);
+      const speed = c.speedMax ? this._randomRange(c.speed, c.speedMax) : c.speed;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+    } else {
+      const s = sampleEmitterShape(shape, this._rand, this._sample, c.direction);
+      p.x = this.x + s.x;
+      p.y = this.y + s.y;
+      // A radial shape emits along its own outward normal, fanned by `spread`;
+      // otherwise `direction` still rules, exactly as for a point emitter.
+      const base = hasRadialNormal(shape) ? Math.atan2(s.ny, s.nx) : c.direction;
+      const angle = base + this._randomRange(-c.spread, c.spread);
+      const speed = c.speedMax ? this._randomRange(c.speed, c.speedMax) : c.speed;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+    }
 
     const lifetime = c.lifetimeMax ? this._randomRange(c.lifetime, c.lifetimeMax) : c.lifetime;
     p.life = lifetime;

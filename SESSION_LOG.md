@@ -11677,3 +11677,29 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 309 — 2026-09-03 (scope: engine)
+
+**Goal:** OSS-M8 (shapes half): particle emitter shapes
+
+**Touched files**
+- `.changeset/oss-m8-particle-emitter-shapes.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/particles/README.md`
+- `packages/particles/src/emitter-shape.ts`
+- `packages/particles/src/index.ts`
+- `packages/particles/src/particle-emitter.ts`
+- `packages/particles/tests/emitter-shape.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (named the variants CircleShape/RingShape/etc — package typecheck was clean but the root gate caught TS2308: @flare-engine/engine re-exports both particles and physics, and physics already exports a CircleShape value. Renamed all five to Emitter*-prefixed, not just the colliding one); deny:0; gate:1 (typecheck failed first on that collision, fixed and re-run; perf-freshness override inherited from 4ac7c58 — the no-shape path is bit-identical and the 39 pre-existing tests pass untouched); fixup:2 (biome format + export sort after the rename); drift:1 (M8's README third was already done in fc0d9e0 — spec stale; adapter split out as M8b with a note not to add a render dep)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

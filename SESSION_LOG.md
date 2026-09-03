@@ -11729,3 +11729,32 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 311 — 2026-09-03 (scope: engine)
+
+**Goal:** OSS-M9: math curves, segment intersection, RNG state
+
+**Touched files**
+- `.changeset/oss-m9-math-curves-rng-state.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/math/README.md`
+- `packages/math/src/curves.ts`
+- `packages/math/src/index.ts`
+- `packages/math/src/intersection.ts`
+- `packages/math/src/random.ts`
+- `packages/math/tests/curves.test.ts`
+- `packages/math/tests/random.test.ts`
+- `packages/math/tests/segment-intersection.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness override inherited from 4ac7c58; math is in every measured closure but this row only ADDS functions — no existing math export changed, so no measured path moved. Node-lane re-capture still owed); fixup:2 (biome format + export sort; and random.test.ts uses it() not test(), so the appended block silently did not run until converted — 17 pass/1 error looked green); drift:0 — found and fixed a real degenerate-segment bug via my own test: a zero-length segment made both denom and the collinearity determinant zero, so it was judged collinear with everything and overlap-tested on one axis only
+
+**Next:** see `docs/plans/todo.md`.
+
+---

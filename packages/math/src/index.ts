@@ -1,6 +1,17 @@
 export { Circle } from './circle.js';
 export { Color, type Oklab, type Oklch } from './color.js';
 export {
+  bezier2,
+  bezier2Into,
+  bezier2Length,
+  bezier3,
+  bezier3Into,
+  bezier3Length,
+  catmullRom,
+  catmullRomInto,
+  catmullRomLength,
+} from './curves.js';
+export {
   type EasingFn,
   easeInBack,
   easeInBounce,
@@ -47,6 +58,9 @@ export {
   rayVsRect,
   rectVsCircle,
   rectVsRect,
+  segmentIntersection,
+  segmentIntersectionInto,
+  segmentsIntersect,
 } from './intersection.js';
 export { Mat3 } from './mat3.js';
 export {

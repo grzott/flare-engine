@@ -26,6 +26,27 @@ export class SeededRNG {
   int(min: number, max: number): number {
     return Math.floor(this.float(min, max + 1));
   }
+
+  /**
+   * The generator's entire internal state, as a single int32.
+   *
+   * Enough to resume the exact sequence later, which is what makes a save file
+   * or a replay reproducible: store this alongside the save, hand it back to
+   * `setState`, and the next `next()` returns what it would have returned.
+   */
+  getState(): number {
+    return this.state;
+  }
+
+  /**
+   * Restore a state previously read from `getState`.
+   *
+   * Coerced to int32 exactly as the constructor coerces a seed, so any number
+   * is accepted and a round-trip through JSON is safe.
+   */
+  setState(state: number): void {
+    this.state = state | 0;
+  }
 }
 
 /** Returns a random float in [min, max). */

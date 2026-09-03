@@ -336,7 +336,6 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-M9 — math: curves + RNG state (P2).** bezier/catmull `*Into` + segment intersection + `SeededRNG` get/setState. Spec: §6 M9.
 - **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
 - **OSS-M11 — physics: detection upgrades (P2, 1-2 sessions).** MTV/overlap-depth helper; `CollisionWorld.raycast` with mask (pooled hits); ~~grid spatial-hash broadphase behind the `SpatialIndex` surface~~ — **already shipped as CW7-8 in 0.3.1** (`spatial-index.ts`, surface frozen, 4.82 ms → 0.18 ms at 1000 sparse); boundary-semantics alignment. Re-scope before planning: the broadphase third of this row is done, and **PERF-9** separately owns `SpatialIndex.update`'s per-entity closure and O(n) find, which CW7-8 did not touch. Spec: §6 M11.
 
@@ -451,6 +450,35 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-M9 — math: curves, segment intersection points, RNG state** (2026-09-03, session #311).
+  Arc OSS P2 cut-line; `packages/math`, one patch changeset. All three spec bullets shipped.
+  **New `curves.ts`:** `bezier2` / `bezier3` / `catmullRom` with `…Into` twins, plus
+  `bezier2Length` / `bezier3Length` / `catmullRomLength`. Control points are **loose numbers, not
+  `Vec2`** — a caller holding coordinates in a `Float32Array` (the documented storage for bulk
+  numeric data) can sample without building temporaries first, which is the whole reason to have an
+  `…Into` form. `t` is clamped rather than extrapolating. Arc length is chord summation and is
+  therefore always a slight **underestimate**, documented rather than left for a reader to discover;
+  the test asserts convergence from below rather than a golden number.
+  **Segment intersection closes the "boolean-only gap".** `intersection.ts` was entirely predicates
+  — `lineVsRect`, `lineVsCircle` and friends answer *whether*, never *where*, and there was no
+  segment-vs-segment at all. Added `segmentIntersection` / `segmentIntersectionInto` (returning
+  `null` with `out` **untouched** when there is no unique point) and `segmentsIntersect` as the
+  boolean companion. **Collinear overlap is the interesting case:** the segments genuinely do
+  intersect, at infinitely many points, so the point-returning form answers `null` and the boolean
+  answers `true`. Splitting it across two functions is what makes that honest instead of arbitrary.
+  **A real bug, found by my own test rather than by review.** A zero-length segment makes `denom`
+  *and* the collinearity determinant trivially zero, so it was classified collinear-with-everything
+  and then overlap-tested on the dominant axis alone — a point at (5,9) "intersected" a segment
+  lying at y=5. Both functions now special-case degenerate segments through a `pointOnSegment`
+  helper, and a point lying on a segment returns that point rather than `null`, which keeps the two
+  functions consistent with each other. Four tests pin it.
+  **`SeededRNG.getState()` / `setState(state)`** expose the whole state as one JSON-safe int32,
+  coerced exactly as the constructor coerces a seed — so a save file or replay resumes the exact
+  sequence. Round-trip, rewind-in-place and JSON-survival are all covered.
+  40 new tests; 509 green in-package. One friction repeated from session #306: `random.test.ts` uses
+  `it`, not `test`, so an appended block silently did not run and reported "17 pass, 1 error" —
+  **a passing count is not evidence that your new tests ran.** SESSION_LOG #311 canonical.
 
 - **OSS-M8b — particles: zero-alloc sprite-batch render adapter** (2026-09-03, session #310).
   Arc OSS P2 cut-line; completes M8. `drawParticles(pool, batch, image, frame, options?)` queues

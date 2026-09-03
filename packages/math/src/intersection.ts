@@ -126,3 +126,152 @@ export function rayVsRect(
 
   return tMin >= 0 ? tMin : tMax;
 }
+
+/**
+ * Is `p` on the segment `a`→`b`? Assumes neither is degenerate.
+ */
+function pointOnSegment(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): boolean {
+  if ((px - ax) * (by - ay) - (py - ay) * (bx - ax) !== 0) return false;
+  const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+  if (dot < 0) return false;
+  const len2 = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+  return dot <= len2;
+}
+
+/**
+ * Do two segments intersect, including collinear overlap?
+ *
+ * The companion to `segmentIntersection`: that returns *where* two segments
+ * cross and is `null` when there is no single crossing point, which includes
+ * collinear segments lying on top of each other. Those genuinely do intersect,
+ * so a caller who only needs the yes/no answer asks here instead.
+ */
+export function segmentsIntersect(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
+  x4: number,
+  y4: number,
+): boolean {
+  const d1x = x2 - x1;
+  const d1y = y2 - y1;
+  const d2x = x4 - x3;
+  const d2y = y4 - y3;
+  const denom = d1x * d2y - d1y * d2x;
+  const ex = x3 - x1;
+  const ey = y3 - y1;
+
+  if (denom === 0) {
+    // A zero-length segment makes both `denom` and the collinearity test
+    // trivially 0, so it would otherwise be judged collinear with everything
+    // and then overlap-tested on one axis while the other is ignored.
+    const aPoint = d1x === 0 && d1y === 0;
+    const bPoint = d2x === 0 && d2y === 0;
+    if (aPoint && bPoint) return x1 === x3 && y1 === y3;
+    if (aPoint) return pointOnSegment(x1, y1, x3, y3, x4, y4);
+    if (bPoint) return pointOnSegment(x3, y3, x1, y1, x2, y2);
+    // Parallel. Collinear only if the offset between origins is parallel too.
+    if (ex * d1y - ey * d1x !== 0) return false;
+    // Collinear: overlap iff the projected intervals overlap. Project onto the
+    // dominant axis to stay exact for vertical segments.
+    const useX = Math.abs(d1x) >= Math.abs(d1y);
+    const aMin = useX ? Math.min(x1, x2) : Math.min(y1, y2);
+    const aMax = useX ? Math.max(x1, x2) : Math.max(y1, y2);
+    const bMin = useX ? Math.min(x3, x4) : Math.min(y3, y4);
+    const bMax = useX ? Math.max(x3, x4) : Math.max(y3, y4);
+    return aMin <= bMax && bMin <= aMax;
+  }
+
+  const t = (ex * d2y - ey * d2x) / denom;
+  const u = (ex * d1y - ey * d1x) / denom;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
+/**
+ * Where two segments cross, written into `out`.
+ *
+ * Returns `null` when there is no **single** crossing point — segments that miss
+ * each other, are parallel, or are collinear. Collinear overlap is the case
+ * worth knowing about: the segments do intersect, at infinitely many points, so
+ * there is no one answer to write into `out`. Use `segmentsIntersect` when the
+ * yes/no answer is what you need.
+ *
+ * `out` is left untouched when the result is `null`.
+ */
+export function segmentIntersectionInto(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
+  x4: number,
+  y4: number,
+  out: Vec2,
+): Vec2 | null {
+  const d1x = x2 - x1;
+  const d1y = y2 - y1;
+  const d2x = x4 - x3;
+  const d2y = y4 - y3;
+  const denom = d1x * d2y - d1y * d2x;
+  if (denom === 0) {
+    // A degenerate segment lying on the other one *does* have a unique
+    // intersection — itself — so answer it rather than reporting no hit.
+    const aPoint = d1x === 0 && d1y === 0;
+    const bPoint = d2x === 0 && d2y === 0;
+    if (aPoint && !bPoint && pointOnSegment(x1, y1, x3, y3, x4, y4)) {
+      out.x = x1;
+      out.y = y1;
+      return out;
+    }
+    if (bPoint && !aPoint && pointOnSegment(x3, y3, x1, y1, x2, y2)) {
+      out.x = x3;
+      out.y = y3;
+      return out;
+    }
+    if (aPoint && bPoint && x1 === x3 && y1 === y3) {
+      out.x = x1;
+      out.y = y1;
+      return out;
+    }
+    return null; // parallel, or collinear with no unique point
+  }
+
+  const ex = x3 - x1;
+  const ey = y3 - y1;
+  const t = (ex * d2y - ey * d2x) / denom;
+  if (t < 0 || t > 1) return null;
+  const u = (ex * d1y - ey * d1x) / denom;
+  if (u < 0 || u > 1) return null;
+
+  out.x = x1 + t * d1x;
+  out.y = y1 + t * d1y;
+  return out;
+}
+
+/**
+ * Where two segments cross. Allocates — see `segmentIntersectionInto` for the
+ * hot path.
+ */
+export function segmentIntersection(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
+  x4: number,
+  y4: number,
+): Vec2 | null {
+  return segmentIntersectionInto(x1, y1, x2, y2, x3, y3, x4, y4, { x: 0, y: 0 });
+}

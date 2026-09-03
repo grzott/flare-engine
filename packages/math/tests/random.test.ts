@@ -140,3 +140,59 @@ describe('choose', () => {
     }
   });
 });
+
+describe('SeededRNG state round-trip (M9)', () => {
+  it('restoring a captured state replays the identical sequence', () => {
+    // The point of the feature: a save file stores getState(), and a reload
+    // continues the run exactly where it left off.
+    const rng = new SeededRNG(12345);
+    for (let i = 0; i < 10; i++) rng.next();
+
+    const saved = rng.getState();
+    const expected = [rng.next(), rng.next(), rng.next(), rng.next()];
+
+    const restored = new SeededRNG(0);
+    restored.setState(saved);
+    expect([restored.next(), restored.next(), restored.next(), restored.next()]).toEqual(expected);
+  });
+
+  it('state can be rewound on the same instance', () => {
+    const rng = new SeededRNG(7);
+    const mark = rng.getState();
+    const first = [rng.next(), rng.next()];
+    rng.setState(mark);
+    expect([rng.next(), rng.next()]).toEqual(first);
+  });
+
+  it('a fresh generator reports the seed the constructor coerced', () => {
+    expect(new SeededRNG(42).getState()).toBe(42);
+    // The constructor coerces to int32; getState reports what is actually used.
+    expect(new SeededRNG(42.9).getState()).toBe(42);
+    expect(new SeededRNG(-1).getState()).toBe(-1);
+  });
+
+  it('setState coerces exactly as the constructor does', () => {
+    const viaSeed = new SeededRNG(99);
+    const viaState = new SeededRNG(0);
+    viaState.setState(99.7);
+    expect(viaState.getState()).toBe(viaSeed.getState());
+    expect(viaState.next()).toBe(viaSeed.next());
+  });
+
+  it('state survives a JSON round-trip', () => {
+    // int32 is JSON-safe, which is what makes this usable in a save file.
+    const rng = new SeededRNG(2024);
+    rng.next();
+    rng.next();
+    const revived = new SeededRNG(0);
+    revived.setState(JSON.parse(JSON.stringify({ s: rng.getState() })).s);
+    expect(revived.next()).toBe(rng.next());
+  });
+
+  it('different states produce different sequences', () => {
+    const a = new SeededRNG(0);
+    const b = new SeededRNG(0);
+    b.setState(1);
+    expect(a.next()).not.toBe(b.next());
+  });
+});

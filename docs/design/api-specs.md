@@ -471,12 +471,17 @@ React error boundary + structured crash payloads for the OSS launch reliability 
 | `createSentryTransport({ dsn?, environment?, release?, sampleRate?, enabled? })` | Lazy-loaded `@sentry/react-native` transport. Returns noop if `dsn` is missing or `enabled === false`. Imports the SDK on first capture; degrades to noop on import failure. `@sentry/react-native` is an **optional peer dependency** — never bundled. |
 | `composeTransports(...transports)`                        | Fan-out helper. Returns a `CrashTransport` whose `report` calls every child sequentially; per-child failure is caught + logged but never aborts the chain. Empty input → valid noop transport. |
 | `ErrorBoundary`                                           | React class component. Props: `fallback: (payload: CrashPayload, reset: () => void) => ReactNode`, `onError?(error: unknown, payload: CrashPayload)`, `transport?: CrashTransport`, `context?: Record<string, unknown>`. Catches render-time errors, calls `transport?.report(payload)`, renders fallback with a `reset()` that clears state. |
+| `installGlobalErrorCapture(target, options?)`             | Routes uncaught errors and unhandled rejections into a `CrashTransport` — the crashes `ErrorBoundary` cannot see (update loop, async, asset load). `target: GlobalErrorTarget` is structural (`addEventListener?` / `removeEventListener?` for web `error` + `unhandledrejection`, `ErrorUtils?` for React Native), so `globalThis` covers both platforms and a test passes a fake. `options: { transport?, bufferSize? = 20, context? }`. Returns `GlobalCaptureHandle { uninstall(), setTransport(t), buffered }`. |
+| `createClientTransport(client)`                           | Transport over an injected browser error client — `client: ErrorClientLike { captureException(error, hint?) }`. The web counterpart to `createSentryTransport`, which is native-only. Rebuilds the payload into an `Error` (preserving `name` and the original `stack`) because such clients group by it, and passes `{ extra: context }` as the hint. |
 
 **Implementation notes:**
 
 - React is a **peer dependency** — the package declares `react >= 19`; it is never bundled (peer deps are externalized by the `tsdown` build).
 - Component is a class (required for `componentDidCatch` / `getDerivedStateFromError`). All other exports are plain functions.
 - Tests instantiate the class directly and stub `setState`; no DOM/JSDOM required.
+- `installGlobalErrorCapture` **chains** the previous React Native `ErrorUtils` handler rather than replacing it — that handler shows the dev red box and terminates the process on a fatal, so replacing it would turn a visible crash into a silent one. `uninstall()` restores it.
+- The pre-transport ring buffer exists because a reporter is usually initialised *after* boot, and boot is when the interesting crashes happen. It is bounded (oldest dropped) so a crash loop cannot grow memory; `bufferSize: 0` disables it.
+- Handlers never rethrow: a transport that throws is caught and logged, because the handler runs inside the platform's own crash path and throwing there would replace the real error with ours.
 
 ---
 

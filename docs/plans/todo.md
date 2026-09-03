@@ -320,7 +320,6 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-M7 — errors: global capture (P2).** `installGlobalErrorCapture` (structural web/RN targets) + early-error ring + web client transport. Spec: §6 M7.
 - **OSS-M8 — particles v2 (P2, 2 sessions).** Emitter shapes union + zero-alloc SpriteBatch render adapter; README phantom API replaced. Spec: §6 M8.
 - **OSS-M9 — math: curves + RNG state (P2).** bezier/catmull `*Into` + segment intersection + `SeededRNG` get/setState. Spec: §6 M9.
 - **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
@@ -437,6 +436,39 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-M7 — errors: global capture** (2026-09-03, session #308). Arc OSS P2 cut-line; new
+  `packages/errors/src/global-capture.ts` + README + api-specs + 18 tests. The first cut-line row
+  that **adds** public API rather than hardening, so the surface was designed for the freeze, not
+  just for the tests.
+  **The gap it closes:** `ErrorBoundary` sees only React render-phase errors. A game's crashes are
+  mostly elsewhere — the update loop, an asset load, an unawaited promise — and none of them reached
+  a transport. `installGlobalErrorCapture(target, options?)` routes them into the existing chain.
+  **One call covers both platforms.** `GlobalErrorTarget` is structural with two independent
+  optional members — `addEventListener`/`removeEventListener` (web `error` + `unhandledrejection`)
+  and `ErrorUtils` (RN) — which is really a description of `globalThis` on each platform, so the
+  caller passes `globalThis` and a test passes a hand-built fake. No `window`, no RN types, no
+  DOM lib. All 18 tests run against fakes.
+  **Two behaviours chosen deliberately, both covered:** the RN `ErrorUtils` handler is **chained,
+  not replaced** (that handler is what shows the dev red box and ends the process on a fatal —
+  swallowing it converts a visible crash into a silent one), and `uninstall()` restores it; and
+  handlers never rethrow, because they run inside the platform's own crash path where throwing would
+  replace the real error with ours.
+  **The ring buffer is the interesting half.** A reporter is typically initialised *after* boot, and
+  boot is when the interesting crashes happen, so a transport may attach late via `setTransport()`
+  and buffered errors drain into it. Bounded (default 20, oldest evicted) so a crash loop cannot grow
+  memory; `bufferSize: 0` opts out.
+  **`createClientTransport(client)`** is the web counterpart to the native-only
+  `createSentryTransport` — a structurally-typed, already-initialised browser client is injected, so
+  the package still depends on no reporter. It rebuilds the payload into an `Error` (preserving
+  `name` and the original `stack`) because such clients group by it.
+  **Changeset level: written as `minor`, corrected to `patch` before commit.** New API is
+  semantically minor, but `changeset status` confirmed a minor bumps the whole lockstep set to
+  **0.4.0** — and both consumers pin `^0.3.0`, which a caret on a `0.x` version **excludes**. That
+  would have dragged the five other pending patches to 0.4.0 with it, including **XR-1c** (the
+  native black-screen fix) and **XR-12** (the barrel peer), so neither would reach PT without a
+  manual pin bump. Same reasoning CW7 used, and the rule the Arc XR header already states.
+  SESSION_LOG #308 canonical.
 
 - **OSS-B18 — pathfinding heap growth, corner-cut divergence, beta label** (2026-09-02,
   session #307). Arc OSS P2 cut-line; `packages/pathfinding`, one patch changeset. All three

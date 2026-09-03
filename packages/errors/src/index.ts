@@ -3,6 +3,14 @@ export type { CrashPayload } from './crash-payload.js';
 export { createCrashPayload } from './crash-payload.js';
 export type { ErrorBoundaryProps } from './error-boundary.js';
 export { ErrorBoundary } from './error-boundary.js';
+export type {
+  ErrorClientLike,
+  ErrorUtilsLike,
+  GlobalCaptureHandle,
+  GlobalCaptureOptions,
+  GlobalErrorTarget,
+} from './global-capture.js';
+export { createClientTransport, installGlobalErrorCapture } from './global-capture.js';
 export type { CrashTransport } from './transport.js';
 export { createConsoleTransport, createNoopTransport } from './transport.js';
 export type { SentryTransportOptions } from './transports/sentry.js';

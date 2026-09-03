@@ -11652,3 +11652,28 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 308 — 2026-09-03 (scope: engine)
+
+**Goal:** OSS-M7: errors global capture
+
+**Touched files**
+- `.changeset/oss-m7-errors-global-capture.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/errors/README.md`
+- `packages/errors/src/global-capture.ts`
+- `packages/errors/src/index.ts`
+- `packages/errors/tests/global-capture.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (wrote the changeset as minor — correct semver for new API, wrong for this repo: changeset status showed it bumps the lockstep set to 0.4.0, which both consumers' ^0.3.0 pins exclude, and it would have carried XR-1c and XR-12 out of their reach. Downgraded to patch before commit); deny:0; gate:1 (perf-freshness override still inherited from 4ac7c58 — packages/errors is in no measured closure and appears nowhere in benchmarks/src; node-lane re-capture owed and owner is preparing a quiet machine); fixup:1 (biome format on the two new files); drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -136,6 +136,22 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   suffix over republishing a live version number. Cache-purging is *not* the remedy and would have
   masked the real cause.
 
+- **HYG9 — the CW7-4 assignability probe is wired into nothing and has never run** (found
+  2026-09-03 while building M8b's equivalent check; **P2, post-flip acceptable**, `[MT]`, ~1 session).
+  `packages/render-web/tests/postfx-assignability.ts` exists with a matching
+  `packages/render-web/tsconfig.tests.json`, and its own header says to run
+  `tsc --noEmit --project packages/render-web/tsconfig.tests.json`. **Nothing does.** Grep across
+  every `package.json`, `turbo.json`, `.github/workflows/*` and `.claude/hooks/verify.sh` returns no
+  reference, and both render-web's `tsconfig.json` and its `typecheck` script (`tsc --noEmit`)
+  include only `src` — so the probe runs solely if a human types that line. It was written for CW7-4
+  to fail before the `uniforms` widening and pass after; today it would not catch a regression of
+  that widening at all. Same family as the "green test that cannot fail" corrected in OSS-B23b, one
+  level worse: this one does not even execute. Fix: either wire the `tsconfig.tests.json` into
+  render-web's `typecheck` script (`tsc --noEmit && tsc --noEmit -p tsconfig.tests.json`, the shape
+  `create-flare-app` already uses for its templates), or convert it to a `bun test` file, which needs
+  no wiring — that is what M8b's `packages/engine/tests/particles-batch.test.ts` does deliberately.
+  **Audit the repo for other unwired probes at the same time**; this one was found by accident.
+
 ### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
 
 Seeded so they do not decay into prose. Findings + the reasoning for each verdict are in the SoT:
@@ -320,17 +336,6 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-M8b — particles: zero-alloc SpriteBatch render adapter (P2, remainder).** The second half of
-  M8; the shapes half landed 2026-09-03 (see `## Done`). Remaining: `drawParticles(pool, batch,
-  frame)` writing into a caller-owned batch via `drawRaw` (zero-alloc loop, the XP5 `drawInto`
-  idiom). **Type the batch and frame structurally — do NOT add `@flare-engine/render` to
-  `packages/particles`.** particles currently depends on `core` + `math` only; a render edge would be
-  tier-legal (3→2) but the repo's idiom for this is structural injection (`ErrorClientLike`,
-  `SceneSurfaceModuleLike`, `AudioContextLike`), and it keeps particles usable with no renderer.
-  `drawRaw`'s parameter list is at `packages/render/src/sprite-batch.ts:138-154`. **The README
-  phantom-API third of M8 needs no work: it was already fixed** in `fc0d9e0` — the README correctly
-  documents `speed`/`speedMax`, `Color` objects and config-owned gravity, so the spec's cut rule
-  protecting that fix is moot. Spec: §6 M8.
 - **OSS-M9 — math: curves + RNG state (P2).** bezier/catmull `*Into` + segment intersection + `SeededRNG` get/setState. Spec: §6 M9.
 - **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
 - **OSS-M11 — physics: detection upgrades (P2, 1-2 sessions).** MTV/overlap-depth helper; `CollisionWorld.raycast` with mask (pooled hits); ~~grid spatial-hash broadphase behind the `SpatialIndex` surface~~ — **already shipped as CW7-8 in 0.3.1** (`spatial-index.ts`, surface frozen, 4.82 ms → 0.18 ms at 1000 sparse); boundary-semantics alignment. Re-scope before planning: the broadphase third of this row is done, and **PERF-9** separately owns `SpatialIndex.update`'s per-entity closure and O(n) find, which CW7-8 did not touch. Spec: §6 M11.
@@ -447,9 +452,38 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **OSS-M8b — particles: zero-alloc sprite-batch render adapter** (2026-09-03, session #310).
+  Arc OSS P2 cut-line; completes M8. `drawParticles(pool, batch, image, frame, options?)` queues
+  every live particle via `drawRaw`, skipping any whose interpolated size or alpha has reached 0
+  rather than paying for an invisible draw call.
+  **No `render` dependency, and the structural claim is proven rather than assumed.**
+  `ParticleBatchLike` and `ParticleFrameLike` are structural, so particles still depends on `core` +
+  `math` only and stays usable with no renderer. Structural typing makes "a real `SpriteBatch`
+  satisfies this" plausible, not true — so `packages/engine/tests/particles-batch.test.ts` builds a
+  real `SpriteBatch`, feeds it a real emitter, and asserts the command count. Engine is the package
+  that depends on both.
+  **It is a `bun test`, not a type-only probe, on purpose — and that choice came from a finding.**
+  The repo already has `packages/render-web/tests/postfx-assignability.ts` (CW7-4) with its own
+  `tsconfig.tests.json`, and **nothing references either**: not a package script, turbo task, CI
+  workflow, or `verify.sh`, and both tsconfigs include only `src`. It runs only if a human types the
+  command in its header, so it has never guarded the widening it was written for. Filed as **HYG9**
+  above, with a note to sweep for other unwired probes. A `bun test` file needs no wiring.
+  **Signature deviates from the spec's `drawParticles(pool, batch, frame)`** — `image` is a separate
+  parameter because a frame is a rectangle *within* a texture and does not carry one anywhere else
+  in this engine (`SpriteFrame` is `{name,x,y,w,h}`).
+  **Colour is deliberately not per-particle, and the reason is a real constraint:** `drawRaw` stores
+  `cmd.effect = effect` and retains the *reference* until flush
+  (`render/src/sprite-batch.ts:138-172`), so one reusable effect object mutated per particle would
+  give every particle the last one's colour, and a per-particle object is exactly the allocation this
+  package exists to avoid. Alpha and rotation are applied, since `drawRaw` takes them as numbers.
+  Documented in README + api-specs with the two ways out (own the loop, or a batch that copies
+  effect values). Zero-alloc verified across 120 frames against **both** the particle pool
+  (`pool.created`) and the batch's command pool (`batch.allocCount`). 9 unit + 5 integration tests.
+  SESSION_LOG #310 canonical.
+
 - **OSS-M8 (shapes half) — particle emitter shapes** (2026-09-03, session #309). Arc OSS P2
   cut-line; `packages/particles`, one patch changeset. M8 is a 2-session row and this is session 1:
-  the render adapter is now **OSS-M8b** above.
+  the render adapter landed the same day as **OSS-M8b** (below).
   **Two findings changed the row before any code was written.** (1) The third deliverable — "replace
   the phantom documented API (speed ranges / packed colors / shared pool / texture field — none
   exist)" — **was already done** in `fc0d9e0`; the README correctly documents `speed`/`speedMax`,

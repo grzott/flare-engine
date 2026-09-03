@@ -67,6 +67,38 @@ than particles. It writes into a caller-owned `ShapeSample` (`createShapeSample(
 nothing, so it is safe per-particle in a steady-state loop. Every shape draws a fixed number of
 values from `rand`, which is what keeps a seeded emitter replaying exactly.
 
+## Drawing into a sprite batch
+
+`drawParticles` queues every live particle into a batch you own, so particles flush together with
+the rest of the scene rather than forcing a second pass:
+
+```ts
+import { drawParticles, ParticleEmitter } from '@flare-engine/particles';
+import type { ParticleBatchLike, ParticleFrameLike } from '@flare-engine/particles';
+
+declare const emitter: ParticleEmitter;
+declare const batch: ParticleBatchLike; // a @flare-engine/render SpriteBatch satisfies this
+declare const atlasImage: unknown;
+declare const frame: ParticleFrameLike; // e.g. a SpriteFrame from @flare-engine/assets
+
+// each frame, before the batch flushes
+drawParticles(emitter.pool, batch, atlasImage, frame);
+```
+
+The batch and frame are typed **structurally**, so this package still depends on nothing but
+`@flare-engine/core` and `@flare-engine/math` and stays usable with no renderer. A real
+`SpriteBatch` satisfies `ParticleBatchLike` — asserted by a runtime test in `@flare-engine/engine`,
+not merely assumed.
+
+The loop allocates nothing per particle, and skips any particle whose interpolated size or alpha has
+reached zero rather than paying for an invisible draw call.
+
+**Colour is not applied per particle.** The pool interpolates `startR/G/B → endR/G/B`, but a batch
+retains an effect *reference* until it flushes, so a single reusable effect object would give every
+particle the last one's colour — and one object per particle per frame is exactly the allocation this
+package exists to avoid. Alpha *is* applied, because `drawRaw` takes it as a number. If you need
+per-particle colour today, write the loop yourself over `pool.particles` and accept the cost.
+
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineparticles--4kb-gzip).
 
 ## License

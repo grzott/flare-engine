@@ -229,6 +229,7 @@ Animation APIs are functional (state object + free functions), not class-based �
 
 | `EmitterShape` | Tagged union for `config.shape` — `{ kind: 'point' }` (default) · `{ kind: 'circle', radius, radial? }` · `{ kind: 'ring', radius, thickness?, radial? }` · `{ kind: 'rect', width, height }` · `{ kind: 'cone', radius, angle, radial? }`. Samples spawn **position** only; `direction`/`spread` continue to govern velocity. `radial: true` hands velocity to the shape's outward normal instead (`rect` has none). |
 | `sampleEmitterShape(shape, rand, out, direction?)` | Writes a spawn offset + outward normal into a caller-owned `ShapeSample` (`createShapeSample()`); allocates nothing, safe per-particle. `rand` returns `[0, 1)`. `direction` orients `cone` and is ignored otherwise. `hasRadialNormal(shape)` reports whether the normal is usable. |
+| `drawParticles(pool, batch, image, frame, options?)` | Queues every live particle into a caller-owned batch via `drawRaw` — zero-alloc, skipping particles whose interpolated size or alpha reached 0. `ParticleBatchLike` and `ParticleFrameLike` are **structural**, so this package takes no dependency on `render` or `assets`; a real `SpriteBatch` satisfies the former, a `SpriteFrame` the latter. `options`: `effect?` (constant for the whole call), `anchorX?`/`anchorY?` (default 0.5 — centred). Size, alpha and rotation come from the pool's interpolators. |
 
 Uses immediate mode (PictureRecorder) at the draw layer — this package owns particle data and lifecycle, not rendering. Target: 200-500 particles at 60fps.
 
@@ -237,6 +238,7 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 - `circle` and `cone` are uniform **by area** (`sqrt`-weighted radius); without that particles bunch toward the centre. `ring` is uniform across its band instead, because area-weighting a thin band buys nothing.
 - Every shape draws a **fixed** number of values from `rand` (`point` 0, all others 2), and shape sampling runs before the velocity draws. That ordering is what makes a seeded emitter replay exactly — a draw count that varied with output would shift the velocity sequence. `point` drawing zero is also why an emitter with no `shape` reproduces the pre-shape sequence bit for bit.
 - Degenerate and negative extents are clamped to 0, so a mis-sized shape collapses to the origin rather than emitting `NaN` positions.
+- `drawParticles` applies **alpha but not colour** per particle. A batch retains the effect *reference* until flush, so one reusable effect object would give every particle the last one's colour, and a per-particle object is precisely the allocation this package avoids. Per-particle colour needs either that allocation (write the loop yourself over `pool.particles`) or a `SpriteBatch` that copies effect values rather than holding the reference.
 
 ### `@flare-engine/tilemap` (< 8KB gzip)
 

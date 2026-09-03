@@ -11703,3 +11703,29 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 310 — 2026-09-03 (scope: engine)
+
+**Goal:** OSS-M8b: particles zero-alloc sprite-batch adapter
+
+**Touched files**
+- `.changeset/oss-m8b-draw-particles.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/engine/tests/particles-batch.test.ts`
+- `packages/particles/README.md`
+- `packages/particles/src/draw-particles.ts`
+- `packages/particles/src/index.ts`
+- `packages/particles/tests/draw-particles.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness override inherited from 4ac7c58; particles IS measured but drawParticles is new surface no bench scenario calls — the emitter/pool paths are untouched. Node-lane re-capture still owed); fixup:1 (biome export sort); drift:1 (found packages/render-web/tests/postfx-assignability.ts + its tsconfig.tests.json are referenced by no script, turbo task, CI workflow or verify.sh, and both tsconfigs include only src — the CW7-4 probe has never run; filed as HYG9 and deliberately made M8b's equivalent a bun test instead)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,4 +1,10 @@
 export {
+  type DrawParticlesOptions,
+  drawParticles,
+  type ParticleBatchLike,
+  type ParticleFrameLike,
+} from './draw-particles.js';
+export {
   createShapeSample,
   type EmitterCircleShape,
   type EmitterConeShape,

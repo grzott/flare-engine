@@ -12,15 +12,28 @@ Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
   *public*-registry cold scaffold is deliberately **I2's** job (flip day), not this window's.
 - **First-run + web consumption use the F2 verdaccio harness** (local registry at
   `http://localhost:4873`). Reuse the exact setup rehearsed in
-  [flip-runbook.md](flip-runbook.md) (F2). Point the **default** registry at verdaccio — the unscoped
-  `create-flare-app` is not routed by a `@flare-engine:registry` scope config:
+  [flip-runbook.md](flip-runbook.md) (the F2 pre-flight box). Point the **default** registry at
+  verdaccio — the unscoped `create-flare-app` is not routed by a `@flare-engine:registry` scope
+  config — but scope the override to the test tree, publish at a throwaway version, and start
+  every attempt in a fresh tree with no lockfile (XR-11):
 
   ```bash
-  # start verdaccio + publish 0.4.0 to it exactly as the F2 rehearsal did (flip-runbook F2), then:
-  npm config set registry http://localhost:4873/
-  # ...run the §1 / §4-web consumption tests...
-  npm config delete registry   # restore npmjs when done
+  # start verdaccio, then publish the freeze cut to it at a THROWAWAY version — never 0.4.0.
+  # 0.4.99 is unmistakable in a lockfile and will never be cut for real; create-flare-app
+  # stamps ^<its own version> into the templates, so a scaffold that falls through to npmjs
+  # 404s loudly instead of silently resolving the real 0.4.0.
+  mkdir freeze-window && cd freeze-window          # ONE fresh tree per attempt; never reuse
+  echo 'registry=http://localhost:4873/' > .npmrc  # project-scoped, NOT `npm config set`
+  # ...run the §1 / §4-web consumption tests inside this tree...
   ```
+
+  Never `npm config set registry`: that is a **user-level** setting that redirects every npm
+  command on the machine for the rest of the window — §2/§3's restricted-registry installs and
+  F3's `npm view`/`npm pack` included. If a tree ever resolved from verdaccio, delete it rather
+  than reinstall in it: the lockfile records the registry, so a re-install there returns the
+  local build even after the override is gone, `--force` included. **Purging the npm/bun cache
+  is not the remedy** — the caches are keyed by registry host, so a purge changes nothing and
+  hides the lockfile as the cause.
 
 - Reference devices: the owner's Android phone (locale **PL** — English-only matchers fail; see
   bilingual note in §2), plus a desktop browser matrix. iOS where a real device is available.
@@ -31,12 +44,19 @@ Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
 
 ## §1 — First-run funnel (LAUNCH-CRITICAL)
 
-The path a stranger hits first. A break here is a launch blocker. Run against verdaccio (above).
+The path a stranger hits first. A break here is a launch blocker. Run against verdaccio (above) —
+one fresh directory per attempt, and confirm you installed the throwaway `0.4.99` before ticking
+anything. A `0.4.0` in the tree means you resolved from npmjs or from a stale lockfile, not from
+the harness.
 
 - [ ] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
   - [ ] `npm create flare-app@latest my-<tpl>` → pick the template → completes with **no `ERESOLVE`**
         and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
   - [ ] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
+  - [ ] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
+        reads `"version": "0.4.99"` and the lockfile's resolved URLs point at `localhost:4873`.
+        A green install proves nothing until this holds — the typecheck and Metro boxes below are
+        only as good as the artifact underneath them (XR-11).
   - [ ] `npm run start` — Metro bundles and resolves every `@flare-engine/*` import with no error.
         (Actually *running* the app needs a **dev build** — `@shopify/react-native-skia` is a native
         module, so plain `expo start` + Expo Go "press a/i" red-screens with a missing-native-module
@@ -141,4 +161,7 @@ finding, fixed in priority order; non-blocking items → the post-flip backlog (
 - [ ] **Perf gate still green after the last FREEZE-FIX patch** — every hard item in the "Perf gate
       (single source)" block of road-to-oss §11 / OSS-H1. Not restated here on purpose. A fix that
       touches a measured package re-reds `check:perf-freshness`; that is a re-capture, not a waiver.
+- [ ] **Registry override torn down:** verdaccio stopped, no `registry=` left in `$HOME/.npmrc` or
+      in `npm config get registry`, and every verdaccio-resolved scaffold directory deleted. I2's
+      flip-day cold scaffold cannot tell the two registries apart if any of this survives (XR-11).
 - [ ] Owner sign-off recorded here: `signed-off: ____________  date: __________`

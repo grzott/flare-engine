@@ -109,8 +109,9 @@ commit block — never leave a half-row uncommitted across sessions.
    on is a sanctioned breaking window. Record every intentional break in the row's todo entry on completion (the launch-cut
    changelog is assembled from those).
 5. No changesets per row; one minor changeset lands in OSS-H1 (lockstep). No publishes mid-arc —
-   **exemption:** F2's local-verdaccio publishes (registry-scoped, discarded) and I1's flip-day
-   publishes (runbook-governed).
+   **exemption:** F2's local-verdaccio publishes (registry-scoped, discarded, and cut at a
+   throwaway version — the registry is discarded, but a lockfile pointing at it is not) and I1's
+   flip-day publishes (runbook-governed).
 6. Builders never run git; commit blocks come from `/close` as usual. F2 and I1 are owner-paired
    sessions where the owner runs the git/publish steps the runbook or row names.
 7. If a row's cited file:line has drifted, trust the row's *intent*, find the real site, and note the
@@ -1017,17 +1018,31 @@ the same way. **Exemptions (this row only):** the owner drives the branch/commit
 never run git); verdaccio publishes are registry-scoped + discarded, exempt from the §2.5
 no-publishes rule.
 
-- Stand up verdaccio; apply the F1 flip commit on a branch; `bun run version` + publish ALL 41
-  (40 scoped + create-flare-app) to verdaccio with `access public`.
-- From a clean temp dir against the verdaccio registry: `npm create flare-app@latest` (all three
-  templates), install, typecheck; `bun add @flare-engine/engine` resolves the full tree with zero
-  `workspace:`/`0.0.0` leaks; the C1 web-only fixture installs with no RN tree.
+- Stand up verdaccio; apply the F1 flip commit on a branch; publish ALL 41 (40 scoped +
+  create-flare-app) to verdaccio with `access public` at a **throwaway version**. Split the
+  `bun run version` chain (`changeset version && concretize-workspace-deps && bun install`, root
+  `package.json:46`) and rewrite the cut version to `0.4.99` in all 41 manifests between the
+  first two, so concretize stamps `^0.4.99` and not `^0.4.0`. Never republish a number that will
+  exist on npmjs: two builds answering to one version string is what makes a wrong-registry
+  install invisible. `create-flare-app` stamps `^<its own version>` into every template
+  (`packages/create-flare-app/src/scaffold.ts:172`), so a rehearsal scaffold that falls through
+  to npmjs **404s loudly** instead of silently resolving the real release.
+- From a **fresh tree with no lockfile** against the verdaccio registry — a new directory per
+  attempt, no `package-lock.json` / `bun.lock` / `node_modules` carried over from an earlier run,
+  and never the tree that published: `npm create flare-app@latest` (all three templates), install,
+  typecheck; `bun add @flare-engine/engine` resolves the full tree with zero `workspace:`/`0.0.0`
+  leaks; the C1 web-only fixture installs with no RN tree. A lockfile records the registry each
+  entry resolved from, so re-installing in a tree that already talked to verdaccio re-serves the
+  local build — `--force` included. **Purging the npm/bun cache is not the remedy:** the caches
+  are keyed by registry host (`…@@localhost@@@1` and `…@@registry.npmjs.org@@@1` coexist), so a
+  purge changes nothing and hides the lockfile as the cause. XR-11.
 - Assert every published tarball's manifest `license == "Apache-2.0"` and that `LICENSE` + `NOTICE`
   are present in the tarball file list (E2 relicense — added 2026-07-12).
 - Feed every delta back into the runbook (F1 doc rev).
 
-**Done when:** cold scaffold + installs green from verdaccio; runbook updated with any corrections;
-branch discarded.
+**Done when:** cold scaffold + installs green from verdaccio — each from a fresh lockfile-free
+tree, at the throwaway version; runbook updated with any corrections; branch discarded, verdaccio
+stopped, and `npm config get registry` back to `https://registry.npmjs.org/`.
 
 ### OSS-F3 · tarball + published-versions audit (P0, 1 session, [main-thread])
 
@@ -1036,7 +1051,11 @@ The access flip exposes **all previously published versions** (0.1.0, 0.2.0, 0.2
 audit them, not just 0.4.0.
 
 - Script: `npm pack` every workspace package at HEAD **and** fetch published tarballs for each
-  released version of all 40 names (authenticated); extract; scan for private-project vocabulary,
+  released version of all 40 names — authenticated **and** with an explicit
+  `--registry https://registry.npmjs.org/` on every published-version `npm view`/`npm pack`
+  (`scripts/lib/pack.mjs:23` inherits ambient npm config, so a leftover freeze-window override
+  makes this row audit verdaccio's tarballs and report them as published — XR-11); extract; scan
+  for private-project vocabulary,
   local paths, tokens/env files, private URLs, and session/plan references — the full pattern list
   lives IN the script and the `_local/` report, not in this public doc. Names absent at a given
   version are expected (only 36 packages existed at 0.1.0) — record as n/a, never as failure.
@@ -1153,7 +1172,9 @@ Written as `docs/plans/manual-test-protocol.md` by an agent session; the checkli
 
 1. **First-run funnel (the launch-critical path):** cold-machine `npm create flare-app@latest` ×3
    templates on Windows AND in a Linux container, **against the F2 verdaccio registry** (reuse that
-   harness — create-flare-app and the public versions don't exist on npmjs until the flip; the
+   harness *including its XR-11 discipline* — throwaway version, one fresh lockfile-free tree per
+   attempt, a project-scoped `.npmrc` and never a global `npm config set registry`; create-flare-app
+   and the public versions don't exist on npmjs until the flip; the
    true tokenless PUBLIC-registry run is deliberately I2's job on flip day); `bun install` +
    `bunx expo run:android` for topdown on a real device; every root-README quickstart executed
    verbatim (same registry override).
@@ -1178,8 +1199,12 @@ Written as `docs/plans/manual-test-protocol.md` by an agent session; the checkli
   checked off in the runbook file. Time-critical mechanics were rehearsed (F2), so this is
   execution, not discovery.
 - **OSS-I2 · post-flip verification battery:** cold `npm create flare-app@latest` from the PUBLIC
-  registry on a machine with no token; `npm view @flare-engine/engine` shows public + provenance on
-  the fresh release; docs-site links into the now-public repo resolve; README badges live (add CI
+  registry — no token **and** the registry proven rather than assumed: verdaccio stopped,
+  `npm config get registry` prints `https://registry.npmjs.org/`, each scaffold in a fresh
+  directory with no lockfile carried over from the freeze window (tokenless proves nothing on its
+  own — verdaccio serves anonymous reads too; XR-11); `npm view @flare-engine/engine` shows public
+  + provenance on the fresh release; docs-site links into the now-public repo resolve; README
+  badges live (add CI
   badge now); GitHub community-standards checklist green; Discussions on (owner);
   `docs/plans/roadmap.md` + this file flipped to "shipped" state; memory updated.
 - **Quiet-launch close:** no announcement required. The repo being findable (GameFromScratch,
@@ -1236,7 +1261,10 @@ Credential specifics, per-hit audit dispositions, and anything business-candid l
 - **RN-Skia / Expo releases mid-window** → template pins re-validated once at freeze (B14 note);
   never chase upstream after Sep 29. Graphite/`@next` stays out entirely.
 - **Verdaccio ≠ npmjs** → F2 rehearses mechanics, F3 audits real tarballs, and the S5/S6 precedent
-  (concretize-workspace-deps) is already wired into `bun run version`.
+  (concretize-workspace-deps) is already wired into `bun run version`. That separation holds only
+  if every rehearsal runs at a throwaway version from a lockfile-free tree and F3's `npm view` /
+  `npm pack` are registry-pinned — otherwise a lockfile or an ambient `registry=` makes both audit
+  the local build and pass (XR-11).
 - **Manual window finds a design flaw** → fix-forward only if launch-critical (first-run funnel,
   data loss, money path); otherwise it's a documented limitation + post-flip row. The freeze exists
   to protect the flip date.

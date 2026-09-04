@@ -670,6 +670,13 @@ module flag to a per-instance `useRef`.
 - **verdaccio must be bound to `0.0.0.0`.** Started with `--listen 4874` it binds IPv6 `::1` only;
   bun then hangs on `localhost` and gets `ConnectionRefused` on `127.0.0.1`. `--listen 0.0.0.0:4874`
   plus an app-level `.npmrc` scoping only `@flare-engine` to it installs 530 packages in 35 s.
+  **Two corrections if you are reproducing this rather than reading history:** (1) a scope-only
+  `.npmrc` leaves the unscoped `create-flare-app` resolving from npmjs — F2's rule is to point the
+  **default** registry at verdaccio (flip-runbook F2 box); (2) publish at a throwaway version and
+  install from a fresh tree with no lockfile, or the install re-serves whatever registry the
+  lockfile recorded — purging the cache does not help, the caches are registry-keyed (XR-11).
+  Port note: this page uses 4874, the runbooks use 4873 — check what is actually listening before
+  trusting either.
 - **`bun publish --registry=<url>` does override `publishConfig.registry`** — confirmed by dry-run
   before publishing (`Registry: http://localhost:4874`). Worth re-confirming rather than assuming,
   given every package points `publishConfig` at npmjs.

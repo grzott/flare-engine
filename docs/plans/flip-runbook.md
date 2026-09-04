@@ -29,12 +29,24 @@ no clean rollback.
       (Oct 5–18) passed with no launch-blockers (road-to-oss §11).
 - [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
       `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
-      tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Two rehearsal gotchas folded
+      tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Three rehearsal rules folded
       in: a local `bun run version` needs `changelog:false`/`GITHUB_TOKEN` (step 5); the
       cold-consumer test points the **default** registry at verdaccio, not a scope
-      config (the unscoped `create-flare-app` isn't routed by `@flare-engine:registry`).
+      config (the unscoped `create-flare-app` isn't routed by `@flare-engine:registry`);
+      and every verification runs from a **fresh tree with no lockfile** at a **throwaway
+      version** (`0.4.99`, never a live number) — a lockfile records the registry it
+      resolved from, so re-installing in the tree that published re-serves the local
+      build, `--force` included. Purging the npm/bun cache is **not** the remedy: the
+      caches are registry-keyed, so a purge changes nothing and hides the lockfile as the
+      cause (XR-11 — found 2026-09-01, after this box was ticked).
       One launch bug surfaced — the templates' `react` pin is too low for RN 0.86's
       peer — tracked as a pre-freeze engine fix.
+- [ ] **Registry hygiene — on the machine that ran the freeze window, before step 1:**
+      verdaccio stopped (nothing listening on 4873 or 4874); `npm config get registry`
+      prints `https://registry.npmjs.org/`; no `registry=` line left in `$HOME/.npmrc`;
+      every freeze-window scaffold directory deleted so no verdaccio-resolved lockfile
+      survives into flip-day verification. The freeze window's override is **user-level**
+      and nothing else in this runbook would notice it still set (XR-11).
 - [ ] **F3 done:** tarball audit clean (or every old-version hit has an owner
       disposition, §14).
 - [ ] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4).
@@ -134,7 +146,11 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (
       a laptop has no OIDC token) and silently ships a non-provenance release, so it
       is **not** the flip path — reserve local `bun run release` for the F2 verdaccio
       rehearsal, where provenance is not asserted.
-- [ ] Verify: no `workspace:`/`0.0.0` leaks in the published tarballs; provenance
+- [ ] Verify: no `workspace:`/`0.0.0` leaks in the published tarballs — fetch each with an
+      explicit `npm pack --registry https://registry.npmjs.org/ @flare-engine/<pkg>@0.4.0`
+      into an empty directory, never by installing in a tree that carries a lockfile. A
+      verdaccio-resolved lockfile or an ambient `registry=` hands you the local build, and
+      it passes this check because concretize ran locally too (XR-11); provenance
       shows on the fresh release (`npm view @flare-engine/engine`).
 
 **Rollback:** publishes are **not** cleanly reversible (unpublish restrictions).
@@ -151,8 +167,15 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (
 
 Run the full battery — see road-to-oss §12 / the OSS-I2 row:
 
+- [ ] **Registry proven, before anything else in this step:** verdaccio not running;
+      `npm config get registry` → `https://registry.npmjs.org/`; no `.npmrc` `registry=`
+      line in the test directory or `$HOME`. "No token" is not an isolation — verdaccio
+      serves anonymous reads too, so a tokenless run against a stale override passes
+      while testing the local build (XR-11).
 - [ ] Tokenless cold scaffold from the **public** registry:
-      `npm create flare-app@latest` (all three templates) on a machine with no npm token.
+      `npm create flare-app@latest` (all three templates) on a machine with no npm token,
+      each into a **new empty directory** — no lockfile or `node_modules` reused from the
+      freeze window, whose scaffolds resolved from verdaccio at `0.4.99`.
 - [ ] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.
 - [ ] Docs-site links into the public repo resolve; README badges live (add the CI badge).
 - [ ] GitHub **Community Standards** checklist green (Insights → Community).

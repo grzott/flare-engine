@@ -16,7 +16,11 @@ import { SpriteBatch } from '@flare-engine/render';
  */
 
 const FRAME = { name: 'spark', x: 16, y: 8, w: 4, h: 4 };
-const IMAGE = { atlas: true };
+const IMAGE = {
+  width: () => 64,
+  height: () => 64,
+  readPixels: () => null,
+};
 
 function burstingEmitter(): ParticleEmitter {
   const emitter = new ParticleEmitter(

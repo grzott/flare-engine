@@ -3,10 +3,16 @@
  * to FrameRendererPostFxRuntime (the type PT consumes via PostFxRuntimeLike in
  * @flare-engine/react).
  *
- * This file is not a bun test — it is a tsc-only check. Running
- *   tsc --noEmit --project packages/render-web/tsconfig.tests.json
- * must FAIL before the uniforms widening in runtime.ts / frame-renderer.ts
+ * This file is not a bun test — it is a tsc-only check, executed by the root
+ * `bun run typecheck:tests` (the only config that includes every package's
+ * tests directory).
+ * It must FAIL before the uniforms widening in runtime.ts / frame-renderer.ts
  * and PASS after.
+ *
+ * That gate runs after `build`, which matters here: the two imports below
+ * resolve to each package's `dist/*.d.mts`, not its `src`. Narrowing
+ * `FrameRendererCompiledPass.uniforms` in src alone leaves this file green
+ * until the dist is rebuilt — verified 2026-09-04 by mutation.
  */
 import type { PostFxRuntime } from '@flare-engine/postfx';
 import type { FrameRendererPostFxRuntime } from '@flare-engine/render';

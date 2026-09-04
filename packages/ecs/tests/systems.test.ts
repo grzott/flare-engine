@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Follower, Lifetime, Position, Velocity } from '../src/components.js';
+import type { Query } from '../src/query.js';
 import type { CullBounds } from '../src/systems.js';
 import {
   createBoundsCullSystem,

@@ -38,18 +38,22 @@ lockfile format, which older Bun releases cannot read.
 5. Run local verification:
    ```bash
    bun test                 # or: cd packages/<name> && bun test
-   bun run typecheck
+   bun run typecheck        # per-package, src only
    bun run lint
    bun run build
+   bun run typecheck:tests  # your tests' own types — needs the build above
    ```
+   `bun run typecheck` is per-package and covers `src` only, so it never looks
+   at the file you wrote in step 4. `typecheck:tests` is the one that does. It
+   runs against built `dist` type declarations, so run it after `bun run build`.
 6. Add a changeset if the change is user-facing:
    ```bash
    bun changeset
    ```
 7. Commit using Conventional Commits (enforced by commitlint): `feat(math): add Vec2.lerp`.
 8. Push and open a Pull Request. CI runs more than step 5 does — on top of lint / typecheck /
-   test / build it gates `check:deps`, `check:changeset`, `check:exports`, `check:nodenext`,
-   `check:readme`, `check:perf`, `check:perf-bytes` and `check:perf-freshness`. Run
+   test / build / typecheck:tests it gates `check:deps`, `check:changeset`, `check:exports`,
+   `check:nodenext`, `check:readme`, `check:perf`, `check:perf-bytes` and `check:perf-freshness`. Run
    `bun run check:deps && bun run check:changeset && bun run check:exports && bun run check:nodenext && bun run check:readme`
    locally if you want the same answer before pushing.
 
@@ -109,6 +113,7 @@ Longer versions live in [AGENTS.md](AGENTS.md).
 - [ ] `bun run lint` clean
 - [ ] `bun test` green
 - [ ] `bun run build` green (verifies the full dep chain)
+- [ ] `bun run typecheck:tests` clean (type-checks `tests/`, which `typecheck` does not)
 - [ ] Changeset added for user-facing changes
 - [ ] Docs updated if the public API moved (`docs/design/api-specs.md`, package README, etc.)
 - [ ] Commit subjects follow `type(scope): description` and are ≤72 chars

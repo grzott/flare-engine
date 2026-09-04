@@ -62,11 +62,31 @@ run_gate "test"      bun run test
 # Build only for engine + mixed (game apps don't always have a build script).
 if [ "$SCOPE" != "game" ]; then
   run_gate "build" bun run build
+
+  # `turbo typecheck` is per-package and src-only, so nothing type-checks the
+  # 236 files under packages/*/tests. The root tsconfig is the only config that
+  # includes them, and until HYG9 no command invoked it.
+  #
+  # It runs AFTER build on purpose: a test importing a sibling by package name
+  # (@flare-engine/render) resolves to that package's dist/*.d.mts, not its src.
+  # Run before build and the probes measure the previous build.
+  run_gate "typecheck:tests" bun run typecheck:tests
 fi
 
 # Guardrails: dependency/tier graph + changelog (changeset) coverage.
 run_gate "deps"      bun run check:deps
 run_gate "changeset" bun run check:changeset
+
+# An undeclared transitive peer is a stranger's install failure, not ours —
+# bun installs optional peers, npm/pnpm/yarn do not. This is the class XR-1 and
+# XR-12 both were; the check existed and no gate ran it until HYG9.
+run_gate "peers"     bun run check:peers
+
+# The contract suite for the sibling hook that enforces "builders never run
+# git add/commit/push". It covers four documented bypasses (wrapper, eval,
+# `git -C`, unnamed verbs) and, until HYG9, was invoked by nothing — so a
+# regression in the guard would have reopened the boundary silently.
+run_gate "hook-guard" bash .claude/hooks/pre-bash-guard.test.sh
 
 # Perf (Track A). Engine + mixed only: a game-scope row cannot move an engine
 # counter, and both gates need built dists.

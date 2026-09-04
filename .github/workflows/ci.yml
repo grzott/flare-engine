@@ -27,9 +27,14 @@ jobs:
       - run: bun run lint
       - run: bun run check:deps
       - run: bun run check:changeset
+      - run: bun run check:peers
       - run: bun run typecheck
       - run: bun run build
       - run: bun run test
+
+      # The only config covering packages/*/tests. After build, never before:
+      # a test importing a sibling by package name resolves to its dist/*.d.mts.
+      - run: bun run typecheck:tests
       - run: bun run check:exports
       - run: bun run check:nodenext
       - run: bun run check:readme
@@ -47,6 +52,11 @@ jobs:
       # ~60 s: packs all 41 publishable packages. CI is the right place for it —
       # the local /close gate stays fast and this runs before anything merges.
       - run: bun run check:perf-bytes
+
+      # OSS-F3 leak detector over packed tarball bytes (~30 s), same rationale.
+      # Runs its own --selftest first: a detector nobody proves still fires is
+      # the failure mode HYG9 exists to remove.
+      - run: bun run check:tarballs
 
       # B24 keystone: do the published numbers still describe HEAD?
       - run: bun run check:perf-freshness

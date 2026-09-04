@@ -11786,3 +11786,36 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 313 — 2026-09-04 (scope: engine)
+
+**Goal:** HYG9: wire the test-typecheck gate + three orphaned guardrails; XR-11: verdaccio lockfile discipline
+
+**Touched files**
+- `.claude/hooks/verify.sh`
+- `.github/workflows/ci.yml`
+- `benchmarks/results/history.ndjson`
+- `CONTRIBUTING.md`
+- `docs/plans/flip-runbook.md`
+- `docs/plans/manual-test-protocol.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `docs/plans/web-target-2026-08.md`
+- `package.json`
+- `packages/ecs/tests/systems.test.ts`
+- `packages/engine/tests/particles-batch.test.ts`
+- `packages/react/tsconfig.test.json`
+- `packages/render-web/tests/postfx-assignability.ts`
+- `packages/render-web/tsconfig.tests.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (my own comment edit introduced a `*/` sequence that would have terminated the block comment early, plus a stray HTML entity — caught and fixed before any gate ran); deny:1 (pre-bash-guard correctly blocked `git checkout` when I tried to revert the rejected bench captures — the revert is handed to the owner instead); gate:1 (perf-freshness red and overridden on evidence, not argument: this row changes zero `packages/*/src/**` — only tests, configs, hooks, CI and docs — so it adds no staleness; the existing debt is inherited from 4ac7c58..b5d0a97 and is now 8 rows deep, and the re-capture was attempted this session and refused by the load guard); fixup:1 (placed the new `Query` type import in the wrong sort position, repositioned for biome before linting); drift:2 (the row as filed was one probe — the audit it mandated showed the probe was a symptom of a 236-file blind spot, so scope grew to the gate itself plus three orphaned guardrails; and XR-2's Active row had never been moved to Done despite landing in session #302, corrected here)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -91,15 +91,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   installed scaffold *without* reanimated reproduces `OptionalDependencyNotInstalledError` on today's
   code and resolves clean after. (b) is the only check that proves the defect, because bun masks it.
   Spec: §11.3 NEW-1/NEW-2, §11.4.
-- **XR-2 — renderer + threading ADR** (P0 for the flip, 1 session, `[MT]`). Creates
-  `docs/design/adr-0001-renderer-and-threading.md` and the `docs/design/adr-*` convention (no
-  `docs/decisions/` or `docs/adr/` exists today). **Runs after XR-1, never before** — §11.5: writing
-  it first records the decision as it was believed to be, writing it second records what the code
-  does. Content per the external §3.1 skeleton, with §2 rewritten to the post-XR-1 truth: worklet-
-  backed texture handoff, JS-thread simulation on `requestAnimationFrame` (`game-loop.ts:142`), no
-  Reanimated *animation* API in engine source. Point 3 is where the argument is won and is currently
-  invisible outside the repo — one code path for web and native, and a pure-TS loop testable under
-  Bun with no RN runtime (2,887 engine tests, 2,522 PT). Spec: external §3, §11.5.
 - **XR-7 — ECS churn benchmark + `Query._remove` complexity** (P2, post-flip acceptable, 1-2 sessions).
   Scope: `benchmarks/src/scenarios/ecs.ts`, `benchmarks/src/ecs.bench.ts`, `packages/ecs/src/query.ts`.
   `ECS_SCENARIOS` defines exactly one shape — `ecs.step {n} entities (Pos+Vel)`, steady-state
@@ -122,35 +113,41 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
 
-- **XR-11 — a verdaccio rehearsal can silently re-serve the local build** (found 2026-09-01, same
-  session; **P2, pre-freeze-preferred**, `[MT]` — 1 session, docs + a runbook step). **Diagnosis
-  corrected during the session — read this, not the first version.** Bun's cache is *not*
-  registry-blind: it keys by registry host, and
-  `@flare-engine/react@0.3.1@@localhost@@@1` / `…@@registry.npmjs.org@@@1` coexist holding
-  different builds. The real mechanism is the **lockfile**, which records the resolved registry, so
-  a re-install "from npmjs" — `--force` included — re-resolves to the verdaccio entry and returns
-  the local build while looking clean. Any rehearsal that publishes to verdaccio and then verifies
-  an install in the same tree is at risk of verifying its own artifact. Affects **F2**, the
-  **manual-test-protocol §1 first-run funnel**, and **OSS-I2**'s post-flip cold scaffold. Fix: the
-  runbooks must verify from a **fresh tree with no lockfile**, and prefer a throwaway version
-  suffix over republishing a live version number. Cache-purging is *not* the remedy and would have
-  masked the real cause.
+- **HYG10 — tests that are collected and cannot fail** (found 2026-09-04 by the HYG9 sweep;
+  P2, post-flip acceptable, ~1 session). Three confirmed, each upheld by a 3-lens refutation panel.
+  (a) `packages/debug/tests/perf-recorder.test.ts` — the test named *'p50 / p95 / p99 are correct
+  for a known sorted distribution'* contains **zero assertions**; its own trailing comments say the
+  approach was abandoned mid-write, and it reports green. Percentile computation in
+  `createPerfRecorder` is therefore unverified against any known distribution — the two tests that
+  do run assert only `min <= p50 <= p95 <= p99 <= max` over near-zero samples, which any monotone
+  bug satisfies. These percentiles feed the report `check:perf` reasons about. (b)
+  `packages/react/tests/game-context.test.ts` — *'has Provider and Consumer'* asserts on string
+  literals that the same file's own `mock.module('react')` hard-codes three lines earlier; it
+  cannot fail for any change to the code under test. (c) `packages/engine/tests/headless.test.ts` —
+  five *'export existence'* blocks assert `typeof x === 'function'` on top-level named imports,
+  which cannot fail independently because a missing export already aborts the file at import time.
+  Five of eleven `it` blocks on the barrel's most consumer-visible surface are dead weight.
+  Fix (a) with a real known-answer distribution; delete or replace (b) and (c) rather than
+  weakening them further. Same family as OSS-B23b.
 
-- **HYG9 — the CW7-4 assignability probe is wired into nothing and has never run** (found
-  2026-09-03 while building M8b's equivalent check; **P2, post-flip acceptable**, `[MT]`, ~1 session).
-  `packages/render-web/tests/postfx-assignability.ts` exists with a matching
-  `packages/render-web/tsconfig.tests.json`, and its own header says to run
-  `tsc --noEmit --project packages/render-web/tsconfig.tests.json`. **Nothing does.** Grep across
-  every `package.json`, `turbo.json`, `.github/workflows/*` and `.claude/hooks/verify.sh` returns no
-  reference, and both render-web's `tsconfig.json` and its `typecheck` script (`tsc --noEmit`)
-  include only `src` — so the probe runs solely if a human types that line. It was written for CW7-4
-  to fail before the `uniforms` widening and pass after; today it would not catch a regression of
-  that widening at all. Same family as the "green test that cannot fail" corrected in OSS-B23b, one
-  level worse: this one does not even execute. Fix: either wire the `tsconfig.tests.json` into
-  render-web's `typecheck` script (`tsc --noEmit && tsc --noEmit -p tsconfig.tests.json`, the shape
-  `create-flare-app` already uses for its templates), or convert it to a `bun test` file, which needs
-  no wiring — that is what M8b's `packages/engine/tests/particles-batch.test.ts` does deliberately.
-  **Audit the repo for other unwired probes at the same time**; this one was found by accident.
+- **HYG11 — the rest of the unwired-config surface** (found 2026-09-04 by the HYG9 sweep; P2,
+  post-flip acceptable, `[MT]`, ~1 session). What HYG9 confirmed but deliberately did not land,
+  since none of it is on the freeze path. (a) The three shipped **template tsconfigs**
+  (`packages/create-flare-app/templates/{blank,shmup,topdown}/tsconfig.json`) are copied verbatim
+  into every scaffolded project and compiled by nothing here; the config that *is* checked
+  (`tsconfig.templates.json`) applies materially different options — `jsx: react-native` vs
+  `react-jsx`, and no `verbatimModuleSyntax`/`erasableSyntaxOnly` — so the file every new developer
+  actually builds against is never exercised. Related to the known template-typecheck blindspot.
+  (b) All 42 `packages/*/tsdown.config.ts` are type-checked by no tsconfig (every package config
+  includes only `src`): the files deciding entry points, `format`, `dts` and `fixedExtension` for
+  everything published get no check against `defineConfig`, and tsdown loads them type-stripped, so
+  a mistyped option is silently ignored. (c) `scripts/propagate-license.ts` and
+  `scripts/concretize-workspace-deps.ts` — both on the publish critical path, both in no tsconfig.
+  (d) `apps/bench-dashboard/tsconfig.json` **is** invoked but its `include` omits `next.config.ts`,
+  so the gate reports that workspace as covered when its Next config is not. (e)
+  `apps/bench-web/scripts/{testingbot-session-smoke,testingbot-probe}.mjs` have no script alias and
+  are invoked only by copy-pasting out of a README, so the web lane's credential/entitlement
+  preconditions surface as a failed capture rather than a fast precondition failure.
 
 ### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
 
@@ -332,7 +329,7 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 - **OSS-F4 — history/exposure re-scan at freeze (P0, run Oct 2–5) [MT].** Full-history secret re-scan; `_local/` untracked; `.claude/` publish set ratified; author-email stance recorded. Spec: §9 F4.
 - **OSS-H1 — FREEZE: one lockstep minor changeset + 0.4.0 restricted publish (P0, Oct 5, owner-paired) [MT].** After this: fix-only until the flip. Spec: §11 H1.
 - **OSS-I1 — flip execution (Oct 20, owner-paired).** Walk the rehearsed runbook; each step checked off in-file. Spec: §12.
-- **OSS-I2 — post-flip verification battery (P0).** Tokenless cold scaffold from the public registry; provenance visible; docs links resolve; CI badge; plan docs flipped to shipped state. Spec: §12.
+- **OSS-I2 — post-flip verification battery (P0).** Cold scaffold from the public registry with the registry *proven*, not assumed — verdaccio stopped, `npm config get registry` = npmjs, fresh dir, no freeze-window lockfile — and no token; tokenless alone discriminates nothing, verdaccio serves anonymous reads too (XR-11). Provenance visible; docs links resolve; CI badge; plan docs flipped to shipped state. Spec: §12.
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
@@ -468,6 +465,70 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **HYG9 — the unwired-probe sweep: nothing type-checked `tests/`, and three guardrails ran
+  nowhere** (2026-09-04, session #313). `[MT]` + engine tests. **The row as filed was one probe;
+  the audit it mandated found the probe was a symptom.** An 18-finding sweep (7 lenses, each
+  finding put through a 3-lens refutation panel) established that root `tsconfig.json` is the only
+  config in the repo including `packages/*/tests`, and **no command invoked it** — `bun run
+  typecheck` is `turbo typecheck`, which is per-package and `src`-only. **236 test files across 42
+  packages had zero automated type checking**, which is why the backlog kept regrowing (TH1 cleared
+  56 errors, TH2 cleared 13, and 5 had accumulated since). **Fixed the 5 live errors, then wired
+  the gate:** `packages/ecs/tests/systems.test.ts` used `Query` as a type annotation without
+  importing it (×4); `packages/engine/tests/particles-batch.test.ts`'s shared `IMAGE` fixture was
+  `{ atlas: true }`, which does not satisfy `SkImageLike` — so the M8b test that exists to prove
+  `drawParticles` accepts a *real* `SpriteBatch` was exercising it with a shape no caller can pass.
+  New root script `typecheck:tests` (`tsc --noEmit -p tsconfig.json`), wired into `verify.sh` and
+  `ci.yml`. **It runs AFTER `build`, and that ordering is load-bearing:** a test importing a sibling
+  by package name resolves to that package's `dist/*.d.mts`, not its `src`, so the same gate placed
+  before `build` measures the previous build. Proven by mutation, not asserted. **Proof of
+  detection (the point of the row — a check that cannot fail is the bug):** narrowing
+  `LabelProps['style']` from `StyleProp<TextStyle>` to `TextStyle` — the exact CW7-7 regression —
+  leaves `packages/ui`'s own `tsc --noEmit` **green (EXIT=0)** and fires the new gate on
+  `style-prop.type-probe.ts:38,39`; narrowing `FrameRendererCompiledPass.uniforms` to `number[]`
+  and rebuilding fires `postfx-assignability.ts:19` while `render`/`render-web`/`postfx` per-package
+  typechecks all stay green. Both probes were previously executed by **neither** of the repo's two
+  channels. **Retired two dead configs:** `packages/render-web/tsconfig.tests.json` (superseded —
+  the root config covers the probe) and `packages/react/tsconfig.test.json` (orphaned since its
+  birth commit `7082410` and broken anyway — 36 errors from an inherited `rootDir`). **Three
+  guardrails that existed and ran nowhere, now wired:** `check:peers` (passes; 42 packages — the
+  class both XR-1 and XR-12 were) into `verify.sh` + CI; `scripts/audit-tarballs.mjs`, the OSS-F3
+  secret/IP leak detector, which had **no package.json alias at all** — so the launch-blocker class
+  it was built for had no standing detection before the October flip — now `check:tarballs`
+  (`--selftest && --head-only`, ~30 s) in CI, self-test first so the detector cannot rot into
+  always-passing; and `.claude/hooks/pre-bash-guard.test.sh` (72/72), the contract suite for the
+  hook enforcing "builders never run git add/commit/push", into `verify.sh`. `CONTRIBUTING.md`
+  corrected: it told contributors to write tests in `packages/<name>/tests/` and verify with
+  `bun run typecheck`, a command that checked none of them. No `packages/*/src/**` change, so
+  `check:changeset` passes on the 10 existing changesets and none was added — a changelog line
+  describing nothing a consumer can observe would violate one-source-per-fact. Gate green
+  (lint/typecheck/test/build/typecheck:tests/deps/changeset/peers/hook-guard); **perf-freshness
+  still red and NOT overridden — see the open row.** Remaining confirmed findings filed as HYG10 +
+  HYG11 rather than smuggled in. SESSION_LOG #313 canonical.
+
+- **XR-11 — a verdaccio rehearsal can silently re-serve the local build** (2026-09-04,
+  session #313). `[MT]`, docs only, 5 files. Encoded the corrected mechanism everywhere a
+  rehearsal is prescribed: the defect is the **lockfile**, which records the resolved registry, so
+  a re-install "from npmjs" — `--force` included — re-resolves to the verdaccio entry and returns
+  the local build while looking clean. Bun's cache is *not* registry-blind (it keys by host, so
+  both copies coexist), and **cache purging is not the remedy** — it changes nothing and hides the
+  cause. Three rules now stated at every call site: verify from a **fresh tree with no lockfile**,
+  publish at a **throwaway version** (`0.4.99` — a caret range excludes prereleases, so
+  `-rehearsal.N` is fragile; and `create-flare-app` stamps `^<its own version>` into templates
+  (`scaffold.ts:172`), so a fall-through to npmjs 404s loudly instead of silently resolving the
+  real release), and scope the override with a project `.npmrc` rather than a **user-level**
+  `npm config set registry`. Touched `road-to-oss-2026-09.md` (§2.5 rule 5, F2 publish + verify +
+  done-when, F3's `npm view`/`npm pack` now registry-pinned since `scripts/lib/pack.mjs:23`
+  inherits ambient npm config, H2 §1, I2, §15 risk line), `flip-runbook.md` (F2 box + **a new
+  pre-flight registry-hygiene box**, step 5 verify, **a new first box in step 7** — "no token" is
+  not an isolation, verdaccio serves anonymous reads too), `manual-test-protocol.md` (§ preamble
+  recipe rewritten, §1 lead, a "prove what you installed" box, §7 teardown box),
+  `web-target-2026-08.md` (correction appended to the historical note, incl. the 4873/4874 port
+  drift), and this file's OSS-I2 row. Two new **checkboxes**, no new numbered Step — a Step 8 would
+  desync `flip-runbook.md:21`'s ordering-invariants chain and the reversibility table. Every anchor
+  verified byte-exact before editing. Deliberately NOT smuggled in: OSS-B21's unapplied F2
+  done-when amendment, and the one-argument `--registry` code change at `pack.mjs:88` /
+  `audit-tarballs.mjs:250` (specified in the F3 row that owns the script). SESSION_LOG #313.
 
 - **OSS-M11 (additive half) — physics MTV + broadphase-backed world raycast** (2026-09-03,
   session #312). Arc OSS P2 cut-line; `packages/physics`, one patch changeset. **The row was

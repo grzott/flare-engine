@@ -1,5 +1,7 @@
 import { Signal } from '@flare-engine/events';
 import type { Rect } from '@flare-engine/math';
+import type { RaycastHit } from './raycast.js';
+import { rayVsShapeInto } from './raycast.js';
 import type { Shape } from './shape.js';
 import { shapeBoundsInto, shapeOverlap } from './shape.js';
 import { SpatialIndex } from './spatial-index.js';
@@ -24,6 +26,9 @@ interface CollisionEntry {
 // Packed pair-key layout: `lo * ENTITY_SHIFT + hi`, lo = min(a,b), hi = max(a,b).
 // 2^26 fits within Number.MAX_SAFE_INTEGER for 26+26 bits → max entity id ~67M.
 const ENTITY_SHIFT = 2 ** 26;
+
+/** Padding applied to a ray's query AABB — see `CollisionWorld.raycast`. */
+const RAY_BOUNDS_PAD = 1e-6;
 
 function encodePair(a: number, b: number): number {
   const lo = a < b ? a : b;
@@ -217,4 +222,100 @@ export class CollisionWorld {
     this.pairBufB.clear();
     this.activePairs = this.pairBufA;
   }
+
+  /** Reused across raycasts — see `raycast`. */
+  private raycastBounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
+  private raycastCandidates: number[] = [];
+  private raycastHit: RaycastHit = {
+    entity: -1,
+    distance: 0,
+    point: { x: 0, y: 0 },
+    normal: { x: 0, y: 0 },
+  };
+
+  /**
+   * Cast a ray against the colliders in this world.
+   *
+   * The standalone `raycast()` export tests a caller-supplied target array, so
+   * it neither sees the world's colliders nor benefits from the broadphase — an
+   * O(n) scan sitting beside an O(1) index. This walks only the cells the ray's
+   * bounding box touches.
+   *
+   * `mask` is a layer bitmask filtered against each collider's `layer`, using the
+   * bits colliders already carry; it defaults to every layer. Triggers are
+   * included — a ray asking "what is over there" wants them.
+   *
+   * The returned record is **reused between calls**: read it, or copy what you
+   * need, before casting again. That is what keeps a per-frame ray allocation-
+   * free, and it is why the standalone helper's fresh-object-per-candidate cost
+   * was worth removing.
+   */
+  raycast(
+    ox: number,
+    oy: number,
+    dx: number,
+    dy: number,
+    maxDist: number,
+    mask = 0xffffffff,
+  ): RaycastHit | null {
+    // Bounding box of the whole ray — the broadphase is rect-based, so this is
+    // a conservative prefilter, not the intersection test itself.
+    const ex = ox + dx * maxDist;
+    const ey = oy + dy * maxDist;
+    const minX = ox < ex ? ox : ex;
+    const minY = oy < ey ? oy : ey;
+    // Padded so the rect always has non-zero extent on both axes. An axis-
+    // aligned ray is otherwise degenerate — a horizontal ray has height 0 — and
+    // SpatialIndex derives its cell range with an exclusive end (`_cMax` is
+    // `ceil(v / CELL) - 1`), so a zero-height rect yields cyMin 0 > cyMax -1 and
+    // the cell loop never runs. The broadphase is a conservative prefilter
+    // anyway, so over-including by a hair costs nothing: the exact ray test
+    // below rejects the extras.
+    this.raycastBounds.x = minX - RAY_BOUNDS_PAD;
+    this.raycastBounds.y = minY - RAY_BOUNDS_PAD;
+    this.raycastBounds.width = Math.abs(ex - ox) + RAY_BOUNDS_PAD * 2;
+    this.raycastBounds.height = Math.abs(ey - oy) + RAY_BOUNDS_PAD * 2;
+
+    this.raycastCandidates.length = 0;
+    this.spatial.query(this.raycastBounds, this.raycastCandidates);
+
+    let bestDist = Number.POSITIVE_INFINITY;
+    let found = false;
+    for (let i = 0; i < this.raycastCandidates.length; i++) {
+      const entry = this.entries.get(this.raycastCandidates[i]!);
+      if (entry === undefined) continue;
+      if ((entry.layer & mask) === 0) continue;
+      const hit = rayVsShapeInto(
+        ox,
+        oy,
+        dx,
+        dy,
+        maxDist,
+        entry.entity,
+        entry.shape,
+        entry.x,
+        entry.y,
+        this.scratchHit,
+      );
+      if (hit !== null && hit.distance < bestDist) {
+        bestDist = hit.distance;
+        found = true;
+        this.raycastHit.entity = hit.entity;
+        this.raycastHit.distance = hit.distance;
+        this.raycastHit.point.x = hit.point.x;
+        this.raycastHit.point.y = hit.point.y;
+        this.raycastHit.normal.x = hit.normal.x;
+        this.raycastHit.normal.y = hit.normal.y;
+      }
+    }
+    return found ? this.raycastHit : null;
+  }
+
+  /** Scratch record handed to `rayVsShapeInto` per candidate. */
+  private scratchHit: RaycastHit = {
+    entity: -1,
+    distance: 0,
+    point: { x: 0, y: 0 },
+    normal: { x: 0, y: 0 },
+  };
 }

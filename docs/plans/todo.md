@@ -337,7 +337,25 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
 - **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
-- **OSS-M11 — physics: detection upgrades (P2, 1-2 sessions).** MTV/overlap-depth helper; `CollisionWorld.raycast` with mask (pooled hits); ~~grid spatial-hash broadphase behind the `SpatialIndex` surface~~ — **already shipped as CW7-8 in 0.3.1** (`spatial-index.ts`, surface frozen, 4.82 ms → 0.18 ms at 1000 sparse); boundary-semantics alignment. Re-scope before planning: the broadphase third of this row is done, and **PERF-9** separately owns `SpatialIndex.update`'s per-entity closure and O(n) find, which CW7-8 did not touch. Spec: §6 M11.
+- **OSS-M11 — physics: detection upgrades (P2, ~1 session after re-scope).** **Re-scoped 2026-09-03
+  against HEAD** — every bullet below re-verified, one dropped as already shipped. Spec: §6 M11, but
+  read this row rather than the spec: the spec is stale on the broadphase.
+  - ~~Grid spatial-hash broadphase behind the `SpatialIndex` surface~~ — **DONE, shipped as CW7-8 in
+    0.3.1.** `spatial-index.ts` is a uniform spatial hash (`_cells: Map<number, _Entry<T>[]>` on a
+    packed cell key), the exported surface was kept byte-identical, and it measured 4.82 ms → 0.18 ms
+    at 1000 sparse bodies. **Do not re-do this.** Note **PERF-9** separately owns what CW7-8 did *not*
+    touch: `SpatialIndex.update`'s per-entity closure and O(n) find.
+  - ~~MTV / overlap depth~~ — **DONE 2026-09-03 (session #312), see `## Done`.**
+  - ~~`CollisionWorld.raycast`~~ — **DONE 2026-09-03 (session #312), see `## Done`.**
+  - **Boundary semantics — the one bullet left. Still divergent, confirmed live.** `aabbVsAabb` (`shape.ts:100`) and
+    `circleVsCircle` (`:114`) use strict `<`; `aabbVsCircle` (`:134`) uses `<=`. Exactly-touching
+    shapes therefore collide in the mixed case and not the like-for-like ones. Pick strict `<`,
+    document it. **This one is a behaviour change in a hot path**, not an addition — it belongs in the
+    same cut as a perf re-capture, not stacked on top of the existing override debt.
+  - **Sequencing:** the additive work landed in session #312. What remains is **only** the boundary
+    fix, which is a behaviour change in a hot path and should ride with a clean node-lane capture
+    rather than stack on the existing override debt. Small — one comparison and its documentation —
+    but do not land it blind.
 
 ### Arc HYG — post-flip engine hygiene (SOLID/DRY/KISS/YAGNI; NOT before the flip)
 
@@ -450,6 +468,38 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-M11 (additive half) — physics MTV + broadphase-backed world raycast** (2026-09-03,
+  session #312). Arc OSS P2 cut-line; `packages/physics`, one patch changeset. **The row was
+  re-scoped against HEAD first** (same session), which is what made it ~1 session instead of 2: one
+  of its four bullets was already shipped, and the audit is recorded on the Active row above.
+  **`overlapInto` / `overlap` / `createOverlap`.** `shapeOverlap` returned `boolean` and nothing
+  else, so a detection-only consumer knew two shapes collided and had no way to separate them. Now
+  a unit axis pointing `a`→`b` plus penetration depth. AABB/AABB resolves along the
+  least-penetrated axis; a circle centred *inside* a box exits through its nearest face (the case a
+  naive closest-point normal gets wrong, since the normal is zero-length there); concentric circles
+  return `(1, 0)` rather than `NaN` from normalising zero. `null` leaves the caller's buffer
+  untouched, so one buffer serves a whole pair loop.
+  **`CollisionWorld.raycast(ox, oy, dx, dy, maxDist, mask?)`.** The spec called the old export
+  "disconnected"; verified it is worse — `grep raycast collision-world.ts` returned **nothing**, so
+  the standalone `raycast(..., targets)` was an O(n) scan over a caller-supplied list sitting beside
+  an O(1) index, allocating a fresh hit plus two nested `Vec2`s **per candidate tested** and keeping
+  only the closest. The new method walks broadphase cells, filters on the `layer` bits colliders
+  already carried (`collider.ts:9-12`) so `mask` needed plumbing rather than a new concept, and
+  reuses one hit record — backed by a new zero-alloc `rayVsShapeInto`. The reuse is a footgun if
+  unnoticed, so it is documented in three places and pinned by a test.
+  **A real bug my tests caught: axis-aligned rays found nothing.** `SpatialIndex._cMax` is
+  `ceil(v / CELL) - 1` — an exclusive end matching `query`'s strict-inequality overlap. A horizontal
+  ray's AABB has **height 0**, giving `cyMin 0 > cyMax -1`, so the cell loop never ran and every
+  horizontal or vertical cast returned `null`. The query AABB is now padded by `RAY_BOUNDS_PAD`;
+  the broadphase is a conservative prefilter, so over-including by 1e-6 costs nothing and the exact
+  test rejects the extras.
+  Also corrected the package README, which still called the broadphase **brute-force** — it has been
+  a uniform spatial hash since CW7-8 in 0.3.1. Same stale-README family as M8's.
+  27 new tests, 108 green in-package (was 81). Two of my own test errors, both mine and not the
+  code's: an inverted least-penetrated-axis expectation (boxes 8 apart on a 10-unit span overlap by
+  2 on x, not 8), and `world.add` taking positional `isTrigger, layer, mask` rather than an options
+  object. SESSION_LOG #312 canonical.
 
 - **OSS-M9 — math: curves, segment intersection points, RNG state** (2026-09-03, session #311).
   Arc OSS P2 cut-line; `packages/math`, one patch changeset. All three spec bullets shipped.

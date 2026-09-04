@@ -11758,3 +11758,31 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 312 — 2026-09-03 (scope: engine)
+
+**Goal:** OSS-M11 (additive half): physics MTV + world raycast
+
+**Touched files**
+- `.changeset/oss-m11-physics-detection.md`
+- `docs/design/api-specs.md`
+- `docs/plans/todo.md`
+- `packages/physics/README.md`
+- `packages/physics/src/collision-world.ts`
+- `packages/physics/src/index.ts`
+- `packages/physics/src/raycast.ts`
+- `packages/physics/src/shape.ts`
+- `packages/physics/tests/overlap.test.ts`
+- `packages/physics/tests/world-raycast.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:2 (both my own test errors, not the code's: inverted least-penetrated-axis expectation, and world.add takes positional isTrigger/layer/mask not an options object); deny:0; gate:1 (perf-freshness override inherited from 4ac7c58; physics IS measured but this row only ADDS overlapInto/raycast/rayVsShapeInto — no existing predicate or step() path changed, and the boundary-semantics fix that WOULD change a hot path was deliberately deferred to ride with the re-capture); fixup:0; drift:2 (M11 re-scoped against HEAD — its broadphase bullet shipped as CW7-8, recorded on the Active row; and the physics README still called the broadphase brute-force, corrected)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -16,6 +16,12 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
   Write the ADR from [`adr-0000-template.md`](docs/design/adr-0000-template.md) and get it accepted
   first — and write one for a consumer-observable behaviour change even when it ships as a `patch`,
   which the gate cannot see.
+- **Pre-flip, the answer to that decision is often "yes".** The scope is `restricted` with no public
+  consumers, so a break costs a migration we control. Minors are deliberately unblocked until the
+  flip, announced version numbers are provisional, and an accepted breaking ADR carries a
+  **posting obligation** to `flare-engine-page` and the portfolio. Posture, reserved numbers
+  (`0.4.0` = freeze cut, `1.0.0` = launch) and the obligation:
+  [`docs/plans/versioning-and-announcements.md`](docs/plans/versioning-and-announcements.md).
 
 ## Code style
 

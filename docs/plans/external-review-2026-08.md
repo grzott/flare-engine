@@ -764,6 +764,47 @@ already exposes `opaque` to move Android off TextureView onto SurfaceView. **Owe
 a long soak (minutes, not 30 s) watching native memory, and a check of whether `opaque: true`
 removes the messages.** `retentionDepth` no longer applies to native and is now web-only.
 
+### 11.4d XR-1c residue closed: `opaque: true` removes the messages, nothing leaks (2026-09-05, session #316)
+
+**Both questions §11.4c left open are answered on device, and the answer to the first changes the
+reading of the second.** Pixel 7 (panther, Android 17), **release** build of the scaffolded vehicle,
+both arms identical except `GameConfig.opaque`.
+
+| | `opaque: false` (default) | `opaque: true` |
+| --- | --- | --- |
+| renders | yes, 0 JS errors | yes, 0 JS errors, RN overlay still on top |
+| RN-Skia pair / 60 s | **22 028** | **0** (three consecutive windows) |
+| share of all logcat output | **90%** (22 028 of 24 600 lines) | ~0% (1 125-3 925 lines total) |
+| native heap, 6 min | 132 740 -> 135 089 KB (+2 349) | 129 433 -> 130 248 KB (+815) |
+| plateau reached | t~150 s | t~120 s |
+
+**No leak, on either path.** Both series rise during warm-up and then plateau with *bidirectional*
+noise for the remaining 3.5 minutes (arm A wanders 135 281 -> 135 193 -> 135 089). §11.4c was right
+that 30 s proves nothing; six minutes shows a flat steady state. `opaque: true` additionally sits
+**~4.8 MB lower** in absolute native heap and settles sooner.
+
+**So the 1.6x message delta recorded in §11.4c was log volume, not retention.** That is consistent
+with the worklet path having no retention ring: there was never anything accumulating to retain.
+The pair is RN-Skia's TextureView path, `opaque` moves Android onto SurfaceView, and the code that
+emits them is simply no longer on the path. Recommended on Android, and now documented as such on
+`GameConfig.opaque` — with the honest framing that this is log noise and TextureView overhead, not
+a correctness fix, since rendering is correct either way.
+
+**Two measurement traps worth keeping, both of which produced wrong numbers first.** (1) `adb logcat
+-d` reads a **wrapping** ring buffer — `main` is 256 KiB and was sitting *full* at 255 KiB, so every
+`-d | grep -c` count was a silent floor (they read 15 265-21 216 against a true 22 028). Stream to a
+file for a fixed window instead. (2) A cumulative-count column sampled that way is not monotonic and
+is meaningless; it measures buffer occupancy.
+
+**Vehicle note.** The `dev.flare.demo` install that §11.4c's 2 840 / 4 614 figures were measured on
+was a stale artifact of an earlier vehicle iteration; the tree's `app.json` declares
+`com.grzott.newarch`, and the debug + Metro path no longer boots (`ReferenceError: Property
+'MessageQueue' doesn't exist` under bridgeless). It was rebuilt as a **release** APK, which is both
+a better soak target and why the absolute counts here are ~2.4x §11.4c's — a release build renders
+more frames and the message rate tracks frames. **The figures above are internally comparable to
+each other and NOT to §11.4c's.** Filed while documenting: **XR-13** — `runOnUI`, which *is* the
+XR-1c fix, is deprecated in Reanimated 4 under an open-ended `>=3.19.1` peer.
+
 ### 11.5 Sequencing note
 
 E-R3's ADR is deliberately sequenced *after* XR-1 rather than before it. Writing the ADR first would

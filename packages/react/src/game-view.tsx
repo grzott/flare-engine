@@ -106,8 +106,19 @@ export interface GameConfig {
    * RN siblings on certain Android devices/Fabric configurations.
    *
    * Implies the canvas content is opaque — the clearColor's alpha must be
-   * fully opaque (0xFF). Defaults to `false` to preserve the current
-   * iOS-equivalent behavior.
+   * fully opaque (0xFF), which the default `0xff000000` already satisfies.
+   * Defaults to `false` to preserve the current iOS-equivalent behavior.
+   *
+   * **Recommended on Android.** Measured on a Pixel 7 (Android 17, release
+   * build, XR-1c): with the default TextureView path RN-Skia logs its
+   * `updateTexImage: LegacySurfaceTexture is not attached!` /
+   * `updateAndRelease() failed` pair **22 028 times per 60 s** — 90% of all
+   * logcat output, saturating the 256 KiB ring buffer so unrelated diagnostics
+   * are lost. With `opaque: true` the same build over three 60 s windows logs
+   * the pair **zero** times and total log volume drops ~10x. RN-Skia labels the
+   * pair ignorable and rendering is correct either way, so this is log noise
+   * and TextureView overhead, not a correctness fix. Native memory is flat
+   * across a 6-minute soak on both paths.
    */
   opaque?: boolean;
 }

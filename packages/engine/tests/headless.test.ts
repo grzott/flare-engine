@@ -8,27 +8,39 @@ import { createGame, createTier2Wiring, EventEmitter, GameLoop, World } from '..
 // ---------------------------------------------------------------------------
 
 describe('headless exports', () => {
-  it('exports World from ecs', () => {
-    expect(World).toBeDefined();
-    expect(typeof World).toBe('function');
-  });
+  // These were five separate `typeof X === 'function'` tests. None could fail
+  // independently: a missing export aborts this file at the import above, so the
+  // import statement was already the existence check and the assertions only
+  // inflated the apparent coverage of the barrel's most consumer-visible surface
+  // (HYG10). Replaced by one test that USES each export, which catches what the
+  // import cannot — a re-export bound to the wrong thing, or an export whose
+  // kind changed from a constructor to something merely callable.
+  it('re-exports usable implementations, not just callable bindings', () => {
+    const world = new World();
+    const id = world.spawn();
+    expect(typeof id).toBe('number');
 
-  it('exports GameLoop from core', () => {
-    expect(GameLoop).toBeDefined();
-    expect(typeof GameLoop).toBe('function');
-  });
+    const loop = new GameLoop();
+    expect(typeof loop.start).toBe('function');
+    expect(typeof loop.stop).toBe('function');
 
-  it('exports EventEmitter from events', () => {
-    expect(EventEmitter).toBeDefined();
-    expect(typeof EventEmitter).toBe('function');
-  });
+    const emitter = new EventEmitter<{ ping: (v: number) => void }>();
+    let seen = 0;
+    emitter.on('ping', (v) => {
+      seen = v;
+    });
+    emitter.emit('ping', 7);
+    expect(seen).toBe(7);
 
-  it('exports createGame from engine', () => {
-    expect(typeof createGame).toBe('function');
-  });
-
-  it('exports createTier2Wiring from tier2-wiring', () => {
-    expect(typeof createTier2Wiring).toBe('function');
+    // createTier2Wiring returns its unsubscribe; with no rules it is a no-op
+    // that must still be callable rather than undefined.
+    const unwire = createTier2Wiring({
+      events: emitter as never,
+      providers: {} as never,
+      rules: [],
+    });
+    expect(typeof unwire).toBe('function');
+    unwire();
   });
 
   it('createGame returns a working instance', () => {

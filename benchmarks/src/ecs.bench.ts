@@ -1,7 +1,7 @@
 import { _resetComponentIds, defineSystem, Position, Velocity, World } from '@flare-engine/ecs';
 import { createBenchSession } from '@flare-engine/testing';
 import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
-import { ECS_SCENARIOS } from './scenarios/ecs.js';
+import { ECS_CHURN_SCENARIOS, ECS_SCENARIOS } from './scenarios/ecs.js';
 
 /**
  * The control suite. Its workload is deliberately left exactly as it was when
@@ -52,8 +52,45 @@ function buildWorld(entities: number): World {
 
 const DT = 1 / 60;
 
+/**
+ * Steady population with a fixed number of entities recycled per step.
+ *
+ * The ring is what keeps this honest: destroying the *oldest* live id each
+ * step means the entity being removed sits at an arbitrary offset inside
+ * `Query.entities`, which is what a real consumer produces. Destroying the
+ * most recently spawned would sit at the end of the array and make
+ * `indexOf` + `splice` look free — measuring the best case of the very code
+ * path this row exists to characterise.
+ */
+type ChurnWorld = {
+  readonly world: World;
+  readonly alive: number[];
+  cursor: number;
+};
+
+function buildChurnWorld(entities: number): ChurnWorld {
+  const world = buildWorld(entities);
+  const alive: number[] = [];
+  for (const id of world.query(Position, Velocity)) alive.push(id);
+  return { world, alive, cursor: 0 };
+}
+
+function churnStep(state: ChurnWorld, churn: number): void {
+  const { world, alive } = state;
+  for (let i = 0; i < churn; i++) {
+    const victim = alive[state.cursor] as number;
+    world.destroy(victim);
+    const id = world.spawn();
+    world.add(id, Position, { x: 0, y: 0 });
+    world.add(id, Velocity, { x: 1, y: 1 });
+    alive[state.cursor] = id;
+    state.cursor = (state.cursor + 1) % alive.length;
+  }
+  world.step(DT);
+}
+
 export function ecsBenches(overrides?: BenchOverrides): BenchStats[] {
-  return ECS_SCENARIOS.map(({ name, n, innerIters }) =>
+  const steady = ECS_SCENARIOS.map(({ name, n, innerIters }) =>
     runBench(
       {
         name,
@@ -64,4 +101,18 @@ export function ecsBenches(overrides?: BenchOverrides): BenchStats[] {
       overrides,
     ),
   );
+
+  const churn = ECS_CHURN_SCENARIOS.map(({ name, n, churn: rate, innerIters }) =>
+    runBench(
+      {
+        name,
+        setup: () => buildChurnWorld(n),
+        run: (state) => churnStep(state, rate),
+        innerIters,
+      },
+      overrides,
+    ),
+  );
+
+  return [...steady, ...churn];
 }

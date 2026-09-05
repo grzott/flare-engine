@@ -20,3 +20,35 @@ export const ECS_SCENARIOS: readonly EcsScenario[] = SWEEP.map(({ n, innerIters 
   n,
   innerIters,
 }));
+
+/** A churn row additionally destroys and respawns `churn` entities per step. */
+export type EcsChurnScenario = EcsScenario & { readonly churn: number };
+
+/**
+ * Churn sweep — steady population, `n / 20` entities destroyed and respawned
+ * every step (5%, the shape a bullet-heavy shmup actually produces).
+ *
+ * `ECS_SCENARIOS` above measures steady-state iteration and is deliberately
+ * frozen, so every published ECS number described the fast path while the path
+ * a consumer reports as dominating its frame had none. These rows are additive
+ * for exactly that reason: they must not perturb the control suite, which is
+ * the reference that located the 2026-07 regression in `render` (XR-7).
+ *
+ * Churn is where `Query._remove`'s `indexOf` + `splice` shows up — both O(n)
+ * per removal, so the cost of these rows grows with `n * churn` rather than `n`.
+ */
+const CHURN_SWEEP: readonly { readonly n: number; readonly innerIters: number }[] = [
+  { n: 500, innerIters: 60 },
+  { n: 1000, innerIters: 25 },
+  { n: 2000, innerIters: 8 },
+  { n: 5000, innerIters: 2 },
+];
+
+export const ECS_CHURN_SCENARIOS: readonly EcsChurnScenario[] = CHURN_SWEEP.map(
+  ({ n, innerIters }) => ({
+    name: `ecs.churn ${n.toString().padStart(4)} entities, 5%/step`,
+    n,
+    churn: Math.max(1, Math.floor(n / 20)),
+    innerIters,
+  }),
+);

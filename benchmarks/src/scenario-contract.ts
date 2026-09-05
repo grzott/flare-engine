@@ -31,6 +31,10 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
     'ecs.step  1000 entities (Pos+Vel)',
     'ecs.step  2000 entities (Pos+Vel)',
     'ecs.step  5000 entities (Pos+Vel)',
+    'ecs.churn  500 entities, 5%/step',
+    'ecs.churn 1000 entities, 5%/step',
+    'ecs.churn 2000 entities, 5%/step',
+    'ecs.churn 5000 entities, 5%/step',
   ],
   Physics: [
     'physics.step   100 AABB sparse',

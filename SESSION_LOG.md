@@ -11819,3 +11819,28 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 314 — 2026-09-05 (scope: engine)
+
+**Goal:** Node + web-cpu-raster + web-GPU perf re-capture: 8 stale lanes down to 1
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `benchmarks/results/web.json`
+- `benchmarks/results/web-gpu.json`
+- `benchmarks/results/web-gpu-history.ndjson`
+- `benchmarks/results/web-history.ndjson`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (perf-freshness still red on ONE entry — web-android.json — and overridden on a hard blocker, not a judgement: `adb devices` lists no device, so the USB-attached Pixel 7 the lane requires is not present; the other seven stale entries were cleared by real captures this session); fixup:0; drift:1 (the row was scoped as the node lane only; the machine was quiet enough to also clear web-cpu-raster and web-GPU, so two extra lanes were captured and folded rather than left for a second session)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -37,11 +37,11 @@ See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-
 
 ## React Native New Architecture
 
-Flare's headless packages are architecture-agnostic pure TypeScript. `@flare-engine/react` requires `react-native-reanimated >= 3.19.1` (matching rn-skia's own floor). Reanimated 3.x works on both old and new architecture, and the `react-native >= 0.79` peer floor still admits old-architecture apps: the New Architecture has been the default since RN 0.76, but 0.79-0.81 still allow an explicit `newArchEnabled: false` opt-out.
+Flare's headless packages are architecture-agnostic pure TypeScript. **`@flare-engine/react` requires the New Architecture.** It peers `react-native-reanimated >= 4.0.0` and `react-native-worklets >= 0.7.0`, and Reanimated 4 is New-Architecture-only — so an app using `<GameView>` must run with `newArchEnabled=true`.
 
-> **Old-architecture support is intended but not verified.** The floors above are chosen to keep it viable, and nothing is known to break — but we have not run Flare on an old-architecture app. No scaffolder template can produce one: all three pin Expo 57 / RN 0.86, which force `newArchEnabled=true`, and `expo prebuild` silently overrides an `app.json` opt-out. Verifying the claim needs a hand-built RN 0.79-0.81 vehicle. If you ship on the old architecture, treat yourself as the first — and please open an issue either way. Reasoning: [ADR-0001](https://github.com/grzott/flare-engine/blob/main/docs/design/adr-0001-renderer-and-threading.md).
+In practice this costs nothing: the New Architecture has been RN's default since 0.76, and every `create-flare-app` template pins Expo 57 / RN 0.86, which force it on.
 
-Notably, `react-native-reanimated` v4 is New-Architecture-only (it additionally peers `react-native-worklets`) — if you pin Reanimated 4, enable the New Architecture. Reanimated 3.x is the declared floor and works either way.
+> **Old-architecture support was dropped deliberately, in [ADR-0002](https://github.com/grzott/flare-engine/blob/main/docs/design/adr-0002-worklets-migration-and-new-arch-floor.md).** The earlier `>= 3.19.1` floor was chosen to keep Reanimated 3 — and therefore old-architecture apps — viable, but the claim was never verifiable: no scaffolder template can produce such an app, because `expo prebuild` overrides an `app.json` opt-out. Rather than keep shipping a promise we could not test, the engine now depends on `react-native-worklets` directly, which also removes a per-frame allocation on the native render path.
 
 ## License
 

@@ -145,16 +145,26 @@ mock.module('react-native-reanimated', () => ({
       },
     };
   },
-  // runOnUI returns the dispatcher; the real one hops to the UI thread, so the
-  // worklet body is deliberately NOT run here — the assertion is about which
-  // thread the capture is scheduled on, not what it draws.
-  runOnUI: (fn: unknown) => {
+}));
+
+// ADR-0002: the native capture dispatches through `scheduleOnUI` from
+// react-native-worklets, not Reanimated's deprecated curried `runOnUI`. The
+// real one hops to the UI thread, so the worklet body is deliberately NOT run
+// here — the assertion is about which thread the capture is scheduled on, not
+// what it draws.
+//
+// `scheduleOnUI(fn, ...args)` is a single call where `runOnUI(fn)(...args)` was
+// two, so schedule-count and dispatch-count are now necessarily equal. Both are
+// still tracked: `_runOnUIDispatchCount` is what the per-frame tests assert, and
+// keeping `_runOnUICount` beside it means a regression back to a curried,
+// per-frame-allocating form shows up as the two diverging rather than silently
+// passing.
+mock.module('react-native-worklets', () => ({
+  scheduleOnUI: (fn: unknown, ...args: unknown[]) => {
     _runOnUICount++;
+    _runOnUIDispatchCount++;
     _runOnUILastFn = fn;
-    return (...args: unknown[]) => {
-      _runOnUIDispatchCount++;
-      _runOnUILastArgs = args;
-    };
+    _runOnUILastArgs = args;
   },
 }));
 

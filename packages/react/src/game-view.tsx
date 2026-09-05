@@ -12,8 +12,9 @@ import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
-import { runOnUI, type SharedValue, useSharedValue } from 'react-native-reanimated';
+import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnUI } from 'react-native-worklets';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
 import { createSceneCapture, type SceneCapture } from './scene-texture.js';
@@ -254,7 +255,11 @@ export function GameView({
           if (img !== null) sceneImage.value = img;
         } else {
           // Native must build the surface on the UI thread — see captureSceneOnUI.
-          runOnUI(captureSceneOnUI)(
+          // `scheduleOnUI` and not Reanimated's `runOnUI`: the latter is curried,
+          // so `runOnUI(fn)` allocated a fresh wrapper on every frame in this
+          // hook. Passing the args directly allocates nothing (ADR-0002).
+          scheduleOnUI(
+            captureSceneOnUI,
             sceneImage,
             uiSurface,
             uiSurfaceKey,

@@ -8,6 +8,14 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 
 - **Biome** lint + format — never Prettier or ESLint
 - **Changesets** lockstep (`fixed`) versioning across `@flare-engine/*` — never bump a single package
+- **`patch` is the default and needs no permission.** A `minor` or `major` changeset is an owner
+  decision, not an implementation detail: lockstep means one word moves all 42 packages — `minor`
+  opens `0.4.0` (reserved for the freeze cut), `major` publishes `1.0.0`, and npm does not take a
+  publish back. `check:bump` refuses any pending changeset above `patch` unless it cites an
+  `ADR-NNNN` in `docs/design/` whose `Status` is `Accepted`. There is no env-var override.
+  Write the ADR from [`adr-0000-template.md`](docs/design/adr-0000-template.md) and get it accepted
+  first — and write one for a consumer-observable behaviour change even when it ships as a `patch`,
+  which the gate cannot see.
 
 ## Code style
 

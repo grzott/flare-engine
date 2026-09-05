@@ -50,6 +50,11 @@ lockfile format, which older Bun releases cannot read.
    ```bash
    bun changeset
    ```
+   Pick `patch` unless you have an accepted ADR. Versioning is lockstep, so a `minor` or `major`
+   moves all 42 packages at once — `bun run check:bump` refuses an above-patch changeset that does
+   not cite an `ADR-NNNN` from `docs/design/` with `Status: Accepted`. If you believe your change
+   warrants one, propose the ADR in the PR rather than raising the level and waiting for the gate
+   to stop you. See [`docs/design/adr-0000-template.md`](docs/design/adr-0000-template.md).
 7. Commit using Conventional Commits (enforced by commitlint): `feat(math): add Vec2.lerp`.
 8. Push and open a Pull Request. CI runs more than step 5 does — on top of lint / typecheck /
    test / build / typecheck:tests it gates `check:deps`, `check:changeset`, `check:exports`,

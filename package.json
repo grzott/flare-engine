@@ -25,6 +25,7 @@
     "check:peers": "bun scripts/check-peer-completeness.mjs",
     "check:tarballs": "bun scripts/audit-tarballs.mjs --selftest && bun scripts/audit-tarballs.mjs --head-only",
     "check:changeset": "bun scripts/check-changeset.mjs",
+    "check:bump": "bun scripts/check-bump-level.mjs",
     "check:exports": "bun scripts/check-exports.mjs",
     "check:nodenext": "bun scripts/check-nodenext.mjs",
     "check:publish-safety": "bun scripts/check-publish-safety.mjs",
@@ -45,7 +46,7 @@
     "propagate-license": "bun run scripts/propagate-license.ts",
     "prebuild": "bun run propagate-license",
     "changeset": "changeset",
-    "version": "changeset version && bun run scripts/concretize-workspace-deps.ts && bun install",
+    "version": "bun run check:bump && changeset version && bun run scripts/concretize-workspace-deps.ts && bun install",
     "release": "bun run propagate-license && turbo build --filter='./packages/*' && bun run check:publish-safety && bun run check:perf && bun run check:perf-freshness && changeset publish",
     "prepare": "husky"
   },

@@ -28,6 +28,9 @@ jobs:
       - run: bun run check:deps
       - run: bun run check:changeset
       - run: bun run check:peers
+
+      # Level, not coverage: refuses an above-patch bump without an accepted ADR.
+      - run: bun run check:bump
       - run: bun run typecheck
       - run: bun run build
       - run: bun run test

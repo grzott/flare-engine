@@ -82,6 +82,13 @@ run_gate "changeset" bun run check:changeset
 # XR-12 both were; the check existed and no gate ran it until HYG9.
 run_gate "peers"     bun run check:peers
 
+# Versioning is lockstep, so one word in one changeset moves all 42 packages: a
+# `minor` opens 0.4.0 (reserved for the freeze cut), a `major` publishes 1.0.0.
+# check:changeset gates coverage, never level. This gates level, and the only way
+# through is an accepted ADR — deliberately not an env var, because a stale
+# benchmark is recoverable and a published major is not.
+run_gate "bump"      bun run check:bump
+
 # The contract suite for the sibling hook that enforces "builders never run
 # git add/commit/push". It covers four documented bypasses (wrapper, eval,
 # `git -C`, unnamed verbs) and, until HYG9, was invoked by nothing — so a

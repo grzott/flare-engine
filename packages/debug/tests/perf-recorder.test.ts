@@ -3,18 +3,79 @@ import { emitPerfReport, PERF_BENCH_TAG } from '../src/perf-output.js';
 import { createPerfRecorder } from '../src/perf-recorder.js';
 
 describe('createPerfRecorder — percentile correctness', () => {
-  test('p50 / p95 / p99 are correct for a known sorted distribution', () => {
-    const rec = createPerfRecorder({ label: 'test', ringSize: 100 });
-    rec.beginSection('render');
-    // Record 100 samples: 1ms each, except last = 50ms (simulates spike)
-    for (let i = 0; i < 99; i++) {
-      rec.endSection('render');
-      // Manually write into the section by using begin/end pairs
-      rec.beginSection('render');
+  /**
+   * Drive a section through begin/end pairs with `performance.now` stubbed, so
+   * each pair records an exact elapsed value.
+   *
+   * The original version of this test recorded no assertions at all — its body
+   * was comments concluding "we can't freeze performance.now()" — so percentile
+   * maths went unverified while the suite reported green (HYG10). `nowMs()`
+   * reads `performance.now` at call time, so it is stubbable after all.
+   */
+  const recordSamples = (ringSize: number, samplesMs: readonly number[]) => {
+    let clock = 0;
+    const spy = spyOn(performance, 'now').mockImplementation(() => clock);
+    try {
+      const rec = createPerfRecorder({ label: 'test', ringSize });
+      for (const ms of samplesMs) {
+        rec.beginSection('render');
+        clock += ms;
+        rec.endSection('render');
+      }
+      return rec.flush().sections.find((x) => x.name === 'render');
+    } finally {
+      spy.mockRestore();
     }
-    // The begin/end pairs above won't produce clean values — use a
-    // known-value approach: record 100 frames of a section with injected timing.
-    // Instead, use multiple begin/end timing pairs where we control the ring directly.
+  };
+
+  test('p99 interpolates BETWEEN samples on a 99x1ms + 1x50ms spike', () => {
+    // sorted = [1 x99, 50], n = 100. The percentile index is (p/100)*(n-1):
+    //   p50 -> 49.5  -> between sorted[49]=1 and sorted[50]=1  -> 1
+    //   p95 -> 94.05 -> between sorted[94]=1 and sorted[95]=1  -> 1
+    //   p99 -> 98.01 -> between sorted[98]=1 and sorted[99]=50 -> 1 + 49*0.01 = 1.49
+    // The p99 value is the discriminating one: returning the max (50), the
+    // nearest sample (1), or an off-by-one index all give something != 1.49.
+    const samples = [...Array.from({ length: 99 }, () => 1), 50];
+    const s = recordSamples(100, samples);
+
+    expect(s?.count).toBe(100);
+    expect(s?.min).toBeCloseTo(1, 5);
+    expect(s?.max).toBeCloseTo(50, 5);
+    expect(s?.p50).toBeCloseTo(1, 5);
+    expect(s?.p95).toBeCloseTo(1, 5);
+    expect(s?.p99).toBeCloseTo(1.49, 4);
+    // mean = (99*1 + 50) / 100
+    expect(s?.mean).toBeCloseTo(1.49, 4);
+  });
+
+  test('every percentile lands on its exact interpolated value for a 1..100 ramp', () => {
+    // sorted = [1..100], n = 100:
+    //   p50 -> 49.5  -> 50 + (51-50)*0.5   = 50.5
+    //   p95 -> 94.05 -> 95 + (96-95)*0.05  = 95.05
+    //   p99 -> 98.01 -> 99 + (100-99)*0.01 = 99.01
+    // A ramp separates the three percentiles, so a bug that returns the mean,
+    // the max, or the same value for all three cannot pass.
+    const s = recordSamples(
+      100,
+      Array.from({ length: 100 }, (_, i) => i + 1),
+    );
+
+    expect(s?.count).toBe(100);
+    expect(s?.p50).toBeCloseTo(50.5, 4);
+    expect(s?.p95).toBeCloseTo(95.05, 4);
+    expect(s?.p99).toBeCloseTo(99.01, 4);
+    expect(s?.mean).toBeCloseTo(50.5, 4);
+    expect(s?.min).toBeCloseTo(1, 5);
+    expect(s?.max).toBeCloseTo(100, 5);
+  });
+
+  test('the ring keeps only the most recent ringSize samples', () => {
+    // 6 samples into a ring of 4 keeps [3,4,5,6], not [1,2,3,4].
+    const s = recordSamples(4, [1, 2, 3, 4, 5, 6]);
+    expect(s?.count).toBe(4);
+    expect(s?.min).toBeCloseTo(3, 5);
+    expect(s?.max).toBeCloseTo(6, 5);
+    expect(s?.mean).toBeCloseTo(4.5, 4);
   });
 
   test('p50 on uniform 10ms samples returns ~10ms', () => {

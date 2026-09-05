@@ -468,6 +468,32 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **web-android re-capture: perf-freshness green with no override** (2026-09-05, session #315).
+  `[MT]`, results + doc only. Closes the one lane session #314 left open and clears an override
+  debt that had run for eight consecutive rows — `check-perf-freshness` now passes on its own, so
+  `bun run release` no longer needs `FLARE_PERF_ALLOW_STALE=1` and the Oct 5 freeze cut can be
+  taken clean. Pixel 7 (panther, Android 17) attached over USB; the lane *attaches* to Chrome
+  rather than launching it, so Chrome stayed foregrounded and `@chrome_devtools_remote` was
+  confirmed published before any work started. Folded 5 runs via
+  `bench:web:promote -- --lane android --runs 5`; renderer ANGLE / Mali-G710 / OpenGL ES 3.2.
+  **The interesting part is that the fold refused twice first, and both refusals were correct.**
+  The first window mixed two thermal states — three captures taken back-to-back while the phone
+  was cold, against two taken later during diagnosis while it was warm — and 6 scenarios split
+  ~12% along exactly that line. The second refusal was subtler: a single uninterrupted batch of 5
+  still failed, because runs 1-2 were cold and 3-5 had reached steady state, and 12 scenarios
+  caught it. **The fix is the opposite of the intuitive one — not a cooler device but a
+  thermally *steady* one.** Discarding the cold runs and capturing 5 more with the phone already
+  warm folded on the first try, every scenario inside the 10% guard, `Thermal Status: 0`
+  throughout (steady, not throttled). Recorded here because the runbook currently says nothing
+  about warm-up and the next person will hit this: **the Android lane needs warm-up captures
+  before the window that counts.** One diagnostic correction worth keeping: `dumpsys
+  thermalservice` prints `Cached temperatures` *before* `Current temperatures from HAL`, so a
+  naive `grep | head -1` reads a stale value — my cooldown watcher did exactly that and would
+  never have fired against a device that had already cooled. Lane commits differ by design
+  (`web-android.json` at `d61abf6`, the other lanes at `e6a3919`) because the owner committed the
+  #314 blocks mid-capture; freshness still passes since nothing between those commits touched a
+  measured source. SESSION_LOG #315 canonical.
+
 - **Perf re-capture: seven of eight stale lanes cleared** (2026-09-05, session #314). `[MT]`,
   results + doc only, no source change. The override debt the last eight rows had been accumulating
   (each individually evidenced, all inheriting `4ac7c58`) is now paid down to a single entry.
@@ -482,15 +508,11 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   (`100 sprites / 1 atlas` at 24 µs) where the pre-2026-08-18 instrument could only ever report
   multiples of the refresh interval. Renderer recorded as ANGLE / RTX 4070 Ti / D3D11.
   **An earlier attempt in the same session was refused and that is the system working:**
-  `bench:promote` rejected 4 of 5 runs at 19–26% foreign load because a game was running; the
-  rejected captures were discarded rather than folded. **What is left is one lane, blocked on
-  hardware, not on judgement:** `web-android.json` still describes `6549fa207ce8`, and
-  `adb devices` lists nothing — the lane attaches over CDP to a USB-attached Pixel 7 that is not
-  connected. Re-capture with `bun run bench:web:android` in `apps/bench-web` then
-  `bench:web:promote -- --lane android --runs 5`. Until then `bun run release` needs
-  `FLARE_PERF_ALLOW_STALE=1`, and the freeze cut should not be taken with that outstanding.
-  Unblocks **OSS-M10** and **OSS-M11**'s boundary bullet, both of which were explicitly waiting on
-  a clean node-lane capture. SESSION_LOG #314 canonical.
+  `bench:promote` rejected 4 of 5 runs at 19-26% foreign load because a game was running; the
+  rejected captures were discarded rather than folded. Unblocks **OSS-M10** and **OSS-M11**'s
+  boundary bullet, both of which were explicitly waiting on a clean node-lane capture.
+  **web-android followed in session #315 (below), so the debt is fully cleared.**
+  SESSION_LOG #314 canonical.
 
 - **HYG9 — the unwired-probe sweep: nothing type-checked `tests/`, and three guardrails ran
   nowhere** (2026-09-04, session #313). `[MT]` + engine tests. **The row as filed was one probe;

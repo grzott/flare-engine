@@ -11844,3 +11844,24 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 315 — 2026-09-05 (scope: engine)
+
+**Goal:** web-android lane re-capture: perf-freshness fully green, override debt cleared
+
+**Touched files**
+- `benchmarks/results/web-android.json`
+- `benchmarks/results/web-android-history.ndjson`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (my cooldown watcher parsed dumpsys's `Cached temperatures` block instead of `Current temperatures from HAL`, so it read a stale 41.6C/status=2 and would never have fired — the device had in fact already cooled; caught by reading the section headers rather than trusting the grep); deny:0; gate:0 (perf-freshness passes with NO override for the first time in eight rows); fixup:2 (two folds refused before one passed — the first window mixed two thermal states, 3 cold runs against 2 taken later while warm; the second caught a warm-up transient inside a single batch, runs 1-2 cold and 3-5 steady. Resolved by capturing at thermal steady state rather than from cold, which is the opposite of the intuitive fix); drift:1 (two captures in the first batch appended nothing AND printed nothing matching the filter — not the documented backgrounded-Chrome failure; root cause never established, so every later batch tee'd full output to a log rather than grepping a pipe)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -11917,3 +11917,32 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 318 — 2026-09-05 (scope: engine)
+
+**Goal:** XR-13: dispatch native capture via react-native-worklets scheduleOnUI (ADR-0002)
+
+**Touched files**
+- `.changeset/xr13-worklets-scheduleonui.md`
+- `AGENTS.md`
+- `docs/design/adr-0002-worklets-migration-and-new-arch-floor.md`
+- `docs/plans/todo.md`
+- `docs/plans/versioning-and-announcements.md`
+- `packages/engine/package.json`
+- `packages/engine/README.md`
+- `packages/react/package.json`
+- `packages/react/README.md`
+- `packages/react/src/game-view.tsx`
+- `packages/react/tests/game-view.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 (I framed this as 'forward-compat, not performance' before checking the call shape — `runOnUI` is curried and the call site is inside onPreRender, so it allocated a wrapper every frame on native, which AGENTS.md explicitly forbids; the owner's optimisation read was right and mine was wrong); deny:0; gate:1 (check:peers caught @flare-engine/engine re-exporting GameView without declaring the new react-native-worklets peer — the XR-12 defect repeating, caught pre-merge this time by the guardrail wired in HYG9 the day before); fixup:0; drift:1 (the row was filed as a deprecation cleanup and turned out to be a breaking architectural decision, so it went through ADR-0002 and the new check:bump gate rather than being implemented directly — the gate refused the minor until the owner accepted the ADR, which is its first real-world case)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

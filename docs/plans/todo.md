@@ -103,23 +103,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
 
-- **XR-13 — the XR-1c fix depends on a deprecated Reanimated API, under an open-ended peer range**
-  (found 2026-09-05, session #316; P2 pre-freeze-preferred, ~1 session). `game-view.tsx:15` imports
-  `runOnUI` from `react-native-reanimated` and calls it at `:257` — that call **is** the XR-1c fix,
-  the thing that makes the native scene render at all. `tsc` reports it **deprecated (TS6385)** at
-  both sites against Reanimated 4.2.1; in Reanimated 4 the worklet primitives moved to
-  `react-native-worklets` (already present in this workspace at 0.7.4, and the scaffolded vehicle's
-  own `babel.config.js` already loads `react-native-worklets/plugin`). The engine declares
-  `"react-native-reanimated": ">=3.19.1"` — **open-ended** — so a consumer installing today resolves
-  4.x with a deprecation, and one installing after Reanimated 5 resolves a version where the symbol
-  may simply be gone, breaking native rendering at runtime for an install that satisfied the peer
-  range. Note the deprecation is invisible to the gate: per-package `typecheck` reports it as a
-  suggestion, not an error, so nothing fails. Decide two things together: whether to import
-  `runOnUI` from `react-native-worklets` (and what that does to the `>=3.19.1` floor, which exists
-  to keep Reanimated 3 and the old-architecture claim alive — see XR-1/XR-2), and whether the peer
-  range should carry an upper bound. Do NOT bump blind: XR-1 established this seam is device-only
-  verifiable, and the vehicle needed a rebuild this session to boot at all.
-
 - **PERF-21 — the Android fold has no thermal-DRIFT gate, and its status gate cannot fire in time**
   (found 2026-09-05, session #315, calibration data in hand; P2, `[MT]`, ~1 session).
   `web-promote.ts:158-168` refuses a window the device reported *throttling* through
@@ -497,6 +480,51 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-13 — native capture now dispatches through `react-native-worklets`; New Architecture
+  required** (2026-09-05, session #318). Decision recorded in **ADR-0002** (accepted by the owner);
+  first row to go through the `check:bump` gate. `game-view.tsx` swaps Reanimated's deprecated,
+  curried `runOnUI` for `scheduleOnUI` from `react-native-worklets`. **Two defects in one line, not
+  one:** (1) `runOnUI` is deprecated in Reanimated 4 under an *open-ended* `>=3.19.1` peer, so a
+  consumer on a future Reanimated 5 would satisfy the declared range and get a **silent runtime
+  break on the native render path**; and (2) `runOnUI(fn)` is **curried**, so it allocated a wrapper
+  closure **every frame** inside `onPreRender` — the one place `AGENTS.md` forbids allocation.
+  `scheduleOnUI(fn, ...args)` fixes both. The owner's read that this mattered for optimisation was
+  correct and my first assessment ("forward-compat, not performance") was wrong — I had not checked
+  the call shape. **Breaking, deliberately:** peers move to `react-native-reanimated >=4.0.0` +
+  `react-native-worklets >=0.7.0`, Reanimated 4 is New-Architecture-only, so **old-architecture
+  support is dropped**. That trades an unverifiable claim for a verifiable one — the old-arch claim
+  had been documented *"intended but not verified"* earlier the same day precisely because no
+  scaffolder template can build such an app. Blast radius zero: scope is `restricted`, and all three
+  `create-flare-app` templates **already** ship reanimated `~4.5.0` + worklets `~0.10.0`, so
+  scaffolded apps need no change. **Device-verified on the Pixel 7** (release APK, engine dist staged
+  into the vehicle): renders, 0 JS errors, 0 crashes — the row's own "do NOT bump blind" clause, on
+  the exact seam that rendered black under XR-1a. **Two gates earned their keep:** `check:bump`
+  refused the minor until the ADR was accepted (its first real case), and `check:peers` — wired in
+  HYG9 the day before — caught `@flare-engine/engine` re-exporting `GameView` without declaring the
+  new peer, **which is the XR-12 defect repeating**; last time that shipped undetected, this time it
+  was caught pre-merge. Tests: the reanimated mock's `runOnUI` was replaced with a
+  `react-native-worklets` `scheduleOnUI` mock, keeping both counters so a regression to a curried
+  per-frame form shows as divergence rather than passing silently; proven by mutation (reverting the
+  source to `runOnUI` fails the suite). Changeset: react + engine **minor**, unreleased — rides into
+  the `0.4.0` freeze cut rather than triggering a separate release, since 64 refs across 12 docs pin
+  that number. **Posting obligation open** (ADR-0002 is `Consumer impact: breaking`): `flare-engine-page`
+  content and the portfolio posts must state the New-Architecture requirement — see
+  [versioning-and-announcements.md](versioning-and-announcements.md). SESSION_LOG #318 canonical.
+
+- **HARNESS — versioning posture + announcement obligation written down** (2026-09-05, session #318,
+  owner-directed). New SoT [versioning-and-announcements.md](versioning-and-announcements.md):
+  pre-flip the scope is `restricted` with no public consumers, so a break costs a migration we
+  control — `0.x` minors are deliberately unblocked until the flip, and the correct engineering
+  change wins over protecting a number nobody relies on yet. Records that **announced version
+  numbers are provisional**, that every post naming a version must say the final published version
+  depends on the changes the engine still needs (which makes a later renumbering an update rather
+  than a correction), and that an accepted `Consumer impact: breaking` ADR creates a **posting
+  obligation** in `flare-engine-page` + the portfolio. Reserved numbers stated once: `0.4.0` = freeze
+  cut (64 refs pin it), `1.0.0` = public launch, never a routine cut. Linked from `AGENTS.md`; a
+  matching section added to **`flare-engine-page/AGENTS.md`** so that repo's own agents notice, with
+  ADR-0002 as the live example. **`grzott-portfolio` is NOT in this workspace** — its half of the
+  obligation is recorded here and must be carried over by hand. SESSION_LOG #318.
 
 - **HARNESS — an above-`patch` bump now requires an accepted ADR, not a word in a changeset**
   (2026-09-05, session #317, owner-requested). `[MT]`. **The hole, verified before building:** the

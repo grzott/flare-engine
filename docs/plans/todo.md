@@ -22,16 +22,6 @@ Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root doc
 CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
 **never major**.
 
-- **XR-1c — long soak + `opaque` check on the native texture path** (P2, pre-freeze, ~1 session).
-  The XR-1c fix is **done and device-verified** (§11.4c) — this is the residue it left. The benign
-  RN-Skia `updateAndRelease` / `LegacySurfaceTexture` pair is pre-existing (2 840 per 30 s on the
-  shipping build) but the fix emits ~1.6× more (4 614). Rendering is correct and the process is
-  stable across repeated soaks, so this is not a blocker — but it is unexplained, and the native path
-  no longer keeps a retention ring: the worklet assigns `target.value` and never releases the prior
-  image, matching RN-Skia's own `createTexture`, which also does not. Do two things: a **multi-minute
-  soak watching native memory** (30 s proves nothing about a leak), and try **`opaque: true`**
-  (already in `GameConfig`) to move Android off TextureView onto SurfaceView and see if the messages
-  go. Spec: §11.4c.
 - **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~3 sessions:
   XR-1a source+tests+desktop-negative; XR-1b vehicle build — `create-flare-app` scaffold → Gradle →
   device install; XR-1c device validation — logcat render-count, `retentionDepth: 2` soak, and the
@@ -112,6 +102,46 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   duplicate copy of `@flare-engine/ecs` does the same. That makes option C (per-`World` registry) the
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
+
+- **XR-13 — the XR-1c fix depends on a deprecated Reanimated API, under an open-ended peer range**
+  (found 2026-09-05, session #316; P2 pre-freeze-preferred, ~1 session). `game-view.tsx:15` imports
+  `runOnUI` from `react-native-reanimated` and calls it at `:257` — that call **is** the XR-1c fix,
+  the thing that makes the native scene render at all. `tsc` reports it **deprecated (TS6385)** at
+  both sites against Reanimated 4.2.1; in Reanimated 4 the worklet primitives moved to
+  `react-native-worklets` (already present in this workspace at 0.7.4, and the scaffolded vehicle's
+  own `babel.config.js` already loads `react-native-worklets/plugin`). The engine declares
+  `"react-native-reanimated": ">=3.19.1"` — **open-ended** — so a consumer installing today resolves
+  4.x with a deprecation, and one installing after Reanimated 5 resolves a version where the symbol
+  may simply be gone, breaking native rendering at runtime for an install that satisfied the peer
+  range. Note the deprecation is invisible to the gate: per-package `typecheck` reports it as a
+  suggestion, not an error, so nothing fails. Decide two things together: whether to import
+  `runOnUI` from `react-native-worklets` (and what that does to the `>=3.19.1` floor, which exists
+  to keep Reanimated 3 and the old-architecture claim alive — see XR-1/XR-2), and whether the peer
+  range should carry an upper bound. Do NOT bump blind: XR-1 established this seam is device-only
+  verifiable, and the vehicle needed a rebuild this session to boot at all.
+
+- **PERF-21 — the Android fold has no thermal-DRIFT gate, and its status gate cannot fire in time**
+  (found 2026-09-05, session #315, calibration data in hand; P2, `[MT]`, ~1 session).
+  `web-promote.ts:158-168` refuses a window the device reported *throttling* through
+  (`thermalStatus > 0`) or that reported nothing. **Both of this session's refused folds had
+  `statusBefore/After = 0` on every capture** — the status gate is a step function that reads 0
+  right up until it does not (its own docstring, `history.ts:45-48`), so it never fired, and the
+  spread backstop caught the problem instead, twice, at the cost of two wasted 5-run batches.
+  **The signal that WAS present and is recorded but ungated: battery temperature drift.** Across 15
+  captures the phone climbed monotonically 29.4 → 31.6 °C (+2.2 °C) and
+  `render.flush 1000 sprites / 1 atlas` p50 tracked it monotonically 0.417 → 0.521 ms (**+25%**).
+  The window that finally folded did so **marginally** — exactly one run outside the 10% band where
+  two are needed to refuse — not because it was clean. `web-sections.ts:280` states battery temp is
+  deliberately not gated because "no throttled capture has ever been measured with this instrument,
+  so any drift threshold would be invented rather than calibrated". **That premise is now out of
+  date**; the calibration exists. Note the baseline this replaced drifted the same way
+  (`23.4 → 25.7 °C`), so this is a long-standing property of the lane, not a new regression.
+  **Proposal, deliberately warn-first:** compute `batteryTempCAfter(last) - batteryTempCBefore(first)`
+  across the folded window and, following `power.ts`'s precedent of warning about states nobody has
+  measured rather than inventing a verdict, **warn** above ~1 °C and refuse only once a second device
+  or a longer series confirms the slope. One device and one session is thin for a hard threshold.
+  Also worth pairing: a `--warmup N` flag on the capture loop that discards the first N runs, since
+  the operator currently has no way to express "these were the cold ones" except by re-running.
 
 - **HYG10 — tests that are collected and cannot fail** (found 2026-09-04 by the HYG9 sweep;
   P2, post-flip acceptable, ~1 session). Three confirmed, each upheld by a 3-lens refutation panel.
@@ -467,6 +497,31 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **XR-1c — long soak + `opaque` check: both answered on device** (2026-09-05, session #316).
+  Closes the last Arc XR residue. Evidence table in
+  [external-review-2026-08.md](external-review-2026-08.md) §11.4d; one JSDoc change in
+  `packages/react/src/game-view.tsx`. **`opaque: true` removes the RN-Skia pair entirely:
+  22 028 messages / 60 s -> 0**, three consecutive windows, on otherwise-identical release builds.
+  The pair was **90% of all logcat output** (22 028 of 24 600 lines), saturating the 256 KiB ring
+  buffer, so unrelated diagnostics were being lost. **No leak on either path:** 6-minute soaks
+  plateau with bidirectional noise after ~150 s (default, +2 349 KB) and ~120 s
+  (`opaque`, +815 KB); `opaque: true` also sits ~4.8 MB lower in absolute native heap. **So
+  §11.4c's unexplained 1.6x was log volume, not retention** — consistent with the worklet path
+  having no retention ring, because nothing was accumulating to retain. `opaque` is now documented
+  as recommended on Android, framed honestly as log-noise/TextureView overhead rather than a
+  correctness fix, since rendering is correct either way and the RN overlay still composites on top.
+  **The vehicle had to be rebuilt to measure anything**, and that cost most of the session: the
+  debug + Metro path no longer boots (`ReferenceError: Property 'MessageQueue' doesn't exist` under
+  bridgeless, not a stale cache - `--clear` was tried and ruled out), and the `dev.flare.demo`
+  install §11.4c measured was a stale artifact of an earlier iteration - the tree's `app.json`
+  declares `com.grzott.newarch`. Rebuilt as a **release** APK, which removes Metro and the
+  dev-client entirely and is the better soak target; absolute counts are therefore ~2.4x §11.4c's
+  (more frames) and deliberately **not** comparable to it. Two instrumentation traps recorded in
+  §11.4d because both produced wrong numbers first: `logcat -d` reads a *wrapping* buffer that was
+  sitting full, so every `-d | grep -c` was a silent floor; and a cumulative count sampled that way
+  measures buffer occupancy, not rate. Spawned **XR-13** (`runOnUI` deprecated under an open-ended
+  peer). SESSION_LOG #316 canonical.
 
 - **web-android re-capture: perf-freshness green with no override** (2026-09-05, session #315).
   `[MT]`, results + doc only. Closes the one lane session #314 left open and clears an override

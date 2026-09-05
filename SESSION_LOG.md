@@ -11865,3 +11865,25 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 316 — 2026-09-05 (scope: engine)
+
+**Goal:** XR-1c: opaque:true removes the RN-Skia message pair; no native leak over 6 min
+
+**Touched files**
+- `.changeset/xr1c-opaque-android-guidance.md`
+- `docs/plans/external-review-2026-08.md`
+- `docs/plans/todo.md`
+- `packages/react/src/game-view.tsx`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:2 (I chased a stale Metro cache through three rounds when the real cause was that adb install had been succeeding against a DIFFERENT package name — the vehicle is com.grzott.newarch and I kept checking dev.flare.demo, so every 'Success but not installed' reading was my error; and my first message-rate numbers were floors because `logcat -d` reads a wrapping 256 KiB buffer that was sitting full — switching to a streamed fixed window moved arm A from ~15-21k to the true 22 028); deny:0; gate:0; fixup:1 (first soak script's cumulative-message column was meaningless — it sampled buffer occupancy, not rate — and its meminfo grep matched two lines; both fixed for the second arm); drift:2 (the row assumed a working vehicle and there wasn't one — the debug+Metro path no longer boots under bridgeless, so the session was mostly a rebuild to a release APK, which also makes these counts deliberately non-comparable to §11.4c's; and I uninstalled dev.flare.demo, a stale earlier-iteration artifact that happens to be the exact install §11.4c measured, so that historical A/B is no longer re-runnable)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

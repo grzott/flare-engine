@@ -11887,3 +11887,33 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 317 — 2026-09-05 (scope: engine)
+
+**Goal:** ADR system + check:bump gate; XR-1 residue: qualify the old-arch claim
+
+**Touched files**
+- `.changeset/xr1-old-arch-claim-qualified.md`
+- `.claude/hooks/verify.sh`
+- `.github/workflows/ci.yml`
+- `AGENTS.md`
+- `CONTRIBUTING.md`
+- `docs/design/adr-0000-template.md`
+- `docs/design/adr-0001-renderer-and-threading.md`
+- `docs/plans/todo.md`
+- `package.json`
+- `packages/engine/README.md`
+- `packages/react/README.md`
+- `scripts/check-bump-level.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0; deny:0; gate:1 (my own new script failed the lint gate on biome formatting — line wrapping and a quote style — caught by the gate and fixed with `lint --write`, then the gate's selftest and all six behavioural probes re-run to confirm the reformat changed nothing); fixup:1 (first wired check:bump into the `release` script, which would have been useless — `changeset version` consumes the changesets before `release` runs, so the gate would have passed vacuously every time; moved to the `version` script, which is the step that actually applies the levels); drift:1 (the session's approved row was XR-1's docs residue; the owner then asked whether a systematic ADR/breaking-change system existed, it did not, and building it was explicitly requested as soon as possible — so this session carries both, and the two design decisions were put to the owner rather than assumed)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

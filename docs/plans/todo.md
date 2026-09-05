@@ -56,7 +56,7 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   — renders, and `GameView` re-renders **6 times across ~1800 frames**, which closes NEW-1 on device
   rather than by argument. The readback workaround was rejected: it also fixes the black frame but
   pays a GPU→CPU copy every frame, where the threading fix pays nothing. Residue tracked as the
-  **XR-1c** row above. **XR-1 is therefore no longer a launch-blocker**; what remains under it is
+  **XR-1c** row above. **RESIDUE CLOSED 2026-09-05, session #317** — the old-architecture claim is now qualified in both shipped READMEs (`packages/engine/README.md`, `packages/react/README.md`) to match ADR-0001's finding, which had recorded it honestly in the one document that does *not* ship to npm while the unqualified claim shipped in the two that do. **What is still open is only verification half (b)** — the npm-installed scaffold reproducing `OptionalDependencyNotInstalledError` — which stays owner-owed: `pre-bash-guard` blocks non-bun package managers by design, and bun masks the defect precisely because it installs optional peers. One command in an unguarded shell, in an empty dir: `npm install /c/xr1b/flare-engine-engine-0.3.1.tgz` then confirm `node_modules/react-native-reanimated` exists. **XR-1 is therefore no longer a launch-blocker**; what also remains under it is
   XR-1b's vehicle-B finding below, which is a documentation-accuracy problem, not a defect.
   Vehicle B (Reanimated 3 / old arch) **cannot be built from
   the scaffolder at all**: `expo prebuild` forces `newArchEnabled=true` on Expo 57 / RN 0.86,
@@ -497,6 +497,49 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **HARNESS — an above-`patch` bump now requires an accepted ADR, not a word in a changeset**
+  (2026-09-05, session #317, owner-requested). `[MT]`. **The hole, verified before building:** the
+  repo had exactly **one** ADR (`adr-0001`, created ad-hoc by XR-2) with no template, index or
+  "when is an ADR required" rule; `check-changeset` gates **coverage only** (the words
+  `major`/`minor`/`patch` do not appear in it); and a grep across `scripts/**`, `.github/workflows/**`
+  and `.claude/hooks/**` for any bump-level validation returned **empty**. With
+  `fixed: [["@flare-engine/*", "create-flare-app"]]`, one word in one markdown frontmatter moves all
+  42 packages — a stray `minor` opens `0.4.0` (reserved for the freeze cut), a stray `major`
+  publishes `1.0.0`, and npm does not take a publish back. Both passed every existing gate.
+  **Built:** `scripts/check-bump-level.mjs` — parses pending changeset frontmatter, and above
+  `patch` refuses unless the changeset cites an `ADR-NNNN` that exists in `docs/design/` with
+  `Status: Accepted`. **Deliberately no env-var override**, breaking with the
+  `FLARE_PERF_ALLOW_STALE` precedent: a stale benchmark is recoverable by re-capturing, a published
+  major is not, and an env var protects against accident but not against an agent acting on its own
+  authority — an agent can type it, it cannot forge a document the owner accepted. The refusal
+  prints the *consequence in versions* ("this cut publishes 1.0.0 across every package"), not the
+  level. **Proven in both directions, six cases:** refuses minor-without-ADR, minor-citing-absent-ADR,
+  minor-citing-the-template (`ADR-0000` is `Proposed` by construction, so the template can never
+  authorise itself), and major-without-ADR; **passes** minor-citing-an-accepted-ADR; and refuses
+  again when that same ADR is flipped to `Superseded`. Carries its own `--selftest` over 13 synthetic
+  cases including "body prose must not leak into level detection" (a changeset saying *"this is not a
+  major change"* must not read as major), run on every invocation — HYG9's lesson applied to a gate
+  guarding an irreversible action. **Wired at the point it bites:** `verify.sh`, CI, and the
+  **`version`** script — *not* `release`, because `changeset version` consumes the changesets, so a
+  gate there would pass vacuously every time. Also added `docs/design/adr-0000-template.md` (status /
+  consumer-impact / migration / what-would-reverse-this) and the rule in `AGENTS.md` +
+  `CONTRIBUTING.md`. **Stated limitation, not papered over:** level is a proxy, not the safety
+  property — a `patch` can still break a consumer, and OSS-M11's boundary bullet is a live in-repo
+  example (flipping `<=` to `<` changes collision results and ships as `patch`). The template names
+  that broader trigger; the gate cannot see it. SESSION_LOG #317 canonical.
+
+- **XR-1 (residue) — the old-architecture claim now says "intended but not verified"** (2026-09-05,
+  session #317). Docs only. ADR-0001 already recorded that no scaffolder template can build an
+  old-architecture app (Expo 57 / RN 0.86 force `newArchEnabled=true`; `expo prebuild` overrides the
+  `app.json` opt-out), but the ADR does not ship to npm while `packages/engine/README.md` and
+  `packages/react/README.md` both shipped the claim unqualified — the honest version was in the one
+  place consumers never see. Both now qualify it and link the ADR. Also **retired a now-false
+  reverser**: ADR-0001 §5 listed "the XR-1c investigation finding the message delta is a real leak"
+  as a condition that would reopen the renderer decision; XR-1c measured it as log noise
+  (§11.4d), so it is struck through with the evidence rather than deleted, keeping the reasoning
+  auditable. Verification half (b) stays open and owner-owed — see the Active row. Changeset: engine
+  + react, patch. SESSION_LOG #317.
 
 - **XR-1c — long soak + `opaque` check: both answered on device** (2026-09-05, session #316).
   Closes the last Arc XR residue. Evidence table in

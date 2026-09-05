@@ -273,7 +273,7 @@ The three `render.sort` rows touch neither surface — pure JS array sorting —
 
 ### Render suite — Android device (on-device GPU)
 
-_Captured: 2026-08-27 · Median of 5 run(s) · Commit: 6549fa207ce8 · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.3.0 · Browser: chrome-android 151.0.7922.173 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
+_Captured: 2026-09-05 · Median of 5 run(s) · Commit: d61abf6f291a · Runtime: web-android-gpu · Device: Pixel 7 (panther, GS201, Android 17) · Engine version: 0.3.1 · Browser: chrome-android 151.0.7922.175 · Renderer: `ANGLE (ARM, Mali-G710, OpenGL ES 3.2)`_
 
 The same 18 scenarios on real phone hardware, through the identical on-screen `<canvas>` + WebGL path as the desktop GPU lane, so the submission-cost caveat above applies here too.
 
@@ -281,26 +281,26 @@ The same 18 scenarios on real phone hardware, through the identical on-screen `<
 
 | Scenario | p50 | Spread across runs | p95 | p99 | Ops/batch |
 |---|---:|---:|---:|---:|---:|
-| render.flush    100 sprites / 1 atlas | 0.113 ms | 0.109 – 0.118 ms | 0.225 ms | 0.328 ms | 178 |
-| render.flush    500 sprites / 1 atlas | 0.231 ms | 0.227 – 0.241 ms | 0.260 ms | 0.408 ms | 87 |
-| render.flush   1000 sprites / 1 atlas | 0.421 ms | 0.421 – 0.428 ms | 0.483 ms | 0.971 ms | 48 |
-| render.flush   5000 sprites / 1 atlas | 1.873 ms | 1.855 – 1.882 ms | 2.050 ms | 3.583 ms | 11 |
-| render.flush    500 sprites / 4 atlas interleaved | 2.550 ms | 2.525 – 2.550 ms | 2.871 ms | 4.680 ms | 8 |
-| render.flush    500 sprites / 4 atlas clustered | 0.264 ms | 0.259 – 0.275 ms | 0.347 ms | 0.718 ms | 76 |
-| render.flush   1000 sprites / 8 atlas interleaved | 5.500 ms | 5.500 – 5.525 ms | 5.750 ms | 6.150 ms | 4 |
-| render.flush   1000 sprites / 8 atlas clustered | 0.481 ms | 0.467 – 0.488 ms | 0.498 ms | 1.063 ms | 42 |
-| render.flush   1000 sprites / 50% rotated | 0.455 ms | 0.447 – 0.459 ms | 0.476 ms | 0.976 ms | 44 |
-| render.flush   1000 sprites / 100% rotated | 0.467 ms | 0.457 – 0.476 ms | 0.493 ms | 1.156 ms | 43 |
-| render.flush   1000 sprites / 4 alpha runs | 0.451 ms | 0.451 – 0.465 ms | 0.502 ms | 0.981 ms | 45 |
-| render.flush   1000 sprites / tint effect | 0.451 ms | 0.441 – 0.455 ms | 0.495 ms | 0.967 ms | 45 |
-| render.flush   1000 sprites / outline effect | 3.100 ms | 3.071 – 3.114 ms | 3.157 ms | 4.460 ms | 7 |
-| render.flush   1000 sprites / stretch path | 2.563 ms | 2.563 – 2.612 ms | 2.688 ms | 4.320 ms | 8 |
-| render.flush   1000 sprites / zone-bg path | 2.344 ms | 2.300 – 2.344 ms | 2.444 ms | 3.700 ms | 9 |
-| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.005 ms | 0.013 ms | 11844 |
-| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.017 ms | 0.036 ms | 4146 |
-| render.sort    1000 items (10 swaps) | 0.018 ms | 0.018 – 0.019 ms | 0.065 ms | 0.133 ms | 1088 |
+| render.flush    100 sprites / 1 atlas | 0.129 ms | 0.116 – 0.132 ms | 0.227 ms | 0.286 ms | 155 |
+| render.flush    500 sprites / 1 atlas | 0.278 ms | 0.243 – 0.287 ms | 0.301 ms | 0.490 ms | 72 |
+| render.flush   1000 sprites / 1 atlas | 0.503 ms | 0.451 – 0.521 ms | 0.591 ms | 1.167 ms | 40 |
+| render.flush   5000 sprites / 1 atlas | 2.244 ms | 2.030 – 2.289 ms | 2.411 ms | 3.483 ms | 9 |
+| render.flush    500 sprites / 4 atlas interleaved | 2.957 ms | 2.763 – 3.086 ms | 3.171 ms | 4.200 ms | 7 |
+| render.flush    500 sprites / 4 atlas clustered | 0.324 ms | 0.294 – 0.330 ms | 0.351 ms | 0.551 ms | 62 |
+| render.flush   1000 sprites / 8 atlas interleaved | 6.625 ms | 6.275 – 6.900 ms | 6.900 ms | 7.200 ms | 3 |
+| render.flush   1000 sprites / 8 atlas clustered | 0.571 ms | 0.529 – 0.588 ms | 0.612 ms | 0.858 ms | 35 |
+| render.flush   1000 sprites / 50% rotated | 0.546 ms | 0.502 – 0.569 ms | 0.600 ms | 1.122 ms | 37 |
+| render.flush   1000 sprites / 100% rotated | 0.558 ms | 0.541 – 0.577 ms | 0.603 ms | 1.139 ms | 36 |
+| render.flush   1000 sprites / 4 alpha runs | 0.541 ms | 0.526 – 0.558 ms | 0.577 ms | 1.144 ms | 37 |
+| render.flush   1000 sprites / tint effect | 0.541 ms | 0.518 – 0.574 ms | 0.597 ms | 0.952 ms | 37 |
+| render.flush   1000 sprites / outline effect | 3.717 ms | 3.583 – 3.800 ms | 3.800 ms | 4.360 ms | 6 |
+| render.flush   1000 sprites / stretch path | 3.057 ms | 2.929 – 3.186 ms | 3.171 ms | 4.120 ms | 7 |
+| render.flush   1000 sprites / zone-bg path | 2.613 ms | 2.563 – 2.675 ms | 2.813 ms | 3.483 ms | 8 |
+| render.sort     500 items (0 swaps) | 0.002 ms | 0.002 – 0.002 ms | 0.007 ms | 0.014 ms | 10628 |
+| render.sort     500 items (5 swaps) | 0.005 ms | 0.005 – 0.005 ms | 0.016 ms | 0.031 ms | 3745 |
+| render.sort    1000 items (10 swaps) | 0.019 ms | 0.019 – 0.020 ms | 0.064 ms | 0.132 ms | 1026 |
 
-The phone costs **2.7x-4.8x** of the desktop's submission time on the flush scenarios and **2.0x-2.5x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
+The phone costs **3.2x-5.5x** of the desktop's submission time on the flush scenarios and **2.2x-2.7x** on `render.sort`. That split is the informative part: `render.sort` is pure JS with no surface involved, so it isolates raw single-thread JS throughput, where this SoC lands close to a desktop i9. The flush rows add real driver and GPU-submission work, and that is where the gap widens. Neither figure is a frame-rate prediction — it is main-thread cost per operation, which is what a frame budget on this device actually contends with.
 
 Caveat on repeatability: the phone is thermally and governor-managed in ways the desktop is not. The fold reads Android's own throttling state (`dumpsys thermalservice`) either side of every capture and **refuses any window in which the device reported throttling**, or in which the status was not reported at all — unrecorded is not the same claim as not-throttling. Battery temperature is recorded beside it (23.4 -> 25.7 C across the five folded runs) but deliberately **not** gated: no throttled capture has ever been measured with this instrument, so any drift threshold would be invented rather than calibrated. Nothing here pins the CPU/GPU governor.
 

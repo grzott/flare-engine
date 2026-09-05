@@ -133,7 +133,13 @@ Any one of these should reopen the decision:
    support outright — a breaking change for consumers the current floor promises to serve.
 3. **A consumer requirement the JS thread cannot meet** — e.g. an animation that must keep running
    while the host app blocks its JS thread.
-4. **The XR-1c investigation finding the message delta is a real leak**, not log noise.
+4. ~~**The XR-1c investigation finding the message delta is a real leak**, not log noise.~~
+   **Resolved 2026-09-05 — it is log noise, and this reverser is retired.** Measured on a Pixel 7
+   release build over two 6-minute soaks: native heap plateaus with bidirectional noise on both
+   paths, and `opaque: true` (SurfaceView instead of TextureView) drops the pair from 22 028
+   messages per 60 s to **zero** while rendering identically. Nothing was accumulating, which is
+   consistent with the worklet path having no retention ring. Evidence:
+   [external review §11.4d](../plans/external-review-2026-08.md).
 
 ## 6. Status
 

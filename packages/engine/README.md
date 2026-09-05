@@ -37,7 +37,9 @@ See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-
 
 ## React Native New Architecture
 
-Flare's headless packages are architecture-agnostic pure TypeScript. `@flare-engine/react` requires `react-native-reanimated >= 3.19.1` (matching rn-skia's own floor). Reanimated 3.x works on both old and new architecture, so old-architecture apps remain viable. The `react-native >= 0.79` peer floor still admits old-architecture apps: the New Architecture has been the default since RN 0.76, but 0.79-0.81 still allow an explicit `newArchEnabled: false` opt-out.
+Flare's headless packages are architecture-agnostic pure TypeScript. `@flare-engine/react` requires `react-native-reanimated >= 3.19.1` (matching rn-skia's own floor). Reanimated 3.x works on both old and new architecture, and the `react-native >= 0.79` peer floor still admits old-architecture apps: the New Architecture has been the default since RN 0.76, but 0.79-0.81 still allow an explicit `newArchEnabled: false` opt-out.
+
+> **Old-architecture support is intended but not verified.** The floors above are chosen to keep it viable, and nothing is known to break — but we have not run Flare on an old-architecture app. No scaffolder template can produce one: all three pin Expo 57 / RN 0.86, which force `newArchEnabled=true`, and `expo prebuild` silently overrides an `app.json` opt-out. Verifying the claim needs a hand-built RN 0.79-0.81 vehicle. If you ship on the old architecture, treat yourself as the first — and please open an issue either way. Reasoning: [ADR-0001](https://github.com/grzott/flare-engine/blob/main/docs/design/adr-0001-renderer-and-threading.md).
 
 Notably, `react-native-reanimated` v4 is New-Architecture-only (it additionally peers `react-native-worklets`) — if you pin Reanimated 4, enable the New Architecture. Reanimated 3.x is the declared floor and works either way.
 

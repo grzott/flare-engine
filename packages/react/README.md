@@ -11,6 +11,8 @@ bun add @flare-engine/react @shopify/react-native-skia react-native-reanimated r
 Peer deps: `react` (>=19), `react-native` (>=0.79), `@shopify/react-native-skia` (>=2), `react-native-reanimated` (>=3.19.1), `react-native-safe-area-context` (>=4). Both `react-native-reanimated` and `react-native-safe-area-context` are value imports in `<GameView>` — a project without either fails to resolve at runtime.
 
 > **Reanimated 4 note:** Reanimated 4 additionally peers `react-native-worklets` and is New-Architecture-only. Reanimated 3.x satisfies the `>=3.19.1` floor and works on both old and new architecture.
+>
+> **Old-architecture support is intended but not verified.** The `>=3.19.1` floor exists to keep it viable and nothing is known to break, but Flare has not been run on an old-architecture app — no scaffolder template can produce one (Expo 57 / RN 0.86 force `newArchEnabled=true`, and `expo prebuild` overrides an `app.json` opt-out). See [ADR-0001](https://github.com/grzott/flare-engine/blob/main/docs/design/adr-0001-renderer-and-threading.md).
 
 ## Usage
 

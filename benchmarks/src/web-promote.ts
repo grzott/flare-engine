@@ -67,6 +67,14 @@ export type WebPromoteRow = {
   readonly thermal?: {
     readonly statusBefore: number | null;
     readonly statusAfter: number | null;
+    /**
+     * Recorded by the capture since the lane existed, but absent from this type
+     * until PERF-21 — so the fold could not see it even though every row
+     * carried it. That is the mechanical reason drift went ungated while
+     * `thermalStatus` (a step function) was the only signal consulted.
+     */
+    readonly batteryTempCBefore?: number | null;
+    readonly batteryTempCAfter?: number | null;
   };
 };
 
@@ -83,8 +91,47 @@ export type WebFoldedRow = {
 };
 
 export type WebAggregateOutcome =
-  | { readonly ok: true; readonly rows: WebFoldedRow[]; readonly runs: number }
+  | {
+      readonly ok: true;
+      readonly rows: WebFoldedRow[];
+      readonly runs: number;
+      /** Non-blocking observations. Reported, never a reason to refuse. */
+      readonly warnings: string[];
+    }
   | { readonly ok: false; readonly problems: string[] };
+
+/**
+ * Battery-temperature drift across a folded window, in Celsius, or null when
+ * any capture failed to report it.
+ *
+ * Split out from the judging so it can be tested against fixed rows.
+ */
+export function windowTempDriftC(captures: readonly WebPromoteRow[][]): number | null {
+  const first = captures[0]?.[0]?.thermal;
+  const last = captures[captures.length - 1]?.[0]?.thermal;
+  const from = first?.batteryTempCBefore;
+  const to = last?.batteryTempCAfter;
+  if (from === null || from === undefined || to === null || to === undefined) return null;
+  return to - from;
+}
+
+/**
+ * Warn above this much drift across a window.
+ *
+ * Calibrated 2026-09-05 (PERF-21), not invented: across 15 Pixel 7 captures the
+ * battery climbed 29.4 -> 31.6 C (+2.2) while `render.flush 1000 / 1 atlas` p50
+ * moved 0.417 -> 0.521 ms (+25%) monotonically, with `thermalStatus` reading 0
+ * throughout. So roughly 1 C of drift buys ~11% of movement — just past the 10%
+ * band the fold guard already enforces, which makes 1 C the point where drift
+ * alone can push a run out of tolerance.
+ *
+ * It WARNS rather than refuses, following `power.ts`'s rule for Balanced: the
+ * effect is measured on one device over one session, which is enough to report
+ * and not enough to invent a verdict. The baseline this replaced drifted the
+ * same way (23.4 -> 25.7 C), so refusing would have rejected the prior
+ * published window too.
+ */
+export const TEMP_DRIFT_WARN_C = 1;
 
 export function median(values: readonly number[]): number {
   const s = [...values].sort((a, b) => a - b);
@@ -214,5 +261,24 @@ export function aggregateWebRuns(captures: readonly WebPromoteRow[][]): WebAggre
   }
 
   if (problems.length > 0) return { ok: false, problems };
-  return { ok: true, rows, runs: captures.length };
+
+  // Thermal DRIFT, distinct from the throttling check above. `thermalStatus` is
+  // a step function that reads 0 right up until it does not, so it cannot fire
+  // during the warm-up that actually moves these numbers (PERF-21).
+  const warnings: string[] = [];
+  const drift = windowTempDriftC(captures);
+  if (drift === null) {
+    warnings.push(
+      'battery temperature was not reported across the window — drift could not be checked',
+    );
+  } else if (Math.abs(drift) >= TEMP_DRIFT_WARN_C) {
+    warnings.push(
+      `battery temperature drifted ${drift.toFixed(1)} C across the window ` +
+        `(warn at ${TEMP_DRIFT_WARN_C} C) — the device was still warming or cooling, so this ` +
+        'median describes a moving thermal state. Capture at steady state: run throwaway ' +
+        'warm-up captures first, then the window that counts.',
+    );
+  }
+
+  return { ok: true, rows, runs: captures.length, warnings };
 }

@@ -67,6 +67,8 @@ if (!outcome.ok) {
   process.exit(1);
 }
 
+for (const w of outcome.warnings) console.warn(`bench:web:promote: WARNING — ${w}`);
+
 const newest = captures[captures.length - 1] as WebPromoteRow[];
 const head = newest[0] as WebPromoteRow;
 const baselinePath = resolve(resultsDir(), baseline);

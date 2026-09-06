@@ -1,8 +1,11 @@
 /**
  * Provenance + the web lane's append-only history record, following the convention
  * `benchmarks/src/results.ts` already established for the node lane: an append-only ndjson (one
- * JSON object per line, never rewritten) plus a committed "latest capture" baseline JSON the
- * dashboard reads through a package export.
+ * JSON object per line, never rewritten) plus a per-lane JSON snapshot of the most recent capture.
+ *
+ * That snapshot is a SIDECAR (`web-latest.json` and friends), not the published baseline. The
+ * committed `web.json` / `web-gpu.json` / `web-android.json` the dashboard and `bench:md` read are
+ * written by `bench:web:promote` alone — see `webBaselineFilePath()` for why (PERF-18, §12 F4).
  *
  * Deliberately a *separate* file (`web-history.ndjson`), not an append to the node lane's
  * `history.ndjson`: that file's only reader, `benchmarks/src/index.ts`'s `--promote`, does
@@ -281,8 +284,24 @@ export function historyFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web-history.ndjson');
 }
 
+/**
+ * The CPU-raster lane's PUBLISHED baseline — written only by `bench:web:promote`, never by a
+ * capture.
+ *
+ * Until PERF-18 every capture rewrote this file from the single run it had just taken, so one
+ * verification capture silently replaced a committed 5-run fold with a one-run snapshot (§12 F4).
+ * A capture now writes `webLatestFilePath()` instead, which is what makes the fold's recency
+ * refusal sharp: if this file's `generated` is not older than the newest capture in the window,
+ * no new capture landed.
+ */
 export function webBaselineFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web.json');
+}
+
+/** The CPU-raster lane's most recent single capture. Per-machine scratch, not published: it is one
+ *  run, and one run is the figure the fold exists to replace. Gitignored. */
+export function webLatestFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-latest.json');
 }
 
 /** The GPU lane's append-only history — a separate file from `historyFilePath()`, per this
@@ -298,14 +317,24 @@ export function androidHistoryFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web-android-history.ndjson');
 }
 
-/** The on-device lane's "latest capture" baseline. */
+/** The on-device lane's PUBLISHED baseline — fold-only, per `webBaselineFilePath()`. */
 export function androidWebBaselineFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web-android.json');
 }
 
-/** The GPU lane's "latest capture" baseline — a separate file from `webBaselineFilePath()`. */
+/** The on-device lane's most recent single capture. Gitignored, per `webLatestFilePath()`. */
+export function androidWebLatestFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-android-latest.json');
+}
+
+/** The GPU lane's PUBLISHED baseline — fold-only, a separate file from `webBaselineFilePath()`. */
 export function gpuWebBaselineFilePath(): string {
   return resolve(repoRoot(), 'benchmarks', 'results', 'web-gpu.json');
+}
+
+/** The GPU lane's most recent single capture. Gitignored, per `webLatestFilePath()`. */
+export function gpuWebLatestFilePath(): string {
+  return resolve(repoRoot(), 'benchmarks', 'results', 'web-gpu-latest.json');
 }
 
 /** Append-only, matching `appendHistoryRow` in `benchmarks/src/results.ts`'s convention: nothing
@@ -319,11 +348,12 @@ export function appendHistory(records: readonly WebHistoryRecord[]): string {
   return file;
 }
 
-/** Overwrites the committed "latest capture" the dashboard reads — mirrors `writeMicrobenchJson`
- *  for the node lane. Only the append-only history log accumulates; this file always reflects the
- *  most recent run. */
-export function writeWebBaseline(capture: WebCapture): string {
-  const file = webBaselineFilePath();
+/** Overwrites the CPU-raster lane's single-capture sidecar. Only the append-only history log
+ *  accumulates; this file always reflects the most recent run — and, since PERF-18, it is NOT the
+ *  file the dashboard, `bench:md` or `check:perf-freshness` read. Publishing is `bench:web:promote`
+ *  and nothing else. */
+export function writeWebLatestCapture(capture: WebCapture): string {
+  const file = webLatestFilePath();
   writeJsonAtomic(file, `${JSON.stringify(capture, null, 2)}\n`);
   return file;
 }
@@ -384,16 +414,16 @@ export function appendAndroidHistory(records: readonly RenderHistoryRecord[]): s
   return file;
 }
 
-/** Overwrites the on-device lane's "latest capture" file. */
-export function writeAndroidWebBaseline(capture: WebAndroidCapture): string {
-  const file = androidWebBaselineFilePath();
+/** Overwrites the on-device lane's single-capture sidecar, per `writeWebLatestCapture`. */
+export function writeAndroidWebLatestCapture(capture: WebAndroidCapture): string {
+  const file = androidWebLatestFilePath();
   writeJsonAtomic(file, `${JSON.stringify(capture, null, 2)}\n`);
   return file;
 }
 
-/** Overwrites the GPU lane's "latest capture" file, mirroring `writeWebBaseline`. */
-export function writeGpuWebBaseline(capture: WebGpuCapture): string {
-  const file = gpuWebBaselineFilePath();
+/** Overwrites the GPU lane's single-capture sidecar, mirroring `writeWebLatestCapture`. */
+export function writeGpuWebLatestCapture(capture: WebGpuCapture): string {
+  const file = gpuWebLatestFilePath();
   writeJsonAtomic(file, `${JSON.stringify(capture, null, 2)}\n`);
   return file;
 }

@@ -266,15 +266,6 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
   trend test across the window. Whatever is chosen, `bench:web:android` should enforce it rather
   than leaving it to whoever remembers.
 
-- **PERF-18 — `bench:web:gpu` / `bench:web:android` have no root passthrough (found 2026-08-21) [MT].**
-  Only `bench:web` exists in the root `package.json`; the other two lanes are reachable solely from
-  `apps/bench-web`. Running them from the repo root fails instantly with `Script not found`, and on
-  2026-08-21 that produced five "captures" in one second that wrote nothing — after which
-  `bench:web:promote` folded the *previous* month's history and republished it as current. The
-  fold cannot tell "no new captures" from "captures that already existed". Add the two root
-  scripts, and make the fold refuse a window whose newest capture predates the lane's committed
-  baseline.
-
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
 - **PERF-14b — the ~2x straddle survives the power-plan fix (found 2026-08-19) [MT].** PERF-14 is
   done (see `## Done`) and the correction was real, but the run log shows the bimodality is **not**
@@ -443,6 +434,44 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **PERF-18 — the web lanes are runnable from the root, and only a fold can publish one**
+  (2026-09-06, session #320). Root `package.json`, `turbo.json`, `.gitignore`,
+  `apps/bench-web/scripts/{history,run,capture}.ts`, `benchmarks/src/web-promote{,-cli}.ts`,
+  `scripts/check-perf-freshness.mjs`, both bench READMEs, tests in
+  `benchmarks/tests/web-promote.test.ts` + `apps/bench-web/tests/history.test.ts`.
+  **Three missing root scripts, not two:** `bench:web:promote` had none either, so
+  `check:perf-freshness` was telling the owner to run two commands that did not exist — the exact
+  message that produced the 2026-08-21 incident. All three added, with the turbo task entries turbo 2
+  requires (and `BENCH_WEB_ALLOW_BUSY` declared on all three bench-web tasks, which the existing
+  `bench:web` task had never declared — the documented override was being dropped under strict env).
+  **The fold guard needed §12 F4 fixed first, and that is why F4 was homed here.** Every capture
+  rewrote its lane's published baseline from that one run, so after any legitimate 5-capture window
+  the newest capture and the baseline's `generated` were *equal* — verified on all three committed
+  baselines, which are folds whose `generated` matches the newest history stamp exactly. A "must be
+  newer" rule would therefore have refused the normal flow, and a "strictly older" rule would have
+  missed the incident, which is the equality case. So a capture now writes a gitignored
+  `*-latest.json` sidecar and `web.json` / `web-gpu.json` / `web-android.json` have exactly one
+  writer: `bench:web:promote`. With that, `judgeWindowRecency` refuses equality as *no new capture
+  landed*, with `--refold` as the named escape. **Consequence handled:** the cpu-raster lane's
+  `payload` / `coldStart` sections used to ride along on the capture's own write, so they now come
+  from the newest folded capture's own history records rather than being copied forward from the
+  previous baseline. **Verified live, not argued:** `bun run bench:web:promote --lane gpu --runs 5`
+  refuses on the real committed history with the no-new-capture message; re-running both desktop
+  lanes with `--refold` reproduced `web.json` and `web-gpu.json` **byte-identically** (`git status`
+  clean), which is what proves the payload/coldStart rewrite faithful; `bun run bench:web:android`
+  from the root now reaches `preflightAndroid()` and fails on "is a device attached", not
+  `Script not found`. Both guards mutation-verified (neutering the recency check fails 5 tests;
+  pointing the capture writer back at `web.json` fails the sidecar test). **Spawned finding, not
+  fixed here:** `.perf-baseline.json`'s `freshness.instrument` is the whole of `benchmarks/src`, so
+  editing the *publisher* (`web-promote.ts`, which never runs during a capture) stales all five node
+  suites exactly as if the measuring harness had changed — a false-positive class that manufactures
+  override debt. Worth its own row before the freeze, since the override is the thing H1 forbids.
+  **Bookkeeping:** no changeset (no `packages/**/src`; benchmarks + apps are private). No
+  user-facing strings, no render/react export change. Gate green except the pre-existing XR-7
+  baseline-contract test (the committed baseline predates the four `ecs.churn` rows — that row owns
+  it) and `check:perf-freshness`, red before this session and unchanged in kind by it.
+  SESSION_LOG #320 canonical.
 
 - **PERF-21 — the web fold now warns on thermal DRIFT, not just throttling** (2026-09-05,
   session #319). `benchmarks/src/web-promote{,-cli}.ts` + `benchmarks/tests/thermal-drift.test.ts`.
@@ -1222,7 +1251,8 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   **(4)** A single capture silently replaces a folded baseline (B11 reaching the web lanes) — it
   clobbered a freshly committed 5-run fold during this very session and only surfaced because the
   fold later refused on disagreeing commits; at the same commit it would have published silently.
-  That one is **warned, not guarded** — the real fix belongs with PERF-18. Also recorded: PERF-14b's
+  That one was **warned, not guarded** — guarded since PERF-18 (2026-09-06), which moved the
+  capture's write to a sidecar so the fold is the only writer. Also recorded: PERF-14b's
   5-run window is mode-coherent, and PERF-17's 100 s gap holds with no monotonic drift.
   Spec: [perf-measurement-2026-07.md](perf-measurement-2026-07.md) §12.
 

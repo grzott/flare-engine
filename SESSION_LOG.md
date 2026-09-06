@@ -11946,3 +11946,47 @@ uncommitted by the crash are committed here as run-log history, not promoted.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+## Session 320 — 2026-09-06 (scope: engine)
+
+**Goal:** PERF-18: root passthroughs for the web bench lanes; the fold is the only publisher
+
+**Touched files**
+- `.gitignore`
+- `apps/bench-dashboard/README.md`
+- `apps/bench-web/README.md`
+- `apps/bench-web/scripts/capture.ts`
+- `apps/bench-web/scripts/history.ts`
+- `apps/bench-web/scripts/run.ts`
+- `apps/bench-web/tests/history.test.ts`
+- `benchmarks/src/web-promote-cli.ts`
+- `benchmarks/src/web-promote.ts`
+- `benchmarks/tests/web-promote.test.ts`
+- `docs/plans/perf-measurement-2026-07.md`
+- `docs/plans/todo.md`
+- `package.json`
+- `scripts/check-perf-freshness.mjs`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: **red on one pre-existing failure** — `benchmarks/tests/baseline.test.ts` "satisfies the
+  frozen scenario contract", which XR-7 owns: the committed `microbench.json` (last written at
+  `bddc910`) predates the four `ecs.churn` rows added at `0ef1aec`, and clears only on the node
+  re-capture that row is open for. Verified failing at HEAD before this session's first edit.
+  Every other suite green, including the 9 new tests here.
+- build: green
+- typecheck:tests / deps / changeset / peers / bump / hook-guard / perf: green (run individually,
+  since `verify.sh` stops at the first red)
+- perf-freshness: red, unchanged in kind — the 8-lane debt XR-7 records
+
+**Frictions:** corr:0; deny:1 (`pre-bash-guard` blocked `npx turbo` on the dry-run check — correct, and `bun x turbo` was the right call); gate:1 (biome reformatted two files after I wrote them — a ternary chain and a test import block — caught by the gate and fixed with `lint --write`, then re-run to confirm the reformat changed nothing); fixup:1 (first cast the history lines to `WebPromoteRow[]` and tsc refused as insufficiently overlapping — the honest type is `Partial<WebPromoteRow> & {kind, capturedAt}`, since only two fields are shared by every record kind); drift:2 (the row named two root scripts and there were three — `bench:web:promote` had no root passthrough either, which is half of why `check:perf-freshness`'s own instructions were unrunnable; and the fold guard turned out to require §12 F4's fix as a precondition rather than as an optional extra, because while a capture stamped the published baseline the equality case was indistinguishable from a legitimate window — the owner approved taking all three)
+
+**Notes:** session #319's block is missing from this file for the same reason this one nearly was —
+`verify.sh` appends nothing when the gate fails, and the XR-7 baseline-contract failure has been red
+since `0ef1aec`. That row is now costing the repo its canonical session history, not just a red
+test. This block was written by hand; the gate result above is recorded as it actually ran.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

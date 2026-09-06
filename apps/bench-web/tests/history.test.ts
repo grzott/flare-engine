@@ -1,13 +1,26 @@
 import { describe, expect, it } from 'bun:test';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, dirname } from 'node:path';
 import {
   allRecords,
+  androidWebBaselineFilePath,
+  androidWebLatestFilePath,
   buildProvenance,
+  buildWebAndroidCapture,
   buildWebCapture,
+  buildWebGpuCapture,
   collectHostAndCommit,
+  gpuWebBaselineFilePath,
+  gpuWebLatestFilePath,
   readAppVersion,
   toColdStartRecords,
   toPayloadRecords,
   toRenderRecords,
+  webBaselineFilePath,
+  webLatestFilePath,
+  writeAndroidWebLatestCapture,
+  writeGpuWebLatestCapture,
+  writeWebLatestCapture,
 } from '../scripts/history.js';
 
 const PROVENANCE_INPUT = {
@@ -140,4 +153,71 @@ describe('readAppVersion', () => {
     const version = await readAppVersion();
     expect(version).toMatch(/^\d+\.\d+\.\d+/);
   });
+});
+/**
+ * The PERF-18 invariant: a capture writes its own sidecar and nothing else. Before this, every
+ * capture rewrote the lane's published baseline from that single run, so one verification capture
+ * replaced a committed 5-run fold with a one-run snapshot (perf-measurement-2026-07.md §12 F4) —
+ * and the fold could no longer tell a re-capture from a window it had already published.
+ *
+ * Written against the real result paths on purpose: the sidecars are gitignored scratch, and a test
+ * against injected paths would not have caught the original bug, which was entirely about which
+ * file the writer named.
+ */
+describe('a capture writes a sidecar, never the published baseline', () => {
+  const STAMP = '2026-09-06T12:00:00.000Z';
+
+  const lanes = [
+    {
+      name: 'cpu-raster',
+      latest: webLatestFilePath(),
+      baseline: webBaselineFilePath(),
+      write: () =>
+        writeWebLatestCapture(
+          buildWebCapture({ generated: STAMP, render: [], payload: [], coldStart: [] }),
+        ),
+    },
+    {
+      name: 'gpu',
+      latest: gpuWebLatestFilePath(),
+      baseline: gpuWebBaselineFilePath(),
+      write: () => writeGpuWebLatestCapture(buildWebGpuCapture({ generated: STAMP, render: [] })),
+    },
+    {
+      name: 'android',
+      latest: androidWebLatestFilePath(),
+      baseline: androidWebBaselineFilePath(),
+      write: () =>
+        writeAndroidWebLatestCapture(buildWebAndroidCapture({ generated: STAMP, render: [] })),
+    },
+  ];
+
+  for (const lane of lanes) {
+    it(`${lane.name}: writes the sidecar and leaves the published baseline byte-identical`, () => {
+      const baselineBefore = existsSync(lane.baseline) ? readFileSync(lane.baseline, 'utf8') : null;
+      const sidecarBefore = existsSync(lane.latest) ? readFileSync(lane.latest, 'utf8') : null;
+
+      try {
+        const written = lane.write();
+        expect(written).toBe(lane.latest);
+        expect(JSON.parse(readFileSync(lane.latest, 'utf8')).generated).toBe(STAMP);
+
+        const baselineAfter = existsSync(lane.baseline)
+          ? readFileSync(lane.baseline, 'utf8')
+          : null;
+        expect(baselineAfter).toBe(baselineBefore);
+      } finally {
+        if (sidecarBefore === null) rmSync(lane.latest, { force: true });
+        else writeFileSync(lane.latest, sidecarBefore, 'utf8');
+      }
+    });
+
+    it(`${lane.name}: the sidecar is a distinct, gitignored path beside the baseline`, () => {
+      expect(lane.latest).not.toBe(lane.baseline);
+      // `benchmarks/results/*-latest.json` in .gitignore is what keeps a one-run file out of the
+      // tree; a rename that broke this suffix would start committing single runs again.
+      expect(basename(lane.latest).endsWith('-latest.json')).toBe(true);
+      expect(dirname(lane.latest)).toBe(dirname(lane.baseline));
+    });
+  }
 });

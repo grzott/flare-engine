@@ -133,6 +133,64 @@ export function windowTempDriftC(captures: readonly WebPromoteRow[][]): number |
  */
 export const TEMP_DRIFT_WARN_C = 1;
 
+/**
+ * Refusal text when a window brings nothing newer than what is already published, or `null` when
+ * the window is genuinely ahead of the baseline.
+ *
+ * **The failure this exists for, measured 2026-08-21.** `bench:web:gpu` and `bench:web:android`
+ * had no root passthrough, so running them from the repo root exited instantly with
+ * `Script not found` — five "captures" in one second that wrote nothing. `bench:web:promote` then
+ * folded the previous month's history and republished it as current, reporting five captures
+ * folded and a file written, because a fold reads history and history is exactly as long as it was
+ * before. Nothing in the harness could tell "no new captures" from "captures that already existed".
+ *
+ * The stamps are what separate them, and they only separate them because a capture no longer
+ * writes the published baseline (PERF-18 / §12 F4). While it did, the newest capture and the
+ * published `generated` were equal after every legitimate capture run, so this check could not have
+ * been written tighter than "strictly older" — which is precisely the case the 2026-08-21 incident
+ * is not.
+ *
+ * Equality is therefore a refusal, not a pass: it means the published baseline already describes
+ * the newest capture on disk. `--refold` exists for the one honest case (re-folding a published
+ * window at a different `--runs`).
+ */
+export function judgeWindowRecency(
+  newestCapturedAt: string,
+  baselineGeneratedAt: string | null,
+): string | null {
+  if (baselineGeneratedAt === null) return null;
+
+  const published = Date.parse(baselineGeneratedAt);
+  if (Number.isNaN(published)) {
+    return (
+      `the published baseline's "generated" stamp (${baselineGeneratedAt}) is not a date, so this ` +
+      'window cannot be shown to be newer than it. Re-capture rather than publish over a baseline ' +
+      'that cannot be dated'
+    );
+  }
+
+  const newest = Date.parse(newestCapturedAt);
+  if (Number.isNaN(newest)) {
+    return `the newest capture's stamp (${newestCapturedAt}) is not a date — the history log is damaged`;
+  }
+
+  if (newest > published) return null;
+
+  if (newest === published) {
+    return (
+      `the newest capture in this window (${newestCapturedAt}) is the one already published — ` +
+      'no new capture landed. Either the lane did not run (a failed capture appends nothing, and ' +
+      'the fold cannot tell that from a window that already existed), or this window is already ' +
+      'the published baseline. Re-capture, or pass --refold to re-fold the same window deliberately'
+    );
+  }
+
+  return (
+    `this window's newest capture (${newestCapturedAt}) predates the published baseline ` +
+    `(${baselineGeneratedAt}) — folding it would republish older numbers as current`
+  );
+}
+
 export function median(values: readonly number[]): number {
   const s = [...values].sort((a, b) => a - b);
   const mid = s.length >> 1;
@@ -167,7 +225,18 @@ function sharedField(
   }
 }
 
-export function aggregateWebRuns(captures: readonly WebPromoteRow[][]): WebAggregateOutcome {
+export type WebAggregateOptions = {
+  /**
+   * `generated` of the lane's published baseline, or `null` when it has none / the caller is
+   * deliberately re-folding. Drives `judgeWindowRecency`.
+   */
+  readonly baselineGeneratedAt?: string | null;
+};
+
+export function aggregateWebRuns(
+  captures: readonly WebPromoteRow[][],
+  options: WebAggregateOptions = {},
+): WebAggregateOutcome {
   const problems: string[] = [];
 
   if (captures.length === 0) {
@@ -182,6 +251,14 @@ export function aggregateWebRuns(captures: readonly WebPromoteRow[][]): WebAggre
       ],
     };
   }
+
+  // Captures are oldest-first, so the last group carries the window's newest stamp.
+  const newestCapture = captures[captures.length - 1] as WebPromoteRow[];
+  const recency = judgeWindowRecency(
+    (newestCapture[0] as WebPromoteRow).capturedAt,
+    options.baselineGeneratedAt ?? null,
+  );
+  if (recency !== null) problems.push(recency);
 
   sharedField(captures, 'commit', problems);
   sharedField(captures, 'runtime', problems);

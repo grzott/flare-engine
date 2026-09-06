@@ -1031,7 +1031,9 @@ phone). F1's preflight is what makes that disambiguation sound.
 - **Failure that looks like a run.** The F1 captures exited 1 having measured nothing.
 
 A batch loop cannot tell these apart from the exit code, and folding the second kind republishes the
-previous window as current — PERF-18's hazard reached through a different door.
+previous window as current — PERF-18's hazard reached through a different door. Both doors are now
+shut on the fold side too: PERF-18 (2026-09-06) refuses any window whose newest capture is not newer
+than the published baseline, whatever the capture's exit code claimed.
 
 **Guard:** every `bench:web*` script now runs through `scripts/capture.ts`, which snapshots the
 lane's history, runs the capture, and decides success from **what landed**: zero records appended is
@@ -1040,7 +1042,7 @@ the crash noted. It also refuses a truncated write, a record missing `capturedAt
 spanning two `capturedAt` values (two runs interleaved as one). `bench:web:unguarded` keeps the raw
 runner for debugging.
 
-### F4 — a single capture silently replaces a folded baseline (warned, not guarded)
+### F4 — a single capture silently replaces a folded baseline (GUARDED 2026-09-06, PERF-18)
 
 Every capture rewrites its lane baseline from that one run, so one verification capture turns a
 committed 5-run fold into a 1-run snapshot with nothing downstream saying so. This is B11's
@@ -1048,9 +1050,18 @@ committed 5-run fold into a 1-run snapshot with nothing downstream saying so. Th
 capture clobbered a freshly committed fold, and it only surfaced because `bench:web:promote` later
 refused a window whose commits disagreed — **at the same commit it would have published silently.**
 
-`capture.ts` now prints the baseline-is-one-run notice with the exact `bench:web:promote` command
-after every successful capture. That is a warning, not a guard: making the runner refuse to write an
-unfolded baseline, or write it to a distinct path, is the real fix and belongs with PERF-18.
+`capture.ts` first printed the baseline-is-one-run notice with the exact `bench:web:promote` command
+after every successful capture. That was a warning, not a guard; the real fix — writing the single
+capture to a distinct path — landed with **PERF-18 (2026-09-06)**. A capture now writes a gitignored
+`*-latest.json` sidecar, and `web.json` / `web-gpu.json` / `web-android.json` have exactly one
+writer: the fold.
+
+That is also what made F3's second door closable. While a capture stamped the published baseline,
+the newest capture and the baseline's `generated` were equal after every legitimate run, so a
+recency check could not have been written tighter than "strictly older" — which is not the shape of
+either incident. With the sidecar in place, equality means *no new capture landed*, and
+`judgeWindowRecency` refuses it (`--refold` is the named escape for deliberately re-folding a
+published window).
 
 ### Measurement results from the same session
 

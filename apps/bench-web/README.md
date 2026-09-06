@@ -5,8 +5,11 @@ Headless CanvasKit runner for the render microbench suite, driven by Playwright
 
 ## On-device Android lane
 
-`bun run bench:web:android` runs the same 18 render scenarios on a USB-attached Android phone and
-writes `benchmarks/results/web-android.json` + `web-android-history.ndjson`.
+`bun run bench:web:android` runs the same 18 render scenarios on a USB-attached Android phone. It
+appends `benchmarks/results/web-android-history.ndjson` and rewrites the gitignored
+`web-android-latest.json` sidecar; the published `web-android.json` is written only by
+`bun run bench:web:promote --lane android --runs N`, so one capture can never replace a folded
+window with a single run.
 
 **Requirements**
 

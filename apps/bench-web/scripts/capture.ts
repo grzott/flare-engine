@@ -4,7 +4,7 @@
  * `scripts/run.ts` does the measuring. This file exists because its **exit code cannot be
  * trusted in either direction**, measured on 2026-08-25 across all three lanes:
  *
- *  - *Nonzero after success.* `bench:web:gpu` writes its baseline, appends all 18 records, and
+ *  - *Nonzero after success.* `bench:web:gpu` writes its sidecar, appends all 18 records, and
  *    then Bun panics with `integer overflow` during process teardown and exits 3. Two Android
  *    captures did the same. The data was complete and correct every time.
  *  - *Reported as a run after measuring nothing.* Five consecutive Android captures failed at
@@ -341,10 +341,10 @@ async function main(): Promise<void> {
   const historyPath = LANE_HISTORY[mode]();
   const before = readLines(historyPath).length;
 
-  // Read the published baseline BEFORE the capture runs. `run.ts` rewrites the lane baseline from
-  // the single run it just took (F4), so reading it afterwards compares the capture against itself
-  // and the drift check can never fire — which is exactly what happened the first time this was
-  // wired up, and it looked like a clean pass.
+  // Read the published baseline BEFORE the capture runs. Since PERF-18 `run.ts` writes a sidecar
+  // rather than the published file, so this is no longer load-bearing for correctness — but it
+  // stays here deliberately: reading it afterwards was how the drift check first came to compare a
+  // capture against itself and pass cleanly, and the order is the thing that made that impossible.
   const baselineBefore = readBaselineP50(mode);
 
   const child = spawnSync(process.execPath, ['run', `${import.meta.dir}/run.ts`], {
@@ -376,11 +376,11 @@ async function main(): Promise<void> {
   }
 
   // Deliberately NOT inside the exit-code-zero branch. An early return here meant the drift and
-  // unfolded-baseline warnings were skipped on precisely the path that fires most often — the
+  // not-published notices were skipped on precisely the path that fires most often — the
   // cpu-raster lane exits non-zero on nearly every capture — so the two most useful notices were
   // invisible in normal use.
   reportBaselineDrift(mode, baselineBefore, after.slice(after.length - verdict.appended));
-  warnBaselineIsUnfolded(mode);
+  noteCaptureIsNotPublished(mode);
 }
 
 /** Say out loud when a capture disagrees with the published baseline for its lane. */
@@ -408,19 +408,24 @@ function reportBaselineDrift(
 }
 
 /**
- * Every capture rewrites its lane baseline from that single run, so one capture silently replaces
- * a folded multi-run window with a one-run snapshot — and nothing downstream says so. Measured the
- * hard way on 2026-08-25: a single verification capture clobbered a freshly committed 5-run GPU
- * fold, and the only reason it surfaced was `bench:web:promote` later refusing a window whose
- * commits disagreed. Had the capture been at the same commit, the one-run baseline would have
- * published silently.
+ * Until PERF-18 every capture rewrote its lane baseline from that single run, so one capture
+ * silently replaced a folded multi-run window with a one-run snapshot and nothing downstream said
+ * so. Measured the hard way on 2026-08-25: a single verification capture clobbered a freshly
+ * committed 5-run GPU fold, and the only reason it surfaced was `bench:web:promote` later refusing
+ * a window whose commits disagreed — at the same commit it would have published silently.
+ *
+ * The write now goes to a sidecar and the published baseline is the fold's alone, so this says
+ * where the numbers went rather than warning about what they overwrote. It still prints on every
+ * capture: the step people forget is the fold, and the run that skips it is the run that thinks it
+ * is finished.
  */
-function warnBaselineIsUnfolded(mode: CaptureMode): void {
+function noteCaptureIsNotPublished(mode: CaptureMode): void {
   console.warn(
-    `bench-web: NOTE — this run rewrote the ${LANE_LABEL[mode]} baseline from ONE capture.\n` +
-      '  It is not a folded window until you run:\n' +
-      `    cd benchmarks && bun run bench:web:promote -- --lane ${mode} --runs <N>\n` +
-      '  Publishing before then reports a single run as if it were the median of N.',
+    `bench-web: NOTE — this capture is not published. The ${LANE_LABEL[mode]} baseline is\n` +
+      '  untouched; a capture writes only its own sidecar and the append-only history.\n' +
+      '  Publish a folded window with:\n' +
+      `    bun run bench:web:promote --lane ${mode} --runs <N>\n` +
+      '  A fold of one run is the single-run figure the fold exists to replace, so capture N first.',
   );
 }
 

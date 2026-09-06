@@ -258,11 +258,18 @@ for (const [file, lane] of Object.entries(webConfig?.lanes ?? {})) {
     ...dirtyPaths(watched).map((p) => `${p} (uncommitted)`),
   ];
   if (since.length > 0) {
+    // Both commands are spelled out in full, from the repo root, with the lane's own arguments.
+    // The abbreviated version of this message named a script that did not exist at the root and a
+    // fold with no --lane, so following it literally produced `Script not found` five times and
+    // then a re-publish of the previous window (PERF-18).
+    const laneSuffix = file === 'web.json' ? '' : file === 'web-gpu.json' ? ':gpu' : ':android';
+    const laneName =
+      file === 'web.json' ? 'cpu-raster' : file === 'web-gpu.json' ? 'gpu' : 'android';
     webProblems.push(
       `web lane ${file} was captured at ${laneSha}, and ${since.length} change(s) have touched ` +
         `what it measures since — first: ${since[0]}. Re-capture with ` +
-        `\`bun run bench:web${file === 'web.json' ? '' : file === 'web-gpu.json' ? ':gpu' : ':android'}\`` +
-        ' then fold with `bun run bench:web:promote`.',
+        `\`bun run bench:web${laneSuffix}\` (x5) then fold with ` +
+        `\`bun run bench:web:promote --lane ${laneName} --runs 5\`.`,
     );
   }
 }

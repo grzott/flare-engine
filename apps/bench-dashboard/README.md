@@ -77,14 +77,19 @@ Then rebuild the dashboard to see the new device rows.
 CPU-raster; a GPU lane also exists, see below):
 
 ```bash
-bun run bench:web                                   # writes benchmarks/results/web.json + appends web-history.ndjson (runtime: "web-cpu-raster")
-bun --cwd apps/bench-web run bench:web:gpu           # writes benchmarks/results/web-gpu.json + appends web-gpu-history.ndjson (runtime: "web-gpu"); local-only, not wired into this dashboard, not run in CI
+bun run bench:web                                   # x5; appends web-history.ndjson (runtime: "web-cpu-raster") + rewrites the web-latest.json sidecar
+bun run bench:web:promote --lane cpu-raster --runs 5 # folds those 5 captures into benchmarks/results/web.json — the only thing that writes it
+bun run bench:web:gpu                               # x5; the GPU lane (runtime: "web-gpu"), then --lane gpu; local-only, not wired into this dashboard, not run in CI
 ```
+
+A capture never writes a published baseline: it appends history and rewrites its own
+(gitignored) `*-latest.json` sidecar. Publishing is `bench:web:promote` and nothing else, so a
+single verification capture can no longer replace a folded window with a one-run snapshot.
 
 `web-history.ndjson` is a separate append-only file from the node lane's `history.ndjson` — see
 `apps/bench-web/scripts/history.ts`'s header for why sharing one file is unsafe (`bench:promote`'s
 blind `rows.slice(-N)` has no runtime discriminant check). The dashboard reads `web.json`, the
-latest capture.
+folded baseline — never a single capture.
 
 Then rebuild the dashboard to see the new `/web` numbers.
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   aggregateWebRuns,
   groupCaptures,
+  judgeWindowRecency,
   MAX_RUN_DEVIATION_PERCENT,
   median,
   type WebPromoteRow,
@@ -182,5 +183,71 @@ describe('aggregateWebRuns — fail-closed', () => {
     expect(out.ok).toBe(false);
     if (out.ok) return;
     expect(out.problems.join(' ')).toContain('contract drifted');
+  });
+});
+describe('judgeWindowRecency', () => {
+  const published = '2026-09-05T07:07:24.475Z';
+
+  it('accepts a window captured after the published baseline', () => {
+    expect(judgeWindowRecency('2026-09-06T08:00:00.000Z', published)).toBeNull();
+  });
+
+  it('refuses a window whose newest capture is the one already published', () => {
+    // The 2026-08-21 shape: the lane exited before measuring anything, so history did not move
+    // and the fold re-published the previous window as current.
+    const problem = judgeWindowRecency(published, published);
+    expect(problem).not.toBeNull();
+    expect(problem).toContain('no new capture landed');
+    expect(problem).toContain('--refold');
+  });
+
+  it('refuses a window that predates the published baseline', () => {
+    const problem = judgeWindowRecency('2026-08-27T22:06:38.600Z', published);
+    expect(problem).not.toBeNull();
+    expect(problem).toContain('predates the published baseline');
+  });
+
+  it('accepts any window when the lane has no baseline yet', () => {
+    expect(judgeWindowRecency('2026-01-01T00:00:00.000Z', null)).toBeNull();
+  });
+
+  it('refuses when the published baseline carries no usable date', () => {
+    const problem = judgeWindowRecency(published, 'whenever');
+    expect(problem).not.toBeNull();
+    expect(problem).toContain('not a date');
+  });
+
+  it('refuses when the capture stamp itself is not a date', () => {
+    const problem = judgeWindowRecency('not-a-stamp', published);
+    expect(problem).not.toBeNull();
+    expect(problem).toContain('history log is damaged');
+  });
+});
+
+describe('aggregateWebRuns — recency against the published baseline', () => {
+  // windowOf stamps captures 10:00, 10:01, 10:02 ... so the newest here is 10:02.
+  const newestInWindow = '2026-08-18T10:02:00.000Z';
+
+  it('refuses an otherwise healthy window that brings nothing newer', () => {
+    const out = aggregateWebRuns(windowOf([1.0, 1.0, 1.0]), {
+      baselineGeneratedAt: newestInWindow,
+    });
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.problems.join(' ')).toContain('no new capture landed');
+  });
+
+  it('folds the same window once a newer capture has landed', () => {
+    const out = aggregateWebRuns(windowOf([1.0, 1.0, 1.0]), {
+      baselineGeneratedAt: '2026-08-18T09:00:00.000Z',
+    });
+    expect(out.ok).toBe(true);
+  });
+
+  it('does not check recency when no baseline stamp is supplied', () => {
+    expect(aggregateWebRuns(windowOf([1.0, 1.0, 1.0])).ok).toBe(true);
+    expect(aggregateWebRuns(windowOf([1.0, 1.0, 1.0]), { baselineGeneratedAt: null }).ok).toBe(
+      true,
+    );
   });
 });

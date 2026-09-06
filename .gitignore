@@ -57,3 +57,7 @@ apps/*/build-*.ipa
 # OSS-A0 formalizes this; added early 2026-07-05 to protect the deep-audit ledger.
 docs/plans/_local/
 
+# Single-capture sidecars from the web bench lanes. One run each, per-machine, rewritten by
+# every capture — the published baselines beside them (web.json, web-gpu.json,
+# web-android.json) are folds, written only by bench:web:promote (PERF-18).
+benchmarks/results/*-latest.json

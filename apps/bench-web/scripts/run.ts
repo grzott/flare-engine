@@ -56,9 +56,9 @@ import {
   toColdStartRecords,
   toPayloadRecords,
   toRenderRecords,
-  writeAndroidWebBaseline,
-  writeGpuWebBaseline,
-  writeWebBaseline,
+  writeAndroidWebLatestCapture,
+  writeGpuWebLatestCapture,
+  writeWebLatestCapture,
 } from './history.js';
 import { FOUR_G_PROFILE, measureCanvasKitPayload } from './payload.js';
 import { startServer } from './server.js';
@@ -285,7 +285,7 @@ async function runAndroidMode(
 `,
   );
   const historyFile = appendAndroidHistory(capture.render);
-  const baselineFile = writeAndroidWebBaseline(capture);
+  const latestFile = writeAndroidWebLatestCapture(capture);
 
   console.log(
     `
@@ -303,7 +303,9 @@ bench-web: ${capture.render.length} scenario(s), runtime=${RUNTIME_LABEL_ANDROID
   console.log(`
 bench-web: wrote ${outPath}`);
   console.log(`bench-web: appended ${capture.render.length} record(s) to ${historyFile}`);
-  console.log(`bench-web: wrote ${baselineFile}`);
+  console.log(
+    `bench-web: wrote ${latestFile} (this capture only — publish with bench:web:promote)`,
+  );
 }
 
 async function runGpuMode(server: { readonly url: string }, renderRawPath: string): Promise<void> {
@@ -336,7 +338,7 @@ async function runGpuMode(server: { readonly url: string }, renderRawPath: strin
   const outPath = `${import.meta.dir}/../results/web-gpu-bench.json`;
   await Bun.write(outPath, `${JSON.stringify(capture, null, 2)}\n`);
   const historyFile = appendGpuHistory(capture.render);
-  const baselineFile = writeGpuWebBaseline(capture);
+  const latestFile = writeGpuWebLatestCapture(capture);
 
   console.log(
     `\nbench-web: ${capture.render.length} scenario(s), runtime=${RUNTIME_LABEL_GPU} ` +
@@ -351,7 +353,9 @@ async function runGpuMode(server: { readonly url: string }, renderRawPath: strin
   }
   console.log(`\nbench-web: wrote ${outPath}`);
   console.log(`bench-web: appended ${capture.render.length} record(s) to ${historyFile}`);
-  console.log(`bench-web: wrote ${baselineFile}`);
+  console.log(
+    `bench-web: wrote ${latestFile} (this capture only — publish with bench:web:promote)`,
+  );
 }
 
 async function runCpuRasterMode(
@@ -393,7 +397,7 @@ async function runCpuRasterMode(
   await Bun.write(outPath, `${JSON.stringify(capture, null, 2)}\n`);
 
   const historyFile = appendWebHistory(allRecords(capture));
-  const baselineFile = writeWebBaseline(capture);
+  const latestFile = writeWebLatestCapture(capture);
 
   console.log(
     `\nbench-web: ${capture.render.length} scenario(s), runtime=${RUNTIME_LABEL} ` +
@@ -415,7 +419,9 @@ async function runCpuRasterMode(
   console.log(
     `bench-web: appended ${capture.render.length + capture.payload.length + capture.coldStart.length} record(s) to ${historyFile}`,
   );
-  console.log(`bench-web: wrote ${baselineFile}`);
+  console.log(
+    `bench-web: wrote ${latestFile} (this capture only — publish with bench:web:promote)`,
+  );
 }
 
 async function main(): Promise<void> {

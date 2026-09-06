@@ -34,14 +34,18 @@ export type EcsChurnScenario = EcsScenario & { readonly churn: number };
  * for exactly that reason: they must not perturb the control suite, which is
  * the reference that located the 2026-07 regression in `render` (XR-7).
  *
- * Churn is where `Query._remove`'s `indexOf` + `splice` shows up — both O(n)
- * per removal, so the cost of these rows grows with `n * churn` rather than `n`.
+ * Churn is where `Query._remove` shows up. `innerIters` is sized for ~10 ms per
+ * sample rather than the ~1-2 ms the other suites use: spawning re-allocates two
+ * component payloads per entity, so these rows are GC-bound in a way the
+ * steady-state ones are not, and short samples straddle collection pauses. At
+ * 1-2 ms/sample the fold guard measured 19-27% run-to-run spread and correctly
+ * refused the window; longer samples average the pauses out.
  */
 const CHURN_SWEEP: readonly { readonly n: number; readonly innerIters: number }[] = [
-  { n: 500, innerIters: 60 },
-  { n: 1000, innerIters: 25 },
-  { n: 2000, innerIters: 8 },
-  { n: 5000, innerIters: 2 },
+  { n: 500, innerIters: 400 },
+  { n: 1000, innerIters: 350 },
+  { n: 2000, innerIters: 170 },
+  { n: 5000, innerIters: 80 },
 ];
 
 export const ECS_CHURN_SCENARIOS: readonly EcsChurnScenario[] = CHURN_SWEEP.map(

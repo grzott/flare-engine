@@ -65,6 +65,21 @@ const DT = 1 / 60;
 type ChurnWorld = {
   readonly world: World;
   readonly alive: number[];
+  /**
+   * Component payloads, one pair per ring slot, reused on every respawn.
+   *
+   * `World.add` stores the reference it is given (`world.ts:64`), so a fresh
+   * object literal per spawn would allocate `2 * churn` objects per step and
+   * make these rows GC-bound: measured that way, run-to-run spread was 15-27%
+   * and `bench:promote`'s 10% fold guard refused the window outright, while
+   * lengthening the samples only produced proportionally more garbage. Pooling
+   * is also what the workload being modelled actually does — a bullet-heavy
+   * game recycles payloads rather than allocating per shot. The slot's previous
+   * occupant is destroyed before the object is handed to its successor, so no
+   * two live entities ever share one.
+   */
+  readonly posPool: { x: number; y: number }[];
+  readonly velPool: { x: number; y: number }[];
   cursor: number;
 };
 
@@ -72,19 +87,24 @@ function buildChurnWorld(entities: number): ChurnWorld {
   const world = buildWorld(entities);
   const alive: number[] = [];
   for (const id of world.query(Position, Velocity)) alive.push(id);
-  return { world, alive, cursor: 0 };
+  const posPool = alive.map(() => ({ x: 0, y: 0 }));
+  const velPool = alive.map(() => ({ x: 1, y: 1 }));
+  return { world, alive, posPool, velPool, cursor: 0 };
 }
 
 function churnStep(state: ChurnWorld, churn: number): void {
-  const { world, alive } = state;
+  const { world, alive, posPool, velPool } = state;
   for (let i = 0; i < churn; i++) {
-    const victim = alive[state.cursor] as number;
-    world.destroy(victim);
+    const slot = state.cursor;
+    world.destroy(alive[slot] as number);
     const id = world.spawn();
-    world.add(id, Position, { x: 0, y: 0 });
-    world.add(id, Velocity, { x: 1, y: 1 });
-    alive[state.cursor] = id;
-    state.cursor = (state.cursor + 1) % alive.length;
+    const pos = posPool[slot] as { x: number; y: number };
+    pos.x = 0;
+    pos.y = 0;
+    world.add(id, Position, pos);
+    world.add(id, Velocity, velPool[slot] as { x: number; y: number });
+    alive[slot] = id;
+    state.cursor = (slot + 1) % alive.length;
   }
   world.step(DT);
 }

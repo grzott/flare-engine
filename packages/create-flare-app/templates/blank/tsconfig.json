@@ -11,5 +11,5 @@
     "isolatedModules": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["src", "index.ts"]
+  "include": ["src", "index.ts", "index.web.ts"]
 }

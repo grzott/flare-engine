@@ -5,14 +5,16 @@
   "description": "Headless CanvasKit runner for the render microbench suite, driven by Playwright",
   "type": "module",
   "scripts": {
-    "dev": "bun run scripts/server.ts",
     "bench:web": "bun run scripts/capture.ts",
-    "bench:web:gpu": "BENCH_WEB_MODE=gpu bun run scripts/capture.ts",
     "bench:web:android": "BENCH_WEB_MODE=android bun run scripts/capture.ts",
+    "bench:web:gpu": "BENCH_WEB_MODE=gpu bun run scripts/capture.ts",
+    "bench:web:unguarded": "bun run scripts/run.ts",
+    "dev": "bun run scripts/server.ts",
     "lint": "biome check src/ scripts/ tests/",
-    "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "bench:web:unguarded": "bun run scripts/run.ts"
+    "testingbot:probe": "bun run scripts/testingbot-probe.mjs",
+    "testingbot:smoke": "bun run scripts/testingbot-session-smoke.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@flare-engine/benchmarks": "workspace:*",

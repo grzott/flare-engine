@@ -82,6 +82,28 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   code and resolves clean after. (b) is the only check that proves the defect, because bun masks it.
   Spec: §11.3 NEW-1/NEW-2, §11.4.
 - **XR-7 — ECS churn benchmark + `Query._remove` complexity** (P2, post-flip acceptable, 1-2 sessions).
+  **CODE LANDED 2026-09-05 (`0ef1aec`); the row stays open ONLY for the baseline re-capture.**
+  Both filed blockers are resolved: the capture blocker cleared (node lane fresh), and the
+  "`Query.entities` is documented sorted" premise was **false** — `_check` always appended, so ids
+  1,2,3 read back `[3, 1, 2]`. Churn rows added and `Query._remove` is O(1) via swap-remove
+  (ADR-0003, accepted). Measured A/B on a quiet machine: **664 -> 154 us at 5000 entities (4.3x)**,
+  speedup growing with `n` as the O(n^2) term disappears, control rows unmoved.
+  **What is left:** the committed baseline predates the four `ecs.churn` rows, so
+  `benchmarks/tests/baseline.test.ts` "satisfies the frozen scenario contract" is red until a
+  promote. The scenarios were retuned afterwards (session #319, uncommitted at time of writing):
+  payload pooling in `ecs.bench.ts` plus larger `innerIters`, because the first attempt was
+  GC-bound and `bench:promote`'s 10% fold guard refused the window at 15-27% run-to-run spread.
+  After pooling + retune all four rows measure 0 runs outside 10%. **Sequence to close:** commit
+  the retune, then 5x `bench:pinned` -> `bench:promote` -> `bench:md` from the clean tree. Note the
+  captures currently in `history.ndjson` predate the retune, so fresh ones are required — the fold
+  takes the last 5 blindly.
+  **Scope warning discovered while closing this (2026-09-05): the re-capture is EIGHT lanes, not
+  one.** `@flare-engine/ecs` sits in the transitive closure of every suite, so touching it staled
+  all five node suites *and* `web.json`, `web-gpu.json` and `web-android.json` — `check:perf-freshness`
+  names `0ef1aec` as the first offender for all of them. The Android lane needs the Pixel 7
+  physically attached with Chrome foregrounded, so **freshness cannot go green without the device**.
+  Budget a tier-1 change accordingly: node (5 runs) + web cpu-raster (5) + web-gpu (5) + web-android
+  (5, device-bound, and it needs warm-up captures first — see PERF-21).
   Scope: `benchmarks/src/scenarios/ecs.ts`, `benchmarks/src/ecs.bench.ts`, `packages/ecs/src/query.ts`.
   `ECS_SCENARIOS` defines exactly one shape — `ecs.step {n} entities (Pos+Vel)`, steady-state
   iteration across four sizes — so every published ECS number describes the fast path, while the path
@@ -102,65 +124,6 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   duplicate copy of `@flare-engine/ecs` does the same. That makes option C (per-`World` registry) the
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
-
-- **PERF-21 — the Android fold has no thermal-DRIFT gate, and its status gate cannot fire in time**
-  (found 2026-09-05, session #315, calibration data in hand; P2, `[MT]`, ~1 session).
-  `web-promote.ts:158-168` refuses a window the device reported *throttling* through
-  (`thermalStatus > 0`) or that reported nothing. **Both of this session's refused folds had
-  `statusBefore/After = 0` on every capture** — the status gate is a step function that reads 0
-  right up until it does not (its own docstring, `history.ts:45-48`), so it never fired, and the
-  spread backstop caught the problem instead, twice, at the cost of two wasted 5-run batches.
-  **The signal that WAS present and is recorded but ungated: battery temperature drift.** Across 15
-  captures the phone climbed monotonically 29.4 → 31.6 °C (+2.2 °C) and
-  `render.flush 1000 sprites / 1 atlas` p50 tracked it monotonically 0.417 → 0.521 ms (**+25%**).
-  The window that finally folded did so **marginally** — exactly one run outside the 10% band where
-  two are needed to refuse — not because it was clean. `web-sections.ts:280` states battery temp is
-  deliberately not gated because "no throttled capture has ever been measured with this instrument,
-  so any drift threshold would be invented rather than calibrated". **That premise is now out of
-  date**; the calibration exists. Note the baseline this replaced drifted the same way
-  (`23.4 → 25.7 °C`), so this is a long-standing property of the lane, not a new regression.
-  **Proposal, deliberately warn-first:** compute `batteryTempCAfter(last) - batteryTempCBefore(first)`
-  across the folded window and, following `power.ts`'s precedent of warning about states nobody has
-  measured rather than inventing a verdict, **warn** above ~1 °C and refuse only once a second device
-  or a longer series confirms the slope. One device and one session is thin for a hard threshold.
-  Also worth pairing: a `--warmup N` flag on the capture loop that discards the first N runs, since
-  the operator currently has no way to express "these were the cold ones" except by re-running.
-
-- **HYG10 — tests that are collected and cannot fail** (found 2026-09-04 by the HYG9 sweep;
-  P2, post-flip acceptable, ~1 session). Three confirmed, each upheld by a 3-lens refutation panel.
-  (a) `packages/debug/tests/perf-recorder.test.ts` — the test named *'p50 / p95 / p99 are correct
-  for a known sorted distribution'* contains **zero assertions**; its own trailing comments say the
-  approach was abandoned mid-write, and it reports green. Percentile computation in
-  `createPerfRecorder` is therefore unverified against any known distribution — the two tests that
-  do run assert only `min <= p50 <= p95 <= p99 <= max` over near-zero samples, which any monotone
-  bug satisfies. These percentiles feed the report `check:perf` reasons about. (b)
-  `packages/react/tests/game-context.test.ts` — *'has Provider and Consumer'* asserts on string
-  literals that the same file's own `mock.module('react')` hard-codes three lines earlier; it
-  cannot fail for any change to the code under test. (c) `packages/engine/tests/headless.test.ts` —
-  five *'export existence'* blocks assert `typeof x === 'function'` on top-level named imports,
-  which cannot fail independently because a missing export already aborts the file at import time.
-  Five of eleven `it` blocks on the barrel's most consumer-visible surface are dead weight.
-  Fix (a) with a real known-answer distribution; delete or replace (b) and (c) rather than
-  weakening them further. Same family as OSS-B23b.
-
-- **HYG11 — the rest of the unwired-config surface** (found 2026-09-04 by the HYG9 sweep; P2,
-  post-flip acceptable, `[MT]`, ~1 session). What HYG9 confirmed but deliberately did not land,
-  since none of it is on the freeze path. (a) The three shipped **template tsconfigs**
-  (`packages/create-flare-app/templates/{blank,shmup,topdown}/tsconfig.json`) are copied verbatim
-  into every scaffolded project and compiled by nothing here; the config that *is* checked
-  (`tsconfig.templates.json`) applies materially different options — `jsx: react-native` vs
-  `react-jsx`, and no `verbatimModuleSyntax`/`erasableSyntaxOnly` — so the file every new developer
-  actually builds against is never exercised. Related to the known template-typecheck blindspot.
-  (b) All 42 `packages/*/tsdown.config.ts` are type-checked by no tsconfig (every package config
-  includes only `src`): the files deciding entry points, `format`, `dts` and `fixedExtension` for
-  everything published get no check against `defineConfig`, and tsdown loads them type-stripped, so
-  a mistyped option is silently ignored. (c) `scripts/propagate-license.ts` and
-  `scripts/concretize-workspace-deps.ts` — both on the publish critical path, both in no tsconfig.
-  (d) `apps/bench-dashboard/tsconfig.json` **is** invoked but its `include` omits `next.config.ts`,
-  so the gate reports that workspace as covered when its Next config is not. (e)
-  `apps/bench-web/scripts/{testingbot-session-smoke,testingbot-probe}.mjs` have no script alias and
-  are invoked only by copy-pasting out of a README, so the web lane's credential/entitlement
-  preconditions surface as a failed capture rather than a fast precondition failure.
 
 ### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
 
@@ -480,6 +443,62 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **PERF-21 — the web fold now warns on thermal DRIFT, not just throttling** (2026-09-05,
+  session #319). `benchmarks/src/web-promote{,-cli}.ts` + `benchmarks/tests/thermal-drift.test.ts`.
+  The existing guard refuses a window the device reported *throttling* through, and **that check
+  never fired on either of the two windows it should have**: `thermalStatus` was 0 on all 15
+  captures. Its own docstring says why — status "is a step function that reads 0 right up until it
+  does not". **The signal that was present and ungated was battery temperature**, and the reason it
+  was ungated turns out to be mechanical: `WebPromoteRow.thermal` declared only
+  `statusBefore`/`statusAfter`, so the fold **could not see** the temps every row had been carrying.
+  Type widened, and the window's drift (`first.batteryTempCBefore` -> `last.batteryTempCAfter`) is
+  now computed and reported. **Warns, never refuses** — following `power.ts`'s rule for Balanced:
+  measured on one device over one session is enough to report and not enough to invent a verdict,
+  and the *previous published baseline drifted the same 2.3 C*, so refusing would have rejected it
+  too. Threshold 1 C, calibrated not invented: 29.4 -> 31.6 C (+2.2) tracked a monotone +25% in p50,
+  so ~1 C buys ~11% of movement — just past the 10% band the fold already enforces. Also warns when
+  temperature was not reported at all, since silence is not steadiness. Eight tests including the
+  real 2026-09-05 window; mutation-verified (disabling the check fails 2). SESSION_LOG #319.
+
+- **HYG11 — the rest of the unwired-config surface, and a real bug in all three templates**
+  (2026-09-05, session #319). **44 files gained type checking**: `packages/*/tsdown.config.ts` (all
+  42 — the files deciding entry points, `format`, `dts` for everything published, previously checked
+  by no tsconfig and loaded type-stripped by tsdown, so a mistyped option was silently ignored) and
+  `scripts/{propagate-license,concretize-workspace-deps}.ts`, both on the publish critical path.
+  Added to the root tsconfig, so `typecheck:tests` covers them; mutation-verified on both. **One
+  trap found while wiring it:** `scripts/readme-snippets/` is generated and gitignored and contains
+  a deliberately-broken `__liveness__.ts` canary proving `check:readme` can still detect an error —
+  compiling it would have made the gate pass or fail depending on whether `check:readme` had been
+  run recently, so it is explicitly excluded with the reason recorded in-file.
+  **A real shipped bug, not just wiring:** every template ships an `index.web.ts`, and all three
+  template `tsconfig.json` files included only `["src", "index.ts"]` — so a scaffolded project's own
+  typecheck **silently skipped its web entry point**. The repo never noticed because
+  `tsconfig.templates.json` compiles that file under its own include list. Fixed in all three and
+  pinned by `tests/template-tsconfig.test.ts`, which also records the deliberate `jsx` divergence
+  (templates `react-native`, the repo's check `react-jsx`) as a fact rather than an accident.
+  Also: `apps/bench-dashboard/tsconfig.json` now includes `next.config.ts` (the gate reported that
+  workspace as covered while its Next config was not), and the two TestingBot scripts got
+  `testingbot:probe` / `testingbot:smoke` aliases so the web lane's credential preconditions are
+  discoverable rather than copy-pasted out of a README. SESSION_LOG #319.
+
+- **HYG10 — three tests that were collected and could not fail** (2026-09-05, session #319).
+  Each fix mutation-verified against the bug it claims to catch. (a)
+  `packages/debug/tests/perf-recorder.test.ts` — the percentile test's body was **comments only,
+  zero assertions**, abandoned mid-write on "we can't freeze `performance.now()`". It is stubbable
+  after all (`nowMs` reads it at call time), so three known-answer tests now drive exact elapsed
+  values: a 99x1ms + 1x50ms spike whose p99 must land on **1.49** (between samples, so returning the
+  max, the nearest sample, or an off-by-one index all fail), a 1..100 ramp separating p50/p95/p99,
+  and a ring-eviction case. Catches dropped interpolation, off-by-one indexing and return-the-max.
+  (b) `packages/react/tests/game-context.test.ts` — `has Provider and Consumer` asserted
+  `toBeDefined()` on properties the file's own mock hard-codes three lines earlier; replaced by
+  recording the `createContext` calls and asserting **exactly one, defaulted to null**, which fails
+  if the default changes. (c) `packages/engine/tests/headless.test.ts` — five `typeof X ===
+  'function'` tests that could not fail independently, since a missing export already aborts the
+  file at import; collapsed into one that **uses** each export, catching a re-export bound to a
+  broken implementation. Verifying (c) surfaced the dist-vs-src trap again: the first mutation
+  passed because `export * from '@flare-engine/events'` resolves to built `dist`, and only failed
+  after a rebuild. SESSION_LOG #319.
 
 - **XR-13 — native capture now dispatches through `react-native-worklets`; New Architecture
   required** (2026-09-05, session #318). Decision recorded in **ADR-0002** (accepted by the owner);

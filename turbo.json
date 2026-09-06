@@ -55,6 +55,21 @@
     },
     "@flare-engine-apps/bench-web#bench:web": {
       "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["BENCH_WEB_ALLOW_BUSY"]
+    },
+    "@flare-engine-apps/bench-web#bench:web:gpu": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["BENCH_WEB_ALLOW_BUSY"]
+    },
+    "@flare-engine-apps/bench-web#bench:web:android": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["BENCH_WEB_ALLOW_BUSY"]
+    },
+    "@flare-engine/benchmarks#bench:web:promote": {
+      "dependsOn": ["^build"],
       "cache": false
     },
     "lint": {},

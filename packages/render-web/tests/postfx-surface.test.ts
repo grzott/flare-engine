@@ -3,9 +3,13 @@ import { resolve } from 'node:path';
 import type { SkImageLike } from '@flare-engine/postfx';
 import {
   COLOR_GRADING_LUT_SKSL,
+  COMPOSITE_SKSL,
   createBloom,
   createColorGradingLut,
   createGrayscaleFlash,
+  createPostFxComposite,
+  createPostFxController,
+  createPostFxRuntime,
   createVignette,
   EffectChain,
   GRAYSCALE_FLASH_SKSL,
@@ -790,5 +794,123 @@ describe('composite blit blend mode', () => {
     surface.fadeTrail([0, 0, 0], 0.5);
     // The trail fade is a genuine alpha-over and must NOT become Src.
     expect(m.blendModes.slice(atConstruction)).toEqual([{ name: 'SrcOver' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// composite(): the chain's global intensity has one owner
+// ---------------------------------------------------------------------------
+
+describe('composite() and the chain global intensity', () => {
+  it('keeps an a11y-set motion scale across composite() when the argument is omitted', () => {
+    const m = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas(64, 64);
+    const pfx = createPostFxController({
+      effects: [createVignette('v', { intensity: 0.5, radius: 0.7 })],
+    });
+    const surface = createPostFxSurface(m.kit, canvas, pfx.chain)!;
+
+    // What createA11yBridge().attachPostfx(pfx) does under reduced motion.
+    pfx.setMotionScale(0);
+    surface.composite();
+
+    expect(pfx.chain.globalIntensity).toBe(0);
+    // Vignette packs [w, h, intensity, radius, r, g, b]; the pass must see the scaled intensity.
+    expect(m.uniformsSeen).toHaveLength(1);
+    expect(m.uniformsSeen[0]![2]).toBe(0);
+  });
+
+  it('an explicit argument still writes the chain global intensity', () => {
+    const m = makeMockKit({ runtimeSupported: true });
+    const canvas = makeEventfulCanvas(64, 64);
+    const chain = new EffectChain();
+    chain.add(createVignette('v', { intensity: 0.5, radius: 0.7 }));
+    const surface = createPostFxSurface(m.kit, canvas, chain)!;
+
+    surface.composite(0.25);
+
+    expect(chain.globalIntensity).toBe(0.25);
+    expect(m.uniformsSeen[0]![2]).toBeCloseTo(0.125, 6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// real CanvasKit CPU: composite clouds honour weatherDirection
+// ---------------------------------------------------------------------------
+
+describe('real CanvasKit CPU: composite weather clouds', () => {
+  const W = 32;
+  const H = 32;
+
+  // Pack through the real runtime so the test pins the shipped layout, not a hand copy of it.
+  const cloudsUniforms = (direction: number): Float32Array =>
+    createPostFxRuntime(null).packUniforms(
+      createPostFxComposite('c', {
+        weatherKind: 4,
+        weatherIntensity: 1,
+        weatherDirection: direction,
+        weatherScrollX: 40,
+      }),
+      W,
+      H,
+    );
+
+  // Flat mid-grey source through COMPOSITE_SKSL → RGBA bytes. Null when RuntimeEffect is absent.
+  function renderComposite(uniforms: Float32Array): Uint8Array | null {
+    if (!ck?.MakeSurface || !ck.RuntimeEffect) return null;
+    const src = ck.MakeSurface(W, H);
+    if (!src) return null;
+    src.getCanvas().clear(ck.Color4f(0.5, 0.5, 0.5, 1));
+    const srcImg = src.makeImageSnapshot();
+    const effect = ck.RuntimeEffect.Make(COMPOSITE_SKSL);
+    expect(effect).not.toBeNull();
+    const dst = ck.MakeSurface(W, H);
+    let pixels: Uint8Array | null = null;
+    if (effect && dst) {
+      const srcShader = srcImg.makeShaderOptions(
+        ck.TileMode.Clamp,
+        ck.TileMode.Clamp,
+        ck.FilterMode.Linear,
+        ck.MipmapMode.None,
+      );
+      const shader = effect.makeShaderWithChildren(uniforms, [srcShader]);
+      expect(shader).not.toBeNull();
+      if (shader) {
+        const paint = new ck.Paint();
+        paint.setShader(shader as Parameters<typeof paint.setShader>[0]);
+        dst.getCanvas().drawRect(ck.LTRBRect(0, 0, W, H), paint);
+        dst.flush();
+        paint.delete();
+        (shader as { delete?(): void }).delete?.();
+        const snap = dst.makeImageSnapshot();
+        const out = snap.readPixels(0, 0, {
+          width: W,
+          height: H,
+          colorType: ck.ColorType.RGBA_8888,
+          alphaType: ck.AlphaType.Unpremul,
+          colorSpace: ck.ColorSpace.SRGB,
+        }) as Uint8Array | null;
+        pixels = out ? Uint8Array.from(out) : null;
+        snap.delete();
+      }
+      srcShader.delete();
+    }
+    dst?.delete();
+    effect?.delete();
+    srcImg.delete();
+    src.delete();
+    return pixels;
+  }
+
+  it('weatherDirection changes the rendered clouds, as it does in WEATHER_CLOUDS_SKSL', () => {
+    const along = renderComposite(cloudsUniforms(0));
+    if (!along) return; // headless runner without RuntimeEffect — skip like the sibling tests
+    const across = renderComposite(cloudsUniforms(90));
+    expect(across).not.toBeNull();
+    // Clouds must actually modulate the flat source, or the comparison below is vacuous.
+    const reds = new Set<number>();
+    for (let i = 0; i < along.length; i += 4) reds.add(along[i]!);
+    expect(reds.size).toBeGreaterThan(1);
+    expect(across).not.toEqual(along);
   });
 });

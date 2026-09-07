@@ -6,7 +6,7 @@ import {
   type SkiaPostFxModuleLike,
   type SkiaRuntimeEffectLike,
 } from '../src/runtime.js';
-import { COMPOSITE_SKSL } from '../src/shaders.js';
+import { COMPOSITE_SKSL, WEATHER_CLOUDS_SKSL } from '../src/shaders.js';
 
 function createMockSkia(): { skia: SkiaPostFxModuleLike } {
   const fake: SkiaRuntimeEffectLike = { makeShaderWithChildren: () => ({}) };
@@ -367,5 +367,39 @@ describe('COMPOSITE_SKSL source', () => {
 
   test('rain branch contains hash-bucketing (floor)', () => {
     expect(COMPOSITE_SKSL).toContain('floor');
+  });
+});
+
+// ── 8. Composite clouds branch — parity with WEATHER_CLOUDS_SKSL ─────────────
+
+/** The `weatherKind == 4` branch body: from its guard up to the grayscale-flash marker. */
+function compositeCloudsBranch(): string {
+  const start = COMPOSITE_SKSL.indexOf('wk >= 3.5');
+  const end = COMPOSITE_SKSL.indexOf('// --- grayscale flash ---');
+  if (start < 0 || end <= start) throw new Error('composite clouds branch not found');
+  return COMPOSITE_SKSL.slice(start, end);
+}
+
+/** Collapse whitespace so the two hand-maintained sources compare structurally. */
+const squash = (s: string): string => s.replace(/\s+/g, '');
+
+describe('COMPOSITE_SKSL clouds branch', () => {
+  test('references weatherDirection (packed slot 16) inside the clouds branch', () => {
+    expect(compositeCloudsBranch()).toContain('weatherDirection');
+  });
+
+  test('rotated scroll matches WEATHER_CLOUDS_SKSL after renaming its uniforms', () => {
+    const from = WEATHER_CLOUDS_SKSL.indexOf('float rad = direction');
+    const to = WEATHER_CLOUDS_SKSL.indexOf('float cloud = fbm');
+    expect(from).toBeGreaterThan(-1);
+    expect(to).toBeGreaterThan(from);
+    const ported = WEATHER_CLOUDS_SKSL.slice(from, to)
+      .replace(/\bdirection\b/g, 'weatherDirection')
+      .replace(/\bscrollOffsetX\b/g, 'weatherScrollX');
+    expect(squash(compositeCloudsBranch())).toContain(squash(ported));
+  });
+
+  test('the X-only scroll the branch drifted onto is gone', () => {
+    expect(compositeCloudsBranch()).not.toContain('uv.x + weatherScrollX / resolution.x');
   });
 });

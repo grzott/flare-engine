@@ -41,8 +41,7 @@ export interface PostFxController {
    * snapshot on expiry. Re-triggering before expiry resets the countdown.
    * No-op if `effectId` is not in the chain.
    */
-  /** Optional — enable an effect for `decayMs` ms then restore its pre-trigger uniforms. No-op if id is not in the chain. */
-  triggerTimed?(effectId: string, decayMs: number): void;
+  triggerTimed(effectId: string, decayMs: number): void;
   /** Advance auto-decaying effects (flash + timed triggers). */
   update(dt: number): void;
   /** Build the per-frame compiled pass list. Empty if runtime is unsupported. */

@@ -66,9 +66,6 @@ const G = globalThis as { __DEV__?: boolean };
 // Structural interfaces — no @shopify/react-native-skia import anywhere here.
 // ---------------------------------------------------------------------------
 
-/** A 4-float RGBA color buffer (r, g, b, a in [0, 1]). */
-export type ColorLike = Float32Array;
-
 /**
  * A mutable axis-aligned rect.
  *

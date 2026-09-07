@@ -6,7 +6,6 @@ export {
 } from './draw-order.js';
 export {
   type ColorFilterFactoryLike,
-  type ColorLike,
   createFrameRenderer,
   type DrawSurfaceLike,
   type FrameRenderer,

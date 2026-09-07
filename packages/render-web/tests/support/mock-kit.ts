@@ -16,6 +16,8 @@ export interface MockKit {
   deletedSrcShaders: string[];
   deletedSnapshots: string[];
   childrenCounts: number[];
+  /** Packed uniforms handed to makeShaderWithChildren, one copy per pass. */
+  uniformsSeen: Float32Array[];
   blendModes: unknown[];
   /** How many on-screen surfaces have been created (one per build + one per resize). */
   onscreenCount: () => number;
@@ -35,6 +37,7 @@ export function makeMockKit(opts: MockKitOptions = {}): MockKit {
   const deletedSrcShaders: string[] = [];
   const deletedSnapshots: string[] = [];
   const childrenCounts: number[] = [];
+  const uniformsSeen: Float32Array[] = [];
   const blendModes: unknown[] = [];
   let surfaceId = 0;
   let shaderIdx = 0;
@@ -77,7 +80,8 @@ export function makeMockKit(opts: MockKitOptions = {}): MockKit {
   }
 
   const fakeEffect = {
-    makeShaderWithChildren: (_uniforms: ArrayLike<number>, children: unknown[]) => {
+    makeShaderWithChildren: (uniforms: ArrayLike<number>, children: unknown[]) => {
+      uniformsSeen.push(Float32Array.from(uniforms));
       childrenCounts.push(children.filter((c) => c != null).length);
       const label = `shader-${++shaderIdx}`;
       return { delete: () => deletedShaders.push(label) };
@@ -133,6 +137,7 @@ export function makeMockKit(opts: MockKitOptions = {}): MockKit {
     deletedSrcShaders,
     deletedSnapshots,
     childrenCounts,
+    uniformsSeen,
     blendModes,
     onscreenCount: () => onscreenCount,
     deletedContexts,

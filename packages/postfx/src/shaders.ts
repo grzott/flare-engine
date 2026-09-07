@@ -429,8 +429,13 @@ half4 main(float2 coord) {
       half dark = half(vd * weatherIntensity);
       c = c * (1.0 - dark);
     } else if (wk >= 3.5) {
-      // clouds
-      float2 cloudUv = float2(uv.x + weatherScrollX / resolution.x, uv.y * 0.5);
+      // clouds — rotated scroll, mirrored from WEATHER_CLOUDS_SKSL (direction=0 → horizontal)
+      float rad = weatherDirection * 3.14159 / 180.0;
+      float2 scrollDir = float2(cos(rad), sin(rad));
+      float2 cloudUv = float2(
+        uv.x + weatherScrollX * scrollDir.x / resolution.x,
+        uv.y * 0.5 + weatherScrollX * scrollDir.y / resolution.y
+      );
       float cloud = fbm(cloudUv * 3.0);
       float heightFade = smoothstep(0.6, 0.2, uv.y);
       float alpha = cloud * heightFade * weatherIntensity * 0.5;

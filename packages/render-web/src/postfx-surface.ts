@@ -38,8 +38,12 @@ export interface PostFxSurface {
   clear(bgRgb: readonly number[]): void;
   /** Motion-blur trail: fade the previous scene frame toward bg instead of clearing. */
   fadeTrail(bgRgb: readonly number[], alpha: number): void;
-  /** Snapshot the scene, run the chain at `globalIntensity`, composite to screen. */
-  composite(globalIntensity: number): void;
+  /**
+   * Snapshot the scene, run the chain, composite to screen. The pass runs at the
+   * chain's own `globalIntensity` (so an a11y `setMotionScale` holds frame to
+   * frame); pass a value only to write a new global intensity into the chain.
+   */
+  composite(globalIntensity?: number): void;
   /** Flush the on-screen surface (after drawing crisp overlays). */
   flush(): void;
   /** Resize the canvas backing store + offscreen surfaces (does NOT clear — call clear() after). */
@@ -282,7 +286,7 @@ export function createPostFxSurface(
     composite(globalIntensity) {
       if (lost || !scene) return;
       scene.flush();
-      chain.globalIntensity = globalIntensity;
+      if (globalIntensity !== undefined) chain.globalIntensity = globalIntensity;
       const img = scene.makeImageSnapshot();
       blit(img);
       img.delete();

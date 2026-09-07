@@ -125,6 +125,116 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   fix for a live correctness class rather than a tidy-up, and C also retires `_resetComponentIds` —
   so land C first regardless of where the mask-width question lands. Spec: external §8, §11.3 NEW-3/NEW-5.
 
+### Arc PFA — pre-flip audit remediation (ACTIVE 2026-09-07, pre-freeze)
+
+The last broad audit before the October flip. **Findings SoT:
+[pre-flip-audit-2026-09-findings.md](pre-flip-audit-2026-09-findings.md)** — read the cited finding id (F0xx)
+or §4.1 contradiction before planning a row; the specs are there, not here. Post-flip module proposals are in
+[roadmap-post-flip.md](roadmap-post-flip.md); how the audit ran is in
+[pre-flip-audit-2026-09.md](pre-flip-audit-2026-09.md).
+
+Scope rule that produced these rows: a code finding is here **only if the fix changes the published API
+surface**, because npm does not take a publish back. Everything else went to Arc HYG (HYG12–HYG21). The
+audit itself edited no `packages/**` file (decision D1).
+
+Routing: `packages/**` → **engine-builder**; `[MT]` rows touch root docs / `scripts/` / `.changeset/` /
+`docs/plans/` and run main-thread. **Changeset level: patch** (0.3.x is the line; the 0.4.0 minor already
+exists as `xr13-worklets-scheduleonui.md` citing ADR-0002 — do not author a second one).
+
+**Capacity, stated honestly (§4.3):** ~20 agent sessions remain before the Oct 2 cutoff; audit demand plus
+already-queued work is 24.5–26.5. It does not fit. The cuts are named in §4.3 — OSS-M10, the D3 docs split
+(DOC-2/3/5), and the CE-W7/DYN-2 registry install all move post-flip. **Never slip the breaks**: F076/F064
+(published tilemap format), the renames (F011, F051), the export/field removals (F050, F056, F034, F070,
+F090, F073, F087) and the contract changes (F059, F069, F079, F086, F005, F018) each become a semver break
+against real consumers after Oct 20.
+
+**Hard sequencing constraint:** PF-9 (the pinned freeze benchmark capture, owner-paired, phone attached) must
+run Sep 28 – Oct 2 **after** the last commit touching the measured closure. So PF-2/3/4/5/6/7, PF-10, DOC-1
+and CR-1+2 must all land by Fri Sep 25. Every `/close` between PF-2 and PF-9 is red on perf-freshness by
+design; override debt must be zero before Oct 5.
+
+- **OWN-DECIDE — owner sitting, first `/start` halt** (owner-only, gates PF-1/PF-2/PF-6). Four calls the
+  audit deliberately did not make: F076 (does `flare tiled-to-flare` emit Tiled-shaped JSON, or does
+  `tilemap` ship `parseFlareMap`); F064 (`TileLayer.tiles` → `Uint32Array`, a published-type break);
+  F002 (narrow `PrefabEntry.data` to `() => T`, or document by-reference sharing); F039 (implement the
+  weighted-grid fallback, or delete the claim). Each is a one-way published-surface decision.
+- **DOC-1 — commit the audit artefacts** (P0, [MT], 1 session). The findings SoT, `roadmap-post-flip.md` and
+  the HYG12–HYG21 block are untracked/uncommitted; every CR/PF row below cites them. Re-anchor the todo.md
+  line citations in §4 after the commit (they are HEAD-relative and the tree has moved), or cite by row id.
+- **F3-EXTEND — the tarball audit covers the wrong versions** (P0, [MT], 0.5 session). `PUBLISHED_VERSIONS_EXPECTED`
+  at `scripts/audit-tarballs.mjs:58` still lists 0.1.0/0.2.0/0.2.1; 0.3.0 and 0.3.1 are published and the
+  access flip exposes **every** version retroactively. Extend to five, fix the three-version prose at
+  road-to-oss:1049-1051/:1064/:1418-1419. Do **not** add a `--registry` pin (§4.2 explains why).
+- **PF-10 — `bench:promote`'s refusals are dead code** (P1, [MT], 1 session). `promote.ts:111` returns before
+  the power-plan and CPU-pinning checks at `:204`/`:227`, so the current baseline is an **unpinned** fold.
+  Move the return after the affinity loop, add `powerSchemeGuid` to the shared field, and add two
+  mutation-verified tests (a Power-Saver run refused; an unpinned 24c/32t run refused). Blocks PF-9 being
+  trustworthy.
+- **CR-1+CR-2 — the pending changesets tell two opposite stories** (P0, [MT], 1 session).
+  `.changeset/xr1-old-arch-claim-qualified.md` still ships ">=3.19.1, old-arch intended" — the story XR-13 and
+  ADR-0002 reversed. Delete it (fold any surviving fact into `xr13-worklets-scheduleonui.md`), confirm
+  `check:changeset` still covers engine + react, and stamp "Superseded 2026-09-05 by XR-13" on the XR-1 row.
+  This ships to consumers in the 0.4.0 changelog if it is not fixed.
+- **PF-2 — tier-1 contracts: ecs, core, math** (P0, 2 sessions). F002 per OWN-DECIDE (+ a second-spawn identity
+  test); F007 zero-alloc `entities` accessor on `Query`; F012 `QueryBuilder.build()` returning an orphan
+  query; F005 coroutine `cancel()`/`clear()` never closing the generator (`gen.return()` throws if called from
+  inside the running generator — guard it); F011 `Vec2.normalizeOut` does not normalize, and it is the repo's
+  only `…Out` name. Tier-1: stales every bench lane.
+- **PF-6 — physics + pathfinding public shape** (P1, 1 session). F049 additive `addCollider(entity, collider, x, y)`
+  + `README.md:25`; F039 per OWN-DECIDE; F050 `NavMeshPolygon.neighbors` required-but-unread; F056 `SpatialEntry<T>`
+  exported with no producer.
+- **PF-5 — render-web + postfx + render surface** (P1, 1 session). F018 `createWebSurface` returns
+  `{ canvas, flush, dispose }` (the surface can never be flushed or deleted today — pulled out of HYG8, which
+  drops the item); F030 `composite(globalIntensity?)` assigns only when provided; F031 the composite clouds
+  branch ignores the packed `weatherDirection`; F033/F034 dead optional + unreferenced `ColorLike` export.
+- **PF-4 — shapes** (P1, 1 session). F016 `drawShip` discards engine `ox/oy/rot`; F017 `shapeBoundsRadius`
+  omits stroke width and the glow ring its contract promises; F032 drop only the dead `_Skia` parameter (the
+  glow enum is the documented contract — verifier corrected the finder here).
+- **PF-3 — input** (P1, 1 session). F038 route only the primary touch id into `pointer`; F052 one clock in
+  `GestureDetector`; F051 the three vocabularies for one edge flag; F043 the non-zero-alloc gamepad seam.
+- **PF-7 — react + scene + storage contracts** (P1, 1 session). F079 `GameView` throws without
+  `<SafeAreaProvider>` while the spec claims a zero fallback — implement it or delete the claim; F069
+  `SceneFactory` must supply world/camera that `SceneManager` discards; F059 `DocumentStore.load()` treats any
+  migration throw as corrupt and **persists defaults over a valid document**.
+- **PF-1 — settle the published tilemap format** (P0, 2 sessions, after OWN-DECIDE). F076 is the one
+  high-severity pre-flip finding: `flare tiled-to-flare` emits a layer/tileset shape that `parseTiled` rejects,
+  so the Tiled authoring story is broken end to end — the story OSS-B8 says the engine depends on. Plus F064
+  (`tiles: number[]` → typed array), F070/F071/F072.
+- **PF-8 — tier-3.5 UI + IAP** (P1, 1 session). F085/F078: the RevenueCat adapter reads `purchaseDateMillis`,
+  a field the SDK never sends, so `purchasedAt` is always "now" — read `latestPurchaseDateMillis` for
+  entitlements and `purchaseDateMillis ?? Date.parse(purchaseDate)` for transactions. Plus F086 `PaywallModal`
+  granting a prop-supplied key past the catalog, F087 the second dead shop list, F083, F090, F073.
+- **CR-5 — runbook + protocol truth pass** (P0, [MT], 1 session). Apply the §4.1 resolutions that target
+  [flip-runbook.md](flip-runbook.md), road-to-oss §9/§11/§12 and [manual-test-protocol.md](manual-test-protocol.md),
+  and close the §4.2 gaps. **The high one first:** the verdaccio rehearsal applies the flip-commit edits
+  (`create-flare-app` `private: false`) and then runs `bun run release` with no registry pin for that package —
+  it would publish `create-flare-app@0.4.99` to the **real** registry. Also: 40 → 41/42 package counts; the
+  `GITHUB_TOKEN`/changelog parenthetical that is simply false; `bun run version` is a four-stage chain, not two;
+  FW-10 is assigned to an agent that the pre-bash guard forbids from running `npm`; FW-2 assumes branch
+  protections that do not exist on a private free-plan repo; no owner-ledger file exists though §14 cites one.
+- **CR-3 — reconcile the ledger to HEAD** (P1, [MT], 1 session, after PF-9). XR-7 → Done
+  (`0ef1aec`/`942ba88`/`87527aa`/`e7e169e`, noting the fold was unpinned and is superseded by PF-9's pinned
+  capture); XR-1 Active row → `>=4.0.0` + worklets `>=0.7.0` per ADR-0002 with only half (b) open; add the
+  missing XR-2 Done row (`245b198`); correct todo.md:294 — "B/C/D/M all shipped in 0.3.0" is false, seven rows
+  landed after 0.3.1 and are unreleased; drop the stale M11/PERF-9/HYG5 bullets that CW7-8 already fixed.
+- **CR-4 — public-facing one-source fixes** (P1, [MT], 1 session; may slip into the manual window — doc fixes
+  are allowed there, restructuring is not). `AGENTS.md:46` still says 0.2.1 is the published line (it is 0.3.1)
+  and AGENTS.md reaches every reader through CLAUDE.md; `architecture.md` becomes the sole tier map reproducing
+  `LAYER_MAP` and the other four maps link to it (five maps disagree on 11 packages today); the downward-only
+  rule is stated nine times with two incompatible semantics — the gate's equal-or-lower wins; `api-specs.md:63`
+  says the 32-component cap is per-World, the code says module-global; README claims `pathfinding` ships flow
+  fields and it does not; the 4-gate/12-gate `verify.sh` restatements; `git.md`'s 7 commit types vs commitlint's 9.
+- **F4-SCAN — full-history secret re-scan** (P0, [MT], 1 session, Oct 2–5). Delta since the June 847-file pass,
+  including Bypass-2FA/granular token patterns; commit the pattern list before running (§4.2 notes the
+  procedure is assumed rather than written down).
+
+Owner-only, on the critical path — full sequence and evidence in findings §4.4: **NPM-ROTATE** (rotate the
+publish credential, mirror it into the Actions secret, record an expiry past Oct 31), **F3-PUB** + **F3-DISP**
+(authenticated published-version audit over five versions × 41 names, with a disposition per hit — must run
+*before* verdaccio stands up, the script inherits ambient npm config), **XR1B-PROBE**, **PF-9** (the pinned
+freeze capture, Sep 28 – Oct 2, phone attached), **F4-RATIFY** (`.claude/` public y/n, `SESSION_LOG.md` public
+y/n, history retention), then H1 and flip week per the runbook.
+
 ### Arc CW7-Q — consumer asks queued from the 2026-08-25 audit (not blocking either consumer)
 
 Seeded so they do not decay into prose. Findings + the reasoning for each verdict are in the SoT:
@@ -335,6 +445,81 @@ Design-quality cleanup from the 2026-07-05 audit ([ledger](_local/deep-audit-202
 - **HYG6 — scene + animation + pathfinding + dialogue: shared helpers.** `_teardownStack()` (dedupe ×3 + drop go()'s double-run); import `linear` from math + document chainTween-needs-a-TweenManager; internal `heap.ts` shared by astar/jps + drop `funnelSmooth` `_mesh`; make `ActionHandler` sync-or-awaited (kill the dead `Promise<void>`).
 - **HYG7 — storage + debug + devtools + progression: dead writes + idiom.** Drop `__flare_doc_version`/`__flare_version` dead writes + dedupe `DocumentStore.load` first-run branch; shared `nowMs` + `StatsTracker`→factory; wire-or-drop `devtools.enabledOnNative` + shared TimeControl/TimeScrubber core; `resolveTier` via `resolveTierIndex`.
 - **HYG8 — react + cli + iap + render-web: shared factories.** One subsystem-wiring factory behind `GameView`+`createGame`; share `parseTemplateArg/parsePmArg` + single template-id source; `getGrantsForProduct` via `getCatalogEntry` + single `ProductType`; `createWebSurface` returns a `{flush,dispose}` handle (or fold into C1's `createWebFrameRenderer`).
+
+**2026-09-07 — the pre-flip audit added HYG12–HYG21** (53 findings; specs + evidence per finding in
+[pre-flip-audit-2026-09-findings.md](pre-flip-audit-2026-09-findings.md) §2). They are tagged post-flip by
+the D2 rule — *the fix does not change the published API surface* — and that rule is about the **fix**, not
+about the **bug**. Six of them are high severity and user-visible: LDtk AutoLayer import is silently empty,
+a raycast can hang the JS thread, the render system re-sorts O(n²) every frame, a rejecting error transport
+loops unbounded, Button steals focus on every re-render, and the default VirtualJoystick oscillates. Fixing
+those changes no exported name, so they are not freeze-blocked — but an owner who would rather not ship them
+public can pull any of the six forward as behaviour fixes without touching the API.
+
+- **HYG12 — render: frame-loop correctness + churn.** `createRenderSystem` discards last frame's sort and
+  re-sorts unordered query order every frame, O(n²) (render-system.ts:94); two `slice()` arrays whenever
+  consecutive runs differ in length (frame-renderer.ts:421); custom-shader effects re-query the uniform layout
+  by reflection every run every frame (:1004); Perlin shake indexes a 256-entry PERM with `PERM[xi]+yi` up to
+  510 so half the lattice reads `undefined` (camera2d.ts:78); BMFont uses `charCodeAt` so glyph ids > 0xFFFF
+  can never match (sprite-font.ts:126); zone-bg falls back to opaque black rects when RuntimeEffect is absent
+  (frame-renderer.ts:820). Covers F024 F025 F026 F020 F021 F022.
+- **HYG13 — physics: raycast hardening + dedupe.** `raycast` with `maxDist=Infinity` (or an infinite
+  position) hangs the JS thread in `SpatialIndex` (spatial-index.ts:122); `rayVsAABB`/`...Into` return a NaN
+  hit when the origin sits exactly on a slab plane (raycast.ts:236); `insert` on an already-indexed item
+  leaves a phantom entry `query` returns forever (:70); ray-vs-AABB and ray-vs-circle math written twice and
+  already diverged (raycast.ts:89); trigger-vs-collision pair dispatch copied three times
+  (collision-world.ts:168). Covers F036 F040 F041 F053 F055.
+- **HYG14 — errors: global capture safety.** A rejecting transport re-enters the `unhandledrejection` handler
+  in an unbounded loop (global-capture.ts:111); `uninstall()` leaves the RN `ErrorUtils` handler live when no
+  previous handler was captured (:150); `createClientTransport` duplicates sentry.ts's payload→Error rebuild
+  (:197). Covers F058 F062 F075.
+- **HYG15 — ui + react: focus, input feel, tween dedupe.** `Button` re-registers on every `onPress` identity
+  change and unregistering the focused node moves focus (ui/button.tsx:45); `FocusManager.register` returns a
+  disposer bound to `this` (focus.ts:98); the default `VirtualJoystick` knob is itself the touch target so
+  `locationX/Y` are knob-relative and the stick oscillates (virtual-joystick.tsx:106); `onPreRender` allocates
+  `Object.keys` per bound postfx pass every frame and builds passes with no binding (game-view.tsx:444);
+  `useOverlayFade` and `useCountUp` are the same 35-line rAF tween differing only in easing
+  (overlay-hooks.ts:41). Covers F077 F082 F080 F084 F088.
+- **HYG16 — tilemap: LDtk AutoLayer + per-tile lookups.** `parseLDtk` drops every AutoLayer tile —
+  `gridTiles ?? autoLayerTiles` picks the empty `gridTiles` array (ldtk-parser.ts:289); the tile draw loop
+  re-resolves the tileset by linear scan and the image by string-keyed `Map.get` for every visible tile every
+  frame (tilemap-renderer.ts:88). Covers F057 F065.
+- **HYG17 — events + assets + scene + achievements: lifecycle correctness.** `Signal.once`/`EventEmitter.once`
+  re-fire on a nested emit, and a once-handler that spawns recurses to stack overflow (signal.ts:30);
+  `parseAseprite` hash format loses every frame name because `Object.values()` discards the keys
+  (sprite-sheet.ts:154); `SceneManager.go()` interrupted mid-fade leaves the abandoned pending scene cached
+  and marked initialized without `onInit` (scene-manager.ts:76); `createStorageAchievements` memoizes a
+  rejected hydrate promise, poisoning every later call (memory.ts:112). Covers F001 F037 F060 F081.
+- **HYG18 — math + core: numeric edges + loop hygiene.** `rayVsRect` returns NaN for an axis-parallel ray
+  whose origin sits on that slab's edge, `0 * Infinity` (intersection.ts:117); `Vec2.slerp` returns garbage
+  for exactly antiparallel unit inputs (:160); `lineVsRect` allocates four object literals per call (:48);
+  `stop()` then `start()` from inside a frame callback leaves two live rAF chains (game-loop.ts:156);
+  `scheduleFrame` allocates a fresh rAF closure every frame (:143); `Pool.tryAcquire` duplicates `acquire`'s
+  body (pool.ts:82). Covers F003 F006 F010 F004 F009 F014.
+- **HYG19 — pathfinding: per-call and per-node allocation.** `findPath`/`findPathJPS` allocate three
+  full-grid typed arrays plus a heap on every call (astar.ts:174); `findNavMeshPath` rebuilds the id index and
+  re-allocates polygon centroids on every node expansion (navmesh.ts:194); JPS `identifySuccessors` allocates
+  a fresh `number[]` per expanded node inside the search loop (jps.ts:189); `jump()` is self-recursive per
+  tile although its comment says the cardinal case is iterative (:314). Covers F044 F045 F047 F048.
+- **HYG20 — render-web + postfx: per-frame wrappers and doubled shims.** A fresh 9-closure canvas wrapper and
+  two scratch buffers on every `beginRecording` (web-skia-module.ts:254); `drawAtlas` allocates two subarray
+  views per run against the api-specs "zero-alloc steady state" claim (:110); `RuntimeEffect.Make` wrapped
+  twice with two incompatible shapes (postfx-surface.ts:173); the README presentation flow never deletes the
+  per-frame Picture (render-web/README.md:72); `triggerTimed` re-trigger overwrites the pre-trigger snapshot
+  with mid-trigger uniforms (postfx/controller.ts:86); `update(dt)` allocates a uniforms object, a `find()`
+  closure and an `expired[]` array while any effect is active (:93). Covers F023 F027 F029 F035 F019 F028.
+- **HYG21 — remaining low sweep (one pass, not one row each).** `World.destroy` walks every component store
+  deleting from stores the entity never had (world.ts:36) and copy-pastes the deferred-removal notify block
+  three times (:71); `createCollectibleRegistry`'s docstring contradicts itself about `capstone ∈ ids`;
+  `updateSpring` is only conditionally stable and diverges under sustained large dt (spring.ts:57);
+  `Music.play` and `Music.crossfadeTo` duplicate the whole start-track block (music.ts:99);
+  `createNativeShareTransport` claims `canShare()` for screenshot payloads then silently drops the image
+  (share.ts:118 — already deferred from OSS-B3); text-reveal punctuation "delay" is a speed override so slow
+  text speeds UP after punctuation (text-reveal.ts:62) and re-slices `visibleText` every frame even when the
+  revealed count did not change (:68); `DebugOverlay` draw calls allocate a command object per call discarded
+  every frame (overlay.ts:77); `recordFrame` re-sums the whole ring every frame once full (frame-budget.ts:42);
+  slot and document stores each define an identical envelope type + guard (document-store.ts:56); `engine`
+  re-types the whole `headless.ts` export list instead of re-exporting it (index.ts:120). Covers F008 F013
+  F015 F042 F054 F061 F063 F066 F067 F068 F074 F089.
 
 Owner-gated (never picked by `/start`; public schedule road-to-oss §14, specifics in the private ledger): rotate the npm publish credential (owner action; timing + specifics in the private ledger) — or pull Trusted Publishing OIDC forward; **0.4.0** restricted publish Oct 5 (0.3.0 was release N, published restricted 2026-08-25; 0.3.1 followed 2026-08-27 — the Oct 5 freeze cut is 0.4.0, per the CE version decision); the two-week manual window; flip-day actions; portfolio copy alignment. Cross-repo lanes (flare-engine-page G1–G3, PT1–PT3, Berek BK1) run in their own repos with their own gates — road-to-oss §10.
 

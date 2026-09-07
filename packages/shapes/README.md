@@ -90,7 +90,10 @@ import { shapeBoundsRadius, singleShapeRadius, type ShapeSpec } from '@flare-eng
 
 declare const playerShip: ShapeSpec;
 
-// For atlas tile sizing — max half-extent across a composition.
+// For atlas tile sizing — max half-extent across a composition. Includes each
+// shape's ox/oy offset, a stroke-width margin where a stroke is actually
+// painted, and the full extent of a glow ring (+5.5 friendly, +2.25 hazard),
+// so a tile sized from this fully contains what `drawShape` paints.
 const tileRadius = shapeBoundsRadius([playerShip]);
 
 // For glow halo sizing — radius of one primitive.

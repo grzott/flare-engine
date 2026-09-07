@@ -9,7 +9,14 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import { argbTo, drawShape, friendlyGlowArgb, hazardGlowArgb } from '../src/draw.js';
+import {
+  applyFriendlyGlow,
+  applyHazardGlow,
+  argbTo,
+  drawShape,
+  friendlyGlowArgb,
+  hazardGlowArgb,
+} from '../src/draw.js';
 import type { ShapeSpec } from '../src/types.js';
 
 interface Call {
@@ -489,6 +496,51 @@ describe('drawShape — ship composite', () => {
     expect(calls.filter((c) => c.method === 'canvas.drawRect')).toHaveLength(3); // engine + 2 weapons
   });
 
+  test('ship engine paints at its ox/oy offset, not the hull centre (F016)', () => {
+    const { Skia, canvas, paint, calls } = createStubSkia();
+    drawShape(
+      Skia as never,
+      canvas as never,
+      paint as never,
+      {
+        kind: 'ship',
+        hull: { kind: 'circle', r: 14 },
+        weapons: [],
+        engine: { kind: 'square', size: 10, oy: 40 },
+      },
+      5,
+      7,
+      0,
+    );
+    // The engine is the only rect drawn here (no weapons, hull is a circle),
+    // so its translate must land at (cx, cy + 40), not (cx, cy).
+    const translate = calls.find((c) => c.method === 'canvas.translate');
+    expect(translate?.args).toEqual([5, 47]);
+  });
+
+  test('ship engine glow emits a ring at the engine offset (F016)', () => {
+    const { Skia, canvas, paint, calls } = createStubSkia();
+    drawShape(
+      Skia as never,
+      canvas as never,
+      paint as never,
+      {
+        kind: 'ship',
+        hull: { kind: 'circle', r: 14 },
+        weapons: [],
+        engine: { kind: 'square', size: 10, oy: 40, glow: 'friendly' },
+      },
+      0,
+      0,
+      0,
+    );
+    // Hull has no fill/stroke, so it draws nothing — the only drawCircle is
+    // the engine's glow ring. gr = max(10,10)*0.6 = 6; friendly ring = gr+4 = 10.
+    const drawCircles = calls.filter((c) => c.method === 'canvas.drawCircle');
+    expect(drawCircles).toHaveLength(1);
+    expect(drawCircles[0]?.args).toEqual([0, 40, 10]);
+  });
+
   test('ship with no weapons still emits engine + hull', () => {
     const { Skia, canvas, paint, calls } = createStubSkia();
     drawShape(
@@ -546,5 +598,15 @@ describe('color plumbing', () => {
 
   test('hazardGlowArgb is hazard-orange at α=0.6', () => {
     expect(hazardGlowArgb()).toBe((0x99 << 24) | 0xe84b2a);
+  });
+});
+
+describe('glow helpers — no dead Skia parameter (F032)', () => {
+  test('applyFriendlyGlow takes exactly 5 params: canvas, paint, cx, cy, r', () => {
+    expect(applyFriendlyGlow.length).toBe(5);
+  });
+
+  test('applyHazardGlow takes exactly 5 params: canvas, paint, cx, cy, r', () => {
+    expect(applyHazardGlow.length).toBe(5);
   });
 });

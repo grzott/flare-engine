@@ -41,7 +41,6 @@ export function hazardGlowArgb(): number {
 }
 
 export function applyFriendlyGlow(
-  _Skia: Skia,
   canvas: SkCanvas,
   paint: SkPaint,
   cx: number,
@@ -53,7 +52,6 @@ export function applyFriendlyGlow(
 }
 
 export function applyHazardGlow(
-  _Skia: Skia,
   canvas: SkCanvas,
   paint: SkPaint,
   cx: number,
@@ -108,9 +106,9 @@ export function drawShape(
   if (spec.glow !== undefined) {
     const gr = singleShapeRadius(spec);
     if (spec.glow === 'friendly') {
-      applyFriendlyGlow(Skia, canvas, paint, cx, cy, gr);
+      applyFriendlyGlow(canvas, paint, cx, cy, gr);
     } else {
-      applyHazardGlow(Skia, canvas, paint, cx, cy, gr);
+      applyHazardGlow(canvas, paint, cx, cy, gr);
     }
   }
 
@@ -492,8 +490,11 @@ function drawSquare(
     ox: spec.ox,
     oy: spec.oy,
     rot: spec.rot,
+    glow: spec.glow,
   };
-  drawRect(Skia, canvas, paint, rectSpec, cx, cy, rot);
+  // Route through the dispatcher (not drawRect) so ox/oy/rot and glow — which
+  // drawRect never reads — are actually applied. See F016.
+  drawShape(Skia, canvas, paint, rectSpec, cx, cy, rot);
 }
 
 /**

@@ -56,7 +56,10 @@ export function singleShapeRadius(spec: ShapeSpec): number {
 /**
  * Compute axis-aligned bounding radius for a shape composition. Used to
  * size atlas tiles. Returns the max half-extent from origin across all
- * shapes (including their `ox`/`oy` offsets and stroke widths).
+ * shapes, including their `ox`/`oy` offsets, a stroke-width margin added on
+ * top of the base `+2` where a stroke is actually painted, and the extent of
+ * a glow ring when `glow` is set (+5.5 friendly, +2.25 hazard) — enough to
+ * fully contain what `drawShape` paints.
  */
 export function shapeBoundsRadius(specs: readonly ShapeSpec[]): number {
   let max = 0;
@@ -64,10 +67,36 @@ export function shapeBoundsRadius(specs: readonly ShapeSpec[]): number {
     const ox = s.ox ?? 0;
     const oy = s.oy ?? 0;
     const r = boundsR(s);
-    const reach = Math.hypot(ox, oy) + r + 2;
+    const reach = Math.hypot(ox, oy) + r + 2 + strokeMargin(s) + glowMargin(s);
     if (reach > max) max = reach;
   }
   return Math.max(4, max);
+}
+
+/**
+ * Extra reach for a stroke `drawShape` actually paints, else 0. `ring` and
+ * `polyline` always stroke (draw.ts falls back to a default color/width);
+ * every other kind strokes only when `stroke` is set. `gradient-rect` never
+ * strokes, and `annulus`'s ring width is the fill-derived `rOuter - rInner`
+ * band (already exactly bounded by `rOuter`), not `strokeWidth` — both are
+ * excluded rather than double-counted. `ship` has no top-level stroke of its
+ * own; its sub-shapes carry theirs through the nested `boundsR` recursion.
+ */
+function strokeMargin(spec: ShapeSpec): number {
+  const painted =
+    spec.kind === 'ring' || spec.kind === 'polyline'
+      ? true
+      : spec.kind === 'gradient-rect' || spec.kind === 'annulus' || spec.kind === 'ship'
+        ? false
+        : spec.stroke !== undefined;
+  return painted ? Math.max(2, (spec.strokeWidth ?? 1) / 2) : 0;
+}
+
+/** Extra reach for the glow ring `drawShape` paints outside the body (see `applyFriendlyGlow`/`applyHazardGlow`). */
+function glowMargin(spec: ShapeSpec): number {
+  if (spec.glow === 'friendly') return 5.5;
+  if (spec.glow === 'hazard') return 2.25;
+  return 0;
 }
 
 /** Tighter atlas-tile-sizing radius (rect/gradient-rect use 0.75 to fit corners). */
@@ -88,6 +117,9 @@ function boundsR(spec: ShapeSpec): number {
           h: spec.engine.size,
           ox: spec.engine.ox,
           oy: spec.engine.oy,
+          stroke: spec.engine.stroke,
+          strokeWidth: spec.engine.strokeWidth,
+          glow: spec.engine.glow,
         },
       ]);
     default:

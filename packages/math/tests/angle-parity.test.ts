@@ -109,7 +109,7 @@ describe('angle-parity: rotateTowards vs reference', () => {
   });
 });
 
-describe('angle-parity: turnVelocityToward vs reference homing step', () => {
+describe('angle-parity: turnVelocityTowardInto vs reference homing step', () => {
   const out = vec2();
 
   it('grid of boundary angle combinations', () => {
@@ -123,7 +123,7 @@ describe('angle-parity: turnVelocityToward vs reference homing step', () => {
             const vy = Math.sin(curAng) * speed;
             const dx = Math.cos(targetAng);
             const dy = Math.sin(targetAng);
-            Vec2.turnVelocityToward(vx, vy, dx, dy, maxStep, out);
+            Vec2.turnVelocityTowardInto(vx, vy, dx, dy, maxStep, out);
             // rate * dt = maxStep (dt=1, rate=maxStep)
             const want = refHomingStep(vx, vy, dx, dy, maxStep, 1);
             expect(Object.is(out.x, want.x)).toBe(true);
@@ -145,7 +145,7 @@ describe('angle-parity: turnVelocityToward vs reference homing step', () => {
       const vy = Math.sin(curAng) * speed;
       const dx = Math.cos(targetAng);
       const dy = Math.sin(targetAng);
-      Vec2.turnVelocityToward(vx, vy, dx, dy, maxStep, out);
+      Vec2.turnVelocityTowardInto(vx, vy, dx, dy, maxStep, out);
       const want = refHomingStep(vx, vy, dx, dy, maxStep, 1);
       expect(Object.is(out.x, want.x)).toBe(true);
       expect(Object.is(out.y, want.y)).toBe(true);

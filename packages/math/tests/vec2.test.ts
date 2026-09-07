@@ -231,23 +231,23 @@ describe('Vec2.clampLength', () => {
   });
 });
 
-describe('Vec2.normalizeOut', () => {
-  it('axis-aligned vector scaled to speed', () => {
+describe('Vec2.scaleToLengthInto', () => {
+  it('axis-aligned vector scaled to length', () => {
     const out = vec2();
-    const result = Vec2.normalizeOut(0, 3, 5, out);
+    const result = Vec2.scaleToLengthInto(0, 3, 5, out);
     expect(result).toBe(out);
     expect(out.x).toBe(0);
     expect(out.y).toBe(5);
   });
-  it('diagonal vector preserves direction with magnitude == speed', () => {
+  it('diagonal vector preserves direction with magnitude == length', () => {
     const out = vec2();
-    Vec2.normalizeOut(3, 4, 10, out);
+    Vec2.scaleToLengthInto(3, 4, 10, out);
     expect(out.x).toBeCloseTo(6);
     expect(out.y).toBeCloseTo(8);
   });
   it('zero vector writes zeros and does not produce NaN', () => {
     const out = vec2();
-    Vec2.normalizeOut(0, 0, 5, out);
+    Vec2.scaleToLengthInto(0, 0, 5, out);
     expect(out.x).toBe(0);
     expect(out.y).toBe(0);
     expect(Number.isNaN(out.x)).toBe(false);
@@ -257,16 +257,16 @@ describe('Vec2.normalizeOut', () => {
   });
 });
 
-describe('Vec2.turnVelocityToward', () => {
+describe('Vec2.turnVelocityTowardInto', () => {
   it('returns the same out object', () => {
     const out = vec2();
-    const result = Vec2.turnVelocityToward(1, 0, 0, 1, 0.1, out);
+    const result = Vec2.turnVelocityTowardInto(1, 0, 0, 1, 0.1, out);
     expect(result).toBe(out);
   });
 
   it('preserves speed within tight tolerance', () => {
     const out = vec2();
-    Vec2.turnVelocityToward(3, 4, 1, 0, 0.5, out);
+    Vec2.turnVelocityTowardInto(3, 4, 1, 0, 0.5, out);
     const speed = Math.hypot(out.x, out.y);
     expect(Math.abs(speed - 5)).toBeLessThan(1e-10);
   });
@@ -274,7 +274,7 @@ describe('Vec2.turnVelocityToward', () => {
   it('with maxStep >= angular distance, velocity points at target direction', () => {
     const out = vec2();
     // velocity pointing right (1,0), target pointing up (0,1), maxStep = PI
-    Vec2.turnVelocityToward(1, 0, 0, 1, Math.PI, out);
+    Vec2.turnVelocityTowardInto(1, 0, 0, 1, Math.PI, out);
     const ang = Math.atan2(out.y, out.x);
     expect(Math.abs(ang - Math.PI / 2)).toBeLessThan(1e-10);
   });
@@ -283,21 +283,21 @@ describe('Vec2.turnVelocityToward', () => {
     const speed = 5;
     const out = vec2();
     // velocity at angle 0, target at angle PI/2
-    Vec2.turnVelocityToward(speed, 0, 0, speed, 0.1, out);
+    Vec2.turnVelocityTowardInto(speed, 0, 0, speed, 0.1, out);
     const newAng = Math.atan2(out.y, out.x);
     expect(Math.abs(newAng - 0.1)).toBeLessThan(1e-10);
   });
 
   it('speed 0 writes (0, 0)', () => {
     const out = vec2();
-    Vec2.turnVelocityToward(0, 0, 1, 0, 0.5, out);
+    Vec2.turnVelocityTowardInto(0, 0, 1, 0, 0.5, out);
     expect(out.x).toBe(0);
     expect(out.y).toBe(0);
   });
 
   it('writes into out and does not allocate a new object', () => {
     const out = vec2(99, 99);
-    Vec2.turnVelocityToward(1, 0, -1, 0, 0.2, out);
+    Vec2.turnVelocityTowardInto(1, 0, -1, 0, 0.2, out);
     expect(out.x).not.toBe(99);
   });
 });

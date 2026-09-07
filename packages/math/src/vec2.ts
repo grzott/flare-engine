@@ -86,15 +86,16 @@ export const Vec2 = {
     return { x: v.x * inv, y: v.y * inv };
   },
 
-  /** Zero-alloc; writes into `out`. Mandatory `out` so callers avoid temporaries in hot paths. */
-  normalizeOut(dx: number, dy: number, speed: number, out: Vec2): Vec2 {
+  /** The direction of `(dx, dy)` scaled to `length`; writes zeros when `(dx, dy)` is shorter than
+   * 1e-6. Zero-alloc, mandatory `out`; scalar components so hot paths need no temporary Vec2. */
+  scaleToLengthInto(dx: number, dy: number, length: number, out: Vec2): Vec2 {
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len <= 1e-6) {
       out.x = 0;
       out.y = 0;
       return out;
     }
-    const inv = speed / len;
+    const inv = length / len;
     out.x = dx * inv;
     out.y = dy * inv;
     return out;
@@ -247,7 +248,7 @@ export const Vec2 = {
   /** Zero-alloc homing steer: rotate velocity (vx,vy) toward direction (dx,dy) by at most maxStep
    * radians, preserving speed; writes into out. Mandatory out. Byte-identical to hand-rolled
    * homing-bullet steering (Math.hypot speed + atan2 + branch-form turn + cos/sin * speed). */
-  turnVelocityToward(
+  turnVelocityTowardInto(
     vx: number,
     vy: number,
     dx: number,

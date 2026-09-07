@@ -11990,3 +11990,74 @@ test. This block was written by hand; the gate result above is recorded as it ac
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 321 — 2026-09-07 (scope: engine)
+
+**Goal:** Arc PFA — the pre-flip audit's published-surface remediation, run as one batch: 17 rows,
+every one of them a change that becomes a semver break after the October 20 flip.
+
+**Rows closed:** OWN-DECIDE (5 owner calls), DOC-1, CR-1+CR-2, F3-EXTEND, PF-10, F4-SCAN (prep half),
+CR-5, PF-2a, PF-2b, PF-3, PF-4, PF-5, PF-6, PF-7, PF-1a+PF-1b, PF-8. Plus ADR-0004 authored.
+
+**Touched files** — 120 files; grouped by row rather than listed flat, because a flat list at this
+size stops being traceability and starts being noise.
+- **PF-1** (F076 + F064/F070/F071/F072) — `packages/cli/**` (7), `packages/tilemap/**` (10)
+- **PF-2a** (F002/F007/F012) — `packages/ecs/**` (7), `packages/render/src/render-system.ts` + test,
+  `packages/create-flare-app/templates/shmup/src/logic.ts`
+- **PF-2b** (F005/F011) — `packages/core/**` (3), `packages/math/**` (4)
+- **PF-3** (F038/F052/F051/F043) — `packages/input/**` (9)
+- **PF-4** (F016/F017/F032) — `packages/shapes/**` (5)
+- **PF-5** (F018/F030/F031/F033/F034) — `packages/render-web/**` (6), `packages/postfx/**` (4),
+  `packages/render/src/frame-renderer.ts`, `packages/render/src/index.ts`
+- **PF-6** (F049/F039/F050/F056/F046) — `packages/physics/**` (6), `packages/pathfinding/**` (5)
+- **PF-7** (F059/F069/F079) — `packages/storage/**` (2), `packages/scene/**` (4), `packages/react/**` (3)
+- **PF-8** (F085/F086/F087/F083/F090/F073) — `packages/iap-revenuecat/**` (4), `packages/ui/**` (6,
+  incl. one deletion), `packages/ui-shop/**` (4), `packages/leaderboards/**` (2), `packages/devtools/**` (2)
+- **PF-10** — `benchmarks/src/promote.ts`, `benchmarks/tests/promote.test.ts`
+- **F3-EXTEND** — `scripts/audit-tarballs.mjs`
+- **CR-1+2** — `.changeset/xr1-old-arch-claim-qualified.md` (deleted), `xr13-worklets-scheduleonui.md`
+- **CR-5 / DOC-1 / F4-SCAN prep** — `docs/plans/flip-runbook.md`, `manual-test-protocol.md`,
+  `road-to-oss-2026-09.md`, `pre-flip-audit-2026-09-findings.md`, `todo.md`
+- **Arc-wide** — `docs/design/adr-0004-pre-flip-surface-remediation.md` (new),
+  `docs/design/api-specs.md`, ten new `.changeset/pf*.md`
+
+**Gates**
+- lint: green (761 files)
+- typecheck: green (67/67)
+- test: green (87/87 turbo tasks). `benchmarks/tests/baseline.test.ts` "satisfies the frozen scenario
+  contract" — the failure that cost sessions #319 and #321-minus-two their SESSION_LOG blocks — was
+  **forced to run rather than trusted from cache**: 8 pass, 0 fail. It clears because XR-7's
+  re-capture landed at `e7e169e`.
+- build: green
+- typecheck:tests (root tsc over src+tests): green — matters here because the per-package gate is
+  src-only and eight rows added test files
+- check:changeset (23 changed packages, all covered) / check:bump / check:deps / check:readme /
+  check:exports (42 packages through publint + attw) / check:publish-safety (41 publishable, all
+  safe): green
+- **perf-freshness: RED, by design and by plan.** Arc PFA's own text: "Every `/close` between PF-2 and
+  PF-9 is red on perf-freshness by design; override debt must be zero before Oct 5." Tier-1 edits in
+  `ecs`, `core` and `math` stale all eight lanes. **No override was set.** PF-9's pinned capture
+  (Sep 28 – Oct 2, phone attached, owner-paired) is what clears it.
+
+**Frictions:** corr:4 (four times a finding's Impact paragraph turned out to be an argument rather
+than a measurement, and twice I propagated one into a consumer-facing document before a reviewer
+caught it — F049's severity, F078's "every purchasedAt", F038's joystick claim in ADR-0004, and my
+own PF-1 brief telling the implementer to drop a `?? 0` that `noUncheckedIndexedAccess` requires);
+deny:2 (`pre-bash-guard` blocked `git rm`, correct; and blocked a ledger entry whose *text* quoted
+forbidden command names — the guard is exactly as absolute as CR-5 now documents); quota:2 (Fable's
+weekly bucket exhausted mid-arc killing three agents, then the session cap killing four more — none
+clean up: they leave edits with no report, and one left `packages/input` red and another left an
+untracked probe file the test runner was happily running); drift:3 (F046 was the one pre-flip finding
+no row owned; HYG5 turned out to need a published-interface decision before it can start; the
+findings SoT's own F038/F052 paragraphs are truncated mid-sentence).
+
+**Notes:** ADR-0004 is `Status: Proposed` and needs owner acceptance before OSS-H1 — all ten Arc PFA
+changesets cite it. Its observable-change table is complete at 33 rows. Two owner decisions were taken
+mid-arc and are recorded in `todo.md`'s OWN-DECIDE row: F059 (never persist over an unread document)
+and the one-ADR-per-arc call. Recovery pattern that worked for the quota deaths: dispatch a
+**finisher** framed as "verify what is there and finish it", never a restart — a restart re-does
+completed work and can conflict with it.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

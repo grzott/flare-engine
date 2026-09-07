@@ -56,7 +56,7 @@ CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once
   — renders, and `GameView` re-renders **6 times across ~1800 frames**, which closes NEW-1 on device
   rather than by argument. The readback workaround was rejected: it also fixes the black frame but
   pays a GPU→CPU copy every frame, where the threading fix pays nothing. Residue tracked as the
-  **XR-1c** row above. **RESIDUE CLOSED 2026-09-05, session #317** — the old-architecture claim is now qualified in both shipped READMEs (`packages/engine/README.md`, `packages/react/README.md`) to match ADR-0001's finding, which had recorded it honestly in the one document that does *not* ship to npm while the unqualified claim shipped in the two that do. **What is still open is only verification half (b)** — the npm-installed scaffold reproducing `OptionalDependencyNotInstalledError` — which stays owner-owed: `pre-bash-guard` blocks non-bun package managers by design, and bun masks the defect precisely because it installs optional peers. One command in an unguarded shell, in an empty dir: `npm install /c/xr1b/flare-engine-engine-0.3.1.tgz` then confirm `node_modules/react-native-reanimated` exists. **XR-1 is therefore no longer a launch-blocker**; what also remains under it is
+  **XR-1c** row above. **RESIDUE CLOSED 2026-09-05, session #317, then SUPERSEDED 2026-09-05 by XR-13** — the residue qualified the old-architecture claim in both shipped READMEs as "intended but not verified"; XR-13 / ADR-0002 then raised the peer to `react-native-reanimated >=4.0.0` + `react-native-worklets >=0.7.0` and **dropped old-architecture support outright**, which is what both READMEs say at HEAD. Read the peer floor from ADR-0002, never from the residue row. **What is still open is only verification half (b)** — the npm-installed scaffold reproducing `OptionalDependencyNotInstalledError` — which stays owner-owed: `pre-bash-guard` blocks non-bun package managers by design, and bun masks the defect precisely because it installs optional peers. One command in an unguarded shell, in an empty dir: `npm install /c/xr1b/flare-engine-engine-0.3.1.tgz` then confirm `node_modules/react-native-reanimated` exists. **XR-1 is therefore no longer a launch-blocker**; what also remains under it is
   XR-1b's vehicle-B finding below, which is a documentation-accuracy problem, not a defect.
   Vehicle B (Reanimated 3 / old arch) **cannot be built from
   the scaffolder at all**: `expo prebuild` forces `newArchEnabled=true` on Expo 57 / RN 0.86,
@@ -141,6 +141,26 @@ Routing: `packages/**` → **engine-builder**; `[MT]` rows touch root docs / `sc
 `docs/plans/` and run main-thread. **Changeset level: patch** (0.3.x is the line; the 0.4.0 minor already
 exists as `xr13-worklets-scheduleonui.md` citing ADR-0002 — do not author a second one).
 
+**ADR: one for the whole arc — DECIDED 2026-09-07.** `docs/design/adr-0004-pre-flip-surface-remediation.md`
+records the D2 scope rule, the five OWN-DECIDE calls and an observable-change table (one line per PF row
+with its changeset name); **every Arc PFA changeset cites `ADR-0004`**. Draft it as rows land and get it
+to `Status: Accepted` before OSS-H1 — after the cut the changelog is what consumers get, and the
+changesets are the changelog. The reasoning that produced the decision:
+
+**~~OWNER DECISION OWED~~ — the ADR obligation (raised 2026-09-07, during PF-2a's review).** `AGENTS.md`
+asks for an ADR on a **consumer-observable behaviour change even when it ships as a `patch`**, because
+`check:bump` cannot see one. By the letter of that rule **nearly every row in this arc owes an ADR** —
+PF-2a alone drops `Prefab.spawn(overrides)` and makes `QueryBuilder`'s constructor argument required;
+PF-6 removes `NavMeshPolygon.neighbors` and `SpatialEntry`, retypes `SolidGrid.solid`, and makes JPS
+delegate on weighted grids; PF-3 renames published members on three types; PF-5 and PF-8 remove
+exports. Ten-plus ADRs for one audit's remediation is not what that rule is for, and the audit never
+asked for it. **Recommendation: one ADR for the whole arc** — "pre-flip published-surface
+remediation" — recording the D2 scope rule (published-surface only), the four OWN-DECIDE calls, and
+the list of observable changes, with each row's changeset citing it. That satisfies the rule's intent
+(a consumer can find one document explaining what moved in 0.4.0 and why) at one document's cost.
+Decide before OSS-H1: after the cut the changelog is what consumers get, and it is the changesets, not
+this file.
+
 **Capacity, stated honestly (§4.3):** ~20 agent sessions remain before the Oct 2 cutoff; audit demand plus
 already-queued work is 24.5–26.5. It does not fit. The cuts are named in §4.3 — OSS-M10, the D3 docs split
 (DOC-2/3/5), and the CE-W7/DYN-2 registry install all move post-flip. **Never slip the breaks**: F076/F064
@@ -153,18 +173,65 @@ run Sep 28 – Oct 2 **after** the last commit touching the measured closure. So
 and CR-1+2 must all land by Fri Sep 25. Every `/close` between PF-2 and PF-9 is red on perf-freshness by
 design; override debt must be zero before Oct 5.
 
-- **OWN-DECIDE — owner sitting, first `/start` halt** (owner-only, gates PF-1/PF-2/PF-6). Four calls the
-  audit deliberately did not make: F076 (does `flare tiled-to-flare` emit Tiled-shaped JSON, or does
-  `tilemap` ship `parseFlareMap`); F064 (`TileLayer.tiles` → `Uint32Array`, a published-type break);
-  F002 (narrow `PrefabEntry.data` to `() => T`, or document by-reference sharing); F039 (implement the
-  weighted-grid fallback, or delete the claim). Each is a one-way published-surface decision.
-- **DOC-1 — commit the audit artefacts** (P0, [MT], 1 session). The findings SoT, `roadmap-post-flip.md` and
-  the HYG12–HYG21 block are untracked/uncommitted; every CR/PF row below cites them. Re-anchor the todo.md
-  line citations in §4 after the commit (they are HEAD-relative and the tree has moved), or cite by row id.
+- **OWN-DECIDE — owner sitting, first `/start` halt** (owner-only, gates PF-1/PF-2/PF-6/PF-7).
+  **DECIDED 2026-09-07.** Four one-way published-surface calls the audit deliberately did not make,
+  plus a fifth (F059) that the audit flagged as needing a decision but that this row had missed:
+  - **F076 → emit Tiled-shaped JSON.** `convertTiled` passes the original layer/tileset objects
+    through (keeping `type: 'tilelayer'|'objectgroup'`, `properties` as `{name,type,value}[]`,
+    tileset `tiles[]`, `offsetx`/`offsety`, object `rotation`) and inlines external tilesets, so
+    `parseTiled` accepts the output. `FlareMap`/`FlareTileLayer`/`FlareObjectLayer` are **deleted**
+    from the cli barrel. No `parseFlareMap`, no second published map format. → PF-1a
+  - **F064 → `TileLayer.tiles` becomes `Uint32Array`.** Both parsers build typed arrays, `getTileAt`
+    drops its `?? 0`, the `toEqual` pins take `Array.from`. → PF-1b
+  - **F002 → document the sharing, keep the union.** `data?: T | (() => T)` stands; plain-object data
+    is stored by reference and shared by every spawn, stated in the `definePrefab` JSDoc,
+    `api-specs.md:67` and the ecs README, pinned by a second-spawn `toBe` identity test. **Not**
+    narrowed to `() => T`, **not** cloned — by-reference mirrors `world.add` and two of three
+    verifiers called it the designed contract. → PF-2a
+  - **F039 → detect and delegate.** `findPathJPS` scans `grid.data` (a flat `Uint8Array`) for any
+    value > 1 and delegates to `findPath` with `diagonal: true`, making the shipped api-specs claim
+    true. One byte scan per call, never per node. Weighted-grid test must detour, not report cost 4.
+    → PF-6
+  - **F059 → never persist over an unread document** (added to this row 2026-09-07; the finding said
+    "it has to be decided before the freeze" and no row had put the choice to anyone). Narrow the
+    `catch` at `document-store.ts:84-92` to `JSON.parse` + the envelope check; on a `runMigrations`
+    throw, return `parse(undefined)` defaults **for the session only and do not call `persistRaw`**,
+    so the stored document survives and reinstalling the newer build recovers it. **`load()` keeps
+    its never-throws contract** — no consumer app starts crashing at boot on a store rollback.
+    Two consequences the owner accepted rather than fixed here: the user sees defaults with no
+    signal that their data is intact, and `createStorage.loadSlot` (`storage.ts:91`) still *throws*
+    in the same situation, so the two stores keep disagreeing. **Record that divergence in
+    api-specs; do not converge them in this row.** → PF-7
+- **DOC-1 — commit the audit artefacts** (P0, [MT], 1 session). **DONE 2026-09-07** — the findings SoT,
+  `roadmap-post-flip.md` and the HYG12–HYG21 block landed in `b844a5c`/`d54330b`/`a62e7ce`. The six §4
+  `todo.md` line citations that had already rotted are re-anchored to row ids, and §4 now states the
+  convention: `todo.md` is cited by row id, never by line, because the queue file is appended every session.
 - **F3-EXTEND — the tarball audit covers the wrong versions** (P0, [MT], 0.5 session). `PUBLISHED_VERSIONS_EXPECTED`
   at `scripts/audit-tarballs.mjs:58` still lists 0.1.0/0.2.0/0.2.1; 0.3.0 and 0.3.1 are published and the
   access flip exposes **every** version retroactively. Extend to five, fix the three-version prose at
   road-to-oss:1049-1051/:1064/:1418-1419. Do **not** add a `--registry` pin (§4.2 explains why).
+  **DONE 2026-09-07, with three corrections to the row's own premises:**
+  1. The constant is **not** what the audit fetches. The authenticated run — the one the owner
+     actually performs — discovers versions from `npm view versions` (`:477`), and
+     `PUBLISHED_VERSIONS_EXPECTED` is read **only** on the unauthenticated fallback (`:467`), to name
+     the versions it could not fetch. So the audit never covered the wrong versions; the
+     *unauthenticated report* did, by listing three and reading as complete. Extended to five, with
+     the narrower purpose stated at the constant.
+  2. The `:1064` license line is **not** a three-versions-should-be-five error and was not changed
+     that way. `0.1.0–0.2.1` really are MIT and really do stay MIT; the Apache relicense (`c7c03c6`,
+     2026-07-12) is an ancestor of the `0.3.0` cut (`905d4d4`, 2026-08-25), so `0.3.0`/`0.3.1` are on
+     the **Apache** side and now carry the same Apache-2.0 + LICENSE + NOTICE assertion as HEAD — an
+     MIT manifest at either is a finding. `:1418-1419` was already correct and is untouched.
+  3. "(§4.2 explains why)" is inaccurate — §4.2 records that the refusal exists and that it leaves
+     FW-10 with no agent-runnable path, not the rationale. The rationale that survives inspection:
+     the pin buys nothing §4.4 step 3's clean-machine procedure does not already guarantee, and it
+     cannot buy agent-runnability because `npm` is denied by `.claude/settings.json` +
+     `pre-bash-guard.sh` whatever flags it carries. **The refusal was honoured, but it contradicts
+     road-to-oss `:1053-1056`, which mandates the pin against the XR-11 hazard — a leftover
+     freeze-window override silently redirecting the audit at verdaccio.** Both statements cannot
+     stand. The disagreement is now written into that bullet instead of hidden between two documents,
+     and **CR-5 owns closing it**: restore the pin, or add an effective-registry assertion that
+     aborts before the first fetch. Procedure is the only thing defending F3-PUB until then.
 - **PF-10 — `bench:promote`'s refusals are dead code** (P1, [MT], 1 session). `promote.ts:111` returns before
   the power-plan and CPU-pinning checks at `:204`/`:227`, so the current baseline is an **unpinned** fold.
   Move the return after the affinity loop, add `powerSchemeGuid` to the shared field, and add two
@@ -175,6 +242,11 @@ design; override debt must be zero before Oct 5.
   ADR-0002 reversed. Delete it (fold any surviving fact into `xr13-worklets-scheduleonui.md`), confirm
   `check:changeset` still covers engine + react, and stamp "Superseded 2026-09-05 by XR-13" on the XR-1 row.
   This ships to consumers in the 0.4.0 changelog if it is not fixed.
+  **DONE 2026-09-07.** The changeset is deleted; the one fact worth keeping — that no scaffolder template
+  could ever build an old-architecture app, so the dropped support was never testable — is folded into
+  `xr13-worklets-scheduleonui.md` as the consumer-facing rationale. Both XR-1 rows carry the supersession
+  stamp with the ADR-0002 peer floor. Gates re-run green: `check:changeset` "9 changed package(s), all
+  covered"; `check:bump` "minor authorised by an accepted ADR (xr13 -> ADR-0002)". Pending set is now 13.
 - **PF-2 — tier-1 contracts: ecs, core, math** (P0, 2 sessions). F002 per OWN-DECIDE (+ a second-spawn identity
   test); F007 zero-alloc `entities` accessor on `Query`; F012 `QueryBuilder.build()` returning an orphan
   query; F005 coroutine `cancel()`/`clear()` never closing the generator (`gen.return()` throws if called from
@@ -183,6 +255,20 @@ design; override debt must be zero before Oct 5.
 - **PF-6 — physics + pathfinding public shape** (P1, 1 session). F049 additive `addCollider(entity, collider, x, y)`
   + `README.md:25`; F039 per OWN-DECIDE; F050 `NavMeshPolygon.neighbors` required-but-unread; F056 `SpatialEntry<T>`
   exported with no producer.
+  **+ F046, added 2026-09-07 — it was the one pre-flip finding no row owned.** Every other entry in the
+  findings' "Unverified pre-flip" table (F056, F033, F034, F070, F071, F072, F083, F090, F073) is queued
+  somewhere in Arc PFA; F046 is queued nowhere, and its stated fix is explicitly "before the freeze".
+  **Re-verified at HEAD before filing** (it is one of the no-refuter rows): `SolidGrid.solid` really is
+  `Set<number>` on the **exported** interface (`solid-grid.ts:21`), `isBlockedAABB` really does
+  `grid.solid.has(row * grid.width + col)` per tile per test (`:70`), and `moveAndSlideInto` calls it
+  twice per entity per frame. So the type is public and changing it to `Uint8Array` (`width * height`,
+  index `row * width + col`) is a **published-type break** — the D2 rule puts it here, not in Arc HYG.
+  Take it as a **type decision, not a perf fix**: there is no solid-grid benchmark, so the per-tile
+  hashing cost is unmeasured, and nobody should claim a speedup they cannot show. Resolved by parity
+  with the owner's F064 call — same class (bulk collision data on a published type), free today,
+  permanent after Oct 20, and F064 went to the typed array. **Owner: say so if you want the opposite,
+  it is a three-line revert before the cut.** `buildSolidGrid` is the only producer, so the change is
+  contained; keep its `SolidTile[]` input shape untouched.
 - **PF-5 — render-web + postfx + render surface** (P1, 1 session). F018 `createWebSurface` returns
   `{ canvas, flush, dispose }` (the surface can never be flushed or deleted today — pulled out of HYG8, which
   drops the item); F030 `composite(globalIntensity?)` assigns only when provided; F031 the composite clouds
@@ -204,7 +290,32 @@ design; override debt must be zero before Oct 5.
   a field the SDK never sends, so `purchasedAt` is always "now" — read `latestPurchaseDateMillis` for
   entitlements and `purchaseDateMillis ?? Date.parse(purchaseDate)` for transactions. Plus F086 `PaywallModal`
   granting a prop-supplied key past the catalog, F087 the second dead shop list, F083, F090, F073.
-- **CR-5 — runbook + protocol truth pass** (P0, [MT], 1 session). Apply the §4.1 resolutions that target
+- **CR-5 — runbook + protocol truth pass** (P0, [MT], 1 session). **DONE 2026-09-07.** Thirteen
+  corrections landed across `flip-runbook.md`, `manual-test-protocol.md` and `road-to-oss-2026-09.md`,
+  each verified against the tree or a gate rather than taken from the finding text:
+  **(1) the high one** — the verdaccio rehearsal really would publish `create-flare-app` to the *real*
+  registry: the manifest's `publishConfig.registry` beats any `.npmrc`, and the rehearsal flips that
+  package `private:false` before `bun run release`. The redirect step and the
+  `npm view … must still 404` assertion are now in **both** the protocol preamble and the F2 box;
+  July applied the redirect but recorded it only in the F2 Done row, which is why it was lost.
+  **(2)** struck the `GITHUB_TOKEN`/`changelog:false` claim in two places — verified false, the
+  configured generator is the built-in `@changesets/cli/changelog`, and `@changesets/changelog-github`
+  is now an unused devDependency. **(3)** `bun run version` written out as the four-stage chain, with
+  why the omitted stages bite. **(4)** `NPM_CONFIG_PROVENANCE` moved to the `changesets/action` step's
+  env, plus the note that `release.yml` has *two* env blocks. **(5)** the tarball check no longer packs
+  `@0.4.0` (the restricted cut, no provenance — it verified the wrong artefact). **(6)** react-pin
+  status corrected to fixed. **(7)** the F3 box stays open, with why it and todo.md's Done row are both
+  right. **(8)** "execution, not discovery" corrected — `release.yml` has never run. **(9)** the Expo Go
+  wording is settled in the tree (XR-10), so the finding is a *regression*. **(10)** FW-2 rewritten as a
+  *first* application with the two constraints that stop it breaking FW-9/FW-13. **(11)** nine stale
+  40→41/42 package counts. **(12)** NPM-ROTATE now demands an explicit expiry ≥ Oct 31 plus an FW-0
+  validity check, and a `create-flare-app` name-still-free pre-flight. **(13)** a lane note stating
+  plainly that an agent cannot run `npm` at all, so every `npm pack`/`view`/`access` step is
+  owner-only whatever its lane says — which is FW-10's answer.
+  **Left for the owner:** `docs/plans/_local/owner-ledger.md` does not exist and three things point at
+  it; §14 now says to create it at NPM-ROTATE. And **the `--registry` pin question F3-EXTEND opened is
+  still open** — see that row; this pass documented the hazard, it did not close it.
+  Original scope follows. Apply the §4.1 resolutions that target
   [flip-runbook.md](flip-runbook.md), road-to-oss §9/§11/§12 and [manual-test-protocol.md](manual-test-protocol.md),
   and close the §4.2 gaps. **The high one first:** the verdaccio rehearsal applies the flip-commit edits
   (`create-flare-app` `private: false`) and then runs `bun run release` with no registry pin for that package —
@@ -212,6 +323,14 @@ design; override debt must be zero before Oct 5.
   `GITHUB_TOKEN`/changelog parenthetical that is simply false; `bun run version` is a four-stage chain, not two;
   FW-10 is assigned to an agent that the pre-bash guard forbids from running `npm`; FW-2 assumes branch
   protections that do not exist on a private free-plan repo; no owner-ledger file exists though §14 cites one.
+  **Added by F3-EXTEND 2026-09-07 — the second registry hazard, sibling of the high one above.**
+  road-to-oss `:1053-1056` mandates an explicit `--registry https://registry.npmjs.org/` on every
+  published-version fetch, because `scripts/lib/pack.mjs:23` inherits ambient npm config and a leftover
+  freeze-window override would make F3-PUB audit **verdaccio's** tarballs and report them as published
+  (XR-11). F3-EXTEND forbids that pin. Both cannot stand, and today nothing but §4.4 step 3's
+  clean-machine instruction defends a step marked `[blocking]`. Close it either way — restore the pin,
+  or assert the effective registry and abort before the first fetch. Note the pin does **not** make the
+  script agent-runnable, so it does not resolve FW-10; that reassignment is a separate decision.
 - **CR-3 — reconcile the ledger to HEAD** (P1, [MT], 1 session, after PF-9). XR-7 → Done
   (`0ef1aec`/`942ba88`/`87527aa`/`e7e169e`, noting the fold was unpinned and is superseded by PF-9's pinned
   capture); XR-1 Active row → `>=4.0.0` + worklets `>=0.7.0` per ADR-0002 with only half (b) open; add the
@@ -224,9 +343,44 @@ design; override debt must be zero before Oct 5.
   rule is stated nine times with two incompatible semantics — the gate's equal-or-lower wins; `api-specs.md:63`
   says the 32-component cap is per-World, the code says module-global; README claims `pathfinding` ships flow
   fields and it does not; the 4-gate/12-gate `verify.sh` restatements; `git.md`'s 7 commit types vs commitlint's 9.
+  **+ added by PF-6, 2026-09-07:** `SpatialEntry<T>` is named in prose at
+  `pan-tvardowski-needs-2026-08.md:153` and `perf-measurement-2026-07.md:975`, but PF-6 removed the export —
+  two plan docs now describe a type that does not exist. Same class as the rest of this row, and cheap.
+  **Also confirm `pathfinding`'s flow-fields claim against HEAD before deleting it**: PF-6 changed what that
+  package does (`findPathJPS` now detects weighted grids and delegates to A\*), so re-read the README rather
+  than applying the audit's verdict blind — the sentence may now be wrong in a different way than recorded.
 - **F4-SCAN — full-history secret re-scan** (P0, [MT], 1 session, Oct 2–5). Delta since the June 847-file pass,
   including Bypass-2FA/granular token patterns; commit the pattern list before running (§4.2 notes the
   procedure is assumed rather than written down).
+  **Prep resolved 2026-09-07 — the run is now reproducible; the scan itself still waits for Oct 2–5.**
+  §4.2 was right that nothing was written down, and two of its own instructions could not be followed
+  as given:
+  - **The baseline commit is `ba173cc` (2026-07-03).** No source named one. It is the commit that
+    recorded "Secret scan PASSED (full 847-file history)" at `engine-deep-audit-2026-07.md:54`, and
+    its tree holds **852** tracked files, which is the 847 that sentence refers to. **The delta is
+    not small:** 252 commits since, tree 852 → 1098. Budget the session for most of a full scan.
+    Note `ba173cc` is itself one of the two commits carrying the removed private notes in history
+    (with `de9f4b6`) — the baseline is inside the exposure, not before it.
+  - **§4.2 says commit the pattern list to `docs/plans/_local/`. That is impossible** — `.gitignore:58`
+    ignores that directory, so nothing there is ever committed. Split it: **patterns are procedure and
+    go somewhere tracked; findings are private and stay in `_local/`.**
+  - **A pattern list already exists** — `scripts/audit-tarballs.mjs` `PATTERNS` (`:70`), 60 lines,
+    already covering npm/GitHub tokens, private keys, `AIza`/`sk-`, `_authToken`/`NPM_TOKEN`,
+    `TESTINGBOT_*`/`EXPO_TOKEN`, `u.expo.dev`, sibling-repo names and the game-IP vocabulary with its
+    `smok`/`smoke` collision already solved. It scans **tarball bytes**, which is why §4.2 read it as
+    absent. Do **not** copy it into a second file — that is the mirror-row drift §3 documents.
+    **Export the existing const and import it**, one line changed in that file. Do not restructure
+    `audit-tarballs.mjs`: it has **no tests**, and it is a blocking freeze-time tool.
+  - **Tool: git plumbing, not gitleaks/trufflehog** — neither is on PATH, and agents cannot install
+    (`npm`/`npx` are denied by `.claude/settings.json` + `pre-bash-guard.sh`). The run is
+    `git log -p ba173cc..HEAD` piped through the shared patterns, plus a full-history pass over paths
+    ever added (`git log --all --diff-filter=A --name-only`). A bun script may wrap it; bun is allowed.
+  - **Add for history only** (the tarball list has no reason to carry these): author/committer emails,
+    `.npmrc`/`.env` paths ever added, and the Bypass-2FA / granular-token vocabulary §4.2 asks for.
+  - Already checked, so the session need not re-derive it: **no `.npmrc` or `.env` was ever committed.**
+    The only matches across all history are `apps/bench-web/.env.testingbot.example` and
+    `apps/pan-tvardowski/.env.testingbot.example` — both `.example`, both to be read for TESTINGBOT
+    vocabulary rather than credentials, and the second confirms PT paths are in this history.
 
 Owner-only, on the critical path — full sequence and evidence in findings §4.4: **NPM-ROTATE** (rotate the
 publish credential, mirror it into the Actions secret, record an expiry past Oct 31), **F3-PUB** + **F3-DISP**
@@ -442,9 +596,20 @@ Design-quality cleanup from the 2026-07-05 audit ([ledger](_local/deep-audit-202
 - **HYG3 — render + postfx: SkSL + effect de-duplication.** Six zone-bg apply-fns → one descriptor-table `applyZoneBg` + shared factory builder (frame-renderer.ts:548-678); shared `HASH*/VALUE_NOISE` SkSL snippet constants (shaders.ts, 9 copies); assemble COMPOSITE_SKSL from shared fragments (rain layers ≡ WEATHER_RAIN).
 - **HYG4 — shapes: fill/stroke epilogue + color unpack.** Extract `fillStrokePath(...)` for the six shape renderers (draw.ts:196-474); one `argbToFloat4Into` color helper replacing the 5 copies (shapes/render/render-web/react/assets).
 - **HYG5 — simulation + physics + input + audio: integrator + hot-path.** `nbody.step()` calls `verletStep` (makes api-specs:837 true); `SpatialIndex` Map-keyed O(1) update/remove; `pollGamepads` single Map get + `applyRemapInto`; drop `AudioManager.factory` dead field; `gestures` `_pinchActive` boolean.
+  **PRECONDITION added 2026-09-07 by PF-3, and it has to be decided BEFORE the flip even though HYG5
+  itself is post-flip.** PF-3 measured this seam rather than changing it — ~20 objects per pad in
+  `poll()`, another ~20 in `applyRemap` when a remap is installed, `updateGamepadFromSnapshot`
+  confirmed zero-alloc — and correctly shipped no code, because none of it changes a published
+  signature. But the `applyRemapInto` work above needs something nobody has decided: **the freshness
+  contract of `GamepadSource.poll()`.** Does it return a fresh object per call, or may it reuse and
+  mutate one across calls? Nothing states it today. A `pollInto`-style reuse cannot be written until
+  it is settled, and — the reason this is urgent rather than post-flip — **`GamepadSource` is a
+  public interface, so the answer binds every native adapter anyone writes after October 20.**
+  Deciding it late means either breaking those adapters or living with the looser contract forever.
+  Cheap to settle now: one sentence in the `GamepadSource` docstring and `api-specs`.
 - **HYG6 — scene + animation + pathfinding + dialogue: shared helpers.** `_teardownStack()` (dedupe ×3 + drop go()'s double-run); import `linear` from math + document chainTween-needs-a-TweenManager; internal `heap.ts` shared by astar/jps + drop `funnelSmooth` `_mesh`; make `ActionHandler` sync-or-awaited (kill the dead `Promise<void>`).
 - **HYG7 — storage + debug + devtools + progression: dead writes + idiom.** Drop `__flare_doc_version`/`__flare_version` dead writes + dedupe `DocumentStore.load` first-run branch; shared `nowMs` + `StatsTracker`→factory; wire-or-drop `devtools.enabledOnNative` + shared TimeControl/TimeScrubber core; `resolveTier` via `resolveTierIndex`.
-- **HYG8 — react + cli + iap + render-web: shared factories.** One subsystem-wiring factory behind `GameView`+`createGame`; share `parseTemplateArg/parsePmArg` + single template-id source; `getGrantsForProduct` via `getCatalogEntry` + single `ProductType`; `createWebSurface` returns a `{flush,dispose}` handle (or fold into C1's `createWebFrameRenderer`).
+- **HYG8 — react + cli + iap + render-web: shared factories.** One subsystem-wiring factory behind `GameView`+`createGame`; share `parseTemplateArg/parsePmArg` + single template-id source; `getGrantsForProduct` via `getCatalogEntry` + single `ProductType`. ~~`createWebSurface` returns a `{flush,dispose}` handle~~ — **moved to PF-5 (pre-freeze) 2026-09-07 under the audit's D2 exception: the fix changes a published return type, so it cannot wait for a post-flip row.** Struck rather than deleted so the disposition stays auditable. Note the prior-art trail: `_local/deep-audit-2026-07-05.md:47` row C12 recorded this verbatim in July and routed it here, and the 2026-09 audit re-found it as F018 — it sat in a post-flip row for two months while the export could not present at all.
 
 **2026-09-07 — the pre-flip audit added HYG12–HYG21** (53 findings; specs + evidence per finding in
 [pre-flip-audit-2026-09-findings.md](pre-flip-audit-2026-09-findings.md) §2). They are tagged post-flip by
@@ -520,6 +685,20 @@ public can pull any of the six forward as behaviour fixes without touching the A
   slot and document stores each define an identical envelope type + guard (document-store.ts:56); `engine`
   re-types the whole `headless.ts` export list instead of re-exporting it (index.ts:120). Covers F008 F013
   F015 F042 F054 F061 F063 F066 F067 F068 F074 F089.
+- **HYG22 — centralise each package's `react` / `react-native` test mocks** (post-flip, test-infra only,
+  no published surface). **Found 2026-09-07 during PF-8 and reproduced twice independently.** Within one
+  `bun test` run, the **first file alphabetically** that calls `mock.module('react', …)` in a package
+  freezes the *set* of named exports for the whole run. A later file can override an existing key's
+  **value**, and a dynamic `await import('react')` sees new keys — but **a new key reached through a
+  static ESM import is silently dropped**, surfacing as
+  `SyntaxError: Export named 'X' not found in module '…\react\index.js'`, which names the **real**
+  module and therefore reads as "my mock isn't applied" when in fact it is applied and truncated.
+  PF-8 hit this adding `Children` for `list.tsx`'s own top-level import, and fixed it the only way that
+  works today: patching the key into `label-truncation.test.ts`, the file that happens to sort first.
+  **That fix is whack-a-mole and the reviewer flagged it as a known fragility rather than closed** —
+  `list.test.ts` now depends on an unrelated file carrying a stub it never uses, and the next new export
+  requirement needs someone to work out which file sorts first. Centralise the mocks in one module every
+  test imports, so the frozen shape has one owner. Do it the next time these mocks are touched.
 
 Owner-gated (never picked by `/start`; public schedule road-to-oss §14, specifics in the private ledger): rotate the npm publish credential (owner action; timing + specifics in the private ledger) — or pull Trusted Publishing OIDC forward; **0.4.0** restricted publish Oct 5 (0.3.0 was release N, published restricted 2026-08-25; 0.3.1 followed 2026-08-27 — the Oct 5 freeze cut is 0.4.0, per the CE version decision); the two-week manual window; flip-day actions; portfolio copy alignment. Cross-repo lanes (flare-engine-page G1–G3, PT1–PT3, Berek BK1) run in their own repos with their own gates — road-to-oss §10.
 
@@ -791,7 +970,11 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   that broader trigger; the gate cannot see it. SESSION_LOG #317 canonical.
 
 - **XR-1 (residue) — the old-architecture claim now says "intended but not verified"** (2026-09-05,
-  session #317). Docs only. ADR-0001 already recorded that no scaffolder template can build an
+  session #317). **SUPERSEDED 2026-09-05 by XR-13 / ADR-0002 — old-architecture support was dropped
+  outright, so "intended but not verified" is no longer what either README says.** Its changeset
+  (`xr1-old-arch-claim-qualified.md`) shipped the reversed story into the pending 0.4.0 set and was
+  deleted in CR-1+2; the surviving fact — that no scaffolder template could ever produce such an app —
+  now lives in `xr13-worklets-scheduleonui.md` and `packages/engine/README.md`. Docs only. ADR-0001 already recorded that no scaffolder template can build an
   old-architecture app (Expo 57 / RN 0.86 force `newArchEnabled=true`; `expo prebuild` overrides the
   `app.json` opt-out), but the ADR does not ship to npm while `packages/engine/README.md` and
   `packages/react/README.md` both shipped the claim unqualified — the honest version was in the one

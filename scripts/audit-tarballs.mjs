@@ -55,7 +55,12 @@ import {
 
 const ROOT = REPO_ROOT;
 const REPORT_PATH = join(ROOT, 'docs', 'plans', '_local', 'f3-tarball-audit.md');
-const PUBLISHED_VERSIONS_EXPECTED = ['0.1.0', '0.2.0', '0.2.1'];
+// Only reached on the unauthenticated path, where `npm view versions` fails and the report has to
+// name the versions it could NOT fetch. The authenticated run discovers versions dynamically and
+// never reads this. It still has to be complete: the access flip exposes every published version
+// retroactively, so a short list here understates the audit surface in exactly the report a reader
+// would use to decide the surface was covered.
+const PUBLISHED_VERSIONS_EXPECTED = ['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.3.1'];
 const MAX_SCAN_BYTES = 2 * 1024 * 1024;
 
 // --- Leak patterns -----------------------------------------------------------

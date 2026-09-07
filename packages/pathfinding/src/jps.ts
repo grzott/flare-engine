@@ -1,14 +1,15 @@
 /**
  * Jump Point Search — an optimization over A* for uniform-cost grids.
- * Only works when all walkable tiles have cost 1. Falls back to A* behavior
- * if weighted costs are detected.
+ * JPS pruning is only correct when every walkable tile costs 1, so a grid with
+ * any tile cost above 1 is delegated to weighted A* (`findPath`, diagonal moves)
+ * after one linear scan of `grid.data`.
  *
  * JPS prunes symmetric paths by "jumping" along directions until hitting
  * a wall, the goal, or a forced neighbor.
  */
 
 import type { PathResult } from './astar.js';
-import { octileDistance } from './astar.js';
+import { findPath, octileDistance } from './astar.js';
 import type { Grid } from './grid.js';
 import { isWalkable } from './grid.js';
 
@@ -96,6 +97,15 @@ function heapPop(h: Heap): number {
 
 const SQRT2 = Math.SQRT2;
 
+// One pass per call, never per node: JPS pruning assumes every walkable tile costs 1.
+function hasWeightedCost(grid: Grid): boolean {
+  const data = grid.data;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i]! > 1) return true;
+  }
+  return false;
+}
+
 export interface JpsOptions {
   /** Max nodes to explore before giving up. Default: width * height. */
   maxIterations?: number;
@@ -118,6 +128,9 @@ export function findPathJPS(
 
   if (!isWalkable(grid, sx, sy) || !isWalkable(grid, ex, ey)) return null;
   if (sx === ex && sy === ey) return { path: [{ x: sx, y: sy }], cost: 0, explored: 0 };
+  if (hasWeightedCost(grid)) {
+    return findPath(grid, sx, sy, ex, ey, { ...options, diagonal: true });
+  }
 
   const w = grid.width;
   const h = grid.height;

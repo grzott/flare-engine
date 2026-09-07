@@ -22,4 +22,4 @@ export {
   type SolidGrid,
   type SolidTile,
 } from './solid-grid.js';
-export { type SpatialEntry, SpatialIndex } from './spatial-index.js';
+export { SpatialIndex } from './spatial-index.js';

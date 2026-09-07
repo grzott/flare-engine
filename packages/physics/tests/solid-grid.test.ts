@@ -16,19 +16,27 @@ function makeGrid(solidTiles: SolidTile[]): SolidGrid {
   return buildSolidGrid(W, H, TS, solidTiles);
 }
 
+function countSolid(grid: SolidGrid): number {
+  let n = 0;
+  for (let i = 0; i < grid.solid.length; i++) n += grid.solid[i]!;
+  return n;
+}
+
 describe('buildSolidGrid', () => {
-  test('empty input produces empty solid set', () => {
+  test('solid is a Uint8Array of width * height cells', () => {
     const grid = makeGrid([]);
-    expect(grid.solid.size).toBe(0);
+    expect(grid.solid).toBeInstanceOf(Uint8Array);
+    expect(grid.solid.length).toBe(W * H);
+    expect(countSolid(grid)).toBe(0);
     expect(grid.width).toBe(W);
     expect(grid.height).toBe(H);
     expect(grid.tileSize).toBe(TS);
   });
 
-  test('a tile at (row, col) adds row*width+col to solid', () => {
+  test('a tile at (row, col) sets solid[row*width+col]', () => {
     const grid = makeGrid([{ row: 3, col: 5 }]);
-    expect(grid.solid.has(3 * W + 5)).toBe(true);
-    expect(grid.solid.size).toBe(1);
+    expect(grid.solid[3 * W + 5]).toBe(1);
+    expect(countSolid(grid)).toBe(1);
   });
 
   test('multiple tiles produce correct entries', () => {
@@ -36,9 +44,18 @@ describe('buildSolidGrid', () => {
       { row: 0, col: 0 },
       { row: 9, col: 9 },
     ]);
-    expect(grid.solid.has(0)).toBe(true);
-    expect(grid.solid.has(9 * W + 9)).toBe(true);
-    expect(grid.solid.size).toBe(2);
+    expect(grid.solid[0]).toBe(1);
+    expect(grid.solid[9 * W + 9]).toBe(1);
+    expect(countSolid(grid)).toBe(2);
+  });
+
+  test('a tile listed twice is still one solid cell', () => {
+    const grid = makeGrid([
+      { row: 1, col: 1 },
+      { row: 1, col: 1 },
+    ]);
+    expect(grid.solid[1 * W + 1]).toBe(1);
+    expect(countSolid(grid)).toBe(1);
   });
 
   test('accepts objects with extra fields (structural: TileCollider-shaped)', () => {
@@ -49,8 +66,8 @@ describe('buildSolidGrid', () => {
     ];
 
     const grid = buildSolidGrid(W, H, TS, extendedTiles);
-    expect(grid.solid.has(2 * W + 4)).toBe(true);
-    expect(grid.solid.size).toBe(1);
+    expect(grid.solid[2 * W + 4]).toBe(1);
+    expect(countSolid(grid)).toBe(1);
   });
 });
 

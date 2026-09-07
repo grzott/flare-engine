@@ -1,5 +1,6 @@
 import { Signal } from '@flare-engine/events';
 import type { Rect } from '@flare-engine/math';
+import type { Collider } from './collider.js';
 import type { RaycastHit } from './raycast.js';
 import { rayVsShapeInto } from './raycast.js';
 import type { Shape } from './shape.js';
@@ -68,7 +69,7 @@ export class CollisionWorld {
   /** Reusable bounds rect — avoids per-entity Rect allocation in step(). */
   private boundsBuf: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
-  /** Add an entity with a shape. */
+  /** Add an entity with a shape. Positional twin of `addCollider`. */
   add(
     entity: number,
     shape: Shape,
@@ -87,6 +88,15 @@ export class CollisionWorld {
     } else {
       this.spatial.insert(entity, this.boundsBuf);
     }
+  }
+
+  /**
+   * Add an entity from a `Collider`. Its `shape`, `isTrigger`, `layer` and `mask`
+   * are copied at add time — later edits to the collider do not reach the world;
+   * re-add to change them. Re-adding an existing entity replaces its data.
+   */
+  addCollider(entity: number, collider: Collider, x: number, y: number): void {
+    this.add(entity, collider.shape, x, y, collider.isTrigger, collider.layer, collider.mask);
   }
 
   /** Remove an entity from the world. Emits exit signals for any active pairs. */

@@ -1,17 +1,13 @@
 import type { Rect } from '@flare-engine/math';
 
-/** Item stored in the spatial index. */
-export interface SpatialEntry<T> {
+// Internal entry: bounding rect (minX, minY, maxX, maxY) plus a per-query stamp
+// for zero-alloc dedup.
+interface _Entry<T> {
   readonly item: T;
-  /** Bounding rect (minX, minY, maxX, maxY). */
   minX: number;
   minY: number;
   maxX: number;
   maxY: number;
-}
-
-// Internal entry: extends the public shape with a per-query stamp for zero-alloc dedup.
-interface _Entry<T> extends SpatialEntry<T> {
   _stamp: number;
 }
 

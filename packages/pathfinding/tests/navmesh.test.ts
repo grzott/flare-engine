@@ -23,7 +23,6 @@ function makeSquareMesh(): NavMeshPolygon[] {
         { x: 5, y: 10 },
         { x: 0, y: 10 },
       ],
-      neighbors: [1],
       portals: [{ neighborId: 1, a: { x: 5, y: 0 }, b: { x: 5, y: 10 } }],
     },
     {
@@ -34,7 +33,6 @@ function makeSquareMesh(): NavMeshPolygon[] {
         { x: 10, y: 10 },
         { x: 5, y: 10 },
       ],
-      neighbors: [0],
       portals: [{ neighborId: 0, a: { x: 5, y: 10 }, b: { x: 5, y: 0 } }],
     },
   ];
@@ -54,7 +52,6 @@ function makeThreePolyMesh(): NavMeshPolygon[] {
         { x: 4, y: 4 },
         { x: 0, y: 4 },
       ],
-      neighbors: [1],
       portals: [{ neighborId: 1, a: { x: 4, y: 0 }, b: { x: 4, y: 4 } }],
     },
     {
@@ -65,7 +62,6 @@ function makeThreePolyMesh(): NavMeshPolygon[] {
         { x: 8, y: 4 },
         { x: 4, y: 4 },
       ],
-      neighbors: [0, 2],
       portals: [
         { neighborId: 0, a: { x: 4, y: 4 }, b: { x: 4, y: 0 } },
         { neighborId: 2, a: { x: 8, y: 0 }, b: { x: 8, y: 4 } },
@@ -79,7 +75,6 @@ function makeThreePolyMesh(): NavMeshPolygon[] {
         { x: 12, y: 4 },
         { x: 8, y: 4 },
       ],
-      neighbors: [1],
       portals: [{ neighborId: 1, a: { x: 8, y: 4 }, b: { x: 8, y: 0 } }],
     },
   ];
@@ -159,7 +154,6 @@ describe('findNavMeshPath', () => {
           { x: 4, y: 4 },
           { x: 0, y: 4 },
         ],
-        neighbors: [],
         portals: [],
       },
       {
@@ -170,7 +164,6 @@ describe('findNavMeshPath', () => {
           { x: 14, y: 4 },
           { x: 10, y: 4 },
         ],
-        neighbors: [],
         portals: [],
       },
     ];

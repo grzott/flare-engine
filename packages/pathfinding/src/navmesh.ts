@@ -12,9 +12,7 @@ export interface NavMeshPolygon {
   readonly id: number;
   /** Convex polygon vertices in winding order. */
   readonly vertices: readonly Vec2[];
-  /** Ids of neighboring polygons (sharing an edge). */
-  readonly neighbors: readonly number[];
-  /** Shared edge per neighbor: [neighborId] → { a, b } portal endpoints. */
+  /** One `Portal` per adjacent polygon: the shared edge plus that neighbour's id. */
   readonly portals: readonly Portal[];
 }
 

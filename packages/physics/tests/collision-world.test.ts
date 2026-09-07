@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { createCollider } from '../src/collider.js';
 import { type CollisionPair, CollisionWorld } from '../src/collision-world.js';
 import { AABB, CircleShape } from '../src/shape.js';
 
@@ -274,5 +275,58 @@ describe('CollisionWorld', () => {
       expect(result!.x).toBe(45);
       expect(result!.y).toBe(25);
     });
+  });
+});
+
+describe('CollisionWorld.addCollider (F049)', () => {
+  it('honours the Collider isTrigger flag — trigger enter, not collision start', () => {
+    const world = new CollisionWorld();
+    world.addCollider(1, createCollider(AABB(20, 20), { isTrigger: true }), 0, 0);
+    world.add(2, AABB(20, 20), 15, 0);
+
+    const triggers: CollisionPair[] = [];
+    const starts: CollisionPair[] = [];
+    world.onTriggerEnter.add((p) => triggers.push(p));
+    world.onCollisionStart.add((p) => starts.push(p));
+
+    world.step();
+    expect(triggers.length).toBe(1);
+    expect(starts.length).toBe(0);
+  });
+
+  it('copies the Collider at add time — later edits to it do not reach the world', () => {
+    const world = new CollisionWorld();
+    const c = createCollider(AABB(20, 20), { layer: 1, mask: 1 });
+    world.addCollider(1, c, 0, 0);
+    world.add(2, AABB(20, 20), 15, 0, false, 1, 1);
+
+    const starts: CollisionPair[] = [];
+    const ends: CollisionPair[] = [];
+    world.onCollisionStart.add((p) => starts.push(p));
+    world.onCollisionEnd.add((p) => ends.push(p));
+
+    world.step();
+    expect(starts.length).toBe(1);
+
+    c.layer = 2;
+    c.mask = 2;
+    c.shape = AABB(200, 200);
+    world.step();
+    expect(starts.length).toBe(1);
+    expect(ends.length).toBe(0);
+    expect(world.getColliderBounds(1)!.width).toBe(20);
+  });
+
+  it('re-adding an entity replaces its collider and updates the broadphase', () => {
+    const world = new CollisionWorld();
+    world.addCollider(1, createCollider(AABB(10, 10)), 0, 0);
+    world.addCollider(1, createCollider(AABB(40, 40)), 100, 100);
+    expect(world.size).toBe(1);
+    expect(world.broadphaseSize).toBe(1);
+    const b = world.getColliderBounds(1)!;
+    expect(b.x).toBe(80);
+    expect(b.y).toBe(80);
+    expect(b.width).toBe(40);
+    expect(b.height).toBe(40);
   });
 });

@@ -22,7 +22,7 @@ const world = new CollisionWorld();
 world.onCollisionStart.add((pair) => console.log(pair.entityA, pair.entityB));
 
 const colliderA = createCollider(AABB(32, 32), { layer: 1, mask: 2 });
-world.add(entityA, colliderA.shape, x, y, false, colliderA.layer, colliderA.mask);
+world.addCollider(entityA, colliderA, x, y);
 world.step();
 ```
 

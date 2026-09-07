@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { findPath } from '../src/astar.js';
-import { createGrid, setWalkable } from '../src/grid.js';
+import { createGrid, setCost, setWalkable } from '../src/grid.js';
 import { findPathJPS } from '../src/jps.js';
 
 describe('findPathJPS', () => {
@@ -148,5 +148,36 @@ describe('corner cutting — A* vs JPS divergence (B18)', () => {
       { x: 0, y: 0 },
       { x: 1, y: 1 },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F039 — JPS is only valid on uniform-cost grids. When any tile costs more
+// than 1 the call must delegate to weighted A* (diagonal moves) instead of
+// walking straight through the expensive tile and reporting a cost-1 total.
+// ---------------------------------------------------------------------------
+
+describe('weighted grids — delegation to A* (F039)', () => {
+  test('detours around an expensive tile and reports the detour cost', () => {
+    const g = createGrid({ width: 5, height: 5 });
+    setCost(g, 2, 2, 100);
+    const result = findPathJPS(g, 0, 2, 4, 2);
+    expect(result).not.toBeNull();
+    for (const p of result!.path) {
+      expect(p.x === 2 && p.y === 2).toBe(false);
+    }
+    // (0,2) → (1,2) → (2,3) → (3,2) → (4,2): two straight + two diagonal steps.
+    expect(result!.cost).toBeCloseTo(2 + 2 * Math.SQRT2, 6);
+    const astar = findPath(g, 0, 2, 4, 2, { diagonal: true });
+    expect(astar).not.toBeNull();
+    expect(result!.cost).toBeCloseTo(astar!.cost, 9);
+    expect(result!.path).toEqual(astar!.path);
+  });
+
+  test('forwards maxIterations to the delegate', () => {
+    const g = createGrid({ width: 5, height: 5 });
+    setCost(g, 2, 2, 100);
+    expect(findPathJPS(g, 0, 2, 4, 2, { maxIterations: 25 })).not.toBeNull();
+    expect(findPathJPS(g, 0, 2, 4, 2, { maxIterations: 1 })).toBeNull();
   });
 });

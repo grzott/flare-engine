@@ -11,14 +11,15 @@ export interface SolidTile {
 }
 
 /**
- * Precomputed flat-index Set of solid tile positions used by `isBlockedAABB`
- * and `moveAndSlideInto`. Build once per map load via `buildSolidGrid`.
+ * Precomputed solid-tile lookup used by `isBlockedAABB` and `moveAndSlideInto`.
+ * `solid` has `width * height` cells indexed `row * width + col`; non-zero means
+ * solid. Build once per map load via `buildSolidGrid`.
  */
 export interface SolidGrid {
   readonly width: number;
   readonly height: number;
   readonly tileSize: number;
-  readonly solid: Set<number>;
+  readonly solid: Uint8Array;
 }
 
 /**
@@ -32,9 +33,9 @@ export function buildSolidGrid(
   tileSize: number,
   tiles: readonly SolidTile[],
 ): SolidGrid {
-  const solid = new Set<number>();
+  const solid = new Uint8Array(width * height);
   for (const t of tiles) {
-    solid.add(t.row * width + t.col);
+    solid[t.row * width + t.col] = 1;
   }
   return { width, height, tileSize, solid };
 }
@@ -67,7 +68,7 @@ export function isBlockedAABB(
   }
   for (let row = minRow; row <= maxRow; row++) {
     for (let col = minCol; col <= maxCol; col++) {
-      if (grid.solid.has(row * grid.width + col)) {
+      if (grid.solid[row * grid.width + col] !== 0) {
         return true;
       }
     }

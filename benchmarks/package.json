@@ -37,6 +37,6 @@
     "@flare-engine/testing": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0"
+    "@types/node": "^26.4.1"
   }
 }

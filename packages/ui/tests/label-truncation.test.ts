@@ -1,8 +1,27 @@
 import { describe, expect, it, mock } from 'bun:test';
 
 // Mocks must be registered before any imports that pull in react or react-native.
+// This is also the FIRST file (alphabetically) to mock 'react' in this package, which
+// freezes the named-export set bun's mock.module uses for the rest of the run — a
+// later file adding a genuinely new key (not just a new value for an existing key,
+// e.g. list.test.ts's `Children`) is silently dropped unless it's present here too.
+
+function childrenToArray(children: unknown): unknown[] {
+  const out: unknown[] = [];
+  const flatten = (node: unknown): void => {
+    if (node === null || node === undefined || typeof node === 'boolean') return;
+    if (Array.isArray(node)) {
+      for (const child of node) flatten(child);
+      return;
+    }
+    out.push(node);
+  };
+  flatten(children);
+  return out;
+}
 
 mock.module('react', () => ({
+  Children: { toArray: childrenToArray },
   createContext: (def: unknown) => ({ Provider: 'Provider', Consumer: 'Consumer', _current: def }),
   useContext: (ctx: { _current: unknown }) => ctx._current,
   useState: (init: unknown) => {

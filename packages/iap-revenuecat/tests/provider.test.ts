@@ -24,14 +24,15 @@ const getProductsMock = mock(async (_ids: string[], _category?: string) => [
 type RcEntitlement = {
   identifier: string;
   productIdentifier: string;
-  purchaseDateMillis: number;
+  latestPurchaseDateMillis: number;
   expirationDate: string | null;
 };
 
 type RcTransaction = {
   transactionIdentifier: string;
   productIdentifier: string;
-  purchaseDateMillis: number;
+  purchaseDateMillis?: number;
+  purchaseDate?: string;
 };
 
 type RcCustomerInfo = {
@@ -60,7 +61,7 @@ const restoreMock = mock(
         premium: {
           identifier: 'premium',
           productIdentifier: 'x',
-          purchaseDateMillis: 1700000000000,
+          latestPurchaseDateMillis: 1700000000000,
           expirationDate: null,
         },
       },
@@ -68,7 +69,7 @@ const restoreMock = mock(
         premium: {
           identifier: 'premium',
           productIdentifier: 'x',
-          purchaseDateMillis: 1700000000000,
+          latestPurchaseDateMillis: 1700000000000,
           expirationDate: null,
         },
       },
@@ -273,7 +274,7 @@ describe('createRevenueCatProvider', () => {
           ent_active: {
             identifier: 'ent_active',
             productIdentifier: 'x_active',
-            purchaseDateMillis: 1700000000000,
+            latestPurchaseDateMillis: 1700000000000,
             expirationDate: null,
           },
         },
@@ -281,13 +282,13 @@ describe('createRevenueCatProvider', () => {
           ent_active: {
             identifier: 'ent_active',
             productIdentifier: 'x_active',
-            purchaseDateMillis: 1700000000000,
+            latestPurchaseDateMillis: 1700000000000,
             expirationDate: null,
           },
           ent_expired: {
             identifier: 'ent_expired',
             productIdentifier: 'x_expired',
-            purchaseDateMillis: 1600000000000,
+            latestPurchaseDateMillis: 1600000000000,
             expirationDate: '2021-01-01T00:00:00Z',
           },
         },
@@ -354,6 +355,87 @@ describe('createRevenueCatProvider', () => {
     expect(result.transaction!.purchasedAt).toBe(1700000000000);
   });
 
+  // F085: the real SDK has no `purchaseDateMillis` on an entitlement — only
+  // `latestPurchaseDateMillis`. This fixture uses the real field name, so it fails
+  // against a reader that still looks for `purchaseDateMillis`.
+  test('restore reads entitlement purchasedAt from latestPurchaseDateMillis', async () => {
+    restoreMock.mockImplementationOnce(async () => ({
+      originalPurchaseDate: null,
+      entitlements: {
+        active: {
+          premium: {
+            identifier: 'premium',
+            productIdentifier: 'x',
+            latestPurchaseDateMillis: 1650000000000,
+            expirationDate: null,
+          },
+        },
+        all: {},
+      },
+      nonSubscriptionTransactions: [],
+    }));
+
+    const provider = createRevenueCatProvider(testConfig);
+    const results = await provider.restore();
+
+    const purchased = results.find((r) => r.transaction?.productId === 'x');
+    expect(purchased?.transaction?.purchasedAt).toBe(1650000000000);
+  });
+
+  // F085 hardening: hybrid-common's mappers emit `purchaseDateMillis` on a
+  // StoreTransaction at runtime, but the SDK's own .d.ts only declares the ISO
+  // `purchaseDate` string. When only the ISO form is present, fall back to it.
+  test('purchase falls back to Date.parse(purchaseDate) when purchaseDateMillis is absent', async () => {
+    purchaseMock.mockImplementationOnce(async () => ({
+      customerInfo: {
+        originalPurchaseDate: '2024-01-01T00:00:00Z',
+        entitlements: { all: {}, active: {} },
+        nonSubscriptionTransactions: [
+          {
+            transactionIdentifier: 'txn_iso_only',
+            productIdentifier: 'x',
+            purchaseDate: '2023-11-14T22:13:20.000Z',
+          },
+        ],
+      },
+    }));
+
+    const provider = createRevenueCatProvider(testConfig);
+    const result = await provider.purchase('x');
+
+    expect(result.transaction!.id).toBe('txn_iso_only');
+    expect(result.transaction!.purchasedAt).toBe(Date.parse('2023-11-14T22:13:20.000Z'));
+  });
+
+  // F085 hardening: `Date.parse` returns NaN for a malformed string, and `NaN ?? x`
+  // is `NaN` (NaN is neither null nor undefined) — a bare `?? Date.parse(...)` chain
+  // would let a malformed payload poison `purchasedAt` with NaN instead of falling
+  // through to `Date.now()`.
+  test('malformed purchaseDate does not leak NaN as purchasedAt', async () => {
+    const before = Date.now();
+    purchaseMock.mockImplementationOnce(async () => ({
+      customerInfo: {
+        originalPurchaseDate: null,
+        entitlements: { all: {}, active: {} },
+        nonSubscriptionTransactions: [
+          {
+            transactionIdentifier: 'txn_bad_date',
+            productIdentifier: 'x',
+            purchaseDate: 'not-a-date',
+          },
+        ],
+      },
+    }));
+
+    const provider = createRevenueCatProvider(testConfig);
+    const result = await provider.purchase('x');
+    const after = Date.now();
+
+    expect(Number.isNaN(result.transaction!.purchasedAt)).toBe(false);
+    expect(result.transaction!.purchasedAt).toBeGreaterThanOrEqual(before);
+    expect(result.transaction!.purchasedAt).toBeLessThanOrEqual(after);
+  });
+
   test('unsubscribe before SDK resolves prevents listener registration', async () => {
     const provider = createRevenueCatProvider(testConfig);
     const unsub = provider.onTransaction(() => {});
@@ -386,10 +468,10 @@ describe('createRevenueCatProvider', () => {
   });
 
   test('onTransaction listener emits all active entitlements per update', async () => {
-    const received: string[] = [];
+    const received: Array<{ productId: string; purchasedAt: number }> = [];
     const provider = createRevenueCatProvider(testConfig);
     provider.onTransaction((tx) => {
-      received.push(tx.productId);
+      received.push({ productId: tx.productId, purchasedAt: tx.purchasedAt });
     });
 
     await Promise.resolve();
@@ -402,19 +484,21 @@ describe('createRevenueCatProvider', () => {
           ent1: {
             identifier: 'ent1',
             productIdentifier: 'prod1',
-            purchaseDateMillis: 1700000000000,
+            latestPurchaseDateMillis: 1700000000000,
           },
           ent2: {
             identifier: 'ent2',
             productIdentifier: 'prod2',
-            purchaseDateMillis: 1700000001000,
+            latestPurchaseDateMillis: 1700000001000,
           },
         },
       },
     });
 
     expect(received).toHaveLength(2);
-    expect(received).toContain('prod1');
-    expect(received).toContain('prod2');
+    const prod1 = received.find((r) => r.productId === 'prod1');
+    const prod2 = received.find((r) => r.productId === 'prod2');
+    expect(prod1?.purchasedAt).toBe(1700000000000);
+    expect(prod2?.purchasedAt).toBe(1700000001000);
   });
 });

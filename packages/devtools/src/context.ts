@@ -22,9 +22,6 @@ export interface DevtoolsContextValue {
   scrubber: TimeScrubber<unknown>;
   selectedEntity: number | null;
   select(entity: number | null): void;
-  pause(): void;
-  step(): void;
-  resume(): void;
 }
 
 export const DevtoolsContext = createContext<DevtoolsContextValue | null>(null);

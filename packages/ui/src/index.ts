@@ -48,7 +48,6 @@ export {
 export { Modal, type ModalProps } from './modal.js';
 export { Panel, type PanelProps } from './panel.js';
 export { ProgressBar, type ProgressBarProps } from './progress-bar.js';
-export { type ShopItem, ShopPanel, type ShopPanelProps } from './shop-panel.js';
 export {
   darkTheme,
   lightTheme,

@@ -74,9 +74,6 @@ export function DevtoolsProvider<T>({
     scrubber: scrubber as TimeScrubberUnknown,
     selectedEntity,
     select,
-    pause: () => scrubber.pause(),
-    step: () => scrubber.step(),
-    resume: () => scrubber.resume(),
   };
 
   return <DevtoolsContext.Provider value={value}>{children}</DevtoolsContext.Provider>;

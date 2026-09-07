@@ -14,6 +14,16 @@ import type {
   RevenueCatStoreProduct,
 } from './types.js';
 
+// `Date.parse` returns NaN for a malformed ISO string, and `NaN ?? x` is `NaN` (NaN is
+// neither null nor undefined) — so a bare `purchaseDateMillis ?? Date.parse(purchaseDate)`
+// chain would let a malformed payload poison `purchasedAt`. Fold NaN to undefined first so
+// the caller's own `?? Date.now()` fallback actually runs.
+function parsePurchaseDateMillis(iso: string | undefined): number | undefined {
+  if (iso === undefined) return undefined;
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? undefined : ms;
+}
+
 function mapProductType(category?: string, type?: string): Product['type'] {
   const typ = (type ?? '').toLowerCase();
   const cat = (category ?? '').toLowerCase();
@@ -45,7 +55,7 @@ function mapRestoreResults(info: RevenueCatCustomerInfo): readonly PurchaseResul
       transaction: {
         id: ent.identifier,
         productId: ent.productIdentifier,
-        purchasedAt: ent.purchaseDateMillis ?? Date.now(),
+        purchasedAt: ent.latestPurchaseDateMillis ?? Date.now(),
         raw: ent,
       },
     });
@@ -57,7 +67,8 @@ function mapRestoreResults(info: RevenueCatCustomerInfo): readonly PurchaseResul
       transaction: {
         id: tx.transactionIdentifier,
         productId: tx.productIdentifier,
-        purchasedAt: tx.purchaseDateMillis ?? Date.now(),
+        purchasedAt:
+          tx.purchaseDateMillis ?? parsePurchaseDateMillis(tx.purchaseDate) ?? Date.now(),
         raw: tx,
       },
     });
@@ -150,7 +161,8 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
             id:
               tx?.transactionIdentifier ?? customerInfo.originalPurchaseDate ?? String(Date.now()),
             productId: id,
-            purchasedAt: tx?.purchaseDateMillis ?? Date.now(),
+            purchasedAt:
+              tx?.purchaseDateMillis ?? parsePurchaseDateMillis(tx?.purchaseDate) ?? Date.now(),
             raw: customerInfo,
           },
         };
@@ -193,7 +205,7 @@ export function createRevenueCatProvider(config: RevenueCatConfig): IAPProvider 
               cb({
                 id: ent.identifier,
                 productId: ent.productIdentifier,
-                purchasedAt: ent.purchaseDateMillis ?? Date.now(),
+                purchasedAt: ent.latestPurchaseDateMillis ?? Date.now(),
                 raw: info,
               });
             }

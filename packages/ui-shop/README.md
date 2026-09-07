@@ -62,7 +62,6 @@ function ShopExample() {
       <PaywallModal
         visible={paywallOpen}
         productId="game.full"
-        entitlementKey="full_game"
         entitlementStore={store}
         strings={paywallStrings}
         localize={t}

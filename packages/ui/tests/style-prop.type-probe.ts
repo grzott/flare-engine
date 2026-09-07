@@ -9,7 +9,6 @@ import type { ListProps } from '../src/list.js';
 import type { MainMenuKitProps } from '../src/main-menu-kit.js';
 import type { PanelProps } from '../src/panel.js';
 import type { ProgressBarProps } from '../src/progress-bar.js';
-import type { ShopPanelProps } from '../src/shop-panel.js';
 
 const arrayView: StyleProp<ViewStyle> = [{ opacity: 1 }, { flex: 1 }];
 const falsyView: StyleProp<ViewStyle> = null;
@@ -54,11 +53,6 @@ const _bra: ProgressBarProps['style'] = arrayView;
 const _brf: ProgressBarProps['style'] = falsyView;
 const _brp: ProgressBarProps['style'] = plainView;
 
-// ShopPanelProps
-const _sa: ShopPanelProps['style'] = arrayView;
-const _sf: ShopPanelProps['style'] = falsyView;
-const _sp: ShopPanelProps['style'] = plainView;
-
 // Suppress "unused variable" errors without allocations.
 void [
   _pa,
@@ -82,7 +76,4 @@ void [
   _bra,
   _brf,
   _brp,
-  _sa,
-  _sf,
-  _sp,
 ];

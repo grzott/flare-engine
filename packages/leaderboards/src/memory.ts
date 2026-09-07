@@ -18,13 +18,6 @@ export interface MemoryLeaderboardsOptions {
   seed?: Readonly<Record<LeaderboardId, readonly SeedScore[]>>;
 }
 
-/**
- * The in-memory provider IS a {@link LeaderboardsProvider} — its backend-free
- * nature is an implementation detail, not a wider surface. See
- * {@link createMemoryLeaderboards} for the recorded semantics.
- */
-export type MemoryLeaderboards = LeaderboardsProvider;
-
 interface InternalEntry {
   playerId: string;
   displayName: string;
@@ -69,7 +62,7 @@ function ranked(entries: readonly InternalEntry[]): ScoreEntry[] {
  * - `getPlayerRank(id)` returns the local player's 1-based rank under the same
  *   ordering, or `null` when the local player has no entry on that board.
  */
-export function createMemoryLeaderboards(opts?: MemoryLeaderboardsOptions): MemoryLeaderboards {
+export function createMemoryLeaderboards(opts?: MemoryLeaderboardsOptions): LeaderboardsProvider {
   const localId = opts?.playerId ?? 'local';
   const localName = opts?.displayName ?? 'Player';
   const boards = new Map<LeaderboardId, InternalEntry[]>();

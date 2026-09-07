@@ -29,13 +29,13 @@ const restoreMock = mock(async () => ({
       sku1_ent: {
         identifier: 'sku1_ent',
         productIdentifier: 'sku1',
-        purchaseDateMillis: 1700000000000,
+        latestPurchaseDateMillis: 1700000000000,
         expirationDate: null,
       },
       sku2_ent: {
         identifier: 'sku2_ent',
         productIdentifier: 'sku2',
-        purchaseDateMillis: 1700000001000,
+        latestPurchaseDateMillis: 1700000001000,
         expirationDate: null,
       },
     },
@@ -99,7 +99,7 @@ describe('iap-revenuecat integration', () => {
     expect(result.transaction).toBeDefined();
     expect(result.transaction!.productId).toBe('test_sku');
 
-    // Caller grants after confirmed purchase (mirrors ShopPanel.handlePurchase).
+    // Caller grants after confirmed purchase (mirrors ui-shop's ShopScreen.handlePurchase).
     entitlementStore.grantProduct('test_sku');
 
     expect(entitlementStore.isEntitled('test_grant')).toBe(true);

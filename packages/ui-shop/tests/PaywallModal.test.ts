@@ -77,7 +77,12 @@ mock.module('@flare-engine/ui', () => ({
 
 const { PaywallModal } = await import('../src/PaywallModal.js');
 
-const catalog = createProductCatalog([{ productId: 'game.full', grants: ['full_game'] }]);
+// Two grants on one product, matching catalog.ts's "one product may unlock several
+// entitlements" contract — the fixture F086 needs to prove grantProduct(productId)
+// unlocks both, not just one key.
+const catalog = createProductCatalog([
+  { productId: 'game.full', grants: ['full_game', 'bonus_pass'] },
+]);
 
 const strings = {
   headingKey: 'paywall.heading',
@@ -118,7 +123,6 @@ describe('PaywallModal', () => {
     const store = createEntitlementStore(catalog);
     const base = {
       productId: 'game.full',
-      entitlementKey: 'full_game',
       entitlementStore: store,
       strings,
       localize,
@@ -148,7 +152,6 @@ describe('PaywallModal', () => {
     PaywallModal({
       visible: true,
       productId: 'game.full',
-      entitlementKey: 'full_game',
       entitlementStore: store,
       strings,
       localize,
@@ -170,7 +173,6 @@ describe('PaywallModal', () => {
     PaywallModal({
       visible: true,
       productId: 'game.full',
-      entitlementKey: 'full_game',
       entitlementStore: store,
       strings,
       localize,
@@ -190,7 +192,6 @@ describe('PaywallModal', () => {
     PaywallModal({
       visible: true,
       productId: 'game.full',
-      entitlementKey: 'full_game',
       entitlementStore: store,
       strings,
       localize,
@@ -201,14 +202,21 @@ describe('PaywallModal', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  test('purchased → grant + onPurchased + onDismiss; cancelled → no grant, no dismiss', async () => {
+  // F086: PaywallModal used to call `entitlementStore.grant(entitlementKey)`, granting
+  // only one key even when the catalog maps the product to several. It must call
+  // `grantProduct(productId)` so every catalog-mapped entitlement is granted.
+  test('purchase drives grantProduct(productId), unlocking every catalog grant', async () => {
     const store = createEntitlementStore(catalog);
     const grantSpy = mock((k: string) => store.grant(k));
-    const patchedStore: EntitlementStore = { ...store, grant: grantSpy };
+    const grantProductSpy = mock((id: string) => store.grantProduct(id));
+    const patchedStore: EntitlementStore = {
+      ...store,
+      grant: grantSpy,
+      grantProduct: grantProductSpy,
+    };
     const onPurchased = mock((_r: PurchaseResult) => {});
     const onDismiss = mock(() => {});
 
-    // purchased flow
     activeProvider = {
       async getProducts() {
         return [];
@@ -227,22 +235,40 @@ describe('PaywallModal', () => {
       },
     };
 
-    const purchased = await activeProvider.purchase('game.full');
-    if (purchased.status === 'purchased') {
-      patchedStore.grant('full_game');
-      onPurchased(purchased);
-      onDismiss();
-    }
+    stateIdx = 0;
+    jsxLog.length = 0;
+    PaywallModal({
+      visible: true,
+      productId: 'game.full',
+      entitlementStore: patchedStore,
+      strings,
+      localize,
+      onDismiss,
+      onPurchased,
+    });
 
-    expect(grantSpy).toHaveBeenCalledWith('full_game');
+    const ctaBtn = jsxLog.find((e) => e.type === 'Button' && e.props.variant === 'primary');
+    expect(typeof ctaBtn?.props.onPress).toBe('function');
+    (ctaBtn!.props.onPress as () => void)();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(grantProductSpy).toHaveBeenCalledWith('game.full');
+    expect(grantSpy).not.toHaveBeenCalled();
     expect(store.isEntitled('full_game')).toBe(true);
+    expect(store.isEntitled('bonus_pass')).toBe(true);
     expect(onPurchased).toHaveBeenCalledTimes(1);
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
 
-    // cancelled flow — reset spies
-    grantSpy.mockClear();
-    onDismiss.mockClear();
-    onPurchased.mockClear();
+  test('cancelled purchase grants nothing and does not dismiss', async () => {
+    const store = createEntitlementStore(catalog);
+    const grantProductSpy = mock((id: string) => store.grantProduct(id));
+    const patchedStore: EntitlementStore = { ...store, grantProduct: grantProductSpy };
+    const onPurchased = mock((_r: PurchaseResult) => {});
+    const onDismiss = mock(() => {});
 
     activeProvider = {
       async getProducts() {
@@ -259,15 +285,27 @@ describe('PaywallModal', () => {
       },
     };
 
-    const cancelled = await activeProvider.purchase('game.full');
-    if (cancelled.status === 'purchased') {
-      patchedStore.grant('full_game');
-      onPurchased(cancelled);
-      onDismiss();
-    }
+    stateIdx = 0;
+    jsxLog.length = 0;
+    PaywallModal({
+      visible: true,
+      productId: 'game.full',
+      entitlementStore: patchedStore,
+      strings,
+      localize,
+      onDismiss,
+      onPurchased,
+    });
 
-    expect(grantSpy).not.toHaveBeenCalled();
-    expect(onDismiss).not.toHaveBeenCalled();
+    const ctaBtn = jsxLog.find((e) => e.type === 'Button' && e.props.variant === 'primary');
+    (ctaBtn!.props.onPress as () => void)();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(grantProductSpy).not.toHaveBeenCalled();
     expect(onPurchased).not.toHaveBeenCalled();
+    expect(onDismiss).not.toHaveBeenCalled();
   });
 });

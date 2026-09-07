@@ -1,6 +1,6 @@
 # @flare-engine/ui
 
-Skia-free UI kit for HUDs, menus, modals — `Panel`, `Button`, `Label`, `List`, `Modal`, `HUDBar`, `ProgressBar`, plus `DialoguePanel`, `ShopPanel`, `MainMenuKit` higher-level components. `ThemeProvider` injects design tokens; `FocusProvider` + `FocusManager` drive focus navigation; `createFocusKeyboardDriver` wires arrows/Tab/Enter/Space onto the manager (gamepad driver pending); `resolveLayout` is a pure flex-like layout resolver.
+Skia-free UI kit for HUDs, menus, modals — `Panel`, `Button`, `Label`, `List`, `Modal`, `HUDBar`, `ProgressBar`, plus `DialoguePanel`, `MainMenuKit` higher-level components. `ThemeProvider` injects design tokens; `FocusProvider` + `FocusManager` drive focus navigation; `createFocusKeyboardDriver` wires arrows/Tab/Enter/Space onto the manager (gamepad driver pending); `resolveLayout` is a pure flex-like layout resolver. A shop list ships in `@flare-engine/ui-shop`, wired to `@flare-engine/iap`.
 
 ## Install
 

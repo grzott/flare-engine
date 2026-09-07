@@ -128,8 +128,9 @@ describe('ui-shop integration', () => {
 
     const paywallResult = await purchaseProvider.purchase('test_sku');
     if (paywallResult.status === 'purchased') {
-      // PaywallModal calls grant(entitlementKey), not grantProduct.
-      entitlementStore.grant('test_grant');
+      // PaywallModal calls grantProduct(productId) — a season-pass-style product
+      // grants every entitlement the catalog maps to it, not just one key (F086).
+      entitlementStore.grantProduct('test_sku');
       onPurchased(paywallResult);
       onDismiss();
     }

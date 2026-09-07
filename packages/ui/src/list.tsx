@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { Children, Fragment, type ReactNode } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
@@ -20,9 +20,11 @@ export function List({ children, gap, direction = 'column', style }: ListProps):
 
   const items: ReactNode[] = [];
   let i = 0;
-  const flat = Array.isArray(children) ? children : [children];
+  // `Children.toArray` flattens nested arrays (e.g. a `{items.map(...)}` child
+  // sitting alongside JSX siblings) and drops null/undefined/boolean, unlike a
+  // manual `Array.isArray` split which only unwraps one level.
+  const flat = Children.toArray(children);
   for (const child of flat) {
-    if (child === null || child === undefined || child === false) continue;
     if (i > 0) {
       const spacerStyle: ViewStyle = direction === 'row' ? { width: g } : { height: g };
       items.push(<View key={`s-${i}`} style={spacerStyle} />);

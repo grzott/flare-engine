@@ -1,9 +1,4 @@
-import type {
-  EntitlementKey,
-  EntitlementStore,
-  ProductId,
-  PurchaseResult,
-} from '@flare-engine/iap';
+import type { EntitlementStore, ProductId, PurchaseResult } from '@flare-engine/iap';
 import { useIAP } from '@flare-engine/iap';
 import { Button, Label, Modal } from '@flare-engine/ui';
 import { useState } from 'react';
@@ -13,7 +8,6 @@ import type { LocalizeFn, PaywallStrings } from './types.js';
 export interface PaywallModalProps {
   readonly visible: boolean;
   readonly productId: ProductId;
-  readonly entitlementKey: EntitlementKey;
   readonly entitlementStore: EntitlementStore;
   readonly strings: PaywallStrings;
   readonly localize: LocalizeFn;
@@ -29,7 +23,6 @@ export interface PaywallModalProps {
 export function PaywallModal({
   visible,
   productId,
-  entitlementKey,
   entitlementStore,
   strings,
   localize,
@@ -49,7 +42,7 @@ export function PaywallModal({
     try {
       const result = await provider.purchase(productId);
       if (result.status === 'purchased') {
-        entitlementStore.grant(entitlementKey);
+        entitlementStore.grantProduct(productId);
         onPurchased?.(result);
         onDismiss();
       } else if (result.status === 'failed') {

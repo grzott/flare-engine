@@ -36,7 +36,9 @@ export interface RevenueCatStoreProduct {
 export interface RevenueCatEntitlement {
   identifier: string;
   productIdentifier: string;
-  purchaseDateMillis?: number;
+  // The real SDK field is `latestPurchaseDateMillis` — there is no bare `purchaseDateMillis`
+  // on an entitlement (verified against react-native-purchases' own .d.ts; see provider.ts).
+  latestPurchaseDateMillis?: number;
   expirationDate?: string | null;
   latestPurchaseDate?: string;
 }
@@ -44,7 +46,10 @@ export interface RevenueCatEntitlement {
 export interface RevenueCatNonSubscriptionTransaction {
   transactionIdentifier: string;
   productIdentifier: string;
+  // hybrid-common's mappers emit this at runtime even though the SDK's own .d.ts only
+  // declares the ISO `purchaseDate` string below — keep both and prefer the millis form.
   purchaseDateMillis?: number;
+  purchaseDate?: string;
 }
 
 export interface RevenueCatCustomerInfo {

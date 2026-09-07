@@ -34,7 +34,6 @@ export {
   type KeyboardEventLike,
   type KeyboardEventTargetLike,
   type KeyboardState,
-  resetKeyboardFrame,
   wasActionPressed,
   wasActionReleased,
 } from './keyboard.js';

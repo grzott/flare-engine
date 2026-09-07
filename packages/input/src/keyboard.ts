@@ -99,11 +99,6 @@ export function createKeyboard(): KeyboardState {
   };
 }
 
-/** Free-function parity with `resetPointerFrame`. Delegates to `kb.reset()`. */
-export function resetKeyboardFrame(kb: KeyboardState): void {
-  kb.reset();
-}
-
 /**
  * Web turnkey adapter: registers `keydown`, `keyup`, and `blur` listeners on
  * `target`. `blur` calls `kb.clear()` (stuck-key guard). Returns a detach fn.

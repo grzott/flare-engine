@@ -5,7 +5,7 @@ import {
   updateGamepadFromSnapshot,
 } from './gamepad.js';
 import type { GamepadSource } from './gamepad-source.js';
-import { createKeyboard, type KeyboardState, resetKeyboardFrame } from './keyboard.js';
+import { createKeyboard, type KeyboardState } from './keyboard.js';
 import {
   createPointer,
   type Pointer,
@@ -25,7 +25,19 @@ import { applyRemap } from './remap.js';
  * Feed events from the platform (RN touch/gesture handlers) via the on* methods.
  */
 export class InputManager {
-  /** Primary pointer (first touch or mouse). */
+  /**
+   * Primary pointer — the touch that started the current gesture (first
+   * `onPointerDown` while no touch was active), or the mouse.
+   *
+   * Once assigned, the primary id stays fixed to that touch until it lifts;
+   * it does NOT transfer to a remaining finger. While a second finger is
+   * down, its events reach only `touches` — `pointer` neither moves nor
+   * releases because of it. When the primary lifts, `pointer.isDown` goes
+   * false even if other fingers remain down, and a new primary is assigned
+   * only once every touch has lifted and a fresh `onPointerDown` arrives.
+   * This keeps `pointer` a single continuous stream with no mid-gesture
+   * teleport; read `touches` for anything beyond one finger.
+   */
   readonly pointer: Pointer = createPointer();
 
   /** Buffered keyboard state. Feed via `attachKeyboardListeners` (web) or `keyboard.keyDown`/`keyUp` (mobile/RN). */
@@ -35,6 +47,7 @@ export class InputManager {
   readonly touches: TouchPoint[] = [];
 
   private _touchMap = new Map<number, TouchPoint>();
+  private _primaryTouchId: number | null = null;
   private _gamepads: GamepadState[] = [];
   private _gamepadDeadZone = 0.15;
   private _gamepadRemaps = new Map<number, RemapTable>();
@@ -42,7 +55,7 @@ export class InputManager {
   /** Call once per frame to reset per-frame flags. */
   update(): void {
     resetPointerFrame(this.pointer);
-    resetKeyboardFrame(this.keyboard);
+    this.keyboard.reset();
     for (let i = 0; i < this._gamepads.length; i++) {
       const pad = this._gamepads[i];
       if (pad) resetGamepadFrame(pad);
@@ -51,19 +64,29 @@ export class InputManager {
 
   /** Feed a touch/pointer begin event. */
   onPointerDown(id: number, x: number, y: number): void {
-    pointerDown(this.pointer, x, y);
+    if (this._touchMap.size === 0) {
+      this._primaryTouchId = id;
+    }
+    if (id === this._primaryTouchId) {
+      pointerDown(this.pointer, x, y);
+    }
     this._addOrUpdateTouch(id, x, y, true);
   }
 
   /** Feed a touch/pointer move event. */
   onPointerMove(id: number, x: number, y: number): void {
-    pointerMove(this.pointer, x, y);
+    if (id === this._primaryTouchId) {
+      pointerMove(this.pointer, x, y);
+    }
     this._addOrUpdateTouch(id, x, y, true);
   }
 
   /** Feed a touch/pointer end event. */
   onPointerUp(id: number, x: number, y: number): void {
-    pointerUp(this.pointer, x, y);
+    if (id === this._primaryTouchId) {
+      pointerUp(this.pointer, x, y);
+      this._primaryTouchId = null;
+    }
     this._removeTouch(id);
   }
 

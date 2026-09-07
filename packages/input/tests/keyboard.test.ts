@@ -6,7 +6,6 @@ import {
   type KeyBindings,
   type KeyboardEventLike,
   type KeyboardEventTargetLike,
-  resetKeyboardFrame,
   wasActionPressed,
   wasActionReleased,
 } from '../src/keyboard.js';
@@ -21,7 +20,7 @@ describe('keyboard state', () => {
     expect(kb.isDown('KeyW')).toBe(true);
 
     // advance frame — held but no longer "just pressed"
-    resetKeyboardFrame(kb);
+    kb.reset();
     expect(kb.wasPressed('KeyW')).toBe(false);
     expect(kb.isDown('KeyW')).toBe(true);
 
@@ -31,13 +30,13 @@ describe('keyboard state', () => {
     expect(kb.isDown('KeyW')).toBe(true);
 
     // advance frame then release
-    resetKeyboardFrame(kb);
+    kb.reset();
     kb.keyUp('KeyW');
     expect(kb.wasReleased('KeyW')).toBe(true);
     expect(kb.isDown('KeyW')).toBe(false);
 
     // next frame — release edge clears
-    resetKeyboardFrame(kb);
+    kb.reset();
     expect(kb.wasReleased('KeyW')).toBe(false);
     expect(kb.isDown('KeyW')).toBe(false);
   });
@@ -54,7 +53,7 @@ describe('keyboard state', () => {
 
     kb.keyDown('KeyA');
     kb.keyDown('KeyS');
-    resetKeyboardFrame(kb);
+    kb.reset();
 
     kb.clear();
 
@@ -64,7 +63,7 @@ describe('keyboard state', () => {
     expect(kb.wasReleased('KeyS')).toBe(true);
 
     // after next reset, quiescent
-    resetKeyboardFrame(kb);
+    kb.reset();
     expect(kb.wasReleased('KeyA')).toBe(false);
     expect(kb.wasReleased('KeyS')).toBe(false);
   });
@@ -73,7 +72,7 @@ describe('keyboard state', () => {
     const kb = createKeyboard();
     kb.keyDown('KeyA');
     kb.keyUp('KeyA');
-    resetKeyboardFrame(kb);
+    kb.reset();
 
     // key is not held — clear should be a no-op for it
     kb.clear();
@@ -108,12 +107,12 @@ describe('attachKeyboardListeners', () => {
     expect(kb.wasPressed('KeyW')).toBe(true);
 
     // keyup feeds state after frame advance
-    resetKeyboardFrame(kb);
+    kb.reset();
     handlers.keyup?.({ code: 'KeyW', type: 'keyup' });
     expect(kb.wasReleased('KeyW')).toBe(true);
 
     // blur clears held keys
-    resetKeyboardFrame(kb);
+    kb.reset();
     kb.keyDown('KeyA');
     expect(kb.isDown('KeyA')).toBe(true);
     handlers.blur?.({ code: '', type: 'blur' });
@@ -156,7 +155,7 @@ describe('KeyBindings action resolver', () => {
   test('isDown stays true while held', () => {
     const kb = createKeyboard();
     kb.keyDown('Space');
-    resetKeyboardFrame(kb);
+    kb.reset();
 
     expect(isActionDown(kb, b, 'jump')).toBe(true);
     expect(wasActionPressed(kb, b, 'jump')).toBe(false);
@@ -167,20 +166,20 @@ describe('KeyBindings action resolver', () => {
 
     kb.keyDown('Space');
     kb.keyDown('KeyW');
-    resetKeyboardFrame(kb);
+    kb.reset();
 
     // release Space — KeyW still held, action not released
     kb.keyUp('Space');
     expect(wasActionReleased(kb, b, 'jump')).toBe(false);
 
-    resetKeyboardFrame(kb);
+    kb.reset();
 
     // release KeyW — no bound key held, action released
     kb.keyUp('KeyW');
     expect(wasActionReleased(kb, b, 'jump')).toBe(true);
 
     // next frame — edge clears
-    resetKeyboardFrame(kb);
+    kb.reset();
     expect(wasActionReleased(kb, b, 'jump')).toBe(false);
   });
 
@@ -189,7 +188,7 @@ describe('KeyBindings action resolver', () => {
 
     kb.keyDown('Space'); // bound index 0
     kb.keyDown('KeyW'); // bound index 1
-    resetKeyboardFrame(kb);
+    kb.reset();
 
     // release the LATER-index key while the earlier one is still held —
     // an impl that inspected only the last bound code would wrongly fire

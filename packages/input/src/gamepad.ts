@@ -54,9 +54,9 @@ export interface GamepadButtonState {
   pressed: boolean;
   value: number;
   /** True for exactly one frame after a press. */
-  pressedThisFrame: boolean;
+  justPressed: boolean;
   /** True for exactly one frame after a release. */
-  releasedThisFrame: boolean;
+  justReleased: boolean;
 }
 
 export interface GamepadState {
@@ -81,7 +81,7 @@ export interface GamepadSnapshot {
 export function createGamepadState(index = 0, buttonCount = 17, axisCount = 4): GamepadState {
   const buttons: GamepadButtonState[] = new Array(buttonCount);
   for (let i = 0; i < buttonCount; i++) {
-    buttons[i] = { pressed: false, value: 0, pressedThisFrame: false, releasedThisFrame: false };
+    buttons[i] = { pressed: false, value: 0, justPressed: false, justReleased: false };
   }
   const axes = new Array<number>(axisCount).fill(0);
   return { connected: false, id: '', index, buttons, axes, timestamp: 0 };
@@ -113,7 +113,7 @@ function applyDeadZone(value: number, deadZone: number): number {
 
 /**
  * Apply a fresh snapshot to an existing `GamepadState` in place. Derived
- * `pressedThisFrame` / `releasedThisFrame` flags are recomputed from the
+ * `justPressed` / `justReleased` flags are recomputed from the
  * previous `pressed` value.
  *
  * `deadZone` in [0, 1). Values at or below are treated as 0.
@@ -132,8 +132,8 @@ export function updateGamepadFromSnapshot(
     for (let i = 0; i < state.buttons.length; i++) {
       const b = state.buttons[i];
       if (!b) continue;
-      b.pressedThisFrame = false;
-      b.releasedThisFrame = b.pressed;
+      b.justPressed = false;
+      b.justReleased = b.pressed;
       b.pressed = false;
       b.value = 0;
     }
@@ -154,18 +154,18 @@ export function updateGamepadFromSnapshot(
     const prev = state.buttons[i];
     const src = srcButtons[i];
     if (!prev || !src) continue;
-    const wasPressed = prev.pressed;
+    const wasDown = prev.pressed;
     prev.pressed = src.pressed;
     prev.value = src.value;
-    prev.pressedThisFrame = src.pressed && !wasPressed;
-    prev.releasedThisFrame = !src.pressed && wasPressed;
+    prev.justPressed = src.pressed && !wasDown;
+    prev.justReleased = !src.pressed && wasDown;
   }
   // Buttons beyond the snapshot length: clear edges, keep prior pressed false.
   for (let i = bLen; i < state.buttons.length; i++) {
     const b = state.buttons[i];
     if (!b) continue;
-    b.pressedThisFrame = false;
-    b.releasedThisFrame = b.pressed;
+    b.justPressed = false;
+    b.justReleased = b.pressed;
     b.pressed = false;
     b.value = 0;
   }
@@ -186,8 +186,8 @@ function clearFrameFlags(state: GamepadState): void {
   for (let i = 0; i < state.buttons.length; i++) {
     const b = state.buttons[i];
     if (!b) continue;
-    b.pressedThisFrame = false;
-    b.releasedThisFrame = false;
+    b.justPressed = false;
+    b.justReleased = false;
   }
 }
 
@@ -203,11 +203,11 @@ export function isButtonDown(state: GamepadState, button: number): boolean {
 }
 
 export function wasButtonPressed(state: GamepadState, button: number): boolean {
-  return state.buttons[button]?.pressedThisFrame ?? false;
+  return state.buttons[button]?.justPressed ?? false;
 }
 
 export function wasButtonReleased(state: GamepadState, button: number): boolean {
-  return state.buttons[button]?.releasedThisFrame ?? false;
+  return state.buttons[button]?.justReleased ?? false;
 }
 
 export function getAxis(state: GamepadState, axis: number): number {

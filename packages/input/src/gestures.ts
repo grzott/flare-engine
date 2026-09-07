@@ -57,7 +57,8 @@ export class GestureDetector {
 
   // Single-touch tracking
   private _startPos: Vec2 = { x: 0, y: 0 };
-  private _startTime = 0;
+  /** Elapsed time (seconds) since `pointerDown` for the in-progress press. */
+  private _elapsed = 0;
   private _isTracking = false;
   private _longPressFired = false;
 
@@ -76,20 +77,32 @@ export class GestureDetector {
   /** Feed a pointer-down event. */
   pointerDown(x: number, y: number): void {
     this._startPos = { x, y };
-    this._startTime = 0;
+    this._elapsed = 0;
     this._isTracking = true;
     this._longPressFired = false;
   }
 
-  /** Feed a pointer-up event. */
-  pointerUp(x: number, y: number, elapsedSinceDown: number): void {
+  /**
+   * Feed a pointer-up event.
+   *
+   * `elapsedSinceDown` is optional: pass it when the host tracks its own
+   * timestamps (e.g. event-driven, no per-frame `update()` calls); omit it
+   * to use the elapsed time already accumulated via `update(dt, ...)`. Either
+   * way there is one clock per press — passing it here re-syncs the same
+   * accumulator `update()` advances, rather than racing it. If a long press
+   * already fired for this press, tap/swipe are suppressed so one press
+   * yields exactly one gesture.
+   */
+  pointerUp(x: number, y: number, elapsedSinceDown?: number): void {
     if (!this._isTracking) return;
     this._isTracking = false;
+    if (elapsedSinceDown !== undefined) this._elapsed = elapsedSinceDown;
+    if (this._longPressFired) return;
 
     const dx = x - this._startPos.x;
     const dy = y - this._startPos.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const duration = elapsedSinceDown;
+    const duration = this._elapsed;
 
     // Check swipe first (requires min distance)
     if (dist >= this.swipeMinDistance && duration <= this.swipeMaxDuration) {
@@ -120,10 +133,10 @@ export class GestureDetector {
    */
   update(dt: number, currentX: number, currentY: number): void {
     if (!this._isTracking) return;
-    this._startTime += dt;
+    this._elapsed += dt;
 
     // Long press detection
-    if (!this._longPressFired && this._startTime >= this.longPressMinDuration) {
+    if (!this._longPressFired && this._elapsed >= this.longPressMinDuration) {
       const dx = currentX - this._startPos.x;
       const dy = currentY - this._startPos.y;
       const dist = Math.sqrt(dx * dx + dy * dy);

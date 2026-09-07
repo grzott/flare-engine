@@ -1,6 +1,8 @@
 # @flare-engine/input
 
-Pointer / touch / gesture / virtual-control / gamepad / keyboard input. `InputManager` polls per frame; `Pointer` exposes primary touch with `isDown` / `justPressed` / `delta`; `GestureDetector` emits tap / swipe / pinch / long-press; data-only `VirtualJoystick` + `VirtualButton` state (RN components live in `@flare-engine/react`); `GamepadSource` + `RemapTable` cover gamepad polling and persistent rebinds; `createKeyboard` provides buffered `isDown` / `wasPressed` / `wasReleased` edges per `KeyboardEvent.code` with blur-clears-held semantics.
+Pointer / touch / gesture / virtual-control / gamepad / keyboard input. `InputManager` polls per frame; `Pointer` exposes the primary touch (the finger that started the current gesture) with `isDown` / `justPressed` / `delta` — other simultaneous touches reach only `touches[]`, never `pointer`, and when the primary lifts it does not transfer to a remaining finger: `pointer` stays unset until every touch is up and a fresh press starts a new primary; `GestureDetector` emits tap / swipe / pinch / long-press; data-only `VirtualJoystick` + `VirtualButton` state (RN components live in `@flare-engine/react`); `GamepadSource` + `RemapTable` cover gamepad polling and persistent rebinds; `createKeyboard` provides buffered `isDown` / `wasPressed` / `wasReleased` edges per `KeyboardEvent.code` with blur-clears-held semantics.
+
+Per-frame edge flags come in two deliberate shapes: per-thing boolean fields (`Pointer.justPressed/justReleased`, `VirtualButtonState.justPressed/justReleased`, `GamepadButtonState.justPressed/justReleased`) for state you already hold a reference to, and keyed query functions (`KeyboardState.wasPressed/wasReleased(code)`, `wasButtonPressed/wasButtonReleased(state, button)`) for state addressed by an id.
 
 ## Install
 

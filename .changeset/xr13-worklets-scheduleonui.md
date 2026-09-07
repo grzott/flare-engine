@@ -16,3 +16,9 @@ allocation.
 `react-native-worklets >=0.7.0`, and Reanimated 4 is New-Architecture-only, so old-architecture
 apps are no longer supported. Every `create-flare-app` template already ships both packages at
 these versions, so scaffolded apps need no change.
+
+Dropping old-architecture support costs nothing testable: no `create-flare-app` template could ever
+produce such an app, because all three pin Expo 57 / RN 0.86 and `expo prebuild` silently overrides
+an `app.json` opt-out. The earlier `>=3.19.1` floor was chosen to keep those apps viable, but Flare
+was never run on one — so the engine was shipping a promise it could not verify. Both shipped
+READMEs now state the New-Architecture requirement outright.

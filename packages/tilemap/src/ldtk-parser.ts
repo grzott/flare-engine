@@ -214,7 +214,7 @@ export function parseLDtk(json: unknown, options: ParseLDtkOptions = {}): Tilema
           // carry auto-render tiles keep collision only (visual auto-tiles are M4 scope).
           const csv = layerInst.intGridCsv;
           const cellCount = layerInst.__cWid * layerInst.__cHei;
-          const tiles = new Array(cellCount).fill(0) as number[];
+          const tiles = new Uint32Array(cellCount);
           const intFirstGid = nextFirstGid;
           let maxLocal = 0;
           let hasNonZero = false;
@@ -285,7 +285,7 @@ function parseTilesLayer(
   gridSize: number,
   firstGid: number,
 ): TileLayer {
-  const tiles = new Array(mapWidth * mapHeight).fill(0) as number[];
+  const tiles = new Uint32Array(mapWidth * mapHeight);
   const tileInstances = layer.gridTiles ?? layer.autoLayerTiles ?? [];
 
   for (const ti of tileInstances) {

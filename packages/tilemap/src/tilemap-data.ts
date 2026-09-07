@@ -32,16 +32,6 @@ export function decodeGidFlags(gid: number): TileFlipFlags {
   };
 }
 
-/** A single tile in a tilemap grid. */
-export interface TileData {
-  /** Global tile ID (0 = empty). */
-  gid: number;
-  /** Whether this tile is flagged as solid (for collision). */
-  solid: boolean;
-  /** Custom properties on the tile. */
-  properties: Record<string, unknown>;
-}
-
 /** A layer of tiles in a grid. */
 export interface TileLayer {
   readonly type: 'tile';
@@ -51,8 +41,13 @@ export interface TileLayer {
   width: number;
   /** Grid height in tiles. */
   height: number;
-  /** Flat array of tile GIDs (row-major, length = width * height). */
-  tiles: number[];
+  /**
+   * Flat array of tile GIDs (row-major, length = width * height). `Uint32Array`,
+   * not `Float32Array` — a 24-bit mantissa cannot hold Tiled's flip-bit GIDs
+   * (`0x80000000` and up). This is a type decision for bulk numeric data per the
+   * repo convention, not a measured perf change.
+   */
+  tiles: Uint32Array;
   /** Visibility flag. */
   visible: boolean;
   /** Opacity (0–1). */
@@ -167,6 +162,9 @@ export function createTilemapData(
 /** Get a tile GID at a grid position from a tile layer. Returns 0 if out of bounds. */
 export function getTileAt(layer: TileLayer, col: number, row: number): number {
   if (col < 0 || col >= layer.width || row < 0 || row >= layer.height) return 0;
+  // The `?? 0` is unreachable at runtime (the bounds check above guarantees an
+  // in-range index into a hole-free Uint32Array) — it satisfies noUncheckedIndexedAccess,
+  // which types every typed-array index read as `number | undefined`.
   return layer.tiles[row * layer.width + col] ?? 0;
 }
 
@@ -185,15 +183,19 @@ export function getTilesetForGid(tilesets: TilesetRef[], gid: number): TilesetRe
   return result;
 }
 
-/** Compute the source rect in a tileset image for a given GID. Strips Tiled flip bits. */
-export function getTileSourceRect(tileset: TilesetRef, gid: number): Rect {
+/** Compute the source rect in a tileset image for a given GID into `out`. Strips Tiled flip bits. Zero-alloc. */
+export function getTileSourceRectInto(tileset: TilesetRef, gid: number, out: Rect): Rect {
   const localId = (gid & GID_FLIP_MASK) - tileset.firstGid;
   const col = localId % tileset.columns;
   const row = Math.floor(localId / tileset.columns);
-  return {
-    x: col * tileset.tileWidth,
-    y: row * tileset.tileHeight,
-    width: tileset.tileWidth,
-    height: tileset.tileHeight,
-  };
+  out.x = col * tileset.tileWidth;
+  out.y = row * tileset.tileHeight;
+  out.width = tileset.tileWidth;
+  out.height = tileset.tileHeight;
+  return out;
+}
+
+/** Compute the source rect in a tileset image for a given GID. Strips Tiled flip bits. */
+export function getTileSourceRect(tileset: TilesetRef, gid: number): Rect {
+  return getTileSourceRectInto(tileset, gid, { x: 0, y: 0, width: 0, height: 0 });
 }

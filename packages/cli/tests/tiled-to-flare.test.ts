@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseTiled } from '@flare-engine/tilemap';
 import { convertTiled } from '../src/tiled-to-flare.js';
 
 async function tmp(): Promise<string> {
@@ -48,6 +49,7 @@ const BASE_TMJ = {
           y: 16,
           width: 16,
           height: 16,
+          rotation: 90,
           properties: [{ name: 'hp', type: 'int', value: 10 }],
         },
       ],
@@ -56,7 +58,7 @@ const BASE_TMJ = {
 };
 
 describe('convertTiled', () => {
-  test('converts tile + object layers to normalized JSON', async () => {
+  test('converts tile + object layers to Tiled-shaped JSON', async () => {
     const dir = await tmp();
     const inPath = join(dir, 'map.tmj');
     await writeFile(inPath, JSON.stringify(BASE_TMJ));
@@ -70,12 +72,13 @@ describe('convertTiled', () => {
 
     const tile = r.layers[0];
     const obj = r.layers[1];
-    expect(tile?.kind).toBe('tile');
-    expect(obj?.kind).toBe('object');
-    if (tile?.kind !== 'tile' || obj?.kind !== 'object') throw new Error('unexpected');
+    expect(tile?.type).toBe('tilelayer');
+    expect(obj?.type).toBe('objectgroup');
+    if (tile?.type !== 'tilelayer' || obj?.type !== 'objectgroup') throw new Error('unexpected');
 
     expect(tile.data).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(obj.objects[0]?.properties.hp).toBe(10);
+    expect(obj.objects[0]?.rotation).toBe(90);
+    expect(obj.objects[0]?.properties).toEqual([{ name: 'hp', type: 'int', value: 10 }]);
 
     expect(r.tilesets[0]?.image).toBe('tiles.png');
 
@@ -189,5 +192,66 @@ describe('convertTiled', () => {
     const r = await convertTiled({ input: inPath, out: join(dir, 'o.json') });
     expect(r.layers.length).toBe(1);
     expect(r.layers[0]?.name).toBe('a');
+  });
+
+  test('round-trips through parseTiled, surviving solidTiles for an external tileset', async () => {
+    const dir = await tmp();
+    const tsPath = join(dir, 'external.json');
+    await writeFile(
+      tsPath,
+      JSON.stringify({
+        name: 'external',
+        tilewidth: 16,
+        tileheight: 16,
+        columns: 4,
+        tilecount: 16,
+        image: 'ext.png',
+        imagewidth: 64,
+        imageheight: 64,
+        tiles: [{ id: 2, properties: [{ name: 'solid', type: 'bool', value: true }] }],
+      }),
+    );
+    const inPath = join(dir, 'map.tmj');
+    await writeFile(
+      inPath,
+      JSON.stringify({
+        ...BASE_TMJ,
+        tilesets: [{ firstgid: 1, source: 'external.json' }],
+        layers: [
+          {
+            type: 'tilelayer',
+            name: 'ground',
+            width: 4,
+            height: 2,
+            data: [1, 2, 3, 4, 5, 6, 7, 8],
+            visible: true,
+            opacity: 1,
+            offsetx: 8,
+            offsety: -4,
+          },
+          BASE_TMJ.layers[1],
+        ],
+      }),
+    );
+
+    const r = await convertTiled({ input: inPath, out: join(dir, 'out.json') });
+    const written = JSON.parse(await readFile(r.outPath, 'utf8'));
+
+    // This is the exact case parseTiled's own error message sends a consumer
+    // with an external tileset to the CLI for — it must parse without throwing.
+    const map = parseTiled(written);
+
+    const tileLayer = map.layers[0];
+    if (tileLayer?.type !== 'tile') throw new Error('expected a tile layer');
+    expect(Array.from(tileLayer.tiles)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(tileLayer.offsetX).toBe(8);
+    expect(tileLayer.offsetY).toBe(-4);
+
+    const objLayer = map.layers[1];
+    if (objLayer?.type !== 'object') throw new Error('expected an object layer');
+    expect(objLayer.objects[0]?.rotation).toBe(90);
+
+    // solidTiles is keyed by local tile id (2), not the global GID.
+    expect(map.tilesets[0]?.solidTiles.has(2)).toBe(true);
   });
 });

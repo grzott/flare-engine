@@ -30,7 +30,7 @@ function mockImage() {
 }
 
 function makeMap(): TilemapData {
-  const tiles = new Array(10 * 10).fill(0) as number[];
+  const tiles = new Uint32Array(10 * 10);
   // Fill with tile 1
   for (let i = 0; i < tiles.length; i++) {
     tiles[i] = 1;
@@ -317,7 +317,7 @@ describe('TilemapRenderer — flip-bit source rect (regression)', () => {
       name: 'ground',
       width: 2,
       height: 1,
-      tiles: [19, flippedGid],
+      tiles: new Uint32Array([19, flippedGid]),
       visible: true,
       opacity: 1,
       offsetX: 0,

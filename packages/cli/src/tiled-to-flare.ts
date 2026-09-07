@@ -1,36 +1,20 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import type {
-  FlareLayer,
-  FlareMap,
-  FlareObject,
-  FlareObjectLayer,
-  FlareTileLayer,
-  FlareTileset,
   TiledConvertOptions,
+  TiledLayer,
+  TiledMap,
+  TiledObject,
+  TiledObjectLayer,
+  TiledProperty,
   TiledResult,
+  TiledTile,
+  TiledTileLayer,
+  TiledTileset,
 } from './types.js';
 
-interface TiledProperty {
-  name: string;
-  type?: string;
-  value: string | number | boolean;
-}
-
-interface TiledObject {
-  id: number;
-  name?: string;
-  type?: string;
-  class?: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  visible?: boolean;
-  properties?: TiledProperty[];
-}
-
-interface TiledLayer {
+/** Raw layer shape as Tiled writes it — a superset covering group/image layers, which are dropped. */
+interface RawTiledLayer {
   type: 'tilelayer' | 'objectgroup' | 'imagelayer' | 'group';
   name: string;
   visible?: boolean;
@@ -39,9 +23,13 @@ interface TiledLayer {
   height?: number;
   data?: number[];
   objects?: TiledObject[];
+  offsetx?: number;
+  offsety?: number;
+  properties?: TiledProperty[];
+  layers?: RawTiledLayer[];
 }
 
-interface TiledTilesetRef {
+interface RawTiledTilesetRef {
   firstgid: number;
   source?: string;
   name?: string;
@@ -52,43 +40,36 @@ interface TiledTilesetRef {
   image?: string;
   imagewidth?: number;
   imageheight?: number;
+  tiles?: TiledTile[];
+  properties?: TiledProperty[];
 }
 
-interface TiledMap {
+interface RawTiledMap {
   width: number;
   height: number;
   tilewidth: number;
   tileheight: number;
-  layers: TiledLayer[];
-  tilesets: TiledTilesetRef[];
+  layers: RawTiledLayer[];
+  tilesets: RawTiledTilesetRef[];
 }
 
 function absPath(p: string, base: string): string {
   return isAbsolute(p) ? p : resolve(base, p);
 }
 
-function propsToRecord(
-  props: TiledProperty[] | undefined,
-): Record<string, string | number | boolean> {
-  const out: Record<string, string | number | boolean> = {};
-  if (!props) return out;
-  for (const p of props) out[p.name] = p.value;
-  return out;
-}
-
 async function resolveTileset(
-  ref: TiledTilesetRef,
+  ref: RawTiledTilesetRef,
   mapDir: string,
   embed: boolean,
-): Promise<FlareTileset> {
-  let data: TiledTilesetRef = ref;
+): Promise<TiledTileset> {
+  let data: RawTiledTilesetRef = ref;
   if (ref.source && embed) {
     const srcPath = absPath(ref.source, mapDir);
     const raw = await readFile(srcPath, 'utf8');
-    const external = JSON.parse(raw) as TiledTilesetRef;
+    const external = JSON.parse(raw) as RawTiledTilesetRef;
     data = { ...external, firstgid: ref.firstgid };
   }
-  return {
+  const tileset: TiledTileset = {
     name: data.name ?? 'tileset',
     firstgid: data.firstgid,
     tilewidth: data.tilewidth ?? 0,
@@ -98,17 +79,19 @@ async function resolveTileset(
     image: data.image ?? '',
     imagewidth: data.imagewidth ?? 0,
     imageheight: data.imageheight ?? 0,
-    ...(ref.source && !embed ? { source: ref.source } : {}),
   };
+  if (data.tiles) tileset.tiles = data.tiles;
+  if (data.properties) tileset.properties = data.properties;
+  if (ref.source && !embed) tileset.source = ref.source;
+  return tileset;
 }
 
-function flattenLayers(layers: TiledLayer[]): TiledLayer[] {
-  const out: TiledLayer[] = [];
-  const walk = (ls: TiledLayer[]): void => {
+function flattenLayers(layers: RawTiledLayer[]): RawTiledLayer[] {
+  const out: RawTiledLayer[] = [];
+  const walk = (ls: RawTiledLayer[]): void => {
     for (const l of ls) {
       if (l.type === 'group') {
-        const inner = (l as unknown as { layers?: TiledLayer[] }).layers;
-        if (inner) walk(inner);
+        if (l.layers) walk(l.layers);
       } else {
         out.push(l);
       }
@@ -118,12 +101,17 @@ function flattenLayers(layers: TiledLayer[]): TiledLayer[] {
   return out;
 }
 
-function convertLayer(layer: TiledLayer): FlareLayer | null {
+/**
+ * Route a layer through as Tiled-shaped `TiledLayer`, keeping every field
+ * `parseTiled` reads (offsets, properties, and — for objects — rotation, which
+ * passes through untouched since `objects` is not re-mapped).
+ */
+function convertLayer(layer: RawTiledLayer): TiledLayer | null {
   const visible = layer.visible !== false;
   const opacity = typeof layer.opacity === 'number' ? layer.opacity : 1;
   if (layer.type === 'tilelayer') {
-    const tile: FlareTileLayer = {
-      kind: 'tile',
+    const tile: TiledTileLayer = {
+      type: 'tilelayer',
       name: layer.name,
       width: layer.width ?? 0,
       height: layer.height ?? 0,
@@ -131,35 +119,32 @@ function convertLayer(layer: TiledLayer): FlareLayer | null {
       visible,
       opacity,
     };
+    if (layer.offsetx !== undefined) tile.offsetx = layer.offsetx;
+    if (layer.offsety !== undefined) tile.offsety = layer.offsety;
+    if (layer.properties) tile.properties = layer.properties;
     return tile;
   }
   if (layer.type === 'objectgroup') {
-    const objects: FlareObject[] = (layer.objects ?? []).map((o) => ({
-      id: o.id,
-      name: o.name ?? '',
-      type: o.type ?? o.class ?? '',
-      x: o.x,
-      y: o.y,
-      width: o.width,
-      height: o.height,
-      properties: propsToRecord(o.properties),
-    }));
-    const obj: FlareObjectLayer = {
-      kind: 'object',
+    const obj: TiledObjectLayer = {
+      type: 'objectgroup',
       name: layer.name,
-      objects,
+      objects: layer.objects ?? [],
       visible,
       opacity,
     };
+    if (layer.properties) obj.properties = layer.properties;
     return obj;
   }
   return null;
 }
 
 /**
- * Convert a Tiled `.tmj` JSON map into Flare's normalized runtime format.
- * Flattens group layers, resolves external tilesets (when `embedTilesets`),
- * and drops image/editor-only layers.
+ * Convert a Tiled `.tmj` JSON map into Tiled-shaped runtime JSON, accepted
+ * directly by `@flare-engine/tilemap`'s `parseTiled` — this is a pass-through of
+ * the original layer/tileset objects (not a re-projection), so `type`,
+ * `properties`, tileset `tiles[]`, object `rotation` and layer `offsetx`/`offsety`
+ * all survive. Flattens group layers, resolves external tilesets (when
+ * `embedTilesets`), and drops image/editor-only layers.
  */
 export async function convertTiled(opts: TiledConvertOptions): Promise<TiledResult> {
   const inputPath = absPath(opts.input, process.cwd());
@@ -169,21 +154,21 @@ export async function convertTiled(opts: TiledConvertOptions): Promise<TiledResu
   const embed = opts.embedTilesets !== false;
 
   const raw = await readFile(inputPath, 'utf8');
-  const parsed = JSON.parse(raw) as TiledMap;
+  const parsed = JSON.parse(raw) as RawTiledMap;
   const mapDir = dirname(inputPath);
 
-  const tilesets: FlareTileset[] = [];
+  const tilesets: TiledTileset[] = [];
   for (const ref of parsed.tilesets ?? []) {
     tilesets.push(await resolveTileset(ref, mapDir, embed));
   }
 
-  const layers: FlareLayer[] = [];
+  const layers: TiledLayer[] = [];
   for (const l of flattenLayers(parsed.layers ?? [])) {
     const converted = convertLayer(l);
     if (converted) layers.push(converted);
   }
 
-  const map: FlareMap = {
+  const map: TiledMap = {
     width: parsed.width,
     height: parsed.height,
     tilewidth: parsed.tilewidth,

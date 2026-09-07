@@ -74,7 +74,10 @@ export function buildProgram(): Command {
     .command('tiled-to-flare <tmj>')
     .description('Convert a Tiled .tmj file to Flare runtime JSON')
     .option('-o, --out <file>', 'output .json path')
-    .option('--no-embed-tilesets', 'keep external tileset references rather than inlining')
+    .option(
+      '--no-embed-tilesets',
+      'keep external tileset references instead of inlining (parseTiled rejects the result)',
+    )
     .action(async (input: string, opts) => {
       const result = await convertTiled({
         input,

@@ -5,7 +5,7 @@ import type { TileLayer, TilemapData, TilesetRef } from '../src/tilemap-data.js'
 function makeSolidMap(): TilemapData {
   // 4x3 grid, tiles 1-12
   // Tileset: tiles 0 and 2 are solid (GIDs 1 and 3)
-  const tiles = [1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12];
+  const tiles = new Uint32Array([1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12]);
   const layer: TileLayer = {
     type: 'tile',
     name: 'ground',
@@ -96,7 +96,7 @@ describe('extractColliders', () => {
       name: 'decoration',
       width: 4,
       height: 3,
-      tiles: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // all GID 1 (solid)
+      tiles: new Uint32Array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), // all GID 1 (solid)
       visible: true,
       opacity: 1,
       offsetX: 0,
@@ -183,7 +183,7 @@ describe('extractColliders — flip-bit regression', () => {
       name: 'ground',
       width: 3,
       height: 1,
-      tiles: [1, flippedGid, 0], // terrain (not solid), flipped-solid, empty
+      tiles: new Uint32Array([1, flippedGid, 0]), // terrain (not solid), flipped-solid, empty
       visible: true,
       opacity: 1,
       offsetX: 0,

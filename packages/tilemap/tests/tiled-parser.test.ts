@@ -51,6 +51,30 @@ describe('parseTiled', () => {
     }
   });
 
+  test('TileLayer.tiles is a Uint32Array that preserves flip-bit GIDs', () => {
+    // 0x80000000 (H-flip bit set) exceeds Float32Array's 24-bit mantissa —
+    // Uint32Array is the only typed-array form that holds it exactly.
+    const flippedGid = 5 + 0x80000000;
+    const json = makeTiledJSON({
+      layers: [
+        {
+          type: 'tilelayer',
+          name: 'ground',
+          width: 2,
+          height: 1,
+          data: [1, flippedGid],
+          visible: true,
+          opacity: 1,
+        },
+      ],
+    });
+    const map = parseTiled(json);
+    const layer = map.layers[0]!;
+    if (layer.type !== 'tile') throw new Error('expected a tile layer');
+    expect(layer.tiles).toBeInstanceOf(Uint32Array);
+    expect(layer.tiles[1]).toBe(flippedGid);
+  });
+
   test('parses tile layer offset', () => {
     const json = makeTiledJSON({
       layers: [
@@ -369,6 +393,12 @@ describe('parseTiled — validation errors', () => {
     } catch (e) {
       expect((e as Error).message).toMatch(/unsupported/i);
       expect((e as Error).message).toContain('imagelayer');
+    }
+  });
+
+  test('throws TilemapParseError (not TypeError) for non-map input', () => {
+    for (const bad of [{}, null, 'garbage', 42, { width: 4, height: 3 }]) {
+      expect(() => parseTiled(bad)).toThrow(TilemapParseError);
     }
   });
 });

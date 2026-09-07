@@ -6,6 +6,7 @@ import {
   GID_FLIP_MASK,
   getTileAt,
   getTileSourceRect,
+  getTileSourceRectInto,
   getTilesetForGid,
   stripGidFlags,
 } from '../src/tilemap-data.js';
@@ -28,7 +29,7 @@ describe('tilemap-data', () => {
       name: 'ground',
       width: 3,
       height: 2,
-      tiles: [1, 2, 3, 4, 5, 6],
+      tiles: new Uint32Array([1, 2, 3, 4, 5, 6]),
       visible: true,
       opacity: 1,
       offsetX: 0,
@@ -46,7 +47,7 @@ describe('tilemap-data', () => {
       name: 'ground',
       width: 2,
       height: 2,
-      tiles: [1, 2, 3, 4],
+      tiles: new Uint32Array([1, 2, 3, 4]),
       visible: true,
       opacity: 1,
       offsetX: 0,
@@ -91,6 +92,15 @@ describe('tilemap-data', () => {
     // Local ID 7 → col 2, row 1
     const r7 = getTileSourceRect(tileset, 8);
     expect(r7).toEqual({ x: 32, y: 16, width: 16, height: 16 });
+  });
+
+  test('getTileSourceRectInto writes into `out` with no allocation, and getTileSourceRect delegates to it', () => {
+    const tileset = makeTileset('tiles', 1, 20, 16, 16, 5);
+    const out = { x: 0, y: 0, width: 0, height: 0 };
+    const result = getTileSourceRectInto(tileset, 5, out);
+    expect(result).toBe(out);
+    expect(out).toEqual({ x: 64, y: 0, width: 16, height: 16 });
+    expect(getTileSourceRect(tileset, 5)).toEqual(out);
   });
 });
 

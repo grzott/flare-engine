@@ -39,6 +39,9 @@
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit"
   },
+  "devDependencies": {
+    "@flare-engine/tilemap": "^0.3.1"
+  },
   "dependencies": {
     "commander": "^13.1.0",
     "maxrects-packer": "^2.7.3",

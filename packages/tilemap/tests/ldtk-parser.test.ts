@@ -43,7 +43,8 @@ describe('parseLDtk', () => {
     expect(layer.type).toBe('tile');
     if (layer.type === 'tile') {
       expect(layer.name).toBe('Collision');
-      expect(layer.tiles).toEqual([1, 0, 1, 0, 1, 0]);
+      expect(layer.tiles).toBeInstanceOf(Uint32Array);
+      expect(Array.from(layer.tiles)).toEqual([1, 0, 1, 0, 1, 0]);
     }
   });
 
@@ -77,6 +78,7 @@ describe('parseLDtk', () => {
     expect(layer.type).toBe('tile');
     if (layer.type === 'tile') {
       expect(layer.name).toBe('Ground');
+      expect(layer.tiles).toBeInstanceOf(Uint32Array);
       // firstGid fallback=1 (no matching def), so gid = 1 + t
       expect(layer.tiles[0]).toBe(1); // (0,0) → t=0 → gid=1
       expect(layer.tiles[1]).toBe(2); // (1,0) → t=1 → gid=2

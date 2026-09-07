@@ -108,6 +108,19 @@ function parseProperties(props?: TiledProperty[]): Record<string, unknown> {
  * external tilesets, base64/compressed/chunked layer data).
  */
 export function parseTiled(json: unknown): TilemapData {
+  if (
+    !json ||
+    typeof json !== 'object' ||
+    typeof (json as Record<string, unknown>).width !== 'number' ||
+    typeof (json as Record<string, unknown>).height !== 'number' ||
+    !Array.isArray((json as Record<string, unknown>).layers) ||
+    !Array.isArray((json as Record<string, unknown>).tilesets)
+  ) {
+    throw new TilemapParseError(
+      'parseTiled: input is not a Tiled map JSON (missing width/height/layers/tilesets).',
+    );
+  }
+
   const data = json as TiledMapJSON;
 
   if (data.infinite === true) {
@@ -200,13 +213,14 @@ function parseTileLayer(layer: TiledTileLayer): TileLayer {
       'parseTiled: base64/compressed/chunked (infinite) layer data is not supported. In Tiled export options set Tile Layer Format to "CSV".',
     );
   }
-  // layer.data is number[] here — flip bits in raw GIDs are preserved by slice()
+  // layer.data is number[] here — Uint32Array.from preserves flip-bit GIDs
+  // (values up to 0xffffffff), unlike a Float32Array's 24-bit mantissa.
   return {
     type: 'tile',
     name: layer.name,
     width: layer.width,
     height: layer.height,
-    tiles: layer.data.slice(),
+    tiles: Uint32Array.from(layer.data),
     visible: layer.visible,
     opacity: layer.opacity,
     offsetX: layer.offsetx ?? 0,

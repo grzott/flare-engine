@@ -3,7 +3,7 @@ import type { Rect } from '@flare-engine/math';
 import type { Camera2D } from '@flare-engine/render';
 import { SpriteBatch } from '@flare-engine/render';
 import type { TileLayer, TilemapData } from './tilemap-data.js';
-import { GID_FLIP_MASK, getTileAt, getTilesetForGid } from './tilemap-data.js';
+import { getTileAt, getTileSourceRectInto, getTilesetForGid } from './tilemap-data.js';
 
 /**
  * TilemapRenderer — draws a tilemap with viewport culling.
@@ -21,6 +21,9 @@ export class TilemapRenderer {
 
   /** Reusable bounds rect — avoids per-frame allocation from camera.getBounds(). */
   private _boundsBuf: Rect = { x: 0, y: 0, width: 0, height: 0 };
+
+  /** Reusable source rect — avoids a per-tile allocation from getTileSourceRect. */
+  private _srcBuf: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
   constructor(map: TilemapData) {
     this.map = map;
@@ -91,16 +94,12 @@ export class TilemapRenderer {
         const image = this._images.get(tileset.name);
         if (!image) continue;
 
-        // Inlined source-rect math — strips flip bits, avoids allocating a Rect per tile.
-        const localId = (gid & GID_FLIP_MASK) - tileset.firstGid;
-        const srcCol = localId % tileset.columns;
-        const srcRow = (localId - srcCol) / tileset.columns;
-        const srcX = srcCol * tileset.tileWidth;
-        const srcY = srcRow * tileset.tileHeight;
+        // Strips flip bits; writes into the reusable buffer, no per-tile allocation.
+        const src = getTileSourceRectInto(tileset, gid, this._srcBuf);
         const dstX = col * tw + offsetX;
         const dstY = row * th + offsetY;
 
-        batch.drawRaw(image, srcX, srcY, tileset.tileWidth, tileset.tileHeight, dstX, dstY, tw, th);
+        batch.drawRaw(image, src.x, src.y, src.width, src.height, dstX, dstY, tw, th);
       }
     }
   }

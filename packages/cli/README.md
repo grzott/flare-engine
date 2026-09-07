@@ -15,7 +15,7 @@ Requires Node 20+; uses `sharp` for image work and `commander` for arg parsing.
 ```sh
 flare pack-atlas ./sprites --out ./assets --padding 2 --max-size 2048 --format png
 flare tiled-to-flare ./maps/zone1.tmj --out ./assets/zone1.json          # embeds tilesets (default)
-flare tiled-to-flare ./maps/zone1.tmj --out ./assets/zone1.json --no-embed-tilesets  # keep external refs
+flare tiled-to-flare ./maps/zone1.tmj --out ./assets/zone1.json --no-embed-tilesets  # keep external refs (not consumable by parseTiled)
 flare new my-game --template shmup --package-manager bun
 ```
 

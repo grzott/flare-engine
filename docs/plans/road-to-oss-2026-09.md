@@ -934,7 +934,7 @@ reads as current.
 
 - architecture.md: move planck/rbush/flow-fields into an explicit **"Post-launch roadmap"**
   subsection (labeled not-shipped); add `shapes` to the layer table + a section; fix `:121` easing
-  count to 35; rewrite `:11` so the only asserted count is 41 dirs / 40 scoped + create-flare-app.
+  count to 35; rewrite `:11` so the only asserted count is 42 dirs / 41 scoped + create-flare-app.
 - api-specs.md: author the missing `@flare-engine/shapes` section (public surface: ShapeSpec-family,
   draw/atlas exports — document what IS, including the PT-vocabulary surface as-is; renaming
   `ShipSpec` etc. is a post-flip API-generality item, not a docs edit); verify B4/M4/M5/M6 already
@@ -994,10 +994,10 @@ just the READMEs), or, if that harness extension slips, the four named sections 
   **(2)** re-add provenance (S4b removed it — set `NPM_CONFIG_PROVENANCE: "true"` in release.yml or
   root publishConfig; requires public repo + public package, GitHub-hosted runner, npm ≥11.5.1;
   `release.yml` already has `id-token: write`); **(3)** npm access flip — `scripts/flip-access.mjs`
-  runs `npm access set status=public` over the 40 scoped packages (serial, resumable, `--otp` pass-through);
-  **(4)** the flip commit — 40× `publishConfig.access` restricted→public + `.changeset/config.json`
+  runs `npm access set status=public` over the 41 scoped packages (serial, resumable, `--otp` pass-through);
+  **(4)** the flip commit — 41× `publishConfig.access` restricted→public + `.changeset/config.json`
   `access: "public"` + create-flare-app `private: false` **+ a version-bump-only lockstep patch
-  changeset** in ONE tagged commit (without the changeset, `changeset publish` would skip the 40
+  changeset** in ONE tagged commit (without the changeset, `changeset publish` would skip the 41
   already-published scoped packages and only create-flare-app would ship — no fresh
   provenance-stamped release would exist); **(5)** `bun run version` + publish — the fresh 0.4.x
   lockstep release for all 41, now public + provenance-stamped, via `bun run release`
@@ -1008,7 +1008,7 @@ just the READMEs), or, if that harness extension slips, the four named sections 
   commit itself must be CI-validated) + the D1 `check:readme` step + a concurrency group.
 
 **Done when:** runbook reviewed against §12; ci.yml runs on a push to main; flip-access script
-dry-run mode lists exactly the 40 scoped names.
+dry-run mode lists exactly the 41 scoped names.
 
 ### OSS-F2 · verdaccio rehearsal (P0, 1-2 sessions, [main-thread], **owner-paired**)
 
@@ -1018,7 +1018,7 @@ the same way. **Exemptions (this row only):** the owner drives the branch/commit
 never run git); verdaccio publishes are registry-scoped + discarded, exempt from the §2.5
 no-publishes rule.
 
-- Stand up verdaccio; apply the F1 flip commit on a branch; publish ALL 41 (40 scoped +
+- Stand up verdaccio; apply the F1 flip commit on a branch; publish ALL 42 (41 scoped +
   create-flare-app) to verdaccio with `access public` at a **throwaway version**. Split the
   `bun run version` chain (`changeset version && concretize-workspace-deps && bun install`, root
   `package.json:46`) and rewrite the cut version to `0.4.99` in all 41 manifests between the
@@ -1047,22 +1047,38 @@ stopped, and `npm config get registry` back to `https://registry.npmjs.org/`.
 ### OSS-F3 · tarball + published-versions audit (P0, 1 session, [main-thread])
 
 **Scope:** `scripts/audit-tarballs.mjs` (new), report to `docs/plans/_local/`.
-The access flip exposes **all previously published versions** (0.1.0, 0.2.0, 0.2.1) retroactively —
-audit them, not just 0.4.0.
+The access flip exposes **all previously published versions** (0.1.0, 0.2.0, 0.2.1, 0.3.0, 0.3.1)
+retroactively — audit them, not just 0.4.0. That is **five** versions today and **six after H1**, not
+the three this row was written against: `0.3.0` published 2026-08-25 and `0.3.1` 2026-08-27, both
+restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1 row 7).
 
 - Script: `npm pack` every workspace package at HEAD **and** fetch published tarballs for each
-  released version of all 40 names — authenticated **and** with an explicit
-  `--registry https://registry.npmjs.org/` on every published-version `npm view`/`npm pack`
-  (`scripts/lib/pack.mjs:23` inherits ambient npm config, so a leftover freeze-window override
-  makes this row audit verdaccio's tarballs and report them as published — XR-11); extract; scan
+  released version of all 41 names — authenticated. The authenticated path discovers versions from
+  `npm view versions` rather than a fixed list, so it needs no edit as versions accumulate;
+  `PUBLISHED_VERSIONS_EXPECTED` in the script is only the unauthenticated fallback's "could not
+  fetch" list, and F3-EXTEND brought it to five so an unauthenticated report cannot read as complete
+  while omitting two published versions.
+  **The registry is not pinned with `--registry`, and that is a live disagreement inside this
+  document.** `scripts/lib/pack.mjs:23` inherits ambient npm config, so a leftover freeze-window
+  override would make this row audit verdaccio's tarballs and report them as published (XR-11) —
+  which is why this bullet used to mandate the flag. F3-EXTEND refuses it. What defends the step
+  today is procedure alone: §4.4 step 3 requires the owner run it "on a machine with no verdaccio
+  and no registry override", *before* verdaccio ever stands up. Note the pin would not buy
+  agent-runnability either — `npm` is denied to agents by `.claude/settings.json` and
+  `pre-bash-guard.sh` FORBIDDEN_PM whatever flags it carries. **CR-5 owns closing this**: either
+  restore the pin, or add an effective-registry assertion that aborts before the first fetch.
+  Extract; scan
   for private-project vocabulary,
   local paths, tokens/env files, private URLs, and session/plan references — the full pattern list
   lives IN the script and the `_local/` report, not in this public doc. Names absent at a given
   version are expected (only 36 packages existed at 0.1.0) — record as n/a, never as failure.
   Report per package×version.
 - Also assert each HEAD-packed tarball manifest carries `"license": "Apache-2.0"` and ships both
-  `LICENSE` and `NOTICE` (E2 relicense — added 2026-07-12). Published 0.1.0–0.2.1 tarballs stay MIT
-  by design (immutable) — record, do not flag.
+  `LICENSE` and `NOTICE` (E2 relicense — added 2026-07-12, `c7c03c6`). Published 0.1.0–0.2.1 tarballs
+  stay MIT by design (immutable) — record, do not flag. **`0.3.0` and `0.3.1` are on the Apache side
+  of that line** — the relicense landed six weeks before the `0.3.0` cut (`c7c03c6` is an ancestor of
+  `905d4d4`) — so their published tarballs get the same Apache-2.0 + LICENSE + NOTICE assertion as
+  HEAD, and an MIT manifest at either version is a finding, not a record-and-move-on.
 - Hits in OLD versions go to the owner for disposition before the flip (§14); the per-hit ledger
   and remediation choices live in the `_local/` report and the runbook's owner lane. HEAD hits =
   fix rows.
@@ -1196,8 +1212,15 @@ Written as `docs/plans/manual-test-protocol.md` by an agent session; the checkli
 ## 12. Flip week (Oct 19–23, target Tue Oct 20)
 
 - **OSS-I1 · execute the runbook** (owner + agent pairing session): the F1 sequence, each step
-  checked off in the runbook file. Time-critical mechanics were rehearsed (F2), so this is
-  execution, not discovery.
+  checked off in the runbook file. **The local publish and the verdaccio mechanics were rehearsed
+  (F2). `release.yml` has never run — its first execution is the flip itself.** Every run to date
+  shows `completed skipped` because the job is gated on `vars.ENABLE_RELEASE == 'true'` and that
+  variable does not exist, so the CI path — `changesets/action`, `secrets.NPM_TOKEN`, OIDC
+  provenance, and the release job's own twelve gates — is unproven on the one-way public release.
+  Treat flip week as **execution for the parts F2 covered and discovery for the CI path**, and
+  budget for the second. Corrected 2026-09-07 (pre-flip audit §4.1 row 5); the owner may retire the
+  discovery half by letting one window `0.4.x` restricted patch publish through CI with
+  `ENABLE_RELEASE` temporarily true, then setting it back.
 - **OSS-I2 · post-flip verification battery:** cold `npm create flare-app@latest` from the PUBLIC
   registry — no token **and** the registry proven rather than assumed: verdaccio stopped,
   `npm config get registry` prints `https://registry.npmjs.org/`, each scaffold in a fresh
@@ -1217,7 +1240,7 @@ web overlay; Expo devtools-plugin transport — directly unblocks PT's deferred 
 pass) → **docs playground** (3–5 curated editable examples, static client-only, esbuild-wasm or
 import maps; skip WebContainers/Sandpack — licensing/stalled) → README GIF + 20-line snippet →
 page D2–D5 dogfood + PT showcase assets + Berek entry → real web benchmark numbers →
-Trusted Publishing OIDC (per-package config ×40, kills token rotation) → `physics-rigid` (planck
+Trusted Publishing OIDC (per-package config ×41, kills token rotation) → `physics-rigid` (planck
 v1.5.x, opt-in, thin facade, fixed-timestep + B7's alpha) → pathfinding consumer (Berek
 enemy-chase or template example) + B18 leftovers → `dynamics` lift decision (portfolio-credibility
 milestone vs planck overlap — pick ONE rigid-body story) → game-driven API generality (per the
@@ -1239,7 +1262,18 @@ modernization notes (todo.md Closed arcs, docs+harness section — opportunistic
 ## 14. Owner ledger (out-of-band actions — nothing here is agent work)
 
 Credential specifics, per-hit audit dispositions, and anything business-candid live in
-`docs/plans/_local/owner-ledger.md` (never committed). The public schedule:
+`docs/plans/_local/owner-ledger.md` (never committed).
+
+**That file does not exist yet (found 2026-09-07, §4.2).** `_local/` holds only the deep-audit,
+f3-tarball-audit, monetization-strategy and oss-launch-audit reports. Three things point at the
+ledger and currently have nowhere to land: NPM-ROTATE's "specifics tracked privately" — including
+the **token expiry date**, which FW-0 has to check against — F3-DISP's per-hit dispositions, and
+DOC-1's "publish credential configured (owner, tracked privately)". **Owner: create it at
+NPM-ROTATE** with the token's creation date, expiry and scope; F3-DISP appends dispositions there.
+If you would rather fold the dispositions into the existing `f3-tarball-audit.md` instead, do that
+and correct this paragraph to name that file — either way, one file, named here, that exists.
+
+The public schedule:
 
 | When | Action | Notes |
 |---|---|---|

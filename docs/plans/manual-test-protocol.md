@@ -27,6 +27,29 @@ Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
   # ...run the §1 / §4-web consumption tests inside this tree...
   ```
 
+  **The `.npmrc` above does NOT protect `create-flare-app`, and this is the one mistake in this
+  document that publishes to the real registry.** `packages/create-flare-app/package.json` carries
+  its own `publishConfig.registry: "https://registry.npmjs.org/"` (since `31dc323`, 2026-04-20), and
+  **npm and changesets honour a manifest's `publishConfig` over any `.npmrc`**. The rehearsal applies
+  the flip-commit edit that flips that package `private: true → false` and then runs
+  `bun run release` — so with the rotated token in `~/.npmrc`, the unscoped scaffolder publishes
+  **publicly, at a throwaway version, before the flip**. There is a 72-hour unpublish window and then
+  it is permanent, and the name is the whole first-run funnel (`npm create flare-app`).
+
+  On the throwaway branch, before `bun run release`, also:
+
+  ```bash
+  # rewrite (or delete) the manifest pin — .npmrc cannot override it
+  #   packages/create-flare-app/package.json
+  #   "publishConfig": { "access": "public", "registry": "http://localhost:4873/" }
+  # then, after every rehearsal publish, prove nothing escaped:
+  npm view create-flare-app --registry https://registry.npmjs.org/   # must still 404
+  ```
+
+  Keep the real pin untouched in the FW-6 flip commit — it is correct there. The July F2 rehearsal
+  avoided this with exactly such a redirect, but that fact was recorded only in the F2 Done row and
+  never reached this document or the runbook (found by the 2026-09-07 pre-flip audit, §4.2).
+
   Never `npm config set registry`: that is a **user-level** setting that redirects every npm
   command on the machine for the rest of the window — §2/§3's restricted-registry installs and
   F3's `npm view`/`npm pack` included. If a tree ever resolved from verdaccio, delete it rather
@@ -60,8 +83,11 @@ the harness.
   - [ ] `npm run start` — Metro bundles and resolves every `@flare-engine/*` import with no error.
         (Actually *running* the app needs a **dev build** — `@shopify/react-native-skia` is a native
         module, so plain `expo start` + Expo Go "press a/i" red-screens with a missing-native-module
-        error. If the template README tells a stranger to "press a/i" into Expo Go, that mismatch is a
-        §7 finding.)
+        error. **This is already correct in the tree and is not an open question:** XR-10 landed, and
+        every template README now leads with `bun run android   # or: bun run ios` and spells out the
+        Expo Go red-screen. So the finding to watch for is a **regression** — a README that has gone
+        back to telling a stranger to press `a`/`i` into Expo Go. Verified 2026-09-07 across the
+        blank and shmup templates; re-read them rather than assuming either way.)
 - [ ] **Linux container** (e.g. `node:22` docker, clean `$HOME`) — repeat all three templates end-to-end
       (catches Windows-only path luck; the F2 rehearsal only proved `--skip-install`).
 - [ ] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the

@@ -15,6 +15,15 @@ verdaccio in **OSS-F2** before the real thing. Check each box in this file as yo
   commit/push/tag. Builders never run git or publish (repo boundary).
 - **Agent** — file edits (workflow/manifest/changeset), dry-runs, verification.
 
+> **An agent cannot run `npm` at all** (corrected 2026-09-07, §4.2). `.claude/settings.json`
+> denies `Bash(npm:*)` and `Bash(npx:*)`, and `.claude/hooks/pre-bash-guard.sh`'s `FORBIDDEN_PM`
+> blocks npm/npx/yarn/pnpm — unwrapping `bash -c`, `eval` and `bun -e` wrappers, so there is no
+> way around it. **Every step in this file that runs `npm pack`, `npm view` or `npm access` is
+> therefore owner-only or owner-paired, whatever its lane says**, including the ×41 tarball and
+> provenance verification below. Adding a `--registry` flag to a bun script does not change this;
+> the block is on the binary, not the flags. If a step needs to be agent-runnable, it has to be
+> re-expressed as a bun script that shells to something other than npm.
+
 ## Ordering invariants (do NOT reorder)
 
 Repo public → provenance on → npm access flip → flip commit → version+publish →
@@ -30,7 +39,11 @@ no clean rollback.
 - [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
       `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
       tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Three rehearsal rules folded
-      in: a local `bun run version` needs `changelog:false`/`GITHUB_TOKEN` (step 5); the
+      in: ~~a local `bun run version` needs `changelog:false`/`GITHUB_TOKEN` (step 5)~~
+      — **struck 2026-09-07, it was never true**: `.changeset/config.json` sets
+      `"changelog": "@changesets/cli/changelog"`, the built-in generator, which makes no
+      GitHub calls (`@changesets/changelog-github` at `package.json:59` is an unused
+      devDependency — drop it post-flip); the
       cold-consumer test points the **default** registry at verdaccio, not a scope
       config (the unscoped `create-flare-app` isn't routed by `@flare-engine:registry`);
       and every verification runs from a **fresh tree with no lockfile** at a **throwaway
@@ -40,7 +53,19 @@ no clean rollback.
       caches are registry-keyed, so a purge changes nothing and hides the lockfile as the
       cause (XR-11 — found 2026-09-01, after this box was ticked).
       One launch bug surfaced — the templates' `react` pin is too low for RN 0.86's
-      peer — tracked as a pre-freeze engine fix.
+      peer — **fixed 2026-07-24 (OSS-B32)**.
+      **A fourth rehearsal rule, recovered 2026-09-07 (pre-flip audit §4.2) — it was
+      applied in July but recorded only in the F2 Done row, so it never reached this box
+      or the protocol.** `packages/create-flare-app/package.json` carries its own
+      `publishConfig.registry: "https://registry.npmjs.org/"`, and npm/changesets honour a
+      manifest's `publishConfig` **over any `.npmrc`**. The rehearsal flips that package
+      `private: true → false` and runs `bun run release`, so without a redirect the
+      unscoped scaffolder publishes **publicly at the throwaway version, before the flip**
+      (72h to unpublish, then permanent — and the name is the entire `npm create flare-app`
+      funnel). On the throwaway branch, rewrite or delete that pin to
+      `http://localhost:4873/` before releasing, and after each rehearsal assert
+      `npm view create-flare-app --registry https://registry.npmjs.org/` still 404s.
+      Keep the real pin untouched in the FW-6 flip commit.
 - [ ] **Registry hygiene — on the machine that ran the freeze window, before step 1:**
       verdaccio stopped (nothing listening on 4873 or 4874); `npm config get registry`
       prints `https://registry.npmjs.org/`; no `registry=` line left in `$HOME/.npmrc`;
@@ -48,13 +73,38 @@ no clean rollback.
       survives into flip-day verification. The freeze window's override is **user-level**
       and nothing else in this runbook would notice it still set (XR-11).
 - [ ] **F3 done:** tarball audit clean (or every old-version hit has an owner
-      disposition, §14).
+      disposition, §14). **This box stays open even though todo.md records OSS-F3 as
+      Done — both are right, read carefully.** The HEAD-tarball half shipped in session
+      #256; the **published-version half is OPEN** and owner-owed: that July run predates
+      `0.3.0` and `0.3.1`, so it must be re-run over **five versions (0.1.0, 0.2.0, 0.2.1,
+      0.3.0, 0.3.1) and again over 0.4.0 after H1** — authenticated, on a machine with no
+      verdaccio and no registry override, *before* the window stands one up
+      (`scripts/lib/pack.mjs:23` inherits ambient npm config).
 - [ ] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4).
 - [ ] **Perf gate green:** every hard item in the "Perf gate (single source)" block of
       road-to-oss §11 / OSS-H1. Not restated here on purpose — one source per fact.
 - [ ] **npm auth ready:** granular publish token (Bypass-2FA) in `~/.npmrc`, the
       `@flare-engine` org on a paid plan, credential rotation done (§14). Keep the
       2FA device handy for `--otp` on the access flip.
+      **Set an explicit expiry and record it (added 2026-09-07, §4.2).** npm removed
+      legacy tokens in November 2025 — only granular tokens exist now, and a granular
+      token carries an expiry chosen at creation, minimum one day out. A token rotated
+      "now" with a short expiry **dies before Oct 20 and the failure surfaces at FW-9 —
+      after the access flip's point of no return, on the path that has never executed.**
+      So: expiry **≥ Oct 31, 2026**; confirm the token covers all 41 names; write the
+      expiry date into the owner ledger. Also note npm's August 2026 change — a
+      Bypass-2FA token can no longer perform account-identity or account-governance
+      actions, though publishing still works; that is what the `--otp` device is for.
+- [ ] **Token still valid on flip day (FW-0):** `npm whoami` locally, and check the
+      recorded expiry — "the Actions secret holds the rotated token" is not the same as
+      "the token still works". If it would lapse inside the window, rotate **before** the
+      access flip, never after.
+- [ ] **`create-flare-app` name still free:** `npm view create-flare-app --registry
+      https://registry.npmjs.org/` must still 404. It was unclaimed on 2026-09-07, but
+      FW-9 is that package's **first** publish — if the unscoped name is taken between
+      now and flip day, the failure appears *after* the point of no return with the whole
+      `npm create flare-app` funnel dead. (Owner may instead decide to hold the name with
+      an early placeholder publish — a publish decision, not an agent one.)
 - [ ] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
       stance (§14).
 
@@ -66,10 +116,21 @@ no clean rollback.
 
 **Side effects (acknowledge before clicking):** stars/watchers reset to 0; the
 Actions run history becomes publicly visible; existing **private forks detach**
-(they do not become public); **push rulesets are disabled** on visibility change —
-re-enable branch protection on `main` right after.
+(they do not become public); ~~**push rulesets are disabled** on visibility change —
+re-enable branch protection on `main` right after~~ — **struck 2026-09-07: moot. There
+are no rulesets and no branch protection to disable.** The repo is private on a free
+plan, and both `gh api repos/grzott/flare-engine/rulesets` and
+`.../branches/main/protection` return 403 *"Upgrade to GitHub Pro or make this
+repository public"*.
 
-- [ ] Owner: re-apply branch protection / push rulesets on `main`.
+- [ ] Owner: apply branch protection on `main` **for the first time** — this is not a
+      re-application. Two constraints, or it breaks the flip it is meant to protect:
+      the ruleset **must allow the owner's direct push to `main`** (FW-9 pushes `main`
+      directly; FW-13/FW-15 commit directly) and **must not block `GITHUB_TOKEN` from
+      creating tags and releases** (`changesets/action` does both, and `release.yml`
+      grants `contents: write` for exactly that). **Safer still: do this after FW-9 and
+      FW-13**, so nothing on the critical path can be blocked by a ruleset that has
+      never been exercised.
 
 **Rollback:** reversible (flip back to private), but stars/watchers and fork
 links do **not** come back. Safe to pause here.
@@ -78,9 +139,13 @@ links do **not** come back. Safe to pause here.
 
 Provenance was removed in S4b; re-add it now that the repo is public.
 
-- [ ] Agent: add `NPM_CONFIG_PROVENANCE: "true"` to the `release` job `env` in
-      `.github/workflows/release.yml` (fold into the step-4 flip commit).
-      `release.yml` already declares `id-token: write`.
+- [ ] Agent: add `NPM_CONFIG_PROVENANCE: "true"` to **the `env:` block of the
+      `changesets/action` step** in `.github/workflows/release.yml` — beside
+      `GITHUB_TOKEN` and `NPM_TOKEN` at `:56-58` — not to a job-level `env`
+      (fold into the step-4 flip commit). `release.yml` already declares
+      `id-token: write`. **Note the file has two `env:` blocks**, not one: the other is
+      `FLARE_PERF_BASE_REF` on the `check:perf` step at `:44-45`. Anything that calls
+      one of them "the only env block in the file" is describing an older file.
 - [ ] Owner: confirm the release runner has **npm ≥ 11.5.1** (GitHub-hosted
       runner; add `npm i -g npm@latest` before publish if the pinned image is
       older). Provenance also requires a public repo (step 1) + public packages
@@ -109,10 +174,10 @@ and blocks once packages have dependents). **This is the point of no return.**
 
 ONE commit, tagged, containing every visibility flip so a single revert is
 possible right up until publish. Without the version-bump changeset, `changeset
-publish` would skip the 40 already-published scoped packages (only
+publish` would skip the 41 already-published scoped packages (only
 `create-flare-app` would ship) and no fresh provenance-stamped release would exist.
 
-- [ ] Agent: `packages/*/package.json` — 40× `"publishConfig": { "access":
+- [ ] Agent: `packages/*/package.json` — 41× `"publishConfig": { "access":
       "restricted" }` → `"public"`.
 - [ ] Agent: `.changeset/config.json` — `"access": "restricted"` → `"public"`.
 - [ ] Agent: `packages/create-flare-app/package.json` — `"private": true` →
@@ -131,13 +196,16 @@ is done).
 
 Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (41 scoped + `create-flare-app`, un-privated in step 4).
 
-- [ ] Owner: `bun run version` — runs `changeset version` **and**
-      `concretize-workspace-deps` (rewrites internal `workspace:*` → `^<version>`;
-      the S5 rehearsal proved this is required or tarballs ship broken deps).
-      *(The CI flip has `GITHUB_TOKEN`, so `@changesets/changelog-github` works. A
-      **local** re-run must set `GITHUB_TOKEN`, or transiently set
-      `.changeset/config.json` `"changelog": false`, or `changeset version` dies while
-      generating changelog entries — F2 caught this.)*
+- [ ] Owner: `bun run version` — a **four-stage chain**, not two
+      (`package.json:52`): `check:bump` → `changeset version` →
+      `scripts/concretize-workspace-deps.ts` → `bun install`. The omitted stages are the
+      ones that bite: **`check:bump` refuses an above-`patch` changeset that cites no
+      Accepted ADR**, and **`bun install` rewrites `bun.lock`, which must be committed
+      with the bump**. Concretize rewrites internal `workspace:*` → `^<version>`; the S5
+      rehearsal proved that is required or tarballs ship broken deps.
+      *(No `GITHUB_TOKEN` is needed locally. The earlier note claiming otherwise was
+      wrong and is struck at the F2 box above — the configured changelog generator is
+      the built-in `@changesets/cli/changelog`, which makes no network calls.)*
 - [ ] Owner: review the version bump + regenerated `CHANGELOG`s; commit.
 - [ ] Owner: publish through **CI only** — push `main` with `vars.ENABLE_RELEASE
       == 'true'` so `release.yml` runs `bun run release` with the step-2
@@ -146,9 +214,15 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (
       a laptop has no OIDC token) and silently ships a non-provenance release, so it
       is **not** the flip path — reserve local `bun run release` for the F2 verdaccio
       rehearsal, where provenance is not asserted.
-- [ ] Verify: no `workspace:`/`0.0.0` leaks in the published tarballs — fetch each with an
-      explicit `npm pack --registry https://registry.npmjs.org/ @flare-engine/<pkg>@0.4.0`
-      into an empty directory, never by installing in a tree that carries a lockfile. A
+- [ ] **Owner** (not agent — see the lane note below): no `workspace:`/`0.0.0` leaks in the
+      published tarballs — fetch each with an
+      explicit `npm pack --registry https://registry.npmjs.org/ @flare-engine/<pkg>@<version>`
+      into an empty directory, never by installing in a tree that carries a lockfile.
+      **`<version>` is what `packages/engine/package.json` reads after `bun run version`
+      (or `@latest`) — NOT `0.4.0`.** `0.4.0` is the *restricted freeze cut*, published
+      before the window and carrying no provenance; packing it verifies the wrong
+      artefact and the provenance assertion below would fail on a correct release. The
+      flip ships a fresh `0.4.x` public re-cut. A
       verdaccio-resolved lockfile or an ambient `registry=` hands you the local build, and
       it passes this check because concretize ran locally too (XR-11); provenance
       shows on the fresh release (`npm view @flare-engine/engine`).

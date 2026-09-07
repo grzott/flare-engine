@@ -34,7 +34,7 @@ function median(values: readonly number[]): number {
 
 function sharedField(
   runs: readonly MicrobenchReport[],
-  field: 'runtime' | 'platform' | 'cpuModel' | 'gitSha' | 'devFlag',
+  field: 'runtime' | 'platform' | 'cpuModel' | 'gitSha' | 'devFlag' | 'powerSchemeGuid',
   problems: string[],
 ): void {
   const seen = [...new Set(runs.map((r) => r[field] ?? 'unrecorded'))];
@@ -69,6 +69,7 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   sharedField(runs, 'cpuModel', problems);
   sharedField(runs, 'gitSha', problems);
   sharedField(runs, 'devFlag', problems);
+  sharedField(runs, 'powerSchemeGuid', problems);
 
   for (const run of runs) {
     if (run.devFlag === 'undeclared') {
@@ -201,7 +202,9 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
         : { guid: run.powerSchemeGuid, label: run.powerSchemeLabel ?? '' },
     );
     if (verdict.kind === 'refuse') {
-      problems.push(`run captured under a refused power plan — ${verdict.message.split('\n')[0]}`);
+      environment.push(
+        `run captured under a refused power plan — ${verdict.message.split('\n')[0]}`,
+      );
     }
   }
 
@@ -224,7 +227,7 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
       logical: run.hostLogicalCpus,
     });
     if (verdict.kind === 'refuse') {
-      problems.push(`run captured without CPU pinning — ${verdict.message.split('\n')[0]}`);
+      environment.push(`run captured without CPU pinning — ${verdict.message.split('\n')[0]}`);
     }
   }
 

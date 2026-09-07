@@ -8,6 +8,10 @@ import {
   EXPECTED_SCENARIOS,
 } from '../src/scenario-contract.js';
 
+// Not exported from power.ts (private there too — see power.test.ts). Mirrored
+// rather than imported: only the value, measured on this hardware, matters here.
+const POWER_SAVER = 'a1841308-3541-4fab-bc81-f71556f20b4a';
+
 /**
  * Builds a contract-satisfying report whose scenarios all report `medianNs`.
  * Every scenario in a run shares the value, so a run is identified by one
@@ -259,6 +263,31 @@ describe('aggregateRuns', () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.problems.join(' ')).toContain('does not record machine load');
+  });
+
+  test('refuses a window captured under the Power-Saver power plan', () => {
+    // Both runs share the same scheme so sharedField('powerSchemeGuid') stays
+    // silent — this isolates the judgePowerScheme refusal at the B29 guard.
+    const powerSaver = { powerSchemeGuid: POWER_SAVER, powerSchemeLabel: 'Power saver' };
+    const outcome = aggregateRuns([runAt(100, powerSaver), runAt(100, powerSaver)]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('Power saver'))).toBe(true);
+  });
+
+  test('refuses a window captured unpinned on a hybrid 24-core/32-thread host', () => {
+    // selected (32) >= logical (32): the capture used every logical processor,
+    // which judgeAffinity refuses on a detected-hybrid host.
+    const unpinned = {
+      affinityMask: '0xffffffff',
+      affinityCpus: 32,
+      hostPhysicalCores: 24,
+      hostLogicalCpus: 32,
+    };
+    const outcome = aggregateRuns([runAt(100, unpinned), runAt(100, unpinned)]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems.some((p) => p.includes('CPU pinning'))).toBe(true);
   });
 
   test('refuses a window where several runs straddle different machine states', () => {

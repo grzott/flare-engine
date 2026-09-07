@@ -43,4 +43,22 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 
 - Conventional Commits: `feat(math): add Vec2.lerp` — ≤72 chars, no body, no emoji, no Co-Authored-By trailer
 - One source per fact (no mirror rows, no duplicate changelogs)
-- Status: 0.2.1 on npm (restricted); **public OSS flip October 2026** — queue + full specs in [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)
+- Status: current line is `0.3.1` on npm (restricted) — read `CHANGELOG.md` rather than trusting a
+  version literal here; **public OSS flip October 2026** — queue + full specs in [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)
+
+### An audit finding's prose is an argument, not a measurement
+
+Findings docs (`docs/plans/*-audit-*.md`) carry a **Defect**, an **Impact**, a severity, and a
+**Fix** written by a *finder*, then **Verifier corrections** written by refuters. Only the defect
+claim is verified. The Impact paragraph, the severity and the suggested Fix routinely overstate — in
+Arc PFA four did, and two reached a consumer-facing document before a reviewer caught them.
+
+- **Verifier corrections beat the finder's text.** Where they disagree, the correction wins. Where
+  the verifiers are *silent* on a detail, that detail is unverified — not endorsed.
+- **Re-verify at HEAD before repeating a finding's claim in anything that ships** — a changeset, an
+  ADR, `api-specs.md`, a README. Those become the public changelog; a borrowed overstatement ships.
+- **Whoever touched the code drafts the consumer-facing prose.** A coordinator writing an ADR row or
+  a changeset from the finding text instead of from the implemented diff is the exact path that
+  produced all four. Edit that prose, do not author it.
+- A finding with **no refuter** (the "unverified" tables) gets its site confirmed at HEAD before any
+  code moves. If the premise is false, report it and change nothing.

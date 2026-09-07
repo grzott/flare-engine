@@ -32,6 +32,13 @@ observable behaviour identical.
 What is true today that forces a decision. Prefer measurements and `file:line` over assertion — the
 value of an ADR is that a reader six months out can check whether the premise still holds.
 
+**If the decision came out of an audit, do not inherit the finding's prose.** A finding's Impact
+paragraph and severity are the finder's argument, and its Verifier corrections may contradict them or
+be silent on the part you are about to repeat. Re-verify against HEAD and write what you confirmed.
+ADR-0004 shipped a claim about which input layout a bug affected that was simply wrong, borrowed from
+a finding, and it was caught in review rather than by anyone reading the ADR — the consumer-facing
+`Consumer impact` section is exactly where a borrowed overstatement does the most damage.
+
 ## Decision
 
 The decision, in the active voice. One paragraph.

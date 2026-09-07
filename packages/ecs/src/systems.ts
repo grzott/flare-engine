@@ -22,8 +22,10 @@ export interface CullBounds {
  */
 export function createMovementSystem(world: World): SystemDef {
   const q = world.query(Position, Velocity);
-  return defineSystem(q, (entities, dt, w) => {
-    for (const id of entities) {
+  return defineSystem(q, (query, dt, w) => {
+    const ids = query.entities;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]!;
       const pos = w.get(id, Position)!;
       const vel = w.get(id, Velocity)!;
       pos.x += vel.x * dt;
@@ -37,8 +39,8 @@ export function createMovementSystem(world: World): SystemDef {
  * Entities whose remaining reaches <= 0 are collected, then onExpire is called
  * for each AFTER the read loop.
  *
- * Deferred removal: destroying inside a live for…of over query.entities splices
- * the array mid-iteration and would skip entities. Collect first, act after.
+ * Deferred removal: destroying inside a live walk of query.entities swap-removes
+ * from the array mid-iteration and would skip entities. Collect first, act after.
  *
  * The scratch array is closure-owned and grow-only — zero steady-state alloc.
  *
@@ -56,9 +58,11 @@ export function createLifetimeSystem(
 ): SystemDef {
   const q = query ?? world.query(Lifetime);
   const scratch: number[] = [];
-  return defineSystem(q, (entities, dt, w) => {
+  return defineSystem(q, (query, dt, w) => {
     scratch.length = 0;
-    for (const id of entities) {
+    const ids = query.entities;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]!;
       const life = w.get(id, Lifetime)!;
       life.remaining -= dt;
       if (life.remaining <= 0) {
@@ -97,9 +101,11 @@ export function createBoundsCullSystem(
 ): SystemDef {
   const q = query ?? world.query(Position);
   const scratch: number[] = [];
-  return defineSystem(q, (entities, _dt, w) => {
+  return defineSystem(q, (query, _dt, w) => {
     scratch.length = 0;
-    for (const id of entities) {
+    const ids = query.entities;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]!;
       const pos = w.get(id, Position)!;
       if (
         pos.x < bounds.minX ||
@@ -126,8 +132,10 @@ export function createBoundsCullSystem(
  */
 export function createFollowerSystem(world: World): SystemDef {
   const q = world.query(Position, Follower);
-  return defineSystem(q, (entities, _dt, w) => {
-    for (const id of entities) {
+  return defineSystem(q, (query, _dt, w) => {
+    const ids = query.entities;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]!;
       const follower = w.get(id, Follower)!;
       const t = w.get(follower.target, Position);
       if (t === undefined) continue;
@@ -158,9 +166,11 @@ export function createOrphanCullSystem(
 ): SystemDef {
   const q = world.query(Follower);
   const scratch: number[] = [];
-  return defineSystem(q, (entities, _dt, w) => {
+  return defineSystem(q, (query, _dt, w) => {
     scratch.length = 0;
-    for (const id of entities) {
+    const ids = query.entities;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]!;
       const follower = w.get(id, Follower)!;
       if (!w.exists(follower.target)) {
         scratch.push(id);

@@ -312,10 +312,17 @@ export function stepShmup(
   state.hitBullets.length = 0;
   state.hitEnemies.length = 0;
 
-  for (const bId of state.bulletQuery) {
+  // Indexed walk over the live id arrays: `for...of` over a Query allocates an
+  // iterator per loop (and, on Hermes, a result object per entity), and this
+  // nest would pay that once per bullet per frame.
+  const bulletIds = state.bulletQuery.entities;
+  const enemyIds = state.enemyQuery.entities;
+  for (let b = 0; b < bulletIds.length; b++) {
+    const bId = bulletIds[b]!;
     const bPos = world.get(bId, Position);
     if (bPos === undefined) continue;
-    for (const eId of state.enemyQuery) {
+    for (let e = 0; e < enemyIds.length; e++) {
+      const eId = enemyIds[e]!;
       const ePos = world.get(eId, Position);
       if (ePos === undefined) continue;
       if (aabbOverlap(bPos.x, bPos.y, BULLET_HW, BULLET_HH, ePos.x, ePos.y, ENEMY_HW, ENEMY_HH)) {

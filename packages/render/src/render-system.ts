@@ -89,9 +89,11 @@ export function createRenderSystem(
   const entries: RenderEntry[] = [];
 
   return () => {
-    // Collect entities
+    // Collect entities — indexed walk over the live id array, no iterator.
     let i = 0;
-    for (const entityId of query) {
+    const ids = query.entities;
+    for (let n = 0; n < ids.length; n++) {
+      const entityId = ids[n]!;
       const sprite = world.get(entityId, spriteDef);
       if (!sprite) continue;
 

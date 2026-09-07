@@ -148,19 +148,21 @@ export class World {
       mask |= c.bit;
     }
     const q = new Query(mask, 0);
-    this.queries.push(q);
-
-    // Populate with existing entities
-    for (const [entityId, arch] of this.archetypes) {
-      q._check(entityId, arch);
-    }
-
+    this.register(q);
     return q;
   }
 
   /** Create a QueryBuilder for complex queries (with/without). */
   queryBuilder(): QueryBuilder {
-    return new _WorldQueryBuilder(this);
+    return new QueryBuilder((q) => this.register(q));
+  }
+
+  /** Track a query and populate it with the entities that already match. */
+  private register(q: Query): void {
+    this.queries.push(q);
+    for (const [entityId, arch] of this.archetypes) {
+      q._check(entityId, arch);
+    }
   }
 
   /**
@@ -215,32 +217,5 @@ export class World {
     for (const sys of this.systems) {
       sys.fn(this, dt);
     }
-  }
-
-  /** @internal Register a query for auto-update. */
-  _registerQuery(q: Query): void {
-    this.queries.push(q);
-    // Populate with existing entities
-    for (const [entityId, arch] of this.archetypes) {
-      q._check(entityId, arch);
-    }
-  }
-}
-
-/**
- * Internal query builder that auto-registers with a World.
- */
-class _WorldQueryBuilder extends QueryBuilder {
-  private world: World;
-
-  constructor(world: World) {
-    super();
-    this.world = world;
-  }
-
-  override build(): Query {
-    const q = super.build();
-    this.world._registerQuery(q);
-    return q;
   }
 }

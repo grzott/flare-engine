@@ -77,6 +77,9 @@ function createMockECS() {
     [Symbol.iterator](): IterableIterator<number> {
       return queryEntities.values();
     },
+    get entities(): readonly number[] {
+      return [...queryEntities];
+    },
     get count() {
       return queryEntities.size;
     },

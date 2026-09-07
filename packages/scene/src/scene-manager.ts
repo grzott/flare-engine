@@ -186,10 +186,7 @@ export class SceneManager {
     const factory = this._factories.get(name);
     if (!factory) return null;
 
-    scene = factory();
-    // Inject World and Camera
-    scene.world = new World();
-    scene.camera = new Camera2D();
+    scene = factory(new World(), new Camera2D());
     this._scenes.set(name, scene);
     return scene;
   }

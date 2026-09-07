@@ -28,9 +28,14 @@ export interface DocumentStoreOptions<T> {
 
 export interface DocumentStore<T> {
   /**
-   * Load from adapter. On first run (or corrupt data) calls parse(undefined)
-   * then onFirstRun, persists the result, and returns it. On subsequent loads
-   * migrates the stored data forward then calls parse on the result.
+   * Load from adapter. On first run, or when the stored data is unparseable
+   * JSON or not a valid envelope, calls parse(undefined) then onFirstRun,
+   * persists the result, and returns it. On subsequent loads migrates the
+   * stored data forward then calls parse on the result. If migration fails
+   * (the stored version is newer than this store's, or a migration throws),
+   * returns parse(undefined) (then onFirstRun) for this call only and does
+   * **not** persist — the stored document is left untouched so a build that
+   * can read it recovers the original data. `load()` never throws.
    */
   load(): Promise<T>;
   /**
@@ -81,13 +86,28 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
     await adapter.set(VERSION_KEY, String(version));
   }
 
-  function tryParseEnvelope(raw: string): unknown {
+  // 'malformed': raw was never a valid envelope (bad JSON, or wrong shape) —
+  // safe to overwrite with defaults, same as first-run.
+  // 'unmigratable': raw WAS a valid envelope but runMigrations threw (stored
+  // version newer than this store's, or a consumer migration threw). The
+  // document was readable; load() must not destroy it (F059).
+  type EnvelopeResult =
+    | { readonly kind: 'malformed' }
+    | { readonly kind: 'unmigratable' }
+    | { readonly kind: 'ok'; readonly data: unknown };
+
+  function tryParseEnvelope(raw: string): EnvelopeResult {
+    let parsed: unknown;
     try {
-      const parsed: unknown = JSON.parse(raw);
-      if (!isDocEnvelope(parsed)) return undefined;
-      return runMigrations(parsed.data, parsed.version, version, migrations);
+      parsed = JSON.parse(raw);
     } catch {
-      return undefined;
+      return { kind: 'malformed' };
+    }
+    if (!isDocEnvelope(parsed)) return { kind: 'malformed' };
+    try {
+      return { kind: 'ok', data: runMigrations(parsed.data, parsed.version, version, migrations) };
+    } catch {
+      return { kind: 'unmigratable' };
     }
   }
 
@@ -101,15 +121,19 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
         cached = doc;
         return doc;
       }
-      const migrated = tryParseEnvelope(raw);
-      if (migrated === undefined) {
-        let doc = parse(undefined);
-        if (onFirstRun) doc = onFirstRun(doc);
-        await persistRaw(doc);
+      const result = tryParseEnvelope(raw);
+      if (result.kind === 'ok') {
+        const doc = parse(result.data);
         cached = doc;
         return doc;
       }
-      const doc = parse(migrated);
+      let doc = parse(undefined);
+      if (onFirstRun) doc = onFirstRun(doc);
+      // Never persist over a document we could not migrate — only over one
+      // that was never a valid envelope to begin with.
+      if (result.kind === 'malformed') {
+        await persistRaw(doc);
+      }
       cached = doc;
       return doc;
     },
@@ -132,8 +156,13 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
     },
 
     async importJSON(json) {
-      const migrated = tryParseEnvelope(json);
-      const doc = parse(migrated === undefined ? undefined : migrated);
+      // Unlike load(), an explicit import always persists its result (even a
+      // parse(undefined) fallback) — the caller supplied this payload directly
+      // and expects it to replace whatever was stored, not to be silently
+      // preserved. F059 scopes the never-persist-over-unreadable-data rule to
+      // the passive load() path.
+      const result = tryParseEnvelope(json);
+      const doc = parse(result.kind === 'ok' ? result.data : undefined);
       cached = doc;
       await persistRaw(doc);
       return doc;

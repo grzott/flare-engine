@@ -118,6 +118,7 @@ mock.module('react-native', () => ({
 }));
 
 mock.module('react-native-safe-area-context', () => ({
+  SafeAreaInsetsContext: 'SafeAreaInsetsContext',
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 

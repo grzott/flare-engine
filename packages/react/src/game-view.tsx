@@ -9,11 +9,11 @@ import { SceneManager } from '@flare-engine/scene';
 import type { CanvasRef, SkImage, SkPicture, SkSurface } from '@shopify/react-native-skia';
 import { Canvas, Image, RuntimeShader, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import type React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { scheduleOnUI } from 'react-native-worklets';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
@@ -134,9 +134,9 @@ export interface GameViewProps {
   style?: ViewStyle;
   /** Optional overlay children (e.g. VirtualJoystick, VirtualButton). */
   children?: React.ReactNode;
-  /** Explicit safe-area insets. If omitted, resolved from react-native-safe-area-context
-   *  via `useSafeAreaInsets()` (requires a `<SafeAreaProvider>` ancestor; falls back to
-   *  zero insets when no provider is mounted). */
+  /** Explicit safe-area insets. If omitted, resolved via `useContext(SafeAreaInsetsContext)`
+   *  from react-native-safe-area-context; falls back to `{ top: 0, right: 0, bottom: 0,
+   *  left: 0 }` when no `<SafeAreaProvider>` ancestor is mounted. */
   safeArea?: SafeArea;
 }
 
@@ -154,8 +154,10 @@ export function GameView({
   children,
   safeArea,
 }: GameViewProps): React.ReactElement {
-  const insets = useSafeAreaInsets();
-  const resolvedSafeArea: SafeArea = safeArea ?? insets;
+  // useContext must run unconditionally (hook rules), even when `safeArea` makes its
+  // value unused below — it never throws, unlike useSafeAreaInsets() without a provider.
+  const contextInsets = useContext(SafeAreaInsetsContext);
+  const resolvedSafeArea: SafeArea = safeArea ?? contextInsets ?? ZERO_INSETS;
   const canvasRef = useCanvasRef();
   const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>(EMPTY_PASSES);
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
@@ -403,6 +405,9 @@ function returnTrue(): boolean {
 /** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses
  *  to this so the `passes` state never changes for a postfx-free GameView. */
 const EMPTY_PASSES: readonly PostFxPassDescriptor[] = [];
+
+/** Fallback insets when no `<SafeAreaProvider>` ancestor supplies a context value. */
+const ZERO_INSETS: SafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
 
 /**
  * Shallow structural equality of two pass lists. The signature is length +

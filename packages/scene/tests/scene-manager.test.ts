@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import type { Scene } from '../src/scene.js';
+import { World } from '@flare-engine/ecs';
+import { Camera2D } from '@flare-engine/render';
+import type { Scene, SceneFactory } from '../src/scene.js';
 import { SceneManager } from '../src/scene-manager.js';
 import { fadeTransition } from '../src/transition.js';
 
-function createTestScene(name: string, log: string[]): Scene {
-  return {
+function createTestScene(name: string, log: string[]): SceneFactory {
+  return (world, camera) => ({
     name,
-    world: null!,
-    camera: null!,
+    world,
+    camera,
     onPreload() {
       log.push(`${name}:preload`);
     },
@@ -29,7 +31,7 @@ function createTestScene(name: string, log: string[]): Scene {
     onDestroy() {
       log.push(`${name}:destroy`);
     },
-  };
+  });
 }
 
 describe('SceneManager', () => {
@@ -42,7 +44,7 @@ describe('SceneManager', () => {
   it('registers and navigates to a scene', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('menu', () => createTestScene('menu', log));
+    mgr.register('menu', createTestScene('menu', log));
     await mgr.go('menu');
     expect(mgr.current?.name).toBe('menu');
     expect(mgr.stackSize).toBe(1);
@@ -52,16 +54,17 @@ describe('SceneManager', () => {
   it('passes data to onEnter via go', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('play', () => createTestScene('play', log));
+    mgr.register('play', createTestScene('play', log));
     await mgr.go('play', 'level1');
     expect(log).toContain('play:enter:level1');
   });
 
-  it('injects World and Camera on creation', async () => {
+  it('passes a real World and Camera2D into the factory', async () => {
     const mgr = new SceneManager();
     let capturedScene: Scene | undefined;
-    mgr.register('test', () => {
-      const s = createTestScene('test', []);
+    const factory = createTestScene('test', []);
+    mgr.register('test', (world, camera) => {
+      const s = factory(world, camera);
       capturedScene = s;
       return s;
     });
@@ -70,11 +73,32 @@ describe('SceneManager', () => {
     expect(capturedScene!.camera).toBeDefined();
   });
 
+  it('a factory that pre-populates its own World keeps it — not overwritten by the manager (F069)', async () => {
+    const mgr = new SceneManager();
+    const ownWorld = new World();
+    const preSpawned = ownWorld.spawn(); // entity added before the scene is returned
+    mgr.register('populated', () => ({
+      name: 'populated',
+      world: ownWorld,
+      camera: new Camera2D(),
+    }));
+
+    await mgr.go('populated');
+
+    // The exact World instance the factory built and populated must survive —
+    // not be silently replaced by a fresh manager-created one.
+    expect(mgr.current?.world).toBe(ownWorld);
+    // A fresh replacement World would restart its id counter; continuity here
+    // (rather than a repeat of preSpawned's id) proves it's the same live world.
+    const next = mgr.current?.world.spawn();
+    expect(next).not.toBe(preSpawned);
+  });
+
   it('calls onExit and onDestroy when switching scenes', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
     await mgr.go('a');
     log.length = 0;
     await mgr.go('b');
@@ -84,7 +108,7 @@ describe('SceneManager', () => {
   it('update calls onUpdate and onDraw on current scene', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('game', () => createTestScene('game', log));
+    mgr.register('game', createTestScene('game', log));
     await mgr.go('game');
     log.length = 0;
     mgr.update(0.016);
@@ -108,8 +132,8 @@ describe('SceneManager — stack', () => {
   it('pushes a scene onto the stack', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
     await mgr.go('a');
     log.length = 0;
     await mgr.push('b');
@@ -121,8 +145,8 @@ describe('SceneManager — stack', () => {
   it('passes data when pushing', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
     await mgr.go('a');
     log.length = 0;
     await mgr.push('b', 'hello');
@@ -132,8 +156,8 @@ describe('SceneManager — stack', () => {
   it('pops a scene and resumes the one below', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
     await mgr.go('a');
     await mgr.push('b');
     log.length = 0;
@@ -146,7 +170,7 @@ describe('SceneManager — stack', () => {
   it('does not pop the last scene', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
+    mgr.register('a', createTestScene('a', log));
     await mgr.go('a');
     log.length = 0;
     mgr.pop();
@@ -157,9 +181,9 @@ describe('SceneManager — stack', () => {
   it('go clears the entire stack', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
-    mgr.register('c', () => createTestScene('c', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
     await mgr.go('a');
     await mgr.push('b');
     log.length = 0;
@@ -179,8 +203,8 @@ describe('SceneManager — transitions', () => {
     const log: string[] = [];
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
     await mgr.go('a');
     log.length = 0;
 
@@ -206,8 +230,8 @@ describe('SceneManager — transitions', () => {
   it('reports correct transition progress', async () => {
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => createTestScene('a', []));
-    mgr.register('b', () => createTestScene('b', []));
+    mgr.register('a', createTestScene('a', []));
+    mgr.register('b', createTestScene('b', []));
     await mgr.go('a');
     await mgr.go('b');
 
@@ -219,7 +243,7 @@ describe('SceneManager — transitions', () => {
   it('no transition when first scene is loaded', async () => {
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => createTestScene('a', []));
+    mgr.register('a', createTestScene('a', []));
     await mgr.go('a');
     expect(mgr.isTransitioning).toBe(false);
   });
@@ -229,8 +253,8 @@ describe('SceneManager — destroy', () => {
   it('destroys all scenes on destroy', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => createTestScene('b', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
     await mgr.go('a');
     await mgr.push('b');
     log.length = 0;
@@ -246,7 +270,7 @@ describe('SceneManager — destroy', () => {
   it('allows re-use after destroy', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('a', () => createTestScene('a', log));
+    mgr.register('a', createTestScene('a', log));
     await mgr.go('a');
     mgr.destroy();
     log.length = 0;
@@ -262,8 +286,8 @@ describe('SceneManager — restart', () => {
   it('instant path: go(sameScene) builds fresh World and instance', async () => {
     const mgr = new SceneManager();
     const instances: Scene[] = [];
-    mgr.register('game', () => {
-      const s = createTestScene('game', []);
+    mgr.register('game', (world, camera) => {
+      const s = createTestScene('game', [])(world, camera);
       instances.push(s);
       return s;
     });
@@ -288,7 +312,7 @@ describe('SceneManager — restart', () => {
   it('instant path: restart calls full lifecycle on new instance', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();
-    mgr.register('game', () => createTestScene('game', log));
+    mgr.register('game', createTestScene('game', log));
 
     await mgr.go('game');
     log.length = 0;
@@ -301,8 +325,8 @@ describe('SceneManager — restart', () => {
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
     const instances: Scene[] = [];
-    mgr.register('game', () => {
-      const s = createTestScene('game', []);
+    mgr.register('game', (world, camera) => {
+      const s = createTestScene('game', [])(world, camera);
       instances.push(s);
       return s;
     });
@@ -328,13 +352,13 @@ describe('SceneManager — restart', () => {
     const instances: Scene[] = [];
     const initCounts: number[] = [];
 
-    mgr.register('game', () => {
+    mgr.register('game', (world, camera) => {
       const idx = instances.length;
       initCounts.push(0);
       const s: Scene = {
         name: 'game',
-        world: null!,
-        camera: null!,
+        world,
+        camera,
         onInit() {
           initCounts[idx] = (initCounts[idx] ?? 0) + 1;
         },
@@ -368,10 +392,10 @@ describe('SceneManager — async preload', () => {
     });
 
     const mgr = new SceneManager();
-    mgr.register('slow', () => ({
+    mgr.register('slow', (world, camera) => ({
       name: 'slow',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload() {
         log.push('slow:preload');
         return preloadPromise;
@@ -402,11 +426,11 @@ describe('SceneManager — async preload', () => {
 
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => ({
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', (world, camera) => ({
       name: 'b',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload() {
         log.push('b:preload');
         return preloadPromise;
@@ -447,11 +471,11 @@ describe('SceneManager — async preload', () => {
     const log: string[] = [];
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => createTestScene('a', log));
-    mgr.register('b', () => ({
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', (world, camera) => ({
       name: 'b',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload(): Promise<void> {
         return Promise.reject(new Error('asset fail'));
       },
@@ -501,8 +525,8 @@ describe('SceneManager — dev warning', () => {
   it('warns with unknown scene name and registered names', async () => {
     const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const mgr = new SceneManager();
-    mgr.register('menu', () => createTestScene('menu', []));
-    mgr.register('play', () => createTestScene('play', []));
+    mgr.register('menu', createTestScene('menu', []));
+    mgr.register('play', createTestScene('play', []));
 
     await mgr.go('ghost');
 
@@ -536,18 +560,18 @@ describe('SceneManager — overlapping transitions / stall fix', () => {
 
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => ({ name: 'a', world: null!, camera: null! }));
+    mgr.register('a', (world, camera) => ({ name: 'a', world, camera }));
     // b has a never-resolving preload, simulating a long concurrent load
-    mgr.register('b', () => ({
+    mgr.register('b', (world, camera) => ({
       name: 'b',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload: () => new Promise<void>(() => {}),
     }));
-    mgr.register('c', () => ({
+    mgr.register('c', (world, camera) => ({
       name: 'c',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload: () => cPreload,
     }));
 
@@ -582,17 +606,17 @@ describe('SceneManager — overlapping transitions / stall fix', () => {
 
     const mgr = new SceneManager();
     mgr.setTransition(fadeTransition(1));
-    mgr.register('a', () => ({ name: 'a', world: null!, camera: null! }));
-    mgr.register('b', () => ({
+    mgr.register('a', (world, camera) => ({ name: 'a', world, camera }));
+    mgr.register('b', (world, camera) => ({
       name: 'b',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload: () => bPreload,
     }));
-    mgr.register('c', () => ({
+    mgr.register('c', (world, camera) => ({
       name: 'c',
-      world: null!,
-      camera: null!,
+      world,
+      camera,
       onPreload: () => cPreload,
       onEnter: () => log.push('c:enter'),
     }));

@@ -167,6 +167,88 @@ describe('createDocumentStore — corrupt-data fallback', () => {
   });
 });
 
+describe('createDocumentStore — F059: never persist over an unmigratable document', () => {
+  test('stored version newer than the app: load() returns defaults but leaves the stored bytes byte-identical', async () => {
+    const adapter = createMemoryAdapter();
+    const originalRaw = JSON.stringify({
+      version: 99,
+      data: { name: 'precious', count: 12345, active: true },
+    });
+    await adapter.set('test:doc', originalRaw);
+
+    const store = makeStore(adapter); // version: 1 — stored version 99 is "backwards"
+    const doc = await store.load();
+
+    expect(doc).toEqual(defaultDoc());
+    // The load-bearing assertion: the adapter's bytes must be untouched, not
+    // merely "some document survives" — byte-identical to what was stored.
+    expect(await adapter.get('test:doc')).toBe(originalRaw);
+  });
+
+  test('a throwing consumer migration: load() returns defaults but leaves the stored bytes byte-identical', async () => {
+    const adapter = createMemoryAdapter();
+    const originalRaw = JSON.stringify({
+      version: 1,
+      data: { name: 'precious', count: 7, active: false },
+    });
+    await adapter.set('test:doc', originalRaw);
+
+    const store = createDocumentStore<TestDoc>({
+      adapter,
+      key: 'test:doc',
+      version: 2,
+      migrations: [
+        {
+          version: 2,
+          migrate: () => {
+            throw new Error('migration bug');
+          },
+        },
+      ],
+      parse: parseDoc,
+    });
+    const doc = await store.load();
+
+    expect(doc).toEqual(defaultDoc());
+    expect(await adapter.get('test:doc')).toBe(originalRaw);
+  });
+
+  test('unmigratable fallback is not cached as if it were persisted — a later store that can read it recovers the original', async () => {
+    const adapter = createMemoryAdapter();
+    const originalRaw = JSON.stringify({
+      version: 99,
+      data: { name: 'precious', count: 12345, active: true },
+    });
+    await adapter.set('test:doc', originalRaw);
+
+    const rollback = makeStore(adapter); // version 1, can't read version 99
+    await rollback.load();
+
+    // A later run with a store that CAN read version 99 (e.g. reinstalling the
+    // newer build) recovers the original data untouched.
+    const recovered = createDocumentStore<TestDoc>({
+      adapter,
+      key: 'test:doc',
+      version: 99,
+      parse: parseDoc,
+    });
+    const doc = await recovered.load();
+    expect(doc).toEqual({ name: 'precious', count: 12345, active: true });
+  });
+
+  test('malformed (non-envelope) data is still persisted over, unlike an unmigratable envelope', async () => {
+    const adapter = createMemoryAdapter();
+    await adapter.set('test:doc', 'not-valid-json{{{');
+
+    const store = makeStore(adapter);
+    await store.load();
+
+    // Unlike the unmigratable case, malformed data was never readable to begin
+    // with, so the existing behavior (persist the defaults) is unchanged.
+    expect(await adapter.get('test:doc')).not.toBe('not-valid-json{{{');
+  });
+});
+
 describe('createDocumentStore — exportJSON / importJSON', () => {
   test('exportJSON before load() throws', () => {
     expect(() => makeStore().exportJSON()).toThrow('called before load()');

@@ -37,5 +37,11 @@ export interface Scene {
   onDestroy?(): void;
 }
 
-/** Factory function type for creating scenes. */
-export type SceneFactory = () => Scene;
+/**
+ * Factory function type for creating scenes. Receives the `World` and
+ * `Camera2D` the manager created for this scene instance, so a factory can
+ * populate the world it will actually get before returning it as part of the
+ * `Scene`. A zero-argument `() => Scene` factory (ignoring both parameters)
+ * remains a valid `SceneFactory`.
+ */
+export type SceneFactory = (world: World, camera: Camera2D) => Scene;

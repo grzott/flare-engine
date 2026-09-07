@@ -189,8 +189,18 @@ mock.module('react-native-reanimated', () => ({
 
 const RN_SAC_INSETS: SafeArea = { top: 44, right: 0, bottom: 34, left: 0 };
 
+// F079: useSafeAreaInsets() throws "No safe area value available" when no
+// <SafeAreaProvider> ancestor is mounted — which is always true in this
+// no-real-renderer harness. GameView must never call it; it reads
+// SafeAreaInsetsContext via useContext instead, which the 'react' mock above
+// resolves to `_useContextReturn` (simulating what a real provider would set).
 mock.module('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => RN_SAC_INSETS,
+  SafeAreaInsetsContext: 'SafeAreaInsetsContext',
+  useSafeAreaInsets: () => {
+    throw new Error(
+      'No safe area value available. Make sure you are rendering `<SafeAreaProvider>` at the top of your app.',
+    );
+  },
 }));
 
 const safeAreaModule = await import('../src/safe-area.js');
@@ -233,14 +243,16 @@ function findSafeAreaValues(): SafeArea[] {
 }
 
 describe('GameView safe-area integration', () => {
-  it('T3: resolves RN-SAC insets when no safeArea prop given', () => {
+  it('T3: resolves context insets (provider mounted) when no safeArea prop given', () => {
+    _useContextReturn = RN_SAC_INSETS;
     gameViewModule.GameView({});
     const values = findSafeAreaValues();
     expect(values.length).toBeGreaterThan(0);
     expect(values[0]).toEqual(RN_SAC_INSETS);
   });
 
-  it('T4: uses explicit safeArea prop, ignoring RN-SAC insets', () => {
+  it('T4: uses explicit safeArea prop, ignoring context insets', () => {
+    _useContextReturn = RN_SAC_INSETS;
     const explicit: SafeArea = { top: 99, right: 1, bottom: 88, left: 2 };
     gameViewModule.GameView({ safeArea: explicit });
     const values = findSafeAreaValues();
@@ -254,6 +266,30 @@ describe('GameView safe-area integration', () => {
     const values = findSafeAreaValues();
     expect(values.length).toBeGreaterThan(0);
     expect(values[0]).toEqual(fallback);
+  });
+});
+
+// F079: useSafeAreaInsets() throws unconditionally without a <SafeAreaProvider>
+// ancestor, and the mocked hook above reproduces that throw. Pre-fix, GameView
+// called it unconditionally, so both cases below threw before a single
+// assertion ran. Post-fix, GameView never calls it — it reads
+// SafeAreaInsetsContext via useContext, which is null here (no provider).
+describe('GameView safe-area — no provider (F079)', () => {
+  it('no provider + explicit safeArea: mounts without throwing and uses the explicit value', () => {
+    _useContextReturn = null;
+    const explicit: SafeArea = { top: 20, right: 0, bottom: 0, left: 0 };
+    expect(() => gameViewModule.GameView({ safeArea: explicit })).not.toThrow();
+    const values = findSafeAreaValues();
+    expect(values.length).toBeGreaterThan(0);
+    expect(values[0]).toEqual(explicit);
+  });
+
+  it('no provider + no safeArea: mounts without throwing and falls back to zero insets', () => {
+    _useContextReturn = null;
+    expect(() => gameViewModule.GameView({})).not.toThrow();
+    const values = findSafeAreaValues();
+    expect(values.length).toBeGreaterThan(0);
+    expect(values[0]).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
   });
 });
 

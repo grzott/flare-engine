@@ -12,15 +12,11 @@ bun add @flare-engine/scene
 
 ```ts
 import { SceneManager, fadeTransition } from '@flare-engine/scene';
-import type { World } from '@flare-engine/ecs';
-import type { Camera2D } from '@flare-engine/render';
-
-// world and camera are injected by SceneManager after the factory runs
-declare const world: World;
-declare const camera: Camera2D;
 
 const manager = new SceneManager();
-manager.register('menu', () => ({
+// SceneManager passes the World and Camera2D it created for this scene into
+// the factory — a zero-argument factory would also be a valid SceneFactory.
+manager.register('menu', (world, camera) => ({
   name: 'menu',
   world,
   camera,

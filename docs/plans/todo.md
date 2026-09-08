@@ -22,7 +22,16 @@ Routing: `packages/**` → **engine-builder**; rows marked `[MT]` touch root doc
 CW7 — a minor would open 0.4.0 early, and the launch cut is 0.4.0); minor once that line opens,
 **never major**.
 
-- **XR-1 — reanimated peer truth + shared-value scene capture** (P0 **launch-blocker**, ~3 sessions:
+- **XR-1 — reanimated peer truth + shared-value scene capture** — **SUPERSEDED 2026-09-05 by XR-13
+  and ADR-0002.** The peer floor this row argued for (`>=3.19.1`, keeping Reanimated 3 and the
+  old-architecture claim alive) was reversed: `@flare-engine/react` now declares
+  `react-native-reanimated >=4.0.0` **and** `react-native-worklets >=0.7.0`, and the capture
+  dispatches through `scheduleOnUI`, not `runOnUI`. **Every `>=3.19.1` below is the historical
+  argument, not the shipped floor** — verified 2026-09-08 at HEAD `7f32ad4` against
+  `packages/react/package.json`. The row's dated session records are left as written.
+  **No longer a launch-blocker** either — see the residue row below, which downgraded it on
+  2026-09-05; only verification half (b) is still owed, and it is owner-owed.
+  (originally P0 launch-blocker, ~3 sessions:
   XR-1a source+tests+desktop-negative; XR-1b vehicle build — `create-flare-app` scaffold → Gradle →
   device install; XR-1c device validation — logcat render-count, `retentionDepth: 2` soak, and the
   native `nonTextureImage: false` sampling assumption).
@@ -239,9 +248,12 @@ design; override debt must be zero before Oct 5.
   trustworthy.
   **DONE 2026-09-07** (session 321). Power-plan and affinity refusals now reach a return via `environment`; `powerSchemeGuid` added as a shared field. Two mutation-verified refusal tests. Review clean.
 - **CR-1+CR-2 — the pending changesets tell two opposite stories** (P0, [MT], 1 session).
-  `.changeset/xr1-old-arch-claim-qualified.md` still ships ">=3.19.1, old-arch intended" — the story XR-13 and
-  ADR-0002 reversed. Delete it (fold any surviving fact into `xr13-worklets-scheduleonui.md`), confirm
-  `check:changeset` still covers engine + react, and stamp "Superseded 2026-09-05 by XR-13" on the XR-1 row.
+  **DONE 2026-09-08.** `.changeset/xr1-old-arch-claim-qualified.md` shipped ">=3.19.1, old-arch
+  intended" — the story XR-13 and ADR-0002 reversed. It was deleted in `5638e4b`
+  (`chore(changeset): drop the superseded old-arch changeset`); `bun run check:changeset` at
+  `7f32ad4` reports **OK — 23 changed package(s), all covered**, so engine + react are still
+  covered; and the XR-1 row above now carries the "Superseded 2026-09-05 by XR-13" stamp this row
+  asked for.
   This ships to consumers in the 0.4.0 changelog if it is not fixed.
   **DONE 2026-09-07.** The changeset is deleted; the one fact worth keeping — that no scaffolder template
   could ever build an old-architecture app, so the dropped support was never testable — is folded into

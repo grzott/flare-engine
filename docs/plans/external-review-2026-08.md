@@ -122,7 +122,7 @@ returns nothing. The portfolio's fact table already carries this as
 
 | Fact | Evidence |
 | --- | --- |
-| Zero worklets anywhere | `grep -rl "react-native-reanimated\|'worklet'\|useSharedValue\|runOnUI" packages/*/src` → no matches across all 41 packages |
+| Zero worklets anywhere | `grep -rl "react-native-reanimated\|'worklet'\|useSharedValue\|runOnUI" packages/*/src` → no matches across all 41 packages. **[2026-09-08] No longer true, by decision:** `packages/react/src/game-view.tsx` now carries one `'worklet'` and two Reanimated shared values. See ADR-0001 and ADR-0002. |
 | The loop drives on `requestAnimationFrame` | `packages/core/src/game-loop.ts:142` |
 | React re-renders per frame on native | `packages/react/src/game-view.tsx:209` (E-R1) |
 | rn-skia peer floor | `packages/react/package.json:56` → `">=2.0.0"` |
@@ -151,7 +151,7 @@ There is no `docs/decisions/` or `docs/adr/` in this repo; the closest conventio
 1. **Context.** RN's two viable paths in 2026: JS-thread `requestAnimationFrame` versus
    Reanimated worklets on the UI thread. What each costs in peer surface, debuggability,
    determinism, and web/native code sharing.
-2. **Decision.** JS-thread `rAF`, imperative Skia capture, no Reanimated peer.
+2. **Decision.** JS-thread `rAF`, imperative Skia capture, no Reanimated peer. **[2026-09-08] The last clause was reversed** — the native capture moved to a UI-thread worklet and Reanimated + `react-native-worklets` are now required peers of `@flare-engine/react` (ADR-0001, then ADR-0002). The JS-thread `rAF` half stands. This document records the August position; do not quote its "no Reanimated peer" as current.
 3. **Why.** The honest reasons, including the ones that are about the project rather than the
    technology — one code path for web and native, a testable pure-TS loop that runs under Bun with
    no RN runtime (this is why the engine has 2,887 tests and PT has 2,522), and determinism, which

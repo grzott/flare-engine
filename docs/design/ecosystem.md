@@ -99,7 +99,10 @@ None of these run on React Native. All are web-only.
 ### Atlas API (Primary game rendering path)
 
 - Renders N sprites in **single GPU draw call** regardless of count
-- `useRSXformBuffer` — transforms computed on UI thread as worklet (no JS thread)
+- `useRSXformBuffer` — transforms computed on UI thread as worklet (no JS thread). **Flare does not
+  use this API.** This section documents what Skia offers, not what the engine adopted; Flare computes
+  transforms on the JS thread and batches through `drawAtlas`. See [architecture.md](architecture.md)
+  § Rendering Pipeline. (Noted 2026-09-08.)
 - Official example: 150 sprites with gesture-driven animation
 - Realistic estimate: **500-2000 sprites at 60fps** on modern phones
 

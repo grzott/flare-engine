@@ -6,12 +6,12 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ---
 
-## State (2026-07-03; version + publish facts refreshed 2026-09-01)
+## State (2026-07-03; version + publish facts refreshed 2026-09-01; harness reconciliation 2026-09-08)
 
 **Positioning (2026-07-03):** public framing = "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; not "the first RN game engine", not a Unity/Godot/Unreal competitor. Games (Pan Tvardowski, Berek, a planned platformer) are showcases/dogfooding.
 **License (2026-07-03 owner decision):** engine relicenses MIT → Apache-2.0 before the flip (patent grant + §6 name reservation); games licensed separately (PT = PolyForm Noncommercial). Owning row: **OSS-E2** (road-to-oss §16) — full scope is 41 per-package LICENSE files + 41 manifests + NOTICE + TRADEMARK.md + prose, not just the root LICENSE. license-compat is clean (zero copyleft). Name collision is LIVE (flarerpg's `flare-engine` shipped v1.15 2026-05).
 
-**Engine:** Feature-complete. **Current line `0.3.1` (2026-08-27, `516d313`)** — lockstep across all **42** package dirs (**41** scoped + `create-flare-app`, which is `private: true` and versioned but never published). `0.3.0` was release N, the consumer-enablement cut (2026-08-25, `905d4d4`, 51 changesets); `0.3.1` followed with the CW7 consumer-needs fixes + the physics spatial hash. **All 41 scoped packages are on npm as `restricted`, not public** — verified 2026-08-26 by authenticated `npm view` against unauthenticated 404s. `@flare-engine/dynamics` (DYN-1, 2026-08-16) first shipped in `0.3.0`, as planned; `simulation` (XP6), `progression` (XP8), `haptics` and `render-web` have shipped since `0.2.1`. **The Oct 5 freeze cut is `0.4.0`** (owner version decision 2026-08-18), and the public flip is what makes any of it public.
+**Engine:** Feature-complete. **Current line `0.3.1` (2026-08-28, `516d313`)** — lockstep across all **42** package dirs (**41** scoped + `create-flare-app`, which is `private: true` and versioned but never published). `0.3.0` was release N, the consumer-enablement cut (2026-08-25, `905d4d4`, 51 changesets); `0.3.1` followed with the CW7 consumer-needs fixes + the physics spatial hash. **All 41 scoped packages are on npm as `restricted`, not public** — verified 2026-08-26 by authenticated `npm view` against unauthenticated 404s. `@flare-engine/dynamics` (DYN-1, 2026-08-16) first shipped in `0.3.0`, as planned; `simulation` (XP6), `progression` (XP8), `haptics` and `render-web` have shipped since `0.2.1`. **The Oct 5 freeze cut is `0.4.0`** (owner version decision 2026-08-18), and the public flip is what makes any of it public.
 **Pan Tvardowski:** **Extracted to its own repo 2026-06-10** — [github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski) (history-preserving split, 405 commits, `monorepo-archive` boundary tag). Consumes the engine from npm; pins `^0.3.0` as of the 2026-08-25 consumer-needs audit (which is why the CW7 fixes shipped as patch `0.3.1`, not a minor). Feature-complete since 2026-04-28; launch tier owner-managed in that repo.
 **Active focus:** **Road to OSS — the October 2026 public flip.** Single roadmap + full row specs: [road-to-oss-2026-09.md](road-to-oss-2026-09.md). Queue: `todo.md` Arc OSS. Freeze Oct 5 → two-week owner manual-test window Oct 5–18 → flip week Oct 19–23.
 **Pre-flip audit (2026-09-07):** the last broad audit before the flip is done — 90 verified code findings and 183 corpus findings in [pre-flip-audit-2026-09-findings.md](pre-flip-audit-2026-09-findings.md), remediation queued as `todo.md` **Arc PFA** (pre-flip, published-surface only) and **Arc HYG12–21** (post-flip). Its §4.3 capacity arithmetic says the pre-freeze work does **not** fit in the remaining ~20 sessions and names the cuts. Post-flip module proposals — ECS-128, an open PostFX effect registry, `flare sprite-bank` — are in [roadmap-post-flip.md](roadmap-post-flip.md); nothing there is scheduled.
@@ -55,9 +55,9 @@ Canonical end-to-end reference + integration smoke test, now at [github.com/grzo
 | Element | Count | Notes |
 |---|---|---|
 | Zones | 8 | ~38 min campaign |
-| Mini-bosses | 4 | Zones 2, 4, 6, 7 |
+| Mini-bosses | 7 | `mb-01`..`mb-07` in PT's `src/config/zones.ts`, re-measured 2026-09-08 at PT `cebc8a2`. **Was 4 here** ("Zones 2, 4, 6, 7") and had been stale since PT went to its own repo. |
 | Bosses | 8 | One per zone; Z1–4 = 2 phases, Z5–8 = 3 phases |
-| Enemy types | 12 | Polish folklore |
+| Enemy types | 12 — **stale, not re-measured** | Polish folklore. PT's own source pointer records **more than 12** as of 2026-08-30 (a gale-wisp flier, a penitent flank-shield and a devils-stone turret were added). Not re-derived here on 2026-09-08 because the count has to come from PT's `src/config/enemy-specs.ts`, and this repo does not own that number. Re-measure there before citing it. |
 | Weapons | 4 | 3 upgrade levels each |
 | Player ships | 3 | Unlocked via progression |
 

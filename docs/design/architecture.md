@@ -199,9 +199,43 @@ Physics always runs at fixed rate (default 60Hz). Rendering interpolates between
 6. Debug overlays (if __DEV__)
 ```
 
-Two modes:
+**Runtime model.** The simulation runs on the JS thread, driven by
+`requestAnimationFrame` with a fixed-step accumulator, an interpolation `alpha`
+and a `maxDt` clamp (default 0.25 s) — `packages/core/src/game-loop.ts`. Every
+frame ends by recording an `SkPicture` (`bridge.endFrame()`), and the two targets
+then diverge — `packages/react/src/game-view.tsx`:
 
-- **Retained (Atlas)** — fixed entity sprites, transforms via `useRSXformBuffer` worklet on UI thread
+- **Web** captures on the JS thread, because the web has one thread and the
+  capture is same-context by construction. `createSceneCapture(...).capture(pic, …)`
+  writes the resulting `SkImage` straight into a shared value.
+- **Native** hops the capture to the UI thread: `scheduleOnUI(captureSceneOnUI, …)`
+  from `react-native-worklets`. `captureSceneOnUI` is a `'worklet'` that caches an
+  offscreen `SkSurface` keyed on pixel size, draws the picture into it, flushes and
+  snapshots. This is **ADR-0002** (`docs/design/adr-0002-worklets-migration-and-new-arch-floor.md`),
+  which also sets the New Architecture floor and replaced Reanimated's deprecated,
+  curried `runOnUI` — `runOnUI(fn)` allocated a wrapper closure every frame inside
+  `onPreRender`, the one place this repo forbids allocation.
+
+The scene image lands in a Reanimated `SharedValue<SkImage>` that a Skia `<Image>`
+reads directly, so **the per-frame path does not go through React state.** React
+state is only touched when the post-FX pass list or the viewport size actually
+changes, both guarded against redundant sets.
+
+> **The engine does not use `useRSXformBuffer`, and never has.** Earlier revisions
+> of this document said the retained path computed "transforms via `useRSXformBuffer`
+> worklet on UI thread". That call does not appear in any of the 41 scoped packages,
+> and transforms are computed on the JS thread in `ctx.batch.flush(bridge.drawAtlas, …)`.
+> `useRSXformBuffer` is a real *Skia* API — see `ecosystem.md` — but it is a
+> capability Flare has not adopted, not a description of this render path.
+>
+> Corrected 2026-09-08 at HEAD `7f32ad4`. **Worklets themselves are no longer absent:**
+> the native capture above is a genuine UI-thread worklet, landed in Arc XR. If this
+> paragraph and the code ever disagree again, read `game-loop.ts` and `game-view.tsx`
+> — they are the answer, this document is not.
+
+Two draw modes:
+
+- **Retained (Atlas)** — fixed entity sprites, batched into a single `drawAtlas` call
 - **Immediate (Picture)** — particles, debug, procedural graphics via `PictureRecorder`
 
 ---

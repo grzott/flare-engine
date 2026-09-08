@@ -45,6 +45,19 @@ app's UI*, which is the case where the JS thread is **not** idle.
 | Scene texture handoff to the canvas | **UI** | one Reanimated worklet — `packages/react/src/game-view.tsx:49`, dispatched at `:246` |
 | Animation (tween/spring/timing) | **JS** | engine's own; **no** Reanimated animation API anywhere |
 
+> **Superseded in its mechanism by [ADR-0002](adr-0002-worklets-migration-and-new-arch-floor.md),
+> re-verified 2026-09-08 at HEAD `7f32ad4`.** The *decision* below stands — the scene-texture handoff
+> runs on the UI thread and nothing else does. Three details under it have moved:
+>
+> - The dispatch is **`scheduleOnUI` from `react-native-worklets`**, not Reanimated's `runOnUI`.
+>   `runOnUI` is curried, so it allocated a wrapper closure every frame inside `onPreRender`.
+> - The peers are now **`react-native-reanimated >=4.0.0`** (was `>=3.19.1`) plus a new
+>   **`react-native-worklets >=0.7.0`**, which is what sets the New Architecture floor.
+> - The file:line refs drifted: the `'worklet'` body is at `packages/react/src/game-view.tsx:50`
+>   and the dispatch at `:263`.
+>
+> Everything below is left as written — it is the record of what was measured on 2026-08-31.
+
 Concretely, at HEAD:
 
 - `react-native-reanimated` is a **required** peer of `@flare-engine/react` at `>=3.19.1`

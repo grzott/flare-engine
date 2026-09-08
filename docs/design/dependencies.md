@@ -101,7 +101,11 @@ planck.js. **No planck.js dependency or peer dependency was ever added**, and no
 />
 ```
 
-- `useRSXformBuffer` — worklet on UI thread, zero FFI cost
+- `useRSXformBuffer` — worklet on UI thread, zero FFI cost. **Flare does not use this.** It is
+  listed here as a Skia capability, not as a description of Flare's render path — the engine builds
+  its transforms on the JS thread and batches through `drawAtlas`. See
+  [architecture.md](architecture.md) § Rendering Pipeline. (Noted 2026-09-08 after this line was
+  read as a Flare claim.)
 - `useRectBuffer` — animate source rectangles (sprite animation)
 - `useTexture` — create GPU textures from React elements
 - Single GPU draw call regardless of sprite count

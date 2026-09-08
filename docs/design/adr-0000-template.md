@@ -14,7 +14,7 @@
 **Always, before a `minor` or `major` changeset lands.** `check:bump` enforces exactly this: it
 refuses any pending changeset above `patch` unless the changeset body cites an `ADR-NNNN` that
 exists here with `Status: Accepted`. Versioning is lockstep (`.changeset/config.json` → `fixed`), so
-one word in one changeset moves all 42 packages — a `minor` opens `0.4.0`, a `major` publishes
+one word in one changeset moves all 41 scoped packages — a `minor` opens `0.4.0`, a `major` publishes
 `1.0.0`, and npm does not take a publish back.
 
 **Also — and the gate cannot see these — for any consumer-observable behaviour change that ships as

@@ -4,8 +4,8 @@ Consumer-side requirements doc, written **for the engine repo** from Berek's des
 what Berek's gameplay loop demands of the engine, what the engine already covers, what Berek will hit
 on its first real build session, and what is simply absent. **It specifies no Berek work.**
 
-**Source discipline.** Everything below derives from `docs/design/Berek_Loop_Idea.md` **§17–29** in the
-Berek repo — the loop sections: big loop and main menu (§17), base (§18), day (§19), night (§20),
+**Source discipline.** Everything below derives from `docs/design-refs/Berek_Loop_Idea.md` **§17–29**
+in the Berek repo — a read-only Polish design reference; the loop sections: big loop and main menu (§17), base (§18), day (§19), night (§20),
 activity choice (§21), expeditions (§22), expedition rewards (§23), expeditions as story (§24),
 unlocking new expeditions (§25), the small loop (§26), return to base (§27), the full loop structure
 (§28), loop philosophy (§29). §1–16 is world and lore; it is not an engine input and is out of scope

@@ -9,6 +9,11 @@ import type { GamepadSnapshot } from './gamepad.js';
  * - `createWebGamepadSource()` wraps the W3C `navigator.getGamepads` API.
  * - Native implementations (e.g., `react-native-gamepad`) inject their own
  *   via the `GamepadSource` interface — the package itself ships no native deps.
+ *
+ * **Freshness contract:** each call returns fresh objects. An implementation
+ * must not reuse or mutate a snapshot (or its `buttons`/`axes` arrays) that a
+ * previous `poll()` call returned. A caller may therefore retain a returned
+ * snapshot across frames without it changing out from under them.
  */
 export interface GamepadSource {
   poll(): (GamepadSnapshot | null)[];

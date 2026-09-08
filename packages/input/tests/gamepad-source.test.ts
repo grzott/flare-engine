@@ -41,4 +41,25 @@ describe('createWebGamepadSource', () => {
     // Disconnected pads normalize to null.
     expect(pads[2]).toBe(null);
   });
+
+  test('poll() returns fresh objects on every call, never a reused snapshot', () => {
+    // Same underlying pad array returned by reference on every call, so any
+    // identity collision below can only come from poll() itself reusing output.
+    const pads = [
+      {
+        id: 'pad-1',
+        index: 0,
+        connected: true,
+        timestamp: 1,
+        buttons: [{ pressed: true, value: 1 }],
+        axes: [0.5],
+      },
+    ];
+    const src = createWebGamepadSource({ getGamepads: () => pads });
+    const first = src.poll();
+    const second = src.poll();
+    expect(first[0]).not.toBe(second[0]);
+    expect(first[0]?.buttons).not.toBe(second[0]?.buttons);
+    expect(first[0]?.axes).not.toBe(second[0]?.axes);
+  });
 });

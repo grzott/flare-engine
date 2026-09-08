@@ -9,7 +9,9 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 - **Biome** lint + format — never Prettier or ESLint
 - **Changesets** lockstep (`fixed`) versioning across `@flare-engine/*` — never bump a single package
 - **`patch` is the default and needs no permission.** A `minor` or `major` changeset is an owner
-  decision, not an implementation detail: lockstep means one word moves all 42 packages — `minor`
+  decision, not an implementation detail: lockstep means one word moves all **41 scoped
+  `@flare-engine/*` packages** at once (`packages/` holds 42 dirs; the 42nd, `create-flare-app`, is
+  unscoped and unpublished) — `minor`
   opens `0.4.0` (reserved for the freeze cut), `major` publishes `1.0.0`, and npm does not take a
   publish back. `check:bump` refuses any pending changeset above `patch` unless it cites an
   `ADR-NNNN` in `docs/design/` whose `Status` is `Accepted`. There is no env-var override.
@@ -45,6 +47,20 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 - One source per fact (no mirror rows, no duplicate changelogs)
 - Status: current line is `0.3.1` on npm (restricted) — read `CHANGELOG.md` rather than trusting a
   version literal here; **public OSS flip October 2026** — queue + full specs in [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)
+
+### Release posture (verified 2026-09-08 at HEAD `7f32ad4`)
+
+- **5 published versions**, all `access: restricted`: `0.1.0` (36 scoped pkgs), `0.2.0` and `0.2.1`
+  (40), `0.3.0` and `0.3.1` (41). Nothing is anonymously installable before the October 2026 flip.
+- **HEAD is ahead of npm, and the next publish is `0.4.0`, not a patch.** 25 unreleased changesets
+  sit under `.changeset/`, and one of them (`xr13-worklets-scheduleonui.md`) is a **`minor`** on
+  `react` + `engine`, authorised by the accepted ADR-0002 — `bun run check:bump` says so. Per
+  [`docs/plans/versioning-and-announcements.md`](docs/plans/versioning-and-announcements.md), a
+  pre-freeze minor rides into the `0.4.0` freeze cut rather than getting its own release, so the
+  pending set resolves to `0.4.0`. Do not describe the next version as `0.3.2`.
+- **A release commit bumps every `package.json` but does not publish.** Git and npm can diverge at
+  any moment, in either direction. Never infer one from the other; `CHANGELOG.md` is the index and
+  each package's own `CHANGELOG.md` is the source of truth for what changed.
 
 ### An audit finding's prose is an argument, not a measurement
 

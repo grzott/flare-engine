@@ -639,6 +639,17 @@ loops unbounded, Button steals focus on every re-render, and the default Virtual
 those changes no exported name, so they are not freeze-blocked — but an owner who would rather not ship them
 public can pull any of the six forward as behaviour fixes without touching the API.
 
+**Read this before planning any HYG12–HYG22 row (measured 2026-09-07).** The findings SoT is
+**incomplete for 19 of the findings these rows cover**: 76 paragraphs across 47 findings end in a
+literal `…` because their text was elided when that file was synthesised, and the remainder is
+**unrecoverable**. **46 of the 76 are the Verifier corrections** — the paragraph the audit's own §0
+now tells you to read *first* and to prefer over the finder's text. Arc PFA survived this only
+because every row re-verified its sites at HEAD and a reviewer re-derived the claims independently;
+these rows get no such cover unless you build it in. So: **treat a visible fragment as a pointer, not
+as the correction. Re-derive the finding at HEAD before acting, and where the fragment and the code
+disagree, the code wins — record that in the row rather than reconciling silently.** Do not infer a
+completion for an elided paragraph and present it as the verifier's words.
+
 - **HYG12 — render: frame-loop correctness + churn.** `createRenderSystem` discards last frame's sort and
   re-sorts unordered query order every frame, O(n²) (render-system.ts:94); two `slice()` arrays whenever
   consecutive runs differ in length (frame-renderer.ts:421); custom-shader effects re-query the uniform layout

@@ -26,6 +26,25 @@ Every finding below becomes a row executed later behind the normal per-row gate.
 > rather than endorsed, and re-confirm at HEAD before repeating any of this prose in a changeset, an
 > ADR, `api-specs.md` or a README.** The rule now also lives in `AGENTS.md`, which every agent reads.
 
+> **This document is incomplete in a way you must account for — measured 2026-09-07.**
+> **76 paragraphs across 47 of the 90 findings end in a literal `…`**: their text was elided when this
+> file was synthesised and the remainder is **not recoverable**. The elision is visible rather than
+> silent, which is the one mercy, but note *where* it falls — **46 of the 76 are the Verifier
+> corrections**, the exact paragraph the rule above tells you to read first and to prefer over the
+> finder's text. So for those findings the authoritative half is the half that got cut.
+>
+> **What this means in practice, by whether the finding has been actioned:**
+> - **28 of the 47 were remediated in Arc PFA** (2026-09-07). The elision was survivable there only
+>   because every row re-verified its sites at HEAD and a reviewer independently re-derived the
+>   claims — not because the text was sufficient.
+> - **19 of the 47 sit in post-flip Arc HYG rows that have not run yet.** Whoever implements those
+>   cannot read the full verifier correction and **must not assume the visible fragment is the whole
+>   of it**. Re-derive the finding at HEAD before acting; if the fragment and the code disagree, the
+>   code wins and the row should say so.
+>
+> Do not attempt to "restore" an elided paragraph by inference. Writing a plausible completion and
+> presenting it as the verifier's words would be worse than the gap.
+
 Verification followed **D4**, and the panel size is recorded per finding because it is the main thing that
 should change your confidence:
 

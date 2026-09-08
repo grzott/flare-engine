@@ -964,6 +964,12 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
   readback parity tests despite them being the row's "Done when". Both closed on the second pass.
   `check:perf` held at 11/11 — the flip path moved no draw-call counter. **Closed with
   `FLARE_PERF_ALLOW_STALE=1`**; the debt is owned by **PERF-22**.
+  **POSTING OBLIGATION (open).** ADR-0006 is `Consumer impact: breaking` and accepted, which under
+  [versioning-and-announcements.md](versioning-and-announcements.md) §"Obligation when an
+  above-`patch` change lands" requires (1) `flare-engine-page` — any page stating a version, peer
+  requirement or platform claim — and (2) `grzott-portfolio` — the announcement posts, which are not
+  in this workspace and must be carried over by hand. Pinned on the row at acceptance, per that
+  file's instruction, rather than discovered at freeze time. Carry both before OSS-H1 (Oct 5).
 
 - **PERF-18 — the web lanes are runnable from the root, and only a fold can publish one**
   (2026-09-06, session #320). Root `package.json`, `turbo.json`, `.gitignore`,

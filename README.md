@@ -20,6 +20,21 @@
 
 ---
 
+## How this is built
+
+Flare is built with an **AI-directed agent workflow**: the implementation is written by coding
+agents, and the architecture, decisions, gates and review are the author's. Scoped builder agents
+work from a written queue and cannot commit — that is enforced in the harness, not by convention —
+and a gate is only accepted once it has been proven able to fail.
+
+This is stated because it changes how to read the repository: the commit history is dense, and the
+docs are unusually explicit about their own past errors. Both are artifacts of the method. It is not
+code generated from a prompt and shipped unread; the engineering is in the decisions, the contracts
+and the verification. See [CONTRIBUTING.md](CONTRIBUTING.md#how-this-is-built) for what that means
+for a contributor.
+
+---
+
 ## Architecture
 
 42 package dirs (41 scoped `@flare-engine/*` + `create-flare-app`), strict downward-only dependencies — a package may depend only on an equal-or-lower tier, never a higher one (see AGENTS.md).

@@ -29,6 +29,39 @@ lockfile format, which older Bun releases cannot read.
 
 ---
 
+## How this is built
+
+Flare is built with an **AI-directed agent workflow**. The implementation is written by coding
+agents; the architecture, the decisions, the verification and the review are the author's.
+
+- **Agents implement, under contract.** Scoped builder agents work from a written queue, each
+  restricted to a directory it may not leave. They cannot run `git add`, `git commit` or `git push` —
+  that is blocked in the harness itself, not by convention.
+- **Gates decide green, not the agent.** A gate that cannot be made to fail is not a gate, so each
+  one is proven able to redden. The gate script is the authoritative list of what must pass.
+- **One source per fact.** No mirror rows, no duplicate changelogs. Where two documents disagree, one
+  of them is wrong — and that has happened, which is why the rule exists.
+- **Decisions include rejections.** `planck.js` was evaluated for physics and never adopted; it
+  appears in no `package.json` in this repo, and collision is `@flare-engine/physics` with rigid
+  bodies in `@flare-engine/dynamics`. `CoroutineManager` in `@flare-engine/core` was built, shipped
+  and then not used by the showcase game, which runs an FSM instead. Both are the pattern: build,
+  measure, reject, and say so.
+
+### What this means for your PR
+
+- **The conventions are enforced, not aspirational.** `bun run check:deps` enforces the tier rule;
+  Biome enforces named exports and `import type`; the gate script is the authoritative list of what
+  must pass. If a rule is not enforced anywhere, treat it as advice.
+- **Docs can be wrong; the code cannot.** Where a document and the code disagree, the code wins —
+  please file it. That has happened more than once and the corrections are recorded in place rather
+  than quietly overwritten.
+- **An audit finding's prose is an argument, not a measurement.** Findings docs carry a defect claim
+  that was verified and an impact/severity/fix that often was not. See `AGENTS.md`.
+- **Review expectations are the same for everyone.** Agent-written or human-written, the diff has to
+  survive the same gates and the same reading.
+
+---
+
 ## Development Workflow
 
 1. Fork the repo and create a branch: `feat/<short-name>` or `fix/<short-name>`.

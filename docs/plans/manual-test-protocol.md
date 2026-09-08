@@ -121,9 +121,17 @@ PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardo
       env-background shader, confirm it **renders** (not blank/black), **animates over time** (not
       frozen at t=0), and that effect sprites layer in correct **global z-order** against normal sprites.
 
-## §3 — Berek at `0.4.0`
+## §3 — `tilemap` + solid-grid coverage, vehicle Berek, at `0.4.0`
 
-Second-genre proof (top-down). Bump to `^0.4.0`, install from restricted registry, run.
+**This is engine verification, not Berek development.** Berek's own build is deferred until after
+the flip (owner decision 2026-09-08). The section stays because road-to-oss §10 `PT1` removes
+`tilemap` from Pan Tvardowski as a dead dep, which leaves Berek as the **only** manual coverage of
+`tilemap` and the physics solid-grid path at `0.4.0`.
+
+Second-genre proof (top-down). Bump to `^0.4.0`, install from restricted registry, run. Berek
+already clears the ADR-0002 floor (`react-native-reanimated 4.3.0`, `react-native-worklets 0.8.1`,
+`newArchEnabled: true` at `app.json:8` — verified 2026-09-08), so this is a dep bump, not a
+migration.
 
 - [ ] Tilemap renders; **solid-grid** movement/collision behaves (the XP5 physics + tilemap lift path
       — the exact code B33 just de-referenced).

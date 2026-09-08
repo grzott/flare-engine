@@ -17,6 +17,16 @@ exactly one existing package, and it appears in the roadmap as its own line. And
 downward only; zero-alloc rules bind `update()`/`render()`. The owner's own first post-flip arc is already
 fixed — the **devtools live-tweak inspector** (road-to-oss §0.6) — and this roadmap sits behind it.
 
+**Consumer correction (2026-09-08, owner).** These tracks were ranked while Berek was on file as
+"a ~342-LOC tilemap proof" (road-to-oss §0.8, since reworded). Berek is in fact the owner's flagship
+title in design: a 2.5D JRPG with two coexisting modes — a Zelda-like open world and base-launched
+"Expeditions" — plus a day/night system that gates content, base building and weapon crafting. Its
+design corpus lives in the Berek repo at `docs/design/`; its build is deferred until after the flip,
+but its requirements are not hypothetical. **T7 (TM-LEVEL) and T8 (SHAPES-ATLAS) therefore have a
+named consumer**, and their "second wave — wait for demand" ranking predates that fact. Re-ranking
+these tracks against both named consumers is its own arc; brief in
+`_local/game-driven-audit-handoff.md` (private, untracked).
+
 ---
 
 ## 1. The ranked tracks

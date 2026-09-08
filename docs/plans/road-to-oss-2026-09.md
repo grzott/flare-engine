@@ -50,7 +50,7 @@ disagree, this doc wins (it post-dates and re-verified them).
 7. **PT stays the private commercial game.** Public-facing showcase links point at the docs site,
    never at the game's private repo (D2–D4 rewrite those links). If the owner later flips PT public,
    that's independent of this plan.
-8. **Public positioning (2026-07-03):** lead with "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; drop "first full-stack RN game engine"; not a Unity/Godot/Unreal competitor. Games are showcases — Pan Tvardowski (private commercial), Berek (a ~342-LOC tilemap proof), and a planned platformer. SEO/a11y proof is DOM/CSS-transform output (the portfolio page-collapse), NOT the CanvasKit canvas demos (canvas pixels aren't indexable).
+8. **Public positioning (2026-07-03):** lead with "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; drop "first full-stack RN game engine"; not a Unity/Godot/Unreal competitor. Games are showcases — Pan Tvardowski (private commercial), Berek (top-down, early), and a planned platformer. SEO/a11y proof is DOM/CSS-transform output (the portfolio page-collapse), NOT the CanvasKit canvas demos (canvas pixels aren't indexable).
 
 ## 1. Dates and capacity
 
@@ -1129,11 +1129,23 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
   breaks on strict install; move the test-only `@flare-engine/input` use to a devDep or drop;
   remove dead deps `particles` + `tilemap` (declared, never imported).
 - **PT2 (manual window):** bump all 32 deps to `^0.4.0` at freeze; full gate + the §11 device sweep.
+  **ADR-0002 floor confirmed 2026-09-08 (owner session):** `react-native-reanimated 4.2.1`,
+  `react-native-worklets 0.7.4`, `newArchEnabled=true` (`android/gradle.properties:38`). No
+  migration work falls in the window — the dep bump is the whole row.
 - **PT3 (post-flip):** wire haptics (M6's adapter) — PT's own docs call it "the one true engine gap".
 
 **Berek:** **BK1 (manual window):** bump 7 deps to `^0.4.0` (the 0.2.1 migration is confirmed
 committed at 2b1733f); fix README:23's reference to deleted `src/movement.ts` (folded into
 `@flare-engine/physics` at 0.2.1); gate + a short play check.
+**ADR-0002 floor confirmed 2026-09-08 (owner session):** `react-native-reanimated 4.3.0`,
+`react-native-worklets 0.8.1`, `newArchEnabled: true` (`app.json:8`). This closes the pre-flip
+audit's high-severity item — "confirm each app is on New Architecture + Reanimated 4 before Oct 5,
+**or** drop §3 Berek from the exit criteria" — **by verification, not by dropping anything.** The
+floor half of BK1 is zero work; the row is the dep bump only.
+**Berek's own game development is deferred until after the flip (owner decision 2026-09-08).** BK1
+and [manual-test-protocol.md](manual-test-protocol.md) §3 are *engine verification*, not Berek
+work, and both stay: with PT1 removing `tilemap` from PT as a dead dep, Berek is the flip's **only**
+manual coverage of `tilemap` and the physics solid-grid path.
 
 **grzott-portfolio** (outside this workspace): **PF1 (owner, minutes, any time before flip):** align
 the portfolio's engine copy with the engine's actual role there (the site's demo predates its

@@ -47,8 +47,14 @@ package is not guaranteed to exist at all.
   force `newArchEnabled=true`, so any app scaffolded by `create-flare-app` is already there and
   needs no change.
 - **Real-world blast radius: zero.** The scope is published `restricted`
-  (`.changeset/config.json` → `"access": "restricted"`); there are no public consumers. The two
-  actual consumers, Pan Tvardowski and the portfolio, are owner-operated.
+  (`.changeset/config.json` → `"access": "restricted"`); there are no public consumers. The four
+  actual consumers — Pan Tvardowski, Berek, `flare-engine-page` and the portfolio — are all
+  owner-operated. **Compliance verified 2026-09-08 (owner session):** PT at
+  `react-native-reanimated 4.2.1` / `react-native-worklets 0.7.4` / `newArchEnabled=true`
+  (`android/gradle.properties:38`); Berek at `4.3.0` / `0.8.1` / `newArchEnabled: true`
+  (`app.json:8`). Neither needs migration work. `flare-engine-page` and the portfolio are web
+  targets and were not checked in that pass — the native capture path this ADR changes is not
+  the path they run.
 - **What we give up is a claim we could not test.** Old-architecture support was documented as
   *intended but not verified* (engine + react READMEs, 2026-09-05) precisely because no scaffolder
   template can produce such an app — all three pin Expo 57 / RN 0.86, and `expo prebuild`

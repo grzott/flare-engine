@@ -46,6 +46,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import {
+  checkRegistry,
   declaredEntryPoints,
   discoverPublishTargets,
   npm,
@@ -457,6 +458,16 @@ try {
     console.log('[audit-tarballs] --head-only: skipping published-version fetch');
   } else {
     console.log('[audit-tarballs] published-version scan (authenticated)');
+    // Assert-and-abort, not a `--registry` pin (F3-ASSERT, owner decision 2026-09-07):
+    // a pin would silently work around a mis-set machine on a [blocking] owner step
+    // that precedes a one-way flip. Only this half aborts — the HEAD scan above
+    // already ran and does not touch a registry.
+    const registryCheck = checkRegistry(npm('config', 'get', 'registry'));
+    if (!registryCheck.ok) {
+      console.error(registryCheck.message);
+      rmSync(work, { recursive: true, force: true });
+      process.exit(2);
+    }
     for (const t of targets) {
       if (t.flipsPublic) {
         publishedRows.push({

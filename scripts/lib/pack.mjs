@@ -27,6 +27,29 @@ export const npm = (...args) =>
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
+/** The registry every published-version fetch must resolve to before the flip. */
+export const NPMJS_REGISTRY = 'https://registry.npmjs.org/';
+
+/**
+ * Pure: does `value` (the output of `npm config get registry`) point at the
+ * real npm registry? Accepts a missing/extra trailing slash; rejects anything
+ * else — a leftover verdaccio override included — and names what was found,
+ * since "not npmjs" alone wastes the reader's next five minutes (F3-ASSERT).
+ */
+export const checkRegistry = (value) => {
+  const found = `${value}`.trim();
+  const norm = (s) => s.replace(/\/+$/, '');
+  if (norm(found) === norm(NPMJS_REGISTRY)) return { ok: true };
+  return {
+    ok: false,
+    message:
+      `[audit-tarballs] effective npm registry is "${found}", not ${NPMJS_REGISTRY} — the ` +
+      'published-version fetch would audit whatever tarballs are at that registry (e.g. a ' +
+      'leftover verdaccio override) and report them as published (XR-11). Stop verdaccio, clear ' +
+      'the registry= line, and re-run. See "Registry hygiene" in docs/plans/flip-runbook.md.',
+  };
+};
+
 /**
  * Entry-point paths a consumer actually imports, collected from the manifest.
  * Used to catch an unbuilt/empty dist that would otherwise look like a clean,

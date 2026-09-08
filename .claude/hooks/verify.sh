@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# /close gate script. Runs lint -> typecheck -> test -> build, upserts a block
-# to SESSION_LOG.md (a same-day re-run of the same goal replaces that row's
-# block rather than appending a duplicate), and emits paste-ready commit blocks
-# based on git diff.
+# /close gate script. Runs the full gate sequence below (lint, typecheck, test,
+# build, typecheck:tests, check:deps, check:changeset, check:peers, check:bump,
+# hook-guard, check:perf, check:perf-freshness — see run_gate calls below for
+# the authoritative, order-accurate list), upserts a block to SESSION_LOG.md (a
+# same-day re-run of the same goal replaces that row's block rather than
+# appending a duplicate), and emits paste-ready commit blocks based on git diff.
 #
 # Usage: bash .claude/hooks/verify.sh "<session goal>" "<scope: engine|game|mixed>" ["<frictions>"]
 #

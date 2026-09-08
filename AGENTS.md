@@ -1,6 +1,6 @@
 # Flare Engine
 
-**Flare** is a modular 2D engine for React Native + Web (animation, gamification, interactive UI, and games), built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). Scoped `@flare-engine/*` packages across layered tiers; **deps flow downward only**.
+**Flare** is a modular 2D engine for React Native + Web (animation, gamification, interactive UI, and games), built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). Scoped `@flare-engine/*` packages across layered tiers. **The dependency rule (single source — every other doc should link here instead of restating it): a package may depend only on packages at an equal or lower tier, never higher; `@flare-engine/engine` is the sanctioned umbrella exception.** Enforced by `scripts/check-deps-tiers.mjs` (`bun run check:deps`); tier map: [docs/design/architecture.md](docs/design/architecture.md#layer-diagram).
 
 Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/design/architecture.md](docs/design/architecture.md). API: [docs/design/api-specs.md](docs/design/api-specs.md).
 

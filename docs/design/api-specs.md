@@ -60,7 +60,7 @@
 
 | API                                   | Description                                                                                                                              |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `World`                               | `spawn() → entityId`, `destroy(entityId)`, `add<T>(entityId, def, data?)`, `remove(entityId, def)`, `get<T>(entityId, def)`, `query(...defs) → Query`, `queryBuilder() → QueryBuilder`, `removeQuery(q)`, `addSystem(fn, priority?)`, `step(dt)`. Max 32 component types per world. |
+| `World`                               | `spawn() → entityId`, `destroy(entityId)`, `add<T>(entityId, def, data?)`, `remove(entityId, def)`, `get<T>(entityId, def)`, `query(...defs) → Query`, `queryBuilder() → QueryBuilder`, `removeQuery(q)`, `addSystem(fn, priority?)`, `step(dt)`. Max 32 component types, **module-global** — the component-id counter is shared across every `World` in the process, not per-`World` (see `defineComponent`). |
 | `Query`                               | `entities: readonly number[]` — the live array of matching ids; walk it by index on hot paths (zero-alloc). `count`, `has(id)`. Also iterable: `for...of` is the convenience form — it allocates an iterator and, on Hermes, a result object per entity, so keep it off the frame path. `onEntityAdded`, `onEntityRemoved` signals. Archetype bitmask caching. |
 | `QueryBuilder`                        | `with(...defs)`, `without(...defs)`, `build() → Query`. Obtained from `world.queryBuilder()` only — the constructor takes the world's registration hook, so `build()` returns a query the world keeps populated and a bare `new QueryBuilder()` does not compile. |
 | `defineComponent<T>(name, defaults?)` | Type-safe component factory. Returns `ComponentDef<T>` used by `world.add/get/remove`.                                                  |
@@ -570,7 +570,7 @@ Extends the existing input package with poll-based gamepad state, a platform-agn
 | `createGamepadState(index?, buttons?, axes?)`                    | Allocates a fresh state with zeroed buttons and axes.                                                                                                                             |
 | `updateGamepadFromSnapshot(state, snapshot, deadZone?)`          | Applies a snapshot in place; recomputes `justPressed` / `justReleased`; zeroes axes inside the dead zone and rescales beyond; handles disconnect (`null` snapshot).     |
 | `resetGamepadFrame(state)` / `isButtonDown` / `wasButtonPressed` / `wasButtonReleased` / `getAxis` | Per-frame edge reset + convenience accessors.                                                                    |
-| `GamepadSource` / `createWebGamepadSource(nav?)`                 | Platform abstraction: `poll() → (GamepadSnapshot \| null)[]`. Web source wraps `navigator.getGamepads`; native adapters inject their own source. No native peer dep in-package.  |
+| `GamepadSource` / `createWebGamepadSource(nav?)`                 | Platform abstraction: `poll() → (GamepadSnapshot \| null)[]`. Web source wraps `navigator.getGamepads`; native adapters inject their own source. No native peer dep in-package. **Freshness:** every call returns fresh objects — an implementation must not reuse or mutate a previously-returned snapshot, or its `buttons`/`axes` arrays, so a caller may retain one across frames.  |
 | `RemapTable` / `createIdentityRemap` / `applyRemap`              | Pure remap table (`buttons: number[]`, `axes: {index,invert,scale}[]`). `applyRemap(snapshot, table)` returns a logical-ordered snapshot.                                        |
 | `saveRemap(store, key, table)` / `loadRemap(store, key)`         | Persistence against the `RemapStore` interface (matches `@flare-engine/storage.StorageAdapter`; declared locally to avoid a hard cross-layer dep).                                |
 | `InputManager.gamepad(index)` / `setGamepadDeadZone` / `setGamepadRemap` / `pollGamepads(source)` | New manager surface: lazily allocates per-slot state, applies remap then dead zone, resets per-frame edges in `update()`.            |
@@ -737,7 +737,9 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ---
 
-## Layer 5: Tooling (OSS-launch addition)
+## Tooling (OSS-launch addition)
+
+No single `LAYER_MAP` tier — `cli` is 4, `devtools` is 3, `create-flare-app` is unmapped (not a scoped `@flare-engine/*` package). See [architecture.md](architecture.md#layer-diagram).
 
 Node-only developer tools. Not shipped to device; excluded from device bundle size budgets. Sizes below are raw install footprint (unpacked `npm pack`).
 
@@ -814,7 +816,9 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 ---
 
-## Layer 6: Platform Integrations (Tier-2)
+## Platform Integrations (Tier-2)
+
+No single `LAYER_MAP` tier — `leaderboards`/`achievements`/`iap`/`analytics`/`iap-revenuecat`/`ui-shop` are 3.5, `haptics` is 2.5. See [architecture.md](architecture.md#layer-diagram).
 
 Each package ships the provider interface + a default `Noop*Provider` + a React context + a `use*()` hook + payload types. Each package now **also** ships a local/in-memory provider (plus a storage/console variant where useful) so games can test and develop against real semantics without a platform SDK. **Concrete PLATFORM adapters** (Game Center, Google Play Games, Steam, PostHog, Amplitude, Segment, Firebase, App Store StoreKit, Google Play Billing) are **post-launch** — consumers wire their own adapter at the app boundary until then. IAP is the exception: it additionally ships a concrete RevenueCat adapter today (`@flare-engine/iap-revenuecat`).
 

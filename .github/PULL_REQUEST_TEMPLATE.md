@@ -18,4 +18,4 @@
 
 - [ ] No `any`, no `as any`, no `@ts-ignore`; named exports only; `import type` for type-only imports
 - [ ] Hot paths (`update()` / `render()`) stay zero-alloc — no `new` in the loop; `out`-param form where a value is consumed per frame
-- [ ] Dependencies flow downward only (layer N imports only from layer < N)
+- [ ] Dependencies flow downward only (layer N imports only from layer ≤ N, never higher — see `scripts/check-deps-tiers.mjs`)

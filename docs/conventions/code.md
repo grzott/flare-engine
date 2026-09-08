@@ -55,7 +55,7 @@ packages/<name>/
 
 Rules:
 - Named exports only. Internal helpers prefixed with `_` or in `src/internal/`.
-- Only import from lower layers (see `docs/design/architecture.md`).
+- Import only from an equal-or-lower layer, never higher (enforced by `scripts/check-deps-tiers.mjs`; tier map: `docs/design/architecture.md`).
 - Internal deps use `workspace:*`.
 - External peer deps declared in `peerDependencies`.
 

@@ -1,14 +1,14 @@
 # Flare Engine — Architecture Reference
 
-> Last updated: 2026-07-12
+> Last updated: 2026-09-08
 
 ---
 
 ## Overview
 
-Flare is a modular, TypeScript-first 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages with strict dependency directions — lower layers never import from higher layers.
+Flare is a modular, TypeScript-first 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages; the dependency rule is stated once in [AGENTS.md](../../AGENTS.md) and enforced by `scripts/check-deps-tiers.mjs`.
 
-The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`, `dynamics`). The repository now holds **42 package dirs — 41 scoped `@flare-engine/*` plus `create-flare-app`**. Dependency edges flow strictly downward; lower layers never import from higher ones.
+The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`, `dynamics`). The repository now holds **42 package dirs — 41 scoped `@flare-engine/*` plus `create-flare-app`**.
 
 ---
 
@@ -38,22 +38,44 @@ graph TD
         PROGRESSION["@flare-engine/progression<br/>UpgradeTrack, DropTable, UnlockDag"]
     end
 
+    subgraph "Layer 2.5 — Persistence & reliability"
+        STORAGE["@flare-engine/storage<br/>KV persistence adapters"]
+        ERRORS["@flare-engine/errors<br/>Error boundary, crash payloads"]
+        TESTING["@flare-engine/testing<br/>Fake clock, test world, mocks"]
+        LOCALIZATION["@flare-engine/localization<br/>String tables, ICU plurals"]
+        DEEPLINKS["@flare-engine/deep-links<br/>URL router, history"]
+        SHARE["@flare-engine/share<br/>Screenshot + share sheet"]
+        A11Y["@flare-engine/a11y<br/>Reduced-motion, contrast tokens"]
+        HAPTICS["@flare-engine/haptics<br/>HapticsProvider interface"]
+    end
+
     subgraph "Layer 3 — Features"
         SCENE["@flare-engine/scene<br/>Lifecycle, Transitions, Stack"]
         ANIM["@flare-engine/animation<br/>SpriteAnimator, Tween, Spring"]
         PARTICLES["@flare-engine/particles<br/>Emitters, Pool, GPU-batched"]
         TILEMAP["@flare-engine/tilemap<br/>Tiled/LDtk, Culling, Collision"]
         DEBUG["@flare-engine/debug<br/>Overlay, Stats, Time controls"]
+        PATHFINDING["@flare-engine/pathfinding<br/>A*, JPS, navmesh"]
+        DIALOGUE["@flare-engine/dialogue<br/>Branching dialogue graph"]
+        DEVTOOLS["@flare-engine/devtools<br/>Entity inspector, time scrub"]
     end
 
-    subgraph "Layer 3.5 — UI & Post-processing"
+    subgraph "Layer 3.5 — UI, Post-processing & Tier-2"
+        UI["@flare-engine/ui<br/>Themed UI kit"]
+        UISHOP["@flare-engine/ui-shop<br/>Shop UI on iap+ui"]
         POSTFX["@flare-engine/postfx<br/>RuntimeEffect stack, EffectChain"]
+        LEADERBOARDS["@flare-engine/leaderboards<br/>Interface + NoopProvider"]
+        ACHIEVEMENTS["@flare-engine/achievements<br/>Interface + NoopProvider"]
+        IAP["@flare-engine/iap<br/>ProductCatalog, EntitlementStore"]
+        ANALYTICS["@flare-engine/analytics<br/>Interface + NoopProvider"]
+        IAPREVENUECAT["@flare-engine/iap-revenuecat<br/>Concrete RevenueCat adapter"]
     end
 
     subgraph "Layer 4 — Integration"
         REACT["@flare-engine/react<br/>Hooks, Components, Skia bindings"]
         RENDERWEB["@flare-engine/render-web<br/>CanvasKit backend + postfx bridge"]
         ENGINE["@flare-engine/engine<br/>createGame(), umbrella"]
+        CLI["@flare-engine/cli<br/>pack-atlas, tiled-to-flare, new"]
     end
 
     MATH --> CORE
@@ -75,6 +97,12 @@ graph TD
     RENDER --> TILEMAP
     CORE --> DEBUG
     RENDER --> DEBUG
+    CORE --> DEVTOOLS
+    ECS --> DEVTOOLS
+
+    IAP --> UISHOP
+    UI --> UISHOP
+    IAP --> IAPREVENUECAT
 
     RENDER --> REACT
     SCENE --> REACT
@@ -83,8 +111,12 @@ graph TD
     RENDER --> RENDERWEB
     POSTFX --> RENDERWEB
 
+    TILEMAP --> CLI
+
     REACT --> ENGINE
 ```
+
+Note: the diagram groups packages by their `LAYER_MAP` tier (`scripts/check-deps-tiers.mjs`) but does not draw every dependency edge — only the edges already verified above. Layer 2.5 and the Layer-3.5 Tier-2/adapter packages have no inbound edges shown here for the same reason the pre-2.5 diagram never enumerated every edge.
 
 ---
 
@@ -94,7 +126,7 @@ graph TD
 
 | Package                | Purpose                                                                  | Size target | Deps |
 | ---------------------- | ------------------------------------------------------------------------ | ----------- | ---- |
-| `@flare-engine/math`   | Vec2, Rect, Circle, Transform2D, Mat3, 35 easings, random, intersections | < 5KB       | 0    |
+| `@flare-engine/math`   | Vec2, Rect, Circle, Transform2D, Mat3, Penner easings, random, intersections | < 5KB       | 0    |
 | `@flare-engine/events` | EventEmitter\<EventMap\>, Signal\<T\>                                    | < 1KB       | 0    |
 
 ### Layer 1 — Core Runtime
@@ -123,7 +155,7 @@ graph TD
 | Package                   | Purpose                                                                                  | Size target |
 | ------------------------- | ---------------------------------------------------------------------------------------- | ----------- |
 | `@flare-engine/scene`     | Scene lifecycle, SceneManager (stack, transitions: fade/slide)                           | < 4KB       |
-| `@flare-engine/animation` | SpriteAnimator (tick-based), Tween (35 easings) + TweenManager, Spring, step sequences   | < 5KB       |
+| `@flare-engine/animation` | SpriteAnimator (tick-based), Tween (Penner easings) + TweenManager, Spring, step sequences   | < 5KB       |
 | `@flare-engine/particles` | Emitters, object-pooled, immediate-mode Skia rendering                                   | < 4KB       |
 | `@flare-engine/tilemap`   | Tiled .tmj parser, LDtk parser, viewport culling, collision extraction                   | < 8KB       |
 | `@flare-engine/debug`     | FPS/entity/draw-call overlay, collision bounds, time controls. Tree-shaken via `__DEV__` | < 3KB       |
@@ -234,30 +266,34 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 | `@flare-engine/pathfinding` | A\* grid pathfinding + JPS + navmesh         |
 | `@flare-engine/dialogue`    | Branching dialogue graph + runtime evaluator |
 
-### Layer 3.5 — UI & post-processing
+### Layer 3.5 — UI, post-processing & Tier-2
 
-| Package                | Purpose                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `@flare-engine/ui`     | Themed UI kit (Panel / Button / Label / List / Modal / HUDBar) + focus nav + layout   |
-| `@flare-engine/postfx` | Skia RuntimeEffect stack: CRT, bloom, chromatic aberration, vignette, grayscale-flash |
+| Package                        | Purpose                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| `@flare-engine/ui`             | Themed UI kit (Panel / Button / Label / List / Modal / HUDBar) + focus nav + layout   |
+| `@flare-engine/ui-shop`        | Reusable shop UI on `ui` + `iap`: `ShopScreen`, `PaywallModal`, `RestorePurchasesButton` |
+| `@flare-engine/postfx`         | Skia RuntimeEffect stack: CRT, bloom, chromatic aberration, vignette, grayscale-flash |
+| `@flare-engine/leaderboards`   | Typed interface + `NoopProvider`. Concrete platform adapter (Game Center, Play Games) deferred post-launch. |
+| `@flare-engine/achievements`   | Typed interface + `NoopProvider`. Concrete platform adapter deferred post-launch.     |
+| `@flare-engine/iap`            | `ProductCatalog` + `EntitlementStore` + content gates, typed interface + `NoopProvider`. |
+| `@flare-engine/analytics`      | Typed interface + `NoopProvider`. Concrete platform adapter (PostHog, …) deferred post-launch. |
+| `@flare-engine/iap-revenuecat` | Concrete `iap` adapter — RevenueCat, lazy-imported, no-throw `purchase`/`restore` contract. |
 
-### Tooling
-
-| Package                  | Purpose                                                                                       |
-| ------------------------ | --------------------------------------------------------------------------------------------- |
-| `@flare-engine/cli`      | `flare pack-atlas`, `flare tiled-to-flare`, `flare new` (sharp + maxrects-packer + commander) |
-| `@flare-engine/devtools` | Entity inspector + time scrub + pause/step (partial slice; full panel post-launch)            |
-| `create-flare-app`       | `npm create flare-app@latest` — blank / topdown / shmup templates                             |
-
-### Tier-2 stubs (interface-only at 0.1.0)
-
-`@flare-engine/leaderboards` · `@flare-engine/achievements` · `@flare-engine/iap` · `@flare-engine/analytics` — each exports a typed interface plus a `NoopProvider`. For `leaderboards` / `achievements` / `analytics` the concrete platform adapters (Game Center, Play Games, PostHog, …) remain **deferred post-launch** — these three ship as interface + `NoopProvider` + in-memory/dev provider for now (`iap` additionally ships `ProductCatalog` + `EntitlementStore` + content gates, with the concrete RevenueCat adapter in `@flare-engine/iap-revenuecat`).
-
-### Device-feedback interface
+### Layer 2.5 — Device feedback
 
 | Package                  | Purpose                                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------------------------ |
 | `@flare-engine/haptics`  | Typed `HapticsProvider` interface + `NoopHapticsProvider` + React context (`HapticsContext` / `useHaptics`). React peer dep; no bundled native binding. |
+
+### Tooling
+
+`LAYER_MAP` tier per package: `cli` is 4, `devtools` is 3. `create-flare-app` carries no tier — it is not a scoped `@flare-engine/*` package (`private: true`, versioned but never published).
+
+| Package                  | Tier | Purpose                                                                                       |
+| ------------------------ | ---- | ----------------------------------------------------------------------------------------------- |
+| `@flare-engine/cli`      | 4    | `flare pack-atlas`, `flare tiled-to-flare`, `flare new` (sharp + maxrects-packer + commander) |
+| `@flare-engine/devtools` | 3    | Entity inspector + time scrub + pause/step (partial slice; full panel post-launch)            |
+| `create-flare-app`       | —    | `npm create flare-app@latest` — blank / topdown / shmup templates                             |
 
 ---
 
@@ -268,7 +304,7 @@ Capabilities that appear in older design sketches but are **not shipping** in th
 | Capability | Home package | Status |
 | ---------- | ------------ | ------ |
 | planck.js rigid-body physics (`PhysicsWorld`, `RigidBody`, `applyForce` / `applyImpulse`) | `physics` (Tier 2) | Not implemented. AABB `CollisionWorld` is the shipping collision model; planck integration is revisited only if AABB proves insufficient. There is no `planck.js` dependency or peer dependency today. |
-| Spatial-hash / rbush broadphase | `physics` | The shipping `SpatialIndex` is a hand-rolled uniform grid suited to < ~1000 dynamic entities. A grid/rbush broadphase upgrade for larger scenes is future work. |
+| ~~Spatial-hash broadphase~~ — **shipped** | `physics` | **Landed 2026-09-03 as CW7-8 (`b617e49`), so this is no longer future work.** `SpatialIndex` is a uniform spatial hash keyed on a packed cell id, and the exported surface was deliberately kept byte-identical, which is why nothing in this table changed at the time. Measured 4.82 ms → 0.18 ms at 1000 sparse bodies. An **rbush**-style tree for very large or heavily-clustered scenes remains unbuilt and unmeasured; treat that, not the grid, as the open item. |
 | Flow-field pathfinding | `pathfinding` | A\* + Jump-Point Search + a convex-polygon navmesh ship today; flow fields are not implemented. |
 
 **Positioning notes**

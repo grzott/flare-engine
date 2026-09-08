@@ -8,7 +8,7 @@ Conventional Commits, subject-only, single-line, ≤72 chars, lowercase, no trai
 <type>(<scope>): <subject>
 ```
 
-Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `chore`.
+Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore` (enforced by `commitlint.config.ts`).
 Scope: package name (e.g. `math`), app name (`bench-dashboard`), or area (`docs`, `plans`, `release`).
 
 Examples:

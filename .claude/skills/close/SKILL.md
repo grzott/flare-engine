@@ -1,6 +1,6 @@
 ---
 name: close
-description: Close the current session (or current batch row). Runs verify.sh which executes lint -> typecheck -> test -> build, appends a SESSION_LOG block with a frictions self-report, and emits paste-ready commit bash blocks.
+description: Close the current session (or current batch row). Runs verify.sh, the full gate script (lint, typecheck, test, build, and more — see the script for the authoritative list), appends a SESSION_LOG block with a frictions self-report, and emits paste-ready commit bash blocks.
 argument-hint: "[\"goal\"] [scope=engine|game|mixed]"
 ---
 
@@ -41,11 +41,21 @@ feeds `/retro` and is the only record of these events.
 bash .claude/hooks/verify.sh "<goal>" "<scope>" "<frictions>"
 ```
 
-The script runs:
+The script runs, in order (engine/mixed scope; `game` scope skips the build-dependent gates marked *):
 1. `bun run lint` (zero errors required)
 2. `bun run typecheck` (zero errors required)
 3. `bun run test` (all pass)
-4. `bun run build` — engine + mixed only
+4. `bun run build`* — engine + mixed only
+5. `bun run typecheck:tests`* — engine + mixed only
+6. `bun run check:deps`
+7. `bun run check:changeset`
+8. `bun run check:peers`
+9. `bun run check:bump`
+10. `bash .claude/hooks/pre-bash-guard.test.sh`
+11. `bun run check:perf`* — engine + mixed only
+12. `bun run check:perf-freshness`* — engine + mixed only
+
+`.claude/hooks/verify.sh` is the authoritative, order-accurate list — re-check it if this drifts.
 
 On gate failure, the script halts and exits non-zero. Fix the failure and re-run `/close`.
 The session block is **not** appended on failure (count the failure in `gate:N`).

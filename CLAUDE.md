@@ -15,7 +15,7 @@ Two builders, no planners. You pick the next row from `todo.md`.
 
 1. `/start [N | keyword]` — pick the top row (or top N, max 5) from `todo.md`, route to builder by scope, present all plans, halt ONCE for batch approval.
 2. Implement row by row — per-row gate, per-row commit block (batch state in `.claude/.batch-baseline`).
-3. `/close` — `.claude/hooks/verify.sh` runs lint → typecheck → test → build, appends a block (incl. a frictions self-report) to `SESSION_LOG.md`, emits commit blocks. You run the commits.
+3. `/close` — runs the full gate sequence in `.claude/hooks/verify.sh` (lint, typecheck, test, build, and more — that script is the authoritative list), appends a block (incl. a frictions self-report) to `SESSION_LOG.md`, emits commit blocks. You run the commits.
 4. `/retro` every ~15 sessions — mines SESSION_LOG frictions into harness recommendations.
 
 ## Boundaries

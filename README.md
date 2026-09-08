@@ -22,80 +22,58 @@
 
 ## Architecture
 
-42 package dirs (41 scoped `@flare-engine/*` + `create-flare-app`), strict downward-only dependencies — every arrow points down, none point up or sideways across unrelated branches.
+42 package dirs (41 scoped `@flare-engine/*` + `create-flare-app`), strict downward-only dependencies — a package may depend only on an equal-or-lower tier, never a higher one (see AGENTS.md).
 
-```
-┌───────────┬────────────────┬──────────────────────────────────────────────────────┐
-│  Layer    │  Tier          │  Packages                                            │
-├───────────┼────────────────┼──────────────────────────────────────────────────────┤
-│  4        │  Integration   │  react  ·  render-web  ·  engine                     │
-│  3.5      │  UI            │  ui  ·  postfx  ·  ui-shop                           │
-│  3        │  Features      │  scene  ·  animation  ·  particles  ·  tilemap       │
-│           │                │  debug  ·  pathfinding  ·  dialogue                  │
-│  2.5      │  Persistence   │  storage  ·  errors  ·  testing  ·  a11y             │
-│           │                │  localization  ·  deep-links  ·  share               │
-│  2        │  Systems       │  render  ·  input  ·  physics  ·  dynamics  ·  audio │
-│           │                │  assets  ·  shapes  ·  simulation  ·  progression    │
-│  1        │  Runtime       │  core  ·  ecs                                        │
-│  0        │  Foundation    │  math  ·  events                                     │
-├───────────┼────────────────┼──────────────────────────────────────────────────────┤
-│  ─        │  Haptics       │  haptics                                             │
-│  ─        │  Tooling       │  cli  ·  devtools  ·  create-flare-app               │
-│  ─        │  Tier-2        │  leaderboards  ·  achievements  ·  iap  ·  analytics │
-│  ─        │  Adapters      │  iap-revenuecat                                      │
-└───────────┴────────────────┴──────────────────────────────────────────────────────┘
-```
-
-Every package shares one lockstep version, is tree-shakeable, and builds to dual CJS+ESM with `.d.ts`. Full diagram and rationale in [docs/design/architecture.md](docs/design/architecture.md).
+Every package shares one lockstep version, is tree-shakeable, and builds to dual CJS+ESM with `.d.ts`. Full layer diagram, and the enforced tier for every package: [docs/design/architecture.md](docs/design/architecture.md#layer-diagram) — the single source of truth for the tier map (this file no longer restates it; see `scripts/check-deps-tiers.mjs` for the enforced version).
 
 ---
 
 ## Packages
 
-| Package                      | Layer | Status                   | Description                                                                    |
-| ---------------------------- | ----- | ------------------------ | ------------------------------------------------------------------------------ |
-| `@flare-engine/math`         | 0     | shipping                 | Vec2, Rect, Transform, Mat3, Color, 42 easings, seeded RNG, intersections      |
-| `@flare-engine/events`       | 0     | shipping                 | Type-safe `EventEmitter` and `Signal`                                          |
-| `@flare-engine/core`         | 1     | shipping                 | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool         |
-| `@flare-engine/ecs`          | 1     | shipping                 | Archetype-bitmask ECS — `World`, `Query`, systems, prefabs, FSM (32-type cap) |
-| `@flare-engine/render`       | 2     | shipping                 | Skia Atlas `SpriteBatch`, `Camera2D`, sprite effects, BMFont text              |
-| `@flare-engine/input`        | 2     | shipping                 | `InputManager`, pointer/touch, gestures, joystick/button state                 |
-| `@flare-engine/physics`      | 2     | shipping                 | AABB `CollisionWorld`, spatial index, raycasting                               |
-| `@flare-engine/audio`        | 2     | shipping                 | `AudioManager`, `SFXPool`, music crossfade, channels                           |
-| `@flare-engine/assets`       | 2     | shipping                 | `AssetManager`, TexturePacker/Aseprite parser, procedural atlas                |
-| `@flare-engine/shapes`       | 2     | shipping                 | Procedural 2D shape primitives + SVG path escape hatch — prototype without art |
-| `@flare-engine/simulation`   | 2     | shipping                 | N-body gravity, Verlet/leapfrog integrators, wave-packet ripple pool           |
-| `@flare-engine/progression`  | 2     | shipping                 | Upgrade tracks, pity-aware drop tables, unlock DAG, tier + collectible registry |
-| `@flare-engine/dynamics`     | 2     | shipping                 | 2D rigid bodies — OBB contact manifolds, sequential-impulse solver, friction   |
-| `@flare-engine/storage`      | 2.5   | shipping                 | Typed KV persistence — MMKV / IndexedDB / memory adapters                      |
-| `@flare-engine/errors`       | 2.5   | shipping                 | Error boundary + structured crash payload + pluggable transport                |
-| `@flare-engine/testing`      | 2.5   | shipping                 | Deterministic fake clock, test world, mock input, scene snapshots              |
-| `@flare-engine/localization` | 2.5   | shipping                 | String tables, ICU plurals, locale resolution                                  |
-| `@flare-engine/deep-links`   | 2.5   | shipping                 | URL → scene router, history API, `Linking` integration                         |
-| `@flare-engine/share`        | 2.5   | shipping                 | `captureScreenshot()` + Web Share API + `expo-sharing` fallback                |
-| `@flare-engine/a11y`         | 2.5   | shipping (light)         | Reduced-motion + contrast tokens (screen-reader deferred)             |
-| `@flare-engine/scene`        | 3     | shipping                 | `SceneManager`, lifecycle, fade/slide transitions                              |
-| `@flare-engine/animation`    | 3     | shipping                 | Sprite animator, tweens (42 easings), springs, timelines                       |
-| `@flare-engine/particles`    | 3     | shipping                 | Pooled emitters, immediate-mode Skia rendering                                 |
-| `@flare-engine/tilemap`      | 3     | shipping                 | Tiled `.tmj` + LDtk parsers, culled renderer, collider extraction              |
-| `@flare-engine/debug`        | 3     | shipping                 | FPS widget, stats, time controls, overlay                                      |
-| `@flare-engine/pathfinding`  | 3     | beta — no production consumer | A\* grid + JPS, flow fields. A\* and JPS differ on corner cutting — see the package README |
-| `@flare-engine/dialogue`     | 3     | shipping                 | Branching dialogue graph, runtime evaluator                                    |
-| `@flare-engine/ui`           | 3.5   | shipping                 | Skia-free UI kit: Panel / Button / Label / List / Modal / HUDBar + focus nav   |
-| `@flare-engine/postfx`       | 3.5   | shipping                 | Skia RuntimeEffect stack: CRT, bloom, vignette, grayscale-flash                |
-| `@flare-engine/react`        | 4     | shipping                 | `<GameView>`, hooks, `<VirtualJoystick>`, `<VirtualButton>`, `<LoadingScreen>` |
-| `@flare-engine/render-web`   | 4     | shipping                 | Web analog of `react` — composes `render` + `postfx` via CanvasKit-WASM        |
-| `@flare-engine/engine`       | 4     | shipping                 | `createGame()` convenience + umbrella re-exports                               |
-| `@flare-engine/cli`          | —     | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
-| `@flare-engine/devtools`     | —     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-0.1.0)      |
-| `create-flare-app`           | —     | pre-launch (unpublished) | `npm create flare-app@latest` — blank / topdown / shmup templates; publishes at the October 2026 flip |
-| `@flare-engine/leaderboards` | —     | shipping                 | Interface + no-op + in-memory provider (`createMemoryLeaderboards`); platform adapters post-launch |
-| `@flare-engine/achievements` | —     | shipping                 | Interface + no-op + in-memory / storage-backed providers; platform adapters post-launch |
-| `@flare-engine/iap`          | —     | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
-| `@flare-engine/analytics`    | —     | shipping                 | Interface + no-op + in-memory + console providers; vendor adapters post-launch |
-| `@flare-engine/iap-revenuecat` | —   | shipping                 | Concrete RevenueCat `IAPProvider` adapter (lazy `react-native-purchases`)      |
-| `@flare-engine/ui-shop`      | 3.5   | shipping                 | `ShopScreen` + `PaywallModal` + `RestorePurchasesButton` consuming `IAPContext` |
-| `@flare-engine/haptics`      | —     | shipping                 | `HapticsProvider` interface + Noop / Expo / Web-Vibration providers + context  |
+| Package                      | Status                   | Description                                                                    |
+| ---------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `@flare-engine/math`         | shipping                 | Vec2, Rect, Transform, Mat3, Color, Penner easings, seeded RNG, intersections      |
+| `@flare-engine/events`       | shipping                 | Type-safe `EventEmitter` and `Signal`                                          |
+| `@flare-engine/core`         | shipping                 | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool         |
+| `@flare-engine/ecs`          | shipping                 | Archetype-bitmask ECS — `World`, `Query`, systems, prefabs, FSM (32-type cap) |
+| `@flare-engine/render`       | shipping                 | Skia Atlas `SpriteBatch`, `Camera2D`, sprite effects, BMFont text              |
+| `@flare-engine/input`        | shipping                 | `InputManager`, pointer/touch, gestures, joystick/button state                 |
+| `@flare-engine/physics`      | shipping                 | AABB `CollisionWorld`, spatial index, raycasting                               |
+| `@flare-engine/audio`        | shipping                 | `AudioManager`, `SFXPool`, music crossfade, channels                           |
+| `@flare-engine/assets`       | shipping                 | `AssetManager`, TexturePacker/Aseprite parser, procedural atlas                |
+| `@flare-engine/shapes`       | shipping                 | Procedural 2D shape primitives + SVG path escape hatch — prototype without art |
+| `@flare-engine/simulation`   | shipping                 | N-body gravity, Verlet/leapfrog integrators, wave-packet ripple pool           |
+| `@flare-engine/progression`  | shipping                 | Upgrade tracks, pity-aware drop tables, unlock DAG, tier + collectible registry |
+| `@flare-engine/dynamics`     | shipping                 | 2D rigid bodies — OBB contact manifolds, sequential-impulse solver, friction   |
+| `@flare-engine/storage`      | shipping                 | Typed KV persistence — MMKV / IndexedDB / memory adapters                      |
+| `@flare-engine/errors`       | shipping                 | Error boundary + structured crash payload + pluggable transport                |
+| `@flare-engine/testing`      | shipping                 | Deterministic fake clock, test world, mock input, scene snapshots              |
+| `@flare-engine/localization` | shipping                 | String tables, ICU plurals, locale resolution                                  |
+| `@flare-engine/deep-links`   | shipping                 | URL → scene router, history API, `Linking` integration                         |
+| `@flare-engine/share`        | shipping                 | `captureScreenshot()` + Web Share API + `expo-sharing` fallback                |
+| `@flare-engine/a11y`         | shipping (light)         | Reduced-motion + contrast tokens (screen-reader deferred)             |
+| `@flare-engine/scene`        | shipping                 | `SceneManager`, lifecycle, fade/slide transitions                              |
+| `@flare-engine/animation`    | shipping                 | Sprite animator, tweens (Penner easings), springs, timelines                       |
+| `@flare-engine/particles`    | shipping                 | Pooled emitters, immediate-mode Skia rendering                                 |
+| `@flare-engine/tilemap`      | shipping                 | Tiled `.tmj` + LDtk parsers, culled renderer, collider extraction              |
+| `@flare-engine/debug`        | shipping                 | FPS widget, stats, time controls, overlay                                      |
+| `@flare-engine/pathfinding`  | beta — no production consumer | A\* grid + JPS + convex-polygon navmesh (no flow fields). A\* and JPS differ on corner cutting; JPS delegates to A\* on weighted grids — see the package README |
+| `@flare-engine/dialogue`     | shipping                 | Branching dialogue graph, runtime evaluator                                    |
+| `@flare-engine/ui`           | shipping                 | Skia-free UI kit: Panel / Button / Label / List / Modal / HUDBar + focus nav   |
+| `@flare-engine/postfx`       | shipping                 | Skia RuntimeEffect stack: CRT, bloom, vignette, grayscale-flash                |
+| `@flare-engine/react`        | shipping                 | `<GameView>`, hooks, `<VirtualJoystick>`, `<VirtualButton>`, `<LoadingScreen>` |
+| `@flare-engine/render-web`   | shipping                 | Web analog of `react` — composes `render` + `postfx` via CanvasKit-WASM        |
+| `@flare-engine/engine`       | shipping                 | `createGame()` convenience + umbrella re-exports                               |
+| `@flare-engine/cli`          | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
+| `@flare-engine/devtools`     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-0.1.0)      |
+| `create-flare-app`           | pre-launch (unpublished) | `npm create flare-app@latest` — blank / topdown / shmup templates; publishes at the October 2026 flip |
+| `@flare-engine/leaderboards` | shipping                 | Interface + no-op + in-memory provider (`createMemoryLeaderboards`); platform adapters post-launch |
+| `@flare-engine/achievements` | shipping                 | Interface + no-op + in-memory / storage-backed providers; platform adapters post-launch |
+| `@flare-engine/iap`          | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
+| `@flare-engine/analytics`    | shipping                 | Interface + no-op + in-memory + console providers; vendor adapters post-launch |
+| `@flare-engine/iap-revenuecat` | shipping                 | Concrete RevenueCat `IAPProvider` adapter (lazy `react-native-purchases`)      |
+| `@flare-engine/ui-shop`      | shipping                 | `ShopScreen` + `PaywallModal` + `RestorePurchasesButton` consuming `IAPContext` |
+| `@flare-engine/haptics`      | shipping                 | `HapticsProvider` interface + Noop / Expo / Web-Vibration providers + context  |
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).
 

@@ -100,7 +100,7 @@ packages/<name>/
 | ------------- | ------------------------------------------------------------------------------------------------ |
 | TypeScript    | Strict, ES2022, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`, no `any`, no `@ts-ignore`    |
 | Exports       | Named only. No default exports. No `export *` barrels (except `@flare-engine/engine`).           |
-| Dependencies  | Layer N may only import from layer < N. No circular imports.                                     |
+| Dependencies  | Equal-or-lower tier only — layer N may import from layer ≤ N, never higher. No circular imports. Enforced by `scripts/check-deps-tiers.mjs`; tier map: [architecture.md](docs/design/architecture.md#layer-diagram). |
 | Hot paths     | Zero-alloc — no `new` inside `update()` / `render()`. Use plain objects + static methods.        |
 | Lint + Format | [Biome](https://biomejs.dev). Run `bun run lint:fix` to auto-fix. Never Prettier or ESLint.      |
 | Commits       | Conventional Commits, ≤72 chars, no emoji. Example: `feat(ecs): cache archetype bitmask`.        |

@@ -12147,3 +12147,22 @@ HYG24 (**a pre-freeze decision**: `SolidGrid.solid` is `readonly`, `TileLayer.ti
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 323 — 2026-09-08 (scope: engine)
+
+**Goal:** OSS-M10 render table-stakes
+
+**Touched files**
+- `docs/design/adr-0006-sprite-command-required-fields.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none
+
+**Next:** see `docs/plans/todo.md`.
+
+---

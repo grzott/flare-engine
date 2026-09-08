@@ -578,6 +578,22 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
 - **PERF-7 — native bench app + device-lane revival (P3) [MT + owner OOB, 2 sessions].** `apps/bench-native` engine scenarios (sprite/rotation/postfx/particles + texture-eviction/resume-from-background + cold start); lift harness from **PT HEAD only** (absolute-ceiling gate) with the B20 fails-green hardening (matrix validation, staleness gate, zero-combo fails, absolute-delta floor, one scenario-id namespace, artifact-path fix); revive per B21 order — TestingBot account verification FIRST, not a fresh APK; weekly cron with window ≥4× cadence + per-release anchor; bridge device data to the dashboard (kills dead device.json — B22); rewrite the parked particle-storm gate below. Spec: §11.7.
 - **PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, `packages/**`, post-freeze).** `SpatialIndex.update`'s per-entity closure + O(n) find; `entries` destructuring in the broadphase loop; the reused pair-`Set` that costs ~38× the heap footprint of a fresh one under JSC (verify on Hermes FIRST — RN is the primary target). One lockstep minor changeset. Spec: §11.9.
 
+- **PERF-22 — re-capture every perf lane before the freeze (P0, dated Sep 28 – Oct 2, [MT + owner OOB]).**
+  **This blocks the freeze publish.** `package.json:54` chains `check:perf-freshness` directly in front
+  of `changeset publish`, so **OSS-H1's `0.4.0` cut cannot run while freshness is red** — the gate is
+  not advisory here, it is in the release path. Verified STALE at HEAD 2026-09-08: the bench instrument
+  itself changed since the capture (`510a536`), so every published number was measured by a different
+  tool; ECS is 4 commits deep, Particles 1, Physics 6, Render 6, Integration 8, and all three web lanes
+  are stale since `fd8df76`. Node lanes: `bun run bench` x5 from a **clean tree**, then `bench:promote`,
+  then `bench:md`. Web lanes are separate series and each folds alone: `bench:web`, `bench:web:gpu`,
+  `bench:web:android` x5 each, folded with `bench:web:promote --lane <cpu-raster|gpu|android> --runs 5`.
+  **The android lane needs the phone physically attached and nothing else holding CDP port 9222**
+  (hardcoded, `apps/bench-web/scripts/run.ts:73`) — it cannot be done on the freeze morning, which is
+  why this row is dated a week early. **Do not close this with `FLARE_PERF_ALLOW_STALE=1`:** overrides
+  compound, `release` chains the gate, and the override taken to close OSS-M10 (session #323) is
+  already one of them. Check `powercfg` before trusting any capture — this machine has read bimodal
+  under Power Saver before (PERF-14). Self-contained; no design-doc section.
+
 ### Arc OSS — road to the October 2026 public flip (ACTIVE 2026-07-03)
 
 Goal: public flip in October 2026 — npm public + repo public + docs live. **Full row specs, dates, freeze protocol, and the owner ledger live in the SoT: [road-to-oss-2026-09.md](road-to-oss-2026-09.md)** — rows here are lean pointers (one-source-per-fact); the builder reads the row's spec section (§) before planning. Rows scoped to `packages/**` (+ api-specs) route **engine-builder**; rows tagged **[MT]** touch root docs/`scripts/`/`.changeset/`/`.github/`/`.claude/`/`docs/plans/` and run **main-thread** (engine-builder's scope guard forbids those paths — same per-row gate + commit block). Full gate green per row **plus** root tsc + biome on changed tests/scripts (execution contract: road-to-oss §2). Every bug site below was re-verified at HEAD with file:line on 2026-07-03. Milestones: **FREEZE + 0.4.0 restricted publish Mon Oct 5 → owner manual-test window Oct 5–18 → flip week Oct 19–23 (target Tue Oct 20).** Sequencing below is the execution order; pick top → `/start`.
@@ -594,7 +610,6 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
 
-- **OSS-M10 — render table-stakes (P2, 2 sessions).** Additive blend per batch; flipX/flipY via the stretch path (RSXform can't one-axis mirror); 9-slice; opt-in culling. Spec: §6 M10.
 - **OSS-M11 — physics: detection upgrades (P2, ~1 session after re-scope).** **Re-scoped 2026-09-03
   against HEAD** — every bullet below re-verified, one dropped as already shipped. Spec: §6 M11, but
   read this row rather than the spec: the spec is stale on the broadphase.
@@ -933,6 +948,22 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-M10 — render table-stakes: additive blend, flipX/flipY, nine-slice, opt-in cull**
+  (2026-09-08, session #323, `599cd30`). `packages/render/src/{sprite-batch,frame-renderer,render-system,index,nine-slice}.ts`,
+  `packages/render-web/src/web-skia-module.ts`, tests in both plus `packages/react/tests/skia-bridge.test.ts`,
+  `api-specs.md`, ADR-0006. **Shipped as a lockstep `minor`, authorised by ADR-0006:** the three new
+  `SpriteDrawCommand` fields are **required**, matching the interface's existing style — a deliberate
+  break taken pre-freeze while the scope is `restricted`, verified to have zero victims (no
+  `SpriteDrawCommand` reference in any sibling repo). **KG5 re-verified rather than inherited:** RSXform's
+  linear part is `[[scos, −ssin], [ssin, scos]]`, determinant `scos² + ssin²` ≥ 0, so a reflection is
+  structurally inexpressible — flips route through `drawImageRect` with a canvas `scale(±1, ±1)`, one
+  draw call per flipped sprite. **Two gaps caught in review, not by the gate:** the first pass never
+  implemented `setBlendMode` in `web-skia-module.ts` (additive silently rendered as SrcOver on the
+  CanvasKit backend, while the changeset prose implied only mocks were affected), and shipped no
+  readback parity tests despite them being the row's "Done when". Both closed on the second pass.
+  `check:perf` held at 11/11 — the flip path moved no draw-call counter. **Closed with
+  `FLARE_PERF_ALLOW_STALE=1`**; the debt is owned by **PERF-22**.
 
 - **PERF-18 — the web lanes are runnable from the root, and only a fold can publish one**
   (2026-09-06, session #320). Root `package.json`, `turbo.json`, `.gitignore`,

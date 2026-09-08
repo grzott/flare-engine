@@ -1,6 +1,6 @@
 # ADR-0006: `SpriteDrawCommand`'s new blend and flip fields are required, and the break lands before the flip
 
-- **Status**: Proposed <!-- owner to accept before OSS-M10's gate can pass check:bump -->
+- **Status**: Accepted <!-- owner, 2026-09-08 -->
 - **Date**: 2026-09-08
 - **Consumer impact**: breaking
 - **Release level**: minor

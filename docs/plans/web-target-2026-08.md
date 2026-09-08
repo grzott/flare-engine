@@ -457,6 +457,10 @@ WEB-3 — the row's scope is postfx, and the render defect above is already fixe
   it "falls back to zero insets when no provider is mounted". That is false on
   `react-native-safe-area-context` 5.6.2. A scaffolded template that omits the provider is a blank
   page plus a stack trace — WEB-4's three templates must each wrap it.
+  **CORRECTED 2026-09-08 — no longer true at HEAD.** PF-7 (2026-09-07) made `GameView` resolve insets
+  through `useContext(SafeAreaInsetsContext)` with a `ZERO_INSETS` fallback
+  (`packages/react/src/game-view.tsx:159-160`), so it no longer throws without a provider. The trap
+  was real for WEB-4/WEB-5; it is not a trap for new work.
 - **A backgrounded Chrome tab pauses the whole render path.** `visibilityState: hidden` stops rAF,
   and RN-Skia's web `<Canvas>` paints from rAF, so the app looks exactly like "the engine renders
   nothing" while the game loop still ticks. Any WEB-5 browser boot must assert
@@ -533,7 +537,7 @@ templates, not one: none of `blank` / `topdown` / `shmup` wrapped its tree, so e
 would have thrown `No safe area value available` on its first web render. `GameView` calls
 `useSafeAreaInsets()` unconditionally. All three are now wrapped.
 
-**Still open, and deliberately not fixed here:** `GameView`'s own JSDoc
+~~**Still open, and deliberately not fixed here:**~~ **RESOLVED 2026-09-07 by Arc PFA row PF-7 — `packages/react/src/game-view.tsx:159-160` now resolves `safeArea ?? useContext(SafeAreaInsetsContext) ?? ZERO_INSETS`, which never throws, so the JSDoc claim holds at HEAD. Recorded 2026-09-08 while auditing for [desktop-steam-2026-09.md](desktop-steam-2026-09.md) §9. Original text follows.** `GameView`'s own JSDoc
 (`packages/react/src/game-view.tsx:91-93`) claims the `safeArea` prop "falls back to zero insets
 when no provider is mounted". That is false on `react-native-safe-area-context` 5.6.2 and it ships
 in the published `.d.ts`. Fixing it is `packages/react` scope and wants its own lockstep changeset,

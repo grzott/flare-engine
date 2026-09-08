@@ -153,7 +153,7 @@ migration.
 
 Each new-in-arc capability exercised at least once on its real target.
 
-- [ ] **M1 — keyboard input** on desktop web: a scaffolded/topdown web build (or a page demo) responds
+- [ ] **M1 — keyboard input** on desktop web: the scaffolded web build proven real by WEB-5 (a `create-flare-app` scaffold under `bun run web`; see [web-target-2026-08.md](web-target-2026-08.md) §17) responds
       to `createKeyboard` input — arrows/WASD drive movement or UI focus; keydown/keyup + per-frame
       reset behave (no stuck keys).
 - [ ] **M2 — headless barrel**: a plain `bun` script `import`s from `@flare-engine/engine/headless`,

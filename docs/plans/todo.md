@@ -781,6 +781,60 @@ completion for an elided paragraph and present it as the verifier's words.
   consistent now; a published-type break after the flip. **Owner: worth one line in a PFA row if you
   want consistency, or an explicit note that the asymmetry is deliberate.**
 
+### Arc DESK — desktop delivery + Steam (POST-FLIP; NOT before Oct 23)
+
+Ship a Flare game on Steam for Windows and Linux including Steam Deck, by running the Expo web
+export Arc WEB already proved inside a bundled-Chromium shell. **Full design in the SoT:
+[desktop-steam-2026-09.md](desktop-steam-2026-09.md)**; rows here are lean pointers
+(one-source-per-fact) — the builder reads the row's spec section before planning. Authorising
+decision: [ADR-0005](../design/adr-0005-desktop-delivery-target.md). All rows are `packages/**` or
+`create-flare-app` → engine-builder. The arc opens a lockstep **minor**. macOS is out of scope by
+owner decision; §11 lists the rest.
+
+- **DESK-1 — shell spike (throwaway; BLOCKING GATE for every other row).** Boot a scaffolded `blank`
+  in Electron and in NW.js, on Windows and Linux. Settles: the Steam-Input-under-Proton gamepad
+  regression, the `file://` `locateFile` break, hardware-vs-software WebGL, whether `ui`/`ui-shop`
+  render through `react-native-web`, and which Steamworks binding builds. Output is a findings
+  section appended to the SoT, not code. **If no shell passes criterion (i), the arc stops and the
+  SoT is rewritten.** Spec: §4 + §8.
+- **DESK-2 — mouse as a first-class input.** Fix the hover bug (`input-manager.ts:77-82` — a pointer
+  move with no prior press never updates `pointer.position`), then add button discrimination, wheel,
+  and host-driven cursor lock/hide. Additive; the touch contract must not regress. Spec: §5.
+- **DESK-3 — keyboard modifiers.** `KeyboardEventLike` gains modifier state; a chord becomes
+  expressible without binding `ControlLeft` as an ordinary code. Structural, no DOM types. Spec: §5.
+- **DESK-4 — gamepad connect/disconnect + rumble.** Listen for `gamepadconnected`/`gamepaddisconnected`
+  instead of inferring from polls; expose a Signal; add rumble via `GamepadHapticActuator` in
+  `packages/input` (not `haptics`, which cannot reach a controller motor). **Read HYG5's settled
+  `GamepadSource.poll()` fresh-object precondition before planning.** Spec: §5.
+- **DESK-5 — wire `ScreenManager` into the real render path.** It is fully implemented and never
+  instantiated; `GameView` calls `camera.setViewport()` raw (`game-view.tsx:302-309`). This is what
+  makes a resizable window and a 1280x800 Deck both work. **Default must be `stretch` at real
+  viewport size or every existing consumer silently changes** — state it in the changeset. Spec: §5.
+- **DESK-6 — wire `AppLifecycle`; pause/resume on window blur.** Construct it in `GameView`, route
+  audio suspend/resume through it, generalize the keyboard stuck-key clear. **Collides with HYG2**
+  (which plans to reword the docstring to "manual adapter"); whichever lands second reconciles.
+  Spec: §5.
+- **DESK-7 — window + display host surface.** Fullscreen, resize-driven surface recreation, DPI
+  change, as a host-implemented contract. `createWebSurface` needs a resize path; `PostFxSurface.resize()`
+  already exists. Strong prior: a bounded addition to `packages/core`, **not** a new package. Spec: §5.
+- **DESK-8 — `@flare-engine/achievements-steam`.** Tier 3.5, `iap-revenuecat` pattern exactly: one
+  factory, lazy `await import()`, memoized init promise, no-throw, hand-rolled structural SDK types,
+  no `isAvailable()`. **The Steamworks SDK is never committed** — Valve's Access Agreement; README
+  must say so. Spec: §6.
+- **DESK-9 — `@flare-engine/leaderboards-steam`.** Identical shape against `submitScore`/`getTopN`/
+  `getPlayerRank`. Spec: §6.
+- **DESK-10 — Steam Cloud `StorageAdapter`.** Different precedent: tier 2.5, `createMmkvAdapter`
+  shape (inject the handle, declare its type locally, no peer dep). No context, no hook. Spec: §6.
+- **DESK-11 — `desktop` template in `create-flare-app`.** Shell + build config + the `locateFile`
+  fix + Deck Verified requirements met by construction (default controller config, gamepad glyphs,
+  legible at 1280x800, any pre-game window fully gamepad-navigable). Pin the shell exactly. Spec: §7.
+- **DESK-12 — desktop docs + the limitations page.** `api-specs.md` rows, a desktop guide, and an
+  honest limitations section: postfx renders nothing, WebGL not WebGPU, no macOS, plus DESK-1's Deck
+  findings. **Whoever implemented a row drafts its prose** — do not author this from the SoT. Spec: §7.
+- **DESK-13 — proof: a scaffolded desktop app reaches a Steam-uploadable build.** Arc exit gate.
+  Windows + Linux, launched from a depot, gamepad working, achievements firing against a real appid.
+  An uploadable build, not a store page. Spec: §7.
+
 Owner-gated (never picked by `/start`; public schedule road-to-oss §14, specifics in the private ledger): rotate the npm publish credential (owner action; timing + specifics in the private ledger) — or pull Trusted Publishing OIDC forward; **0.4.0** restricted publish Oct 5 (0.3.0 was release N, published restricted 2026-08-25; 0.3.1 followed 2026-08-27 — the Oct 5 freeze cut is 0.4.0, per the CE version decision); the two-week manual window; flip-day actions; portfolio copy alignment. Cross-repo lanes (flare-engine-page G1–G3, PT1–PT3, Berek BK1) run in their own repos with their own gates — road-to-oss §10.
 
 ## Closed arcs (2026-06 → 2026-07; canonical history in SESSION_LOG.md — the harness-modernization notes in the docs+harness section below remain opportunistic, not closed)

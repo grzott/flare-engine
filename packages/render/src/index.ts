@@ -25,6 +25,7 @@ export {
   type RuntimeEffectLike,
   resetXformCounters,
 } from './frame-renderer.js';
+export { drawNineSlice } from './nine-slice.js';
 export {
   createRenderSystem,
   type PositionData,
@@ -37,7 +38,6 @@ export {
   Renderer,
   type RenderStats,
 } from './renderer.js';
-
 export {
   CAVE_INTERIOR_SKSL,
   FIRE_SKSL,
@@ -50,6 +50,7 @@ export {
   WATER_SKSL,
 } from './shaders.js';
 export {
+  type BatchCullBounds,
   SpriteBatch,
   type SpriteDrawCommand,
 } from './sprite-batch.js';

@@ -2,6 +2,17 @@ import type { SkImageLike, SpriteFrame } from '@flare-engine/assets';
 import type { Renderer } from './renderer.js';
 import type { AnySpriteEffect } from './sprite-effects.js';
 
+/**
+ * Axis-aligned bounds used for viewport culling in the batch.
+ * All coordinates are in the same space as the sprite destination rects.
+ */
+export interface BatchCullBounds {
+  readonly minX: number;
+  readonly minY: number;
+  readonly maxX: number;
+  readonly maxY: number;
+}
+
 /** A single sprite draw request in the batch. */
 export interface SpriteDrawCommand {
   /** Texture (Skia SkImage). */
@@ -45,6 +56,27 @@ export interface SpriteDrawCommand {
    * Combine with a zero rotation only.
    */
   stretch: boolean;
+  /**
+   * Blend mode for this batch run. Participates in the batch key — sprites
+   * with different blend modes are placed in separate runs.
+   * `'normal'` (default): standard alpha-over (SrcOver).
+   * `'additive'`: destination pixel receives `src + dst` (Skia Plus mode) —
+   *   useful for particle addons, glows, and shmup bullet trails.
+   */
+  blend: 'normal' | 'additive';
+  /**
+   * Mirror the sprite horizontally about its center.
+   * Participates in the batch key. Flipped sprites are drawn via
+   * `drawImageRect` with a canvas scale(-1, 1) transform — one draw call
+   * per sprite (per-sprite draw call trade-off, documented).
+   * Unsupported in combination with rotation (same constraint as stretch mode).
+   */
+  flipX: boolean;
+  /**
+   * Mirror the sprite vertically about its center.
+   * Same trade-offs as flipX; the two may be combined freely.
+   */
+  flipY: boolean;
 }
 
 /** Internal run-bucket — one reused across all runs per flush. */
@@ -53,6 +85,9 @@ interface Batch {
   effect: AnySpriteEffect | undefined;
   alpha: number;
   stretch: boolean;
+  blend: 'normal' | 'additive';
+  flipX: boolean;
+  flipY: boolean;
   commands: SpriteDrawCommand[];
 }
 
@@ -76,6 +111,7 @@ export class SpriteBatch {
   private _pool: SpriteDrawCommand[] = [];
   private _batches: Batch[] = [];
   private _allocCount = 0;
+  private _cull: { minX: number; minY: number; maxX: number; maxY: number } | null = null;
 
   /** Number of queued draw commands. */
   get count(): number {
@@ -86,6 +122,33 @@ export class SpriteBatch {
    *  command pool was empty. Steady state should be 0 after warm-up. */
   get allocCount(): number {
     return this._allocCount;
+  }
+
+  /**
+   * Current cull bounds, or `null` when culling is disabled.
+   * Read by `drawNineSlice` for coarse AABB precheck.
+   * Set via `setCullBounds()` / `clearCullBounds()`.
+   */
+  get cullBounds(): BatchCullBounds | null {
+    return this._cull;
+  }
+
+  /** Set the viewport cull bounds for this batch.
+   *  Zero-alloc in steady state — the internal object is allocated once and then mutated. */
+  setCullBounds(minX: number, minY: number, maxX: number, maxY: number): void {
+    if (this._cull === null) {
+      this._cull = { minX, minY, maxX, maxY };
+    } else {
+      this._cull.minX = minX;
+      this._cull.minY = minY;
+      this._cull.maxX = maxX;
+      this._cull.maxY = maxY;
+    }
+  }
+
+  /** Disable viewport culling (e.g. during UI rendering). */
+  clearCullBounds(): void {
+    this._cull = null;
   }
 
   /** Queue a sprite draw from a frame.
@@ -109,6 +172,9 @@ export class SpriteBatch {
     alpha = 1,
     rotation = 0,
     stretch = false,
+    blend: 'normal' | 'additive' = 'normal',
+    flipX = false,
+    flipY = false,
   ): void {
     const cmd = this._acquire();
     const w = dstW ?? frame.w;
@@ -128,6 +194,9 @@ export class SpriteBatch {
     cmd.anchorX = anchorX;
     cmd.anchorY = anchorY;
     cmd.stretch = stretch;
+    cmd.blend = blend;
+    cmd.flipX = flipX;
+    cmd.flipY = flipY;
     this._commands.push(cmd);
   }
 
@@ -151,6 +220,9 @@ export class SpriteBatch {
     alpha = 1,
     rotation = 0,
     stretch = false,
+    blend: 'normal' | 'additive' = 'normal',
+    flipX = false,
+    flipY = false,
   ): void {
     const cmd = this._acquire();
     cmd.image = image;
@@ -168,6 +240,9 @@ export class SpriteBatch {
     cmd.anchorX = anchorX;
     cmd.anchorY = anchorY;
     cmd.stretch = stretch;
+    cmd.blend = blend;
+    cmd.flipX = flipX;
+    cmd.flipY = flipY;
     this._commands.push(cmd);
   }
 
@@ -192,7 +267,16 @@ export class SpriteBatch {
     // Ensure one reusable run-bucket exists (allocated once, never in steady state).
     let run = this._batches[0];
     if (run === undefined) {
-      run = { image: null!, effect: undefined, alpha: 1, stretch: false, commands: [] };
+      run = {
+        image: null!,
+        effect: undefined,
+        alpha: 1,
+        stretch: false,
+        blend: 'normal',
+        flipX: false,
+        flipY: false,
+        commands: [],
+      };
       this._batches[0] = run;
     }
 
@@ -204,7 +288,10 @@ export class SpriteBatch {
         (cmd.image !== run.image ||
           cmd.effect !== run.effect ||
           cmd.alpha !== run.alpha ||
-          cmd.stretch !== run.stretch)
+          cmd.stretch !== run.stretch ||
+          cmd.blend !== run.blend ||
+          cmd.flipX !== run.flipX ||
+          cmd.flipY !== run.flipY)
       ) {
         drawAtlas(run.image, run.commands);
         if (renderer) {
@@ -217,6 +304,9 @@ export class SpriteBatch {
       run.effect = cmd.effect;
       run.alpha = cmd.alpha;
       run.stretch = cmd.stretch;
+      run.blend = cmd.blend;
+      run.flipX = cmd.flipX;
+      run.flipY = cmd.flipY;
       run.commands.push(cmd);
     }
 
@@ -268,6 +358,9 @@ export class SpriteBatch {
       anchorX: 0,
       anchorY: 0,
       stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
     };
   }
 }

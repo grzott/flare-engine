@@ -29,9 +29,10 @@ interface CKPaintLike extends PaintLike {
 }
 
 // Numeric BlendMode constants inlined (stable CK ABI).
-// CK's BlendMode enum values: SrcOver=3, SrcIn=5.
+// CK's BlendMode enum values: SrcOver=3, SrcIn=5, Plus=12.
 const BLEND_SRC_OVER = 3;
 const BLEND_SRC_IN = 5;
+const BLEND_PLUS = 12;
 
 // Grow-only flat Float32Array scratch buffers for flattening drawAtlas args.
 // Each instance of createWebSkiaModule gets its own pair.
@@ -241,6 +242,15 @@ export function createWebSkiaModule(kit: CanvasKit): FrameRendererModule {
         setColorFilter: (f) => p.setColorFilter(f as ColorFilter | null),
         setShader: (s) => p.setShader(s as Shader | null),
         setImageFilter: (f) => p.setImageFilter(f as ImageFilter | null),
+        setBlendMode: (m) => {
+          const bm =
+            m === BLEND_SRC_IN
+              ? kit.BlendMode.SrcIn
+              : m === BLEND_PLUS
+                ? kit.BlendMode.Plus
+                : kit.BlendMode.SrcOver;
+          p.setBlendMode(bm);
+        },
       };
       return paint;
     },

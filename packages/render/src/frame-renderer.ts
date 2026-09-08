@@ -135,6 +135,12 @@ export interface PaintLike {
   setColorFilter(filter: unknown): void;
   setShader(shader: unknown): void;
   setImageFilter(filter: unknown): void;
+  /**
+   * Set the Skia BlendMode on this paint.
+   * Optional — absent on mocks and some test stubs; the renderer silently
+   * falls back to SrcOver (the Skia default) when the method is missing.
+   */
+  setBlendMode?(mode: number): void;
 }
 
 /** Minimal draw surface the frame-renderer calls into. */
@@ -263,6 +269,8 @@ export interface FrameRenderer {
 
 const BLEND_SRC_OVER = 3;
 const BLEND_SRC_IN = 5;
+/** Skia BlendMode.Plus — additive: dst = clamp(src + dst). */
+const BLEND_PLUS = 12;
 
 const OUTLINE_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
@@ -795,10 +803,14 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const n = commands.length;
       if (n === 0) return;
 
-      const effect = commands[0]?.effect;
-      const alpha = commands[0]?.alpha ?? 1;
-      currentSpriteW = commands[0]?.dstW ?? 0;
-      currentSpriteH = commands[0]?.dstH ?? 0;
+      const cmd0 = commands[0] as SpriteDrawCommand;
+      const effect = cmd0.effect;
+      const alpha = cmd0.alpha;
+      const blendAdditive = cmd0.blend === 'additive';
+      const flipX = cmd0.flipX;
+      const flipY = cmd0.flipY;
+      currentSpriteW = cmd0.dstW;
+      currentSpriteH = cmd0.dstH;
 
       if (
         effect?.type === 'roofs-city' ||
@@ -809,6 +821,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
         effect?.type === 'mountain-hills'
       ) {
         const paint = resolveEffectPaint(effect);
+        if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
         paint.setAlphaf(alpha);
         ensureZoneBgPoolCapacity(n);
         for (let i = 0; i < n; i++) {
@@ -817,18 +830,20 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
           current.drawRect(zoneBgRects[i]!, paint);
         }
         paint.setAlphaf(1);
+        if (blendAdditive) paint.setBlendMode?.(BLEND_SRC_OVER);
         return;
       }
 
-      if (commands[0]?.stretch) {
+      if (cmd0.stretch || flipX || flipY) {
         ensureStretchPoolCapacity(n);
         if (stretchPaint === null) stretchPaint = Skia.Paint();
         const sp = stretchPaint;
         // outline requires two passes (SRC_IN silhouette + source) which is
         // incompatible with the single-drawImageRect stretch path; fall back
-        // to alpha-only like the pre-effect baseline.
+        // to alpha-only. Also fall back when flip+outline is combined.
         const sPaint =
           effect === undefined || effect.type === 'outline' ? sp : resolveEffectPaint(effect);
+        if (blendAdditive) sPaint.setBlendMode?.(BLEND_PLUS);
         sPaint.setAlphaf(alpha);
         for (let i = 0; i < n; i++) {
           const cmd = commands[i] as SpriteDrawCommand;
@@ -836,9 +851,21 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
           const dstR = stretchDstRects[i]!;
           srcR.setXYWH(cmd.srcX, cmd.srcY, cmd.srcW, cmd.srcH);
           dstR.setXYWH(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
-          current.drawImageRect(image, srcR, dstR, sPaint);
+          if (cmd.flipX || cmd.flipY) {
+            const cx = cmd.dstX + cmd.dstW * 0.5;
+            const cy = cmd.dstY + cmd.dstH * 0.5;
+            current.save();
+            current.translate(cx, cy);
+            current.scale(cmd.flipX ? -1 : 1, cmd.flipY ? -1 : 1);
+            current.translate(-cx, -cy);
+            current.drawImageRect(image, srcR, dstR, sPaint);
+            current.restore();
+          } else {
+            current.drawImageRect(image, srcR, dstR, sPaint);
+          }
         }
         sPaint.setAlphaf(1);
+        if (blendAdditive) sPaint.setBlendMode?.(BLEND_SRC_OVER);
         return;
       }
 
@@ -846,7 +873,15 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       fillSrcRects(commands, n);
 
       if (effect?.type === 'outline') {
+        if (blendAdditive) {
+          outlinePaint?.setBlendMode?.(BLEND_PLUS);
+          defaultPaint.setBlendMode?.(BLEND_PLUS);
+        }
         drawOutlined(current, image, commands, n, effect, alpha);
+        if (blendAdditive) {
+          outlinePaint?.setBlendMode?.(BLEND_SRC_OVER);
+          defaultPaint.setBlendMode?.(BLEND_SRC_OVER);
+        }
         return;
       }
 
@@ -854,9 +889,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const srcs = getCachedSrcSlice(n);
       const dsts = getCachedXformSlice(n);
       const paint = effect === undefined ? defaultPaint : resolveEffectPaint(effect);
+      if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
       paint.setAlphaf(alpha);
       current.drawAtlas(image, srcs, dsts, paint);
       paint.setAlphaf(1);
+      if (blendAdditive) paint.setBlendMode?.(BLEND_SRC_OVER);
     },
 
     setPostFxBinding(runtime, chain): void {

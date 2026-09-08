@@ -410,6 +410,9 @@ function cmd(partial: Partial<SpriteDrawCommand>): SpriteDrawCommand {
     anchorX: 0,
     anchorY: 0,
     stretch: false,
+    blend: 'normal',
+    flipX: false,
+    flipY: false,
     ...partial,
   };
 }

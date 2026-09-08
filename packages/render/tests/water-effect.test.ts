@@ -161,6 +161,9 @@ function makeWaterCmd(dstW: number, dstH: number): SpriteDrawCommand {
     anchorX: 0,
     anchorY: 0,
     stretch: false,
+    blend: 'normal',
+    flipX: false,
+    flipY: false,
   };
 }
 

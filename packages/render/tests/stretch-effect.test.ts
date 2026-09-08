@@ -134,6 +134,9 @@ function stretchCmd(partial: Partial<SpriteDrawCommand> = {}): SpriteDrawCommand
     anchorX: 0,
     anchorY: 0,
     stretch: true,
+    blend: 'normal',
+    flipX: false,
+    flipY: false,
     ...partial,
   };
 }

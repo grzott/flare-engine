@@ -52,6 +52,19 @@ export interface SpriteData {
    * Rotation is unsupported in stretch mode — combine only with `rotation = 0`.
    */
   stretch?: boolean;
+  /**
+   * Blend mode for this sprite.
+   * `'normal'` (default): standard alpha-over blending.
+   * `'additive'`: src + dst pixel colours — glows, particles, bullet trails.
+   * Sprites with different blend modes are placed in separate batch runs.
+   */
+  blend?: 'normal' | 'additive';
+  /** Mirror the sprite horizontally. Default false.
+   *  Routes through the `drawImageRect` path — per-sprite draw call trade-off.
+   *  Unsupported with rotation; combine only with `rotation = 0`. */
+  flipX?: boolean;
+  /** Mirror the sprite vertically. Default false. Same trade-offs as flipX. */
+  flipY?: boolean;
 }
 
 /** Cached entry for sorting. Reused each frame to avoid allocs. */
@@ -135,6 +148,9 @@ export function createRenderSystem(
         sprite.alpha ?? 1,
         sprite.rotation ?? 0,
         sprite.stretch ?? false,
+        sprite.blend ?? 'normal',
+        sprite.flipX ?? false,
+        sprite.flipY ?? false,
       );
     }
   };

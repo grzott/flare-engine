@@ -165,6 +165,9 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
       anchorY: 0,
       effect: undefined,
       stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
     };
 
     renderer.drawAtlas(atlasImage, [cmd]);
@@ -260,6 +263,9 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
       anchorY: 0,
       effect: undefined,
       stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
     };
 
     renderer.drawAtlas(atlasImage, [cmd]);
@@ -412,6 +418,9 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
       anchorX: 0,
       anchorY: 0,
       stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
     };
     renderer.drawAtlas(cmd.image, [cmd]);
     const pic = renderer.endFrame();
@@ -519,6 +528,9 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
       anchorX: 0,
       anchorY: 0,
       stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
     });
 
     renderer.beginFrame(W, H, 1.0, 1);
@@ -539,5 +551,216 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     expect(time0).not.toBe(time1);
 
     atlasSurf.delete();
+  });
+
+  /**
+   * Additive blend parity: draws a solid-blue full-frame sprite with normal blend,
+   * then a solid-red full-frame sprite with additive blend on the same frame.
+   *
+   * With additive (Plus): dst=(0,0,255) + src=(255,0,0) → pixel ≈ (255,0,255) — both
+   * R and B channels are high (magenta).
+   * With SrcOver (the bug): dst is replaced → pixel ≈ (255,0,0) — B channel is low.
+   *
+   * The blue channel surviving distinguishes additive from the SrcOver fallback.
+   */
+  it('additive blend pixel is brighter than SrcOver (blue channel survives red additive)', () => {
+    const W = 32;
+    const H = 32;
+
+    const blueSurface = kit.MakeSurface(W, H);
+    expect(blueSurface).not.toBeNull();
+    if (!blueSurface) return;
+    blueSurface.getCanvas().clear(kit.Color4f(0, 0, 1, 1));
+    const blueImage = blueSurface.makeImageSnapshot() as unknown as SkImageLike;
+
+    const redSurface = kit.MakeSurface(W, H);
+    expect(redSurface).not.toBeNull();
+    if (!redSurface) return;
+    redSurface.getCanvas().clear(kit.Color4f(1, 0, 0, 1));
+    const redImage = redSurface.makeImageSnapshot() as unknown as SkImageLike;
+
+    const mod = createWebSkiaModule(kit);
+    const renderer = createFrameRenderer(mod);
+
+    renderer.beginFrame(W, H, 0, 1);
+    const blueCmd: SpriteDrawCommand = {
+      image: blueImage,
+      srcX: 0,
+      srcY: 0,
+      srcW: W,
+      srcH: W,
+      dstX: 0,
+      dstY: 0,
+      dstW: W,
+      dstH: H,
+      rotation: 0,
+      alpha: 1,
+      anchorX: 0,
+      anchorY: 0,
+      effect: undefined,
+      stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
+    };
+    const redCmd: SpriteDrawCommand = {
+      image: redImage,
+      srcX: 0,
+      srcY: 0,
+      srcW: W,
+      srcH: H,
+      dstX: 0,
+      dstY: 0,
+      dstW: W,
+      dstH: H,
+      rotation: 0,
+      alpha: 1,
+      anchorX: 0,
+      anchorY: 0,
+      effect: undefined,
+      stretch: false,
+      blend: 'additive',
+      flipX: false,
+      flipY: false,
+    };
+    renderer.drawAtlas(blueImage, [blueCmd]);
+    renderer.drawAtlas(redImage, [redCmd]);
+    const pic = renderer.endFrame();
+    expect(pic).not.toBeNull();
+    if (!pic) return;
+
+    const rasterSurface = kit.MakeSurface(W, H);
+    expect(rasterSurface).not.toBeNull();
+    if (!rasterSurface) return;
+    const rc = rasterSurface.getCanvas();
+    rc.clear(kit.Color4f(0, 0, 0, 1));
+    rc.drawPicture(pic as Parameters<typeof rc.drawPicture>[0]);
+    rasterSurface.flush();
+
+    const imageInfo = {
+      width: W,
+      height: H,
+      colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul,
+      colorSpace: kit.ColorSpace.SRGB,
+    };
+    const pixels = rasterSurface.makeImageSnapshot().readPixels(0, 0, imageInfo) as Uint8Array;
+    expect(pixels).not.toBeNull();
+
+    // Centre pixel must be ~magenta: R high (red additive applied), B high (blue survived).
+    const idx = (16 * W + 16) * 4;
+    const r = pixels[idx]!;
+    const b = pixels[idx + 2]!;
+    expect(r).toBeGreaterThan(200); // red from the additive sprite
+    expect(b).toBeGreaterThan(200); // blue from the base sprite survived (additive, not SrcOver)
+
+    if (typeof (pic as { delete?: () => void }).delete === 'function') {
+      (pic as { delete: () => void }).delete();
+    }
+    blueSurface.delete();
+    redSurface.delete();
+    rasterSurface.delete();
+  });
+
+  /**
+   * flipX parity: a 4×4 atlas where the left half is red and right half is green.
+   * Drawing with flipX=true must swap which half appears red in the destination.
+   *
+   * Destination pixel (col=0, row=2) — leftmost column:
+   *   flipX correct → green (was right half in source)
+   *   flipX ignored → red   (was left half in source — the bug)
+   *
+   * Destination pixel (col=3, row=2) — rightmost column:
+   *   flipX correct → red   (was left half in source)
+   *   flipX ignored → green (was right half — the bug)
+   */
+  it('flipX swaps which half of the atlas reads as red vs green', () => {
+    const W = 4;
+    const H = 4;
+
+    // Build a 4×4 atlas: left 2 columns red, right 2 columns green.
+    const atlasSurface = kit.MakeSurface(W, H);
+    expect(atlasSurface).not.toBeNull();
+    if (!atlasSurface) return;
+    const ac = atlasSurface.getCanvas();
+    ac.clear(kit.Color4f(0, 0, 0, 1));
+    const redPaint = new kit.Paint();
+    redPaint.setColor(kit.Color4f(1, 0, 0, 1));
+    ac.drawRect(kit.XYWHRect(0, 0, 2, H), redPaint);
+    const greenPaint = new kit.Paint();
+    greenPaint.setColor(kit.Color4f(0, 1, 0, 1));
+    ac.drawRect(kit.XYWHRect(2, 0, 2, H), greenPaint);
+    atlasSurface.flush();
+    const atlasImage = atlasSurface.makeImageSnapshot() as unknown as SkImageLike;
+
+    const mod = createWebSkiaModule(kit);
+    const renderer = createFrameRenderer(mod);
+
+    renderer.beginFrame(W, H, 0, 1);
+    const flipCmd: SpriteDrawCommand = {
+      image: atlasImage,
+      srcX: 0,
+      srcY: 0,
+      srcW: W,
+      srcH: H,
+      dstX: 0,
+      dstY: 0,
+      dstW: W,
+      dstH: H,
+      rotation: 0,
+      alpha: 1,
+      anchorX: 0,
+      anchorY: 0,
+      effect: undefined,
+      stretch: true,
+      blend: 'normal',
+      flipX: true,
+      flipY: false,
+    };
+    renderer.drawAtlas(atlasImage, [flipCmd]);
+    const pic = renderer.endFrame();
+    expect(pic).not.toBeNull();
+    if (!pic) return;
+
+    const rasterSurface = kit.MakeSurface(W, H);
+    expect(rasterSurface).not.toBeNull();
+    if (!rasterSurface) return;
+    const rc = rasterSurface.getCanvas();
+    rc.clear(kit.Color4f(0, 0, 0, 1));
+    rc.drawPicture(pic as Parameters<typeof rc.drawPicture>[0]);
+    rasterSurface.flush();
+
+    const imageInfo = {
+      width: W,
+      height: H,
+      colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul,
+      colorSpace: kit.ColorSpace.SRGB,
+    };
+    const pixels = rasterSurface.makeImageSnapshot().readPixels(0, 0, imageInfo) as Uint8Array;
+    expect(pixels).not.toBeNull();
+
+    const at = (col: number, row: number) => {
+      const i = (row * W + col) * 4;
+      return { r: pixels[i]!, g: pixels[i + 1]!, b: pixels[i + 2]! };
+    };
+
+    // Left column (col=0): after flipX, this was the right (green) half of the source.
+    const left = at(0, 2);
+    expect(left.g).toBeGreaterThan(200); // green — flipX moved the green half to the left
+    expect(left.r).toBeLessThan(50); // not red
+
+    // Right column (col=3): after flipX, this was the left (red) half of the source.
+    const right = at(3, 2);
+    expect(right.r).toBeGreaterThan(200); // red — flipX moved the red half to the right
+    expect(right.g).toBeLessThan(50); // not green
+
+    if (typeof (pic as { delete?: () => void }).delete === 'function') {
+      (pic as { delete: () => void }).delete();
+    }
+    redPaint.delete();
+    greenPaint.delete();
+    atlasSurface.delete();
+    rasterSurface.delete();
   });
 });

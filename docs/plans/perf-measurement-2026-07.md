@@ -975,6 +975,12 @@ Files: packages/physics/src/{collision-world.ts,spatial-index.ts}, tests.
    item)` with a `Map<T, SpatialEntry<T>>` index — removes a closure allocation per entity
    per frame and an O(n) scan inside an already O(n²) broadphase. Keep `remove`'s
    swap-remove semantics working with the index.
+   **Note (PF-6, 2026-09-07): `SpatialEntry<T>` no longer exists as a public export — it is
+   the internal `_Entry<T>`.** This item also reads superseded in the shipped code: `b617e49`
+   ("perf(physics): uniform spatial hash broadphase, surface frozen", 2026-08-27) rewrote
+   `SpatialIndex` around a dense array + `_slots: Map<T, number>` index, and `update()`
+   (spatial-index.ts:88) is now O(1) via `_slots.get(item)` — no `.find()` scan remains.
+   Re-verify against `todo.md`/`SESSION_LOG.md` before treating this item as open work.
 3. `CollisionWorld.step` (collision-world.ts:137): iterate `this.entries.values()` and read
    `entryA.entity` instead of destructuring `[entityA, entryA]` — the field already exists,
    so this drops one 2-element array per entity per frame for free.

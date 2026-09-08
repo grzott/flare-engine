@@ -237,6 +237,7 @@ design; override debt must be zero before Oct 5.
   Move the return after the affinity loop, add `powerSchemeGuid` to the shared field, and add two
   mutation-verified tests (a Power-Saver run refused; an unpinned 24c/32t run refused). Blocks PF-9 being
   trustworthy.
+  **DONE 2026-09-07** (session 321). Power-plan and affinity refusals now reach a return via `environment`; `powerSchemeGuid` added as a shared field. Two mutation-verified refusal tests. Review clean.
 - **CR-1+CR-2 — the pending changesets tell two opposite stories** (P0, [MT], 1 session).
   `.changeset/xr1-old-arch-claim-qualified.md` still ships ">=3.19.1, old-arch intended" — the story XR-13 and
   ADR-0002 reversed. Delete it (fold any surviving fact into `xr13-worklets-scheduleonui.md`), confirm
@@ -252,6 +253,7 @@ design; override debt must be zero before Oct 5.
   query; F005 coroutine `cancel()`/`clear()` never closing the generator (`gen.return()` throws if called from
   inside the running generator — guard it); F011 `Vec2.normalizeOut` does not normalize, and it is the repo's
   only `…Out` name. Tier-1: stales every bench lane.
+  **DONE 2026-09-07** (session 321), run as PF-2a (ecs) + PF-2b (core+math). Review clean after one fix round each: the `QueryBuilder` arity pin was strengthened to reject an optional param, the scaffolder template nested `for...of` was rewritten to an indexed walk, and `CoroutineHandle` gained `cancelled` so all three end states are distinguishable.
 - **PF-6 — physics + pathfinding public shape** (P1, 1 session). F049 additive `addCollider(entity, collider, x, y)`
   + `README.md:25`; F039 per OWN-DECIDE; F050 `NavMeshPolygon.neighbors` required-but-unread; F056 `SpatialEntry<T>`
   exported with no producer.
@@ -269,27 +271,34 @@ design; override debt must be zero before Oct 5.
   permanent after Oct 20, and F064 went to the typed array. **Owner: say so if you want the opposite,
   it is a three-line revert before the cut.** `buildSolidGrid` is the only producer, so the change is
   contained; keep its `SolidTile[]` input shape untouched.
+  **DONE 2026-09-07** (session 321). Review clean after one fix round that REVERSED the by-reference `Collider` storage the brief asked for: `Collider.shape` is mutable while `Shape` is readonly, so holding it live let a post-add mutation silently desync the broadphase — a miss whose visibility depended on entity id order. `CollisionEntry` stays flat; `addCollider` copies.
 - **PF-5 — render-web + postfx + render surface** (P1, 1 session). F018 `createWebSurface` returns
   `{ canvas, flush, dispose }` (the surface can never be flushed or deleted today — pulled out of HYG8, which
   drops the item); F030 `composite(globalIntensity?)` assigns only when provided; F031 the composite clouds
   branch ignores the packed `weatherDirection`; F033/F034 dead optional + unreferenced `ColorLike` export.
+  **DONE 2026-09-07** (session 321). Review clean, no fix round. F033 and F034 both confirmed at HEAD before acting; `ckCanvas` is load-bearing because `CanvasLike` has no `drawPicture`.
 - **PF-4 — shapes** (P1, 1 session). F016 `drawShip` discards engine `ox/oy/rot`; F017 `shapeBoundsRadius`
   omits stroke width and the glow ring its contract promises; F032 drop only the dead `_Skia` parameter (the
   glow enum is the documented contract — verifier corrected the finder here).
+  **DONE 2026-09-07** (session 321). Review clean, no fix round. All seven pinned `bounds.test.ts` values verified unchanged — that is what proves the F017 fix was additive rather than a substitution.
 - **PF-3 — input** (P1, 1 session). F038 route only the primary touch id into `pointer`; F052 one clock in
   `GestureDetector`; F051 the three vocabularies for one edge flag; F043 the non-zero-alloc gamepad seam.
+  **DONE 2026-09-07** (session 321). Review clean after one docs-only fix round. F043 shipped NO CODE by design: measured (~20 objects per pad in `poll()`), found nothing that changes a published signature, left it to HYG5 — see the precondition it surfaced there.
 - **PF-7 — react + scene + storage contracts** (P1, 1 session). F079 `GameView` throws without
   `<SafeAreaProvider>` while the spec claims a zero fallback — implement it or delete the claim; F069
   `SceneFactory` must supply world/camera that `SceneManager` discards; F059 `DocumentStore.load()` treats any
   migration throw as corrupt and **persists defaults over a valid document**.
+  **DONE 2026-09-07** (session 321). Review clean, no fix round. The F059 test asserts the stored bytes are byte-identical after a failed migration, not merely that defaults came back.
 - **PF-1 — settle the published tilemap format** (P0, 2 sessions, after OWN-DECIDE). F076 is the one
   high-severity pre-flip finding: `flare tiled-to-flare` emits a layer/tileset shape that `parseTiled` rejects,
   so the Tiled authoring story is broken end to end — the story OSS-B8 says the engine depends on. Plus F064
   (`tiles: number[]` → typed array), F070/F071/F072.
+  **DONE 2026-09-07** (session 321), both passes. Review clean, no fix round — and the reviewer reproduced the pre-fix failure itself, feeding the old converter into the current `parseTiled` and getting `unsupported type undefined` plus the dropped tileset `tiles[]`.
 - **PF-8 — tier-3.5 UI + IAP** (P1, 1 session). F085/F078: the RevenueCat adapter reads `purchaseDateMillis`,
   a field the SDK never sends, so `purchasedAt` is always "now" — read `latestPurchaseDateMillis` for
   entitlements and `purchaseDateMillis ?? Date.parse(purchaseDate)` for transactions. Plus F086 `PaywallModal`
   granting a prop-supplied key past the catalog, F087 the second dead shop list, F083, F090, F073.
+  **DONE 2026-09-07** (session 321). Review clean, no fix round. F083/F090/F073 all confirmed at HEAD. F087 decided: `ui` `ShopPanel`/`ShopItem` removed, `ui-shop` `ShopScreen` kept.
 - **CR-5 — runbook + protocol truth pass** (P0, [MT], 1 session). **DONE 2026-09-07.** Thirteen
   corrections landed across `flip-runbook.md`, `manual-test-protocol.md` and `road-to-oss-2026-09.md`,
   each verified against the tree or a gate rather than taken from the finding text:
@@ -596,6 +605,16 @@ Design-quality cleanup from the 2026-07-05 audit ([ledger](_local/deep-audit-202
 - **HYG3 — render + postfx: SkSL + effect de-duplication.** Six zone-bg apply-fns → one descriptor-table `applyZoneBg` + shared factory builder (frame-renderer.ts:548-678); shared `HASH*/VALUE_NOISE` SkSL snippet constants (shaders.ts, 9 copies); assemble COMPOSITE_SKSL from shared fragments (rain layers ≡ WEATHER_RAIN).
 - **HYG4 — shapes: fill/stroke epilogue + color unpack.** Extract `fillStrokePath(...)` for the six shape renderers (draw.ts:196-474); one `argbToFloat4Into` color helper replacing the 5 copies (shapes/render/render-web/react/assets).
 - **HYG5 — simulation + physics + input + audio: integrator + hot-path.** `nbody.step()` calls `verletStep` (makes api-specs:837 true); `SpatialIndex` Map-keyed O(1) update/remove; `pollGamepads` single Map get + `applyRemapInto`; drop `AudioManager.factory` dead field; `gestures` `_pinchActive` boolean.
+  **PRECONDITION SETTLED 2026-09-07 (session 321) — HYG5 is unblocked.** `GamepadSource.poll()`
+  returns **fresh objects on every call**: an implementation must not reuse or mutate a snapshot, or
+  its `buttons`/`axes` arrays, that a previous call returned; a caller may therefore retain one
+  across frames. Documented on the interface, in `api-specs.md`'s `GamepadSource` row, and pinned by
+  an identity test that holds the underlying pad array constant by reference so a collision can only
+  come from `poll()` itself. This **documents what already shipped** — `createWebGamepadSource`
+  always allocated fresh — rather than changing behaviour. **What it means for HYG5:** the zero-alloc
+  work cannot make `poll()` reuse; it must add a separate `pollInto`/`applyRemapInto` twin, which is
+  the repo convention anyway (19 `…Into` names, and PF-2b renamed the last `…Out`). Additive, and
+  needing no further decision. Original framing follows.
   **PRECONDITION added 2026-09-07 by PF-3, and it has to be decided BEFORE the flip even though HYG5
   itself is post-flip.** PF-3 measured this seam rather than changing it — ~20 objects per pad in
   `poll()`, another ~20 in `applyRemap` when a remap is installed, `updateGamepadFromSnapshot`

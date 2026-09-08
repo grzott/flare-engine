@@ -20,20 +20,15 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ## Engine architecture
 
-41 packages, layered, downward-only deps. Diagram: `docs/design/architecture.md`.
+**42 package dirs — 41 scoped `@flare-engine/*` plus `create-flare-app`, which is versioned in
+lockstep but never published.** Layered, with dependencies flowing downward only.
 
-| Layer | Packages |
-|---|---|
-| 0 Foundation | math · events |
-| 1 Runtime | core · ecs |
-| 2 Systems | render · shapes · input · physics · dynamics · audio · assets · simulation · progression |
-| 2.5 Persistence | storage · errors · testing · localization · deep-links · share · a11y · haptics |
-| 3 Features | scene · animation · particles · tilemap · debug · pathfinding · dialogue |
-| 3.5 UI | ui · postfx · ui-shop |
-| 4 Integration | react · render-web · engine |
-| Tooling | cli · devtools · create-flare-app |
-| Tier-2 stubs | leaderboards · achievements · iap · analytics |
-| Adapters | iap-revenuecat |
+**The tier map is not reproduced here.** It lives in exactly one place:
+[docs/design/architecture.md](../design/architecture.md#layer-diagram), which is the document that
+tracks `LAYER_MAP` in `scripts/check-deps-tiers.mjs`. Five documents used to carry their own copy and
+they had drifted apart on eleven packages — CR-4 collapsed them to that one source on 2026-09-07, and
+adding a sixth copy here would restart the drift. The dependency rule itself is stated once in
+`AGENTS.md` and enforced by `bun run check:deps`.
 
 ### Engine phases — status
 

@@ -153,6 +153,10 @@ treating `SpatialIndex` as a broadphase.
 `SpatialEntry<T>`, no new constructor parameters — so no consumer edit is required beyond taking
 `^0.3.1`.
 
+**Update 2026-09-07 (PF-6):** `SpatialEntry<T>` was un-exported (it is now the internal `_Entry<T>`,
+never a public export). The verdict above still holds — no consumer depended on the type being
+public — but `SpatialEntry<T>` itself no longer exists on the public surface.
+
 **Your mechanism claims were all correct at HEAD**: `setPosition` O(n), `step()` O(n²), and the source
 comment inviting the upgrade. All three reproduced verbatim.
 

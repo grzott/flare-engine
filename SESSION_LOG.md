@@ -12061,3 +12061,43 @@ completed work and can conflict with it.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 322 — 2026-09-07 (scope: engine)
+
+**Goal:** the two Arc PFA rows still runnable before the freeze — CR-4 (public-facing one-source
+fixes) and the HYG5 precondition PF-3 surfaced. Plus repairing a bookkeeping bug from session 321.
+
+**Touched files**
+- `.claude/hooks/verify.sh` (comment only), `.claude/skills/close/SKILL.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md`
+- `docs/conventions/code.md`, `docs/conventions/git.md`
+- `docs/design/api-specs.md`, `docs/design/architecture.md`
+- `docs/plans/roadmap.md`, `docs/plans/todo.md`,
+  `docs/plans/pan-tvardowski-needs-2026-08.md`, `docs/plans/perf-measurement-2026-07.md`
+- `packages/input/src/gamepad-source.ts` (docstring only), `packages/input/tests/gamepad-source.test.ts`
+- `.changeset/hyg5-pre-gamepad-source-freshness.md`
+
+**Gates** — all green: lint, typecheck, test+build, typecheck:tests, check:deps, check:changeset,
+check:bump, check:readme, hook-guard. `check:perf-freshness` remains red by design until PF-9.
+
+**Frictions:** corr:2 (I predicted PF-6 had changed the pathfinding flow-fields claim — it had not,
+and the agent was right to re-read rather than assume; and my HYG5-PRE brief asked for snapshot +
+buttons identity while the contract I approved froze snapshot + buttons + axes, so the test pinned
+two thirds of its own promise until review caught it); drift:3 (nine session-321 rows were never
+stamped in todo.md, so `/start` would have re-run committed work; roadmap.md carried a sixth tier-map
+copy that would have restarted the drift CR-4 had just collapsed; architecture.md still called the
+spatial-hash broadphase "future work" three commits after `b617e49` shipped it — invisible because
+CW7-8 deliberately kept the exported surface byte-identical, so no signature changed to prompt an
+update).
+
+**Notes:** `AGENTS.md` gained "An audit finding's prose is an argument, not a measurement" and is now
+the single source for the dependency rule that four documents link to — verified against
+`check-deps-tiers.mjs:220`'s actual `depTier > selfTier` test rather than against the old prose. The
+tier map went from five copies to one; the easing count from five sites to one
+(`packages/math/README.md`), with the summaries saying "Penner easings" and no number. `verify.sh`'s
+own header described 4 gates when it runs 12 — corrected, comment-only, and the list now matches the
+`run_gate` order including the game-scope skips.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

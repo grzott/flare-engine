@@ -12101,3 +12101,49 @@ own header described 4 gates when it runs 12 — corrected, comment-only, and th
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 323 — 2026-09-08 (scope: engine)
+
+**Goal:** act on the owner's seven decisions — the registry assertion, two high-severity defects
+pulled forward from Arc HYG, and the scaffolder templates.
+
+**Touched files**
+- `scripts/audit-tarballs.mjs`, `scripts/lib/pack.mjs`, `scripts/lib/pack.d.mts` (new),
+  `scripts/tests/pack-registry.test.ts` (new)
+- `scripts/check-changeset-symbols.mjs` (new), `scripts/check-changeset-symbols.d.mts` (new),
+  `scripts/tests/check-changeset-symbols.test.ts` (new), `package.json`
+- `packages/physics/src/{spatial-index,collision-world}.ts`,
+  `packages/physics/tests/{spatial-index,world-raycast}.test.ts`
+- `packages/tilemap/src/ldtk-parser.ts`, `packages/tilemap/tests/ldtk-parser.test.ts`
+- `packages/create-flare-app/templates/topdown/{src/map.ts,src/App.tsx,tests/tilemap.test.ts,README.md}`
+- `docs/design/{adr-0004-pre-flip-surface-remediation,adr-0001-renderer-and-threading,api-specs}.md`
+- `docs/plans/{todo,road-to-oss-2026-09,pre-flip-audit-2026-09-findings}.md`
+- `.changeset/{hyg13-hyg16-pre-raycast-hang-ldtk-autolayer,pf1b-tilemap-types,xr1c-opaque-android-guidance}.md`
+
+**Gates** — all green: lint, typecheck, test+build, typecheck:tests, check:deps, check:changeset,
+check:bump, check:readme, check:changeset-symbols, hook-guard. `check:perf-freshness` stays red by
+design until PF-9.
+
+**Frictions:** corr:2 (I told the owner `TileLayer.tiles` was `readonly` at the property level — it
+carries no modifier at all, only `SolidGrid.solid` does; and I reported the findings-doc elision as
+"two paragraphs of F038" when it is 76 paragraphs across 47 findings, having read my own truncated
+`cut -c1-300` output as a property of the file); deny:1 (`pre-bash-guard` blocked a ledger entry whose
+*text* quoted forbidden command names); data-loss:1 (an agent used `bun --check` to verify a file
+parsed — bun has no such flag, so it RAN the script and overwrote the gitignored
+`docs/plans/_local/f3-tarball-audit.md`; assessed as negligible because that report is generated and
+regenerable offline, its published rows were all "not fetched (auth required)", and its July content
+described tarballs that no longer exist).
+
+**Notes:** the `AGENTS.md` rule added yesterday caught its own repo one round before shipping — the
+HYG-PULL changeset claimed the tightened LDtk types made a real-shape fixture "the only shape that
+typechecks", which a review disproved by compiling the pattern under `tsc --strict`: `parseLDtk`
+narrows through a bare `as LDtkJSON`, so the guardrail does not exist. Corrected before landing.
+The `SpatialIndex` clamp bound was verified exact rather than approximate (`KEY_OFFSET` 32768 x
+`CELL` 64 = 2,097,152), and out-of-range aliasing was proven never to yield a wrong result because
+`query()`'s containment test uses unclamped coordinates. `blank` and `shmup` were surveyed and
+deliberately left unchanged. New rows: HYG22 (mock centralisation), HYG23 (`setSolidAt`/`setTileAt`),
+HYG24 (**a pre-freeze decision**: `SolidGrid.solid` is `readonly`, `TileLayer.tiles` is not).
+
+**Next:** see `docs/plans/todo.md`.
+
+---

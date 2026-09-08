@@ -1058,16 +1058,21 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
   `PUBLISHED_VERSIONS_EXPECTED` in the script is only the unauthenticated fallback's "could not
   fetch" list, and F3-EXTEND brought it to five so an unauthenticated report cannot read as complete
   while omitting two published versions.
-  **The registry is not pinned with `--registry`, and that is a live disagreement inside this
-  document.** `scripts/lib/pack.mjs:23` inherits ambient npm config, so a leftover freeze-window
-  override would make this row audit verdaccio's tarballs and report them as published (XR-11) —
-  which is why this bullet used to mandate the flag. F3-EXTEND refuses it. What defends the step
-  today is procedure alone: §4.4 step 3 requires the owner run it "on a machine with no verdaccio
-  and no registry override", *before* verdaccio ever stands up. Note the pin would not buy
-  agent-runnability either — `npm` is denied to agents by `.claude/settings.json` and
-  `pre-bash-guard.sh` FORBIDDEN_PM whatever flags it carries. **CR-5 owns closing this**: either
-  restore the pin, or add an effective-registry assertion that aborts before the first fetch.
-  Extract; scan
+  **Closed 2026-09-08 (F3-ASSERT, owner decision 2026-09-07): assert-and-abort, not a `--registry`
+  pin.** `scripts/lib/pack.mjs:23` inherits ambient npm config, so a leftover freeze-window override
+  would make this row audit verdaccio's tarballs and report them as published (XR-11) — which is why
+  this bullet used to mandate the flag, and why F3-EXTEND then refused it: a pin silently works
+  around a mis-set machine, and this row is one step in a longer owner-run sequence, so the next
+  step would inherit the same bad config and nobody would learn. An assertion fails loudly at the
+  first fetch instead, which is the behaviour wanted on a `[blocking]` step before a one-way flip.
+  `scripts/audit-tarballs.mjs` now resolves the effective registry (`npm config get registry`, via
+  the same `pack.mjs` `npm()` helper the rest of the script already shells through) immediately
+  before the first published-version fetch and aborts with the registry it found plus a pointer to
+  flip-runbook.md's "Registry hygiene" pre-flight box, unless it is `https://registry.npmjs.org/`.
+  Only the published-version half aborts — the registry-independent HEAD-tarball scan still runs.
+  The pin still would not have bought agent-runnability — `npm` is denied to agents by
+  `.claude/settings.json` and `pre-bash-guard.sh` FORBIDDEN_PM whatever flags it carries — so this
+  row does not change who may run the script. Extract; scan
   for private-project vocabulary,
   local paths, tokens/env files, private URLs, and session/plan references — the full pattern list
   lives IN the script and the `_local/` report, not in this public doc. Names absent at a given

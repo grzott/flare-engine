@@ -336,10 +336,19 @@ design; override debt must be zero before Oct 5.
   road-to-oss `:1053-1056` mandates an explicit `--registry https://registry.npmjs.org/` on every
   published-version fetch, because `scripts/lib/pack.mjs:23` inherits ambient npm config and a leftover
   freeze-window override would make F3-PUB audit **verdaccio's** tarballs and report them as published
-  (XR-11). F3-EXTEND forbids that pin. Both cannot stand, and today nothing but §4.4 step 3's
-  clean-machine instruction defends a step marked `[blocking]`. Close it either way — restore the pin,
-  or assert the effective registry and abort before the first fetch. Note the pin does **not** make the
-  script agent-runnable, so it does not resolve FW-10; that reassignment is a separate decision.
+  (XR-11). F3-EXTEND forbids that pin. Both cannot stand, and until today nothing but §4.4 step 3's
+  clean-machine instruction defended a step marked `[blocking]`.
+  **CLOSED 2026-09-07 (owner decision): assert-and-abort, not a pin.** `checkRegistry` (a pure,
+  testable helper in `scripts/lib/pack.mjs`) resolves the effective registry and
+  `audit-tarballs.mjs` aborts with `exit 2` unless it is npmjs — naming the value it found, because
+  "not npmjs" alone wastes the reader's next five minutes. **The assertion sits inside the
+  published-version branch only**, so the HEAD-tarball half still runs on any machine, offline. Why
+  assert beat pin: a pin silently *works around* a mis-set machine, and F3-PUB is one step in a
+  longer owner-run sequence whose next step would inherit the same bad config; an assertion fails
+  loudly at the first fetch, which is what a blocking step before a one-way flip needs.
+  Neither option makes the script agent-runnable — the node package manager is denied to agents by
+  `.claude/settings.json` + `pre-bash-guard.sh` whatever flags it carries — so **FW-10's reassignment
+  to owner-only remains a separate, still-open decision**, now recorded in the runbook's lane note.
 - **CR-3 — reconcile the ledger to HEAD** (P1, [MT], 1 session, after PF-9). XR-7 → Done
   (`0ef1aec`/`942ba88`/`87527aa`/`e7e169e`, noting the fold was unpinned and is superseded by PF-9's pinned
   capture); XR-1 Active row → `>=4.0.0` + worklets `>=0.7.0` per ADR-0002 with only half (b) open; add the
@@ -663,6 +672,13 @@ completion for an elided paragraph and present it as the verifier's words.
   leaves a phantom entry `query` returns forever (:70); ray-vs-AABB and ray-vs-circle math written twice and
   already diverged (raycast.ts:89); trigger-vs-collision pair dispatch copied three times
   (collision-world.ts:168). Covers F036 F040 F041 F053 F055.
+  **PARTIALLY PULLED FORWARD 2026-09-07 (session 322): F036 is DONE pre-flip.** The owner pulled the
+  raycast hang forward because a hung JS thread is a dead app, not a degraded one. `raycast` now
+  rejects a non-finite `maxDist` (returns `null`, no new throw) and `SpatialIndex` clamps its cell
+  walk to the packed key's supported range. **Still owed here: F040, F041, F053, F055.** Note the
+  agent declined a verifier fragment's "walk the populated-cells map" fallback after sketching it —
+  it mishandles `NaN`, matching every cell instead of none. That fragment is one of the elided ones;
+  do not resurrect it without re-deriving it.
 - **HYG14 — errors: global capture safety.** A rejecting transport re-enters the `unhandledrejection` handler
   in an unbounded loop (global-capture.ts:111); `uninstall()` leaves the RN `ErrorUtils` handler live when no
   previous handler was captured (:150); `createClientTransport` duplicates sentry.ts's payload→Error rebuild
@@ -678,6 +694,10 @@ completion for an elided paragraph and present it as the verifier's words.
   `gridTiles ?? autoLayerTiles` picks the empty `gridTiles` array (ldtk-parser.ts:289); the tile draw loop
   re-resolves the tileset by linear scan and the image by string-keyed `Map.get` for every visible tile every
   frame (tilemap-renderer.ts:88). Covers F057 F065.
+  **PARTIALLY PULLED FORWARD 2026-09-07 (session 322): F057 is DONE pre-flip.** An LDtk AutoLayer
+  parsed as silently empty, which reads as the engine being broken rather than the consumer's data.
+  Selection is now keyed on `__type`. **Still owed here: F065** (the per-tile linear tileset scan and
+  string-keyed image lookup, per visible tile per frame).
 - **HYG17 — events + assets + scene + achievements: lifecycle correctness.** `Signal.once`/`EventEmitter.once`
   re-fire on a nested emit, and a once-handler that spawns recurses to stack overflow (signal.ts:30);
   `parseAseprite` hash format loses every frame name because `Object.values()` discards the keys
@@ -729,6 +749,25 @@ completion for an elided paragraph and present it as the verifier's words.
   `list.test.ts` now depends on an unrelated file carrying a stub it never uses, and the next new export
   requirement needs someone to work out which file sorts first. Centralise the mocks in one module every
   test imports, so the frozen shape has one owner. Do it the next time these mocks are touched.
+- **HYG23 — one canonical way to mutate a solid cell and a tile GID** (post-flip, additive). Found
+  2026-09-07 while reviewing the topdown template redesign. Opening a door means writing
+  `grid.solid[row * grid.width + col] = 0` and `layer.tiles[same] = OPEN_GID`, and **that row-major
+  index formula is now hand-duplicated three times** across the template's `map.ts`, `App.tsx` and its
+  test. Neither `@flare-engine/physics` nor `@flare-engine/tilemap` exposes a `setSolidAt` /
+  `setTileAt`, so there is nothing canonical to reach for — grep confirmed, the template author did
+  not miss an existing API. It is not an engine *gap* in the blocking sense (the writes are legal and
+  the template ships correct), but "a door that opens" is the first thing a real game needs, so this
+  exact hand-rolled indexing will recur in every game scaffolded from the template. Add the accessors,
+  then simplify the template to use them. Additive, so it costs nothing to defer past the flip.
+- **HYG24 — `SolidGrid.solid` is `readonly`, `TileLayer.tiles` is not** (**decide BEFORE the freeze**
+  — it is a published-type question, additive-free but frozen Oct 20). `solid-grid.ts:22` declares
+  `readonly solid: Uint8Array`; `tilemap-data.ts:50` declares `tiles: Uint32Array` with no modifier.
+  Both are bulk typed arrays on published interfaces filling the same role, and they disagree.
+  **`readonly` on the property blocks reassigning the array, not writing its indices**, so adding it
+  to `tiles` changes nothing a consumer can currently do — the door's `layer.tiles[idx] = GID` keeps
+  working — while removing a way to swap the whole array out from under a parsed map. Cheap and
+  consistent now; a published-type break after the flip. **Owner: worth one line in a PFA row if you
+  want consistency, or an explicit note that the asymmetry is deliberate.**
 
 Owner-gated (never picked by `/start`; public schedule road-to-oss §14, specifics in the private ledger): rotate the npm publish credential (owner action; timing + specifics in the private ledger) — or pull Trusted Publishing OIDC forward; **0.4.0** restricted publish Oct 5 (0.3.0 was release N, published restricted 2026-08-25; 0.3.1 followed 2026-08-27 — the Oct 5 freeze cut is 0.4.0, per the CE version decision); the two-week manual window; flip-day actions; portfolio copy alignment. Cross-repo lanes (flare-engine-page G1–G3, PT1–PT3, Berek BK1) run in their own repos with their own gates — road-to-oss §10.
 

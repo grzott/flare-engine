@@ -119,8 +119,20 @@ why. Every row is written for them rather than for us.
 | PF-8 | `leaderboards`: `MemoryLeaderboards` removed | Compile error on an import of the type | Use `LeaderboardsProvider`, which it aliased with zero added content. |
 | PF-8 | `devtools`: `DevtoolsContextValue` drops `pause` / `step` / `resume` | Compile error if read off the context | Use the `scrubber` + time-control hook route, which was always one of the three ways the same controls were exposed. HYG7 still owns the internal HUD/Panel button de-duplication. |
 
-<!-- Every Arc PFA row has now appended. The table is complete as of PF-8;
-     Status may flip to Accepted once the owner has read it. -->
+**Two behaviour fixes pulled forward after this ADR was accepted (owner, 2026-09-07).** Neither
+changes an exported name — they were parked in Arc HYG for exactly that reason — so they do not
+belong in the table above, whose framing is "what stops compiling". They are recorded here because
+they are consumer-observable, which is the other half of what this ADR is for. Both are pieces of
+still-open HYG rows: **HYG13** also covers F040/F041/F053/F055 and **HYG16** also covers F065, and
+those remain post-flip.
+
+| Row | Change | What a consumer sees | Migration |
+| --- | --- | --- | --- |
+| HYG13-PRE | `CollisionWorld.raycast` rejects a non-finite `maxDist` and returns `null`; `SpatialIndex` clamps its cell walk to the packed key's supported ±2,097,152 range | A ray cast with `Number.POSITIVE_INFINITY` — or any non-finite `maxDist` — returns `null` immediately instead of **hanging the JS thread**. An entity added or moved at an infinite coordinate no longer hangs or leaks | None. A caller relying on an "unbounded ray" must pass a large finite `maxDist` instead, such as the map's diagonal. There was no working unbounded behaviour to lose — only a hang. |
+| HYG16-PRE | `parseLDtk` selects an AutoLayer's tiles by `__type` rather than `gridTiles ?? autoLayerTiles` | An LDtk project using AutoLayer — auto-tiled terrain — now renders its tiles. Previously that layer parsed as **empty, with no error** | None. The corrected output is the intended one: AutoLayer support was advertised in `api-specs.md` and never worked. |
+
+<!-- Arc PFA's own rows are complete as of PF-8. Later pulled-forward behaviour fixes append to the
+     addendum above, not to the main table, so "what stops compiling" stays a clean list. -->
 
 **Why now.** October 20 is the last day any of these is free. See
 [roadmap.md](../plans/roadmap.md) and the freeze sequence in

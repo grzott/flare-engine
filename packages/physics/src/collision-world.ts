@@ -259,6 +259,13 @@ export class CollisionWorld {
    * need, before casting again. That is what keeps a per-frame ray allocation-
    * free, and it is why the standalone helper's fresh-object-per-candidate cost
    * was worth removing.
+   *
+   * `maxDist` must be finite — this requires a bounded ray, not the
+   * `Number.POSITIVE_INFINITY` "unbounded ray" idiom some engines accept. The
+   * broadphase below is a uniform grid: an infinite `maxDist` derives an
+   * infinite cell range and never terminates the walk. Pass a large finite
+   * bound instead (e.g. the map's diagonal) to cast "until it leaves the
+   * populated area". A non-finite `maxDist` returns `null`.
    */
   raycast(
     ox: number,
@@ -268,6 +275,8 @@ export class CollisionWorld {
     maxDist: number,
     mask = 0xffffffff,
   ): RaycastHit | null {
+    if (!Number.isFinite(maxDist)) return null;
+
     // Bounding box of the whole ray — the broadphase is rect-based, so this is
     // a conservative prefilter, not the intersection test itself.
     const ex = ox + dx * maxDist;

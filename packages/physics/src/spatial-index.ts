@@ -35,6 +35,25 @@ function _cMax(v: number): number {
   return Math.ceil(v / CELL) - 1;
 }
 
+// Supported cell-coordinate range for the packed key above.
+const MIN_CELL = -KEY_OFFSET;
+const MAX_CELL = KEY_OFFSET - 1;
+
+// Bounds a derived cell coordinate to the packed-key range. Without this, a
+// non-finite world coordinate (±Infinity — an unbounded raycast maxDist, or an
+// entity parked at Infinity) makes cxMin/cxMax/cyMin/cyMax infinite, and
+// `for (cx = cxMin; cx <= cxMax; cx++)` never exits: once cx itself is
+// Infinity, `cx <= Infinity` stays true and `cx++` is a no-op, so the loop
+// spins forever pushing/reading the same bucket (unbounded memory growth on
+// the link side). NaN is left untouched: every comparison against NaN is
+// false, so the loop already runs zero times, which is the existing (safe)
+// behaviour for a degenerate direction like `0 * Infinity`.
+function _clampCell(c: number): number {
+  if (c > MAX_CELL) return MAX_CELL;
+  if (c < MIN_CELL) return MIN_CELL;
+  return c;
+}
+
 /**
  * Uniform spatial-hash broadphase.
  * `insert`, `remove`, and `update` are O(cells touched) — O(1) for typical entities.
@@ -110,10 +129,10 @@ export class SpatialIndex<T> {
     const qMaxX = bounds.x + bounds.width;
     const qMaxY = bounds.y + bounds.height;
 
-    const cxMin = _cMin(qMinX);
-    const cxMax = _cMax(qMaxX);
-    const cyMin = _cMin(qMinY);
-    const cyMax = _cMax(qMaxY);
+    const cxMin = _clampCell(_cMin(qMinX));
+    const cxMax = _clampCell(_cMax(qMaxX));
+    const cyMin = _clampCell(_cMin(qMinY));
+    const cyMax = _clampCell(_cMax(qMaxY));
 
     for (let cx = cxMin; cx <= cxMax; cx++) {
       for (let cy = cyMin; cy <= cyMax; cy++) {
@@ -141,10 +160,10 @@ export class SpatialIndex<T> {
 
   // Register entry in all grid cells it overlaps.
   private _link(entry: _Entry<T>): void {
-    const cxMin = _cMin(entry.minX);
-    const cxMax = _cMax(entry.maxX);
-    const cyMin = _cMin(entry.minY);
-    const cyMax = _cMax(entry.maxY);
+    const cxMin = _clampCell(_cMin(entry.minX));
+    const cxMax = _clampCell(_cMax(entry.maxX));
+    const cyMin = _clampCell(_cMin(entry.minY));
+    const cyMax = _clampCell(_cMax(entry.maxY));
     for (let cx = cxMin; cx <= cxMax; cx++) {
       for (let cy = cyMin; cy <= cyMax; cy++) {
         const k = _key(cx, cy);
@@ -160,10 +179,10 @@ export class SpatialIndex<T> {
 
   // Remove entry from all grid cells it currently occupies.
   private _unlink(entry: _Entry<T>): void {
-    const cxMin = _cMin(entry.minX);
-    const cxMax = _cMax(entry.maxX);
-    const cyMin = _cMin(entry.minY);
-    const cyMax = _cMax(entry.maxY);
+    const cxMin = _clampCell(_cMin(entry.minX));
+    const cxMax = _clampCell(_cMax(entry.maxX));
+    const cyMin = _clampCell(_cMin(entry.minY));
+    const cyMax = _clampCell(_cMax(entry.maxY));
     for (let cx = cxMin; cx <= cxMax; cx++) {
       for (let cy = cyMin; cy <= cyMax; cy++) {
         const b = this._cells.get(_key(cx, cy));

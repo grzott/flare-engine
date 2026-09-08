@@ -131,6 +131,90 @@ describe('SpatialIndex', () => {
     expect(hitsNeg).not.toContain(1);
   });
 
+  // F036 — an infinite bound made the cell-range loop unbounded (`for (cx =
+  // cxMin; cx <= cxMax; cx++)` never exits once cxMax is Infinity). A real
+  // `Number.POSITIVE_INFINITY` bound hangs the JS thread forever, so it cannot
+  // be called directly in a test. Instead, patch the private cell map's `get`
+  // with an iteration counter that throws once a query needs an unreasonable
+  // number of cell lookups — a bounded, deterministic stand-in for "did not
+  // terminate" that fails fast instead of hanging the test run.
+  describe('unbounded extents (F036)', () => {
+    // No real, in-range query ever needs this many cell lookups.
+    const BUDGET = 200_000;
+
+    function withCellLookupBudget<TReturn>(
+      idx: SpatialIndex<unknown>,
+      fn: () => TReturn,
+    ): { result: TReturn; calls: number } {
+      const cells = (idx as unknown as { _cells: Map<number, unknown[]> })._cells;
+      const realGet = cells.get.bind(cells);
+      let calls = 0;
+      cells.get = ((key: number) => {
+        if (++calls > BUDGET) {
+          throw new Error(`cell walk exceeded ${BUDGET} lookups without terminating`);
+        }
+        return realGet(key);
+      }) as typeof cells.get;
+      try {
+        return { result: fn(), calls };
+      } finally {
+        cells.get = realGet;
+      }
+    }
+
+    it('a query with an infinite extent terminates within a bounded cell walk', () => {
+      const idx = new SpatialIndex<number>();
+      idx.insert(1, { x: 0, y: 0, width: 10, height: 10 });
+
+      const { result, calls } = withCellLookupBudget(idx, () =>
+        idx.query({ x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 10 }),
+      );
+
+      expect(calls).toBeLessThan(BUDGET);
+      expect(result).toContain(1);
+    });
+
+    it('inserting an item at an infinite coordinate does not hang or grow a bucket without bound', () => {
+      const idx = new SpatialIndex<number>();
+
+      const { calls } = withCellLookupBudget(idx, () => {
+        idx.insert(1, { x: Number.POSITIVE_INFINITY, y: 0, width: 10, height: 10 });
+        return idx.size;
+      });
+
+      expect(calls).toBeLessThan(BUDGET);
+      expect(idx.size).toBe(1);
+    });
+
+    it('updating an item to an infinite coordinate and back does not hang', () => {
+      const idx = new SpatialIndex<number>();
+      idx.insert(1, { x: 0, y: 0, width: 10, height: 10 });
+
+      const { calls } = withCellLookupBudget(idx, () => {
+        idx.update(1, {
+          x: Number.POSITIVE_INFINITY,
+          y: Number.POSITIVE_INFINITY,
+          width: 10,
+          height: 10,
+        });
+        idx.update(1, { x: 5, y: 5, width: 10, height: 10 });
+      });
+
+      expect(calls).toBeLessThan(BUDGET);
+      expect(idx.query({ x: 0, y: 0, width: 20, height: 20 })).toContain(1);
+    });
+
+    it('a query with a NaN extent still runs zero iterations (unchanged behaviour)', () => {
+      const idx = new SpatialIndex<number>();
+      idx.insert(1, { x: 0, y: 0, width: 10, height: 10 });
+
+      // dx=0, maxDist=Infinity → 0 * Infinity = NaN, the degenerate-direction
+      // case CollisionWorld.raycast's bounding box produces for a vertical ray.
+      const hits = idx.query({ x: Number.NaN, y: 0, width: Number.NaN, height: 10 });
+      expect(hits).toEqual([]);
+    });
+  });
+
   it('touching edge exactly at a cell boundary is non-overlapping', () => {
     const idx = new SpatialIndex<number>();
     // Entry A: [0, 64] — its right edge is exactly at the cell-0/cell-1 boundary.

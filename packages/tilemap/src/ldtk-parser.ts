@@ -40,8 +40,12 @@ interface LDtkLayerInstance {
   visible: boolean;
   __opacity: number;
   intGridCsv?: number[];
-  gridTiles?: LDtkTileInstance[];
-  autoLayerTiles?: LDtkTileInstance[];
+  // Real LDtk output always emits both arrays on every layer instance — only
+  // one is ever populated per __type (an AutoLayer's gridTiles is always []).
+  // Required (not optional) so a fixture omitting the unused one, as every
+  // fixture here did before F057, cannot pass this module's own types.
+  gridTiles: LDtkTileInstance[];
+  autoLayerTiles: LDtkTileInstance[];
   entityInstances?: LDtkEntityInstance[];
 }
 
@@ -286,7 +290,11 @@ function parseTilesLayer(
   firstGid: number,
 ): TileLayer {
   const tiles = new Uint32Array(mapWidth * mapHeight);
-  const tileInstances = layer.gridTiles ?? layer.autoLayerTiles ?? [];
+  // An AutoLayer's tiles live in autoLayerTiles; its gridTiles is always [].
+  // `gridTiles ?? autoLayerTiles` picked the empty gridTiles for every
+  // AutoLayer, since `??` only falls through on null/undefined, never on `[]`
+  // — select by __type instead, which is the field LDtk itself keys on.
+  const tileInstances = layer.__type === 'AutoLayer' ? layer.autoLayerTiles : layer.gridTiles;
 
   for (const ti of tileInstances) {
     const col = Math.floor(ti.px[0] / gridSize);

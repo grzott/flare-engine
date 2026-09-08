@@ -86,6 +86,52 @@ describe('parseLDtk', () => {
     }
   });
 
+  test('parses AutoLayer tiles from autoLayerTiles, not the empty gridTiles (F057)', () => {
+    // Real LDtk JSON emits BOTH arrays on every layer instance — an AutoLayer's
+    // gridTiles is always []; its rule-generated tiles live in autoLayerTiles.
+    // A fixture that omits gridTiles here (as every fixture in this suite did)
+    // would still pass against the `gridTiles ?? autoLayerTiles` bug this
+    // pins, since `??` never falls through on an empty array.
+    const json = makeLDtkJSON({
+      levels: [
+        makeLevel({
+          layerInstances: [
+            {
+              __identifier: 'AutoGround',
+              __type: 'AutoLayer',
+              __cWid: 3,
+              __cHei: 2,
+              __gridSize: 16,
+              __tilesetDefUid: 1,
+              __tilesetRelPath: 'tileset.png',
+              visible: true,
+              __opacity: 1,
+              intGridCsv: [],
+              gridTiles: [],
+              autoLayerTiles: [
+                { px: [0, 0], src: [0, 0], f: 0, t: 0 },
+                { px: [16, 0], src: [16, 0], f: 0, t: 1 },
+                { px: [32, 16], src: [32, 0], f: 0, t: 2 },
+              ],
+              entityInstances: [],
+            },
+          ],
+        }),
+      ],
+    });
+    const map = parseLDtk(json)[0]!;
+    const layer = map.layers[0]!;
+    expect(layer.type).toBe('tile');
+    if (layer.type === 'tile') {
+      expect(layer.name).toBe('AutoGround');
+      expect(layer.tiles).toBeInstanceOf(Uint32Array);
+      // firstGid fallback=1 (no matching def), so gid = 1 + t
+      expect(layer.tiles[0]).toBe(1); // (0,0) → t=0 → gid=1
+      expect(layer.tiles[1]).toBe(2); // (1,0) → t=1 → gid=2
+      expect(layer.tiles[10 * 1 + 2]).toBe(3); // (2,1) → t=2 → gid=3
+    }
+  });
+
   test('parses Entities layers', () => {
     const json = makeLDtkJSON({
       levels: [

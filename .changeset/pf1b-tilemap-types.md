@@ -8,3 +8,8 @@ PF-1b: settle four small published-surface findings in `tilemap` before the free
 - `TileData` — an exported interface nothing in the repo constructed or read — is deleted, along with its barrel export.
 - `getTileSourceRectInto(tileset, gid, out)` is added as the zero-alloc form of `getTileSourceRect`, which now delegates to it. `TilemapRenderer`'s per-tile draw loop switches from its own inlined copy of the same math to the shared `…Into` form via a reusable buffer.
 - `parseTiled` now validates its input the same way `parseLDtk` already does (`typeof json === 'object'`, array/number checks) and throws `TilemapParseError` instead of a raw `TypeError` on garbage input.
+
+<!-- symbols-ok: noUncheckedIndexedAccess -->
+<!-- reason: a TypeScript compiler flag from tsconfig.base.json, not an exported symbol. It is
+     named here because it is the reason getTileAt keeps its `?? 0` after the Uint32Array switch:
+     under that flag a typed-array index read is still `number | undefined`. -->

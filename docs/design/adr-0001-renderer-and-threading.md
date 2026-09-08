@@ -156,3 +156,8 @@ else, and that boundary is the thing to defend in review.
 - The worklet — `packages/react/src/game-view.tsx:49`, dispatched `:246`
 - Peer floors — `packages/react/package.json:56-57`
 - Layering and package map — [`architecture.md`](architecture.md)
+
+<!-- symbols-ok: usePictureAsTexture, updateAndRelease -->
+<!-- reason: both are @shopify/react-native-skia APIs, not Flare exports. This ADR is about how
+     Flare sits on top of that library, so its names appear here by necessity. Note XR-13 later
+     dropped Flare's use of usePictureAsTexture in favour of scheduleOnUI — see ADR-0002. -->

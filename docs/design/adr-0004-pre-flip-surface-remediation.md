@@ -147,3 +147,8 @@ exactly the condition this rule exists to prevent.
   table above, the arc no longer has one source and this ADR should be split.
 - **The flip slips past 2026-10-20.** The urgency here is entirely the freeze date; a later flip
   would make several of these affordable as separate, better-argued decisions.
+
+<!-- symbols-ok: parseFlareMap -->
+<!-- reason: the REJECTED alternative in the F076 row above — a second tilemap importer that was
+     considered and deliberately not built. It correctly does not resolve, and that is the point:
+     recording what was turned down is half of what an ADR is for. -->

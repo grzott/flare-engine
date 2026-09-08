@@ -1,6 +1,6 @@
 # ADR-0005: Flare supports a desktop delivery target — the web export in a bundled-Chromium shell, with Steam integration as adapter packages
 
-- **Status**: Accepted <!-- owner to accept before the first Arc DESK row that adds a package -->
+- **Status**: Accepted <!-- owner, 2026-09-08 -->
 - **Date**: 2026-09-08
 - **Consumer impact**: additive
 - **Release level**: minor

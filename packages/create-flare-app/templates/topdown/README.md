@@ -44,10 +44,12 @@ the loader.
 
 ## What this template demonstrates
 
-A top-down starter that wires the full tilemap pipeline:
+A top-down starter built around one scene: a 4x8 house on an open field,
+with rocks and an openable door.
 
-- `src/map.ts` — edit `MAP_ART` (ASCII art: `#` wall, `.` grass, `~` water, `,` sand) to reshape the map.
-- Collision: `@flare-engine/physics` `buildSolidGrid` + `moveAndSlideInto` over wall and water tiles; axis-separated slide so diagonal inputs slide along walls instead of stopping.
+- `src/map.ts` — edit `MAP_ART` (ASCII art: `#` wall, `.` grass, `R` rock, `D` door) to reshape the map.
+- Collision: `@flare-engine/physics` `buildSolidGrid` + `moveAndSlideInto` over wall, rock, and closed-door tiles; axis-separated slide so diagonal inputs slide along walls instead of stopping.
+- **The door**: walking into it while closed opens it — `map.ts`'s `openDoor` flips its cell in the `SolidGrid.solid` array and swaps its tile GID so the render picks up the open frame, both plain zero-alloc index writes into arrays the engine already owns. That is a tile whose solidity changes at runtime, not just its colour; `isBlockedAABB`/`moveAndSlideInto` treat the door exactly like a wall until it's opened.
 - Camera: `camera.follow` tracks the player; zoom is set to 2×.
 - A `VirtualJoystick` drives analog movement — all 8 directions and diagonals work.
 
@@ -70,7 +72,7 @@ A top-down starter that wires the full tilemap pipeline:
 bun test
 ```
 
-Runs `tests/tilemap.test.ts` — validates the map parse, collider extraction, solid-grid query, and slide-on-wall behavior.
+Runs `tests/tilemap.test.ts` — validates the map parse, collider extraction, solid-grid query, and that the closed door blocks while the open door and wall/rock collision are unaffected by opening it.
 
 ## Docs
 

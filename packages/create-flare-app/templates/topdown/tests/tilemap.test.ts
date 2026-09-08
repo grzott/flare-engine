@@ -6,23 +6,49 @@ import {
 } from '@flare-engine/physics';
 import {
   extractColliders,
-  parseTiled,
 } from '@flare-engine/tilemap';
 import {
-  MAP_ART,
+  DOOR_COL,
+  DOOR_ROW,
+  DOOR_WORLD_X,
+  DOOR_WORLD_Y,
+  TILE_DOOR_CLOSED,
+  TILE_DOOR_OPEN,
+  TILE_ROCK,
   TILE_SIZE,
   TILE_WALL,
-  TILE_WATER,
   buildTiledMapJson,
+  isTouchingDoor,
   loadMap,
+  openDoor,
 } from '../src/map';
 
-const MAP_WIDTH = 20;
-const MAP_HEIGHT = 12;
+const MAP_WIDTH = 12;
+const MAP_HEIGHT = 10;
 const PLAYER_HALF = 6;
-// PLAYER_START from App.tsx: {x:40, y:88} -> tile col=2, row=5, char='.'
-const PLAYER_X = 40;
-const PLAYER_Y = 88;
+// PLAYER_START from App.tsx: {x:24, y:152} -> tile col=1, row=9, char='.'
+const PLAYER_X = 24;
+const PLAYER_Y = 152;
+
+// House top wall (row=1, col=4). World center = (4*16+8, 1*16+8).
+const WALL_X = 72;
+const WALL_Y = 24;
+
+// Rock at (row=3, col=2). World center = (2*16+8, 3*16+8).
+const ROCK_X = 40;
+const ROCK_Y = 56;
+
+/** Load a fresh map + ground layer + solid grid for one test — every test
+ *  gets its own SolidGrid so openDoor in one test cannot leak into another. */
+function setup() {
+  const map = loadMap();
+  const groundLayer = map.layers[0];
+  if (groundLayer === undefined || groundLayer.type !== 'tile') {
+    throw new Error('expected a tile layer at index 0');
+  }
+  const grid = buildSolidGrid(map.width, map.height, TILE_SIZE, extractColliders(map));
+  return { map, groundLayer, grid };
+}
 
 describe('buildTiledMapJson', () => {
   test('produces correct shape, dimensions and known GIDs', () => {
@@ -44,14 +70,12 @@ describe('buildTiledMapJson', () => {
     expect(layer?.type).toBe('tilelayer');
 
     const data = layer?.data ?? [];
-    // top-left corner (row=0, col=0) is '#' -> TILE_WALL = 2
-    expect(data[0]).toBe(TILE_WALL);
-    // top-right corner (row=0, col=19) is '#' -> TILE_WALL = 2
-    expect(data[19]).toBe(TILE_WALL);
-    // bottom-right corner (row=11, col=19) is '#' -> TILE_WALL = 2
-    expect(data[11 * MAP_WIDTH + 19]).toBe(TILE_WALL);
-    // row=1, col=9 is '~' -> TILE_WATER = 3
-    expect(data[1 * MAP_WIDTH + 9]).toBe(TILE_WATER);
+    // House top wall corner (row=1, col=4) -> '#' -> TILE_WALL
+    expect(data[1 * MAP_WIDTH + 4]).toBe(TILE_WALL);
+    // Rock (row=3, col=2) -> 'R' -> TILE_ROCK
+    expect(data[3 * MAP_WIDTH + 2]).toBe(TILE_ROCK);
+    // Door (row=8, col=5) -> 'D' -> starts closed
+    expect(data[DOOR_ROW * MAP_WIDTH + DOOR_COL]).toBe(TILE_DOOR_CLOSED);
 
     expect(json.tilesets[0]?.name).toBe('tiles');
   });
@@ -70,98 +94,108 @@ describe('parseTiled round-trip', () => {
     expect(map.layers[0]?.type).toBe('tile');
 
     expect(map.tilesets.length).toBe(1);
-    expect(map.tilesets[0]?.name).toBe('tiles');
-
-    // wall and water must be solid; localId = gid - firstGid
-    // TILE_WALL=2 -> localId=1; TILE_WATER=3 -> localId=2
     const ts = map.tilesets[0];
+    expect(ts?.name).toBe('tiles');
+
+    // wall, rock, and the closed door must be solid; localId = gid - firstGid
     expect(ts?.solidTiles.has(TILE_WALL - 1)).toBe(true);
-    expect(ts?.solidTiles.has(TILE_WATER - 1)).toBe(true);
+    expect(ts?.solidTiles.has(TILE_ROCK - 1)).toBe(true);
+    expect(ts?.solidTiles.has(TILE_DOOR_CLOSED - 1)).toBe(true);
     // grass (localId=0) is not solid
     expect(ts?.solidTiles.has(0)).toBe(false);
   });
 });
 
 describe('extractColliders', () => {
-  test('all 4 map corners are solid; interior grass tile is not', () => {
+  test('house walls, rocks, and the closed door are solid; interior floor is not', () => {
     const map = loadMap();
     const colliders = extractColliders(map);
-
     const solidSet = new Set(colliders.map((c) => `${c.row},${c.col}`));
 
-    // Border corners are '#' (wall)
-    expect(solidSet.has('0,0')).toBe(true);
-    expect(solidSet.has('0,19')).toBe(true);
-    expect(solidSet.has('11,0')).toBe(true);
-    expect(solidSet.has('11,19')).toBe(true);
-
-    // Interior grass tile at row=5, col=5 -> '.' -> NOT solid
-    expect(solidSet.has('5,5')).toBe(false);
+    // House top wall corner and a rock
+    expect(solidSet.has('1,4')).toBe(true);
+    expect(solidSet.has('3,2')).toBe(true);
+    // Closed door
+    expect(solidSet.has(`${DOOR_ROW},${DOOR_COL}`)).toBe(true);
+    // Interior floor tile (row=4, col=5)
+    expect(solidSet.has('4,5')).toBe(false);
   });
 });
 
-describe('buildSolidGrid + isBlockedAABB', () => {
-  test('true inside a border wall AABB, false at PLAYER_START', () => {
-    const map = loadMap();
-    const grid = buildSolidGrid(
-      map.width,
-      map.height,
-      TILE_SIZE,
-      extractColliders(map),
-    );
+describe('isTouchingDoor', () => {
+  test('true when the AABB overlaps the door tile, false far away', () => {
+    expect(isTouchingDoor(DOOR_WORLD_X, DOOR_WORLD_Y, PLAYER_HALF, PLAYER_HALF)).toBe(true);
+    expect(isTouchingDoor(PLAYER_X, PLAYER_Y, PLAYER_HALF, PLAYER_HALF)).toBe(false);
+  });
+});
 
-    // AABB centered at (8, 8) with hw=8, hh=8 covers only tile (col=0, row=0)
-    // which is '#' (wall) -> blocked
-    expect(isBlockedAABB(grid, 8, 8, 8, 8)).toBe(true);
+describe('openDoor', () => {
+  test('flips the solid-grid cell and swaps the tile GID', () => {
+    const { groundLayer, grid } = setup();
+    const idx = DOOR_ROW * grid.width + DOOR_COL;
 
-    // Player start (40, 88) tile = col=2, row=5 = '.' (grass) -> not blocked
+    expect(grid.solid[idx]).toBe(1);
+    expect(groundLayer.tiles[idx]).toBe(TILE_DOOR_CLOSED);
+
+    openDoor(groundLayer, grid);
+
+    expect(grid.solid[idx]).toBe(0);
+    expect(groundLayer.tiles[idx]).toBe(TILE_DOOR_OPEN);
+  });
+});
+
+describe('collision: wall, rock, and door', () => {
+  test('wall and rock block; PLAYER_START is open', () => {
+    const { grid } = setup();
+
+    expect(isBlockedAABB(grid, WALL_X, WALL_Y, PLAYER_HALF, PLAYER_HALF)).toBe(true);
+    expect(isBlockedAABB(grid, ROCK_X, ROCK_Y, PLAYER_HALF, PLAYER_HALF)).toBe(true);
     expect(isBlockedAABB(grid, PLAYER_X, PLAYER_Y, PLAYER_HALF, PLAYER_HALF)).toBe(false);
   });
-});
 
-describe('moveAndSlideInto', () => {
-  test('blocks x-movement into a wall; allows y-movement into open space', () => {
-    const map = loadMap();
-    const grid = buildSolidGrid(
-      map.width,
-      map.height,
-      TILE_SIZE,
-      extractColliders(map),
-    );
+  test('closed door blocks; open door does not; wall and rock are unaffected by opening it', () => {
+    const { groundLayer, grid } = setup();
 
-    // Place entity just left of the right border wall (col=19 starts at x=304).
-    // With hw=6 the entity's rightmost pixel is at x+6.
-    // x=297: right edge = 303 (free). Move dx=10 -> right edge = 313 -> col=19 -> wall -> blocked.
-    const wallBlockX = 297;
-    const out1 = { x: wallBlockX, y: PLAYER_Y };
-    moveAndSlideInto(grid, wallBlockX, PLAYER_Y, 10, 0, PLAYER_HALF, PLAYER_HALF, out1);
-    expect(out1.x).toBe(wallBlockX); // x unchanged — wall blocks it
-    expect(out1.y).toBe(PLAYER_Y);   // y unchanged — no dy
+    expect(isBlockedAABB(grid, DOOR_WORLD_X, DOOR_WORLD_Y, PLAYER_HALF, PLAYER_HALF)).toBe(true);
 
-    // PLAYER_START position with dy=2 stays on grass -> movement applies
-    const out2 = { x: PLAYER_X, y: PLAYER_Y };
-    moveAndSlideInto(grid, PLAYER_X, PLAYER_Y, 0, 2, PLAYER_HALF, PLAYER_HALF, out2);
-    expect(out2.x).toBe(PLAYER_X);       // x unchanged — no dx
-    expect(out2.y).toBe(PLAYER_Y + 2);   // y advances
+    openDoor(groundLayer, grid);
+
+    expect(isBlockedAABB(grid, DOOR_WORLD_X, DOOR_WORLD_Y, PLAYER_HALF, PLAYER_HALF)).toBe(false);
+    // Opening the door must not touch any other cell.
+    expect(isBlockedAABB(grid, WALL_X, WALL_Y, PLAYER_HALF, PLAYER_HALF)).toBe(true);
+    expect(isBlockedAABB(grid, ROCK_X, ROCK_Y, PLAYER_HALF, PLAYER_HALF)).toBe(true);
   });
 
-  test('diagonal into top wall: free axis (x) advances, blocked axis (y) stays', () => {
-    const map = loadMap();
-    const grid = buildSolidGrid(
-      map.width,
-      map.height,
-      TILE_SIZE,
-      extractColliders(map),
-    );
+  test('moveAndSlideInto: closed door blocks approach; opening it lets the same move through', () => {
+    // Just south of the door tile (row=8 spans y=128..144), moving north (dy<0).
+    const { groundLayer, grid } = setup();
+    const startX = DOOR_WORLD_X;
+    const startY = 150;
 
-    // Player at (40, 22): tile col=2 row=1 ('.' grass), hh=6 -> top edge = 16 (free of row-0 wall).
-    // dx=+2 (right, into open grass col=2-3 row=1): isBlocked(42, 22) -> col 2..2 row 1..1 -> '.' -> free -> x advances to 42.
-    // dy=-10 (up, into top border wall row 0): isBlocked(42, 12) -> rows 0..1, cols 2..2 -> row 0 = '#' -> blocked -> y stays at 22.
-    const startX = 40;
-    const startY = 22;
-    const out = { x: startX, y: startY };
-    moveAndSlideInto(grid, startX, startY, 2, -10, PLAYER_HALF, PLAYER_HALF, out);
-    expect(out.x).toBe(42); // free axis advances
-    expect(out.y).toBe(22); // blocked axis stays
+    const blocked = { x: startX, y: startY };
+    moveAndSlideInto(grid, startX, startY, 0, -10, PLAYER_HALF, PLAYER_HALF, blocked);
+    expect(blocked.y).toBe(startY); // door still closed — no movement
+
+    openDoor(groundLayer, grid);
+
+    const opened = { x: startX, y: startY };
+    moveAndSlideInto(grid, startX, startY, 0, -10, PLAYER_HALF, PLAYER_HALF, opened);
+    expect(opened.y).toBe(startY - 10); // door open — the same move now succeeds
+  });
+
+  test('moveAndSlideInto: blocks x-movement into a wall; allows y-movement into open space', () => {
+    const { grid } = setup();
+
+    // House right side wall is col=7 (x starts at 112). Approach from just west of it.
+    const wallBlockX = 105;
+    const out1 = { x: wallBlockX, y: WALL_Y + 32 };
+    moveAndSlideInto(grid, wallBlockX, WALL_Y + 32, 10, 0, PLAYER_HALF, PLAYER_HALF, out1);
+    expect(out1.x).toBe(wallBlockX); // x unchanged — wall blocks it
+
+    // PLAYER_START position with dy=2 stays on open field grass -> movement applies
+    const out2 = { x: PLAYER_X, y: PLAYER_Y };
+    moveAndSlideInto(grid, PLAYER_X, PLAYER_Y, 0, 2, PLAYER_HALF, PLAYER_HALF, out2);
+    expect(out2.x).toBe(PLAYER_X);     // x unchanged — no dx
+    expect(out2.y).toBe(PLAYER_Y + 2); // y advances
   });
 });

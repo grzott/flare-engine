@@ -22,7 +22,9 @@ function toArray(children: unknown): unknown[] {
 }
 
 // `List` calls `useTheme()`, which needs a `useContext`/`createContext` pair; stub
-// those (same pattern as primitives.test.ts).
+// those (same pattern as primitives.test.ts). The hook stubs are unused here but must
+// exist: if this file mocks 'react' first, its key set is the one bun freezes, and the
+// other files import `useState` & co. (readdir order differs by OS).
 mock.module('react', () => ({
   Children: { toArray },
   Fragment: 'Fragment',
@@ -37,21 +39,36 @@ mock.module('react', () => ({
     children,
   }),
   useContext: (ctx: { _current: unknown }) => ctx._current,
+  useState: (init: unknown) => [
+    typeof init === 'function' ? (init as () => unknown)() : init,
+    () => {},
+  ],
+  useEffect: () => {},
+  useMemo: (fn: () => unknown) => fn(),
+  useCallback: (fn: unknown) => fn,
+  useRef: (init: unknown) => ({ current: init }),
+  useId: () => 'auto-id',
 }));
 
 mock.module('react/jsx-runtime', () => ({
   jsx: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
   jsxs: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
+  jsxDEV: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
   Fragment: 'Fragment',
 }));
 mock.module('react/jsx-dev-runtime', () => ({
+  jsx: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
+  jsxs: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
   jsxDEV: (type: unknown, props: Record<string, unknown> | null) => ({ type, props: props ?? {} }),
   Fragment: 'Fragment',
 }));
 
 mock.module('react-native', () => ({
   View: 'View',
+  Text: 'Text',
+  Pressable: 'Pressable',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
+  PixelRatio: { get: () => 1 },
 }));
 
 const { List } = await import('../src/list.js');

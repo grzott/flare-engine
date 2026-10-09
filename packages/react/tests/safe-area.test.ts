@@ -58,12 +58,14 @@ mock.module('react-native', () => ({
   View: 'View',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
   Platform: { OS: 'ios' },
+  PixelRatio: { get: () => 1 },
 }));
 
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
   Picture: 'Picture',
   Image: 'Image',
+  RuntimeShader: 'RuntimeShader',
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
   Skia: {
     Surface: {

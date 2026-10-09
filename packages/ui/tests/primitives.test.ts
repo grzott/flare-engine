@@ -25,7 +25,26 @@ function flushEffects(): Array<() => void> {
   return cleanups;
 }
 
+// bun's mock.module freezes the named-export set from whichever file mocks 'react' first,
+// and file order is readdir order: alphabetical on Windows, but this file runs first on the
+// Linux CI runner. So every mock of 'react' in this package carries the full key set —
+// without `Children` here, list.test.ts's `import { Children }` fails on Linux only.
+function childrenToArray(children: unknown): unknown[] {
+  const out: unknown[] = [];
+  const flatten = (node: unknown): void => {
+    if (node === null || node === undefined || typeof node === 'boolean') return;
+    if (Array.isArray(node)) {
+      for (const child of node) flatten(child);
+      return;
+    }
+    out.push(node);
+  };
+  flatten(children);
+  return out;
+}
+
 mock.module('react', () => ({
+  Children: { toArray: childrenToArray },
   createContext: (def: unknown) => ({ Provider: 'Provider', Consumer: 'Consumer', _current: def }),
   useContext: (ctx: { _current: unknown }) => ctx._current,
   useState: (init: unknown) => {

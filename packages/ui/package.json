@@ -32,7 +32,7 @@
   "files": ["dist", "README.md", "LICENSE", "NOTICE"],
   "scripts": {
     "build": "tsdown",
-    "test": "bun test",
+    "test": "bun ../../scripts/test-isolated.mjs",
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit"
   },

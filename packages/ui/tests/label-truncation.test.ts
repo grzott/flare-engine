@@ -1,10 +1,11 @@
 import { describe, expect, it, mock } from 'bun:test';
 
 // Mocks must be registered before any imports that pull in react or react-native.
-// This is also the FIRST file (alphabetically) to mock 'react' in this package, which
-// freezes the named-export set bun's mock.module uses for the rest of the run — a
-// later file adding a genuinely new key (not just a new value for an existing key,
-// e.g. list.test.ts's `Children`) is silently dropped unless it's present here too.
+// Whichever file mocks 'react' first freezes the named-export set bun's mock.module uses
+// for the rest of the run — a later file adding a genuinely new key (not just a new value
+// for an existing key, e.g. list.test.ts's `Children`) is silently dropped. File order is
+// readdir order, which differs by OS (primitives.test.ts runs first on Linux CI), so every
+// file that mocks 'react' here must carry the full key set.
 
 function childrenToArray(children: unknown): unknown[] {
   const out: unknown[] = [];

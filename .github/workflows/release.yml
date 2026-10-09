@@ -10,8 +10,8 @@ concurrency:
 
 jobs:
   release:
-    # Opt-in: enable once the @flare-engine scope exists on npm and
-    # publishable packages have `"private": false`.
+    # Opt-in: off until the flip (docs/plans/flip-runbook.md). Every package
+    # publishes from this job once `ENABLE_RELEASE` is set to 'true'.
     if: ${{ vars.ENABLE_RELEASE == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -26,6 +26,18 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.11
+
+      # `changeset publish` shells out to npm. Pin a known npm rather than
+      # inheriting the runner image's: provenance on the flip publish needs
+      # npm >= 11.5.1 (flip-runbook FW-3b), and the image's npm is not that.
+      # No `registry-url` here on purpose: it makes setup-node write its own
+      # .npmrc keyed to NODE_AUTH_TOKEN and point npm at it, which shadows the
+      # NPM_TOKEN .npmrc changesets/action writes below — the publish would 401.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g npm@11
+      - run: npm --version
 
       - run: bun install --frozen-lockfile
 

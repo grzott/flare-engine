@@ -42,9 +42,9 @@
  * Exit codes: 0 = HEAD clean · 1 = HEAD hits (fix rows) or selftest failure ·
  *             2 = usage/setup error.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { PATTERNS } from './lib/leak-patterns.mjs';
 import {
@@ -464,6 +464,8 @@ try {
 
 const stamp = new Date().toISOString();
 const mode = headOnly ? 'head-only' : 'head + published';
+// _local/ is gitignored, so a fresh clone (CI) does not have it.
+mkdirSync(dirname(REPORT_PATH), { recursive: true });
 writeFileSync(
   REPORT_PATH,
   renderReport({ headRows, publishedRows, headHits, allHits, mode, stamp }),

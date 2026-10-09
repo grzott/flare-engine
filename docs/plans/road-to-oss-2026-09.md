@@ -14,7 +14,9 @@ independent 7-agent pass before this plan was written.
 > Oct 5 / Oct 18 / Oct 20 wording as the record of what was planned — the §1 table is current.
 > Same day: the scaffolder became `@flare-engine/create` (ADR-0007), so it is the 42nd *scoped*
 > package and publishes `restricted` at H1 — every "41 scoped + `create-flare-app`" below means 42
-> scoped.
+> scoped, and every `npm create flare-app@latest` below means `npm create @flare-engine` (no
+> `@latest` suffix is valid in that form). Run the commands in `flip-runbook.md` and
+> `manual-test-protocol.md`, which carry the current ones.
 > **§17 (bottom) holds the 2026-07-05 deep-audit additions** (rows B25–B31, C2–C4, Arc HYG);
 > evidence ledger: `_local/deep-audit-2026-07-05.md`.
 

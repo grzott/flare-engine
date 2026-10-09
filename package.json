@@ -24,6 +24,7 @@
     "check:deps": "bun scripts/check-deps-tiers.mjs",
     "check:peers": "bun scripts/check-peer-completeness.mjs",
     "check:tarballs": "bun scripts/audit-tarballs.mjs --selftest && bun scripts/audit-tarballs.mjs --head-only",
+    "check:history": "bun scripts/scan-history.mjs",
     "check:changeset": "bun scripts/check-changeset.mjs",
     "check:changeset-symbols": "bun scripts/check-changeset-symbols.mjs",
     "check:bump": "bun scripts/check-bump-level.mjs",

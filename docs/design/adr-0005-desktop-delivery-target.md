@@ -12,7 +12,7 @@ Verified at HEAD `2ae80cc` on 2026-09-08. Full design and evidence:
 [todo.md](../plans/todo.md) Arc DESK.
 
 Arc WEB proved a scaffolded Flare app renders in a browser (WEB-5, 2026-08-24). That build is
-produced by Expo + Metro (`packages/create-flare-app/templates/blank/{package.json,metro.config.js}`),
+produced by Expo + Metro (`packages/create/templates/blank/{package.json,metro.config.js}`),
 with `react-native-web` supplying `react-native` and `LoadSkiaWeb` supplying Skia through CanvasKit
 (`templates/blank/index.web.ts`). `canvaskit-wasm` and `react-native-web` are already optional peer
 deps of `packages/react` (`package.json:53-70`). Nothing about that path is browser-specific once
@@ -49,7 +49,7 @@ desktop input, display and lifecycle surface it lacks, and gains Steam support a
 against the Tier-2 interfaces that already exist — `@flare-engine/achievements-steam` and
 `@flare-engine/leaderboards-steam` at tier 3.5 following `iap-revenuecat`, and a Steam Cloud
 `StorageAdapter` at tier 2.5 following `createMmkvAdapter`. **No `@flare-engine/*` package depends on
-a shell**; the shell ships as a `create-flare-app` template, and the Steamworks SDK is never
+a shell**; the shell ships as an `@flare-engine/create` template, and the Steamworks SDK is never
 committed to this repository.
 
 ## Consumer impact
@@ -107,3 +107,7 @@ Additive. Nothing existing is removed or renamed.
   the renderer assumptions in the design doc's §10 R2 are worth re-deriving.
 - **Valve changes the SDK Access Agreement's redistribution terms.** The "never commit the SDK"
   constraint is downstream of it.
+
+<!-- symbols-ok: LoadSkiaWeb, WEBGL_debug_renderer_info -->
+<!-- reason: `LoadSkiaWeb` is @shopify/react-native-skia's web loader and
+     `WEBGL_debug_renderer_info` is a WebGL extension name — neither is a Flare export. -->

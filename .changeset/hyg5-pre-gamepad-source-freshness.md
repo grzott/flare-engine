@@ -2,7 +2,7 @@
 '@flare-engine/input': patch
 ---
 
-HYG5-PRE: document `GamepadSource.poll()`'s freshness contract. Per ADR-0004.
+HYG5-PRE: document `GamepadSource.poll()`'s freshness contract.
 
 `poll()` now documents that it returns fresh objects on every call: an implementation must not
 reuse or mutate a snapshot (or its `buttons`/`axes` arrays) it previously returned, and a caller

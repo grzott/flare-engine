@@ -32,3 +32,7 @@ AABB precheck before drawing any slices.
 the batch. Read by `drawNineSlice`; set via `setCullBounds(minX, minY, maxX, maxY)` (zero-alloc
 in steady state — one object allocated on first call, mutated thereafter). Disabled with
 `clearCullBounds()`.
+
+<!-- symbols-ok: BlendMode.Plus -->
+<!-- reason: Skia's blend-mode enum member, named because additive blending maps onto it; not a
+     Flare export. -->

@@ -3,7 +3,7 @@
 '@flare-engine/render': patch
 ---
 
-PF-2a: settle three `ecs` contracts before the freeze.
+PF-2a: settle three `ecs` contracts before the freeze. Per ADR-0004.
 
 `Query.entities` is the zero-alloc walk — the live `readonly number[]` of matching ids, for an
 indexed loop. The built-in systems and the render system now use it; `for...of` stays as the

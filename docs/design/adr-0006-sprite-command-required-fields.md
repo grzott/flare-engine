@@ -97,3 +97,8 @@ every documented path — but the obligation is not waived by being small.
   checked out here but not `grzott-portfolio`. If one turns up there the migration is one mechanical
   edit per literal, not a reversal — but if the count is large, the optional variant wins.
 - **The freeze date moves earlier.** Same reasoning as the first item.
+
+<!-- symbols-ok: Berek, SpriteDrawFlags -->
+<!-- reason: `Berek` is a sibling game repo named in the consumer scan, not a symbol.
+     `SpriteDrawFlags` is the REJECTED side-channel alternative; it was never built, so it
+     correctly does not resolve. -->

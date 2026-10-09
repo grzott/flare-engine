@@ -61,7 +61,7 @@ export interface SpriteDrawCommand {
    * with different blend modes are placed in separate runs.
    * `'normal'` (default): standard alpha-over (SrcOver).
    * `'additive'`: destination pixel receives `src + dst` (Skia Plus mode) —
-   *   useful for particle addons, glows, and shmup bullet trails.
+   *   useful for particle add-ons, glows, and projectile trails.
    */
   blend: 'normal' | 'additive';
   /**

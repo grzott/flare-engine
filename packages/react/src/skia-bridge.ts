@@ -46,7 +46,7 @@ export interface PostFxPassDescriptor {
   readonly uniforms: Record<string, number | readonly number[]>;
   /**
    * Extra child shader slots beyond the implicit scene sampler. Empty for every
-   * built-in PT effect; only color-grading-lut would populate it. Each entry
+   * built-in effect; only color-grading-lut would populate it. Each entry
    * is an SkImage that GameView wraps in `<ImageShader>`.
    */
   readonly children: readonly SkImage[];

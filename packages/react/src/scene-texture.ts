@@ -119,8 +119,8 @@ export interface SceneCapture<TImage> {
  * snapshot "is a true copy on native", so `false` was safe there. That is
  * wrong: the native snapshot is GPU-backed and belongs to whichever context
  * created the surface. What actually makes it sampleable is building the
- * surface on the **UI thread**, which is a `runOnUI` worklet in
- * `game-view.tsx`, not a call into this module. Passing `false` here on native
+ * surface on the **UI thread**, which `game-view.tsx` does through
+ * `scheduleOnUI`, not through a call into this module. Passing `false` here on native
  * yields a black frame; passing `true` fixes it only by forcing a per-frame
  * GPU→CPU readback. Verified on a Pixel 7 — external-review-2026-08.md §11.4b.
  *

@@ -8,7 +8,7 @@
  *   - its `package.json` version is already ahead of its latest release tag
  *     (i.e. `changeset version` has run; the release is pending publish).
  *
- * Exempt: private packages (e.g. create-flare-app), `benchmarks`, and anything
+ * Exempt: private packages, `benchmarks`, and anything
  * whose change is confined to `tests/`, docs, or tooling (only `src/**` counts).
  * For a truly non-shippable src change, add an empty changeset (`bunx changeset
  * --empty`). Bun-runnable plain ESM. Exit 1 on any violation, 0 when clean.

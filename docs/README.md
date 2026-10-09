@@ -29,7 +29,7 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 - [roadmap.md](plans/roadmap.md) — Phase-by-phase roadmap through the October 2026 OSS launch.
 - [todo.md](plans/todo.md) — the next-work queue. `/start` picks from the top of `## Active`.
 - [road-to-oss-2026-09.md](plans/road-to-oss-2026-09.md) — **the launch SoT**: row specs, freeze protocol, flip sequencing.
-- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore shmup), in its own repo since 2026-06-10.
+- Pan Tvardowski — the canonical showcase game (Polish-folklore shmup), a separate private repo since 2026-06-10. Public showcases: [flareengine.dev](https://flareengine.dev).
 
 ### references/
 

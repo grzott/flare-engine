@@ -44,7 +44,8 @@ package is not guaranteed to exist at all.
 - **Who breaks.** Any consumer pinning Reanimated 3.x, and any app running the old architecture.
 - **What they see.** An unmet peer at install (loud), not a runtime surprise — which is the point.
 - **Migration.** Upgrade to Reanimated 4 and enable the New Architecture. Expo 57 / RN 0.86 already
-  force `newArchEnabled=true`, so any app scaffolded by `create-flare-app` is already there and
+  force `newArchEnabled=true`, so any app scaffolded by the Flare scaffolder (`@flare-engine/create`
+  since ADR-0007) is already there and
   needs no change.
 - **Real-world blast radius: zero.** The scope is published `restricted`
   (`.changeset/config.json` → `"access": "restricted"`); there are no public consumers. The four

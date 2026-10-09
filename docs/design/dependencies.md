@@ -27,7 +27,7 @@
 
 | Package           | Role                                            | Used by                                 |
 | ----------------- | ----------------------------------------------- | --------------------------------------- |
-| `commander`       | CLI argument parsing                            | `@flare-engine/cli`, `create-flare-app` |
+| `commander`       | CLI argument parsing                            | `@flare-engine/cli`, `@flare-engine/create` |
 | `sharp`           | Image decode / resize / encode for atlas packer | `@flare-engine/cli` (`pack-atlas`)      |
 | `maxrects-packer` | Rectangle bin-packing for texture atlases       | `@flare-engine/cli` (`pack-atlas`)      |
 

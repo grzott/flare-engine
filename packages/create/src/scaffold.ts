@@ -129,14 +129,14 @@ function runInstall(pm: 'bun' | 'npm' | 'pnpm', cwd: string): Promise<number> {
  */
 export async function scaffoldApp(opts: ScaffoldOptions): Promise<ScaffoldResult> {
   if (!isValidAppName(opts.name)) {
-    throw new Error(`[create-flare-app] invalid app name: ${opts.name}`);
+    throw new Error(`[flare-create] invalid app name: ${opts.name}`);
   }
   const templateId = opts.template ?? 'blank';
   if (!isTemplateId(templateId)) {
-    throw new Error(`[create-flare-app] unknown template: ${templateId}`);
+    throw new Error(`[flare-create] unknown template: ${templateId}`);
   }
   const manifest = TEMPLATES[templateId];
-  if (!manifest) throw new Error(`[create-flare-app] missing manifest for ${templateId}`);
+  if (!manifest) throw new Error(`[flare-create] missing manifest for ${templateId}`);
 
   const cwd = process.cwd();
   const target = opts.targetDir
@@ -148,7 +148,7 @@ export async function scaffoldApp(opts: ScaffoldOptions): Promise<ScaffoldResult
   if (await pathExists(target)) {
     const entries = await readdir(target);
     if (entries.length > 0) {
-      throw new Error(`[create-flare-app] target ${target} already exists and is not empty`);
+      throw new Error(`[flare-create] target ${target} already exists and is not empty`);
     }
   } else {
     await mkdir(target, { recursive: true });
@@ -157,7 +157,7 @@ export async function scaffoldApp(opts: ScaffoldOptions): Promise<ScaffoldResult
   const templatesRoot = opts.templatesDir ?? DEFAULT_TEMPLATES_DIR;
   const src = join(templatesRoot, templateId);
   if (!(await pathExists(src))) {
-    throw new Error(`[create-flare-app] template directory not found: ${src}`);
+    throw new Error(`[flare-create] template directory not found: ${src}`);
   }
 
   await cp(src, target, { recursive: true });
@@ -188,7 +188,7 @@ export async function scaffoldApp(opts: ScaffoldOptions): Promise<ScaffoldResult
   if (!opts.skipInstall) {
     const code = await runInstall(pm, target);
     if (code !== 0) {
-      throw new Error(`[create-flare-app] ${pm} install exited with code ${code}`);
+      throw new Error(`[flare-create] ${pm} install exited with code ${code}`);
     }
     installed = true;
   }

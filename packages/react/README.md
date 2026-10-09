@@ -12,7 +12,7 @@ Peer deps: `react` (>=19), `react-native` (>=0.79), `@shopify/react-native-skia`
 
 > **The New Architecture is required.** Reanimated 4 is New-Architecture-only, so an app using
 > `<GameView>` must run with `newArchEnabled=true`. This costs nothing in practice — it has been
-> RN's default since 0.76, and every `create-flare-app` template pins Expo 57 / RN 0.86, which
+> RN's default since 0.76, and every `@flare-engine/create` template pins Expo 57 / RN 0.86, which
 > force it on. Old-architecture support was dropped deliberately in
 > [ADR-0002](https://github.com/grzott/flare-engine/blob/main/docs/design/adr-0002-worklets-migration-and-new-arch-floor.md):
 > the previous `>=3.19.1` floor promised something no scaffolder template could produce, so it was

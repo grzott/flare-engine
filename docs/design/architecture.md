@@ -8,7 +8,7 @@
 
 Flare is a modular, TypeScript-first 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on `@shopify/react-native-skia` (native) and CanvasKit WASM (web). The architecture is organized into layered packages; the dependency rule is stated once in [AGENTS.md](../../AGENTS.md) and enforced by `scripts/check-deps-tiers.mjs`.
 
-The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`, `dynamics`). The repository now holds **42 package dirs — 41 scoped `@flare-engine/*` plus `create-flare-app`**.
+The engine grew in phases — a foundational core (Layers 0–4), then the OSS-launch horizontals (Layers 2.5 and 3.5, tooling, Tier-2 stubs), then extraction work that lifted proven, genre-agnostic game logic back into the engine (`iap-revenuecat`, `ui-shop`, `haptics`, `devtools`, `render-web`, `simulation`, `progression`, `shapes`, `dynamics`). The repository now holds **42 scoped `@flare-engine/*` packages**, the `@flare-engine/create` scaffolder included.
 
 ---
 
@@ -76,6 +76,7 @@ graph TD
         RENDERWEB["@flare-engine/render-web<br/>CanvasKit backend + postfx bridge"]
         ENGINE["@flare-engine/engine<br/>createGame(), umbrella"]
         CLI["@flare-engine/cli<br/>pack-atlas, tiled-to-flare, new"]
+        CREATE["@flare-engine/create<br/>npm create @flare-engine"]
     end
 
     MATH --> CORE
@@ -321,13 +322,13 @@ Phase 11 extends the core 16 packages with the horizontal concerns a full-stack,
 
 ### Tooling
 
-`LAYER_MAP` tier per package: `cli` is 4, `devtools` is 3. `create-flare-app` carries no tier — it is not a scoped `@flare-engine/*` package (`private: true`, versioned but never published).
+`LAYER_MAP` tier per package: `cli` and `create` are 4, `devtools` is 3. The scaffolder was the unscoped, never-published `create-flare-app` until [ADR-0007](adr-0007-scaffolder-is-flare-engine-create.md); it now publishes with the rest of the scope.
 
 | Package                  | Tier | Purpose                                                                                       |
 | ------------------------ | ---- | ----------------------------------------------------------------------------------------------- |
 | `@flare-engine/cli`      | 4    | `flare pack-atlas`, `flare tiled-to-flare`, `flare new` (sharp + maxrects-packer + commander) |
 | `@flare-engine/devtools` | 3    | Entity inspector + time scrub + pause/step (partial slice; full panel post-launch)            |
-| `create-flare-app`       | —    | `npm create flare-app@latest` — blank / topdown / shmup templates                             |
+| `@flare-engine/create`   | 4    | `npm create @flare-engine` — blank / topdown / shmup templates                                |
 
 ---
 
@@ -385,4 +386,4 @@ Base (`tsconfig.base.json`) — `strict`, `target: ES2022`, `module: ESNext`, `m
 
 ### Changesets
 
-**Restricted** npm access (public at the October 2026 flip), main branch, patch-bump consumers on internal dep change, **lockstep (`fixed`) versioning** across `@flare-engine/*` + `create-flare-app` — never a single-package bump — and the `@changesets/changelog-github` changelog format.
+**Restricted** npm access (public at the October 2026 flip), main branch, patch-bump consumers on internal dep change, **lockstep (`fixed`) versioning** across every `@flare-engine/*` package — never a single-package bump — and the built-in `@changesets/cli/changelog` format.

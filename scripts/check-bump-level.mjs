@@ -5,7 +5,7 @@
  * **The hole this closes.** `check-changeset` answers "is every changed package
  * covered by a changeset?" — coverage, never level. Nothing else in the repo
  * reads `major`/`minor`/`patch` at all. Combined with `fixed:
- * [["@flare-engine/*", "create-flare-app"]]` in `.changeset/config.json`, that
+ * [["@flare-engine/*"]]` in `.changeset/config.json`, that
  * means **one word in one markdown frontmatter moves all 42 packages**:
  *
  *   - a stray `minor` opens `0.4.0`, the version reserved for the freeze cut;
@@ -171,8 +171,8 @@ if (problems.length === 0) {
 
 const consequence =
   highest === 'major'
-    ? 'publishes 1.0.0 across every @flare-engine/* package and create-flare-app. npm does not take a publish back.'
-    : 'opens 0.4.0 across every @flare-engine/* package and create-flare-app — the version reserved for the freeze cut.';
+    ? 'publishes 1.0.0 across every @flare-engine/* package. npm does not take a publish back.'
+    : 'opens 0.4.0 across every @flare-engine/* package — the version reserved for the freeze cut.';
 
 console.error(
   `\ncheck-bump-level: REFUSED — a "${highest}" bump needs your decision, not a changeset.\n`,

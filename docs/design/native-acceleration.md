@@ -6,7 +6,7 @@
 
 ## Strategy: JS First, C++ Second
 
-**Phases 1–9 (done):** Everything in TypeScript. Ship working modules. Validate APIs on device (`apps/demo` full loop verified pre-retirement; [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — now in its own repo — is the canonical reference).
+**Phases 1–9 (done):** Everything in TypeScript. Ship working modules. Validate APIs on device (`apps/demo` full loop verified pre-retirement; Pan Tvardowski — now in its own private repo — is the canonical reference).
 **Phase 8 (done):** Microbenches shipped and folded across runs; device capture done twice — 2026-04-22 native FPS on a Galaxy A54 (now stale and unrefreshable) and 2026-08-18 web-on-device on a Pixel 7. See [PERFORMANCE.md](../../PERFORMANCE.md) for what each lane does and does not cover.
 **Phase 10 (data-gated):** Once device numbers land, move the measured bottlenecks to C++ via Nitro Modules.
 

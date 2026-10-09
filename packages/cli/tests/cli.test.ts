@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { version } from '../package.json';
-import { buildProgram, createAppSpawnSpec, isValidAppName } from '../src/cli.js';
+import {
+  buildProgram,
+  createAppSpawnArgs,
+  createAppSpawnSpec,
+  isValidAppName,
+} from '../src/cli.js';
 
 describe('buildProgram', () => {
   test('registers pack-atlas, tiled-to-flare, and new commands', () => {
@@ -36,6 +41,23 @@ describe('createAppSpawnSpec', () => {
 
   test('linux → shell:false, cmd is npx', () => {
     expect(createAppSpawnSpec('linux')).toEqual({ cmd: 'npx', shell: false });
+  });
+});
+
+describe('createAppSpawnArgs', () => {
+  test('pins the scoped scaffolder to the CLI version, then forwards the args', () => {
+    expect(createAppSpawnArgs('0.4.0', ['my-game', '--template', 'shmup'])).toEqual([
+      '@flare-engine/create@0.4.0',
+      'my-game',
+      '--template',
+      'shmup',
+    ]);
+  });
+
+  test('never spawns an unscoped package name', () => {
+    const [spec] = createAppSpawnArgs(version, ['my-game']);
+    expect(spec).toBe(`@flare-engine/create@${version}`);
+    expect(spec?.startsWith('create-')).toBe(false);
   });
 });
 

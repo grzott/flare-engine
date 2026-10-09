@@ -1,8 +1,7 @@
 {
-  "name": "create-flare-app",
+  "name": "@flare-engine/create",
   "version": "0.3.1",
-  "private": true,
-  "description": "One-shot scaffolder for Flare engine apps — `npm create flare-app@latest`",
+  "description": "One-shot scaffolder for Flare engine apps — `npm create @flare-engine`",
   "keywords": ["flare-engine", "scaffold", "create-app", "expo", "react-native"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
@@ -13,7 +12,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/grzott/flare-engine.git",
-    "directory": "packages/create-flare-app"
+    "directory": "packages/create"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -31,7 +30,7 @@
     }
   },
   "bin": {
-    "create-flare-app": "dist/bin.js"
+    "flare-create": "dist/bin.js"
   },
   "files": ["dist", "templates", "README.md", "LICENSE", "NOTICE"],
   "scripts": {
@@ -55,7 +54,7 @@
     "node": ">=20"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false

@@ -95,8 +95,8 @@ agents; the architecture, the decisions, the verification and the review are the
    `bun run check:deps && bun run check:changeset && bun run check:exports && bun run check:nodenext && bun run check:readme`
    locally if you want the same answer before pushing.
 
-After a publish, the [Pan Tvardowski repo](https://github.com/grzott/Pan-Tvardowski)'s nightly
-`Engine Compat` workflow is the post-publish drift signal — it floats `@flare-engine/*` to the
+After a publish, the showcase game Pan Tvardowski (a separate, private repo) runs a nightly
+`Engine Compat` workflow that is the post-publish drift signal — it floats `@flare-engine/*` to the
 latest in-range versions and runs PT's full gate. **Engine minor bumps (`0.x` → `0.x+1`) fall
 outside PT's caret ranges and silently freeze that guard** — bumping PT's `@flare-engine/*`
 ranges is part of every minor release.
@@ -105,8 +105,8 @@ ranges is part of every minor release.
 
 ## Project Layout
 
-- [packages/](packages/) — the 41 `@flare-engine/*` packages + the `create-flare-app` scaffolder. See [README.md](README.md#packages) for the layer map.
-- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — device-verified Expo consumer game in its own repo; canonical end-to-end reference consuming `@flare-engine/*` from npm.
+- [packages/](packages/) — the 42 `@flare-engine/*` packages, the `@flare-engine/create` scaffolder included. See [README.md](README.md#packages) for the layer map.
+- Pan Tvardowski — device-verified Expo consumer game in its own private repo; canonical end-to-end reference consuming `@flare-engine/*` from npm.
 - [apps/bench-dashboard/](apps/bench-dashboard/) — Next.js visualizer for benchmark results.
 - [benchmarks/](benchmarks/) — perf harness.
 - [docs/](docs/README.md) — design, plans, references.
@@ -138,7 +138,7 @@ packages/<name>/
 | Lint + Format | [Biome](https://biomejs.dev). Run `bun run lint:fix` to auto-fix. Never Prettier or ESLint.      |
 | Commits       | Conventional Commits, ≤72 chars, no emoji. Example: `feat(ecs): cache archetype bitmask`.        |
 | Tests         | `bun test`. One test file per source file. Cover `NaN`, `Infinity`, zero, negative, edge inputs. |
-| Versioning    | Changesets (lockstep — one shared version across `@flare-engine/*` + `create-flare-app`).        |
+| Versioning    | Changesets (lockstep — one shared version across every `@flare-engine/*` package).               |
 
 Longer versions live in [AGENTS.md](AGENTS.md).
 

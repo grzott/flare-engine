@@ -7,8 +7,7 @@
  *
  * Requires `bun run build` first (attw analyzes `dist/`). Run in CI after build
  * and before publish (release.yml). The "export set" is every `packages/*` with
- * a name, EXCEPT `benchmarks` — it INCLUDES create-flare-app (private today, but
- * it publishes at the flip, so validate its exports now).
+ * a name, EXCEPT `benchmarks` — the scaffolder `@flare-engine/create` included.
  *
  * Tools are resolved to their bin entry and spawned through the running bun
  * binary (`process.execPath <bin>`) so there is no Windows PATH / `.cmd`

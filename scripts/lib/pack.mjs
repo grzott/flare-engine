@@ -75,8 +75,7 @@ export const declaredEntryPoints = (manifest) => {
 
 /**
  * Every package this repo publishes: the scoped `@flare-engine/*` that are not
- * private, plus unscoped `create-flare-app` (private today, flips public at
- * launch — it ships, so it is weighed and scanned like the rest).
+ * private. The scaffolder is one of them since it became `@flare-engine/create`.
  */
 export const discoverPublishTargets = (only) => {
   const packagesDir = join(REPO_ROOT, 'packages');
@@ -87,11 +86,9 @@ export const discoverPublishTargets = (only) => {
     if (!existsSync(manifestPath)) continue;
     const pkg = JSON.parse(readFileSync(manifestPath, 'utf8'));
     if (typeof pkg.name !== 'string') continue;
-    const isScoped = pkg.name.startsWith(SCOPE);
-    const isCreateFlareApp = pkg.name === 'create-flare-app';
-    if (!((isScoped && !pkg.private) || isCreateFlareApp)) continue;
+    if (!pkg.name.startsWith(SCOPE) || pkg.private) continue;
     if (only && !pkg.name.includes(only)) continue;
-    targets.push({ name: pkg.name, dir, flipsPublic: isCreateFlareApp });
+    targets.push({ name: pkg.name, dir });
   }
   return targets;
 };

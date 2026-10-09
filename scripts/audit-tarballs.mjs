@@ -18,9 +18,10 @@
  * `license: "Apache-2.0"` and ships both LICENSE + NOTICE (E2). Published
  * 0.1.0-0.2.1 tarballs stay MIT by design (immutable) — recorded, never flagged.
  *
- * Targets: the 40 scoped `@flare-engine/*` (not private) + `create-flare-app`
- * (unscoped, private today, flips public at launch). Absent-at-version is
- * expected (only 36 packages existed at 0.1.0) — recorded n/a, never a failure.
+ * Targets: every non-private scoped `@flare-engine/*` package (42 since the
+ * scaffolder became `@flare-engine/create`, first published at 0.4.0).
+ * Absent-at-version is expected (only 36 packages existed at 0.1.0) — recorded
+ * n/a, never a failure.
  *
  * The published-version fetch is AUTHENTICATED (restricted packages) and thus
  * owner-paired: without a logged-in npm token every `npm view`/`npm pack
@@ -45,6 +46,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import { PATTERNS } from './lib/leak-patterns.mjs';
 import {
   checkRegistry,
   declaredEntryPoints,
@@ -65,75 +67,11 @@ const PUBLISHED_VERSIONS_EXPECTED = ['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.3.1'
 const MAX_SCAN_BYTES = 2 * 1024 * 1024;
 
 // --- Leak patterns -----------------------------------------------------------
-// severity: high (must never ship) · medium (private IP) · low (advisory).
-// redact: mask the matched value in the report (real secrets).
-// skipCreateFlareApp: legitimate in the public starter templates (e.g. "shmup").
-const PATTERNS = [
-  { category: 'local-path', severity: 'high', re: /C:[\\/]_PROG|flare-engine-workspace/i },
-  { category: 'home-path', severity: 'high', re: /(?:\/Users\/|\/home\/)[a-z0-9._-]+\//i },
-  { category: 'npm-token', severity: 'high', redact: true, re: /npm_[A-Za-z0-9]{36}/ },
-  {
-    category: 'gh-token',
-    severity: 'high',
-    redact: true,
-    re: /ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}/,
-  },
-  {
-    category: 'private-key',
-    severity: 'high',
-    redact: true,
-    // Covers PKCS8/RSA/EC/OPENSSH ("... PRIVATE KEY") and PGP armor ("... PRIVATE KEY BLOCK").
-    re: /-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----/,
-  },
-  {
-    category: 'api-key',
-    severity: 'high',
-    redact: true,
-    re: /AIza[0-9A-Za-z_-]{35}|sk-[A-Za-z0-9]{20,}/,
-  },
-  { category: 'auth-token-ref', severity: 'high', re: /_authToken|NPM_TOKEN|NODE_AUTH_TOKEN/ },
-  { category: 'ci-secret', severity: 'high', re: /TESTINGBOT_(?:KEY|SECRET)|EXPO_TOKEN/i },
-  {
-    category: 'private-url',
-    severity: 'high',
-    re: /u\.expo\.dev|202e2a64-a737-48c1-8d71-0e7b8b6a3395|grzegorzotto\.dev/i,
-  },
-  { category: 'pt-vocab', severity: 'medium', re: /pan[\s._-]?tvardowski|tvardowski/i },
-  {
-    category: 'sibling-repo',
-    severity: 'high',
-    re: /grzott-portfolio|flare-engine-page|Pan-Tvardowski|pan-tvardowski-lore/i,
-  },
-  // Unanchored (like pt-vocab) so IP names embedded in identifiers/keys are caught
-  // (berekMode, spawnKogut, JedzaBossState); these have no English collision.
-  {
-    category: 'game-ip',
-    severity: 'medium',
-    re: /berek|kogut|j[eę]dz[aeęyąói]|polyform/i,
-  },
-  // "smok" collides with English "smoke/smoky", so match only proper-noun forms
-  // (Smok, SmokBoss, spawnSmok, smokBoss, smok_x, x_smok, standalone smok). Case-sensitive.
-  {
-    category: 'game-ip',
-    severity: 'medium',
-    re: /Smok(?![a-z])|smok(?=[A-Z])|\bsmok\b|_smok|smok_/,
-  },
-  {
-    category: 'plan-ref',
-    severity: 'low',
-    re: /SESSION_LOG|road-to-oss|docs[\\/]plans[\\/]_local|(?:^|[^a-z])_local[\\/]/,
-  },
-  {
-    category: 'genre-coupling',
-    severity: 'low',
-    skipScaffolders: true,
-    re: /\bshmup\b|danmaku|bullet[\s-]?hell/i,
-  },
-];
+// Shared with scan-history.mjs — see scripts/lib/leak-patterns.mjs.
 
 // The two public scaffolders legitimately name their starter templates
 // (blank/topdown/shmup), so genre words there are expected, not coupling leaks.
-const SCAFFOLDER_PACKAGES = new Set(['create-flare-app', '@flare-engine/cli']);
+const SCAFFOLDER_PACKAGES = new Set(['@flare-engine/create', '@flare-engine/cli']);
 
 // Files that must never appear in a published tarball.
 const FORBIDDEN_FILES =
@@ -468,8 +406,17 @@ try {
       rmSync(work, { recursive: true, force: true });
       process.exit(2);
     }
+    // A restricted package 404s for an anonymous caller exactly as an unpublished
+    // one does, so an E404 only means "never published" when npm is logged in.
+    let authenticated = true;
+    try {
+      npm('whoami');
+    } catch {
+      authenticated = false;
+    }
     for (const t of targets) {
-      if (t.flipsPublic) {
+      const versions = publishedVersions(t.name);
+      if (!versions.ok && authenticated && /\bE404\b/.test(versions.reason)) {
         publishedRows.push({
           name: t.name,
           version: '(never published)',
@@ -478,7 +425,6 @@ try {
         });
         continue;
       }
-      const versions = publishedVersions(t.name);
       if (!versions.ok) {
         for (const v of PUBLISHED_VERSIONS_EXPECTED) {
           publishedRows.push({

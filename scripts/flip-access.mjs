@@ -7,8 +7,8 @@
  *
  * The target set is derived from the workspace at runtime (every packages/*
  * whose name starts with `@flare-engine/` and is not `private`), so it stays
- * correct if a package is added or removed. `create-flare-app` is unscoped
- * (public by default once `private:false`) and is intentionally excluded.
+ * correct if a package is added or removed. The scaffolder is in the set: it is
+ * `@flare-engine/create`, published restricted from 0.4.0 like the rest.
  *
  * Usage:
  *   bun scripts/flip-access.mjs                 # dry-run (default): list the packages, mutate nothing

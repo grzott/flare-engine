@@ -235,7 +235,7 @@ describe('findDistFile / findUnbuiltPackages — fail loudly on missing input', 
     expect(findUnbuiltPackages([{ name: '@flare-engine/built-pkg', dir: pkgDir }])).toEqual([]);
   });
 
-  it('accepts the create-flare-app style `.d.mts` fallback', () => {
+  it('accepts the scaffolder-style `.d.mts` fallback', () => {
     scratch = mkdtempSync(join(tmpdir(), 'sym-gate-'));
     const pkgDir = join(scratch, 'mts-pkg');
     mkdirSync(join(pkgDir, 'dist'), { recursive: true });

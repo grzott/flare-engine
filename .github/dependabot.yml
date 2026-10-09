@@ -5,7 +5,7 @@
 # `bun.lock`. Bun is supported by Dependabot only via the text-format
 # `bun.lock` (>= bun 1.1.39); this repo is on bun 1.3.11.
 #
-# `packages/create-flare-app/templates/*` is deliberately NOT covered. Those
+# `packages/create/templates/*` is deliberately NOT covered. Those
 # manifests are scaffolding fixtures, not workspace members — they appear in no
 # lockfile — and their pins are load-bearing: OSS-B32 fixed the template `react`
 # pin specifically to satisfy RN 0.86's peer range. An automated bump there would

@@ -17,11 +17,11 @@ function parsePmArg(value: string): 'bun' | 'npm' | 'pnpm' {
   return value;
 }
 
-/** Build the `create-flare-app` CLI program. Exposed for tests. */
+/** Build the `flare-create` CLI program. Exposed for tests. */
 export function buildProgram(): Command {
   const program = new Command();
   program
-    .name('create-flare-app')
+    .name('flare-create')
     .description('Scaffold a new Flare engine app')
     .version(version)
     .argument('<name>', 'directory name / package name for the new app')
@@ -37,16 +37,16 @@ export function buildProgram(): Command {
       });
       const manifest = TEMPLATES[result.template];
       process.stdout.write(
-        `[create-flare-app] scaffolded ${
+        `[flare-create] scaffolded ${
           manifest?.displayName ?? result.template
         } at ${result.targetDir}\n`,
       );
       if (!result.installed) {
         process.stdout.write(
-          `[create-flare-app] skipped install — run \`cd ${name} && ${result.packageManager} install\` when ready\n`,
+          `[flare-create] skipped install — run \`cd ${name} && ${result.packageManager} install\` when ready\n`,
         );
       } else if (manifest?.postInstall) {
-        process.stdout.write(`[create-flare-app] next: cd ${name} && ${manifest.postInstall}\n`);
+        process.stdout.write(`[flare-create] next: cd ${name} && ${manifest.postInstall}\n`);
       }
     });
   return program;

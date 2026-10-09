@@ -38,9 +38,19 @@ export function isValidAppName(name: string): boolean {
   return VALID_APP_NAME.test(name);
 }
 
-/** Returns the spawn configuration for `npx create-flare-app` on the given platform. */
+/** Returns the spawn configuration for `npx @flare-engine/create` on the given platform. */
 export function createAppSpawnSpec(platform: NodeJS.Platform): { cmd: string; shell: boolean } {
   return { cmd: 'npx', shell: platform === 'win32' };
+}
+
+/**
+ * The npx arguments for `flare new`: the scaffolder pinned to this CLI's own
+ * version. Lockstep versioning guarantees `@flare-engine/create` exists at that
+ * version, and a scoped, exact spec can never resolve to a package someone else
+ * published under an unscoped name.
+ */
+export function createAppSpawnArgs(cliVersion: string, args: readonly string[]): string[] {
+  return [`@flare-engine/create@${cliVersion}`, ...args];
 }
 
 /** Build the `flare` CLI program. Exposed for tests. */
@@ -91,24 +101,24 @@ export function buildProgram(): Command {
 
   program
     .command('new <name>')
-    .description('Scaffold a new Flare app (alias for create-flare-app)')
+    .description('Scaffold a new Flare app (alias for npm create @flare-engine)')
     .option('-t, --template <name>', 'template (blank|topdown|shmup)', parseTemplateArg, 'blank')
     .option('-p, --package-manager <pm>', 'package manager (bun|npm|pnpm)', parsePmArg)
     .action(async (name: string, opts) => {
       if (!VALID_APP_NAME.test(name)) throw new Error(`invalid app name: ${name}`);
       const args = [name, '--template', opts.template];
       if (opts.packageManager) args.push('--package-manager', opts.packageManager);
-      const code = await runCreateFlareApp(args);
+      const code = await runCreateApp(args);
       if (code !== 0) process.exit(code);
     });
 
   return program;
 }
 
-function runCreateFlareApp(args: string[]): Promise<number> {
+function runCreateApp(args: string[]): Promise<number> {
   return new Promise((resolvePromise) => {
     const { cmd, shell } = createAppSpawnSpec(process.platform);
-    const child = spawn(cmd, ['create-flare-app', ...args], {
+    const child = spawn(cmd, createAppSpawnArgs(version, args), {
       stdio: 'inherit',
       shell,
     });

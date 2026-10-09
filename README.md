@@ -13,8 +13,8 @@
 
 **Public OSS launch: October 2026.** The `@flare-engine/*` scope cuts a `0.4.0` lockstep release and flips from restricted to public npm access during the launch window.
 
-- 41 scoped `@flare-engine/*` packages + `create-flare-app`, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
-- [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). Lives in its own repo since 2026-06-10 and consumes the engine from npm — proof it works as a real dependency, not just a workspace
+- 42 scoped `@flare-engine/*` packages, scaffolder included, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
+- Pan Tvardowski — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). A separate, private commercial project that consumes the engine from npm — proof it works as a real dependency, not just a workspace. Showcases are on [flareengine.dev](https://flareengine.dev)
 - Not affiliated with [FLARE (flarerpg.org)](https://flarerpg.org), a separate action-RPG game engine — this project is the `@flare-engine/*` TypeScript packages for React Native + Web
 - Full roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md)
 
@@ -37,7 +37,7 @@ for a contributor.
 
 ## Architecture
 
-42 package dirs (41 scoped `@flare-engine/*` + `create-flare-app`), strict downward-only dependencies — a package may depend only on an equal-or-lower tier, never a higher one (see AGENTS.md).
+42 scoped `@flare-engine/*` packages, strict downward-only dependencies — a package may depend only on an equal-or-lower tier, never a higher one (see AGENTS.md).
 
 Every package shares one lockstep version, is tree-shakeable, and builds to dual CJS+ESM with `.d.ts`. Full layer diagram, and the enforced tier for every package: [docs/design/architecture.md](docs/design/architecture.md#layer-diagram) — the single source of truth for the tier map (this file no longer restates it; see `scripts/check-deps-tiers.mjs` for the enforced version).
 
@@ -80,8 +80,8 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 | `@flare-engine/render-web`   | shipping                 | Web analog of `react` — composes `render` + `postfx` via CanvasKit-WASM        |
 | `@flare-engine/engine`       | shipping                 | `createGame()` convenience + umbrella re-exports                               |
 | `@flare-engine/cli`          | shipping                 | `flare pack-atlas`, `flare tiled-to-flare`, `flare new`                        |
-| `@flare-engine/devtools`     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-0.1.0)      |
-| `create-flare-app`           | pre-launch (unpublished) | `npm create flare-app@latest` — blank / topdown / shmup templates; publishes at the October 2026 flip |
+| `@flare-engine/devtools`     | shipping                 | Entity inspector + time scrub + pause/step (broader profiling post-launch)     |
+| `@flare-engine/create`       | shipping                 | `npm create @flare-engine` — blank / topdown / shmup templates                 |
 | `@flare-engine/leaderboards` | shipping                 | Interface + no-op + in-memory provider (`createMemoryLeaderboards`); platform adapters post-launch |
 | `@flare-engine/achievements` | shipping                 | Interface + no-op + in-memory / storage-backed providers; platform adapters post-launch |
 | `@flare-engine/iap`          | shipping                 | Interface + no-op provider + `ProductCatalog` + `EntitlementStore` + content gates |
@@ -104,21 +104,17 @@ bun run build
 bun run test
 ```
 
-The showcase game lives in its own repo and consumes the published packages:
+A fresh project scaffolds via:
 
 ```bash
-git clone https://github.com/grzott/Pan-Tvardowski
-cd Pan-Tvardowski && bun install && bun run start
+npm create @flare-engine my-game
+# bun: bunx @flare-engine/create my-game
 ```
 
-From the October 2026 public launch, a fresh project scaffolds via:
-
-```bash
-npm create flare-app@latest my-game
-```
-
-The scaffolder is not on npm yet — it is `private` until the flip, so that command does not resolve
-today. Until then, clone the repo and run `bun packages/create-flare-app/src/bin.ts my-game`.
+Pick `blank`, `topdown` or `shmup` with `-- --template <name>`. `npm create flare-app` is a
+different, unrelated package — the scaffolder is `@flare-engine/create`. Until the October 2026
+public launch the scope is restricted on npm; from a clone, run
+`bun packages/create/src/bin.ts my-game` instead.
 
 ---
 
@@ -132,7 +128,7 @@ today. Until then, clone the repo and run `bun packages/create-flare-app/src/bin
 | Build              | [tsdown](https://tsdown.dev) (dual CJS/ESM + `.d.ts`)                                              |
 | Test               | Bun test                                                                                           |
 | Commits            | Conventional Commits (commitlint + Husky)                                                          |
-| Versioning         | [Changesets](https://github.com/changesets/changesets) (lockstep — one shared version across `@flare-engine/*` + `create-flare-app`) |
+| Versioning         | [Changesets](https://github.com/changesets/changesets) (lockstep — one shared version across every `@flare-engine/*` package) |
 | Rendering (native) | [`@shopify/react-native-skia`](https://shopify.github.io/react-native-skia/)                       |
 | Rendering (web)    | CanvasKit WASM                                                                                     |
 | Audio              | [`react-native-audio-api`](https://github.com/software-mansion/react-native-audio-api) / Web Audio |

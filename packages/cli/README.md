@@ -1,6 +1,6 @@
 # @flare-engine/cli
 
-Node-only dev tool. Three commands: `flare pack-atlas` (sprite folder → TexturePacker-compatible JSON + atlas PNG), `flare tiled-to-flare` (Tiled `.tmj` → normalized runtime JSON for `@flare-engine/tilemap`), and `flare new` (alias for `create-flare-app`). Programmatic equivalents (`packAtlas`, `convertTiled`) are exported so CI and integration tests can call them without shelling out.
+Node-only dev tool. Three commands: `flare pack-atlas` (sprite folder → TexturePacker-compatible JSON + atlas PNG), `flare tiled-to-flare` (Tiled `.tmj` → normalized runtime JSON for `@flare-engine/tilemap`), and `flare new` (runs `@flare-engine/create` at this CLI's own version). Programmatic equivalents (`packAtlas`, `convertTiled`) are exported so CI and integration tests can call them without shelling out.
 
 ## Install
 

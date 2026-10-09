@@ -121,7 +121,7 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 | API                                         | Description                                                                                                                                  |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CollisionWorld`                            | `add(entity, shape, x, y, isTrigger?, layer?, mask?)`, `addCollider(entity, collider, x, y)` (copies the `Collider`'s `shape` / `isTrigger` / `layer` / `mask` at add time — re-add to change them), `setPosition(entity, x, y)`, `remove(entity)`, `step()`, `clear()`. `getColliderBoundsInto(entity, out): Rect \| null` (zero-alloc); `getColliderBounds(entity): Rect \| null` (allocating convenience). Both return `null` when the entity is absent. |
-| `Shape`                                     | `AABB(w, h)`, `CircleShape(r)`. `shapeBounds(shape, x, y)` (allocating) and `shapeBoundsInto(shape, x, y, out)` (zero-alloc).                |
+| `Shape`                                     | `AABB(w, h)`, `CircleShape(r)`. `shapeBounds(shape, x, y)` (allocating) and `shapeBoundsInto(shape, x, y, out)` (zero-alloc). `shapeOverlap(a, ax, ay, b, bx, by)` is **strict on every pair**: exactly-touching shapes do not collide (box/circle used `<=` until 0.4.0), and it agrees with `overlapInto(...) !== null`. A zero-radius circle collides only strictly inside a box, as a zero-size box does. |
 | `overlapInto(a, ax, ay, b, bx, by, out)`    | Minimum translation vector — the shortest push separating two overlapping shapes. `Overlap { x, y, depth }`: unit axis pointing from `a` toward `b`, plus penetration depth. `null` when apart, leaving `out` untouched. `overlap(...)` is the allocating twin, `createOverlap()` makes a buffer. AABB/AABB resolves along the least-penetrated axis; a circle centred inside a box exits through its nearest face; concentric circles return `(1, 0)` rather than `NaN`. Fills the gap between `shapeOverlap`'s boolean and actually resolving the collision. |
 | `CollisionWorld.raycast(ox, oy, dx, dy, maxDist, mask?)` | Nearest hit against the world's colliders, walking only the broadphase cells the ray's AABB touches, filtered by each collider's `layer` bits (`mask` defaults to all). Returns a `RaycastHit` **reused between calls** — copy what you need before casting again — or `null`. The ray AABB is padded so an axis-aligned ray is not a degenerate zero-extent query. `maxDist` must be finite: the broadphase is a uniform grid, and an infinite `maxDist` derives an infinite cell range and never terminates the walk; a non-finite `maxDist` returns `null`. Pass a large finite bound (e.g. the map's diagonal) to approximate an unbounded ray. Contrast the standalone `raycast(..., targets)`, which scans a caller-supplied list and allocates a hit per candidate. |
 | `rayVsShapeInto(ox, oy, dx, dy, maxDist, entity, shape, x, y, out)` | Zero-alloc ray-vs-shape test writing into `out`; `null` leaves it untouched. The primitive `CollisionWorld.raycast` is built on. |
@@ -320,7 +320,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 - Single hard dep: `@flare-engine/events` (`Signal`).
 - `ConditionResolver` and `ActionHandler` are caller-supplied — the package owns no game state.
-- Used by [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski) for the inter-zone dialogue card stack and boss banter.
+- Used by Pan Tvardowski, the engine's showcase game, for the inter-zone dialogue card stack and boss banter.
 
 ---
 
@@ -740,7 +740,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ## Tooling (OSS-launch addition)
 
-No single `LAYER_MAP` tier — `cli` is 4, `devtools` is 3, `create-flare-app` is unmapped (not a scoped `@flare-engine/*` package). See [architecture.md](architecture.md#layer-diagram).
+No single `LAYER_MAP` tier — `cli` and `create` are 4, `devtools` is 3. See [architecture.md](architecture.md#layer-diagram).
 
 Node-only developer tools. Not shipped to device; excluded from device bundle size budgets. Sizes below are raw install footprint (unpacked `npm pack`).
 
@@ -754,7 +754,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | --- | --- |
 | `flare pack-atlas <input> [--out <dir>] [--padding N] [--max-size N] [--format png\|webp]` | Sprite folder → TexturePacker-compatible JSON + atlas PNG consumable by `@flare-engine/assets`. Default `--padding 2`, `--max-size 2048`, `--format png`. |
 | `flare tiled-to-flare <tmj> [--out <file>] [--no-embed-tilesets]` | Tiled `.tmj` → Tiled-shaped JSON accepted directly by `@flare-engine/tilemap`'s `parseTiled` — a pass-through of the original layer/tileset objects (`type`, `properties`, tileset `tiles[]`, object `rotation`, layer `offsetx`/`offsety` all survive), flattening group layers and dropping image layers. Embeds external tilesets by default; `--no-embed-tilesets` keeps the Tiled `source` reference instead, which `parseTiled` rejects — that output is for pipelines that resolve external tilesets themselves. |
-| `flare new <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm]` | Thin alias that spawns `create-flare-app` with the same args. Present so `flare` is a single discoverable entrypoint. |
+| `flare new <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm]` | Thin alias that runs `npx @flare-engine/create@<this CLI's version>` with the same args — exact and scoped, so it never resolves another publisher's package. Present so `flare` is a single discoverable entrypoint. |
 | `packAtlas(opts: AtlasPackerOptions): Promise<AtlasResult>` | Programmatic form of `pack-atlas`. Returns `{ jsonPath, imagePath, frames, width, height }`. |
 | `convertTiled(opts: TiledConvertOptions): Promise<TiledResult>` | Programmatic form of `tiled-to-flare`. Returns `{ outPath, layers, tilesets, map }` — `layers`/`tilesets`/`map` are Tiled-shaped (`TiledLayer`, `TiledTileset`, `TiledMap`), not a separate published format. |
 | `AtlasPackerOptions` / `TiledConvertOptions` | Exported TS types mirroring the CLI flags. |
@@ -769,22 +769,23 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 ---
 
-### `create-flare-app` (< 30KB raw, Node-only, standalone npm package)
+### `@flare-engine/create` (< 35KB raw, Node-only)
 
-**Responsibility.** One-shot scaffolder invoked via `npm create flare-app@latest <name>`. Produces a runnable Expo + Flare app with a minimal scene + HUD in under 5 minutes on a clean machine (build-plan §11.8 "Done when"). Named without the `@flare-engine/` scope because `npm create <x>` resolves to the unscoped `create-<x>` package by npm convention.
+**Responsibility.** One-shot scaffolder invoked via `npm create @flare-engine <name>` (npm, pnpm and yarn map a bare `@scope` to `@scope/create`; bun users run `bunx @flare-engine/create <name>`). Produces a runnable Expo + Flare app with a minimal scene + HUD in under 5 minutes on a clean machine (build-plan §11.8 "Done when"). Scoped, and published with the rest of the lockstep set, since [ADR-0007](adr-0007-scaffolder-is-flare-engine-create.md): the unscoped `create-flare-app` it was developed under belongs to an unrelated npm package.
 
 | API | Description |
 | --- | --- |
-| `create-flare-app <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
+| `flare-create <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
+| `scaffoldApp(opts)` | Programmatic form. `opts`: `{ name, template?, packageManager?, skipInstall?, targetDir?, templatesDir?, flareVersion? }`; resolves to `{ targetDir, template, packageManager, installed }`. |
 | Template `blank` | Empty scene, single sprite, `GameView` wired via `@flare-engine/react`. Smallest starting point. |
 | Template `topdown` | Player with analog joystick movement, tilemap + tile-collision + camera follow. Exercises `tilemap` + `physics` + `input` + `ecs`. |
-| Template `shmup` | Auto-fire player, enemy spawner, HUD score — minimum vertical-slice shmup. Exercises `particles` + `audio` + `scene`. For the full-scope showcase, see [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski). |
+| Template `shmup` | Auto-fire player, enemy spawner, HUD score — minimum vertical-slice shmup. Exercises `particles` + `audio` + `scene`. For full-scope showcases, see [flareengine.dev](https://flareengine.dev). |
 | `TemplateManifest` | Exported type: `{ id, displayName, description, engines, postInstall? }`. Declared per template so contributor-authored templates can plug in identically. |
 
 **Implementation notes:**
 
-- Lives outside `packages/@flare-engine/*` as `packages/create-flare-app` to satisfy npm's `npm create` convention.
-- Templates ship inside this package as `templates/<id>/`. Copy is a plain recursive FS copy with a small set of token replacements (`__APP_NAME__`, `__FLARE_VERSION__`).
+- Lives at `packages/create`, versioned in lockstep and published `restricted` until the flip like every other package.
+- Templates ship inside this package as `templates/<id>/`. Copy is a plain recursive FS copy with a small set of token replacements (`{{APP_NAME}}`, `{{FLARE_VERSION}}`, `{{TEMPLATE_ID}}`).
 - Package-manager detection: explicit `--package-manager` > `npm_config_user_agent` > fallback `bun`.
 - `flare new` in `@flare-engine/cli` shells out to this package's binary; the two CLIs never import each other.
 - CI smoke test creates one app per template and runs `bun install && bun run typecheck` on each; failure blocks release.

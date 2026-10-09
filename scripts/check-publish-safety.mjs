@@ -19,9 +19,10 @@
  * and it would publish an uninstallable manifest.
  *
  * Safe to run at HEAD too: all internal deps are `^x.y.z` today, so concretize
- * is a no-op and this passes. create-flare-app is `private` until the launch
- * flip — OSS-F1's runbook flips it to `private:false` — so it is intentionally
- * skipped here and surfaced as a tracking note, not a failure.
+ * is a no-op and this passes. A `private` package carrying
+ * `publishConfig.access: "public"` is a violation: deleting the one `private`
+ * line would publish it publicly, past the restricted scope (the old unscoped
+ * scaffolder sat in exactly that state until it became `@flare-engine/create`).
  *
  * Bun-runnable plain ESM. Exit 1 on any violation, 0 when the publish set is
  * safe.
@@ -64,7 +65,6 @@ const changesetIgnored = () => {
 
 const ignored = changesetIgnored();
 const violations = [];
-const notes = [];
 let publishCount = 0;
 
 for (const pj of workspaceManifests()) {
@@ -73,8 +73,8 @@ for (const pj of workspaceManifests()) {
 
   if (j.private || ignored.has(j.name)) {
     if (j.private && j.publishConfig?.access === 'public') {
-      notes.push(
-        `${j.name} is private with publishConfig.access:"public" — intentional; flipped to private:false at launch by OSS-F1.`,
+      violations.push(
+        `${j.name} is private with publishConfig.access:"public" — removing "private" would publish it publicly.`,
       );
     }
     continue;
@@ -100,8 +100,6 @@ for (const pj of workspaceManifests()) {
     violations.push(`${j.name}: no "exports" or "main" — nothing for a consumer to import`);
   }
 }
-
-for (const n of notes) console.log(`check-publish-safety: NOTE — ${n}`);
 
 if (violations.length > 0) {
   console.error('\ncheck-publish-safety: FAILED — publish set is not safe to ship:');

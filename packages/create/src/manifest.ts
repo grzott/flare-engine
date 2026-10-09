@@ -1,4 +1,4 @@
-/** Declared metadata for a create-flare-app template. */
+/** Declared metadata for a `@flare-engine/create` template. */
 export interface TemplateManifest {
   /** Template directory name (`blank`, `topdown`, `shmup`, ...). */
   id: string;
@@ -12,7 +12,7 @@ export interface TemplateManifest {
   postInstall?: string;
 }
 
-/** Built-in templates shipped inside `create-flare-app`. */
+/** Built-in templates shipped inside `@flare-engine/create`. */
 export const TEMPLATES = {
   blank: {
     id: 'blank',

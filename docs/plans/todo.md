@@ -361,12 +361,17 @@ design; override debt must be zero before Oct 5.
   Neither option makes the script agent-runnable — the node package manager is denied to agents by
   `.claude/settings.json` + `pre-bash-guard.sh` whatever flags it carries — so **FW-10's reassignment
   to owner-only remains a separate, still-open decision**, now recorded in the runbook's lane note.
-- **CR-3 — reconcile the ledger to HEAD** (P1, [MT], 1 session, after PF-9). XR-7 → Done
+- **CR-3 — reconcile the ledger to HEAD** (P1, [MT], 1 session, after PF-9). **PARTLY DONE 2026-10-09
+  (session #324)** — road-to-oss §1/§10/§11/§14, the runbook and the protocol now match HEAD (stale G1
+  premise, obsolete H1 "author ONE changeset", owner-ledger-does-not-exist, PT1/BK1 status); CR-4,
+  M11-boundary and HYG24 are stamped. **Still owed after PF-9:** the XR-7/XR-2/M6/C4 Done rows, the
+  XR-1 Active-row rewrite, and the duplicate "Session 323" heading in SESSION_LOG. Original: XR-7 → Done
   (`0ef1aec`/`942ba88`/`87527aa`/`e7e169e`, noting the fold was unpinned and is superseded by PF-9's pinned
   capture); XR-1 Active row → `>=4.0.0` + worklets `>=0.7.0` per ADR-0002 with only half (b) open; add the
   missing XR-2 Done row (`245b198`); correct todo.md:294 — "B/C/D/M all shipped in 0.3.0" is false, seven rows
   landed after 0.3.1 and are unreleased; drop the stale M11/PERF-9/HYG5 bullets that CW7-8 already fixed.
-- **CR-4 — public-facing one-source fixes** (P1, [MT], 1 session; may slip into the manual window — doc fixes
+- **CR-4 — DONE 2026-09-07 (session #322, `82a788a`; stamped 2026-10-09 — `/start` would otherwise
+  re-run it).** public-facing one-source fixes (P1, [MT], 1 session; may slip into the manual window — doc fixes
   are allowed there, restructuring is not). `AGENTS.md:46` still says 0.2.1 is the published line (it is 0.3.1)
   and AGENTS.md reaches every reader through CLAUDE.md; `architecture.md` becomes the sole tier map reproducing
   `LAYER_MAP` and the other four maps link to it (five maps disagree on 11 packages today); the downward-only
@@ -379,7 +384,13 @@ design; override debt must be zero before Oct 5.
   **Also confirm `pathfinding`'s flow-fields claim against HEAD before deleting it**: PF-6 changed what that
   package does (`findPathJPS` now detects weighted grids and delegates to A\*), so re-read the README rather
   than applying the audit's verdict blind — the sentence may now be wrong in a different way than recorded.
-- **F4-SCAN — full-history secret re-scan** (P0, [MT], 1 session, Oct 2–5). Delta since the June 847-file pass,
+- **F4-SCAN — DONE 2026-10-09 (session #324): built and run over full history, zero secrets; re-run at
+  the freeze HEAD — see the OSS-F4 row in Arc OSS for the result.** Two prep notes below were wrong
+  and were not followed: "export the existing const" — `audit-tarballs.mjs` has no `import.meta.main`
+  guard, so importing it runs the whole audit; the list moved to `scripts/lib/leak-patterns.mjs`
+  instead, one import in each tool. And a `ba173cc..HEAD` delta was unnecessary: the full history of
+  all refs scans in under two seconds. Original row:
+  full-history secret re-scan (P0, [MT], 1 session, Oct 2–5). Delta since the June 847-file pass,
   including Bypass-2FA/granular token patterns; commit the pattern list before running (§4.2 notes the
   procedure is assumed rather than written down).
   **Prep resolved 2026-09-07 — the run is now reproducible; the scan itself still waits for Oct 2–5.**
@@ -578,7 +589,13 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
 - **PERF-7 — native bench app + device-lane revival (P3) [MT + owner OOB, 2 sessions].** `apps/bench-native` engine scenarios (sprite/rotation/postfx/particles + texture-eviction/resume-from-background + cold start); lift harness from **PT HEAD only** (absolute-ceiling gate) with the B20 fails-green hardening (matrix validation, staleness gate, zero-combo fails, absolute-delta floor, one scenario-id namespace, artifact-path fix); revive per B21 order — TestingBot account verification FIRST, not a fresh APK; weekly cron with window ≥4× cadence + per-release anchor; bridge device data to the dashboard (kills dead device.json — B22); rewrite the parked particle-storm gate below. Spec: §11.7.
 - **PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, `packages/**`, post-freeze).** `SpatialIndex.update`'s per-entity closure + O(n) find; `entries` destructuring in the broadphase loop; the reused pair-`Set` that costs ~38× the heap footprint of a fresh one under JSC (verify on Hermes FIRST — RN is the primary target). One lockstep minor changeset. Spec: §11.9.
 
-- **PERF-22 — re-capture every perf lane before the freeze (P0, dated Sep 28 – Oct 2, [MT + owner OOB]).**
+- **PERF-22 — re-capture every perf lane before the freeze (P0, re-dated 2026-10-09: after this session's
+  commits land, by Sun Oct 11, [MT + owner OOB]).** The Sep 28 – Oct 2 window passed with nothing
+  captured. Session #324 touched `physics`, `render`, `react`, `tilemap`, `cli` and `create` source, so
+  capture only after those commits — any later `packages/**` commit re-stales it. The machine is ready:
+  BIOS 1836 (the 0x11F-microcode instability note predates it) and High performance power plan, checked
+  2026-09-29. **Decide PERF-14b (pause between runs, or assert mode-coherence) and PERF-17 (minimum gap
+  on the android lane — 100 s produced a clean window last time) before the first run.** Original:
   **This blocks the freeze publish.** `package.json:54` chains `check:perf-freshness` directly in front
   of `changeset publish`, so **OSS-H1's `0.4.0` cut cannot run while freshness is red** — the gate is
   not advisory here, it is in the release path. Verified STALE at HEAD 2026-09-08: the bench instrument
@@ -603,9 +620,29 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 **Recomputed 2026-09-01 (session #297 is the last landed).** The B/C/D/M launch rows all shipped in `0.3.0`; what is left above the freeze line is **XR-1b, XR-1c, XR-2, XR-6, OSS-F4, OSS-H1** ≈ 6–7 sessions, against ~4.8 wk × ~5 ≈ **24 available**. The calendar is no longer the binding constraint — **XR-1c is**, because it needs a physical Pixel 7 and neither of XR-1's two required verification halves has evidence yet. Everything else still listed (XR-7, XR-8, the P2 cut-line, CW7-Q, PERF-4b/7/9/14b/17/18, CE-W7/W8, DYN-2/3, Arc HYG) is explicitly post-flip-acceptable or non-blocking; with this much slack the P2 cut-line rows are now affordable rather than conditional.
 
-- **OSS-F4 — history/exposure re-scan at freeze (P0, run Oct 2–5) [MT].** Full-history secret re-scan; `_local/` untracked; `.claude/` publish set ratified; author-email stance recorded. Spec: §9 F4.
-- **OSS-H1 — FREEZE: one lockstep minor changeset + 0.4.0 restricted publish (P0, Oct 5, owner-paired) [MT].** After this: fix-only until the flip. Spec: §11 H1.
-- **OSS-I1 — flip execution (Oct 20, owner-paired).** Walk the rehearsed runbook; each step checked off in-file. Spec: §12.
+**Recomputed 2026-10-09 (session #324) — the Oct 5 freeze was missed; schedule moved one week by
+§1's fallback rule (owner): freeze Mon Oct 12, window Oct 12–25, flip Oct 26–28.** What stands
+between HEAD and the cut, in order: (1) the owner commits and pushes this session's work —
+nothing after the capture may touch `packages/**`; (2) **PERF-22**, the 8-lane re-capture, phone
+attached, by Sun Oct 11 — the only hard blocker left, because `bun run release` chains
+`check:perf-freshness`; (3) owner-only **NPM-ROTATE** (expiry ≥ Nov 15) and **F3-PUB/F3-DISP**,
+both before any verdaccio; (4) **F4-RATIFY**, informed by the scan already run (below); (5) H1.
+Every other row still listed above or below is post-flip or window-legal.
+
+- **OSS-F4 — history/exposure re-scan at freeze (P0) [MT].** **Scan built and run 2026-10-09
+  (session #324):** `bun run check:history` (`scripts/scan-history.mjs`, patterns shared with the
+  tarball audit via `scripts/lib/leak-patterns.mjs`) over **all refs, full history — 1144 commits,
+  229,826 added lines: zero secret-shaped values**, zero `.npmrc`/`.env` ever added, two emails
+  (the owner's and `github-actions[bot]`). Five token shapes are the tarball audit's own selftest
+  samples (synthetic alphabet runs, `af169db`), reported separately. The exposure inventory —
+  ~3.3k lines of game vocabulary (mostly `SESSION_LOG.md`), PT's EAS project URL in historical
+  `apps/pan-tvardowski/app.json`, `C:\_PROG` paths in `.claude/skills/retro/SKILL.md` — is in
+  `_local/f4-history-scan.md` for the owner's F4-RATIFY. **Re-run at the freeze HEAD** (seconds).
+  Spec: §9 F4.
+- **OSS-H1 — FREEZE: 0.4.0 restricted publish (P0, Mon Oct 12, owner-paired) [MT].** No new
+  changeset: the 29 pending ones resolve to `0.4.0` (`changeset status`). First publish of
+  `@flare-engine/create`. After this: fix-only until the flip. Spec: §11 H1.
+- **OSS-I1 — flip execution (Oct 26–28, owner-paired).** Walk the rehearsed runbook; each step checked off in-file. Spec: §12.
 - **OSS-I2 — post-flip verification battery (P0).** Cold scaffold from the public registry with the registry *proven*, not assumed — verdaccio stopped, `npm config get registry` = npmjs, fresh dir, no freeze-window lockfile — and no token; tokenless alone discriminates nothing, verdaccio serves anonymous reads too (XR-11). Provenance visible; docs links resolve; CI badge; plan docs flipped to shipped state. Spec: §12.
 
 P2 cut-line — run before the D-passes if the calendar is green, else they move to the post-flip backlog untouched (each row owns its docs updates, so D-ordering holds either way):
@@ -620,7 +657,9 @@ P2 cut-line — run before the D-passes if the calendar is green, else they move
     touch: `SpatialIndex.update`'s per-entity closure and O(n) find.
   - ~~MTV / overlap depth~~ — **DONE 2026-09-03 (session #312), see `## Done`.**
   - ~~`CollisionWorld.raycast`~~ — **DONE 2026-09-03 (session #312), see `## Done`.**
-  - **Boundary semantics — the one bullet left. Still divergent, confirmed live.** `aabbVsAabb` (`shape.ts:100`) and
+  - ~~Boundary semantics~~ — **DONE 2026-10-09 (session #324), see `## Done` (M11-BOUNDARY).** Lands
+    before PERF-22, which is the re-capture this bullet asked to follow it. Original text:
+    `aabbVsAabb` (`shape.ts:100`) and
     `circleVsCircle` (`:114`) use strict `<`; `aabbVsCircle` (`:134`) uses `<=`. Exactly-touching
     shapes therefore collide in the mixed case and not the like-for-like ones. Pick strict `<`,
     document it. **This one is a behaviour change in a hot path**, not an addition — it belongs in the
@@ -786,7 +825,8 @@ completion for an elided paragraph and present it as the verifier's words.
   the template ships correct), but "a door that opens" is the first thing a real game needs, so this
   exact hand-rolled indexing will recur in every game scaffolded from the template. Add the accessors,
   then simplify the template to use them. Additive, so it costs nothing to defer past the flip.
-- **HYG24 — `SolidGrid.solid` is `readonly`, `TileLayer.tiles` is not** (**decide BEFORE the freeze**
+- **HYG24 — DONE 2026-10-09 (session #324, owner chose "add `readonly`"), see `## Done`.** Original:
+  `SolidGrid.solid` is `readonly`, `TileLayer.tiles` is not (**decide BEFORE the freeze**
   — it is a published-type question, additive-free but frozen Oct 20). `solid-grid.ts:22` declares
   `readonly solid: Uint8Array`; `tilemap-data.ts:50` declares `tiles: Uint32Array` with no modifier.
   Both are bulk typed arrays on published interfaces filling the same role, and they disagree.
@@ -948,6 +988,46 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **Session #324 (2026-10-09) — the pre-freeze agent side, after a full-repo audit on 2026-09-29.**
+  Owner decisions taken at the session's one halt: scaffolder `@flare-engine/create`; M11 boundary +
+  HYG24 land now; raise the byte ceilings; freeze Oct 12 / flip Oct 26–28.
+  - **CI-ORDER — `ci.yml` had been red on every `main` run since at least 2026-07-10**, failing in
+    `ui`, `react`, `render` or `render-web` by turns. Cause: bun's `mock.module` is process-global and
+    freezes a module's export set from whichever file mocks it first, and test files run in readdir
+    order — alphabetical on Windows, filesystem-hash on the Linux runner. Reproduced locally by
+    passing the files in CI's order. Fix: `scripts/test-isolated.mjs` runs each test file in its own
+    process (+ test), wired as the `test` script of the 10 packages that use `mock.module`, plus
+    `turbo.json` `globalDependencies`; `ui`'s three react mocks given one key set and `react`'s
+    `safe-area.test.ts` made standalone-correct (it passed only by following `game-view.test.ts`).
+    Verified by shuffled file orders (6 permutations in `ui`, 10 seeded in each of the four).
+    `release.yml` runs the same `bun run test` on flip day.
+  - **CFA-RENAME — ADR-0007.** `create-flare-app` belongs to an unrelated npm package since
+    2026-09-11, and `flare new` was spawning `npx create-flare-app`, i.e. that package. Now
+    `packages/create` = `@flare-engine/create`, bin `flare-create`, published restricted at 0.4.0
+    with the rest; `flare new` spawns `@flare-engine/create@<cli version>` (+2 tests).
+    `.changeset/config.json` fixed group, `check-deps` LAYER_MAP (`create: 4`), `pack.mjs`'s unscoped
+    special case, audit/flip-access/publish-safety (a `private` + `access:"public"` manifest is now a
+    violation), the perf-baseline key, READMEs, api-specs, architecture, the skill, runbook and
+    protocol all follow. Changeset `adr7-scaffolder-flare-engine-create` (patch).
+  - **M11-BOUNDARY + HYG24** — box-vs-circle `shapeOverlap` strict like the other pairs, and
+    `overlapInto` returns `null` for a zero-radius circle on a box edge, so the two agree on every
+    input (5 fail-old/pass-new tests + a 3-radius sweep); `TileLayer.tiles` `readonly`. ADR-0004
+    addendum; changeset `m11-boundary-hyg24-readonly-tiles` (patch).
+  - **Shipped-text leaks** — `react` `skia-bridge.ts` "built-in PT effect", `scene-texture.ts`
+    `runOnUI` → `scheduleOnUI`, `render` `sprite-batch.ts` "shmup bullet trails" (the tarball audit's
+    only HEAD hits). `check:tarballs` HEAD-clean.
+  - **Gates that were red outside `verify.sh`:** `check:perf-bytes` (9 ceilings raised with a dated
+    review; growth traced per commit, toolchain ruled out), `check:changeset-symbols` (5 third-party
+    names declared). Changeset hygiene: `pf2a` cites ADR-0004, `hyg5-pre` no longer cites an ADR it is
+    not in, `xr13` names the new scaffolder, `.changeset/README.md` rewritten (it described a `linked`
+    group and a `private` flip that no longer exist).
+  - **`release.yml`** pins `npm@11` via `actions/setup-node` (runbook FW-3b), deliberately without
+    `registry-url`, which would have shadowed changesets' `NPM_TOKEN` `.npmrc`.
+  - **Protocol hazard corrected:** all 42 manifests pin `publishConfig.registry` to npmjs, not just
+    the scaffolder, so a verdaccio rehearsal that redirects only one would publish the other 41 at
+    `0.4.99` to the real registry. Runbook + protocol now rewrite all 42 and assert two 404s.
+  - **F4-SCAN** — `check:history`, see the OSS-F4 row. Plans rescheduled; CR-3 partly done.
 
 - **OSS-M10 — render table-stakes: additive blend, flipX/flipY, nine-slice, opt-in cull**
   (2026-09-08, session #323, `599cd30`). `packages/render/src/{sprite-batch,frame-renderer,render-system,index,nine-slice}.ts`,

@@ -1,25 +1,27 @@
-# Manual-test protocol — the two-week freeze window (Oct 5–18)
+# Manual-test protocol — the two-week freeze window (Oct 12–25)
 
-**Owner-executed** after OSS-H1 (freeze + `0.4.0` restricted publish), before OSS-I1 (flip, target Oct 20).
-Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
+**Owner-executed** after OSS-H1 (freeze + `0.4.0` restricted publish, Oct 12), before OSS-I1 (flip,
+Oct 26–28). Dates moved from Oct 5–18 / Oct 20 on 2026-10-09 (owner) when the Oct 5 freeze did not
+happen. Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
 
 ## How to use this doc
 
 - Walk every box in order. Check `[x]` on pass; on fail, log a row in **§7 Findings** and keep going
   (don't stop the sweep — collect everything, then triage).
-- **Everything runs against `^0.4.0` RESTRICTED**, not the public registry. `create-flare-app` and the
-  public `@flare-engine/*@0.4.0` versions do **not** exist on npmjs until flip day — the tokenless
-  *public*-registry cold scaffold is deliberately **I2's** job (flip day), not this window's.
+- **Everything runs against `^0.4.0` RESTRICTED**, not the public registry. The public
+  `@flare-engine/*@0.4.0` versions — the scaffolder `@flare-engine/create` included — do **not**
+  exist anonymously on npmjs until flip day; the tokenless *public*-registry cold scaffold is
+  deliberately **I2's** job (flip day), not this window's.
 - **First-run + web consumption use the F2 verdaccio harness** (local registry at
   `http://localhost:4873`). Reuse the exact setup rehearsed in
   [flip-runbook.md](flip-runbook.md) (the F2 pre-flight box). Point the **default** registry at
-  verdaccio — the unscoped `create-flare-app` is not routed by a `@flare-engine:registry` scope
-  config — but scope the override to the test tree, publish at a throwaway version, and start
-  every attempt in a fresh tree with no lockfile (XR-11):
+  verdaccio — transitive non-Flare deps must come through its npmjs uplink too — but scope the
+  override to the test tree, publish at a throwaway version, and start every attempt in a fresh
+  tree with no lockfile (XR-11):
 
   ```bash
   # start verdaccio, then publish the freeze cut to it at a THROWAWAY version — never 0.4.0.
-  # 0.4.99 is unmistakable in a lockfile and will never be cut for real; create-flare-app
+  # 0.4.99 is unmistakable in a lockfile and will never be cut for real; @flare-engine/create
   # stamps ^<its own version> into the templates, so a scaffold that falls through to npmjs
   # 404s loudly instead of silently resolving the real 0.4.0.
   mkdir freeze-window && cd freeze-window          # ONE fresh tree per attempt; never reuse
@@ -27,28 +29,29 @@ Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026-09.md).
   # ...run the §1 / §4-web consumption tests inside this tree...
   ```
 
-  **The `.npmrc` above does NOT protect `create-flare-app`, and this is the one mistake in this
-  document that publishes to the real registry.** `packages/create-flare-app/package.json` carries
-  its own `publishConfig.registry: "https://registry.npmjs.org/"` (since `31dc323`, 2026-04-20), and
-  **npm and changesets honour a manifest's `publishConfig` over any `.npmrc`**. The rehearsal applies
-  the flip-commit edit that flips that package `private: true → false` and then runs
-  `bun run release` — so with the rotated token in `~/.npmrc`, the unscoped scaffolder publishes
-  **publicly, at a throwaway version, before the flip**. There is a 72-hour unpublish window and then
-  it is permanent, and the name is the whole first-run funnel (`npm create flare-app`).
+  **The `.npmrc` above does NOT protect the publish, and this is the one mistake in this document
+  that publishes to the real registry.** Every one of the **42** `packages/*/package.json` carries
+  its own `publishConfig.registry: "https://registry.npmjs.org/"` (since `be17caf`, 2026-04-17), and
+  **npm and changesets honour a manifest's `publishConfig` over any `.npmrc`**. So `bun run release`
+  on the throwaway branch, with the rotated token in `~/.npmrc`, publishes all 42 at `0.4.99` to the
+  **real** registry — restricted until the flip, then public, and `0.4.99` sorts above every real
+  `0.4.x`. The 2026-09-07 text of this paragraph named only the old unscoped scaffolder's pin; that
+  was never the whole hazard (corrected 2026-10-09).
 
   On the throwaway branch, before `bun run release`, also:
 
   ```bash
-  # rewrite (or delete) the manifest pin — .npmrc cannot override it
-  #   packages/create-flare-app/package.json
-  #   "publishConfig": { "access": "public", "registry": "http://localhost:4873/" }
+  # rewrite every manifest pin — .npmrc cannot override it
+  bun -e 'const fs=require("fs");for(const d of fs.readdirSync("packages")){const p="packages/"+d+"/package.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));if(j.publishConfig){j.publishConfig.registry="http://localhost:4873/";fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n")}}'
+  git diff --stat   # must list 42 package.json files
   # then, after every rehearsal publish, prove nothing escaped:
-  npm view create-flare-app --registry https://registry.npmjs.org/   # must still 404
+  npm view @flare-engine/engine@0.4.99 --registry https://registry.npmjs.org/   # must 404
+  npm view @flare-engine/create@0.4.99 --registry https://registry.npmjs.org/   # must 404
   ```
 
-  Keep the real pin untouched in the FW-6 flip commit — it is correct there. The July F2 rehearsal
-  avoided this with exactly such a redirect, but that fact was recorded only in the F2 Done row and
-  never reached this document or the runbook (found by the 2026-09-07 pre-flip audit, §4.2).
+  Keep the real pins untouched in the flip commit. The July F2 rehearsal evidently redirected every
+  pin — the real `0.3.0` publish in August succeeded, so nothing had reached npmjs — but the fact
+  was recorded only in the F2 Done row and never reached this document or the runbook.
 
   Never `npm config set registry`: that is a **user-level** setting that redirects every npm
   command on the machine for the rest of the window — §2/§3's restricted-registry installs and
@@ -73,7 +76,7 @@ anything. A `0.4.0` in the tree means you resolved from npmjs or from a stale lo
 the harness.
 
 - [ ] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
-  - [ ] `npm create flare-app@latest my-<tpl>` → pick the template → completes with **no `ERESOLVE`**
+  - [ ] `npm create @flare-engine my-<tpl> -- --template <tpl>` → completes with **no `ERESOLVE`**
         and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
   - [ ] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
   - [ ] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
@@ -93,7 +96,7 @@ the harness.
 - [ ] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the
       tilemap renders and the virtual joystick moves the player over solid-grid collision (the TPL1 wire).
 - [ ] **Root-README quickstart, verbatim** — every command block in [README.md](../../README.md) run
-      exactly as written against the same registry override (`npm create flare-app@latest my-game`, the
+      exactly as written against the same registry override (`npm create @flare-engine my-game`, the
       install/build lines). Any command that errors or drifts from its documented output = a finding.
 
 ## §2 — Pan Tvardowski at `^0.4.0`
@@ -153,7 +156,7 @@ migration.
 
 Each new-in-arc capability exercised at least once on its real target.
 
-- [ ] **M1 — keyboard input** on desktop web: the scaffolded web build proven real by WEB-5 (a `create-flare-app` scaffold under `bun run web`; see [web-target-2026-08.md](web-target-2026-08.md) §17) responds
+- [ ] **M1 — keyboard input** on desktop web: the scaffolded web build proven real by WEB-5 (a scaffold — then `create-flare-app`, now `@flare-engine/create` — under `bun run web`; see [web-target-2026-08.md](web-target-2026-08.md) §17) responds
       to `createKeyboard` input — arrows/WASD drive movement or UI focus; keydown/keyup + per-frame
       reset behave (no stuck keys).
 - [ ] **M2 — headless barrel**: a plain `bun` script `import`s from `@flare-engine/engine/headless`,

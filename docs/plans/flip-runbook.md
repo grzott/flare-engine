@@ -1,4 +1,9 @@
-# Flip runbook — public OSS launch (target Tue Oct 20, 2026)
+# Flip runbook — public OSS launch (target Oct 26–28, 2026)
+
+> **Dates moved 2026-10-09 (owner):** the Oct 5 freeze did not happen, so the plan's own fallback
+> applies — freeze + `0.4.0` restricted publish **Mon Oct 12**, manual window **Oct 12–25**, flip
+> **Oct 26–28**. Where this file still says Oct 5 / Oct 18 / Oct 20 in a quoted record, read it as
+> the original schedule.
 
 The step-by-step to take Flare from restricted/private to public. Executed in the
 **OSS-I1 owner+agent pairing session** (road-to-oss §12); rehearsed end-to-end on
@@ -19,7 +24,7 @@ verdaccio in **OSS-F2** before the real thing. Check each box in this file as yo
 > denies `Bash(npm:*)` and `Bash(npx:*)`, and `.claude/hooks/pre-bash-guard.sh`'s `FORBIDDEN_PM`
 > blocks npm/npx/yarn/pnpm — unwrapping `bash -c`, `eval` and `bun -e` wrappers, so there is no
 > way around it. **Every step in this file that runs `npm pack`, `npm view` or `npm access` is
-> therefore owner-only or owner-paired, whatever its lane says**, including the ×41 tarball and
+> therefore owner-only or owner-paired, whatever its lane says**, including the ×42 tarball and
 > provenance verification below. Adding a `--registry` flag to a bun script does not change this;
 > the block is on the binary, not the flags. If a step needs to be agent-runnable, it has to be
 > re-expressed as a bun script that shells to something other than npm.
@@ -32,10 +37,11 @@ no clean rollback.
 
 ---
 
-## Pre-flight (before flip day — completed by freeze, Oct 5)
+## Pre-flight (before flip day — completed by freeze, Oct 12)
 
-- [ ] **H1 done:** `0.4.0` published **restricted**; the two-week manual window
-      (Oct 5–18) passed with no launch-blockers (road-to-oss §11).
+- [ ] **H1 done:** `0.4.0` published **restricted** — all **42** scoped packages, the first
+      publish of `@flare-engine/create` included; the two-week manual window
+      (Oct 12–25) passed with no launch-blockers (road-to-oss §11).
 - [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
       `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
       tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Three rehearsal rules folded
@@ -45,7 +51,7 @@ no clean rollback.
       GitHub calls (`@changesets/changelog-github` at `package.json:59` is an unused
       devDependency — drop it post-flip); the
       cold-consumer test points the **default** registry at verdaccio, not a scope
-      config (the unscoped `create-flare-app` isn't routed by `@flare-engine:registry`);
+      config (transitive non-Flare deps must come through verdaccio's npmjs uplink too);
       and every verification runs from a **fresh tree with no lockfile** at a **throwaway
       version** (`0.4.99`, never a live number) — a lockfile records the registry it
       resolved from, so re-installing in the tree that published re-serves the local
@@ -54,18 +60,22 @@ no clean rollback.
       cause (XR-11 — found 2026-09-01, after this box was ticked).
       One launch bug surfaced — the templates' `react` pin is too low for RN 0.86's
       peer — **fixed 2026-07-24 (OSS-B32)**.
-      **A fourth rehearsal rule, recovered 2026-09-07 (pre-flip audit §4.2) — it was
-      applied in July but recorded only in the F2 Done row, so it never reached this box
-      or the protocol.** `packages/create-flare-app/package.json` carries its own
-      `publishConfig.registry: "https://registry.npmjs.org/"`, and npm/changesets honour a
-      manifest's `publishConfig` **over any `.npmrc`**. The rehearsal flips that package
-      `private: true → false` and runs `bun run release`, so without a redirect the
-      unscoped scaffolder publishes **publicly at the throwaway version, before the flip**
-      (72h to unpublish, then permanent — and the name is the entire `npm create flare-app`
-      funnel). On the throwaway branch, rewrite or delete that pin to
-      `http://localhost:4873/` before releasing, and after each rehearsal assert
-      `npm view create-flare-app --registry https://registry.npmjs.org/` still 404s.
-      Keep the real pin untouched in the FW-6 flip commit.
+      **A fourth rehearsal rule, recovered 2026-09-07 (pre-flip audit §4.2) and corrected
+      2026-10-09: it covers every manifest, not one.** **All 42** `packages/*/package.json`
+      carry `publishConfig.registry: "https://registry.npmjs.org/"` (since `be17caf`,
+      2026-04-17), and npm/changesets honour a manifest's `publishConfig` **over any
+      `.npmrc`**. The 2026-09-07 text named only the scaffolder; but without a redirect of
+      *every* pin, `bun run release` on the throwaway branch publishes all 42 at the
+      throwaway version (`0.4.99`) to the **real** registry — restricted today, public the
+      moment the flip runs, and `0.4.99` sorts above every real `0.4.x`, so it would become
+      what `npm install` resolves. July's rehearsal must have redirected all of them (the
+      real `0.3.0` publish in August succeeded, so nothing had reached npmjs). On the
+      throwaway branch, before releasing:
+      `bun -e 'const fs=require("fs");for(const d of fs.readdirSync("packages")){const p="packages/"+d+"/package.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));if(j.publishConfig){j.publishConfig.registry="http://localhost:4873/";fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n")}}'`
+      — then `git diff --stat` must show 42 manifests. After each rehearsal publish, assert
+      `npm view @flare-engine/engine@0.4.99 --registry https://registry.npmjs.org/` and
+      `npm view @flare-engine/create@0.4.99 --registry https://registry.npmjs.org/` both
+      **404**. Keep the real pins untouched in the flip commit.
 - [ ] **Registry hygiene — on the machine that ran the freeze window, before step 1:**
       verdaccio stopped (nothing listening on 4873 or 4874); `npm config get registry`
       prints `https://registry.npmjs.org/`; no `registry=` line left in `$HOME/.npmrc`;
@@ -89,9 +99,10 @@ no clean rollback.
       **Set an explicit expiry and record it (added 2026-09-07, §4.2).** npm removed
       legacy tokens in November 2025 — only granular tokens exist now, and a granular
       token carries an expiry chosen at creation, minimum one day out. A token rotated
-      "now" with a short expiry **dies before Oct 20 and the failure surfaces at FW-9 —
+      "now" with a short expiry **dies before the flip and the failure surfaces at FW-9 —
       after the access flip's point of no return, on the path that has never executed.**
-      So: expiry **≥ Oct 31, 2026**; confirm the token covers all 41 names; write the
+      So: expiry **≥ Nov 15, 2026** (the flip moved to Oct 26–28); confirm the token
+      covers all 42 `@flare-engine/*` names (a scope-wide grant does); write the
       expiry date into the owner ledger. Also note npm's August 2026 change — a
       Bypass-2FA token can no longer perform account-identity or account-governance
       actions, though publishing still works; that is what the `--otp` device is for.
@@ -99,12 +110,13 @@ no clean rollback.
       recorded expiry — "the Actions secret holds the rotated token" is not the same as
       "the token still works". If it would lapse inside the window, rotate **before** the
       access flip, never after.
-- [ ] **`create-flare-app` name still free:** `npm view create-flare-app --registry
-      https://registry.npmjs.org/` must still 404. It was unclaimed on 2026-09-07, but
-      FW-9 is that package's **first** publish — if the unscoped name is taken between
-      now and flip day, the failure appears *after* the point of no return with the whole
-      `npm create flare-app` funnel dead. (Owner may instead decide to hold the name with
-      an early placeholder publish — a publish decision, not an agent one.)
+- [x] ~~**`create-flare-app` name still free**~~ — **failed 2026-09-11 and retired
+      2026-10-09.** An unrelated publisher (`oksigen`) took the unscoped name. Per
+      [ADR-0007](../design/adr-0007-scaffolder-is-flare-engine-create.md) the scaffolder is
+      `@flare-engine/create`: inside the scope, published `restricted` at H1 with the other
+      41, so flip day no longer contains a first publish. Its replacement check:
+- [ ] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
+      prints the freeze version, and the manual window's §1 scaffolded from it.
 - [ ] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
       stance (§14).
 
@@ -146,25 +158,23 @@ Provenance was removed in S4b; re-add it now that the repo is public.
       `id-token: write`. **Note the file has two `env:` blocks**, not one: the other is
       `FLARE_PERF_BASE_REF` on the `check:perf` step at `:44-45`. Anything that calls
       one of them "the only env block in the file" is describing an older file.
-- [ ] Owner: confirm the release runner has **npm ≥ 11.5.1** (GitHub-hosted
-      runner; add `npm i -g npm@latest` before publish if the pinned image is
-      older). Provenance also requires a public repo (step 1) + public packages
-      (steps 3–5) — all true by publish time.
+- [ ] Owner: confirm the release runner has **npm ≥ 11.5.1** — `release.yml` installs
+      `npm@11` after `actions/setup-node` since 2026-10-09 and prints `npm --version`;
+      read that line in the run log. Provenance also requires a public repo (step 1) +
+      public packages (steps 3–5) — all true by publish time.
 
 **Rollback:** trivial (revert the env line).
 
 ## Step 3 — npm access flip **(owner, `--otp`)**
 
-Flip the **41 scoped** `@flare-engine/*` packages from restricted → public. This
+Flip the **42 scoped** `@flare-engine/*` packages from restricted → public. This
 exposes every already-published version.
 
 - [ ] Owner (dry-run): `bun scripts/flip-access.mjs` → confirm it lists **exactly
-      41** `@flare-engine/*` names and mutates nothing.
+      42** `@flare-engine/*` names, `@flare-engine/create` among them, and mutates nothing.
 - [ ] Owner (live): `bun scripts/flip-access.mjs --execute --otp <code>`.
       Serial + resumable — already-public packages are skipped, so on an
       expired-OTP / network failure just re-run with a fresh `--otp`.
-- [ ] `create-flare-app` is unscoped → public by default once `private:false`
-      (step 4); it is **not** in the flip-access set.
 
 **Rollback:** ⚠ **effectively NONE.** Public npm visibility is retroactive and
 one-way (re-privatizing requires unpublish, which npm restricts to a 72h window
@@ -174,16 +184,14 @@ and blocks once packages have dependents). **This is the point of no return.**
 
 ONE commit, tagged, containing every visibility flip so a single revert is
 possible right up until publish. Without the version-bump changeset, `changeset
-publish` would skip the 41 already-published scoped packages (only
-`create-flare-app` would ship) and no fresh provenance-stamped release would exist.
+publish` would skip all 42 already-published packages and no fresh
+provenance-stamped release would exist.
 
-- [ ] Agent: `packages/*/package.json` — 41× `"publishConfig": { "access":
-      "restricted" }` → `"public"`.
+- [ ] Agent: `packages/*/package.json` — 42× `"publishConfig": { "access":
+      "restricted" }` → `"public"` (keep each `registry` pin).
 - [ ] Agent: `.changeset/config.json` — `"access": "restricted"` → `"public"`.
-- [ ] Agent: `packages/create-flare-app/package.json` — `"private": true` →
-      `false`.
-- [ ] Agent: add a version-bump-only lockstep **patch** changeset (all
-      `@flare-engine/*` + `create-flare-app`) so the fixed group cuts a fresh
+- [ ] Agent: add a version-bump-only lockstep **patch** changeset (all 42
+      `@flare-engine/*`) so the fixed group cuts a fresh
       release. (H1 already shipped the `0.4.0` minor; this is the patch bump that
       re-cuts the group public.)
 - [ ] Agent: also fold in the step-2 `NPM_CONFIG_PROVENANCE` edit.
@@ -194,7 +202,7 @@ is done).
 
 ## Step 5 — Version + publish **(owner)**
 
-Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (41 scoped + `create-flare-app`, un-privated in step 4).
+Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 scoped packages.
 
 - [ ] Owner: `bun run version` — a **four-stage chain**, not two
       (`package.json:52`): `check:bump` → `changeset version` →
@@ -231,9 +239,11 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 (
 
 ## Step 6 — Docs-site domain bind **(owner)**
 
-- [ ] Owner (flare-engine-page repo): bind **flareengine.dev** to the Workers
-      deployment and run the final production deploy (G1/G2 pre-flip work already
-      green). The 6 links into the now-public engine repo go live here.
+- [ ] Owner (flare-engine-page repo): run the final production deploy (G2 pre-flip work
+      already green). **flareengine.dev is already bound and serving** — the page repo
+      deployed to it on 2026-07-01 and verified the WASM MIME type on the live Worker on
+      2026-08-27 (found 2026-09-29), so this step is the deploy, not a domain bind. The 6
+      links into the now-public engine repo go live here.
 
 **Rollback:** reversible (unbind domain).
 
@@ -247,7 +257,8 @@ Run the full battery — see road-to-oss §12 / the OSS-I2 row:
       serves anonymous reads too, so a tokenless run against a stale override passes
       while testing the local build (XR-11).
 - [ ] Tokenless cold scaffold from the **public** registry:
-      `npm create flare-app@latest` (all three templates) on a machine with no npm token,
+      `npm create @flare-engine my-<tpl> -- --template <tpl>` (all three templates) on a
+      machine with no npm token,
       each into a **new empty directory** — no lockfile or `node_modules` reused from the
       freeze window, whose scaffolds resolved from verdaccio at `0.4.99`.
 - [ ] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.

@@ -5,8 +5,16 @@ July audit corpus; every bug row below was re-verified against HEAD (file:line) 
 independent 7-agent pass before this plan was written.
 
 > **Filename note:** this file is named `-2026-09` for historical reasons — it predates the
-> September→October schedule move. The plan is an **October** flip throughout (freeze Oct 5, flip
-> Oct 20). Do not rename (≈30 inbound `road-to-oss-2026-09` references); trust the dates in the body.
+> September→October schedule move. The plan is an **October** flip throughout. Do not rename
+> (≈30 inbound `road-to-oss-2026-09` references).
+>
+> **Schedule moved 2026-10-09 (owner), by §1's own fallback rule:** the Oct 5 freeze did not happen,
+> so **freeze + `0.4.0` restricted publish Mon Oct 12 → manual window Oct 12–25 → flip Oct 26–28**.
+> Still October; the two-week window is not compressed. Section bodies below keep their original
+> Oct 5 / Oct 18 / Oct 20 wording as the record of what was planned — the §1 table is current.
+> Same day: the scaffolder became `@flare-engine/create` (ADR-0007), so it is the 42nd *scoped*
+> package and publishes `restricted` at H1 — every "41 scoped + `create-flare-app`" below means 42
+> scoped.
 > **§17 (bottom) holds the 2026-07-05 deep-audit additions** (rows B25–B31, C2–C4, Arc HYG);
 > evidence ledger: `_local/deep-audit-2026-07-05.md`.
 
@@ -61,10 +69,12 @@ disagree, this doc wins (it post-dates and re-verified them).
 | Arc C + M (packaging + modules) done | ~**Sep 18** | 0.4.0 feature-complete; Arc D may start during the M tail |
 | Arc D + E (truth pass + governance) done | ~**Sep 29** | docs describe reality |
 | Arc F (rehearsal + runbook + audits) done | ~**Oct 2** | flip mechanics proven on verdaccio |
-| **FREEZE + 0.4.0 restricted publish** | **Mon Oct 5** | code-complete; only manual-test fixes after |
-| **Manual test window (owner)** | **Oct 5 – Oct 18** | the requested two weeks; protocol in §11 |
-| **Flip week** | **Oct 19 – Oct 23** (target Tue Oct 20) | runbook execution, §12 |
-| Buffer | after the actual flip day → Oct 28 | absorbs slip while staying "October" |
+| ~~FREEZE + 0.4.0 restricted publish~~ | ~~Mon Oct 5~~ | **missed** — owner away Sep 8–28, nothing captured or cut |
+| **PERF-22 re-capture (all 8 lanes, phone attached)** | **by Sun Oct 11** | after the last `packages/**` commit; release chains the freshness gate |
+| **FREEZE + 0.4.0 restricted publish** | **Mon Oct 12** | code-complete; only manual-test fixes after (moved 2026-10-09) |
+| **Manual test window (owner)** | **Oct 12 – Oct 25** | the requested two weeks, not compressed; protocol in §11 |
+| **Flip** | **Oct 26 – Oct 28** | runbook execution, §12 — the buffer row below is now spent |
+| ~~Buffer~~ | ~~after the actual flip day → Oct 28~~ | consumed by the one-week slip; a further slip leaves October |
 
 **Capacity assumption:** engine gets ~5 agent sessions/week of the owner's four-project split
 (June ran ~45 sessions across repos, so this is the historical norm, not a stretch). The P0+P1 set
@@ -1109,10 +1119,13 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
 
 ## 10. Cross-repo lanes (each runs in its own repo with its own harness/gate)
 
-**flare-engine-page** (deploy-ready but never deployed; wrangler Workers Static Assets):
-- **G1 (pre-flip, before freeze):** first real deploy to the workers.dev preview URL (owner auth) +
-  WASM MIME verify + Lighthouse re-run (owner's bar: 100 mobile+desktop). Domain bind to
-  flareengine.dev happens at flip (runbook step 6).
+**flare-engine-page** (wrangler Workers Static Assets):
+- **G1 (pre-flip, before freeze):** ~~first real deploy to the workers.dev preview URL (owner auth) +
+  WASM MIME verify~~ — **stale premise, found 2026-09-29:** the site has been live at
+  **flareengine.dev** since 2026-07-01 (page todo row 11), and the WASM MIME type was verified on
+  the deployed Worker on 2026-08-27. What remains of G1 is the **Lighthouse re-run on production**
+  (owner's bar: 100 mobile+desktop; only 2026-07-01 localhost runs exist). Flip day is a redeploy,
+  not a domain bind (runbook step 6). The live site still shows the pre-launch copy G2 replaces.
 - **G2 (pre-flip):** `GENERATE_API=1` typedoc dry-run NOW + fix fallout (verified: gated off, never
   run in CI); October strings sweep (7 verified locations: SiteFooter.astro:3,58, index.astro:290,
   architecture.mdx:134, packages.mdx:34, getting-started.mdx:14, overview.mdx:119); getting-started
@@ -1128,6 +1141,10 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
 - **PT1 (pre-freeze):** declare `@flare-engine/debug` (real src imports ×3) — the phantom dep that
   breaks on strict install; move the test-only `@flare-engine/input` use to a devDep or drop;
   remove dead deps `particles` + `tilemap` (declared, never imported).
+  **Status 2026-09-29:** `debug` declared (`67c71eb`), `tilemap` removed (`b39a885`); `input` is now
+  a **real** runtime dep (pause bindings, `2c099d2`) — that half of the row is stale, leave it;
+  only `particles` (declared, zero src imports) remains. PT pins **exact `0.3.1`**, not a caret, and
+  its September work (67 commits on `docs/session-log-backfill`) was on no remote as of 2026-10-09.
 - **PT2 (manual window):** bump all 32 deps to `^0.4.0` at freeze; full gate + the §11 device sweep.
   **ADR-0002 floor confirmed 2026-09-08 (owner session):** `react-native-reanimated 4.2.1`,
   `react-native-worklets 0.7.4`, `newArchEnabled=true` (`android/gradle.properties:38`). No
@@ -1137,6 +1154,9 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
 **Berek:** **BK1 (manual window):** bump 7 deps to `^0.4.0` (the 0.2.1 migration is confirmed
 committed at 2b1733f); fix README:23's reference to deleted `src/movement.ts` (folded into
 `@flare-engine/physics` at 0.2.1); gate + a short play check.
+**Status 2026-09-29:** the README half is done (`df02342`). The deps are still `^0.2.1`, so the
+bump crosses **two** minors (0.3.0's tsdown/per-condition types and 0.3.1's physics changes, then
+0.4.0's breaks) — budget more than a version edit.
 **ADR-0002 floor confirmed 2026-09-08 (owner session):** `react-native-reanimated 4.3.0`,
 `react-native-worklets 0.8.1`, `newArchEnabled: true` (`app.json:8`). This closes the pre-flip
 audit's high-severity item — "confirm each app is on New Architecture + Reanimated 4 before Oct 5,
@@ -1157,8 +1177,10 @@ engine integration); the `dynamics` lift stays a post-flip option and must not b
 
 ### OSS-H1 · freeze + 0.4.0 restricted publish (P0, 1 session + owner publish, [main-thread])
 
-- Last pre-freeze commit lands; author ONE changeset (minor, lockstep — summary assembled from the
-  Arc B/C/M intentional-change notes in todo rows); `bun run version` (concretize runs
+- Last pre-freeze commit lands; ~~author ONE changeset (minor, lockstep — summary assembled from the
+  Arc B/C/M intentional-change notes in todo rows)~~ — **obsolete, corrected 2026-10-09:** the
+  per-row changesets *are* the changelog (29 pending, two of them ADR-authorised minors), and they
+  already resolve to `0.4.0`; author no extra changeset. `bun run version` (concretize runs
   automatically — verify no `workspace:*` survives, the S5 landmine); owner publishes 0.4.0
   **restricted** (owner session); PT2/BK1/G2 bump their repos to `^0.4.0`.
 - From freeze to flip: **only fixes for manual-window findings.** No API changes, no new features,
@@ -1281,14 +1303,11 @@ modernization notes (todo.md Closed arcs, docs+harness section — opportunistic
 Credential specifics, per-hit audit dispositions, and anything business-candid live in
 `docs/plans/_local/owner-ledger.md` (never committed).
 
-**That file does not exist yet (found 2026-09-07, §4.2).** `_local/` holds only the deep-audit,
-f3-tarball-audit, monetization-strategy and oss-launch-audit reports. Three things point at the
-ledger and currently have nowhere to land: NPM-ROTATE's "specifics tracked privately" — including
-the **token expiry date**, which FW-0 has to check against — F3-DISP's per-hit dispositions, and
-DOC-1's "publish credential configured (owner, tracked privately)". **Owner: create it at
-NPM-ROTATE** with the token's creation date, expiry and scope; F3-DISP appends dispositions there.
-If you would rather fold the dispositions into the existing `f3-tarball-audit.md` instead, do that
-and correct this paragraph to name that file — either way, one file, named here, that exists.
+**The file exists (created 2026-09-07 by CR-5) and is still blank (checked 2026-10-09).** It holds
+three tables the owner fills: §1 the npm credential (rotated on, **expiry — now ≥ Nov 15** after
+the flip moved to Oct 26–28, scope, Actions-secret mirror date), §2 the F3 per-hit dispositions,
+§3 the F4 ratification answers. The `NPM_TOKEN` Actions secret was last set 2026-06-08 and
+`~/.npmrc` last changed 2026-07-15, so no rotation has happened since the July plan asked for one.
 
 The public schedule:
 

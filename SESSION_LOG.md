@@ -12166,3 +12166,155 @@ HYG24 (**a pre-freeze decision**: `SolidGrid.solid` is `readonly`, `TileLayer.ti
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 324 — 2026-10-09 (scope: mixed)
+
+**Goal:** Pre-freeze agent side: CI order fix, @flare-engine/create (ADR-0007), M11 boundary + HYG24, red gates, F4 history scan, reschedule to Oct 12/26
+
+**Touched files**
+- `.changeset/adr7-scaffolder-flare-engine-create.md`
+- `.changeset/config.json`
+- `.changeset/hyg5-pre-gamepad-source-freshness.md`
+- `.changeset/m11-boundary-hyg24-readonly-tiles.md`
+- `.changeset/oss-m10-render-table-stakes.md`
+- `.changeset/pf2a-ecs-contracts.md`
+- `.changeset/react-docstring-corrections.md`
+- `.changeset/README.md`
+- `.changeset/xr13-worklets-scheduleonui.md`
+- `.claude/skills/create-flare-app/SKILL.md`
+- `.github/dependabot.yml`
+- `.github/workflows/release.yml`
+- `.perf-baseline.json`
+- `AGENTS.md`
+- `biome.json`
+- `bun.lock`
+- `CONTRIBUTING.md`
+- `docs/design/adr-0002-worklets-migration-and-new-arch-floor.md`
+- `docs/design/adr-0004-pre-flip-surface-remediation.md`
+- `docs/design/adr-0005-desktop-delivery-target.md`
+- `docs/design/adr-0006-sprite-command-required-fields.md`
+- `docs/design/adr-0007-scaffolder-is-flare-engine-create.md`
+- `docs/design/api-specs.md`
+- `docs/design/architecture.md`
+- `docs/design/dependencies.md`
+- `docs/design/native-acceleration.md`
+- `docs/plans/flip-runbook.md`
+- `docs/plans/manual-test-protocol.md`
+- `docs/plans/roadmap.md`
+- `docs/plans/road-to-oss-2026-09.md`
+- `docs/plans/todo.md`
+- `docs/README.md`
+- `package.json`
+- `packages/cli/README.md`
+- `packages/cli/src/cli.ts`
+- `packages/cli/tests/cli.test.ts`
+- `packages/create/`
+- `packages/create-flare-app/CHANGELOG.md`
+- `packages/create-flare-app/LICENSE`
+- `packages/create-flare-app/NOTICE`
+- `packages/create-flare-app/package.json`
+- `packages/create-flare-app/README.md`
+- `packages/create-flare-app/src/bin.ts`
+- `packages/create-flare-app/src/cli.ts`
+- `packages/create-flare-app/src/index.ts`
+- `packages/create-flare-app/src/manifest.ts`
+- `packages/create-flare-app/src/scaffold.ts`
+- `packages/create-flare-app/templates/blank/app.json`
+- `packages/create-flare-app/templates/blank/babel.config.js`
+- `packages/create-flare-app/templates/blank/gitignore`
+- `packages/create-flare-app/templates/blank/index.ts`
+- `packages/create-flare-app/templates/blank/index.web.ts`
+- `packages/create-flare-app/templates/blank/metro.config.js`
+- `packages/create-flare-app/templates/blank/package.json`
+- `packages/create-flare-app/templates/blank/README.md`
+- `packages/create-flare-app/templates/blank/scripts/copy-canvaskit.mjs`
+- `packages/create-flare-app/templates/blank/src/App.tsx`
+- `packages/create-flare-app/templates/blank/tsconfig.json`
+- `packages/create-flare-app/templates/shmup/app.json`
+- `packages/create-flare-app/templates/shmup/babel.config.js`
+- `packages/create-flare-app/templates/shmup/gitignore`
+- `packages/create-flare-app/templates/shmup/index.ts`
+- `packages/create-flare-app/templates/shmup/index.web.ts`
+- `packages/create-flare-app/templates/shmup/metro.config.js`
+- `packages/create-flare-app/templates/shmup/package.json`
+- `packages/create-flare-app/templates/shmup/README.md`
+- `packages/create-flare-app/templates/shmup/scripts/copy-canvaskit.mjs`
+- `packages/create-flare-app/templates/shmup/src/App.tsx`
+- `packages/create-flare-app/templates/shmup/src/logic.ts`
+- `packages/create-flare-app/templates/shmup/tests/logic.test.ts`
+- `packages/create-flare-app/templates/shmup/tsconfig.json`
+- `packages/create-flare-app/templates/topdown/app.json`
+- `packages/create-flare-app/templates/topdown/babel.config.js`
+- `packages/create-flare-app/templates/topdown/gitignore`
+- `packages/create-flare-app/templates/topdown/index.ts`
+- `packages/create-flare-app/templates/topdown/index.web.ts`
+- `packages/create-flare-app/templates/topdown/metro.config.js`
+- `packages/create-flare-app/templates/topdown/package.json`
+- `packages/create-flare-app/templates/topdown/README.md`
+- `packages/create-flare-app/templates/topdown/scripts/copy-canvaskit.mjs`
+- `packages/create-flare-app/templates/topdown/src/App.tsx`
+- `packages/create-flare-app/templates/topdown/src/map.ts`
+- `packages/create-flare-app/templates/topdown/tests/tilemap.test.ts`
+- `packages/create-flare-app/templates/topdown/tsconfig.json`
+- `packages/create-flare-app/templates-typecheck-shims.d.ts`
+- `packages/create-flare-app/tests/bin.test.ts`
+- `packages/create-flare-app/tests/cli.test.ts`
+- `packages/create-flare-app/tests/pack.test.ts`
+- `packages/create-flare-app/tests/scaffold.test.ts`
+- `packages/create-flare-app/tests/template-tsconfig.test.ts`
+- `packages/create-flare-app/tsconfig.json`
+- `packages/create-flare-app/tsconfig.templates.json`
+- `packages/create-flare-app/tsdown.config.ts`
+- `packages/devtools/package.json`
+- `packages/engine/README.md`
+- `packages/errors/package.json`
+- `packages/iap-revenuecat/package.json`
+- `packages/physics/README.md`
+- `packages/physics/src/shape.ts`
+- `packages/physics/tests/overlap.test.ts`
+- `packages/react/package.json`
+- `packages/react/README.md`
+- `packages/react/src/scene-texture.ts`
+- `packages/react/src/skia-bridge.ts`
+- `packages/react/tests/safe-area.test.ts`
+- `packages/render/package.json`
+- `packages/render/src/sprite-batch.ts`
+- `packages/render-web/package.json`
+- `packages/testing/package.json`
+- `packages/tilemap/package.json`
+- `packages/tilemap/src/tilemap-data.ts`
+- `packages/ui/package.json`
+- `packages/ui/tests/label-truncation.test.ts`
+- `packages/ui/tests/list.test.ts`
+- `packages/ui/tests/primitives.test.ts`
+- `packages/ui-shop/package.json`
+- `README.md`
+- `scripts/audit-tarballs.mjs`
+- `scripts/check-bump-level.mjs`
+- `scripts/check-changeset.mjs`
+- `scripts/check-deps-tiers.mjs`
+- `scripts/check-exports.mjs`
+- `scripts/check-publish-safety.mjs`
+- `scripts/flip-access.mjs`
+- `scripts/lib/leak-patterns.mjs`
+- `scripts/lib/pack.mjs`
+- `scripts/scan-history.d.mts`
+- `scripts/scan-history.mjs`
+- `scripts/test-isolated.d.mts`
+- `scripts/test-isolated.mjs`
+- `scripts/tests/check-changeset-symbols.test.ts`
+- `scripts/tests/scan-history.test.ts`
+- `scripts/tests/test-isolated.test.ts`
+- `turbo.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** deny:3 (auto-mode classifier blocked a sed -i and two Edits mid-rename until the owner confirmed the scaffolder name); gate:4 (lint x2, check:readme stale import, check:perf missing review entry); perf-freshness overridden: capture needs these commits on a clean tree first (PERF-22)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

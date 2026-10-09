@@ -156,3 +156,50 @@ describe('overlap agrees with shapeOverlap', () => {
     }
   });
 });
+
+/**
+ * OSS-M11 boundary semantics: every shape pair is strict — exactly-touching
+ * shapes do not collide. aabbVsCircle used `<=` while the other two used `<`, so
+ * a circle resting on a box face collided and a box resting on a box did not.
+ */
+describe('boundary semantics — exactly touching never collides', () => {
+  // Box half-width 5 at the origin; a radius-3 circle at x=8 touches the right face.
+  const touching = [
+    ['circle touching a box face', AABB(10, 10), 0, 0, CircleShape(3), 8, 0],
+    ['box touching a circle (reversed)', CircleShape(3), 8, 0, AABB(10, 10), 0, 0],
+    ['circle touching a box corner', AABB(10, 10), 0, 0, CircleShape(5), 8, 9],
+    ['zero-radius circle on a box edge', AABB(10, 10), 0, 0, CircleShape(0), 5, 0],
+    ['box touching a box', AABB(10, 10), 0, 0, AABB(10, 10), 10, 0],
+    ['circle touching a circle', CircleShape(5), 0, 0, CircleShape(5), 10, 0],
+  ] as const;
+
+  for (const [label, a, ax, ay, b, bx, by] of touching) {
+    test(`${label}: shapeOverlap is false and overlap is null`, () => {
+      expect(shapeOverlap(a, ax, ay, b, bx, by)).toBe(false);
+      expect(overlap(a, ax, ay, b, bx, by)).toBeNull();
+    });
+  }
+
+  test('a zero-radius circle strictly inside a box still collides, like a zero-size box', () => {
+    expect(shapeOverlap(AABB(10, 10), 0, 0, CircleShape(0), 2, 1)).toBe(true);
+    expect(shapeOverlap(AABB(10, 10), 0, 0, AABB(0, 0), 2, 1)).toBe(true);
+    expect(overlap(AABB(10, 10), 0, 0, CircleShape(0), 2, 1)).not.toBeNull();
+  });
+
+  test('just inside the touching distance collides', () => {
+    expect(shapeOverlap(AABB(10, 10), 0, 0, CircleShape(3), 7.999, 0)).toBe(true);
+    expect(overlap(AABB(10, 10), 0, 0, CircleShape(3), 7.999, 0)).not.toBeNull();
+  });
+
+  test('shapeOverlap and overlap agree in both directions across a sweep', () => {
+    const box = AABB(10, 10);
+    for (const r of [0, 0.5, 3]) {
+      for (let x = -9; x <= 9; x += 0.5) {
+        for (let y = -9; y <= 9; y += 0.5) {
+          const hit = shapeOverlap(box, 0, 0, CircleShape(r), x, y);
+          expect(overlap(box, 0, 0, CircleShape(r), x, y) !== null).toBe(hit);
+        }
+      }
+    }
+  });
+});

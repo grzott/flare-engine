@@ -45,6 +45,10 @@ if (overlapInto(AABB(32, 32), 0, 0, CircleShape(8), 18, 4, mtv) !== null) {
 Returns `null` when the shapes are apart, leaving your buffer untouched. Concentric circles have no
 meaningful axis, so `(1, 0)` is returned rather than `NaN` from normalising a zero vector.
 
+**Touching is not colliding.** Every shape pair is strict: two shapes whose edges exactly meet do not
+overlap, in `shapeOverlap` and `overlapInto` alike, so the two always agree. A zero-radius circle
+collides only when strictly inside a box, as a zero-size box does.
+
 ## Raycasting the world
 
 ```ts

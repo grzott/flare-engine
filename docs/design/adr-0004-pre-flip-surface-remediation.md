@@ -1,6 +1,6 @@
 # ADR-0004: The pre-flip audit's published-surface changes ship as one decision, under one ADR
 
-- **Status**: Accepted <!-- owner to accept before OSS-H1; see "Why one ADR" -->
+- **Status**: Accepted
 - **Date**: 2026-09-07
 - **Consumer impact**: breaking
 - **Release level**: patch <!-- 0.3.x is the line; the 0.4.0 minor is xr13 -> ADR-0002 -->
@@ -131,6 +131,15 @@ those remain post-flip.
 | HYG13-PRE | `CollisionWorld.raycast` rejects a non-finite `maxDist` and returns `null`; `SpatialIndex` clamps its cell walk to the packed key's supported ±2,097,152 range | A ray cast with `Number.POSITIVE_INFINITY` — or any non-finite `maxDist` — returns `null` immediately instead of **hanging the JS thread**. An entity added or moved at an infinite coordinate no longer hangs or leaks | None. A caller relying on an "unbounded ray" must pass a large finite `maxDist` instead, such as the map's diagonal. There was no working unbounded behaviour to lose — only a hang. |
 | HYG16-PRE | `parseLDtk` selects an AutoLayer's tiles by `__type` rather than `gridTiles ?? autoLayerTiles` | An LDtk project using AutoLayer — auto-tiled terrain — now renders its tiles. Previously that layer parsed as **empty, with no error** | None. The corrected output is the intended one: AutoLayer support was advertised in `api-specs.md` and never worked. |
 
+**Two more pulled forward (owner, 2026-10-09)**, both named in the pre-flip queue as "free now, a
+semver break after the flip". OSS-M11's boundary bullet is a behaviour change; HYG24 is a one-modifier
+type change, recorded here rather than in the main table because it came from Arc HYG, not Arc PFA.
+
+| Row | Change | What a consumer sees | Migration |
+| --- | --- | --- | --- |
+| M11-BOUNDARY | `shapeOverlap`'s box-vs-circle test is strict (`<`), like box-vs-box and circle-vs-circle; `overlapInto` returns `null` for a zero-radius circle exactly on a box edge | A circle **exactly touching** a box face or corner no longer collides — no `onEnter`, no trigger — where before it did, in either argument order. Touching box-vs-box and circle-vs-circle never collided, so mixed pairs now match them, and `shapeOverlap` now agrees with `overlapInto(...) !== null` on every input | None for real gameplay: exact float contact is a measure-zero event. A test fixture that placed a circle precisely on a box edge and expected a hit must move it inside by any positive amount. |
+| HYG24 | `TileLayer.tiles` is `readonly`, matching `SolidGrid.solid` | Assigning a new array to `layer.tiles` stops compiling. Writing cells (`layer.tiles[i] = gid`) is unchanged | Write cells in place instead of swapping the array. Nothing in the repo or the scaffolder templates reassigned it. |
+
 <!-- Arc PFA's own rows are complete as of PF-8. Later pulled-forward behaviour fixes append to the
      addendum above, not to the main table, so "what stops compiling" stays a clean list. -->
 
@@ -158,7 +167,9 @@ exactly the condition this rule exists to prevent.
 - **The table stops being complete.** If a row lands a consumer-observable change that is not in the
   table above, the arc no longer has one source and this ADR should be split.
 - **The flip slips past 2026-10-20.** The urgency here is entirely the freeze date; a later flip
-  would make several of these affordable as separate, better-argued decisions.
+  would make several of these affordable as separate, better-argued decisions. *Observed
+  2026-10-09: the freeze moved to Oct 12 and the flip to Oct 26–28 (owner). A one-week slip leaves
+  the decision as it stands; a slip of months would reopen it.*
 
 <!-- symbols-ok: parseFlareMap -->
 <!-- reason: the REJECTED alternative in the F076 row above — a second tilemap importer that was

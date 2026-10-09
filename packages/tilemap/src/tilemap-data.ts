@@ -46,8 +46,11 @@ export interface TileLayer {
    * not `Float32Array` — a 24-bit mantissa cannot hold Tiled's flip-bit GIDs
    * (`0x80000000` and up). This is a type decision for bulk numeric data per the
    * repo convention, not a measured perf change.
+   *
+   * `readonly` like `SolidGrid.solid`: the array cannot be swapped out from under a
+   * parsed map, but its cells stay writable (`layer.tiles[i] = gid`).
    */
-  tiles: Uint32Array;
+  readonly tiles: Uint32Array;
   /** Visibility flag. */
   visible: boolean;
   /** Opacity (0–1). */

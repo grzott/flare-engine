@@ -131,7 +131,12 @@ function aabbVsCircle(
   const closestY = cy < top ? top : cy > bottom ? bottom : cy;
   const dx = cx - closestX;
   const dy = cy - closestY;
-  return dx * dx + dy * dy <= cr * cr;
+  const distSq = dx * dx + dy * dy;
+  // Strict, like aabbVsAabb and circleVsCircle: exactly-touching shapes do not
+  // collide. A centre on or inside the box collides when the radius is positive;
+  // a zero radius counts only strictly inside, as a zero-size box does.
+  if (distSq > 0) return distSq < cr * cr;
+  return cr > 0 || (cx > left && cx < right && cy > top && cy < bottom);
 }
 
 /**
@@ -324,6 +329,8 @@ function aabbCircleOverlap(
     ny = 1;
     depth = toBottom;
   }
+  // Zero radius on the boundary is exactly touching, not overlapping.
+  if (depth + cr <= 0) return null;
   out.x = flip ? -nx : nx;
   out.y = flip ? -ny : ny;
   out.depth = depth + cr;

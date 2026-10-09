@@ -52,7 +52,7 @@ jobs:
           # push started from. Without it the guard only sees the tip commit.
           FLARE_PERF_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
 
-      # ~60 s: packs all 41 publishable packages. CI is the right place for it —
+      # ~60 s: packs all 42 publishable packages. CI is the right place for it —
       # the local /close gate stays fast and this runs before anything merges.
       - run: bun run check:perf-bytes
 

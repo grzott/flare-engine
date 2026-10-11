@@ -570,6 +570,11 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
   captures, a battery-temperature delta ceiling calibrated against these numbers, or a monotonic
   trend test across the window. Whatever is chosen, `bench:web:android` should enforce it rather
   than leaving it to whoever remembers.
+  **Decided 2026-10-10 (PERF-22): a 100 s gap from a cool phone, plus a no-monotonic-trend check
+  across the window.** Evidence: from 20.6 C the battery rose 2.2 C over five runs (promote warns at
+  1 C) with thermal status 0, zero of 18 rows trending upward, and `render.flush 1000 / 1 atlas`
+  0.400–0.412 ms. The temperature delta measures warm-up, not drift, so it stays a warning. Still
+  open, post-flip: the gap and the trend check are run by hand, not enforced by the lane.
 
 - **PERF-4b — bench coverage extension (P1 remainder) [MT].** New per-frame suites for animation / postfx / tilemap / pathfinding / math — contract entries, smoke rows, `innerIters` sized to the 0.3–25 ms window, workspace deps; ends with a 5-run re-capture + promote + `bench:md`. Requires PERF-4a. Spec: §11.4b.
 - **PERF-14b — the ~2x straddle survives the power-plan fix (found 2026-08-19) [MT].** PERF-14 is
@@ -585,11 +590,21 @@ Goal: real, current, automated perf numbers + hard gates before the Oct 5 freeze
   sustained load, or the machine's known WHEA-corrected microcode instability (BIOS 1611, microcode
   0x11F — a BIOS update is scheduled). **Do this before trusting the next capture:** decide whether
   the protocol pauses between runs or asserts mode-coherence across the window, and record which.
+  **Decided 2026-10-10 (PERF-22): assert mode-coherence — five back-to-back `bench:pinned` runs,
+  never more, folded only when every run sits in the fast mode.** `promote` already refuses a window
+  disagreeing by >20%; the residual hazard (a window wholly inside the slow mode) is checked by hand
+  against the fast-mode anchors, `ecs.step 1000` ≈ 9–10 µs. The PERF-22 window read 9.3–10.0 µs at
+  1.3–2.7% foreign load, worst spread 1.145x. Still open, post-flip: automate the anchor check.
 
 - **PERF-7 — native bench app + device-lane revival (P3) [MT + owner OOB, 2 sessions].** `apps/bench-native` engine scenarios (sprite/rotation/postfx/particles + texture-eviction/resume-from-background + cold start); lift harness from **PT HEAD only** (absolute-ceiling gate) with the B20 fails-green hardening (matrix validation, staleness gate, zero-combo fails, absolute-delta floor, one scenario-id namespace, artifact-path fix); revive per B21 order — TestingBot account verification FIRST, not a fresh APK; weekly cron with window ≥4× cadence + per-release anchor; bridge device data to the dashboard (kills dead device.json — B22); rewrite the parked particle-storm gate below. Spec: §11.7.
 - **PERF-9 — physics broadphase allocation + O(n²) update (B27) (engine-builder, `packages/**`, post-freeze).** `SpatialIndex.update`'s per-entity closure + O(n) find; `entries` destructuring in the broadphase loop; the reused pair-`Set` that costs ~38× the heap footprint of a fresh one under JSC (verify on Hermes FIRST — RN is the primary target). One lockstep minor changeset. Spec: §11.9.
 
-- **PERF-22 — re-capture every perf lane before the freeze (P0, re-dated 2026-10-09: after this session's
+- **PERF-22 — DONE 2026-10-10, see `## Done`.** All 8 lanes captured at `cc47ab7`; freshness green.
+  **Any `packages/*/src` commit before the flip re-stales it** (the gate watches `src` only, so the
+  H1 version commit and the flip's `publishConfig` edit do not) — a window fix means a re-capture with
+  the phone. `bench:md` refuses a baseline older than 30 days: this one renders until Nov 9.
+  Original row:
+  **PERF-22 — re-capture every perf lane before the freeze (P0, re-dated 2026-10-09: after this session's
   commits land, by Sun Oct 11, [MT + owner OOB]).** The Sep 28 – Oct 2 window passed with nothing
   captured. Session #324 touched `physics`, `render`, `react`, `tilemap`, `cli` and `create` source, so
   capture only after those commits — any later `packages/**` commit re-stales it. The machine is ready:
@@ -622,11 +637,11 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 
 **Recomputed 2026-10-09 (session #324) — the Oct 5 freeze was missed; schedule moved one week by
 §1's fallback rule (owner): freeze Mon Oct 12, window Oct 12–25, flip Oct 26–28.** What stands
-between HEAD and the cut, in order: (1) the owner commits and pushes this session's work —
-nothing after the capture may touch `packages/**`; (2) **PERF-22**, the 8-lane re-capture, phone
-attached, by Sun Oct 11 — the only hard blocker left, because `bun run release` chains
-`check:perf-freshness`; (3) owner-only **NPM-ROTATE** (expiry ≥ Nov 15) and **F3-PUB/F3-DISP**,
-both before any verdaccio; (4) **F4-RATIFY**, informed by the scan already run (below); (5) H1.
+between HEAD and the cut, in order: (1) ~~the owner commits and pushes this session's work~~ done
+2026-10-09; (2) ~~**PERF-22**~~ done 2026-10-10 — nothing may touch `packages/*/src` from here to the
+flip without a re-capture; (3) owner-only **NPM-ROTATE** (expiry ≥ Nov 15; the Actions secret still
+needs the new token) and **F3-PUB/F3-DISP**, both before any verdaccio; (4) **F4-RATIFY**, informed
+by the scan already run (below); (5) H1.
 Every other row still listed above or below is post-flip or window-legal.
 
 - **OSS-F4 — history/exposure re-scan at freeze (P0) [MT].** **Scan built and run 2026-10-09
@@ -988,6 +1003,18 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **PERF-22 — the freeze re-capture, all 8 lanes at `cc47ab7` (2026-10-10, owner + MT).** Clears
+  the last hard blocker on H1: `check:perf-freshness` and `check:perf` green, and CI's only red step
+  goes with it. High performance plan, GPU idle, phone at 20.6 C. Node: five `bench:pinned` runs,
+  1.3–2.7% foreign load, every run in the fast mode, worst spread 1.145x. Web cpu-raster and gpu: five
+  each (the known Bun teardown panic after every write, harmless). Android: five at 100 s gaps,
+  worst row 8.2% from median, no upward trend. PERF-14b and PERF-17 decisions are recorded on their
+  rows. **First measurement of OSS-M10** (`599cd30`, landed under the freshness override): every
+  node `render.flush` row is **+10–15%** (`1000 / 1 atlas` 22.8 → 26.0 µs, ≈ +3.2 ns per sprite of
+  pure-JS batching for blend runs, flip and the cull check); ECS, physics, particles and integration
+  are within ±8%. It does not reach a frame: the CanvasKit lanes' flush medians moved +2.5% (gpu),
+  −1.5% (cpu-raster) and −6% (android). No changeset or ADR claimed the work was free.
 
 - **Session #324 (2026-10-09) — the pre-freeze agent side, after a full-repo audit on 2026-09-29.**
   Owner decisions taken at the session's one halt: scaffolder `@flare-engine/create`; M11 boundary +

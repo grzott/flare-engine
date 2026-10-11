@@ -12318,3 +12318,30 @@ HYG24 (**a pre-freeze decision**: `SolidGrid.solid` is `readonly`, `TileLayer.ti
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 325 — 2026-10-10 (scope: engine)
+
+**Goal:** PERF-22 — the freeze re-capture, all 8 perf lanes at `cc47ab7`, phone attached
+
+**Touched files**
+- `benchmarks/results/history.ndjson`
+- `benchmarks/results/microbench.json`
+- `benchmarks/results/web-android-history.ndjson`
+- `benchmarks/results/web-android.json`
+- `benchmarks/results/web-gpu-history.ndjson`
+- `benchmarks/results/web-gpu.json`
+- `benchmarks/results/web-history.ndjson`
+- `benchmarks/results/web.json`
+- `docs/plans/todo.md`
+- `docs/references/benchmarks.md`
+
+**Gates**
+- check:perf-freshness: green (re-run 2026-10-11)
+- check:perf: green (re-run 2026-10-11)
+- lint/typecheck/test/build: not run — data and docs only, no source touched
+
+**Frictions:** session transcript lost before /close; this block was reconstructed 2026-10-11 from the uncommitted diff, so no deny/gate counts are recorded
+
+**Next:** see `docs/plans/todo.md`.
+
+---

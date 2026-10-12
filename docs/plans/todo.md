@@ -639,9 +639,13 @@ Capacity, as first written 2026-07-03: ~49–55 sessions (~46 launch rows + B25�
 §1's fallback rule (owner): freeze Mon Oct 12, window Oct 12–25, flip Oct 26–28.** What stands
 between HEAD and the cut, in order: (1) ~~the owner commits and pushes this session's work~~ done
 2026-10-09; (2) ~~**PERF-22**~~ done 2026-10-10 — nothing may touch `packages/*/src` from here to the
-flip without a re-capture; (3) owner-only **NPM-ROTATE** (expiry ≥ Nov 15; the Actions secret still
-needs the new token) and **F3-PUB/F3-DISP**, both before any verdaccio; (4) **F4-RATIFY**, informed
-by the scan already run (below); (5) H1.
+flip without a re-capture; (3) ~~owner-only **NPM-ROTATE**~~ done 2026-10-12 — publish token in
+`~/.npmrc` + the `flare-engine` Actions secret, a read-only window token in the PT and page
+secrets (both had lapsed in September); expiry goes in the ledger. ~~**F3-PUB/F3-DISP**~~ done
+2026-10-12 — 198/198 published tarballs fetched, 0.3.0/0.3.1 clean, the 189 hits in 0.1.0–0.2.1 are
+game vocabulary and sibling-repo names, all accepted; **re-run over 0.4.0 after H1, before any
+verdaccio**; (4) ~~**F4-RATIFY**~~ done 2026-10-12, see OSS-F4; (5) H1 — version bump prepared,
+owner publishes.
 Every other row still listed above or below is post-flip or window-legal.
 
 - **OSS-F4 — history/exposure re-scan at freeze (P0) [MT].** **Scan built and run 2026-10-09
@@ -654,9 +658,16 @@ Every other row still listed above or below is post-flip or window-legal.
   `apps/pan-tvardowski/app.json`, `C:\_PROG` paths in `.claude/skills/retro/SKILL.md` — is in
   `_local/f4-history-scan.md` for the owner's F4-RATIFY. **Re-run at the freeze HEAD** (seconds).
   Spec: §9 F4.
+  **Re-run 2026-10-12 at `23bd323`: 1158 commits, 0 secret hits. F4-RATIFY done 2026-10-12
+  (owner):** `.claude/` and `SESSION_LOG.md` go public, the author email stays, history is kept
+  as-is (no scrub), flip Oct 26–28. Nothing to `git rm` before H1.
 - **OSS-H1 — FREEZE: 0.4.0 restricted publish (P0, Mon Oct 12, owner-paired) [MT].** No new
   changeset: the 29 pending ones resolve to `0.4.0` (`changeset status`). First publish of
   `@flare-engine/create`. After this: fix-only until the flip. Spec: §11 H1.
+  **`bun run version` run 2026-10-12:** 42 packages at `0.4.0`, 78 internal ranges `^0.4.0`, zero
+  `workspace:` left, all 29 changesets consumed; every pre-release gate green at `23bd323`.
+  `bun.lock` still names the workspaces `0.3.1` (as after 0.3.1, fixed then by `41ef818`); cosmetic,
+  `bun install --frozen-lockfile` passes. Owner: commit, `bun run release`, push main + tags.
 - **OSS-I1 — flip execution (Oct 26–28, owner-paired).** Walk the rehearsed runbook; each step checked off in-file. Spec: §12.
 - **OSS-I2 — post-flip verification battery (P0).** Cold scaffold from the public registry with the registry *proven*, not assumed — verdaccio stopped, `npm config get registry` = npmjs, fresh dir, no freeze-window lockfile — and no token; tokenless alone discriminates nothing, verdaccio serves anonymous reads too (XR-11). Provenance visible; docs links resolve; CI badge; plan docs flipped to shipped state. Spec: §12.
 

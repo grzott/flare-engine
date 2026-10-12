@@ -90,7 +90,10 @@ no clean rollback.
       0.3.0, 0.3.1) and again over 0.4.0 after H1** — authenticated, on a machine with no
       verdaccio and no registry override, *before* the window stands one up
       (`scripts/lib/pack.mjs:23` inherits ambient npm config).
-- [ ] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4).
+      **Five-version half done 2026-10-12:** 198/198 fetched, 0.3.0/0.3.1 clean, every
+      0.1.0–0.2.1 hit dispositioned in the ledger. Open only for the 0.4.0 re-run.
+- [x] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4). 2026-10-12 at
+      `23bd323`: 0 secret hits across 1158 commits.
 - [ ] **Perf gate green:** every hard item in the "Perf gate (single source)" block of
       road-to-oss §11 / OSS-H1. Not restated here on purpose — one source per fact.
 - [ ] **npm auth ready:** granular publish token (Bypass-2FA) in `~/.npmrc`, the
@@ -117,8 +120,8 @@ no clean rollback.
       41, so flip day no longer contains a first publish. Its replacement check:
 - [ ] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
       prints the freeze version, and the manual window's §1 scaffolded from it.
-- [ ] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
-      stance (§14).
+- [x] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
+      stance (§14). 2026-10-12: all yes, flip Oct 26–28, history kept as-is.
 
 ---
 

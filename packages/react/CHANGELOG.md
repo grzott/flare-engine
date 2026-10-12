@@ -1,5 +1,96 @@
 # @flare-engine/react
 
+## 0.4.0
+
+### Minor Changes
+
+- 7b4f56f: Dispatch the native scene capture through `scheduleOnUI` from `react-native-worklets` instead of
+  Reanimated's deprecated, curried `runOnUI`. Per ADR-0002.
+
+  Two things this fixes. `runOnUI` is deprecated in Reanimated 4 and the peer range was open-ended
+  (`>=3.19.1`), so a consumer on a future Reanimated 5 would have satisfied the declared range and
+  got a silent runtime break on the native render path. And `runOnUI(fn)` is curried, so it allocated
+  a wrapper closure on every frame inside `onPreRender` — the one place `AGENTS.md` forbids
+  allocation.
+
+  **Breaking:** `@flare-engine/react` now peers `react-native-reanimated >=4.0.0` and
+  `react-native-worklets >=0.7.0`, and Reanimated 4 is New-Architecture-only, so old-architecture
+  apps are no longer supported. Every `@flare-engine/create` template already ships both packages at
+  these versions, so scaffolded apps need no change.
+
+  Dropping old-architecture support costs nothing testable: no `@flare-engine/create` template could ever
+  produce such an app, because all three pin Expo 57 / RN 0.86 and `expo prebuild` silently overrides
+  an `app.json` opt-out. The earlier `>=3.19.1` floor was chosen to keep those apps viable, but Flare
+  was never run on one — so the engine was shipping a promise it could not verify. Both shipped
+  READMEs now state the New-Architecture requirement outright.
+
+### Patch Changes
+
+- 6d6668c: PF-7: settle the published surface of `react`, `scene` and `storage` before the 0.4.0 freeze. Per ADR-0004.
+
+  - `GameView`'s `safeArea` prop: the shipped JSDoc and API spec already promised a zero-insets
+    fallback when no `<SafeAreaProvider>` ancestor is mounted, but the code called
+    `useSafeAreaInsets()` unconditionally, which throws in that exact situation — so the fallback
+    never existed and an app trusting the docs got a blank screen and a stack trace. `GameView` now
+    reads `useContext(SafeAreaInsetsContext)` directly (still called unconditionally, per the hook
+    rules) and falls back to `{ top: 0, right: 0, bottom: 0, left: 0 }` when it is `null` or when
+    `safeArea` is supplied explicitly. `useSafeAreaInsets` is no longer called.
+  - `SceneFactory` is now `(world: World, camera: Camera2D) => Scene` instead of `() => Scene`.
+    `SceneManager` always overwrote `scene.world`/`scene.camera` after calling the factory, so a
+    factory that returned a real, pre-populated `World` — the only shape the published `Scene`
+    interface's required `world`/`camera` fields allow without a forbidden `null!` — silently lost
+    it. The manager now passes the `World`/`Camera2D` it created into the factory instead. A
+    zero-argument `() => Scene` factory remains assignable to `SceneFactory`, so existing factories
+    that build their own world/camera are unaffected.
+  - `DocumentStore.load()` never persists over a document it could not read. Previously, a stored
+    version newer than the app's (store rollback, side-loaded APK, staged-rollout revert) or a
+    throwing consumer migration fell into the same silent-fallback path as corrupt JSON — returning
+    `parse(undefined)` **and writing it back to the adapter**, destroying a well-formed document that
+    a newer build could otherwise have read. `load()` now persists the fallback only when the stored
+    data was never a valid envelope to begin with (bad JSON, wrong shape); on a migration failure it
+    returns the fallback for that call only and leaves the stored bytes untouched, so reinstalling a
+    build that can read the document recovers it. `load()` still never throws. Two things this does
+    NOT change, on purpose: the caller has no signal that its data survived versus was truly absent
+    (a reason channel was considered and deferred — more design than this row holds), and
+    `createStorage.loadSlot` still throws in the equivalent case, so the two stores now deliberately
+    diverge; see `api-specs.md` for the documented split.
+
+- 9ed4ac6: Two docstring corrections in the published type declarations: `SceneCaptureOptions` now says the
+  native UI-thread capture runs through `scheduleOnUI` (it named `runOnUI`, which `GameView` stopped
+  using when the worklets floor rose), and the shader-effect `children` field no longer refers to a
+  private game's effect set. No behaviour change.
+- c5b8c01: XR-1: declare react-native-reanimated peer, own shared-value scene capture
+- a630580: XR-1c: build the native scene-capture surface on the UI thread. A surface created on the JS thread belongs to a different GL context than the on-screen canvas, so `<GameView>` rendered a black frame on device while the game loop ran normally. Web keeps its single-threaded capture path.
+- 96f6893: Document `GameConfig.opaque` as recommended on Android, with the device measurement behind it: the
+  default TextureView path logs RN-Skia's `LegacySurfaceTexture` / `updateAndRelease` pair 22,028
+  times per 60s — 90% of all logcat output — where `opaque: true` logs it zero times. Rendering is
+  correct either way and native memory is flat across a 6-minute soak on both paths, so this is log
+  noise and TextureView overhead rather than a correctness fix.
+
+  <!-- symbols-ok: LegacySurfaceTexture, updateAndRelease -->
+  <!-- reason: both are @shopify/react-native-skia internals, not Flare exports. Named because the
+       Android guidance is about behaviour originating in that dependency. -->
+
+- Updated dependencies [3573ff6]
+- Updated dependencies [4ac7c58]
+- Updated dependencies [599cd30]
+- Updated dependencies [da81c97]
+- Updated dependencies [9868562]
+- Updated dependencies [fb5a0c5]
+- Updated dependencies [c50c515]
+- Updated dependencies [2afc6d9]
+- Updated dependencies [6d6668c]
+- Updated dependencies [0ef1aec]
+  - @flare-engine/input@0.4.0
+  - @flare-engine/render@0.4.0
+  - @flare-engine/math@0.4.0
+  - @flare-engine/ecs@0.4.0
+  - @flare-engine/core@0.4.0
+  - @flare-engine/scene@0.4.0
+  - @flare-engine/assets@0.4.0
+  - @flare-engine/audio@0.4.0
+  - @flare-engine/events@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

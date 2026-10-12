@@ -1,5 +1,78 @@
 # @flare-engine/render
 
+## 0.4.0
+
+### Minor Changes
+
+- 599cd30: OSS-M10: additive blend, flipX/flipY, drawNineSlice, cullBounds — per ADR-0006.
+
+  **Breaking (SpriteDrawCommand):** three new required fields — `blend: 'normal' | 'additive'`,
+  `flipX: boolean`, `flipY: boolean` — have been added to `SpriteDrawCommand`. Code that
+  constructs a `SpriteDrawCommand` literal must now provide all three. The scope is `restricted`
+  with no public consumers, so the break is a controlled migration; it is the reason this ships as
+  a `minor` and lands pre-freeze rather than post-flip.
+
+  **Additive blend:** `SpriteData.blend?` / `SpriteBatch.draw()` / `SpriteBatch.drawRaw()` accept
+  `'normal' | 'additive'`. The value is a batch-key field — sprites with different blend modes form
+  separate runs. Additive uses Skia `BlendMode.Plus` (kPlus = 12). `PaintLike.setBlendMode?` is
+  optional; mocks that omit it silently stay in SrcOver (the Skia default).
+
+  **flipX / flipY:** `SpriteData.flipX? / .flipY?` mirror a sprite about its centre. Mirrored
+  sprites are routed through `drawImageRect` with a canvas `scale(±1, ±1)` transform — one draw
+  call per sprite (per-sprite cost, documented). Not compatible with rotation; combine only with
+  `rotation = 0`. RSXform cannot express a one-axis mirror (negative-determinant transform);
+  this path is the explicit workaround. flip + outline effect falls back to the plain stretch
+  paint (outline's two-pass SRC_IN path is incompatible with the single-drawImageRect flip path).
+
+  **drawNineSlice:** `drawNineSlice(batch, image, frame, x, y, w, h, inset, effect?, alpha?)`
+  splits a source frame into a 3×3 grid and draws each non-degenerate slice via `drawImageRect`.
+  Corners draw at natural size; edges and centre stretch. Reads `batch.cullBounds` for a coarse
+  AABB precheck before drawing any slices.
+
+  **SpriteBatch.cullBounds / setCullBounds / clearCullBounds:** opt-in viewport culling bounds on
+  the batch. Read by `drawNineSlice`; set via `setCullBounds(minX, minY, maxX, maxY)` (zero-alloc
+  in steady state — one object allocated on first call, mutated thereafter). Disabled with
+  `clearCullBounds()`.
+
+  <!-- symbols-ok: BlendMode.Plus -->
+  <!-- reason: Skia's blend-mode enum member, named because additive blending maps onto it; not a
+       Flare export. -->
+
+### Patch Changes
+
+- 9868562: PF-2a: settle three `ecs` contracts before the freeze. Per ADR-0004.
+
+  `Query.entities` is the zero-alloc walk — the live `readonly number[]` of matching ids, for an
+  indexed loop. The built-in systems and the render system now use it; `for...of` stays as the
+  convenience form, which allocates an iterator per loop and, on Hermes, a result object per entity.
+
+  `QueryBuilder` takes the World's registration hook as a required constructor argument, so a bare
+  `new QueryBuilder()` no longer compiles and `build()` always returns a query the world keeps
+  populated. `world.queryBuilder()` is unchanged. The internal `_WorldQueryBuilder` subclass and
+  `World._registerQuery` are gone.
+
+  `definePrefab` documents that plain-object data is stored by reference and shared by every spawn
+  (pass `() => T` for per-entity mutable state), and `Prefab.spawn(world)` drops the `overrides`
+  parameter it never read.
+
+- 2afc6d9: PF-5: settle the render-web, postfx and render surface before the freeze. Per ADR-0004.
+
+  `createWebSurface` now returns a `WebSurface` handle — `{ canvas, ckCanvas, flush(), dispose() }` — instead of a bare `CanvasLike`. The previous return hid the CanvasKit surface, so nothing drawn through it could be presented or freed; the README presentation example now goes through the function instead of around it.
+
+  `PostFxSurface.composite(globalIntensity?)` takes its argument optionally and writes it into the chain only when given. Every frame it used to overwrite `chain.globalIntensity`, undoing a reduced-motion scale set through `PostFxController.setMotionScale` or the a11y bridge; the README recipe that taught `composite(1)` now calls `composite()`.
+
+  `COMPOSITE_SKSL`'s clouds branch honours `weatherDirection` with the same rotated scroll as `WEATHER_CLOUDS_SKSL`; it had stayed on the X-only scroll when the standalone shader gained a direction. Rendering changes for anyone on the composite clouds path with a non-zero direction.
+
+  `PostFxController.triggerTimed` is required on the interface (it was always implemented). `render` no longer exports `ColorLike`, an alias nothing referenced.
+
+- Updated dependencies [da81c97]
+- Updated dependencies [9868562]
+- Updated dependencies [fb5a0c5]
+- Updated dependencies [0ef1aec]
+  - @flare-engine/math@0.4.0
+  - @flare-engine/ecs@0.4.0
+  - @flare-engine/assets@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

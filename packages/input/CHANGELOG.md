@@ -1,5 +1,55 @@
 # @flare-engine/input
 
+## 0.4.0
+
+### Patch Changes
+
+- 3573ff6: HYG5-PRE: document `GamepadSource.poll()`'s freshness contract.
+
+  `poll()` now documents that it returns fresh objects on every call: an implementation must not
+  reuse or mutate a snapshot (or its `buttons`/`axes` arrays) it previously returned, and a caller
+  may retain a returned snapshot across frames. This was previously unstated. `createWebGamepadSource`
+  already behaved this way — every call allocates a new snapshot, a new buttons array and a new axes
+  array per connected pad — so this documents existing behaviour rather than changing it. It matters
+  now because `GamepadSource` is a public interface the docstring explicitly invites native adapter
+  authors to implement, and the contract binds every adapter written after the October 20 flip.
+
+- 4ac7c58: OSS-B23b: harden URL and input parsing against inherited keys and non-finite values.
+
+  `deep-links` builds its three URL-derived `Params` objects with `Object.create(null)`, so a link that never carried a `constructor` / `toString` key no longer answers those reads with an inherited value.
+
+  `input` corrects out-of-contract configuration instead of propagating it: `updateJoystick` guards a zero distance and a `maxRadius` equal to `deadZone` (both divided by zero and wrote NaN into the reused state, which never recovered), and `applyDeadZone` clamps a dead zone outside `[0, 1)`. Invalid values are clamped and reported once via a `__DEV__`-only warning rather than throwing, since both run in the per-frame input path.
+
+- c50c515: PF-3: settle the published surface of `input` before the 0.4.0 freeze. Per ADR-0004.
+
+  `InputManager.pointer` now tracks only the primary touch — the finger whose `onPointerDown`
+  started the current gesture. Previously every touch id was forwarded into `pointer`, so a second
+  finger's `down`/`move` teleported `pointer.position` and its `up` set `justReleased` while the
+  first finger was still down. A primary's role does not transfer to a remaining finger when it
+  lifts: `pointer.isDown` goes false and stays unset until every touch is up and a fresh
+  `onPointerDown` arrives. Other touches were, and remain, visible only through `touches`.
+
+  `GestureDetector.pointerUp`'s `elapsedSinceDown` is now optional and, when passed, re-syncs the
+  same clock `update(dt, ...)` accumulates rather than racing it; `pointerUp` also now checks
+  whether a long press already fired for the in-progress press and skips tap/swipe if so, so one
+  press yields exactly one gesture (previously a config with `tapMaxDuration >=
+longPressMinDuration` — the package's own custom-config test — emitted `onLongPress` then `onTap`
+  for one hold).
+
+  Per-frame edge flags keep two deliberate shapes rather than one. The boolean-field shape now
+  converges on `justPressed`/`justReleased` everywhere: `GamepadButtonState.pressedThisFrame`/
+  `releasedThisFrame` are renamed to match the names `Pointer` and `VirtualButtonState` already used.
+  The keyed-accessor shape is untouched by design — `KeyboardState.wasPressed`/`wasReleased(code)` and
+  `wasButtonPressed`/`wasButtonReleased(state, button)` keep their names, since collapsing either onto
+  a bare `justPressed`/`justReleased` would drop the argument that makes them keyed. `resetKeyboardFrame`
+  is dropped — `InputManager.update()` now calls `keyboard.reset()` directly, matching `KeyboardState`'s
+  existing method-based shape.
+
+- Updated dependencies [da81c97]
+- Updated dependencies [fb5a0c5]
+  - @flare-engine/math@0.4.0
+  - @flare-engine/events@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

@@ -1,5 +1,28 @@
 # @flare-engine/particles
 
+## 0.4.0
+
+### Patch Changes
+
+- 2740004: OSS-M8 (first half): emitter shapes.
+
+  `EmitterConfig.shape` places newly emitted particles with a tagged union — `point` (default), `circle`, `ring`, `rect`, `cone`. Shapes sample **position** only, so `direction` and `spread` continue to govern velocity and the two compose; a shape with an outward normal can hand velocity over with `radial: true`, which is the difference between a ring of drifting particles and an explosion.
+
+  `sampleEmitterShape(shape, rand, out, direction?)` is exported for placing non-particles. It writes into a caller-owned `ShapeSample` and allocates nothing, so it is safe per-particle in a steady-state loop.
+
+  Fully backward compatible: `point` draws no random values and shape sampling precedes the velocity draws, so an emitter without a `shape` produces the identical sequence to one from before this change — asserted by test, not assumed.
+
+- ddd8116: OSS-M8b: `drawParticles(pool, batch, image, frame, options?)` — queue every live particle into a caller-owned sprite batch.
+
+  The batch and frame are typed structurally, so `@flare-engine/particles` still depends on nothing but `core` and `math` and remains usable with no renderer; a real `SpriteBatch` satisfies `ParticleBatchLike`, asserted by a runtime test rather than assumed. The loop allocates nothing per particle and skips particles whose interpolated size or alpha has reached zero.
+
+  Alpha and rotation are applied per particle. Colour is not: a batch retains the effect reference until flush, so a reusable effect object would give every particle the last one's colour, and a per-particle object is the allocation this package exists to avoid.
+
+- Updated dependencies [da81c97]
+- Updated dependencies [fb5a0c5]
+  - @flare-engine/math@0.4.0
+  - @flare-engine/core@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

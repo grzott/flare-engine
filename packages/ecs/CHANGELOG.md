@@ -1,5 +1,42 @@
 # @flare-engine/ecs
 
+## 0.4.0
+
+### Patch Changes
+
+- 9868562: PF-2a: settle three `ecs` contracts before the freeze. Per ADR-0004.
+
+  `Query.entities` is the zero-alloc walk — the live `readonly number[]` of matching ids, for an
+  indexed loop. The built-in systems and the render system now use it; `for...of` stays as the
+  convenience form, which allocates an iterator per loop and, on Hermes, a result object per entity.
+
+  `QueryBuilder` takes the World's registration hook as a required constructor argument, so a bare
+  `new QueryBuilder()` no longer compiles and `build()` always returns a query the world keeps
+  populated. `world.queryBuilder()` is unchanged. The internal `_WorldQueryBuilder` subclass and
+  `World._registerQuery` are gone.
+
+  `definePrefab` documents that plain-object data is stored by reference and shared by every spawn
+  (pass `() => T` for per-entity mutable state), and `Prefab.spawn(world)` drops the `overrides`
+  parameter it never read.
+
+- 0ef1aec: `Query` removal is now O(1). It was `indexOf` + `splice` — both O(n) — so churn cost grew with
+  `entities x removals`; a single `Map<entityId, index>` now serves membership and position, and
+  removal swaps the last element into the hole. Measured on the new `ecs.churn` bench rows
+  (5%/step): the path was 14.5x steady-state iteration at 5000 entities before this.
+
+  **Behaviour change, per ADR-0003:** removal no longer preserves the relative order of the
+  remaining entities, and iteration order is now documented as explicitly unspecified. The array was
+  previously documented "sorted" but never was — `_check` has always appended, so an entity that
+  begins matching later landed after higher ids. The only consumer that reads the order is
+  `render-system`, whose sort is stable on `z` alone, so query order is the tie-break between
+  equal-`z` sprites: give overlapping sprites distinct `z` values, which was already the only
+  supported way to control draw order.
+
+- Updated dependencies [da81c97]
+- Updated dependencies [fb5a0c5]
+  - @flare-engine/math@0.4.0
+  - @flare-engine/events@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

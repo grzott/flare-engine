@@ -14,6 +14,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.0](#040) | 2026-10-12 | 42 | Freeze cut before the public flip: New Architecture floor, scaffolder in scope |
 | [0.3.1](#031) | 2026-08-28 | 41 | Consumer-reported fixes and a spatial-hash broadphase |
 | [0.3.0](#030) | 2026-08-25 | 41 | Consumer-enablement release: web target, `dynamics`, toolchain modernisation |
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
@@ -21,6 +22,62 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.0
+
+The freeze cut before the October public flip. Its two breaking changes were each decided in an
+accepted ADR while the scope is still restricted. Until the flip, only fixes ship, as `0.4.x`
+patches.
+
+**Breaking**
+
+- **`react` requires the New Architecture** ([ADR-0002](docs/design/adr-0002-worklets-migration-and-new-arch-floor.md)).
+  It now peers `react-native-reanimated >=4.0.0` and `react-native-worklets >=0.7.0`, and dispatches
+  the native scene capture through `scheduleOnUI` instead of Reanimated's deprecated `runOnUI`. Every
+  `@flare-engine/create` template already ships both at these versions.
+- **`render` — `SpriteDrawCommand` gains three required fields**, `blend`, `flipX` and `flipY`
+  ([ADR-0006](docs/design/adr-0006-sprite-command-required-fields.md)). Code that builds a command
+  literal must supply them.
+
+**New**
+
+- **`@flare-engine/create`**, first publish — the scaffolder, now inside the scope
+  ([ADR-0007](docs/design/adr-0007-scaffolder-is-flare-engine-create.md)). Run
+  `npm create @flare-engine my-game` or `bunx @flare-engine/create my-game`. The unscoped
+  `create-flare-app` belongs to an unrelated package; `flare new` now runs `@flare-engine/create`
+  pinned to the CLI's own version.
+- **`render`** — additive blend, `flipX` / `flipY`, `drawNineSlice`, and opt-in `cullBounds` on the
+  sprite batch.
+- **`particles`** — emitter shapes, and `drawParticles` to queue live particles into a caller-owned
+  sprite batch.
+- **`physics`** — minimum-translation vectors and a broadphase-backed world raycast. Exactly-touching
+  shapes now never collide, across every shape pair.
+- **`math`** — curves, segment intersection points, and RNG state.
+- **`errors`** — captures the crashes `ErrorBoundary` cannot see.
+
+**Fixes**
+
+- **`react`** — `<GameView>` rendered a black frame on device; the native capture surface is now
+  built on the UI thread. The `safeArea` zero-insets fallback the docs promised now exists.
+- **`storage`** — `DocumentStore.load()` no longer writes a fallback over a stored document it could
+  not read.
+- **`pathfinding`** — the open-set heap grows instead of corrupting past 4096 entries.
+- **`ecs`** — `Query` removal is O(1).
+- **`cli`** — `flare tiled-to-flare` emits Tiled-shaped JSON that `parseTiled` accepts.
+- **`input`, `deep-links`** — URL and input parsing hardened against inherited keys and non-finite
+  values.
+- **`engine`** — declares the `react-native-reanimated` peer on the barrel.
+
+**Published-surface settlement** ([ADR-0004](docs/design/adr-0004-pre-flip-surface-remediation.md)).
+The pre-flip audit's contract changes across `core`, `math`, `ecs`, `input`, `shapes`, `render`,
+`render-web`, `postfx`, `react`, `scene`, `storage`, `physics`, `pathfinding`, `tilemap`, `cli`, `ui`,
+`ui-shop`, `iap-revenuecat`, `leaderboards` and `devtools` — read each package's changelog before
+upgrading. For example, `SceneFactory` now receives the `World` and `Camera2D` the manager created
+(a zero-argument factory still type-checks), and `TileLayer.tiles` is `readonly`.
+
+**Performance.** The new blend, flip and cull checks cost the node `render.flush` microbenchmarks
+10–15% (`1000 sprites / 1 atlas` 22.8 → 26.0 µs). The CanvasKit frame lanes moved −6% to +2.5%.
+See [benchmarks](docs/references/benchmarks.md).
 
 ## 0.3.1
 

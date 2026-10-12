@@ -1,5 +1,21 @@
 # @flare-engine/testing
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [3573ff6]
+- Updated dependencies [4ac7c58]
+- Updated dependencies [da81c97]
+- Updated dependencies [9868562]
+- Updated dependencies [fb5a0c5]
+- Updated dependencies [c50c515]
+- Updated dependencies [0ef1aec]
+  - @flare-engine/input@0.4.0
+  - @flare-engine/math@0.4.0
+  - @flare-engine/ecs@0.4.0
+  - @flare-engine/core@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

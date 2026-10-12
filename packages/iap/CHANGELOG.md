@@ -1,5 +1,11 @@
 # @flare-engine/iap
 
+## 0.4.0
+
+### Patch Changes
+
+- @flare-engine/events@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @flare-engine/a11y
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [da81c97]
+- Updated dependencies [fb5a0c5]
+  - @flare-engine/math@0.4.0
+  - @flare-engine/events@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

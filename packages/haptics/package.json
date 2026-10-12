@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/haptics",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Haptics (tactile feedback) provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "haptics", "provider", "interface"],
   "license": "Apache-2.0",

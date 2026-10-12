@@ -1,5 +1,61 @@
 # @flare-engine/physics
 
+## 0.4.0
+
+### Patch Changes
+
+- 63d7dad: HYG13/HYG16-PRE: bound the raycast broadphase walk; select AutoLayer tiles by `__type`. Per ADR-0004.
+
+  `CollisionWorld.raycast` now rejects a non-finite `maxDist` (returns `null`) instead of reaching
+  `SpatialIndex`'s cell-range loop with an infinite bound. `SpatialIndex.query`/`insert`/`update` also
+  clamp the derived cell range to the packed key's supported extent (±2,097,152 world units), so an
+  entity positioned at an infinite coordinate (`setPosition(e, Infinity, y)`) no longer hangs the JS
+  thread or grows a broadphase bucket without bound. An unbounded ray must now pass a large finite
+  `maxDist` (e.g. the map's diagonal) — "cast until it leaves the world" is not a supported contract
+  for a uniform-grid broadphase.
+
+  `parseLDtk` selected an AutoLayer's tiles with `layer.gridTiles ?? layer.autoLayerTiles`, which never
+  falls through to `autoLayerTiles` because a real AutoLayer's `gridTiles` is `[]`, not `null`/`undefined`
+  — every LDtk AutoLayer (the standard way to author auto-tiled terrain) parsed as an empty, all-zero
+  layer with no error. Selection is now keyed on `layer.__type === 'AutoLayer'`, matching the field LDtk
+  itself keys on; `gridTiles`/`autoLayerTiles` on the parser's internal `LDtkLayerInstance` type are no
+  longer optional, documenting that real LDtk output always carries both arrays. This is accurate
+  self-documentation, not a typecheck guardrail: `parseLDtk(json: unknown)` narrows via a bare
+  `as LDtkJSON` assertion, so a fixture omitting either field still compiles.
+
+- 88b6907: Exactly-touching shapes never collide; `TileLayer.tiles` is `readonly`. Per ADR-0004.
+
+  `shapeOverlap` tested box-vs-circle with `<=` while box-vs-box and circle-vs-circle used `<`, so a
+  circle resting exactly on a box face or corner collided (raising `onEnter`) where two touching boxes
+  did not. All three pairs are now strict. `overlapInto` already was, except for a zero-radius circle
+  exactly on a box edge, which returned a depth-0 overlap and now returns `null` — so `shapeOverlap`
+  and `overlapInto(...) !== null` agree on every input. A zero-radius circle strictly inside a box
+  still collides, as a zero-size box does.
+
+  `TileLayer.tiles` gains the `readonly` modifier `SolidGrid.solid` already carries. Assigning a new
+  array to `layer.tiles` stops compiling; writing cells (`layer.tiles[i] = gid`) is unchanged.
+
+- b5d0a97: OSS-M11 (additive half): minimum-translation vectors and a broadphase-backed world raycast.
+
+  `overlapInto(a, ax, ay, b, bx, by, out)` returns the shortest push separating two overlapping shapes — a unit axis and a penetration depth — with `overlap()` as the allocating twin. `shapeOverlap` previously answered only _whether_ two shapes collide, leaving a detection-only consumer with no way to resolve it. Returns `null` when apart, leaving the buffer untouched; concentric circles get a usable axis instead of `NaN`.
+
+  `CollisionWorld.raycast(ox, oy, dx, dy, maxDist, mask?)` casts against the world's own colliders, walking only the broadphase cells the ray touches and filtering by the `layer` bits colliders already carry. The standalone `raycast(..., targets)` neither saw the world nor used the index, and allocated a hit record per candidate tested; the new method reuses one record, backed by a new zero-alloc `rayVsShapeInto` primitive.
+
+  Also corrects the package README, which still described the broadphase as brute-force — it has been a uniform spatial hash since 0.3.1.
+
+- 84c6268: PF-6: settle the published surface of `physics` and `pathfinding` before the 0.4.0 freeze. Per ADR-0004.
+
+  - `findPathJPS` now does what its header and the API spec already promised: when any tile costs more than 1 it delegates to weighted A\* (`findPath` with `diagonal: true`, forwarding `maxIterations` and `heuristic`). Nothing in JPS read tile costs before, so a weighted grid got a path straight through expensive tiles with the cost reported as if every tile cost 1. Detection is one linear scan of `grid.data` per call.
+  - `CollisionWorld.addCollider(entity, collider, x, y)` — additive; the seven-positional `add` is unchanged. The collider's `shape` / `isTrigger` / `layer` / `mask` are copied at add time (re-add to change them), so `createCollider` finally has a consumer and one collider can seed many entities. The README example had hard-coded `false` for `isTrigger` while passing the collider's other fields — copied under a trigger collider it silently produced a solid body — and now uses `addCollider`.
+  - `NavMeshPolygon.neighbors` removed. Nothing read it; adjacency comes from `portals[].neighborId`, so every mesh author was filling a dead field.
+  - `SpatialEntry<T>` is no longer exported. No public signature produced or accepted it.
+  - `SolidGrid.solid` is a `Uint8Array` of `width * height` cells (`row * width + col`, non-zero = solid) instead of a `Set<number>`. `buildSolidGrid` and its `readonly SolidTile[]` input are unchanged. This is a type decision for bulk data; there is no solid-grid benchmark, so the runtime effect is unmeasured.
+
+- Updated dependencies [da81c97]
+- Updated dependencies [fb5a0c5]
+  - @flare-engine/math@0.4.0
+  - @flare-engine/events@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

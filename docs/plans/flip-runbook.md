@@ -42,6 +42,7 @@ no clean rollback.
 - [ ] **H1 done:** `0.4.0` published **restricted** — all **42** scoped packages, the first
       publish of `@flare-engine/create` included; the two-week manual window
       (Oct 12–25) passed with no launch-blockers (road-to-oss §11).
+      **Publish half done 2026-10-12** (`c00b173`, 42 tags pushed); open for the window.
 - [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
       `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
       tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Three rehearsal rules folded
@@ -82,7 +83,7 @@ no clean rollback.
       every freeze-window scaffold directory deleted so no verdaccio-resolved lockfile
       survives into flip-day verification. The freeze window's override is **user-level**
       and nothing else in this runbook would notice it still set (XR-11).
-- [ ] **F3 done:** tarball audit clean (or every old-version hit has an owner
+- [x] **F3 done:** tarball audit clean (or every old-version hit has an owner
       disposition, §14). **This box stays open even though todo.md records OSS-F3 as
       Done — both are right, read carefully.** The HEAD-tarball half shipped in session
       #256; the **published-version half is OPEN** and owner-owed: that July run predates
@@ -91,13 +92,16 @@ no clean rollback.
       verdaccio and no registry override, *before* the window stands one up
       (`scripts/lib/pack.mjs:23` inherits ambient npm config).
       **Five-version half done 2026-10-12:** 198/198 fetched, 0.3.0/0.3.1 clean, every
-      0.1.0–0.2.1 hit dispositioned in the ledger. Open only for the 0.4.0 re-run.
+      0.1.0–0.2.1 hit dispositioned in the ledger. **0.4.0 re-run done 2026-10-12, before
+      any verdaccio:** 42/42 fetched, all Apache-2.0, 0 hits.
 - [x] **F4 done:** freeze-time secret re-scan clean / owner-accepted (§9 F4). 2026-10-12 at
       `23bd323`: 0 secret hits across 1158 commits.
-- [ ] **Perf gate green:** every hard item in the "Perf gate (single source)" block of
+- [x] **Perf gate green:** every hard item in the "Perf gate (single source)" block of
       road-to-oss §11 / OSS-H1. Not restated here on purpose — one source per fact.
-- [ ] **npm auth ready:** granular publish token (Bypass-2FA) in `~/.npmrc`, the
-      `@flare-engine` org on a paid plan, credential rotation done (§14). Keep the
+      Green at `c00b173`, 2026-10-12 (capture `cc47ab7`, Oct 10).
+- [x] **npm auth ready:** granular publish token (Bypass-2FA) in `~/.npmrc`, the
+      `@flare-engine` org on a paid plan, credential rotation done (§14). Rotated
+      2026-10-12, expiry recorded in the ledger; the 0.4.0 publish proved it. Keep the
       2FA device handy for `--otp` on the access flip.
       **Set an explicit expiry and record it (added 2026-09-07, §4.2).** npm removed
       legacy tokens in November 2025 — only granular tokens exist now, and a granular
@@ -120,6 +124,7 @@ no clean rollback.
       41, so flip day no longer contains a first publish. Its replacement check:
 - [ ] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
       prints the freeze version, and the manual window's §1 scaffolded from it.
+      Registry half done 2026-10-12 (`0.4.0`); open for window §1.
 - [x] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
       stance (§14). 2026-10-12: all yes, flip Oct 26–28, history kept as-is.
 

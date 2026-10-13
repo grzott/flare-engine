@@ -643,9 +643,9 @@ flip without a re-capture; (3) ~~owner-only **NPM-ROTATE**~~ done 2026-10-12 —
 `~/.npmrc` + the `flare-engine` Actions secret, a read-only window token in the PT and page
 secrets (both had lapsed in September); expiry goes in the ledger. ~~**F3-PUB/F3-DISP**~~ done
 2026-10-12 — 198/198 published tarballs fetched, 0.3.0/0.3.1 clean, the 189 hits in 0.1.0–0.2.1 are
-game vocabulary and sibling-repo names, all accepted; **re-run over 0.4.0 after H1, before any
-verdaccio**; (4) ~~**F4-RATIFY**~~ done 2026-10-12, see OSS-F4; (5) H1 — version bump prepared,
-owner publishes.
+game vocabulary and sibling-repo names, all accepted; 0.4.0 re-run clean the same day; (4)
+~~**F4-RATIFY**~~ done 2026-10-12, see OSS-F4; (5) ~~H1~~ published 2026-10-12, see `## Done`.
+**Now: the manual window, Oct 12–25** — consumers to `^0.4.0`, fixes only, as `0.4.x` patches.
 Every other row still listed above or below is post-flip or window-legal.
 
 - **OSS-F4 — history/exposure re-scan at freeze (P0) [MT].** **Scan built and run 2026-10-09
@@ -661,13 +661,7 @@ Every other row still listed above or below is post-flip or window-legal.
   **Re-run 2026-10-12 at `23bd323`: 1158 commits, 0 secret hits. F4-RATIFY done 2026-10-12
   (owner):** `.claude/` and `SESSION_LOG.md` go public, the author email stays, history is kept
   as-is (no scrub), flip Oct 26–28. Nothing to `git rm` before H1.
-- **OSS-H1 — FREEZE: 0.4.0 restricted publish (P0, Mon Oct 12, owner-paired) [MT].** No new
-  changeset: the 29 pending ones resolve to `0.4.0` (`changeset status`). First publish of
-  `@flare-engine/create`. After this: fix-only until the flip. Spec: §11 H1.
-  **`bun run version` run 2026-10-12:** 42 packages at `0.4.0`, 78 internal ranges `^0.4.0`, zero
-  `workspace:` left, all 29 changesets consumed; every pre-release gate green at `23bd323`.
-  `bun.lock` still names the workspaces `0.3.1` (as after 0.3.1, fixed then by `41ef818`); cosmetic,
-  `bun install --frozen-lockfile` passes. Owner: commit, `bun run release`, push main + tags.
+- **OSS-H1 — DONE 2026-10-12, see `## Done`.** Fix-only until the flip.
 - **OSS-I1 — flip execution (Oct 26–28, owner-paired).** Walk the rehearsed runbook; each step checked off in-file. Spec: §12.
 - **OSS-I2 — post-flip verification battery (P0).** Cold scaffold from the public registry with the registry *proven*, not assumed — verdaccio stopped, `npm config get registry` = npmjs, fresh dir, no freeze-window lockfile — and no token; tokenless alone discriminates nothing, verdaccio serves anonymous reads too (XR-11). Provenance visible; docs links resolve; CI badge; plan docs flipped to shipped state. Spec: §12.
 
@@ -1014,6 +1008,15 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **OSS-H1 — the freeze: `0.4.0` published restricted (2026-10-12, owner + MT).** All 42 scoped
+  packages at `c00b173`, 42 tags pushed, including the first publish of `@flare-engine/create`.
+  No new changeset: the 29 pending ones resolved to `0.4.0`, two of them ADR-authorised minors.
+  `bun run version` left 78 internal ranges at `^0.4.0` and no `workspace:`; it re-serialised all 42
+  manifests, which Biome reformatted back. Every pre-release gate was green before and after the
+  bump, including the ones outside `verify.sh`. The authenticated audit then fetched 0.4.0 for all
+  42 names — Apache-2.0, 0 hits. `bun.lock` still names the workspaces `0.3.1`: cosmetic, a frozen
+  install passes (as after 0.3.1, fixed then by `41ef818`).
 
 - **PERF-22 — the freeze re-capture, all 8 lanes at `cc47ab7` (2026-10-10, owner + MT).** Clears
   the last hard blocker on H1: `check:perf-freshness` and `check:perf` green, and CI's only red step

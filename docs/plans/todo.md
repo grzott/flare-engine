@@ -16,30 +16,8 @@ re-verified at HEAD `3e90e8a` (paths are under `packages/`). Freeze rule
 at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 ships alone as
 `0.4.1`, so the privacy blocker does not wait on the phone; FREEZE-FIX-2 follows as `0.4.2`.
 
-- **FREEZE-FIX-1 — errors: `createSentryTransport` inits Sentry with its default integrations, so
-  Sentry keeps reporting after the consumer revokes consent (P0 privacy, blocker, engine-builder,
-  `packages/**`).** `report()` lazily imports `@sentry/react-native` and calls
-  `mod.init({ dsn, environment, release, sampleRate })` on the **first** payload it is handed
-  (`errors/src/transports/sentry.ts:27-35`): no `defaultIntegrations`, no `integrations`, no
-  session or native-crash option, and the private shim admits only those four fields
-  (`transports/sentry-types.d.ts:6-11`). Unchanged since 0.3.1; shipped as-is in the 0.4.0 dist.
-  With defaults, Sentry installs its own global error/rejection handlers, native crash handling and
-  automatic session tracking (Sentry's documented defaults; the SDK is installed in neither repo, so
-  this was not read from source), and those send on their own, outside `report()`. A consent gate
-  that drops payloads before the transport (the pattern consumers will write; PT's is
-  `src/platform/crash.ts`) therefore holds only until the first consented report: after it, a user
-  who opts out is still reported for the rest of the process, and nothing can tear Sentry down —
-  `CrashTransport` is `report()` only (`transport.ts:7-9`) and the SDK handle is closure-private
-  (`sentry.ts:20`). Inferred, not observed: with `installGlobalErrorCapture` also chained on
-  `ErrorUtils`, one crash is reported twice. **Fix (no exported name changes):** init with
-  `defaultIntegrations: false` (or an `integrations` filter that drops the global-handler and
-  session integrations) plus automatic session tracking and native crash handling off, so Sentry
-  sends exactly what `report()` hands it; widen the shim; assert the init options in
-  `tests/sentry-transport.test.ts` (its mocked-module test already records `initCalls`); one README
-  line under the Sentry example (`README.md:25`): the transport sends only what it is given. Check
-  the option names against every major the `>=5.0.0` peer (`package.json:44`) admits — they have
-  moved between majors. Consumer-observable, so it needs an ADR; patch; no perf re-capture. The
-  API-shaped half is CW7-Q11. Found by PT's 0.4.0 adoption audit (2026-10-12).
+- **FREEZE-FIX-1 — DONE 2026-10-19 (versioned `0.4.1`), see `## Done`.** Owner publish and PT's
+  re-test close §7 row 1.
 - **FREEZE-FIX-2 — render: `flash` / `tint` paint the sprite's transparent padding (PT A1) (P1,
   major — owner elected to close it in the window, engine-builder, `packages/**`).** `applyTint`
   and `applyFlash` build `Skia.ColorFilter.MakeBlend(color, BLEND_SRC_OVER)`
@@ -1102,6 +1080,27 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **FREEZE-FIX-1 — errors: the Sentry transport no longer captures on its own (2026-10-19,
+  engine-builder + MT; `0.4.1` versioned, publish is the owner's).** P0 privacy blocker from PT's
+  0.4.0 adoption audit, §7 row 1. The lazy `init` now passes an `integrations` allowlist of eight
+  event processors and sets `enableAutoSessionTracking`, `enableNativeCrashHandling`,
+  `enableAppHangTracking`, `enableWatchdogTerminationTracking` and `sendClientReports` to `false`;
+  no exported name changes ([ADR-0008](../design/adr-0008-sentry-transport-auto-capture-off.md),
+  Accepted by the owner at the plan halt). Research against Sentry's docs and source at tags across
+  5.x–8.31.0 overturned the row's own fix twice: the row's three switches left iOS app hangs (every
+  major) and watchdog terminations (5.0–7.4) sending, and `defaultIntegrations: false` would have
+  dropped `RewriteFrames`/`Release`, breaking source-map symbolication with no `dist` option to
+  restore it inside the freeze. One residual the engine cannot close: on Android 11+ sentry-java's
+  `AnrV2Integration` escapes the RN SDK's `instanceof AnrIntegration` removal; the README and ADR
+  name the manifest switch. Test red on the pre-fix source (6 keys missing), green after; the
+  allowlist is exercised against a fake default list. `verify.sh` green, plus `check:readme`,
+  `check:changeset-symbols`, `check:tarballs`, `check:perf-bytes`, `check:history`, the scripts
+  tests and root `tsc`; `check:perf-freshness` green (`errors` is outside the measured closure).
+  `check:changeset-symbols` had gone red on ADR-0004 since the 0.4.0 tag became its baseline (20
+  names that ADR removed); acknowledged in ADR-0004's marker. `bun run version`: 42 manifests at
+  `0.4.1`, 78 internal ranges `^0.4.1`, no `workspace:`; Biome reformat as at 0.4.0. Follow-up:
+  CW7-Q11 (opt-in passthrough + `close()`, post-flip).
 
 - **OSS-H1 — the freeze: `0.4.0` published restricted (2026-10-12, owner + MT).** All 42 scoped
   packages at `c00b173`, 42 tags pushed, including the first publish of `@flare-engine/create`.

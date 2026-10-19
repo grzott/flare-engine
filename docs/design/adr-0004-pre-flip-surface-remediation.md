@@ -175,3 +175,11 @@ exactly the condition this rule exists to prevent.
 <!-- reason: the REJECTED alternative in the F076 row above — a second tilemap importer that was
      considered and deliberately not built. It correctly does not resolve, and that is the point:
      recording what was turned down is half of what an ADR is for. -->
+
+<!-- symbols-ok: ColorLike, entitlementKey, FlareLayer, FlareMap, FlareObject, FlareObjectLayer,
+     FlareTileLayer, FlareTileset, GamepadButtonState.pressedThisFrame, MemoryLeaderboards,
+     NavMeshPolygon.neighbors, releasedThisFrame, resetKeyboardFrame, ShopItem, ShopPanel,
+     ShopPanelProps, SpatialEntry, TileData, turnVelocityToward, Vec2.normalizeOut -->
+<!-- reason: names this ADR's rows removed or renamed in 0.4.0. check:changeset-symbols excuses a
+     removal against the newest release tag; they resolved at 0.3.1 and, by design, do not exist at
+     the 0.4.0 tag the gate reads since the 2026-10-12 cut (added 2026-10-19, FREEZE-FIX-1). -->

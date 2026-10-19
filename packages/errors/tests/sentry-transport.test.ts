@@ -68,8 +68,57 @@ describe('createSentryTransport', () => {
     if (result instanceof Promise) await result;
 
     expect(initCalls.length).toBe(1);
-    expect((initCalls[0] as Record<string, unknown>).dsn).toBe('https://key@sentry.io/99');
-    expect((initCalls[0] as Record<string, unknown>).environment).toBe('test');
+    expect(initCalls[0]).toStrictEqual({
+      dsn: 'https://key@sentry.io/99',
+      environment: 'test',
+      release: '1.0.0',
+      sampleRate: 1,
+      integrations: expect.any(Function),
+      enableAutoSessionTracking: false,
+      enableNativeCrashHandling: false,
+      enableAppHangTracking: false,
+      enableWatchdogTerminationTracking: false,
+      sendClientReports: false,
+    });
+
+    // The allowlist keeps only event processors, in the SDK's original order,
+    // and drops every capture-side integration including names it has never
+    // seen — the fail-safe direction (ADR-0008).
+    type FakeIntegration = { name: string };
+    const { integrations } = initCalls[0] as {
+      integrations: (defaults: FakeIntegration[]) => FakeIntegration[];
+    };
+    const defaults: FakeIntegration[] = [
+      { name: 'ReactNativeErrorHandlers' },
+      { name: 'InboundFilters' },
+      { name: 'Breadcrumbs' },
+      { name: 'Release' },
+      { name: 'DeviceContext' },
+      { name: 'RewriteFrames' },
+      { name: 'HttpContext' },
+      { name: 'DebugMeta' },
+      { name: 'ModulesLoader' },
+      { name: 'SdkInfo' },
+      { name: 'ReactNativeInfo' },
+      { name: 'Dedupe' },
+      { name: 'FutureCaptureThing' },
+      { name: 'NativeLinkedErrors' },
+      { name: 'EventOrigin' },
+    ];
+    const kept = integrations(defaults);
+    expect(kept.map((i) => i.name)).toStrictEqual([
+      'InboundFilters',
+      'Release',
+      'RewriteFrames',
+      'DebugMeta',
+      'SdkInfo',
+      'Dedupe',
+      'NativeLinkedErrors',
+      'EventOrigin',
+    ]);
+    expect(kept[0]).toBe(defaults[1]);
+    expect(kept[7]).toBe(defaults[14]);
+    expect(integrations([])).toStrictEqual([]);
 
     expect(captured.length).toBe(1);
     const hint = captured[0]?.hint as { extra: Record<string, unknown> };

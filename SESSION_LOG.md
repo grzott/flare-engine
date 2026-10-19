@@ -12479,3 +12479,37 @@ HYG24 (**a pre-freeze decision**: `SolidGrid.solid` is `readonly`, `TileLayer.ti
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 327 — 2026-10-19 (scope: engine)
+
+**Goal:** FREEZE-FIX-1: Sentry transport starts with auto-capture off (ADR-0008)
+
+**Touched files**
+- `.changeset/freeze-fix-1-sentry-auto-capture-off.md`
+- `docs/design/adr-0008-sentry-transport-auto-capture-off.md`
+- `docs/design/api-specs.md`
+- `packages/errors/README.md`
+- `packages/errors/src/transports/sentry.ts`
+- `packages/errors/src/transports/sentry-types.d.ts`
+- `packages/errors/tests/sentry-transport.test.ts`
+- `docs/design/adr-0004-pre-flip-surface-remediation.md` (symbols-ok marker, coordinator)
+- release `0.4.1`: 42 `packages/*/package.json` + `CHANGELOG.md`, root `CHANGELOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+- outside verify.sh, before and after `bun run version`: `check:readme`, `check:changeset-symbols`,
+  `check:tarballs`, `check:perf-bytes`, `check:perf-freshness`, `check:history`, scripts tests,
+  root `tsc` — all green
+
+**Frictions:** corr:1 (Sentry research overturned the approved 3-switch set: iOS app hangs and
+watchdog survive it, `defaultIntegrations: false` breaks symbolication; owner re-chose an allowlist);
+gate:2 (verify.sh rejects scope `errors` — engine|game|mixed only; `check:changeset-symbols` red on
+ADR-0004 since the 0.4.0 tag became its baseline); drift:1 (ADR-0004 marker). verify.sh's emitted
+commit subject used `freeze-fix-1:`, not a commit type — rewritten by hand.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -34,6 +34,14 @@ const transport = composeTransports(
 </ErrorBoundary>
 ```
 
+`createSentryTransport` starts Sentry with the SDK's own capture switched off — no global error or
+rejection handlers, no automatic session tracking, no native crash handling, no console/network
+instrumentation — so Sentry sends only what the transport is given, and a consent check placed in
+front of the transport holds. Process-wide JS errors reach it through `installGlobalErrorCapture`
+(next section). The one exception the transport cannot close: on Android 11+ the native SDK reports
+past ANRs on its own; if consent must cover those, set the `io.sentry.anr.enable` meta-data to
+`false` in your Android manifest ([Sentry Android docs](https://docs.sentry.io/platforms/android/configuration/app-not-respond/)).
+
 ## Catching what the boundary cannot
 
 `ErrorBoundary` only sees errors thrown during React's render phase. Most of a game's crashes are

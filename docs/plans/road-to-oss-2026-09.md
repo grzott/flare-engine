@@ -1147,14 +1147,19 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
   a **real** runtime dep (pause bindings, `2c099d2`) — that half of the row is stale, leave it;
   only `particles` (declared, zero src imports) remains. PT pins **exact `0.3.1`**, not a caret, and
   its September work (67 commits on `docs/session-log-backfill`) was on no remote as of 2026-10-09.
+  **Status 2026-10-19: done** — `particles` dropped (`bde4ec4`, 2026-10-12); the 2026-09-29
+  `exact 0.3.1` pin is superseded by PT2.
 - **PT2 (manual window):** bump all 32 deps to `^0.4.0` at freeze; full gate + the §11 device sweep.
   **ADR-0002 floor confirmed 2026-09-08 (owner session):** `react-native-reanimated 4.2.1`,
   `react-native-worklets 0.7.4`, `newArchEnabled=true` (`android/gradle.properties:38`). No
   migration work falls in the window — the dep bump is the whole row.
+  **Status 2026-10-19:** bump done — PT has been on `^0.4.0` since 2026-10-12 (`87d4b22`; both
+  commits are on PT's `origin/main`). The device sweep's results are in
+  [manual-test-protocol.md](manual-test-protocol.md) §2 and §7.
 - **PT3 (post-flip):** wire haptics (M6's adapter) — PT's own docs call it "the one true engine gap".
 
-**Berek:** **BK1 (manual window):** bump 7 deps to `^0.4.0` (the 0.2.1 migration is confirmed
-committed at 2b1733f); fix README:23's reference to deleted `src/movement.ts` (folded into
+**Berek:** **BK1 — DEFERRED post-flip (owner decision 2026-10-19; was: manual window):** bump
+7 deps to `^0.4.0` (the 0.2.1 migration is confirmed committed at 2b1733f); fix README:23's reference to deleted `src/movement.ts` (folded into
 `@flare-engine/physics` at 0.2.1); gate + a short play check.
 **Status 2026-09-29:** the README half is done (`df02342`). The deps are still `^0.2.1`, so the
 bump crosses **two** minors (0.3.0's tsdown/per-condition types and 0.3.1's physics changes, then
@@ -1166,8 +1171,8 @@ audit's high-severity item — "confirm each app is on New Architecture + Reanim
 floor half of BK1 is zero work; the row is the dep bump only.
 **Berek's own game development is deferred until after the flip (owner decision 2026-09-08).** BK1
 and [manual-test-protocol.md](manual-test-protocol.md) §3 are *engine verification*, not Berek
-work, and both stay: with PT1 removing `tilemap` from PT as a dead dep, Berek is the flip's **only**
-manual coverage of `tilemap` and the physics solid-grid path.
+work. **Deferred 2026-10-19 (owner):** both move after the flip and leave the exit criteria; the
+protocol's exit criteria name what now covers `tilemap` and the physics solid-grid path pre-flip.
 
 **grzott-portfolio** (outside this workspace): **PF1 (owner, minutes, any time before flip):** align
 the portfolio's engine copy with the engine's actual role there (the site's demo predates its

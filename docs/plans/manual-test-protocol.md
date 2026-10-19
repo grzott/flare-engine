@@ -115,21 +115,23 @@ PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardo
 - [ ] **B5 scene-restart** — die/restart and full scene reload: async preload completes, no leaked
       state, no double-run teardown.
 - [ ] **B12 IAP-restore** — restore-purchases path re-grants entitlements; gated content unlocks.
-- [ ] **Audio, by ear** — reference device, **volume up, native audio NOT skipped** (do *not* set
+- [x] **Audio, by ear** — reference device, **volume up, native audio NOT skipped** (do *not* set
       `PT_SKIP_NATIVE_AUDIO=1` for this build): SFX fire on gameplay events; music plays and crossfades
       cleanly on zone/scene change (no clipping/overlap); the settings volume/mute control actually
       attenuates the buses. (A muted/stubbed playthrough passes the "no crash" sweep while shipping
       broken audio — this is the least-exercised device path.)
+      **Passed 2026-10-16** on PT's EAS APK `785c3ed4` (native audio loaded), owner by ear; the
+      background-resume failure it found is §7 row 5, fixed PT-side and re-heard on `7b46ba95`.
 - [ ] **Shader-backed backgrounds/effects (B24)** — in each zone using a water/fog/fire or
       env-background shader, confirm it **renders** (not blank/black), **animates over time** (not
       frozen at t=0), and that effect sprites layer in correct **global z-order** against normal sprites.
 
-## §3 — `tilemap` + solid-grid coverage, vehicle Berek, at `0.4.0`
+## §3 — `tilemap` + solid-grid coverage, vehicle Berek, at `0.4.0` — DEFERRED post-flip
 
-**This is engine verification, not Berek development.** Berek's own build is deferred until after
-the flip (owner decision 2026-09-08). The section stays because road-to-oss §10 `PT1` removes
-`tilemap` from Pan Tvardowski as a dead dep, which leaves Berek as the **only** manual coverage of
-`tilemap` and the physics solid-grid path at `0.4.0`.
+**Deferred until after the flip (owner decision 2026-10-19)**, with road-to-oss §10 `BK1`. Not run
+in this window and not an exit criterion; what it covered now rests on §1's real-Android topdown box
+(see Exit criteria). It remains engine verification, not Berek development — Berek's own build was
+already deferred (owner decision 2026-09-08). The checklist below is kept for the post-flip run.
 
 Second-genre proof (top-down). Bump to `^0.4.0`, install from restricted registry, run. Berek
 already clears the ADR-0002 floor (`react-native-reanimated 4.3.0`, `react-native-worklets 0.8.1`,
@@ -182,14 +184,23 @@ Each new-in-arc capability exercised at least once on its real target.
 Log every failure here. Then create a `FREEZE-FIX`-tagged row in [todo.md](todo.md) per launch-critical
 finding, fixed in priority order; non-blocking items → the post-flip backlog (road-to-oss §13).
 
+Rows 1-2 are filed from PT's `docs/plans/engine-040-filings.md`, rows 3-5 from PT's
+`docs/plans/engine-040-device-run.md`; a "step" number is that checklist's.
+
 | # | §/step | Surface | Symptom | Severity (blocker / major / minor) | FREEZE-FIX row | Status |
 |---|--------|---------|---------|------------------------------------|----------------|--------|
-|   |        |         |         |                                    |                |        |
+| 1 | §2 (PT, adoption audit) | `errors` `createSentryTransport` | After the first consented report, Sentry's default integrations keep capturing and sending outside the consumer's consent gate; opt-out cannot stop it | blocker (owner classified 2026-10-13 — consent is not in the launch-critical list) | FREEZE-FIX-1 | open |
+| 2 | §2 full campaign sweep (PT) | `render` `flash` / `tint` | Enemy, mini-boss and boss hit flash paints the whole sprite rectangle instead of the silhouette (frames with transparent padding) | major (owner elected to close in the window) | FREEZE-FIX-2 | open |
+| 3 | §2 / launch (PT, release build without native audio) | PT `initAudio` | Crash on launch: audio module init throw is reported fatal by Metro | blocker | PT-side — fixed `89fe9b9` | closed |
+| 4 | §2 / B5 die → retry (step 10) | PT game-over overlay | Blank screen after death with reduced motion off; overlay at opacity 0 but tappable | major | PT-side — fixed `7ec0a1b` | closed |
+| 5 | §2 Audio, by ear (step 22) | PT app lifecycle | Music silent for the rest of a run after any trip to the background; SFX unaffected | major | PT-side — fixed `4eb72df` | closed |
 
 ### Exit criteria (all must hold before OSS-I1 / flip)
 
 - [ ] §1 first-run funnel is **green on both OSes, all three templates** (zero blockers).
-- [ ] PT + Berek run on `0.4.0` with no blocker/major regression.
+- [ ] PT runs on `0.4.0` with no blocker/major regression. Berek (§3) is deferred post-flip (owner
+      decision 2026-10-19), so §1's **Real Android device** topdown box is now the only pre-flip
+      manual coverage of `tilemap` and the physics solid-grid path.
 - [ ] Web matrix + Lighthouse 100 hold; docs getting-started is followable cold.
 - [ ] **§5 new surfaces** (M1 keyboard, M2 headless, B8/M4 Tiled, M6 haptics) each executed on its real
       target and green — or every failure logged in §7 and triaged (blockers closed).

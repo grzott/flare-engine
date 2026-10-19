@@ -6,6 +6,68 @@ Next work, in order. Pick top → `/start`. When done → `/close`. History appe
 
 _Prior arcs closed: Rain (#155) + Arc K (Kenney zone-1 — KENG3 #167 / KG9 #168 / KG10 #169, A54-verified 2026-06-06) + iOS bench wiring (iOS1 #170, wire-ready; activation runbook lived in the since-deleted engine docs/perf fork — living copy: PT repo `docs/perf/protocol.md`)._
 
+### Freeze window — FREEZE-FIX rows (Oct 12–25; fixes only, lockstep 0.4.x)
+
+Manual-window findings, one [manual-test-protocol.md](manual-test-protocol.md) §7 line each. Filed
+2026-10-19 from PT's `docs/plans/engine-040-filings.md`; every engine `file:line` below was
+re-verified at HEAD `3e90e8a` (paths are under `packages/`). Freeze rule
+(`manual-test-protocol.md:66-67`): fixes only, no API change, no new feature. **Every changeset is
+`patch`** — a `minor` now cuts `0.5.0`. Both rows are consumer-observable, so each needs its own ADR
+at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 ships alone as
+`0.4.1`, so the privacy blocker does not wait on the phone; FREEZE-FIX-2 follows as `0.4.2`.
+
+- **FREEZE-FIX-1 — errors: `createSentryTransport` inits Sentry with its default integrations, so
+  Sentry keeps reporting after the consumer revokes consent (P0 privacy, blocker, engine-builder,
+  `packages/**`).** `report()` lazily imports `@sentry/react-native` and calls
+  `mod.init({ dsn, environment, release, sampleRate })` on the **first** payload it is handed
+  (`errors/src/transports/sentry.ts:27-35`): no `defaultIntegrations`, no `integrations`, no
+  session or native-crash option, and the private shim admits only those four fields
+  (`transports/sentry-types.d.ts:6-11`). Unchanged since 0.3.1; shipped as-is in the 0.4.0 dist.
+  With defaults, Sentry installs its own global error/rejection handlers, native crash handling and
+  automatic session tracking (Sentry's documented defaults; the SDK is installed in neither repo, so
+  this was not read from source), and those send on their own, outside `report()`. A consent gate
+  that drops payloads before the transport (the pattern consumers will write; PT's is
+  `src/platform/crash.ts`) therefore holds only until the first consented report: after it, a user
+  who opts out is still reported for the rest of the process, and nothing can tear Sentry down —
+  `CrashTransport` is `report()` only (`transport.ts:7-9`) and the SDK handle is closure-private
+  (`sentry.ts:20`). Inferred, not observed: with `installGlobalErrorCapture` also chained on
+  `ErrorUtils`, one crash is reported twice. **Fix (no exported name changes):** init with
+  `defaultIntegrations: false` (or an `integrations` filter that drops the global-handler and
+  session integrations) plus automatic session tracking and native crash handling off, so Sentry
+  sends exactly what `report()` hands it; widen the shim; assert the init options in
+  `tests/sentry-transport.test.ts` (its mocked-module test already records `initCalls`); one README
+  line under the Sentry example (`README.md:25`): the transport sends only what it is given. Check
+  the option names against every major the `>=5.0.0` peer (`package.json:44`) admits — they have
+  moved between majors. Consumer-observable, so it needs an ADR; patch; no perf re-capture. The
+  API-shaped half is CW7-Q11. Found by PT's 0.4.0 adoption audit (2026-10-12).
+- **FREEZE-FIX-2 — render: `flash` / `tint` paint the sprite's transparent padding (PT A1) (P1,
+  major — owner elected to close it in the window, engine-builder, `packages/**`).** `applyTint`
+  and `applyFlash` build `Skia.ColorFilter.MakeBlend(color, BLEND_SRC_OVER)`
+  (`render/src/frame-renderer.ts:475`, `:482`; `BLEND_SRC_OVER = 3` at `:270`). A colour filter
+  runs on every pixel of the quad, and SrcOver of a constant over transparent black is the
+  constant, so a flash at full intensity (`writeColor` sets alpha = `color.a * intensity`,
+  `:996-1001`) turns fully transparent padding opaque: any sprite whose art does not fill its frame
+  flashes as a rectangle. Same in the 0.4.0 dist. The precedent is in the same file:
+  `applyOutlinePaint` uses `BLEND_SRC_IN` (`:496`). **Fix:** a `BLEND_SRC_ATOP = 9` constant for
+  both (`r = s·da + d·(1−sa)`). It keeps the art's alpha and lerps colour by the filter's alpha, so
+  it is **pixel-identical to SrcOver wherever the art is opaque** (`da = 1`) and differs only where
+  alpha < 1: padding, anti-aliased edges, glow. Not SrcIn (`r = s·da`): it discards the art's
+  colour, which breaks `tint(amount < 1)`. **The web half is load-bearing:** `render-web`'s adapter
+  maps only 3→SrcOver and 5→SrcIn and sends every other mode to **SrcOver**
+  (`render-web/src/web-skia-module.ts:174-181`), so the constant alone is a silent no-op on
+  CanvasKit. Add 9→`kit.BlendMode.SrcATop` and fix the doc comment at `:166-167`. **Tests:** nothing
+  pins the tint/flash mode today; every render-test `MakeBlend` mock ignores `mode` (e.g.
+  `render/tests/frame-renderer-counters.test.ts:68`). Add a mode-recording assertion (red on 3,
+  green on 9) and a CanvasKit pixel test in `render-web/tests/conformance.test.ts` (pattern at
+  `:566`): a flashed, padded sprite's padding keeps alpha 0. **Cost:** consumer-observable, so it
+  needs an ADR; `render` and `render-web` are in the measured closure, so it re-stales the Render +
+  Integration suites and all three web lanes (the android lane needs the phone) — the owner accepted
+  that re-capture on 2026-10-13. Patch. No scaffold template calls `flash`/`tint`, so the first-run
+  funnel is unaffected. **Deadline (owner 2026-10-19): the fix and its re-capture both by Thu
+  Oct 22.** The flip's re-cut runs `bun run release`, which chains `check:perf-freshness`, so a
+  landed fix with no capture blocks the flip itself. If both cannot finish by then, do not land it:
+  record it in §7 as an explicitly accepted major and move it post-flip.
+
 ### Arc XR — external pre-flip review remediation (ACTIVE 2026-08-31, pre-freeze)
 
 Third-party audit findings, re-verified in-repo before filing. **Full evidence, the verdicts on each
@@ -487,6 +549,38 @@ anything here** — both docs say so explicitly and both ship today. All are `pa
   exported resolves, never that what is *reachable* is exported. Add the declared-vs-exported diff
   over `dist/index.d.mts` to `scripts/`, or this recurs on the next package. Level: patch while
   0.3.x is the line. Widening an export list is source-compatible — no consumer breaks.
+- **CW7-Q10 — audio: the source end-callback never fires; web `createBufferSource` is a Promise
+  (PT E1) (P2, engine-builder, `packages/**`, post-flip).** `packages/audio/src` is byte-identical
+  from 0.3.1 to 0.4.0. Two halves:
+  - **(a) `onended` vs `onEnded`: live on native, fix-shaped.** The engine assigns
+    `source.onended = …` (`audio/src/sfx-pool.ts:114`, `music.ts:58`, `:114`; typed at
+    `audio-manager.ts:41`). `react-native-audio-api` (0.11.7) exposes only an `onEnded` accessor
+    (its `src/core/AudioScheduledSourceNode.ts:47-67`; the web wrapper likewise), and `onended`
+    appears nowhere in its `src/core`, so the engine's assignment is an expando the library never
+    calls. From the code, not observed on a device: `SFXPool` never drops a finished voice
+    (`sfx-pool.ts:115-118` never runs), so `activeCount` over-reports and per-voice gains stay
+    connected until evicted; once the list reaches `maxPolyphony`, every `play()` evicts the oldest
+    entry (`:78-81`), cutting off a still-playing loop or long sound. `Music.currentName` stays set
+    after a non-looping track ends (`music.ts:58-65`). OSS-B17 made `onended` writable but checked
+    only `playbackRate` against the real library. Fix: register via `onEnded` when the node has it,
+    else `onended`, with an additive optional `onEnded?` on `AudioBufferSourceNodeLike`. Not heard
+    on PT's device run (EAS APK with native audio, 2026-10-16, a long busy stretch), so it stays
+    post-flip.
+  - **(b) Web contract: API-shaped.** `AudioContextLike.createBufferSource()` is typed and consumed
+    synchronously (`audio-manager.ts:49`; `sfx-pool.ts:83`, `music.ts:44`, `:99`). The library's
+    web build is `async createBufferSource(): Promise<AudioBufferSourceNode>` (its
+    `src/web-core/AudioContext.tsx:114-121`), while native stays sync, so on web
+    `source.connect(gain)` (`sfx-pool.ts:96`) throws on a Promise. Bundle: the `state` union
+    (`audio-manager.ts:45`) cannot express a value the web wrapper passes through unchecked
+    (WebKit's `'interrupted'` is the candidate, not reproduced), and the `'suspended'`-only resume
+    guard (`:95-99`) never leaves that state; `resume()` awaits the raw context promise with no
+    catch, the wrong shape for a gesture handler called on every early tap. Widening a return type
+    and the `AudioState` union are contract changes: ADR.
+- **CW7-Q11 — errors: let a consumer opt Sentry's auto-capture back in, and shut it down on
+  opt-out (PT, post-flip).** The API half of FREEZE-FIX-1: a `SentryTransportOptions.integrations`
+  passthrough for consumers who want Sentry's own handlers deliberately, and a `close()` on the
+  returned transport (calling the SDK's `close`) so revoking consent can stop a live client.
+  `CrashTransport` (`errors/src/transport.ts:7-9`) has no teardown today. Additive; patch + ADR.
 
 ### Arc WEB — run a Flare game in a browser (engine half COMPLETE 2026-08-24)
 

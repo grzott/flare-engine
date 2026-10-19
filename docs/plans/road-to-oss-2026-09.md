@@ -1189,7 +1189,8 @@ engine integration); the `dynamics` lift stays a post-flip option and must not b
   per-row changesets *are* the changelog (29 pending, two of them ADR-authorised minors), and they
   already resolve to `0.4.0`; author no extra changeset. `bun run version` (concretize runs
   automatically — verify no `workspace:*` survives, the S5 landmine); owner publishes 0.4.0
-  **restricted** (owner session); PT2/BK1/G2 bump their repos to `^0.4.0`.
+  **restricted** (owner session); PT2/BK1/G2 bump their repos to `^0.4.0` (BK1 deferred post-flip
+  2026-10-19, §10).
 - From freeze to flip: **only fixes for manual-window findings.** No API changes, no new features,
   no docs restructuring. Each fix ships as a lockstep 0.4.x restricted patch when a consumer needs
   it re-tested.
@@ -1243,7 +1244,7 @@ Written as `docs/plans/manual-test-protocol.md` by an agent session; the checkli
 2. **PT** on the reference device at ^0.4.0: full campaign sweep (saves/settings round-trip, shop,
    locale PL↔EN, reduced-motion, colorblind atlas), plus the B5 scene-restart and B12 IAP-restore
    paths explicitly.
-3. **Berek** walk on 0.4.0 (tilemap + solid-grid path).
+3. **Berek** walk on 0.4.0 (tilemap + solid-grid path). Deferred post-flip 2026-10-19 (§10 BK1).
 4. **Web:** page hero demos at ^0.4.0 on desktop Chrome/Firefox/Safari + Android Chrome + iOS
    Safari (real devices), WASM load on throttled 4G, Lighthouse 100 re-check.
 5. **New surfaces:** keyboard demo on desktop web (M1); headless bun script (M2); a Tiled map

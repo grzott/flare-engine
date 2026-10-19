@@ -22,7 +22,8 @@ owner session: Expo `~55.0.15`, RN `0.83.4`, `react-native-reanimated 4.3.0`,
 `react-native-worklets 0.8.1`, `newArchEnabled: true` (`app.json:8`) — **ADR-0002 satisfied, no
 migration work falls in the manual window.** Under `BK1` it bumps to `^0.4.0` at the freeze, and since
 `PT1` removes `tilemap` from Pan-Tvardowski as a dead dep, **Berek is the flip's only manual coverage
-of `tilemap` and the physics solid-grid path.**
+of `tilemap` and the physics solid-grid path.** **Superseded 2026-10-19:** BK1 and
+`manual-test-protocol.md` §3 are deferred post-flip (owner); see road-to-oss §10 BK1.
 
 **Berek's own game development is deferred until after the October flip** (owner decision 2026-09-08).
 Nothing in this file is scheduled, nothing here happens before the flip, and nothing here renumbers,
@@ -413,6 +414,8 @@ Named so nobody generalises game design into engine surface:
 ## 8. What Berek verifies for the engine in return
 
 Recorded because it is why Berek stays in the exit criteria even while its own development is deferred.
+(**Superseded 2026-10-19:** §3 left the exit criteria and runs post-flip; the list below is its
+post-flip scope.)
 With `PT1` removing `tilemap` from Pan-Tvardowski, `manual-test-protocol.md` §3 is the flip's **only**
 manual exercise of:
 

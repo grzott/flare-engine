@@ -29,9 +29,10 @@ interface CKPaintLike extends PaintLike {
 }
 
 // Numeric BlendMode constants inlined (stable CK ABI).
-// CK's BlendMode enum values: SrcOver=3, SrcIn=5, Plus=12.
+// CK's BlendMode enum values: SrcOver=3, SrcIn=5, SrcATop=9, Plus=12.
 const BLEND_SRC_OVER = 3;
 const BLEND_SRC_IN = 5;
+const BLEND_SRC_ATOP = 9;
 const BLEND_PLUS = 12;
 
 // Grow-only flat Float32Array scratch buffers for flattening drawAtlas args.
@@ -164,7 +165,7 @@ function wrapRuntimeEffect(eff: RuntimeEffect): RuntimeEffectLike {
  * - `rotate` is forwarded verbatim (no radians→degrees conversion) to match
  *   the native bridge; the dormant radians/degrees mismatch is tracked separately.
  * - `ColorFilter.MakeBlend(color, mode)` takes an EmbindEnumEntity — the
- *   wrapper maps the numeric literal (3=SrcOver, 5=SrcIn) to the CK enum.
+ *   wrapper maps the numeric literal (3=SrcOver, 5=SrcIn, 9=SrcATop) to the CK enum.
  * - `RSXform` objects carry `scos/ssin/tx/ty` fields for flat-array flattening.
  */
 export function createWebSkiaModule(kit: CanvasKit): FrameRendererModule {
@@ -177,7 +178,9 @@ export function createWebSkiaModule(kit: CanvasKit): FrameRendererModule {
           ? kit.BlendMode.SrcOver
           : mode === BLEND_SRC_IN
             ? kit.BlendMode.SrcIn
-            : kit.BlendMode.SrcOver;
+            : mode === BLEND_SRC_ATOP
+              ? kit.BlendMode.SrcATop
+              : kit.BlendMode.SrcOver;
       return kit.ColorFilter.MakeBlend(color, blendMode) as ColorFilter;
     },
     MakeMatrix(matrix) {

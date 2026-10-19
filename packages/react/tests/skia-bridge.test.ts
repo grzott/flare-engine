@@ -629,7 +629,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     expect(blend?.color[1]).toBeCloseTo(0.5);
     expect(blend?.color[2]).toBeCloseTo(0.25);
     expect(blend?.color[3]).toBeCloseTo(0.4);
-    expect(blend?.mode).toBe(3); // BlendMode.SrcOver
+    expect(blend?.mode).toBe(9); // BlendMode.SrcATop — keeps the art's alpha (ADR-0009)
 
     const call = currentMockCanvas?.drawAtlasCalls[0];
     expect(call?.paint.colorFilter?.kind).toBe('blend');
@@ -648,7 +648,7 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     bridge.drawAtlas(mockImage(), [cmd({ effect: halfway })]);
     const [blend] = colorFilterBlendCalls;
     expect(blend?.color[3]).toBeCloseTo(0.5);
-    expect(blend?.mode).toBe(3);
+    expect(blend?.mode).toBe(9); // BlendMode.SrcATop — keeps the art's alpha (ADR-0009)
   });
 
   it('grayscale effect assigns a MakeMatrix color filter interpolated by amount', () => {

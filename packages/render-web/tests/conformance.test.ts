@@ -11,7 +11,7 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { resolve } from 'node:path';
 import type { SkImageLike } from '@flare-engine/assets';
-import type { CanvasLike, SpriteDrawCommand } from '@flare-engine/render';
+import type { AnySpriteEffect, CanvasLike, SpriteDrawCommand } from '@flare-engine/render';
 import { createFrameRenderer, Renderer, water } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { createWebFrameRenderer } from '../src/web-frame-renderer.js';
@@ -660,6 +660,134 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     blueSurface.delete();
     redSurface.delete();
     rasterSurface.delete();
+  });
+
+  /**
+   * Renders one padded sprite — an 8×8 atlas, transparent except an opaque red
+   * 4×4 at (2,2) — through `createFrameRenderer` with `effect`, onto a target
+   * cleared to transparent, and returns the Unpremul RGBA bytes.
+   *
+   * Shared by the tint/flash tests below (ADR-0009): a colour filter runs on
+   * every pixel of the quad, so the padding is where SrcOver (paints the
+   * constant) and SrcATop (keeps the art's alpha) differ.
+   */
+  function renderPaddedSpriteWithEffect(effect: AnySpriteEffect): Uint8Array | null {
+    const W = 8;
+    const H = 8;
+
+    const atlasSurface = kit.MakeSurface(W, H);
+    expect(atlasSurface).not.toBeNull();
+    if (!atlasSurface) return null;
+    const ac = atlasSurface.getCanvas();
+    ac.clear(kit.Color4f(0, 0, 0, 0));
+    const redPaint = new kit.Paint();
+    redPaint.setColor(kit.Color4f(1, 0, 0, 1));
+    ac.drawRect(kit.XYWHRect(2, 2, 4, 4), redPaint);
+    atlasSurface.flush();
+    const atlasImage = atlasSurface.makeImageSnapshot() as unknown as SkImageLike;
+
+    const mod = createWebSkiaModule(kit);
+    const renderer = createFrameRenderer(mod);
+
+    renderer.beginFrame(W, H, 0, 1);
+    const cmd: SpriteDrawCommand = {
+      image: atlasImage,
+      srcX: 0,
+      srcY: 0,
+      srcW: W,
+      srcH: H,
+      dstX: 0,
+      dstY: 0,
+      dstW: W,
+      dstH: H,
+      rotation: 0,
+      alpha: 1,
+      anchorX: 0,
+      anchorY: 0,
+      effect,
+      stretch: false,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
+    };
+    renderer.drawAtlas(atlasImage, [cmd]);
+    const pic = renderer.endFrame();
+    expect(pic).not.toBeNull();
+    if (!pic) return null;
+
+    const rasterSurface = kit.MakeSurface(W, H);
+    expect(rasterSurface).not.toBeNull();
+    if (!rasterSurface) return null;
+    const rc = rasterSurface.getCanvas();
+    rc.clear(kit.Color4f(0, 0, 0, 0));
+    rc.drawPicture(pic as Parameters<typeof rc.drawPicture>[0]);
+    rasterSurface.flush();
+
+    const imageInfo = {
+      width: W,
+      height: H,
+      colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul,
+      colorSpace: kit.ColorSpace.SRGB,
+    };
+    const pixels = rasterSurface.makeImageSnapshot().readPixels(0, 0, imageInfo) as Uint8Array;
+
+    if (typeof (pic as { delete?: () => void }).delete === 'function') {
+      (pic as { delete: () => void }).delete();
+    }
+    redPaint.delete();
+    atlasSurface.delete();
+    rasterSurface.delete();
+    return pixels;
+  }
+
+  /** RGBA of pixel (col,row) in an 8-wide Unpremul readback. */
+  function rgba8(pixels: Uint8Array, col: number, row: number): [number, number, number, number] {
+    const i = (row * 8 + col) * 4;
+    return [pixels[i]!, pixels[i + 1]!, pixels[i + 2]!, pixels[i + 3]!];
+  }
+
+  it('flash keeps transparent padding transparent and lerps opaque pixels toward the flash colour', () => {
+    const pixels = renderPaddedSpriteWithEffect({
+      type: 'flash',
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      duration: 1,
+      elapsed: 0.5,
+    });
+    expect(pixels).not.toBeNull();
+    if (!pixels) return;
+
+    // Padding: outside the quad's art (0,0) and inside the quad but outside
+    // the art (1,1). SrcOver would paint both white at alpha 128.
+    expect(rgba8(pixels, 0, 0)[3]).toBe(0);
+    expect(rgba8(pixels, 1, 1)[3]).toBe(0);
+
+    // Opaque centre: red lerped halfway to white, alpha untouched.
+    const [r, g, b, a] = rgba8(pixels, 3, 3);
+    expect(Math.abs(r - 255)).toBeLessThanOrEqual(2);
+    expect(Math.abs(g - 128)).toBeLessThanOrEqual(2);
+    expect(Math.abs(b - 128)).toBeLessThanOrEqual(2);
+    expect(a).toBe(255);
+  });
+
+  it('tint keeps transparent padding transparent and lerps opaque pixels toward the tint colour', () => {
+    const pixels = renderPaddedSpriteWithEffect({
+      type: 'tint',
+      color: { r: 0, g: 0, b: 1, a: 1 },
+      amount: 0.5,
+    });
+    expect(pixels).not.toBeNull();
+    if (!pixels) return;
+
+    expect(rgba8(pixels, 0, 0)[3]).toBe(0);
+    expect(rgba8(pixels, 1, 1)[3]).toBe(0);
+
+    // Opaque centre: red lerped halfway to blue, alpha untouched.
+    const [r, g, b, a] = rgba8(pixels, 3, 3);
+    expect(Math.abs(r - 128)).toBeLessThanOrEqual(2);
+    expect(g).toBeLessThanOrEqual(2);
+    expect(Math.abs(b - 128)).toBeLessThanOrEqual(2);
+    expect(a).toBe(255);
   });
 
   /**

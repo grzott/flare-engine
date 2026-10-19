@@ -269,6 +269,8 @@ export interface FrameRenderer {
 
 const BLEND_SRC_OVER = 3;
 const BLEND_SRC_IN = 5;
+/** Skia BlendMode.SrcATop — r = s·da + d·(1−sa): keeps the art's alpha, lerps colour by the filter's alpha. */
+const BLEND_SRC_ATOP = 9;
 /** Skia BlendMode.Plus — additive: dst = clamp(src + dst). */
 const BLEND_PLUS = 12;
 
@@ -472,14 +474,14 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   function applyTint(effect: TintEffect): PaintLike {
     if (tintPaint === null) tintPaint = Skia.Paint();
     writeColor(tintColor, effect.color, effect.amount);
-    tintPaint.setColorFilter(Skia.ColorFilter.MakeBlend(tintColor, BLEND_SRC_OVER));
+    tintPaint.setColorFilter(Skia.ColorFilter.MakeBlend(tintColor, BLEND_SRC_ATOP));
     return tintPaint;
   }
 
   function applyFlash(effect: FlashEffect): PaintLike {
     if (flashPaint === null) flashPaint = Skia.Paint();
     writeColor(flashColor, effect.color, flashIntensity(effect));
-    flashPaint.setColorFilter(Skia.ColorFilter.MakeBlend(flashColor, BLEND_SRC_OVER));
+    flashPaint.setColorFilter(Skia.ColorFilter.MakeBlend(flashColor, BLEND_SRC_ATOP));
     return flashPaint;
   }
 

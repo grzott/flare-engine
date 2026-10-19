@@ -12513,3 +12513,29 @@ commit subject used `freeze-fix-1:`, not a commit type — rewritten by hand.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 328 — 2026-10-19 (scope: engine)
+
+**Goal:** FREEZE-FIX-2: tint/flash keep the sprite's alpha via SrcATop (ADR-0009)
+
+**Touched files**
+- `.changeset/freeze-fix-2-tint-flash-src-atop.md`
+- `docs/design/adr-0009-tint-flash-src-atop.md`
+- `docs/references/canvaskit-parity.md`
+- `packages/react/tests/skia-bridge.test.ts`
+- `packages/render/src/frame-renderer.ts`
+- `packages/render/tests/effect-blend-mode.test.ts`
+- `packages/render-web/src/web-skia-module.ts`
+- `packages/render-web/tests/conformance.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** none; perf-freshness ran under FLARE_PERF_ALLOW_STALE=1 pending the owner-approved re-capture (Render+Integration suites, web/web-gpu/web-android lanes)
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/debug",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Dev overlay, stats, entity inspector, time controls",
   "keywords": ["flare-engine", "debug", "overlay", "stats"],
   "license": "Apache-2.0",
@@ -37,7 +37,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/core": "^0.4.0"
+    "@flare-engine/core": "^0.4.1"
   },
   "engines": {
     "node": ">=20"

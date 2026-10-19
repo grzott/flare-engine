@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/shapes",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Procedural 2D shape primitives for Skia — atomic primitives + SVG path escape hatch, composable for fast game prototyping",
   "keywords": ["flare-engine", "shapes", "skia", "primitives", "svg", "prototyping"],
   "license": "Apache-2.0",

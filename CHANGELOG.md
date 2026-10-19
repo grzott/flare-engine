@@ -14,6 +14,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.1](#041) | 2026-10-19 | 42 | Freeze-window fix: the Sentry transport no longer captures on its own |
 | [0.4.0](#040) | 2026-10-12 | 42 | Freeze cut before the public flip: New Architecture floor, scaffolder in scope |
 | [0.3.1](#031) | 2026-08-28 | 41 | Consumer-reported fixes and a spatial-hash broadphase |
 | [0.3.0](#030) | 2026-08-25 | 41 | Consumer-enablement release: web target, `dynamics`, toolchain modernisation |
@@ -22,6 +23,18 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.1
+
+A freeze-window fix, shipped alone. Only `errors` changed; every other package moves in lockstep.
+
+- **`errors`** — `createSentryTransport` starts Sentry with the SDK's own capture switched off, so
+  Sentry sends only what the transport is given and a consent check in front of it holds
+  ([ADR-0008](docs/design/adr-0008-sentry-transport-auto-capture-off.md)). Events sent through
+  `report()` keep their stack frames, release and debug-meta but lose the device context and
+  breadcrumbs the dropped integrations attached. Route process-wide JavaScript errors through
+  `installGlobalErrorCapture`. On Android 11+ the native SDK still reports past ANRs on its own;
+  the ADR names the manifest switch.
 
 ## 0.4.0
 

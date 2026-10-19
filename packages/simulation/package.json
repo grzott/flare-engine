@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/simulation",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Continuous-time dynamics: n-body gravity, Verlet integration, wave-packet ripples",
   "keywords": ["flare-engine", "simulation", "nbody", "gravity", "verlet", "wave"],
   "license": "Apache-2.0",
@@ -45,6 +45,6 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@flare-engine/math": "^0.4.0"
+    "@flare-engine/math": "^0.4.1"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/audio",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "AudioManager, SFX pool, music crossfade",
   "keywords": ["flare-engine", "audio", "sfx", "music"],
   "license": "Apache-2.0",

@@ -1,5 +1,39 @@
 # @flare-engine/errors
 
+## 0.4.1
+
+### Patch Changes
+
+- FREEZE-FIX-1: `createSentryTransport` starts Sentry with the SDK's own capture switched off, so
+  Sentry sends only what the transport is given.
+
+  Before, the first `report()` initialised `@sentry/react-native` with its default integrations,
+  automatic session tracking and native crash handling, so once a consumer's consent check had let one
+  payload through, Sentry kept capturing on its own — global JS errors and unhandled rejections,
+  release-health sessions, native crashes — for the rest of the process, outside that check. The
+  transport now passes an `integrations` allowlist that keeps only event processors (`RewriteFrames`,
+  `Release`, `DebugMeta`, `SdkInfo`, `Dedupe`, `InboundFilters`, `NativeLinkedErrors`, `EventOrigin`)
+  and drops every other default by name, including names it has never seen, and sets
+  `enableAutoSessionTracking`, `enableNativeCrashHandling`, `enableAppHangTracking`,
+  `enableWatchdogTerminationTracking` and `sendClientReports` to `false`. `dsn`, `environment`,
+  `release` and `sampleRate` are passed as before. No exported name, signature or type changes.
+
+  What consumers observe: Sentry no longer receives uncaught JS errors, unhandled rejections,
+  sessions, native crashes or iOS app hangs on its own, nor client reports — route process-wide JS errors
+  through `installGlobalErrorCapture` with this transport. Events still sent via `report()` keep their
+  stack frames, release and debug-meta but lose the device/OS context, React Native runtime info,
+  module list and breadcrumbs the dropped integrations attached. One residual the transport cannot
+  close: on Android 11+ the native SDK reports past ANRs on its own, gated by a native option the React
+  Native JS options do not expose — set the `io.sentry.anr.enable` manifest meta-data to `false` if
+  consent must cover ANRs. Rationale, the per-SDK-major verification and the post-flip follow-up (an
+  opt-in passthrough plus `close()`, CW7-Q11) are in ADR-0008.
+
+  <!-- symbols-ok: RewriteFrames, Release, DebugMeta, SdkInfo, Dedupe, InboundFilters,
+       NativeLinkedErrors, EventOrigin -->
+  <!-- reason: the eight names are @sentry/react-native default-integration names kept by the
+       transport's allowlist, not Flare exports. The five `init` keys resolve against the private
+       shim in `sentry-types.d.ts`. -->
+
 ## 0.4.0
 
 ### Patch Changes

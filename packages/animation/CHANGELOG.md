@@ -1,5 +1,12 @@
 # @flare-engine/animation
 
+## 0.4.1
+
+### Patch Changes
+
+- @flare-engine/assets@0.4.1
+- @flare-engine/math@0.4.1
+
 ## 0.4.0
 
 ### Patch Changes

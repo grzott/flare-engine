@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/physics",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "AABB collision, spatial index, raycasting",
   "keywords": ["flare-engine", "physics", "collision", "aabb", "raycast"],
   "license": "Apache-2.0",
@@ -37,8 +37,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.4.0",
-    "@flare-engine/math": "^0.4.0"
+    "@flare-engine/events": "^0.4.1",
+    "@flare-engine/math": "^0.4.1"
   },
   "engines": {
     "node": ">=20"

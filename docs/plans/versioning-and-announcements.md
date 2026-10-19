@@ -53,7 +53,7 @@ freeze time.
   already moved `0.3.0` → `0.4.0` once. Land pre-freeze minors as **unreleased changesets that ride
   into `0.4.0`** rather than cutting a separate release, unless a consumer genuinely needs the
   change earlier — in which case the references get swept again, deliberately.
-- **`1.0.0` is the public launch**, and under lockstep any `major` reaches it across all 42
+- **`0.4.x` is the public launch**, and under lockstep any `major` reaches it across all 42
   packages at once. It is never a routine cut.
 
 ## Worked example — ADR-0002

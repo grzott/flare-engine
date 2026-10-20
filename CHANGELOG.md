@@ -14,6 +14,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.2](#042) | 2026-10-20 | 42 | Freeze-window fix: `tint` and `flash` keep the sprite's alpha |
 | [0.4.1](#041) | 2026-10-19 | 42 | Freeze-window fix: the Sentry transport no longer captures on its own |
 | [0.4.0](#040) | 2026-10-12 | 42 | Freeze cut before the public flip: New Architecture floor, scaffolder in scope |
 | [0.3.1](#031) | 2026-08-28 | 41 | Consumer-reported fixes and a spatial-hash broadphase |
@@ -23,6 +24,19 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.2
+
+A freeze-window fix, shipped alone. Only `render` and `render-web` changed; every other package
+moves in lockstep.
+
+- **`render` / `render-web`** — `tint` and `flash` keep the sprite's alpha, so a frame's transparent
+  padding stays transparent instead of being painted with the effect colour; a sprite whose art does
+  not fill its frame no longer flashes as a rectangle
+  ([ADR-0009](docs/design/adr-0009-tint-flash-src-atop.md)). Fully opaque pixels are unchanged;
+  anti-aliased edges and glows keep their coverage, so a soft edge under `tint` reads slightly
+  thinner. `render-web`'s CanvasKit adapter maps the new blend mode, without which the fix would have
+  been a no-op on web.
 
 ## 0.4.1
 

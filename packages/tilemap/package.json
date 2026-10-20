@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/tilemap",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Tiled/LDtk parser, culled tilemap renderer",
   "keywords": ["flare-engine", "tilemap", "tiled", "ldtk"],
   "license": "Apache-2.0",
@@ -37,10 +37,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/assets": "^0.4.1",
-    "@flare-engine/math": "^0.4.1",
-    "@flare-engine/physics": "^0.4.1",
-    "@flare-engine/render": "^0.4.1"
+    "@flare-engine/assets": "^0.4.2",
+    "@flare-engine/math": "^0.4.2",
+    "@flare-engine/physics": "^0.4.2",
+    "@flare-engine/render": "^0.4.2"
   },
   "engines": {
     "node": ">=20"

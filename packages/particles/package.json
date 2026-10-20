@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/particles",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Particle emitter, pool, immediate-mode Skia rendering",
   "keywords": ["flare-engine", "particles", "emitter", "skia"],
   "license": "Apache-2.0",
@@ -37,8 +37,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/core": "^0.4.1",
-    "@flare-engine/math": "^0.4.1"
+    "@flare-engine/core": "^0.4.2",
+    "@flare-engine/math": "^0.4.2"
   },
   "engines": {
     "node": ">=20"

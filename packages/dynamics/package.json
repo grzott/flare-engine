@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/dynamics",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "2D rigid bodies: oriented boxes, contact manifolds, sequential-impulse solver",
   "keywords": ["flare-engine", "physics", "rigid-body", "obb", "solver"],
   "license": "Apache-2.0",
@@ -37,7 +37,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/math": "^0.4.1"
+    "@flare-engine/math": "^0.4.2"
   },
   "engines": {
     "node": ">=20"

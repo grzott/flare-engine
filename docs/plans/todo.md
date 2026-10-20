@@ -18,33 +18,8 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
 
 - **FREEZE-FIX-1 — DONE 2026-10-19 (versioned `0.4.1`), see `## Done`.** Owner publish and PT's
   re-test close §7 row 1.
-- **FREEZE-FIX-2 — render: `flash` / `tint` paint the sprite's transparent padding (PT A1) (P1,
-  major — owner elected to close it in the window, engine-builder, `packages/**`).** `applyTint`
-  and `applyFlash` build `Skia.ColorFilter.MakeBlend(color, BLEND_SRC_OVER)`
-  (`render/src/frame-renderer.ts:475`, `:482`; `BLEND_SRC_OVER = 3` at `:270`). A colour filter
-  runs on every pixel of the quad, and SrcOver of a constant over transparent black is the
-  constant, so a flash at full intensity (`writeColor` sets alpha = `color.a * intensity`,
-  `:996-1001`) turns fully transparent padding opaque: any sprite whose art does not fill its frame
-  flashes as a rectangle. Same in the 0.4.0 dist. The precedent is in the same file:
-  `applyOutlinePaint` uses `BLEND_SRC_IN` (`:496`). **Fix:** a `BLEND_SRC_ATOP = 9` constant for
-  both (`r = s·da + d·(1−sa)`). It keeps the art's alpha and lerps colour by the filter's alpha, so
-  it is **pixel-identical to SrcOver wherever the art is opaque** (`da = 1`) and differs only where
-  alpha < 1: padding, anti-aliased edges, glow. Not SrcIn (`r = s·da`): it discards the art's
-  colour, which breaks `tint(amount < 1)`. **The web half is load-bearing:** `render-web`'s adapter
-  maps only 3→SrcOver and 5→SrcIn and sends every other mode to **SrcOver**
-  (`render-web/src/web-skia-module.ts:174-181`), so the constant alone is a silent no-op on
-  CanvasKit. Add 9→`kit.BlendMode.SrcATop` and fix the doc comment at `:166-167`. **Tests:** nothing
-  pins the tint/flash mode today; every render-test `MakeBlend` mock ignores `mode` (e.g.
-  `render/tests/frame-renderer-counters.test.ts:68`). Add a mode-recording assertion (red on 3,
-  green on 9) and a CanvasKit pixel test in `render-web/tests/conformance.test.ts` (pattern at
-  `:566`): a flashed, padded sprite's padding keeps alpha 0. **Cost:** consumer-observable, so it
-  needs an ADR; `render` and `render-web` are in the measured closure, so it re-stales the Render +
-  Integration suites and all three web lanes (the android lane needs the phone) — the owner accepted
-  that re-capture on 2026-10-13. Patch. No scaffold template calls `flash`/`tint`, so the first-run
-  funnel is unaffected. **Deadline (owner 2026-10-19): the fix and its re-capture both by Thu
-  Oct 22.** The flip's re-cut runs `bun run release`, which chains `check:perf-freshness`, so a
-  landed fix with no capture blocks the flip itself. If both cannot finish by then, do not land it:
-  record it in §7 as an explicitly accepted major and move it post-flip.
+- **FREEZE-FIX-2 — DONE 2026-10-20 (versioned `0.4.2`, re-capture landed), see `## Done`.** Owner
+  publish and PT `H2`'s re-check close §7 row 2.
 
 ### Arc XR — external pre-flip review remediation (ACTIVE 2026-08-31, pre-freeze)
 
@@ -1080,6 +1055,30 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **FREEZE-FIX-2 — render: `tint` and `flash` keep the sprite's alpha, plus the re-capture
+  (2026-10-19/20, engine-builder + MT + owner; `0.4.2` versioned, publish is the owner's).** Major
+  from PT's campaign sweep, §7 row 2: a colour filter blended with SrcOver turned a frame's
+  transparent padding into the effect colour, so padded sprites flashed as rectangles. Both effects
+  now blend with SrcATop (Skia enum 9), and `render-web`'s CanvasKit adapter maps 9 — it sent every
+  unknown mode to SrcOver, so the constant alone would have been a no-op on web
+  ([ADR-0009](../design/adr-0009-tint-flash-src-atop.md), Accepted at the plan halt). A CanvasKit
+  probe confirmed byte-identical output on opaque pixels and alpha 0 in the padding. Tests red
+  before, green after: a new mode-recording test (3 → 9), two CanvasKit pixel tests (padding alpha
+  128 → 0), and the two `react/tests/skia-bridge.test.ts` assertions that pinned 3 — the row's
+  "nothing pins the mode" was wrong. Consumer scan: PT is the only caller (four `tint`, two
+  `flash`); nothing relies on the rectangle. **Re-capture at `785a3b2`, 2026-10-20:** High
+  performance plan, 0.9–3.2% foreign load, GPU idle. Node: the first five-run window was discarded
+  — run 5's whole render suite landed in the slow mode (1.27–1.46x on every render row) while its
+  `ecs.step 1000` anchor stayed fast, so the anchor alone would have passed it; a fresh window read
+  9.2–10.1 µs on the anchor, `flush 1000/1` 25.8 µs (PERF-22: 26.0), worst row `ecs.churn` 1.25x.
+  cpu-raster and gpu: five each (the Bun teardown panic as before). Android: five at 100 s gaps; the
+  fold warned of 3.2 C battery drift (25.5 → 28.6 C, warn at 1 C), accepted by the owner because the
+  timings did not move with it — 17/18 rows flat, `stretch path` +3.4% then flat, worst 3.9% from
+  median (PERF-22: 8.2%). `tint` row: node +3%, cpu-raster −4%, gpu +2%, android +3%, all within
+  the run-to-run band. `check:perf-freshness` and `check:perf` green without the override, and every
+  gate outside `verify.sh` green before and after `bun run version` (42 at `0.4.2`, 78 ranges
+  `^0.4.2`).
 
 - **FREEZE-FIX-1 — errors: the Sentry transport no longer captures on its own (2026-10-19,
   engine-builder + MT; `0.4.1` versioned, publish is the owner's).** P0 privacy blocker from PT's

@@ -12539,3 +12539,27 @@ commit subject used `freeze-fix-1:`, not a commit type — rewritten by hand.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 329 — 2026-10-20 (scope: engine, MT + owner)
+
+**Goal:** FREEZE-FIX-2 re-capture (all perf lanes at `785a3b2`) and the `0.4.2` cut
+
+**Touched files**
+- `benchmarks/results/{history,web-history,web-gpu-history,web-android-history}.ndjson`
+- `benchmarks/results/{microbench,web,web-gpu,web-android}.json`, `docs/references/benchmarks.md`
+- release `0.4.2`: 42 `packages/*/package.json` + `CHANGELOG.md`, root `CHANGELOG.md`
+- `docs/plans/todo.md`, `docs/plans/manual-test-protocol.md`
+
+**Gates**
+- `check:perf-freshness` and `check:perf` green without the override, closing #328's
+- lint, typecheck, test, build, typecheck:tests, deps, changeset, peers, bump, perf-bytes,
+  changeset-symbols, tarballs, readme, history, scripts tests — green before and after
+  `bun run version`
+
+**Frictions:** gate:1 (first node window discarded: run 5's render suite in the slow mode while the
+`ecs.step 1000` anchor stayed fast — the anchor check alone would have folded it); android fold
+warned of 3.2 C battery drift, owner accepted on flat timings.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

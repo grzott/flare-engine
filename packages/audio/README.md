@@ -8,7 +8,9 @@ Web-Audio-shaped runtime audio — `AudioManager` (init / suspend / resume), `SF
 bun add @flare-engine/audio
 ```
 
-Native: pair with `react-native-audio-api` (Web Audio API on native).
+Native: pair with `react-native-audio-api` (Web Audio API on native). It is an optional peer, so
+install it yourself in an app that plays audio on native (`bun add react-native-audio-api`); the
+package never imports it. On web, the browser's `AudioContext` needs nothing installed.
 
 ## Usage
 

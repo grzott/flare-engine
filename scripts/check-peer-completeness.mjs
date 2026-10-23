@@ -18,11 +18,6 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 /** pkg -> peers it legitimately does not re-declare, with the reason. */
 const ALLOWED = {
-  '@flare-engine/react': {
-    // packages/audio never imports react-native-audio-api; AudioManager types the
-    // context structurally (audio-manager.ts:3) and the consumer injects it.
-    'react-native-audio-api': 'audio uses structural types, no import',
-  },
   '@flare-engine/iap-revenuecat': {
     // The adapter consumes only iap's non-React surface — no react import anywhere
     // in packages/iap-revenuecat/src.

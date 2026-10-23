@@ -84,7 +84,7 @@ planck.js. **No planck.js dependency or peer dependency was ever added**, and no
 | expo-av                | —       | Expo managed, higher latency                | Not game-oriented          |
 | react-native-sound     | —       | Community, aging                            | Deprecated direction       |
 
-**Decision:** `react-native-audio-api` as peer dep. Web Audio API gives `AudioBufferSourceNode.start()` for lowest latency JS playback. Same team as Reanimated.
+**Decision:** `react-native-audio-api` as peer dep. Web Audio API gives `AudioBufferSourceNode.start()` for lowest latency JS playback. Same team as Reanimated. An **optional** peer since ADR-0010: the engine never imports it, and as a required peer npm and bun installed and autolinked it into every app, audio or not.
 
 ---
 

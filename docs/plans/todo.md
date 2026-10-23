@@ -20,6 +20,18 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
   re-test close §7 row 1.
 - **FREEZE-FIX-2 — DONE 2026-10-20 (versioned `0.4.2`, re-capture landed), see `## Done`.** Owner
   publish and PT `H2`'s re-check close §7 row 2.
+- **FREEZE-FIX-3 — `react-native-audio-api` becomes an optional peer (P0, `0.4.3`; code done and
+  ADR-0010 accepted by the owner 2026-10-23; the cut follows).** Evidence: manual-test-protocol §7
+  row 14. As a required peer of `audio` and `engine` it is installed into every scaffold and its
+  native build fails on Windows, so every template's `bun run android` fails there. Diff:
+  peerDependenciesMeta `optional` in `packages/audio/package.json` and `packages/engine/package.json`,
+  the now-redundant `@flare-engine/react` exception dropped from `scripts/check-peer-completeness.mjs`,
+  `packages/audio/README.md` and `docs/design/dependencies.md` updated, and
+  `.changeset/freeze-fix-3-audio-api-optional-peer.md`, and `bun.lock` (`optionalPeers` on both
+  workspace entries, so `--frozen-lockfile` passes; it also refreshes the stale `0.3.1` workspace
+  versions). No `src` change, so no perf lane goes stale.
+  Close: ADR-0010 accepted, `0.4.3` cut and published, then the runner's `android` stage passes on
+  `0.4.3` without `--drop-audio-api`.
 - **RW-WASM-1 — CanvasKit wasm downloads twice on canvaskit-wasm `0.41.x` (P1, engine-builder,
   `packages/render-web`, first post-flip `0.4.x` patch; deliberately not in the window).** Spec and
   evidence: [manual-test-protocol.md](manual-test-protocol.md) §7 row 11. The fix also needs a

@@ -12563,3 +12563,31 @@ warned of 3.2 C battery drift, owner accepted on flat timings.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 330 — 2026-10-23 (scope: engine)
+
+**Goal:** FREEZE-FIX-3: react-native-audio-api becomes an optional peer
+
+**Touched files**
+- `.changeset/freeze-fix-3-audio-api-optional-peer.md`
+- `bun.lock`
+- `docs/design/adr-0010-audio-api-optional-peer.md`
+- `docs/design/dependencies.md`
+- `docs/plans/manual-test-protocol.md`
+- `docs/plans/todo.md`
+- `packages/audio/package.json`
+- `packages/audio/README.md`
+- `packages/engine/package.json`
+- `scripts/check-peer-completeness.mjs`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 deny:1 gate:1 fixup:1 drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

@@ -14,7 +14,7 @@
 **Public OSS launch: October 2026.** The `@flare-engine/*` scope cuts a `0.4.0` lockstep release and flips from restricted to public npm access during the launch window.
 
 - 42 scoped `@flare-engine/*` packages, scaffolder included, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
-- Pan Tvardowski — the canonical showcase game (Polish-folklore vertical shmup, 8 zones, PL+EN). A separate, private commercial project that consumes the engine from npm — proof it works as a real dependency, not just a workspace. Showcases are on [flareengine.dev](https://flareengine.dev)
+- Real consumers, not just a workspace: the three games and five animations on [flareengine.dev](https://flareengine.dev) run on the published packages in the browser, and Pan Tvardowski — a private, unreleased game in alpha — consumes the engine from npm on a real Android device
 - Not affiliated with [FLARE (flarerpg.org)](https://flarerpg.org), a separate action-RPG game engine — this project is the `@flare-engine/*` TypeScript packages for React Native + Web
 - Full roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md)
 
@@ -92,7 +92,7 @@ Every package shares one lockstep version, is tree-shakeable, and builds to dual
 
 Full API contracts live in [docs/design/api-specs.md](docs/design/api-specs.md).
 
-**One constraint to know before adopting `@flare-engine/ecs`:** it supports a maximum of **32 component types**, and the component-id bitmask is **module-global — shared across every `World` in the process**, not per-`World`. Two worlds in one process draw on the same 32-slot budget. Seven slots are spent by the built-ins (`Position`, `Velocity`, `Rotation`, `Scale`, `Parent`, `Lifetime`, `Follower`), leaving 25. Defining a 33rd throws at definition time and names the offending component — it never corrupts silently. For scale, the canonical showcase game uses 16, so it sits at 23 of 32.
+**One constraint to know before adopting `@flare-engine/ecs`:** it supports a maximum of **32 component types**, and the component-id bitmask is **module-global — shared across every `World` in the process**, not per-`World`. Two worlds in one process draw on the same 32-slot budget. Seven slots are spent by the built-ins (`Position`, `Velocity`, `Rotation`, `Scale`, `Parent`, `Lifetime`, `Follower`), leaving 25. Defining a 33rd throws at definition time and names the offending component — it never corrupts silently. For scale, Pan Tvardowski, the largest consumer, uses 16, so it sits at 23 of 32.
 
 ---
 

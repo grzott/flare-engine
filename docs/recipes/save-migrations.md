@@ -38,7 +38,7 @@ export function migrateSave(raw: unknown, storedVersion: number): unknown {
 
 The resulting `Migration[]` is directly compatible with `runMigrations`: each step is mapped to `{ version: step.to, migrate: step.migrate }`.
 
-Canonical real-world reference: [`src/save/migrate.ts` in the Pan Tvardowski repo](https://github.com/grzott/Pan-Tvardowski/blob/main/src/save/migrate.ts) — the PT game uses a hand-rolled version of this same v1→v7 chain.
+Real-world reference: Pan Tvardowski (a private consumer game) runs a hand-rolled version of this same v1→v7 chain in its `src/save/migrate.ts`.
 
 ---
 
@@ -61,7 +61,7 @@ export const migrations = defineMigrationChain([ ... ]); // imports types from s
 // parseSaveFile.ts — imports from migrate.ts + schema.ts, no cycle
 ```
 
-This is the pattern used in PT. The comment at [src/save/migrate.ts line 122](https://github.com/grzott/Pan-Tvardowski/blob/main/src/save/migrate.ts#L122) explains the rationale: the `makeDefaultSaveFile` helper is inlined in `migrate.ts` rather than re-exported from `schema.ts` to prevent a runtime circular dependency.
+This is the pattern Pan Tvardowski uses, and a comment in its `src/save/migrate.ts` records why: the `makeDefaultSaveFile` helper is inlined in `migrate.ts` rather than re-exported from `schema.ts` to prevent a runtime circular dependency.
 
 ---
 
@@ -69,7 +69,7 @@ This is the pattern used in PT. The comment at [src/save/migrate.ts line 122](ht
 
 Write one test file that seeds a fixture at every historic version and verifies the migrated output matches the current schema exactly.
 
-Pattern from PT: [`tests/save-migrator.test.ts` in the Pan Tvardowski repo](https://github.com/grzott/Pan-Tvardowski/blob/main/tests/save-migrator.test.ts)
+Pattern from Pan Tvardowski's `tests/save-migrator.test.ts` (private repo).
 
 Key points:
 

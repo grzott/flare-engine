@@ -29,14 +29,13 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 - [roadmap.md](plans/roadmap.md) — Phase-by-phase roadmap through the October 2026 OSS launch.
 - [todo.md](plans/todo.md) — the next-work queue. `/start` picks from the top of `## Active`.
 - [road-to-oss-2026-09.md](plans/road-to-oss-2026-09.md) — **the launch SoT**: row specs, freeze protocol, flip sequencing.
-- Pan Tvardowski — the canonical showcase game (Polish-folklore shmup), a separate private repo since 2026-06-10. Public showcases: [flareengine.dev](https://flareengine.dev).
+- Pan Tvardowski — a private, unreleased consumer game (alpha), in its own repo since 2026-06-10. Public showcases: [flareengine.dev](https://flareengine.dev).
 
 ### references/
 
 - [benchmarks.md](references/benchmarks.md) — Microbench + device FPS results (regenerated from `benchmarks/results/`).
 - [canvaskit-parity.md](references/canvaskit-parity.md) — Audit of CanvasKit web parity for every Skia API Flare uses.
 - [cli-image-tooling.md](references/cli-image-tooling.md) — Tooling background for `@flare-engine/cli` (sharp + maxrects-packer decisions).
-- [pan-tvardowski/](references/pan-tvardowski/) — showcase-game reference material kept for engine context.
 
 ### conventions/ · recipes/ · history/
 

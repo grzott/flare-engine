@@ -44,7 +44,7 @@ agents; the architecture, the decisions, the verification and the review are the
 - **Decisions include rejections.** `planck.js` was evaluated for physics and never adopted; it
   appears in no `package.json` in this repo, and collision is `@flare-engine/physics` with rigid
   bodies in `@flare-engine/dynamics`. `CoroutineManager` in `@flare-engine/core` was built, shipped
-  and then not used by the showcase game, which runs an FSM instead. Both are the pattern: build,
+  and then not used by Pan Tvardowski, which runs an FSM instead. Both are the pattern: build,
   measure, reject, and say so.
 
 ### What this means for your PR
@@ -95,7 +95,7 @@ agents; the architecture, the decisions, the verification and the review are the
    `bun run check:deps && bun run check:changeset && bun run check:exports && bun run check:nodenext && bun run check:readme`
    locally if you want the same answer before pushing.
 
-After a publish, the showcase game Pan Tvardowski (a separate, private repo) runs a nightly
+After a publish, Pan Tvardowski (a private, unreleased consumer game in its own repo) runs a nightly
 `Engine Compat` workflow that is the post-publish drift signal — it floats `@flare-engine/*` to the
 latest in-range versions and runs PT's full gate. **Engine minor bumps (`0.x` → `0.x+1`) fall
 outside PT's caret ranges and silently freeze that guard** — bumping PT's `@flare-engine/*`
@@ -106,7 +106,7 @@ ranges is part of every minor release.
 ## Project Layout
 
 - [packages/](packages/) — the 42 `@flare-engine/*` packages, the `@flare-engine/create` scaffolder included. See [README.md](README.md#packages) for the layer map.
-- Pan Tvardowski — device-verified Expo consumer game in its own private repo; canonical end-to-end reference consuming `@flare-engine/*` from npm.
+- Pan Tvardowski — private, unreleased Expo game (alpha) in its own repo; device-verified end-to-end consumer of `@flare-engine/*` from npm.
 - [apps/bench-dashboard/](apps/bench-dashboard/) — Next.js visualizer for benchmark results.
 - [benchmarks/](benchmarks/) — perf harness.
 - [docs/](docs/README.md) — design, plans, references.

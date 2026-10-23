@@ -53,7 +53,7 @@ The dashboard reads the **baseline**, so only `bench:baseline` changes what it r
 commands go through turbo and build the engine packages first — benchmarks resolve
 `@flare-engine/*` to `dist/`, so an unbuilt run measures stale code.
 
-**Device JSON** — hand-append samples from a device bench scene (the original `apps/demo` source was retired at stage 11.14; the bench scene lives in [Pan Tvardowski](https://github.com/grzott/Pan-Tvardowski), now its own repo):
+**Device JSON** — hand-append samples from a device bench scene (the original `apps/demo` source was retired at stage 11.14; the bench scene lives in Pan Tvardowski, a private consumer game in its own repo):
 
 1. Release build on hardware (in the PT repo): `bun run android --variant release --device`
 2. Triple-tap the menu title → bench scene runs 3 × 10 s

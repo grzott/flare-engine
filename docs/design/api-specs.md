@@ -320,7 +320,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 - Single hard dep: `@flare-engine/events` (`Signal`).
 - `ConditionResolver` and `ActionHandler` are caller-supplied — the package owns no game state.
-- Used by Pan Tvardowski, the engine's showcase game, for the inter-zone dialogue card stack and boss banter.
+- Used by Pan Tvardowski, a private consumer game, for the inter-zone dialogue card stack and boss banter.
 
 ---
 

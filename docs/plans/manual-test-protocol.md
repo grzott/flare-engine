@@ -35,7 +35,7 @@ happen. Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026
 
 The path a stranger hits first. A break here is a launch blocker. Run against npmjs, authenticated
 (above) — one fresh directory per attempt, and confirm you installed the current freeze patch
-(`0.4.2` at the time of writing) before ticking anything.
+(`0.4.3` since 2026-10-23, FREEZE-FIX-3) before ticking anything.
 
 **Runner (2026-10-23):** `docs/plans/_local/window-2026-10-23/check/window-check.sh` (gitignored;
 run it with `--dry-run` first) covers §1, §5 and the Android half of §4/§6. Every scaffold, npm
@@ -50,7 +50,7 @@ and no Metro window is left running.
         and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
   - [ ] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
   - [ ] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
-        reads the current freeze patch (`0.4.2`) and the lockfile's resolved URLs point at
+        reads the current freeze patch (`0.4.3`) and the lockfile's resolved URLs point at
         `registry.npmjs.org`.
         A green install proves nothing until this holds — the typecheck and Metro boxes below are
         only as good as the artifact underneath them (XR-11).

@@ -12591,3 +12591,109 @@ warned of 3.2 C battery drift, owner accepted on flat timings.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 331 — 2026-10-23 (scope: engine)
+
+**Goal:** 0.4.3 cut: FREEZE-FIX-3 version step
+
+**Touched files**
+- `.changeset/freeze-fix-3-audio-api-optional-peer.md`
+- `CHANGELOG.md`
+- `docs/plans/flip-runbook.md`
+- `docs/plans/manual-test-protocol.md`
+- `packages/a11y/CHANGELOG.md`
+- `packages/a11y/package.json`
+- `packages/achievements/CHANGELOG.md`
+- `packages/achievements/package.json`
+- `packages/analytics/CHANGELOG.md`
+- `packages/analytics/package.json`
+- `packages/animation/CHANGELOG.md`
+- `packages/animation/package.json`
+- `packages/assets/CHANGELOG.md`
+- `packages/assets/package.json`
+- `packages/audio/CHANGELOG.md`
+- `packages/audio/package.json`
+- `packages/cli/CHANGELOG.md`
+- `packages/cli/package.json`
+- `packages/core/CHANGELOG.md`
+- `packages/core/package.json`
+- `packages/create/CHANGELOG.md`
+- `packages/create/package.json`
+- `packages/debug/CHANGELOG.md`
+- `packages/debug/package.json`
+- `packages/deep-links/CHANGELOG.md`
+- `packages/deep-links/package.json`
+- `packages/devtools/CHANGELOG.md`
+- `packages/devtools/package.json`
+- `packages/dialogue/CHANGELOG.md`
+- `packages/dialogue/package.json`
+- `packages/dynamics/CHANGELOG.md`
+- `packages/dynamics/package.json`
+- `packages/ecs/CHANGELOG.md`
+- `packages/ecs/package.json`
+- `packages/engine/CHANGELOG.md`
+- `packages/engine/package.json`
+- `packages/errors/CHANGELOG.md`
+- `packages/errors/package.json`
+- `packages/events/CHANGELOG.md`
+- `packages/events/package.json`
+- `packages/haptics/CHANGELOG.md`
+- `packages/haptics/package.json`
+- `packages/iap/CHANGELOG.md`
+- `packages/iap/package.json`
+- `packages/iap-revenuecat/CHANGELOG.md`
+- `packages/iap-revenuecat/package.json`
+- `packages/input/CHANGELOG.md`
+- `packages/input/package.json`
+- `packages/leaderboards/CHANGELOG.md`
+- `packages/leaderboards/package.json`
+- `packages/localization/CHANGELOG.md`
+- `packages/localization/package.json`
+- `packages/math/CHANGELOG.md`
+- `packages/math/package.json`
+- `packages/particles/CHANGELOG.md`
+- `packages/particles/package.json`
+- `packages/pathfinding/CHANGELOG.md`
+- `packages/pathfinding/package.json`
+- `packages/physics/CHANGELOG.md`
+- `packages/physics/package.json`
+- `packages/postfx/CHANGELOG.md`
+- `packages/postfx/package.json`
+- `packages/progression/CHANGELOG.md`
+- `packages/progression/package.json`
+- `packages/react/CHANGELOG.md`
+- `packages/react/package.json`
+- `packages/render/CHANGELOG.md`
+- `packages/render/package.json`
+- `packages/render-web/CHANGELOG.md`
+- `packages/render-web/package.json`
+- `packages/scene/CHANGELOG.md`
+- `packages/scene/package.json`
+- `packages/shapes/CHANGELOG.md`
+- `packages/shapes/package.json`
+- `packages/share/CHANGELOG.md`
+- `packages/share/package.json`
+- `packages/simulation/CHANGELOG.md`
+- `packages/simulation/package.json`
+- `packages/storage/CHANGELOG.md`
+- `packages/storage/package.json`
+- `packages/testing/CHANGELOG.md`
+- `packages/testing/package.json`
+- `packages/tilemap/CHANGELOG.md`
+- `packages/tilemap/package.json`
+- `packages/ui/CHANGELOG.md`
+- `packages/ui/package.json`
+- `packages/ui-shop/CHANGELOG.md`
+- `packages/ui-shop/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:0 deny:0 gate:0 fixup:1 drift:0
+
+**Next:** see `docs/plans/todo.md`.
+
+---

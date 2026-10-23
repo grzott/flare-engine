@@ -280,11 +280,13 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
       deployed to it on 2026-07-01 and verified the WASM MIME type on the live Worker on
       2026-08-27 (found 2026-09-29), so this step is the deploy, not a domain bind. The 6
       links into the now-public engine repo go live here.
-- [ ] Owner (Cloudflare dashboard, any time before this deploy): turn off the zone's bot
-      **JavaScript detections** for flareengine.dev, and with it Bot Fight Mode, which forces
-      them on. The snippet is injected per request with a ray ID, so the site's hash-only
+- [ ] Owner (Cloudflare dashboard, any time before this deploy): the zone's bot **JavaScript
+      detections** snippet is injected per request with a ray ID, so the site's hash-only
       `script-src` can never allow it; it is the last console error behind best-practices 93
-      (manual-test-protocol §7 row 6).
+      (manual-test-protocol §7 row 6). Bot Fight Mode is off (2026-10-23, Security → Settings →
+      DDoS attacks). JavaScript detections cannot be switched off on the Free plan, and the
+      snippet was still injected after Bot Fight Mode went off, so this box closes on the owner's
+      decision recorded in §7 row 6, not on a toggle.
 
 **Rollback:** reversible (unbind domain).
 

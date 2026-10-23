@@ -25,6 +25,16 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
   evidence: [manual-test-protocol.md](manual-test-protocol.md) §7 row 11. The fix also needs a
   render-web test that resolves `0.41.x`: the engine's own tests and bench resolve `0.40.0`, which
   is why no gate saw it. It re-stales the render-web perf lanes, android included.
+- **CREATE-HINT-1 — the scaffolder's next-step hint is bun-only and points at Expo Go (P2,
+  engine-builder, `packages/create`, first post-flip `0.4.x` patch unless the owner pulls it in).**
+  Evidence: [manual-test-protocol.md](manual-test-protocol.md) §7 row 13. `manifest.ts` hard-codes
+  `postInstall: 'bun run start'` for all three templates, and `cli.ts` prints it whatever
+  `detectPackageManager` returned. Print `<pm> run android` instead, the step every template README
+  leads with, and give `npm create` users an npm-runnable `test` script or README line.
+- **CREATE-TMP-1 — `packages/create/tests/scaffold.test.ts` never deletes its temp dirs (P3,
+  engine-builder, post-flip hygiene).** `tmp()` makes `flare-scaffold-*` under the OS temp dir and
+  nothing removes them: 1,724 had built up on the owner's machine by 2026-10-23. Add an `afterEach`
+  cleanup; test-only, no publish.
 
 ### Arc XR — external pre-flip review remediation (ACTIVE 2026-08-31, pre-freeze)
 

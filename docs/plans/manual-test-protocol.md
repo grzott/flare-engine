@@ -12,54 +12,17 @@ happen. Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026
   `@flare-engine/*@0.4.0` versions — the scaffolder `@flare-engine/create` included — do **not**
   exist anonymously on npmjs until flip day; the tokenless *public*-registry cold scaffold is
   deliberately **I2's** job (flip day), not this window's.
-- **First-run + web consumption use the F2 verdaccio harness** (local registry at
-  `http://localhost:4873`). Reuse the exact setup rehearsed in
-  [flip-runbook.md](flip-runbook.md) (the F2 pre-flight box). Point the **default** registry at
-  verdaccio — transitive non-Flare deps must come through its npmjs uplink too — but scope the
-  override to the test tree, publish at a throwaway version, and start every attempt in a fresh
-  tree with no lockfile (XR-11):
-
-  ```bash
-  # start verdaccio, then publish the freeze cut to it at a THROWAWAY version — never 0.4.0.
-  # 0.4.99 is unmistakable in a lockfile and will never be cut for real; @flare-engine/create
-  # stamps ^<its own version> into the templates, so a scaffold that falls through to npmjs
-  # 404s loudly instead of silently resolving the real 0.4.0.
-  mkdir freeze-window && cd freeze-window          # ONE fresh tree per attempt; never reuse
-  echo 'registry=http://localhost:4873/' > .npmrc  # project-scoped, NOT `npm config set`
-  # ...run the §1 / §4-web consumption tests inside this tree...
-  ```
-
-  **The `.npmrc` above does NOT protect the publish, and this is the one mistake in this document
-  that publishes to the real registry.** Every one of the **42** `packages/*/package.json` carries
-  its own `publishConfig.registry: "https://registry.npmjs.org/"` (since `be17caf`, 2026-04-17), and
-  **npm and changesets honour a manifest's `publishConfig` over any `.npmrc`**. So `bun run release`
-  on the throwaway branch, with the rotated token in `~/.npmrc`, publishes all 42 at `0.4.99` to the
-  **real** registry — restricted until the flip, then public, and `0.4.99` sorts above every real
-  `0.4.x`. The 2026-09-07 text of this paragraph named only the old unscoped scaffolder's pin; that
-  was never the whole hazard (corrected 2026-10-09).
-
-  On the throwaway branch, before `bun run release`, also:
-
-  ```bash
-  # rewrite every manifest pin — .npmrc cannot override it
-  bun -e 'const fs=require("fs");for(const d of fs.readdirSync("packages")){const p="packages/"+d+"/package.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));if(j.publishConfig){j.publishConfig.registry="http://localhost:4873/";fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n")}}'
-  git diff --stat   # must list 42 package.json files
-  # then, after every rehearsal publish, prove nothing escaped:
-  npm view @flare-engine/engine@0.4.99 --registry https://registry.npmjs.org/   # must 404
-  npm view @flare-engine/create@0.4.99 --registry https://registry.npmjs.org/   # must 404
-  ```
-
-  Keep the real pins untouched in the flip commit. The July F2 rehearsal evidently redirected every
-  pin — the real `0.3.0` publish in August succeeded, so nothing had reached npmjs — but the fact
-  was recorded only in the F2 Done row and never reached this document or the runbook.
-
-  Never `npm config set registry`: that is a **user-level** setting that redirects every npm
-  command on the machine for the rest of the window — §2/§3's restricted-registry installs and
-  F3's `npm view`/`npm pack` included. If a tree ever resolved from verdaccio, delete it rather
-  than reinstall in it: the lockfile records the registry, so a re-install there returns the
-  local build even after the override is gone, `--force` included. **Purging the npm/bun cache
-  is not the remedy** — the caches are keyed by registry host, so a purge changes nothing and
-  hides the lockfile as the cause.
+- **First-run + web consumption install the real freeze build from npmjs, authenticated**
+  (owner decision 2026-10-23). Verdaccio was only needed while the scaffolder was not on npmjs;
+  `@flare-engine/create` has been published restricted alongside the other 41 since `0.4.0`
+  (ADR-0007), so an authenticated install now tests the exact bytes the flip makes public. That
+  drops the throwaway-version publish, the 42-manifest `publishConfig.registry` rewrite with its
+  publish-to-the-real-registry hazard, and the registry teardown. If verdaccio is ever used again,
+  the full procedure and its hazards live in [flip-runbook.md](flip-runbook.md)'s F2 pre-flight box.
+  Rules that still hold (XR-11): one fresh directory per attempt, no lockfile carried between
+  attempts, never `npm config set registry`. Authentication: Windows uses the token already in
+  `~/.npmrc`; a Linux container gets the read-only token through `NPM_TOKEN` and a container-local
+  `~/.npmrc` line `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`.
 
 - Reference devices: the owner's Android phone (locale **PL** — English-only matchers fail; see
   bilingual note in §2), plus a desktop browser matrix. iOS where a real device is available.
@@ -70,17 +33,17 @@ happen. Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026
 
 ## §1 — First-run funnel (LAUNCH-CRITICAL)
 
-The path a stranger hits first. A break here is a launch blocker. Run against verdaccio (above) —
-one fresh directory per attempt, and confirm you installed the throwaway `0.4.99` before ticking
-anything. A `0.4.0` in the tree means you resolved from npmjs or from a stale lockfile, not from
-the harness.
+The path a stranger hits first. A break here is a launch blocker. Run against npmjs, authenticated
+(above) — one fresh directory per attempt, and confirm you installed the current freeze patch
+(`0.4.2` at the time of writing) before ticking anything.
 
 - [ ] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
   - [ ] `npm create @flare-engine my-<tpl> -- --template <tpl>` → completes with **no `ERESOLVE`**
         and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
   - [ ] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
   - [ ] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
-        reads `"version": "0.4.99"` and the lockfile's resolved URLs point at `localhost:4873`.
+        reads the current freeze patch (`0.4.2`) and the lockfile's resolved URLs point at
+        `registry.npmjs.org`.
         A green install proves nothing until this holds — the typecheck and Metro boxes below are
         only as good as the artifact underneath them (XR-11).
   - [ ] `npm run start` — Metro bundles and resolves every `@flare-engine/*` import with no error.
@@ -96,7 +59,7 @@ the harness.
 - [ ] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the
       tilemap renders and the virtual joystick moves the player over solid-grid collision (the TPL1 wire).
 - [ ] **Root-README quickstart, verbatim** — every command block in [README.md](../../README.md) run
-      exactly as written against the same registry override (`npm create @flare-engine my-game`, the
+      exactly as written, authenticated against npmjs as above (`npm create @flare-engine my-game`, the
       install/build lines). Any command that errors or drifts from its documented output = a finding.
 
 ## §2 — Pan Tvardowski at `^0.4.0`
@@ -104,17 +67,25 @@ the harness.
 PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardowski)); bump it to
 `@flare-engine/*@^0.4.0`, `bun install` from the restricted registry, build to the reference device.
 
-- [ ] **Full campaign sweep** — zones 1→8 playable start to finish; no crash, no stuck scene.
-- [ ] **Saves + settings round-trip** — quit mid-run, relaunch: progress/settings restored intact
+The boxes ticked below passed in the owner's manual run on the Pixel 7 at `^0.4.0`, 2026-10-13
+(PT `docs/plans/engine-040-device-run.md` steps 14-20 and 23, recorded "all good"); ticked here
+2026-10-23. PT has since adopted `0.4.2` (`64d5a61`).
+
+- [x] **Full campaign sweep** — zones 1→8 playable start to finish; no crash, no stuck scene.
+- [x] **Saves + settings round-trip** — quit mid-run, relaunch: progress/settings restored intact
       (no save-wipe — the migration landmine).
-- [ ] **Shop** — open, purchase/equip a weapon/ship, changes persist across relaunch.
-- [ ] **Locale PL↔EN** — toggle both ways; all strings swap, no missing keys, no layout overflow
+- [x] **Shop** — open, purchase/equip a weapon/ship, changes persist across relaunch.
+- [x] **Locale PL↔EN** — toggle both ways; all strings swap, no missing keys, no layout overflow
       (device locale is PL — keep any smoke matchers bilingual `en|pl`).
-- [ ] **Reduced-motion** — OS reduced-motion on: transitions/particles honor it.
-- [ ] **Colorblind atlas** — each colorblind palette renders correctly.
-- [ ] **B5 scene-restart** — die/restart and full scene reload: async preload completes, no leaked
+- [x] **Reduced-motion** — OS reduced-motion on: transitions/particles honor it.
+- [x] **Colorblind atlas** — each colorblind palette renders correctly.
+- [x] **B5 scene-restart** — die/restart and full scene reload: async preload completes, no leaked
       state, no double-run teardown.
 - [ ] **B12 IAP-restore** — restore-purchases path re-grants entitlements; gated content unlocks.
+      **Owner to confirm:** PT step 21 counts only if the 2026-10-13 build had
+      `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID` and the phone is a Play-licensed tester; without the
+      key PT falls back to `NoopIAPProvider` and the step is *not exercised* — then log it in §7 as
+      `minor`, post-flip.
 - [x] **Audio, by ear** — reference device, **volume up, native audio NOT skipped** (do *not* set
       `PT_SKIP_NATIVE_AUDIO=1` for this build): SFX fire on gameplay events; music plays and crossfades
       cleanly on zone/scene change (no clipping/overlap); the settings volume/mute control actually
@@ -122,9 +93,15 @@ PT repo ([github.com/grzott/Pan-Tvardowski](https://github.com/grzott/Pan-Tvardo
       broken audio — this is the least-exercised device path.)
       **Passed 2026-10-16** on PT's EAS APK `785c3ed4` (native audio loaded), owner by ear; the
       background-resume failure it found is §7 row 5, fixed PT-side and re-heard on `7b46ba95`.
-- [ ] **Shader-backed backgrounds/effects (B24)** — in each zone using a water/fog/fire or
+- [x] **Shader-backed backgrounds/effects (B24)** — in each zone using a water/fog/fire or
       env-background shader, confirm it **renders** (not blank/black), **animates over time** (not
       frozen at t=0), and that effect sprites layer in correct **global z-order** against normal sprites.
+      PT step 23. PT uses no per-sprite SkSL (only `tint`/`outline`), so per-sprite shaders are not
+      exercised by PT.
+- [ ] **Hit flash on device at `0.4.2`** (closes §7 row 2) — PT step 24 on a build containing
+      `64d5a61`: enemy, mini-boss and boss flash in their own silhouette, no box; the four `tint`
+      users (phantom summons, boss and revenge telegraphs, dash ghosts) likewise. So far re-checked
+      on web only.
 
 ## §3 — `tilemap` + solid-grid coverage, vehicle Berek, at `0.4.0` — DEFERRED post-flip
 
@@ -146,36 +123,79 @@ migration.
 
 `flare-engine-page` repo (CanvasKit-WASM backend, `render-web`). Bump to `^0.4.0`, deploy the preview.
 
+Automated pass 2026-10-23 on the live site at `^0.4.2`: the hero plus 8 showcases (3 games,
+5 animations) in Chrome 155 (real GPU), Playwright Firefox 153 and WebKit 26.5, plus Pixel 7 and
+iPhone 14 emulation. All 45 loads: HTTP 200, 0 page errors, a non-blank canvas within 1.3-3.6 s.
+WebKit and the emulations are proxies, not Safari or real phones.
+
 - [ ] **Desktop browser matrix** — hero demos render + animate on **Chrome**, **Firefox**, **Safari**.
+      Chrome and Firefox: all 9 pages animate, and a 25 s soak holds without fallback. Safari is not
+      run (Windows). WebKit animates everything, but 4 animations go blank after the perf governor
+      rebuilds them at a lower tier — §7 row 9, traced to the Windows WebKit build itself (a plain
+      WebGL canvas blanks on resize there too). A real Safari check is still needed.
 - [ ] **Mobile browsers** — **Android Chrome** + **iOS Safari** (real devices): demos render, touch works.
+      Emulation renders and animates all 9. The three game pages overflowed the phone width — §7
+      row 10, fixed on the page's flip branch.
 - [ ] **WASM load on throttled 4G** — CanvasKit downloads + inits within an acceptable time; no hang.
-- [ ] **Time-driven shader on web** — at least one hero demo using a time/resolution-driven shader
+      No hang (slow 4G, CPU 4x, cache off): first frame at 2.2 s on `/` (no CanvasKit) and about
+      36 s on CanvasKit pages, because the 3.26 MB wasm downloads twice — §7 row 11. With the HTTP
+      cache on, the second copy is a cache hit and the first frame lands at about 20 s.
+- [x] **Time-driven shader on web** — at least one hero demo using a time/resolution-driven shader
       (the render `dist` runs on the CanvasKit backend too): confirm it **renders and animates** on the
       web backend, not just native (B24 fixed the resolution-0 / frozen-time bugs — re-prove on web).
+      **Passed 2026-10-23:** the logo's specular sheen (time-driven uniforms present in the compiled
+      GLSL) changes 1.2-7.1% of pixels during its shine phase on Chrome, Firefox and both
+      emulations. The post-FX SkSL passes link on all configs with 0 failures.
 - [ ] **Lighthouse** — re-run; mobile + desktop still hit the owner's **100** bar.
+      Not met on the live site — §7 rows 6-8. All three are fixed on the page's flip branch. A
+      local build scores accessibility and best-practices 100 on `/`, `/getting-started/`,
+      `/showcases/` and `/showcases/overrun/`, and getting-started desktop performance 100 with CLS 0.
+      Re-run on the live site after the flip deploys. Live mobile performance sat at 94-98 (LCP
+      about 2.5 s on simulated slow 4G), which these fixes do not touch.
 
 ## §5 — New surfaces (this arc's additions)
 
 Each new-in-arc capability exercised at least once on its real target.
 
-- [ ] **M1 — keyboard input** on desktop web: the scaffolded web build proven real by WEB-5 (a scaffold — then `create-flare-app`, now `@flare-engine/create` — under `bun run web`; see [web-target-2026-08.md](web-target-2026-08.md) §17) responds
+- [x] **M1 — keyboard input** on desktop web: the scaffolded web build proven real by WEB-5 (a scaffold — then `create-flare-app`, now `@flare-engine/create` — under `bun run web`; see [web-target-2026-08.md](web-target-2026-08.md) §17) responds
       to `createKeyboard` input — arrows/WASD drive movement or UI focus; keydown/keyup + per-frame
       reset behave (no stuck keys).
-- [ ] **M2 — headless barrel**: a plain `bun` script `import`s from `@flare-engine/engine/headless`,
+      **Passed 2026-10-23 on the page's two keyboard games**, which use the published
+      `createKeyboard` (`^0.4.2`) in desktop Chrome. Over 1 s, holding D moved the Causeway ship
+      +46/+63 px and the Overrun player +125/+140 px, holding A moved them −78 and −232/−255 px,
+      and with no input they drifted 2-3 px. The scaffold's `npm run web` in §1 re-checks the same
+      path from a template.
+- [x] **M2 — headless barrel**: a plain `bun` script `import`s from `@flare-engine/engine/headless`,
       steps an ECS world, and runs to completion **with no React/Skia/react-native pulled in** (no
       native/DOM dependency error).
+      **Passed 2026-10-23** against the published `@flare-engine/engine@0.4.2` from npmjs, installed
+      with `bun install --omit=peer` into an empty directory (no `react`, `react-native` or Skia in
+      `node_modules`): `World` + `createMovementSystem`, 60 steps, correct position, exit 0 under both
+      bun 1.3.11 and node.
 - [ ] **B8 / M4 — Tiled authoring**: author a fresh map in **Tiled 1.12**, export `.tmj`, run it through
       the `cli` → template pipeline (`parseTiled` / LDtk entities), and render it — flip bits + entities
       resolve correctly.
 - [ ] **M6 — haptics** on device: a build using the real `expo-haptics` provider fires haptics on the
       wired events; the `NoopHapticsProvider` fallback is silent (no crash) where haptics is absent.
+      **No consumer wires the Expo provider (checked 2026-10-23):** PT does not depend on
+      `@flare-engine/haptics` and no template uses it; only the page imports it, with the web
+      vibration provider. Exercising this needs a scaffold with `expo-haptics` wired by hand and a
+      device build. Otherwise log it in §7 as *not exercised* (`minor`, post-flip).
 
 ## §6 — Docs site
 
 `flare-engine-page` docs (Astro Starlight + typedoc). On a **real phone**:
 
-- [ ] **Every page + link** loads (no 404, no broken internal link); nav works.
-- [ ] **Typedoc reference pages** render (the generated API pages, not just hand-written docs).
+- [x] **Every page + link** loads (no 404, no broken internal link); nav works.
+      **Passed 2026-10-23, automated crawl of the live site:** all 1,081 sitemap pages 200; 2,205
+      internal URLs, 0 non-200; 7,946 fragment anchors, 0 broken; 11 one-hop 307s to trailing-slash
+      URLs. The 237 links into this repo 404 until runbook Step 1 by design; the page's own L10 row
+      re-checks them after the flip. 229 of them are typedoc "Defined in" links pinned to `7328b53`,
+      so they depend on public history keeping that commit.
+- [x] **Typedoc reference pages** render (the generated API pages, not just hand-written docs).
+      **Passed 2026-10-23:** all 1,051 `/api/` pages have an h1, a signature and body text; 4 API pages
+      plus `/`, `/getting-started/` and `/showcases/` rendered at 390x844 with no horizontal
+      overflow. Emulated, not on a physical phone.
 - [ ] **Getting-started, verbatim, as a stranger** — the owner follows it literally with no prior
       knowledge; any step that assumes context or drifts from reality = a finding.
 
@@ -185,15 +205,23 @@ Log every failure here. Then create a `FREEZE-FIX`-tagged row in [todo.md](todo.
 finding, fixed in priority order; non-blocking items → the post-flip backlog (road-to-oss §13).
 
 Rows 1-2 are filed from PT's `docs/plans/engine-040-filings.md`, rows 3-5 from PT's
-`docs/plans/engine-040-device-run.md`; a "step" number is that checklist's.
+`docs/plans/engine-040-device-run.md`; a "step" number is that checklist's. Rows 6-11 come from
+the 2026-10-23 automated pass over the live site (Lighthouse, link crawl, browser matrix); the raw
+reports are in `docs/plans/_local/window-2026-10-23/` (gitignored).
 
 | # | §/step | Surface | Symptom | Severity (blocker / major / minor) | FREEZE-FIX row | Status |
 |---|--------|---------|---------|------------------------------------|----------------|--------|
-| 1 | §2 (PT, adoption audit) | `errors` `createSentryTransport` | After the first consented report, Sentry's default integrations keep capturing and sending outside the consumer's consent gate; opt-out cannot stop it | blocker (owner classified 2026-10-13 — consent is not in the launch-critical list) | FREEZE-FIX-1 | fixed in `0.4.1` (ADR-0008), published 2026-10-19; open until PT re-tests |
-| 2 | §2 full campaign sweep (PT) | `render` `flash` / `tint` | Enemy, mini-boss and boss hit flash paints the whole sprite rectangle instead of the silhouette (frames with transparent padding) | major (owner elected to close in the window) | FREEZE-FIX-2 | fixed in `0.4.2` (ADR-0009); open until published and PT `H2` re-checks |
+| 1 | §2 (PT, adoption audit) | `errors` `createSentryTransport` | After the first consented report, Sentry's default integrations keep capturing and sending outside the consumer's consent gate; opt-out cannot stop it | blocker (owner classified 2026-10-13 — consent is not in the launch-critical list) | FREEZE-FIX-1 | closed — fixed in `0.4.1` (ADR-0008); PT adopted it in `64d5a61`, which pins the init options in `tests/platform/sentry-consent.test.ts`; PT does not install the Sentry SDK, so there is no device path to re-test |
+| 2 | §2 full campaign sweep (PT) | `render` `flash` / `tint` | Enemy, mini-boss and boss hit flash paints the whole sprite rectangle instead of the silhouette (frames with transparent padding) | major (owner elected to close in the window) | FREEZE-FIX-2 | fixed in `0.4.2` (ADR-0009), published; PT adopted it in `64d5a61` and a web run shows the silhouette; open until the §2 device re-check |
 | 3 | §2 / launch (PT, release build without native audio) | PT `initAudio` | Crash on launch: audio module init throw is reported fatal by Metro | blocker | PT-side — fixed `89fe9b9` | closed |
 | 4 | §2 / B5 die → retry (step 10) | PT game-over overlay | Blank screen after death with reduced motion off; overlay at opacity 0 but tappable | major | PT-side — fixed `7ec0a1b` | closed |
 | 5 | §2 Audio, by ear (step 22) | PT app lifecycle | Music silent for the rest of a run after any trip to the background; SFX unaffected | major | PT-side — fixed `4eb72df` | closed |
+| 6 | §4 Lighthouse (2026-10-23, live site, Lighthouse 12.8.2) | page CSP | Best-practices 93 on every URL tested: the page's CSP blocks 3-4 Starlight inline scripts (hashes missing) and one Cloudflare-injected script. Functional cost: Starlight's tab-restore element is never defined and the Ctrl+K hint stays hidden; search still opens. **Fixed on the page's `feat/oss-flip`:** the post-build CSP step now hashes every inline script in the built HTML (0 of 1,082 pages left with an unhashed one). The Cloudflare script is the zone's per-request bot JavaScript detection and cannot be hashed; it stays blocked until that detection is switched off in the Cloudflare dashboard | minor (owner's 100 bar) | page-side + Cloudflare setting | fixed in page, dashboard toggle open |
+| 7 | §4 Lighthouse | page contrast | Accessibility 93 on `/`: code-sample comments `#6a737d` on `#24292e` (3.04:1); footer links "Apache-2.0" / "v0.4.2" 1.43:1 against body text with no underline (the same footer gives 96 on `/showcases/` and `/showcases/overrun/`). **Fixed on `feat/oss-flip`:** comments repainted to the muted token (6.0:1), footer blurb links underlined; local accessibility 100 on all four pages | minor (owner's 100 bar) | page-side | fixed, live re-check after flip |
+| 8 | §4 Lighthouse | page `/getting-started/` | Desktop CLS 0.146 in 3/3 runs from the requirements table `div.reqs` → performance 94; mobile performance 94-98 elsewhere. Cause: the brand web fonts swap in after first paint and re-wrap the text (CLS 0 with fonts blocked). **Fixed on `feat/oss-flip`:** docs pages preload the two latin faces; throttled A/B CLS 0.034 → 0, local desktop performance 100 | minor (owner's 100 bar) | page-side | fixed, live re-check after flip |
+| 9 | §4 desktop matrix (Playwright WebKit 26.5, proxy) | page perf governor + CanvasKit surface rebuild | When the governor steps an animation down a tier, it rebuilds it on the same canvas. After that, WebKit shows a blank canvas while the HUD still reports 59-96 fps. Reproduced on logo, nuclear-reaction, physarum-network and spacetime-lattice by forcing the step-down; Chrome and Firefox keep rendering. Not yet seen on real Safari. **Isolated 2026-10-23: a Playwright WebKit (Windows) defect, not page or engine code.** A plain WebGL1/WebGL2 canvas with no CanvasKit and no engine blanks after any `width`/`height` change in that build, while `readPixels` still returns the drawn colour; a 2D canvas, Chromium and Firefox are fine. With render-web 0.4.2 + canvaskit 0.41.1, dispose and re-create at the same size renders, and a fresh `<canvas>` renders. The rebuild blanks only because it resizes the canvas, and a plain window resize on the live site blanks it as well. The "iPhone 14" run used the same Windows binary, so it is not iOS evidence | major only if real Safari shows it (judged unlikely) | — (owner resizes a running animation in real Safari) | open until the Safari check |
+| 10 | §4 mobile (emulated) | page game showcases | On causeway, overrun and reroute, the "N engine packages, in the order the demo earned them" table is wider than a phone and has no scroll container: iPhone 14 scrolls sideways (page 420-516 px vs 390), Pixel 7 renders zoomed out. **Fixed on `feat/oss-flip`:** the table scrolls inside its own focusable region; page width equals the viewport on all three pages at 390 and 412 px | minor | page-side | fixed |
+| 11 | §4 WASM on 4G | `render-web` `loadCanvasKit` with canvaskit-wasm 0.41.x | `loader.ts:74-76` downloads the wasm with progress and passes `wasmBinary`. The 0.41.x glue does not read `wasmBinary` (0.40.0, the version the engine's own tests and bench resolve, does), so it streams the same 3.26 MB again from `locateFile`. Every consumer on 0.41.x is affected: the templates pin `0.41.0` and the peer range is `>=0.40.0`. Cache off: about 36 s to the first frame on slow 4G. Cache on: the second fetch is a cache hit, about 20 s. A fix needs the downloaded bytes handed back as a Blob URL via `locateFile` (0.41 has no `instantiateWasm` hook either), which re-stales the render-web perf lanes | minor (perf; owner may raise) | post-flip `0.4.x` patch unless the owner pulls it in | open |
 
 ### Exit criteria (all must hold before OSS-I1 / flip)
 
@@ -206,10 +234,13 @@ Rows 1-2 are filed from PT's `docs/plans/engine-040-filings.md`, rows 3-5 from P
       target and green — or every failure logged in §7 and triaged (blockers closed).
 - [ ] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.4.x` restricted patch and
       re-tested); majors closed or explicitly accepted; minors triaged to the post-flip backlog.
-- [ ] **Perf gate still green after the last FREEZE-FIX patch** — every hard item in the "Perf gate
+- [x] **Perf gate still green after the last FREEZE-FIX patch** — every hard item in the "Perf gate
       (single source)" block of road-to-oss §11 / OSS-H1. Not restated here on purpose. A fix that
       touches a measured package re-reds `check:perf-freshness`; that is a re-capture, not a waiver.
-- [ ] **Registry override torn down:** verdaccio stopped, no `registry=` left in `$HOME/.npmrc` or
-      in `npm config get registry`, and every verdaccio-resolved scaffold directory deleted. I2's
-      flip-day cold scaffold cannot tell the two registries apart if any of this survives (XR-11).
+      Green 2026-10-23 at `7328b53`, no override: `check:perf` (11 scenarios), `check:perf-bytes`
+      (42 packages), `check:perf-freshness` (5 suites captured at `785a3b2`).
+- [ ] **No registry override left:** `npm config get registry` prints `https://registry.npmjs.org/`,
+      no `registry=` line in `$HOME/.npmrc`, nothing listening on 4873/4874, and every §1 scaffold
+      directory deleted. With the window on npmjs (2026-10-23) this is a check, not a teardown — but
+      I2's flip-day tokenless scaffold must start from a clean machine either way (XR-11).
 - [ ] Owner sign-off recorded here: `signed-off: ____________  date: __________`

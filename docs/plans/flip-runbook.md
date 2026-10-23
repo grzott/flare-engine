@@ -83,6 +83,16 @@ no clean rollback.
       every freeze-window scaffold directory deleted so no verdaccio-resolved lockfile
       survives into flip-day verification. The freeze window's override is **user-level**
       and nothing else in this runbook would notice it still set (XR-11).
+      **2026-10-23:** the window's §1 runs authenticated against npmjs, not verdaccio
+      (manual-test-protocol.md, owner decision), so this is a check rather than a teardown.
+- [ ] **Nothing stale goes public with the repo (added 2026-10-23):** every branch and open
+      PR becomes visible at Step 1. Delete the six April `copilot/*` remote branches (five
+      point at `996ce1f`, an abandoned line 14 commits off `main` whose `.claude/settings.json`
+      carries local paths; `market-research-rn-mobile-games` is already merged), and close the
+      three Dependabot PRs (#7, #8, #9 — dependency bumps are out of scope during the freeze;
+      #7 fails `bench-dashboard`'s build and #9 fails `check:perf-bytes`). Done when
+      `git ls-remote --heads origin` lists only `main` (plus any branch you mean to publish)
+      and `gh pr list` is empty.
 - [x] **F3 done:** tarball audit clean (or every old-version hit has an owner
       disposition, §14). **This box stays open even though todo.md records OSS-F3 as
       Done — both are right, read carefully.** The HEAD-tarball half shipped in session
@@ -124,7 +134,8 @@ no clean rollback.
       41, so flip day no longer contains a first publish. Its replacement check:
 - [ ] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
       prints the freeze version, and the manual window's §1 scaffolded from it.
-      Registry half done 2026-10-12 (`0.4.0`); open for window §1.
+      Registry half done 2026-10-12 (`0.4.0`); `0.4.2` is on npmjs (PT and the page install
+      it); open for window §1.
 - [x] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
       stance (§14). 2026-10-12: all yes, flip Oct 26–28, history kept as-is.
 
@@ -151,6 +162,16 @@ repository public"*.
       grants `contents: write` for exactly that). **Safer still: do this after FW-9 and
       FW-13**, so nothing on the critical path can be blocked by a ruleset that has
       never been exercised.
+
+- [ ] Owner: **Settings → Security → Code security** — enable **Private vulnerability
+      reporting** (added 2026-10-23: `SECURITY.md` tells reporters to use GitHub's "Report a
+      vulnerability" button, which does not exist until this is on), **Secret scanning** and
+      **Push protection** (free on public repos), and **Dependabot alerts**. None of these were
+      available while the repo was private on the free plan.
+- [ ] Owner: **Settings → General → Social preview** — upload an image (1280×640). The API
+      cannot set it; without one, link previews show a generated card. Description, homepage
+      (`https://flareengine.dev`) and 14 topics were set 2026-10-23, Projects tab off,
+      delete-branch-on-merge on.
 
 **Rollback:** reversible (flip back to private), but stars/watchers and fork
 links do **not** come back. Safe to pause here.
@@ -203,6 +224,13 @@ provenance-stamped release would exist.
       release. (H1 already shipped the `0.4.0` minor; this is the patch bump that
       re-cuts the group public.)
 - [ ] Agent: also fold in the step-2 `NPM_CONFIG_PROVENANCE` edit.
+- [ ] Agent (added 2026-10-23): the root docs that describe the pre-flip state —
+      `README.md` "Status" (the "Public OSS launch: October 2026 … flips from restricted to
+      public" line), `README.md` "Getting Started" (the "Until the October 2026 public launch
+      the scope is restricted on npm; from a clone, run …" sentence) and `CONTRIBUTING.md:5`
+      ("Before the public OSS launch (October 2026)"). Rewrite them to the shipped state.
+      No package README carries pre-flip wording (checked 2026-10-23), so nothing stale
+      ships to npm with the fresh release.
 - [ ] Owner: commit + tag (e.g. `git tag v0.4.x-public`), do **not** push yet.
 
 **Rollback:** revert the commit (npm access from step 3 stays flipped — that part
@@ -252,6 +280,11 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
       deployed to it on 2026-07-01 and verified the WASM MIME type on the live Worker on
       2026-08-27 (found 2026-09-29), so this step is the deploy, not a domain bind. The 6
       links into the now-public engine repo go live here.
+- [ ] Owner (Cloudflare dashboard, any time before this deploy): turn off the zone's bot
+      **JavaScript detections** for flareengine.dev, and with it Bot Fight Mode, which forces
+      them on. The snippet is injected per request with a ray ID, so the site's hash-only
+      `script-src` can never allow it; it is the last console error behind best-practices 93
+      (manual-test-protocol §7 row 6).
 
 **Rollback:** reversible (unbind domain).
 
@@ -268,9 +301,12 @@ Run the full battery — see road-to-oss §12 / the OSS-I2 row:
       `npm create @flare-engine my-<tpl> -- --template <tpl>` (all three templates) on a
       machine with no npm token,
       each into a **new empty directory** — no lockfile or `node_modules` reused from the
-      freeze window, whose scaffolds resolved from verdaccio at `0.4.99`.
+      freeze window, whose scaffolds installed the restricted `0.4.2` with a token.
 - [ ] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.
 - [ ] Docs-site links into the public repo resolve; README badges live (add the CI badge).
+- [ ] Lighthouse on the live site (`/`, `/getting-started/`, `/showcases/`,
+      `/showcases/overrun/`, mobile + desktop): accessibility and best-practices 100,
+      getting-started desktop CLS 0 — the live re-check of manual-test-protocol §7 rows 6-8.
 - [ ] GitHub **Community Standards** checklist green (Insights → Community).
 - [ ] Owner: enable **Discussions**.
 - [ ] Agent: flip `docs/plans/roadmap.md` + `road-to-oss-2026-09.md` to "shipped"

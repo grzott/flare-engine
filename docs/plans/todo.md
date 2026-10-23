@@ -20,6 +20,11 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
   re-test close §7 row 1.
 - **FREEZE-FIX-2 — DONE 2026-10-20 (versioned `0.4.2`, re-capture landed), see `## Done`.** Owner
   publish and PT `H2`'s re-check close §7 row 2.
+- **RW-WASM-1 — CanvasKit wasm downloads twice on canvaskit-wasm `0.41.x` (P1, engine-builder,
+  `packages/render-web`, first post-flip `0.4.x` patch; deliberately not in the window).** Spec and
+  evidence: [manual-test-protocol.md](manual-test-protocol.md) §7 row 11. The fix also needs a
+  render-web test that resolves `0.41.x`: the engine's own tests and bench resolve `0.40.0`, which
+  is why no gate saw it. It re-stales the render-web perf lanes, android included.
 
 ### Arc XR — external pre-flip review remediation (ACTIVE 2026-08-31, pre-freeze)
 

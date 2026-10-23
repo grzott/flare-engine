@@ -1137,7 +1137,12 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
   PT2/BK1).
 - **G3 (post-flip OK):** the page repo's own dogfood rows PAGE-D1 browser-verify + PAGE-D2–D5
   (distinct from this doc's D-rows; already defined in that repo's todo — closes the
-  simulation/render-web declared-not-imported Tier-B gap); PT showcase assets + Berek entry.
+  simulation/render-web declared-not-imported Tier-B gap); Berek entry.
+- **PT on the page (owner decision 2026-10-23, no date):** PT is a private alpha, not ready for a
+  public release. The only PT item planned for the site is one video of the current build (enemies,
+  zones, bosses) in Showcases, labelled as a working demo on Kenney placeholder assets and posted
+  only after the engine is public. The page's `showcases/pan-tvardowski` entry stays `draft: true`
+  until then.
 
 **Pan-Tvardowski** (clean at e0f35f5):
 - **PT1 (pre-freeze):** declare `@flare-engine/debug` (real src imports ×3) — the phantom dep that
@@ -1286,7 +1291,7 @@ Ranked start: **devtools live-tweak inspector arc** (ecs prerequisites landed in
 web overlay; Expo devtools-plugin transport — directly unblocks PT's deferred holistic balance
 pass) → **docs playground** (3–5 curated editable examples, static client-only, esbuild-wasm or
 import maps; skip WebContainers/Sandpack — licensing/stalled) → README GIF + 20-line snippet →
-page D2–D5 dogfood + PT showcase assets + Berek entry → real web benchmark numbers →
+page D2–D5 dogfood + Berek entry → real web benchmark numbers →
 Trusted Publishing OIDC (per-package config ×41, kills token rotation) → `physics-rigid` (planck
 v1.5.x, opt-in, thin facade, fixed-timestep + B7's alpha) → pathfinding consumer (Berek
 enemy-chase or template example) + B18 leftovers → `dynamics` lift decision (portfolio-credibility

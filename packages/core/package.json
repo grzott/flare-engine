@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/core",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "GameLoop, Clock, AppLifecycle, Pool, Coroutines",
   "keywords": ["flare-engine", "game-loop", "coroutines", "pool"],
   "license": "Apache-2.0",
@@ -37,8 +37,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/math": "^0.4.2",
-    "@flare-engine/events": "^0.4.2"
+    "@flare-engine/math": "^0.4.3",
+    "@flare-engine/events": "^0.4.3"
   },
   "engines": {
     "node": ">=20"

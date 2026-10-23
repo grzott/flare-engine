@@ -14,6 +14,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.3](#043) | 2026-10-23 | 42 | Freeze-window fix: `react-native-audio-api` is an optional peer |
 | [0.4.2](#042) | 2026-10-20 | 42 | Freeze-window fix: `tint` and `flash` keep the sprite's alpha |
 | [0.4.1](#041) | 2026-10-19 | 42 | Freeze-window fix: the Sentry transport no longer captures on its own |
 | [0.4.0](#040) | 2026-10-12 | 42 | Freeze cut before the public flip: New Architecture floor, scaffolder in scope |
@@ -22,6 +23,20 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.3
+
+A freeze-window fix, shipped alone. Only the package metadata of `audio` and `engine` changed; no
+code changed, and every other package moves in lockstep.
+
+- **`audio` / `engine`** — `react-native-audio-api` is now an optional peer, so npm and bun no longer
+  install it into every app that depends on `engine`. Neither package imports it. As a required peer
+  it was compiled into every Android build, starter templates included, and on Windows that build
+  cannot complete, so no template could build for Android there
+  ([ADR-0010](docs/design/adr-0010-audio-api-optional-peer.md)). An app that plays audio on native
+  adds it itself: `bun add react-native-audio-api`.
 
 ---
 

@@ -1,5 +1,15 @@
 # @flare-engine/simulation
 
+## 0.4.5
+
+### Patch Changes
+
+- 8814ec2: Public release: every `@flare-engine/*` package is public on npm from this version, published from
+  CI with npm provenance. No code changes; npm visibility is retroactive, so earlier versions are
+  public too.
+- Updated dependencies [8814ec2]
+  - @flare-engine/math@0.4.5
+
 ## 0.4.4
 
 ### Patch Changes

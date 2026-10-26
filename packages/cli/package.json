@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/cli",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Flare engine CLI — pack-atlas, tiled-to-flare, new app scaffolder",
   "keywords": ["flare-engine", "cli", "atlas", "tiled", "sprite-sheet", "scaffold"],
   "license": "Apache-2.0",
@@ -40,7 +40,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@flare-engine/tilemap": "^0.4.4"
+    "@flare-engine/tilemap": "^0.4.5"
   },
   "dependencies": {
     "commander": "^13.1.0",

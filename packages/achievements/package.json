@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/achievements",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Achievements provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "achievements", "provider", "interface"],
   "license": "Apache-2.0",

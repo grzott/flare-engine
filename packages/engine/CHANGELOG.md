@@ -1,5 +1,31 @@
 # @flare-engine/engine
 
+## 0.4.5
+
+### Patch Changes
+
+- 8814ec2: Public release: every `@flare-engine/*` package is public on npm from this version, published from
+  CI with npm provenance. No code changes; npm visibility is retroactive, so earlier versions are
+  public too.
+- Updated dependencies [8814ec2]
+  - @flare-engine/animation@0.4.5
+  - @flare-engine/assets@0.4.5
+  - @flare-engine/audio@0.4.5
+  - @flare-engine/core@0.4.5
+  - @flare-engine/debug@0.4.5
+  - @flare-engine/dynamics@0.4.5
+  - @flare-engine/ecs@0.4.5
+  - @flare-engine/events@0.4.5
+  - @flare-engine/input@0.4.5
+  - @flare-engine/math@0.4.5
+  - @flare-engine/particles@0.4.5
+  - @flare-engine/physics@0.4.5
+  - @flare-engine/postfx@0.4.5
+  - @flare-engine/react@0.4.5
+  - @flare-engine/render@0.4.5
+  - @flare-engine/scene@0.4.5
+  - @flare-engine/tilemap@0.4.5
+
 ## 0.4.4
 
 ### Patch Changes

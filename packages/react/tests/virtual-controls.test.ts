@@ -135,6 +135,19 @@ describe('VirtualJoystick', () => {
     expect(knobCalls.length).toBeGreaterThan(0);
   });
 
+  it('thumb absent — the default knob is not a touch target', () => {
+    // A hittable knob becomes the view Android measures locationX against
+    // whenever the finger is over it.
+    render({});
+    const knobStyle = jsxCalls
+      .flatMap((c) => (Array.isArray(c.props.style) ? c.props.style : []))
+      .find(
+        (s: unknown): s is Record<string, unknown> =>
+          s !== null && typeof s === 'object' && (s as Record<string, unknown>).width === 40,
+      );
+    expect(knobStyle?.pointerEvents).toBe('none');
+  });
+
   // --- maxRadius flows into sizing ---
 
   it('maxRadius from config flows into outer View width and height', () => {

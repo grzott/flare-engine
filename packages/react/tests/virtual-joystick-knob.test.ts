@@ -5,7 +5,7 @@ import { describe, expect, it, mock } from 'bun:test';
 // virtual-controls.test.ts. Bun's module registry is last-writer-wins.
 
 // Controlled stub for @flare-engine/input — tests component wiring, not math.
-// updateJoystick sets offset = (touchX - centerX, touchY - centerY) so
+// updateJoystick sets offset = (touchX - centerX, touchY - centerY), unclamped, so
 // the exact output is predictable without re-implementing the real algorithm.
 mock.module('@flare-engine/input', () => ({
   createJoystickState: () => ({
@@ -17,13 +17,13 @@ mock.module('@flare-engine/input', () => ({
   updateJoystick(
     s: { offset: { x: number; y: number }; active: boolean },
     cx: number,
-    _cy: number,
+    cy: number,
     tx: number,
-    _ty: number,
+    ty: number,
   ): void {
     s.active = true;
     s.offset.x = tx - cx;
-    s.offset.y = 0;
+    s.offset.y = ty - cy;
   },
   releaseJoystick(s: { offset: { x: number; y: number }; active: boolean }): void {
     s.active = false;
@@ -114,13 +114,15 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
     expect(onLayout).toBeDefined();
     onLayout?.({ nativeEvent: { layout: { width: 100, height: 100 } } });
 
-    // Reset to detect the call from handleTouch only.
+    grantAt(50, 50);
+
+    // Reset to detect the call from the move only.
     capturedSetKnob = null;
 
     // Fire onResponderMove with touch at (80,50) → stub sets offset.x = 80-50 = 30.
     const onResponderMove = findProp<(e: unknown) => void>('onResponderMove');
     expect(onResponderMove).toBeDefined();
-    onResponderMove?.({ nativeEvent: { locationX: 80, locationY: 50 } });
+    onResponderMove?.(touchEvent(finger(1, 80, 50)));
 
     // The real component must have called setKnob.
     expect(capturedSetKnob).not.toBeNull();
@@ -234,8 +236,91 @@ describe('VirtualJoystick — real component wiring (Option B)', () => {
   });
 });
 
-// Helper — fires onResponderMove from the last render() call.
-function onResponderMove_move(locationX: number, locationY: number): void {
-  const handler = findProp<(e: unknown) => void>('onResponderMove');
-  handler?.({ nativeEvent: { locationX, locationY } });
+// Where the stick's top-left corner sits on the page in these tests.
+const PAGE_X = 24;
+const PAGE_Y = 600;
+
+type Touch = {
+  identifier: number;
+  pageX: number;
+  pageY: number;
+  locationX: number;
+  locationY: number;
+};
+
+// A finger at (x, y) inside the stick, with locationX/Y measured against the stick.
+function finger(identifier: number, x: number, y: number): Touch {
+  return { identifier, pageX: PAGE_X + x, pageY: PAGE_Y + y, locationX: x, locationY: y };
 }
+
+// The event RN delivers: the changed touch's fields on the event itself, every
+// finger on the screen in `touches`.
+function touchEvent(changed: Touch, touches: Touch[] = [changed]): unknown {
+  return { nativeEvent: { ...changed, touches } };
+}
+
+function grantAt(x: number, y: number): void {
+  findProp<(e: unknown) => void>('onResponderGrant')?.(touchEvent(finger(1, x, y)));
+}
+
+// Helper — grants finger 1 at the centre, then moves it, from the last render() call.
+function onResponderMove_move(x: number, y: number): void {
+  grantAt(50, 50);
+  findProp<(e: unknown) => void>('onResponderMove')?.(touchEvent(finger(1, x, y)));
+}
+
+function knobAfterLastUpdate(): { x: number; y: number } {
+  const updater = capturedSetKnob as unknown as (prev: { x: number; y: number }) => {
+    x: number;
+    y: number;
+  };
+  return updater({ x: 0, y: 0 });
+}
+
+// Android hit-tests every MOVE again and measures locationX/Y against whichever
+// view is under the finger now (JSTouchDispatcher + TouchesHelper), while pageX/Y
+// stay in root coordinates. Fabric also fills the event's own fields from the
+// first *changed* touch, which may be another finger.
+describe('VirtualJoystick — follows its own finger on every platform', () => {
+  function setup(): (e: unknown) => void {
+    render();
+    findProp<(e: unknown) => void>('onLayout')?.({
+      nativeEvent: { layout: { width: 100, height: 100 } },
+    });
+    grantAt(50, 50);
+    capturedSetKnob = null;
+    const move = findProp<(e: unknown) => void>('onResponderMove');
+    if (move === undefined) throw new Error('onResponderMove missing');
+    return move;
+  }
+
+  it('finger over the knob: locationX measured against the knob does not move the stick', () => {
+    const move = setup();
+    // Finger at (60,50) in the stick, over the centred 40x40 knob (30..70), so
+    // Android reports locationX/Y against the knob: (30, 20).
+    move(touchEvent({ ...finger(1, 60, 50), locationX: 30, locationY: 20 }));
+    expect(knobAfterLastUpdate()).toEqual({ x: 10, y: 0 });
+  });
+
+  it('finger past the rim, over the game view: locationX measured against the game view', () => {
+    const move = setup();
+    // Finger at (130,50) in the stick, outside it, over a full-screen canvas at (0,0).
+    move(touchEvent({ ...finger(1, 130, 50), locationX: PAGE_X + 130, locationY: PAGE_Y + 50 }));
+    expect(knobAfterLastUpdate()).toEqual({ x: 80, y: 0 });
+  });
+
+  it('a second finger moving does not move the stick', () => {
+    const move = setup();
+    const own = finger(1, 60, 50);
+    const other = { identifier: 2, pageX: 300, pageY: 200, locationX: 300, locationY: 200 };
+    move(touchEvent(other, [own, other]));
+    expect(knobAfterLastUpdate()).toEqual({ x: 10, y: 0 });
+  });
+
+  it('a move that does not carry its finger leaves the stick where it is', () => {
+    const move = setup();
+    const other = { identifier: 2, pageX: 300, pageY: 200, locationX: 300, locationY: 200 };
+    move(touchEvent(other, [other]));
+    expect(capturedSetKnob).toBeNull();
+  });
+});

@@ -35,7 +35,7 @@ happen. Authored by OSS-H2. Spec: [road-to-oss-2026-09.md §11](road-to-oss-2026
 
 The path a stranger hits first. A break here is a launch blocker. Run against npmjs, authenticated
 (above) — one fresh directory per attempt, and confirm you installed the current freeze patch
-(`0.4.3` since 2026-10-23, FREEZE-FIX-3) before ticking anything.
+(`0.4.4` since 2026-10-26, FREEZE-FIX-4) before ticking anything.
 
 **Runner (2026-10-23):** `docs/plans/_local/window-2026-10-23/check/window-check.sh` (gitignored;
 run it with `--dry-run` first) covers §1, §5 and the Android half of §4/§6. Every scaffold, npm
@@ -45,16 +45,20 @@ in its `results/`. Two boxes are checked differently from their wording. "Metro 
 build is the release variant (`expo run:android --variant release`), so the JS is inside the APK
 and no Metro window is left running.
 
-- [ ] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
-  - [ ] `npm create @flare-engine my-<tpl> -- --template <tpl>` → completes with **no `ERESOLVE`**
+**Results 2026-10-25 on `0.4.3`** (runner, `results/20261025-175034`): Windows, the Linux container
+and the README quickstart passed every check below, all three templates on both OSes. Android at
+`results/20261023-224318`: see that box.
+
+- [x] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
+  - [x] `npm create @flare-engine my-<tpl> -- --template <tpl>` → completes with **no `ERESOLVE`**
         and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
-  - [ ] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
-  - [ ] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
+  - [x] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
+  - [x] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
         reads the current freeze patch (`0.4.3`) and the lockfile's resolved URLs point at
         `registry.npmjs.org`.
         A green install proves nothing until this holds — the typecheck and Metro boxes below are
         only as good as the artifact underneath them (XR-11).
-  - [ ] `npm run start` — Metro bundles and resolves every `@flare-engine/*` import with no error.
+  - [x] `npm run start` — Metro bundles and resolves every `@flare-engine/*` import with no error.
         (Actually *running* the app needs a **dev build** — `@shopify/react-native-skia` is a native
         module, so plain `expo start` + Expo Go "press a/i" red-screens with a missing-native-module
         error. **This is already correct in the tree and is not an open question:** XR-10 landed, and
@@ -62,11 +66,16 @@ and no Metro window is left running.
         Expo Go red-screen. So the finding to watch for is a **regression** — a README that has gone
         back to telling a stranger to press `a`/`i` into Expo Go. Verified 2026-09-07 across the
         blank and shmup templates; re-read them rather than assuming either way.)
-- [ ] **Linux container** (e.g. `node:22` docker, clean `$HOME`) — repeat all three templates end-to-end
+- [x] **Linux container** (e.g. `node:22` docker, clean `$HOME`) — repeat all three templates end-to-end
       (catches Windows-only path luck; the F2 rehearsal only proved `--skip-install`).
 - [ ] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the
       tilemap renders and the virtual joystick moves the player over solid-grid collision (the TPL1 wire).
-- [ ] **Root-README quickstart, verbatim** — every command block in [README.md](../../README.md) run
+      **2026-10-23 on `0.4.3`, without `--drop-audio-api`:** the release build installed and
+      launched; the tilemap, collision and the door passed. The joystick moved the player but
+      erratically: §7 row 15, FREEZE-FIX-4. Open until the stage passes on the release that carries it
+      (`0.4.4`). The Windows, Linux and README boxes above passed on `0.4.3`, which differs from
+      `0.4.4` only in `react`'s joystick touch handling.
+- [x] **Root-README quickstart, verbatim** — every command block in [README.md](../../README.md) run
       exactly as written, authenticated against npmjs as above (`npm create @flare-engine my-game`, the
       install/build lines). Any command that errors or drifts from its documented output = a finding.
 
@@ -195,6 +204,17 @@ Each new-in-arc capability exercised at least once on its real target.
       1.12, H/V/D flips resolve and collide, objects keep name, class and position), then renders it
       in the topdown template in the browser and on the phone. Flipped tiles draw unflipped by
       design: render-flip is post-flip M10 (`tilemap-renderer.ts:64-66`).
+      **2026-10-25, first `s5` run:** stopped at the conversion. The map had been saved as TMX
+      (XML) under the `.tmj` name; Tiled takes the format from the Save-as-type list, not from the
+      file name. The CLI reads JSON only, as its README says. The map also had no door, no flipped
+      tiles and no object named `spawn`. Not an engine defect; the error text is §7 row 16. Redraw
+      and re-run. The runner now names the XML case and the kit's steps say how to avoid it.
+      **2026-10-26, second run** (`results/20261026-083600`, with `--local-react`): the JSON map
+      converted, parsed (16x12, 2 layers, solid local ids 1-3), kept both objects with name, class and
+      position, rendered with spawn and collision in the browser and rendered on the phone. Flips
+      failed: the saved map holds no flipped tile (H 0, V 0, D 0), so nothing was painted flipped.
+      The runner now rejects such a map before it scaffolds, and the kit's flip steps say how to see
+      a flip while painting.
 - [ ] **M6 — haptics** on device: a build using the real `expo-haptics` provider fires haptics on the
       wired events; the `NoopHapticsProvider` fallback is silent (no crash) where haptics is absent.
       **No consumer wires the Expo provider (checked 2026-10-23):** PT does not depend on
@@ -204,6 +224,15 @@ Each new-in-arc capability exercised at least once on its real target.
       Runner: `s5` wires the published `@flare-engine/haptics` to real `expo-haptics` in that same
       scaffold: an impact on every wall bump and a notification when the door opens. The web build
       gets `NoopHapticsProvider`, which covers the silent-fallback half.
+      **2026-10-26** (same run, Pixel 7, Android 17): no red errors on web. On the phone the owner
+      felt no vibration, but the phone's own log (`dumpsys vibrator_manager`) shows the app's cues
+      reached the motor: 10 wall-bump impacts played to the end, each 50 ms at 12% strength, with
+      every vibration setting at High. The door's notification started and was cancelled 2 ms in,
+      superseded by a wall-bump impact from the same frame (the jamb). Android plays one vibration at
+      a time, and the check app fired both, so this was the check app, not the engine. The
+      strength is `expo-haptics`' own Android waveform, passed through unchanged: §7 row 17. The
+      check app now opens every door tile and holds the bump cue back while the door's plays, and
+      the runner reads the phone's vibration log instead of asking whether a buzz was felt.
 
 ## §6 — Docs site
 
@@ -232,7 +261,8 @@ Rows 1-2 are filed from PT's `docs/plans/engine-040-filings.md`, rows 3-5 from P
 `docs/plans/engine-040-device-run.md`; a "step" number is that checklist's. Rows 6-11 come from
 the 2026-10-23 automated pass over the live site (Lighthouse, link crawl, browser matrix); the raw
 reports are in `docs/plans/_local/window-2026-10-23/` (gitignored). Rows 12-13 come from the same
-day's review of §1 and §2, row 14 from the runner's first Android run.
+day's review of §1 and §2, row 14 from the runner's first Android run, rows 15-17 from its later
+stages.
 
 | # | §/step | Surface | Symptom | Severity (blocker / major / minor) | FREEZE-FIX row | Status |
 |---|--------|---------|---------|------------------------------------|----------------|--------|
@@ -249,7 +279,10 @@ day's review of §1 and §2, row 14 from the runner's first Android run.
 | 11 | §4 WASM on 4G | `render-web` `loadCanvasKit` with canvaskit-wasm 0.41.x | `loader.ts:74-76` downloads the wasm with progress and passes `wasmBinary`. The 0.41.x glue does not read `wasmBinary` (0.40.0, the version the engine's own tests and bench resolve, does), so it streams the same 3.26 MB again from `locateFile`. Every consumer on 0.41.x is affected: the templates pin `0.41.0` and the peer range is `>=0.40.0`. Cache off: about 36 s to the first frame on slow 4G. Cache on: the second fetch is a cache hit, about 20 s. A fix needs the downloaded bytes handed back as a Blob URL via `locateFile` (0.41 has no `instantiateWasm` hook either), which re-stales the render-web perf lanes | minor (perf; owner may raise) | post-flip `0.4.x` patch unless the owner pulls it in | open |
 | 12 | §2 B12 IAP-restore (PT step 21) | `iap-revenuecat` restore | Not exercised: PT's `.env` holds no RevenueCat key, so every PT build fell back to `NoopIAPProvider`. A real run needs Play Console products, a Play test track, a license tester and RevenueCat service credentials. RevenueCat's Test Store is no shortcut here: it needs `react-native-purchases` 9.5.4 or later, and restore on it is unconfirmed | minor (coverage gap) | — (post-flip) | open |
 | 13 | §1 first-run (code read 2026-10-23, the runner's `readme` stage prints the live hint) | `create` next-step hint | `manifest.ts` sets `postInstall: 'bun run start'` for all three templates and `cli.ts` prints it whatever package manager ran the install. An `npm create` user without bun gets `bun: command not found`; with bun, `start` is the Expo Go path every template README warns against (press `a`, red screen). The READMEs lead with `bun run android`, and the templates' `test` script is `bun test` | minor (owner may raise: it sits on the launch-critical funnel) | CREATE-HINT-1, post-flip `0.4.x` patch unless the owner pulls it in | open |
-| 14 | §1 real Android device (the runner's `android` stage, 2026-10-23, Windows) | `audio` + `engine` peer metadata | The topdown release build fails in `react-native-audio-api`'s arm64 native build: ninja cannot create its object directory, after CMake warns the directory alone is 186 of 250 characters. No template uses audio, but `audio` and `engine` declare the package as a required peer (`>=0.3.0`), so npm and bun install it into every scaffold (bun picked `0.13.6`) and Expo compiles it. Its CMake mirrors the absolute source path inside the object directory, so the project path counts twice, and no Windows project path is short enough with the stock toolchain. Engine source never imports it. With the package deleted before prebuild, the same template built a release APK at a longer path (42 characters), Skia, Reanimated and Worklets included | blocker (every template's `bun run android` on Windows) | FREEZE-FIX-3 (ADR-0010, `0.4.3`) | fix accepted 2026-10-23; open until `0.4.3` is published and the `android` stage passes without `--drop-audio-api` |
+| 14 | §1 real Android device (the runner's `android` stage, 2026-10-23, Windows) | `audio` + `engine` peer metadata | The topdown release build fails in `react-native-audio-api`'s arm64 native build: ninja cannot create its object directory, after CMake warns the directory alone is 186 of 250 characters. No template uses audio, but `audio` and `engine` declare the package as a required peer (`>=0.3.0`), so npm and bun install it into every scaffold (bun picked `0.13.6`) and Expo compiles it. Its CMake mirrors the absolute source path inside the object directory, so the project path counts twice, and no Windows project path is short enough with the stock toolchain. Engine source never imports it. With the package deleted before prebuild, the same template built a release APK at a longer path (42 characters), Skia, Reanimated and Worklets included | blocker (every template's `bun run android` on Windows) | FREEZE-FIX-3 (ADR-0010, `0.4.3`) | closed — `0.4.3` published 2026-10-23; the same evening the runner's `android` stage built, installed and launched the topdown template on the phone without `--drop-audio-api` (`results/20261023-224318`) |
+| 15 | §1 real Android device (the runner's `android` stage on `0.4.3`, 2026-10-23; reported 2026-10-25) | `react` `<VirtualJoystick>` | The joystick moves the player erratically, and with the finger held to the right the knob leaves the ring. The component fed `nativeEvent.locationX/Y` to `updateJoystick` as if measured against the stick. Android measures them against the view under the finger on every move (`JSTouchDispatcher.kt:156-158`, `TouchesHelper.kt:51-65` in RN 0.83.6): the default knob, which was a touch target, while the finger is over it, and the full-screen game view past the ring. Fabric also puts the first changed touch on the event, and the responder gets every finger's moves, so in shmup the fire-button finger can drive the stick. Web was right throughout: react-native-web measures against the responder | blocker (the only control of the first-run template, on every Android device) | FREEZE-FIX-4 (ADR-0011, accepted 2026-10-26, `0.4.4`) | open: `0.4.4` cut 2026-10-26; owner device check with `--local-react` before the publish, then the `android` stage on the published `0.4.4` |
+| 16 | §5 B8/M4 (the runner's `s5` stage, 2026-10-25) | `cli` `flare tiled-to-flare` | A map saved as TMX (XML) fails with the raw JSON parser message `Unexpected token '<', "<?xml vers"... is not valid JSON`. The CLI is documented as `.tmj` only, but Tiled writes XML under any name when Save as type is left on TMX, so a stranger gets no hint | minor (DX) | CLI-TMX-1, post-flip | open |
+| 17 | §5 M6 (the runner's `s5` stage, 2026-10-26, Pixel 7) | `haptics` `createExpoHapticsProvider` | The cues reach the motor, but the owner could not feel them. The adapter forwards `impact`/`notification` to `expo-haptics`' `impactAsync`/`notificationAsync` unchanged, and on Android those play fixed waveforms through `Vibrator`: `light` is 50 ms at 12% strength, `success` two 40 ms steps at 20% and 24% (`expo-haptics` 57.0.3, `HapticsImpactType.kt`, `HapticsNotificationType.kt`). The same module's `performAndroidHapticsAsync` uses the system haptic effects instead. A consumer calling `expo-haptics` directly gets the same strength | minor (feel, Android only) | HAPTICS-ANDROID-1, post-flip | open |
 
 ### Exit criteria (all must hold before OSS-I1 / flip)
 

@@ -12697,3 +12697,141 @@ warned of 3.2 C battery drift, owner accepted on flat timings.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 332 — 2026-10-25 (scope: engine)
+
+**Goal:** FREEZE-FIX-4: VirtualJoystick follows its own finger on Android (ADR-0011 Proposed); window results logged
+
+**Touched files**
+- `.changeset/freeze-fix-4-joystick-own-finger.md`
+- `docs/design/adr-0011-joystick-reads-its-own-finger.md`
+- `docs/design/api-specs.md`
+- `docs/plans/manual-test-protocol.md`
+- `docs/plans/todo.md`
+- `packages/react/src/virtual-joystick.tsx`
+- `packages/react/tests/virtual-controls.test.ts`
+- `packages/react/tests/virtual-joystick-knob.test.ts`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** Owner reported joystick as a note under a PASS answer; runner asks now probe the failure modes directly
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Session 333 — 2026-10-26 (scope: engine)
+
+**Goal:** 0.4.4 cut (FREEZE-FIX-4, ADR-0011 accepted); s5 run 2 logged, haptics row 17
+
+**Touched files**
+- `CHANGELOG.md`
+- `docs/design/adr-0011-joystick-reads-its-own-finger.md`
+- `docs/design/api-specs.md`
+- `docs/plans/flip-runbook.md`
+- `docs/plans/manual-test-protocol.md`
+- `docs/plans/todo.md`
+- `packages/a11y/CHANGELOG.md`
+- `packages/a11y/package.json`
+- `packages/achievements/CHANGELOG.md`
+- `packages/achievements/package.json`
+- `packages/analytics/CHANGELOG.md`
+- `packages/analytics/package.json`
+- `packages/animation/CHANGELOG.md`
+- `packages/animation/package.json`
+- `packages/assets/CHANGELOG.md`
+- `packages/assets/package.json`
+- `packages/audio/CHANGELOG.md`
+- `packages/audio/package.json`
+- `packages/cli/CHANGELOG.md`
+- `packages/cli/package.json`
+- `packages/core/CHANGELOG.md`
+- `packages/core/package.json`
+- `packages/create/CHANGELOG.md`
+- `packages/create/package.json`
+- `packages/debug/CHANGELOG.md`
+- `packages/debug/package.json`
+- `packages/deep-links/CHANGELOG.md`
+- `packages/deep-links/package.json`
+- `packages/devtools/CHANGELOG.md`
+- `packages/devtools/package.json`
+- `packages/dialogue/CHANGELOG.md`
+- `packages/dialogue/package.json`
+- `packages/dynamics/CHANGELOG.md`
+- `packages/dynamics/package.json`
+- `packages/ecs/CHANGELOG.md`
+- `packages/ecs/package.json`
+- `packages/engine/CHANGELOG.md`
+- `packages/engine/package.json`
+- `packages/errors/CHANGELOG.md`
+- `packages/errors/package.json`
+- `packages/events/CHANGELOG.md`
+- `packages/events/package.json`
+- `packages/haptics/CHANGELOG.md`
+- `packages/haptics/package.json`
+- `packages/iap/CHANGELOG.md`
+- `packages/iap/package.json`
+- `packages/iap-revenuecat/CHANGELOG.md`
+- `packages/iap-revenuecat/package.json`
+- `packages/input/CHANGELOG.md`
+- `packages/input/package.json`
+- `packages/leaderboards/CHANGELOG.md`
+- `packages/leaderboards/package.json`
+- `packages/localization/CHANGELOG.md`
+- `packages/localization/package.json`
+- `packages/math/CHANGELOG.md`
+- `packages/math/package.json`
+- `packages/particles/CHANGELOG.md`
+- `packages/particles/package.json`
+- `packages/pathfinding/CHANGELOG.md`
+- `packages/pathfinding/package.json`
+- `packages/physics/CHANGELOG.md`
+- `packages/physics/package.json`
+- `packages/postfx/CHANGELOG.md`
+- `packages/postfx/package.json`
+- `packages/progression/CHANGELOG.md`
+- `packages/progression/package.json`
+- `packages/react/CHANGELOG.md`
+- `packages/react/package.json`
+- `packages/react/src/virtual-joystick.tsx`
+- `packages/react/tests/virtual-controls.test.ts`
+- `packages/react/tests/virtual-joystick-knob.test.ts`
+- `packages/render/CHANGELOG.md`
+- `packages/render/package.json`
+- `packages/render-web/CHANGELOG.md`
+- `packages/render-web/package.json`
+- `packages/scene/CHANGELOG.md`
+- `packages/scene/package.json`
+- `packages/shapes/CHANGELOG.md`
+- `packages/shapes/package.json`
+- `packages/share/CHANGELOG.md`
+- `packages/share/package.json`
+- `packages/simulation/CHANGELOG.md`
+- `packages/simulation/package.json`
+- `packages/storage/CHANGELOG.md`
+- `packages/storage/package.json`
+- `packages/testing/CHANGELOG.md`
+- `packages/testing/package.json`
+- `packages/tilemap/CHANGELOG.md`
+- `packages/tilemap/package.json`
+- `packages/ui/CHANGELOG.md`
+- `packages/ui/package.json`
+- `packages/ui-shop/CHANGELOG.md`
+- `packages/ui-shop/package.json`
+- `SESSION_LOG.md`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** Owner answered y to the wall-bump haptic by mistake; fingertip asks are unreliable for 12% cues, so the runner now reads dumpsys vibrator_manager. Check app opened one door tile and fired a bump cue in the door's frame, which superseded the door cue after 2 ms on Android.
+
+**Next:** see `docs/plans/todo.md`.
+
+---

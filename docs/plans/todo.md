@@ -20,18 +20,19 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
   re-test close §7 row 1.
 - **FREEZE-FIX-2 — DONE 2026-10-20 (versioned `0.4.2`, re-capture landed), see `## Done`.** Owner
   publish and PT `H2`'s re-check close §7 row 2.
-- **FREEZE-FIX-3 — `react-native-audio-api` becomes an optional peer (P0, `0.4.3`; code done and
-  ADR-0010 accepted by the owner 2026-10-23; the cut follows).** Evidence: manual-test-protocol §7
-  row 14. As a required peer of `audio` and `engine` it is installed into every scaffold and its
-  native build fails on Windows, so every template's `bun run android` fails there. Diff:
-  peerDependenciesMeta `optional` in `packages/audio/package.json` and `packages/engine/package.json`,
-  the now-redundant `@flare-engine/react` exception dropped from `scripts/check-peer-completeness.mjs`,
-  `packages/audio/README.md` and `docs/design/dependencies.md` updated, and
-  `.changeset/freeze-fix-3-audio-api-optional-peer.md`, and `bun.lock` (`optionalPeers` on both
-  workspace entries, so `--frozen-lockfile` passes; it also refreshes the stale `0.3.1` workspace
-  versions). No `src` change, so no perf lane goes stale.
-  Close: ADR-0010 accepted, `0.4.3` cut and published, then the runner's `android` stage passes on
-  `0.4.3` without `--drop-audio-api`.
+- **FREEZE-FIX-3 — DONE 2026-10-23 (published `0.4.3`), see `## Done`.** §7 row 14 closed.
+- **FREEZE-FIX-4 — `<VirtualJoystick>` follows its own finger (P0, `0.4.4`; code and tests done
+  2026-10-25, ADR-0011 accepted and `0.4.4` versioned 2026-10-26).** Evidence: manual-test-protocol §7 row 15. On Android the knob
+  jumps and leaves the ring because the component read `locationX/Y`, which Android re-measures
+  against the view under the finger on every move. Diff: `packages/react/src/virtual-joystick.tsx`
+  (page origin at grant, the granting finger matched by `identifier`, other fingers ignored, the
+  default knob not a touch target), five new tests red before and green after in
+  `packages/react/tests/virtual-joystick-knob.test.ts` and `virtual-controls.test.ts` (the
+  knob-test helpers now send grant-then-move events with page coordinates), the `<VirtualJoystick>`
+  row in `docs/design/api-specs.md`, ADR-0011, and `.changeset/freeze-fix-4-joystick-own-finger.md`.
+  `react` is outside every perf lane's closure. Close: the owner's device check with the runner's
+  `--local-react`, ADR-0011 accepted, `0.4.4` cut and published, then the `android` stage passes on
+  `0.4.4`.
 - **RW-WASM-1 — CanvasKit wasm downloads twice on canvaskit-wasm `0.41.x` (P1, engine-builder,
   `packages/render-web`, first post-flip `0.4.x` patch; deliberately not in the window).** Spec and
   evidence: [manual-test-protocol.md](manual-test-protocol.md) §7 row 11. The fix also needs a
@@ -47,6 +48,17 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
   engine-builder, post-flip hygiene).** `tmp()` makes `flare-scaffold-*` under the OS temp dir and
   nothing removes them: 1,724 had built up on the owner's machine by 2026-10-23. Add an `afterEach`
   cleanup; test-only, no publish.
+- **CLI-TMX-1 — `flare tiled-to-flare` names a TMX (XML) input instead of failing in the JSON parser
+  (P3, engine-builder, `packages/cli`, post-flip).** Evidence:
+  [manual-test-protocol.md](manual-test-protocol.md) §7 row 16. Tiled writes XML under a `.tmj`
+  name when Save as type is left on TMX, and the CLI prints `Unexpected token '<'`. Detect a leading
+  `<` and say to save as "JSON map files"; JSON-only stays the contract.
+- **HAPTICS-ANDROID-1 — Expo haptics cues are too faint to feel on Android (P3, engine-builder,
+  `packages/haptics`, post-flip).** Evidence: [manual-test-protocol.md](manual-test-protocol.md)
+  §7 row 17. `createExpoHapticsProvider` forwards to `impactAsync`/`notificationAsync`, which play
+  fixed `Vibrator` waveforms on Android at 12-27% strength. Decide between mapping Android cues to
+  `performAndroidHapticsAsync` (system effects; a consumer-observable change, so an ADR) and
+  documenting the strength. Needs a device check either way.
 
 ### Arc XR — external pre-flip review remediation (ACTIVE 2026-08-31, pre-freeze)
 
@@ -1082,6 +1094,15 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 4. **Pre-launch polish** — Phase 11.11 / 11.12 / 11.13 (landing MP4, docs site, RC publish, EUIPO trademark).
 
 ## Done
+
+- **FREEZE-FIX-3 — audio + engine: `react-native-audio-api` is an optional peer (2026-10-23,
+  `0.4.3` published by the owner).** Blocker from the §1 runner, §7 row 14: as a required peer it was
+  installed into every scaffold and its native build cannot finish on Windows (CMake doubles the
+  project path in its object directory). peerDependenciesMeta `optional` on both packages, the
+  redundant peer-gate exception dropped, `bun.lock` `optionalPeers`
+  ([ADR-0010](../design/adr-0010-audio-api-optional-peer.md), Accepted by the owner). Verified before
+  the cut by a release APK built with the package deleted, and after it by the runner's `android`
+  stage on `0.4.3` with no workaround.
 
 - **FREEZE-FIX-2 — render: `tint` and `flash` keep the sprite's alpha, plus the re-capture
   (2026-10-19/20, engine-builder + MT + owner; `0.4.2` versioned, publish is the owner's).** Major

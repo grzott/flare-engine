@@ -135,7 +135,8 @@ no clean rollback.
 - [ ] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
       prints the freeze version, and the manual window's §1 scaffolded from it.
       Registry half done 2026-10-12 (`0.4.0`); `0.4.2` is on npmjs (PT and the page install
-      it), and `0.4.3` (FREEZE-FIX-3) is the freeze version from 2026-10-23; open for window §1.
+      it), `0.4.3` (FREEZE-FIX-3) followed on 2026-10-23, and `0.4.4` (FREEZE-FIX-4) is the freeze
+      version from 2026-10-26; open for window §1.
 - [x] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
       stance (§14). 2026-10-12: all yes, flip Oct 26–28, history kept as-is.
 
@@ -303,7 +304,7 @@ Run the full battery — see road-to-oss §12 / the OSS-I2 row:
       `npm create @flare-engine my-<tpl> -- --template <tpl>` (all three templates) on a
       machine with no npm token,
       each into a **new empty directory** — no lockfile or `node_modules` reused from the
-      freeze window, whose scaffolds installed the restricted `0.4.3` with a token.
+      freeze window, whose scaffolds installed the restricted `0.4.3` and `0.4.4` with a token.
 - [ ] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.
 - [ ] Docs-site links into the public repo resolve; README badges live (add the CI badge).
 - [ ] Lighthouse on the live site (`/`, `/getting-started/`, `/showcases/`,

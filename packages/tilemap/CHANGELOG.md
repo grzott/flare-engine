@@ -1,5 +1,14 @@
 # @flare-engine/tilemap
 
+## 0.4.4
+
+### Patch Changes
+
+- @flare-engine/assets@0.4.4
+- @flare-engine/math@0.4.4
+- @flare-engine/physics@0.4.4
+- @flare-engine/render@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes

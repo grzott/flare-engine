@@ -1,5 +1,34 @@
 # @flare-engine/react
 
+## 0.4.4
+
+### Patch Changes
+
+- FREEZE-FIX-4: `<VirtualJoystick>` follows its own finger on device, so the knob no longer jumps on
+  Android or leaves its ring when you drag past the edge. Per ADR-0011.
+
+  The component read each touch's `locationX`/`locationY` as if they were measured against the stick.
+  Android measures them against whichever view is under the finger at that moment: the default knob
+  while the finger is over it, or the game view once the finger passes the ring. It also reports
+  another finger's touch on the event when that finger moves. The stick now takes its page origin at
+  grant, follows the granting finger by `identifier` in page coordinates, and ignores other fingers.
+  The default knob is no longer a touch target, matching the `base` and `thumb` slots. Web behaviour is
+  unchanged. No exported name, signature or type changes.
+
+  <!-- symbols-ok: locationX, locationY, identifier -->
+  <!-- reason: React Native touch-event fields, named because the fix is which of them the component
+       reads; none is a Flare export. -->
+
+  - @flare-engine/assets@0.4.4
+  - @flare-engine/audio@0.4.4
+  - @flare-engine/core@0.4.4
+  - @flare-engine/ecs@0.4.4
+  - @flare-engine/events@0.4.4
+  - @flare-engine/input@0.4.4
+  - @flare-engine/math@0.4.4
+  - @flare-engine/render@0.4.4
+  - @flare-engine/scene@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes

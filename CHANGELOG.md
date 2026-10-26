@@ -14,6 +14,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.4](#044) | 2026-10-26 | 42 | Freeze-window fix: `<VirtualJoystick>` follows its own finger on device |
 | [0.4.3](#043) | 2026-10-23 | 42 | Freeze-window fix: `react-native-audio-api` is an optional peer |
 | [0.4.2](#042) | 2026-10-20 | 42 | Freeze-window fix: `tint` and `flash` keep the sprite's alpha |
 | [0.4.1](#041) | 2026-10-19 | 42 | Freeze-window fix: the Sentry transport no longer captures on its own |
@@ -23,6 +24,20 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.4
+
+A freeze-window fix, shipped alone. Only `react` changed; every other package moves in lockstep.
+
+- **`react`** — `<VirtualJoystick>` follows its own finger on device, so the knob no longer jumps on
+  Android or leaves its ring when you drag past the edge
+  ([ADR-0011](docs/design/adr-0011-joystick-reads-its-own-finger.md)). It takes its page origin when
+  the touch starts, follows that finger by its identifier in page coordinates, and ignores other
+  fingers, so a second finger on a fire button no longer steers the stick. The default knob is no
+  longer a touch target, matching the `base` and `thumb` slots. Web behaviour is unchanged, and no
+  exported name, signature or type changes.
 
 ---
 

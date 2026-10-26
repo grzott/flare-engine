@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/scene",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Scene manager, transitions, lifecycle",
   "keywords": ["flare-engine", "scene", "transitions"],
   "license": "Apache-2.0",
@@ -37,9 +37,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/ecs": "^0.4.3",
-    "@flare-engine/math": "^0.4.3",
-    "@flare-engine/render": "^0.4.3"
+    "@flare-engine/ecs": "^0.4.4",
+    "@flare-engine/math": "^0.4.4",
+    "@flare-engine/render": "^0.4.4"
   },
   "engines": {
     "node": ">=20"

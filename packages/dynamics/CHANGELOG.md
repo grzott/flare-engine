@@ -1,5 +1,11 @@
 # @flare-engine/dynamics
 
+## 0.4.4
+
+### Patch Changes
+
+- @flare-engine/math@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes

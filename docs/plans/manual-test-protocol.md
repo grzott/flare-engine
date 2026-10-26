@@ -49,12 +49,17 @@ and no Metro window is left running.
 and the README quickstart passed every check below, all three templates on both OSes. Android at
 `results/20261023-224318`: see that box.
 
+**Re-run 2026-10-26 on the published `0.4.4`** (runner, `results/20261026-093413`): every check below
+passed again on Windows and in the Linux container, all three templates, and the README quickstart
+(`npm create` and `bunx` both installed `0.4.4`; clone, install, build and test at `90e35b6`).
+Android passed on `0.4.4` the same morning: see that box.
+
 - [x] **Windows** — cold shell (no repo checkout), for each template `blank` / `topdown` / `shmup`:
   - [x] `npm create @flare-engine my-<tpl> -- --template <tpl>` → completes with **no `ERESOLVE`**
         and **no `--legacy-peer-deps`** (B32 fixed the `react@19.2.3` peer; confirm it holds).
   - [x] `cd my-<tpl> && npm install` clean; `npx tsc --noEmit` (or the template's typecheck) passes.
   - [x] **Prove what you installed, don't infer it:** `node_modules/@flare-engine/engine/package.json`
-        reads the current freeze patch (`0.4.3`) and the lockfile's resolved URLs point at
+        reads the current freeze patch (`0.4.4`) and the lockfile's resolved URLs point at
         `registry.npmjs.org`.
         A green install proves nothing until this holds — the typecheck and Metro boxes below are
         only as good as the artifact underneath them (XR-11).
@@ -68,13 +73,16 @@ and the README quickstart passed every check below, all three templates on both 
         blank and shmup templates; re-read them rather than assuming either way.)
 - [x] **Linux container** (e.g. `node:22` docker, clean `$HOME`) — repeat all three templates end-to-end
       (catches Windows-only path luck; the F2 rehearsal only proved `--skip-install`).
-- [ ] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the
+- [x] **Real Android device** — topdown template: `bunx expo run:android` → installs, launches, the
       tilemap renders and the virtual joystick moves the player over solid-grid collision (the TPL1 wire).
       **2026-10-23 on `0.4.3`, without `--drop-audio-api`:** the release build installed and
       launched; the tilemap, collision and the door passed. The joystick moved the player but
-      erratically: §7 row 15, FREEZE-FIX-4. Open until the stage passes on the release that carries it
-      (`0.4.4`). The Windows, Linux and README boxes above passed on `0.4.3`, which differs from
-      `0.4.4` only in `react`'s joystick touch handling.
+      erratically: §7 row 15, FREEZE-FIX-4.
+      **Passed 2026-10-26 on the published `0.4.4`** (`results/20261026-092248`, Pixel 7): built,
+      installed and launched; tilemap, collision and the door pass; the knob stays under the thumb
+      through a full circle and holds the ring's edge when dragged past it. The Windows, Linux and
+      README boxes above passed on `0.4.3`, which differs from `0.4.4` only in `react`'s joystick
+      touch handling.
 - [x] **Root-README quickstart, verbatim** — every command block in [README.md](../../README.md) run
       exactly as written, authenticated against npmjs as above (`npm create @flare-engine my-game`, the
       install/build lines). Any command that errors or drifts from its documented output = a finding.
@@ -160,6 +168,9 @@ WebKit and the emulations are proxies, not Safari or real phones.
       row 10, fixed on the page's flip branch.
       No iPhone either (same owner decision): iOS Safari is unverified at the flip. Android Chrome
       is the runner's `phone` stage, a build of `feat/oss-flip` served from the PC over USB.
+      **Android Chrome passed 2026-10-26** (`results/20261026-092248`, `a4402ae`, Pixel 7): the home
+      hero, showcases, all 3 games with touch controls and all 5 animations render and run with no
+      sideways scroll, and rotating the phone keeps them working.
 - [ ] **WASM load on throttled 4G** — CanvasKit downloads + inits within an acceptable time; no hang.
       No hang (slow 4G, CPU 4x, cache off): first frame at 2.2 s on `/` (no CanvasKit) and about
       36 s on CanvasKit pages, because the 3.26 MB wasm downloads twice — §7 row 11. With the HTTP
@@ -196,7 +207,7 @@ Each new-in-arc capability exercised at least once on its real target.
       with `bun install --omit=peer` into an empty directory (no `react`, `react-native` or Skia in
       `node_modules`): `World` + `createMovementSystem`, 60 steps, correct position, exit 0 under both
       bun 1.3.11 and node.
-- [ ] **B8 / M4 — Tiled authoring**: author a fresh map in **Tiled 1.12**, export `.tmj`, run it through
+- [x] **B8 / M4 — Tiled authoring**: author a fresh map in **Tiled 1.12**, export `.tmj`, run it through
       the `cli` → template pipeline (`parseTiled` / LDtk entities), and render it — flip bits + entities
       resolve correctly.
       Runner: `tiled-kit` writes a 5-tile tileset and the drawing steps. `s5` converts the saved map
@@ -215,7 +226,11 @@ Each new-in-arc capability exercised at least once on its real target.
       failed: the saved map holds no flipped tile (H 0, V 0, D 0), so nothing was painted flipped.
       The runner now rejects such a map before it scaffolds, and the kit's flip steps say how to see
       a flip while painting.
-- [ ] **M6 — haptics** on device: a build using the real `expo-haptics` provider fires haptics on the
+      **Passed 2026-10-26, third run** (`results/20261026-091126`, published `0.4.3` tooling): every
+      tiled check green. Flip bits decode as H 4, V 4, D 2, and all 8 flipped solid tiles (walls and
+      the two-tile door) are in the collision set. Both objects keep name, class and position. The
+      map renders with spawn and collision in the browser and renders on the phone.
+- [x] **M6 — haptics** on device: a build using the real `expo-haptics` provider fires haptics on the
       wired events; the `NoopHapticsProvider` fallback is silent (no crash) where haptics is absent.
       **No consumer wires the Expo provider (checked 2026-10-23):** PT does not depend on
       `@flare-engine/haptics` and no template uses it; only the page imports it, with the web
@@ -233,6 +248,9 @@ Each new-in-arc capability exercised at least once on its real target.
       strength is `expo-haptics`' own Android waveform, passed through unchanged: §7 row 17. The
       check app now opens every door tile and holds the bump cue back while the door's plays, and
       the runner reads the phone's vibration log instead of asking whether a buzz was felt.
+      **Passed 2026-10-26, third run** (`results/20261026-091126`): the phone's log shows 12 wall-bump
+      impacts and the door's notification (40 ms at 20% + 40 ms at 24%), each played to the end;
+      the web build stayed free of console errors. Feel is §7 row 17.
 
 ## §6 — Docs site
 
@@ -248,9 +266,11 @@ Each new-in-arc capability exercised at least once on its real target.
       **Passed 2026-10-23:** all 1,051 `/api/` pages have an h1, a signature and body text; 4 API pages
       plus `/`, `/getting-started/` and `/showcases/` rendered at 390x844 with no horizontal
       overflow. Emulated, not on a physical phone.
-- [ ] **Getting-started, verbatim, as a stranger** — the owner follows it literally with no prior
+- [x] **Getting-started, verbatim, as a stranger** — the owner follows it literally with no prior
       knowledge; any step that assumes context or drifts from reality = a finding.
       The runner's `phone` stage opens it on the phone last.
+      **Passed 2026-10-26** (`results/20261026-092248`, `feat/oss-flip` at `a4402ae` on the Pixel 7):
+      the owner followed it cold with no finding.
 
 ## §7 — Findings → FREEZE-FIX
 
@@ -271,37 +291,52 @@ stages.
 | 3 | §2 / launch (PT, release build without native audio) | PT `initAudio` | Crash on launch: audio module init throw is reported fatal by Metro | blocker | PT-side — fixed `89fe9b9` | closed |
 | 4 | §2 / B5 die → retry (step 10) | PT game-over overlay | Blank screen after death with reduced motion off; overlay at opacity 0 but tappable | major | PT-side — fixed `7ec0a1b` | closed |
 | 5 | §2 Audio, by ear (step 22) | PT app lifecycle | Music silent for the rest of a run after any trip to the background; SFX unaffected | major | PT-side — fixed `4eb72df` | closed |
-| 6 | §4 Lighthouse (2026-10-23, live site, Lighthouse 12.8.2) | page CSP | Best-practices 93 on every URL tested: the page's CSP blocks 3-4 Starlight inline scripts (hashes missing) and one Cloudflare-injected script. Functional cost: Starlight's tab-restore element is never defined and the Ctrl+K hint stays hidden; search still opens. **Fixed on the page's `feat/oss-flip`:** the post-build CSP step now hashes every inline script in the built HTML (0 of 1,082 pages left with an unhashed one). The Cloudflare script is the zone's per-request bot JavaScript detection and cannot be hashed. **2026-10-23:** the owner turned Bot Fight Mode off, but the live pages still carried the snippet afterwards, and Cloudflare documents JavaScript detections as always on for Free-plan zones. Options: accept it (live best-practices stays below 100 on that one console error; no visitor-facing function is lost), move to a plan where the toggle exists, or serve the CSP as a header with a per-request nonce, which Cloudflare's injector honours (a Worker change, post-flip) | minor (owner's 100 bar) | page-side + Cloudflare | fixed in page; Cloudflare part waits on the owner's choice |
+| 6 | §4 Lighthouse (2026-10-23, live site, Lighthouse 12.8.2) | page CSP | Best-practices 93 on every URL tested: the page's CSP blocks 3-4 Starlight inline scripts (hashes missing) and one Cloudflare-injected script. Functional cost: Starlight's tab-restore element is never defined and the Ctrl+K hint stays hidden; search still opens. **Fixed on the page's `feat/oss-flip`:** the post-build CSP step now hashes every inline script in the built HTML (0 of 1,082 pages left with an unhashed one). The Cloudflare script is the zone's per-request bot JavaScript detection and cannot be hashed. **2026-10-23:** the owner turned Bot Fight Mode off, but the live pages still carried the snippet afterwards, and Cloudflare documents JavaScript detections as always on for Free-plan zones. Options: accept it (live best-practices stays below 100 on that one console error; no visitor-facing function is lost), move to a plan where the toggle exists, or serve the CSP as a header with a per-request nonce, which Cloudflare's injector honours (a Worker change, post-flip) | minor (owner's 100 bar) | page-side + Cloudflare | fixed in page; Cloudflare part accepted by the owner 2026-10-26: the console error stays, and the per-request nonce is a post-flip page task |
 | 7 | §4 Lighthouse | page contrast | Accessibility 93 on `/`: code-sample comments `#6a737d` on `#24292e` (3.04:1); footer links "Apache-2.0" / "v0.4.2" 1.43:1 against body text with no underline (the same footer gives 96 on `/showcases/` and `/showcases/overrun/`). **Fixed on `feat/oss-flip`:** comments repainted to the muted token (6.0:1), footer blurb links underlined; local accessibility 100 on all four pages | minor (owner's 100 bar) | page-side | fixed, live re-check after flip |
 | 8 | §4 Lighthouse | page `/getting-started/` | Desktop CLS 0.146 in 3/3 runs from the requirements table `div.reqs` → performance 94; mobile performance 94-98 elsewhere. Cause: the brand web fonts swap in after first paint and re-wrap the text (CLS 0 with fonts blocked). **Fixed on `feat/oss-flip`:** docs pages preload the two latin faces; throttled A/B CLS 0.034 → 0, local desktop performance 100 | minor (owner's 100 bar) | page-side | fixed, live re-check after flip |
-| 9 | §4 desktop matrix (Playwright WebKit 26.5, proxy) | page perf governor + CanvasKit surface rebuild | When the governor steps an animation down a tier, it rebuilds it on the same canvas. After that, WebKit shows a blank canvas while the HUD still reports 59-96 fps. Reproduced on logo, nuclear-reaction, physarum-network and spacetime-lattice by forcing the step-down; Chrome and Firefox keep rendering. Not yet seen on real Safari. **Isolated 2026-10-23: a Playwright WebKit (Windows) defect, not page or engine code.** A plain WebGL1/WebGL2 canvas with no CanvasKit and no engine blanks after any `width`/`height` change in that build, while `readPixels` still returns the drawn colour; a 2D canvas, Chromium and Firefox are fine. With render-web 0.4.2 + canvaskit 0.41.1, dispose and re-create at the same size renders, and a fresh `<canvas>` renders. The rebuild blanks only because it resizes the canvas, and a plain window resize on the live site blanks it as well. The "iPhone 14" run used the same Windows binary, so it is not iOS evidence | major only if real Safari shows it (judged unlikely) | — (owner resizes a running animation in real Safari) | open until the Safari check |
+| 9 | §4 desktop matrix (Playwright WebKit 26.5, proxy) | page perf governor + CanvasKit surface rebuild | When the governor steps an animation down a tier, it rebuilds it on the same canvas. After that, WebKit shows a blank canvas while the HUD still reports 59-96 fps. Reproduced on logo, nuclear-reaction, physarum-network and spacetime-lattice by forcing the step-down; Chrome and Firefox keep rendering. Not yet seen on real Safari. **Isolated 2026-10-23: a Playwright WebKit (Windows) defect, not page or engine code.** A plain WebGL1/WebGL2 canvas with no CanvasKit and no engine blanks after any `width`/`height` change in that build, while `readPixels` still returns the drawn colour; a 2D canvas, Chromium and Firefox are fine. With render-web 0.4.2 + canvaskit 0.41.1, dispose and re-create at the same size renders, and a fresh `<canvas>` renders. The rebuild blanks only because it resizes the canvas, and a plain window resize on the live site blanks it as well. The "iPhone 14" run used the same Windows binary, so it is not iOS evidence | major only if real Safari shows it (judged unlikely) | — (owner resizes a running animation in real Safari) | open until the Safari check; accepted for the flip by the owner 2026-10-26 |
 | 10 | §4 mobile (emulated) | page game showcases | On causeway, overrun and reroute, the "N engine packages, in the order the demo earned them" table is wider than a phone and has no scroll container: iPhone 14 scrolls sideways (page 420-516 px vs 390), Pixel 7 renders zoomed out. **Fixed on `feat/oss-flip`:** the table scrolls inside its own focusable region; page width equals the viewport on all three pages at 390 and 412 px | minor | page-side | fixed |
-| 11 | §4 WASM on 4G | `render-web` `loadCanvasKit` with canvaskit-wasm 0.41.x | `loader.ts:74-76` downloads the wasm with progress and passes `wasmBinary`. The 0.41.x glue does not read `wasmBinary` (0.40.0, the version the engine's own tests and bench resolve, does), so it streams the same 3.26 MB again from `locateFile`. Every consumer on 0.41.x is affected: the templates pin `0.41.0` and the peer range is `>=0.40.0`. Cache off: about 36 s to the first frame on slow 4G. Cache on: the second fetch is a cache hit, about 20 s. A fix needs the downloaded bytes handed back as a Blob URL via `locateFile` (0.41 has no `instantiateWasm` hook either), which re-stales the render-web perf lanes | minor (perf; owner may raise) | post-flip `0.4.x` patch unless the owner pulls it in | open |
+| 11 | §4 WASM on 4G | `render-web` `loadCanvasKit` with canvaskit-wasm 0.41.x | `loader.ts:74-76` downloads the wasm with progress and passes `wasmBinary`. The 0.41.x glue does not read `wasmBinary` (0.40.0, the version the engine's own tests and bench resolve, does), so it streams the same 3.26 MB again from `locateFile`. Every consumer on 0.41.x is affected: the templates pin `0.41.0` and the peer range is `>=0.40.0`. Cache off: about 36 s to the first frame on slow 4G. Cache on: the second fetch is a cache hit, about 20 s. A fix needs the downloaded bytes handed back as a Blob URL via `locateFile` (0.41 has no `instantiateWasm` hook either), which re-stales the render-web perf lanes | minor (perf; owner may raise) | RW-WASM-1, first post-flip `0.4.x` patch (owner 2026-10-26) | open |
 | 12 | §2 B12 IAP-restore (PT step 21) | `iap-revenuecat` restore | Not exercised: PT's `.env` holds no RevenueCat key, so every PT build fell back to `NoopIAPProvider`. A real run needs Play Console products, a Play test track, a license tester and RevenueCat service credentials. RevenueCat's Test Store is no shortcut here: it needs `react-native-purchases` 9.5.4 or later, and restore on it is unconfirmed | minor (coverage gap) | — (post-flip) | open |
-| 13 | §1 first-run (code read 2026-10-23, the runner's `readme` stage prints the live hint) | `create` next-step hint | `manifest.ts` sets `postInstall: 'bun run start'` for all three templates and `cli.ts` prints it whatever package manager ran the install. An `npm create` user without bun gets `bun: command not found`; with bun, `start` is the Expo Go path every template README warns against (press `a`, red screen). The READMEs lead with `bun run android`, and the templates' `test` script is `bun test` | minor (owner may raise: it sits on the launch-critical funnel) | CREATE-HINT-1, post-flip `0.4.x` patch unless the owner pulls it in | open |
+| 13 | §1 first-run (code read 2026-10-23, the runner's `readme` stage prints the live hint) | `create` next-step hint | `manifest.ts` sets `postInstall: 'bun run start'` for all three templates and `cli.ts` prints it whatever package manager ran the install. An `npm create` user without bun gets `bun: command not found`; with bun, `start` is the Expo Go path every template README warns against (press `a`, red screen). The READMEs lead with `bun run android`, and the templates' `test` script is `bun test` | minor (owner may raise: it sits on the launch-critical funnel) | CREATE-HINT-1, post-flip `0.4.x` patch (owner 2026-10-26) | open |
 | 14 | §1 real Android device (the runner's `android` stage, 2026-10-23, Windows) | `audio` + `engine` peer metadata | The topdown release build fails in `react-native-audio-api`'s arm64 native build: ninja cannot create its object directory, after CMake warns the directory alone is 186 of 250 characters. No template uses audio, but `audio` and `engine` declare the package as a required peer (`>=0.3.0`), so npm and bun install it into every scaffold (bun picked `0.13.6`) and Expo compiles it. Its CMake mirrors the absolute source path inside the object directory, so the project path counts twice, and no Windows project path is short enough with the stock toolchain. Engine source never imports it. With the package deleted before prebuild, the same template built a release APK at a longer path (42 characters), Skia, Reanimated and Worklets included | blocker (every template's `bun run android` on Windows) | FREEZE-FIX-3 (ADR-0010, `0.4.3`) | closed — `0.4.3` published 2026-10-23; the same evening the runner's `android` stage built, installed and launched the topdown template on the phone without `--drop-audio-api` (`results/20261023-224318`) |
-| 15 | §1 real Android device (the runner's `android` stage on `0.4.3`, 2026-10-23; reported 2026-10-25) | `react` `<VirtualJoystick>` | The joystick moves the player erratically, and with the finger held to the right the knob leaves the ring. The component fed `nativeEvent.locationX/Y` to `updateJoystick` as if measured against the stick. Android measures them against the view under the finger on every move (`JSTouchDispatcher.kt:156-158`, `TouchesHelper.kt:51-65` in RN 0.83.6): the default knob, which was a touch target, while the finger is over it, and the full-screen game view past the ring. Fabric also puts the first changed touch on the event, and the responder gets every finger's moves, so in shmup the fire-button finger can drive the stick. Web was right throughout: react-native-web measures against the responder | blocker (the only control of the first-run template, on every Android device) | FREEZE-FIX-4 (ADR-0011, accepted 2026-10-26, `0.4.4`) | open: `0.4.4` cut 2026-10-26; owner device check with `--local-react` before the publish, then the `android` stage on the published `0.4.4` |
+| 15 | §1 real Android device (the runner's `android` stage on `0.4.3`, 2026-10-23; reported 2026-10-25) | `react` `<VirtualJoystick>` | The joystick moves the player erratically, and with the finger held to the right the knob leaves the ring. The component fed `nativeEvent.locationX/Y` to `updateJoystick` as if measured against the stick. Android measures them against the view under the finger on every move (`JSTouchDispatcher.kt:156-158`, `TouchesHelper.kt:51-65` in RN 0.83.6): the default knob, which was a touch target, while the finger is over it, and the full-screen game view past the ring. Fabric also puts the first changed touch on the event, and the responder gets every finger's moves, so in shmup the fire-button finger can drive the stick. Web was right throughout: react-native-web measures against the responder | blocker (the only control of the first-run template, on every Android device) | FREEZE-FIX-4 (ADR-0011, accepted 2026-10-26, `0.4.4`) | closed — the fix passed on the phone before the publish (`s5` with `--local-react`, `results/20261026-091126`), and the `android` stage passed on the published `0.4.4` (`results/20261026-092248`) |
 | 16 | §5 B8/M4 (the runner's `s5` stage, 2026-10-25) | `cli` `flare tiled-to-flare` | A map saved as TMX (XML) fails with the raw JSON parser message `Unexpected token '<', "<?xml vers"... is not valid JSON`. The CLI is documented as `.tmj` only, but Tiled writes XML under any name when Save as type is left on TMX, so a stranger gets no hint | minor (DX) | CLI-TMX-1, post-flip | open |
 | 17 | §5 M6 (the runner's `s5` stage, 2026-10-26, Pixel 7) | `haptics` `createExpoHapticsProvider` | The cues reach the motor, but the owner could not feel them. The adapter forwards `impact`/`notification` to `expo-haptics`' `impactAsync`/`notificationAsync` unchanged, and on Android those play fixed waveforms through `Vibrator`: `light` is 50 ms at 12% strength, `success` two 40 ms steps at 20% and 24% (`expo-haptics` 57.0.3, `HapticsImpactType.kt`, `HapticsNotificationType.kt`). The same module's `performAndroidHapticsAsync` uses the system haptic effects instead. A consumer calling `expo-haptics` directly gets the same strength | minor (feel, Android only) | HAPTICS-ANDROID-1, post-flip | open |
 
 ### Exit criteria (all must hold before OSS-I1 / flip)
 
-- [ ] §1 first-run funnel is **green on both OSes, all three templates** (zero blockers).
-- [ ] PT runs on `0.4.0` with no blocker/major regression. Berek (§3) is deferred post-flip (owner
+- [x] §1 first-run funnel is **green on both OSes, all three templates** (zero blockers).
+      2026-10-26 on `0.4.4`: Windows, Linux, the README quickstart and the real Android device.
+- [x] PT runs on `0.4.0` with no blocker/major regression. Berek (§3) is deferred post-flip (owner
       decision 2026-10-19), so §1's **Real Android device** topdown box is now the only pre-flip
       manual coverage of `tilemap` and the physics solid-grid path.
-- [ ] Web matrix + Lighthouse 100 hold; docs getting-started is followable cold.
-- [ ] **§5 new surfaces** (M1 keyboard, M2 headless, B8/M4 Tiled, M6 haptics) each executed on its real
+      §2: every box passed except B12 IAP restore, not exercised (§7 row 12, minor, post-flip); §7
+      rows 1-5 are closed. That topdown box passed on `0.4.4`.
+- [x] Web matrix + Lighthouse 100 hold; docs getting-started is followable cold.
+      Chrome, Firefox and Android Chrome pass, and getting-started passed cold on the phone.
+      **Accepted as known gaps by the owner 2026-10-26:** Safari and iOS Safari are unverified at
+      the flip (no Mac or iPhone; §7 row 9 stays open until then), and Lighthouse 100 is shown on a
+      local build of the page's `feat/oss-flip`, with the live site re-checked after the flip
+      deploys (live mobile performance 94-98 accepted).
+- [x] **§5 new surfaces** (M1 keyboard, M2 headless, B8/M4 Tiled, M6 haptics) each executed on its real
       target and green — or every failure logged in §7 and triaged (blockers closed).
-- [ ] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.4.x` restricted patch and
+      All four green by 2026-10-26; rows 16 and 17 are post-flip minors.
+- [x] Every `FREEZE-FIX` blocker is closed (each fix shipped as a lockstep `0.4.x` restricted patch and
       re-tested); majors closed or explicitly accepted; minors triaged to the post-flip backlog.
+      2026-10-26: blockers 1, 3, 14 and 15 closed (`0.4.1`, PT, `0.4.3`, `0.4.4`); majors 2, 4 and 5
+      closed, 9 accepted by the owner; minors 7, 8 and 10 fixed on the page, 6 accepted, and 11,
+      12, 13, 16 and 17 post-flip.
 - [x] **Perf gate still green after the last FREEZE-FIX patch** — every hard item in the "Perf gate
       (single source)" block of road-to-oss §11 / OSS-H1. Not restated here on purpose. A fix that
       touches a measured package re-reds `check:perf-freshness`; that is a re-capture, not a waiver.
       Green 2026-10-23 at `7328b53`, no override: `check:perf` (11 scenarios), `check:perf-bytes`
-      (42 packages), `check:perf-freshness` (5 suites captured at `785a3b2`).
-- [ ] **No registry override left:** `npm config get registry` prints `https://registry.npmjs.org/`,
+      (42 packages), `check:perf-freshness` (5 suites captured at `785a3b2`). Green again at the
+      `0.4.4` cut (2026-10-26, `90e35b6`), same three gates and same capture: `react` is outside
+      every lane's closure, and `bun run release` re-ran the gate before the publish.
+- [x] **No registry override left:** `npm config get registry` prints `https://registry.npmjs.org/`,
       no `registry=` line in `$HOME/.npmrc` pointing anywhere but npmjs, nothing listening on
       4873/4874, and every §1 scaffold directory deleted (the runner's `exit` stage checks all four). With the window on npmjs (2026-10-23) this is a check, not a teardown — but
       I2's flip-day tokenless scaffold must start from a clean machine either way (XR-11).
-- [ ] Owner sign-off recorded here: `signed-off: ____________  date: __________`
+      **Passed 2026-10-26** (the runner's `exit` stage, after the last §1 run): all four checks.
+- [x] Owner sign-off recorded here: `signed-off: grzott  date: 2026-10-26`

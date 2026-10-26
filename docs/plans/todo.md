@@ -21,18 +21,7 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
 - **FREEZE-FIX-2 — DONE 2026-10-20 (versioned `0.4.2`, re-capture landed), see `## Done`.** Owner
   publish and PT `H2`'s re-check close §7 row 2.
 - **FREEZE-FIX-3 — DONE 2026-10-23 (published `0.4.3`), see `## Done`.** §7 row 14 closed.
-- **FREEZE-FIX-4 — `<VirtualJoystick>` follows its own finger (P0, `0.4.4`; code and tests done
-  2026-10-25, ADR-0011 accepted and `0.4.4` versioned 2026-10-26).** Evidence: manual-test-protocol §7 row 15. On Android the knob
-  jumps and leaves the ring because the component read `locationX/Y`, which Android re-measures
-  against the view under the finger on every move. Diff: `packages/react/src/virtual-joystick.tsx`
-  (page origin at grant, the granting finger matched by `identifier`, other fingers ignored, the
-  default knob not a touch target), five new tests red before and green after in
-  `packages/react/tests/virtual-joystick-knob.test.ts` and `virtual-controls.test.ts` (the
-  knob-test helpers now send grant-then-move events with page coordinates), the `<VirtualJoystick>`
-  row in `docs/design/api-specs.md`, ADR-0011, and `.changeset/freeze-fix-4-joystick-own-finger.md`.
-  `react` is outside every perf lane's closure. Close: the owner's device check with the runner's
-  `--local-react`, ADR-0011 accepted, `0.4.4` cut and published, then the `android` stage passes on
-  `0.4.4`.
+- **FREEZE-FIX-4 — DONE 2026-10-26 (published `0.4.4`), see `## Done`.** §7 row 15 closed.
 - **RW-WASM-1 — CanvasKit wasm downloads twice on canvaskit-wasm `0.41.x` (P1, engine-builder,
   `packages/render-web`, first post-flip `0.4.x` patch; deliberately not in the window).** Spec and
   evidence: [manual-test-protocol.md](manual-test-protocol.md) §7 row 11. The fix also needs a
@@ -1095,6 +1084,14 @@ See [roadmap.md "Future tracks"](roadmap.md#future-tracks-when-meta-refactor-clo
 
 ## Done
 
+- **FREEZE-FIX-4 — react: `<VirtualJoystick>` follows its own finger (2026-10-26, `0.4.4` published
+  by the owner).** Blocker from the §1 runner, §7 row 15: on Android the knob jumped and left the
+  ring, because the component read `locationX/Y`, which Android re-measures against the view under
+  the finger on every move. The stick now takes its page origin at grant, follows the granting
+  finger by `identifier` in page coordinates and ignores other fingers; the default knob is not a
+  touch target ([ADR-0011](../design/adr-0011-joystick-reads-its-own-finger.md), Accepted by the
+  owner). Five new tests, red before and green after. Verified on the phone before the publish by
+  the runner's `s5` stage with `--local-react`, and after it by the `android` stage on `0.4.4`.
 - **FREEZE-FIX-3 — audio + engine: `react-native-audio-api` is an optional peer (2026-10-23,
   `0.4.3` published by the owner).** Blocker from the §1 runner, §7 row 14: as a required peer it was
   installed into every scaffold and its native build cannot finish on Windows (CMake doubles the

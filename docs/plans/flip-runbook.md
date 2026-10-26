@@ -77,7 +77,7 @@ no clean rollback.
       `npm view @flare-engine/engine@0.4.99 --registry https://registry.npmjs.org/` and
       `npm view @flare-engine/create@0.4.99 --registry https://registry.npmjs.org/` both
       **404**. Keep the real pins untouched in the flip commit.
-- [ ] **Registry hygiene — on the machine that ran the freeze window, before step 1:**
+- [x] **Registry hygiene — on the machine that ran the freeze window, before step 1:**
       verdaccio stopped (nothing listening on 4873 or 4874); `npm config get registry`
       prints `https://registry.npmjs.org/`; no `registry=` line left in `$HOME/.npmrc`;
       every freeze-window scaffold directory deleted so no verdaccio-resolved lockfile
@@ -85,6 +85,8 @@ no clean rollback.
       and nothing else in this runbook would notice it still set (XR-11).
       **2026-10-23:** the window's §1 runs authenticated against npmjs, not verdaccio
       (manual-test-protocol.md, owner decision), so this is a check rather than a teardown.
+      **Passed 2026-10-26:** the window runner's `exit` stage, after the last §1 run, checked all
+      four.
 - [ ] **Nothing stale goes public with the repo (added 2026-10-23):** every branch and open
       PR becomes visible at Step 1. Delete the six April `copilot/*` remote branches (five
       point at `996ce1f`, an abandoned line 14 commits off `main` whose `.claude/settings.json`
@@ -132,11 +134,13 @@ no clean rollback.
       [ADR-0007](../design/adr-0007-scaffolder-is-flare-engine-create.md) the scaffolder is
       `@flare-engine/create`: inside the scope, published `restricted` at H1 with the other
       41, so flip day no longer contains a first publish. Its replacement check:
-- [ ] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
+- [x] **Scaffolder on the registry:** `npm view @flare-engine/create version` (authenticated)
       prints the freeze version, and the manual window's §1 scaffolded from it.
       Registry half done 2026-10-12 (`0.4.0`); `0.4.2` is on npmjs (PT and the page install
       it), `0.4.3` (FREEZE-FIX-3) followed on 2026-10-23, and `0.4.4` (FREEZE-FIX-4) is the freeze
-      version from 2026-10-26; open for window §1.
+      version from 2026-10-26. **Done 2026-10-26:** window §1 scaffolded all three templates from
+      the published `0.4.4` with `npm create @flare-engine` and `bunx @flare-engine/create`, on
+      Windows, Linux and the phone (`results/20261026-093413`, `20261026-092248`).
 - [x] **Owner ratified:** flip date, `.claude/`/SESSION_LOG go public, author-email
       stance (§14). 2026-10-12: all yes, flip Oct 26–28, history kept as-is.
 
@@ -281,13 +285,14 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
       deployed to it on 2026-07-01 and verified the WASM MIME type on the live Worker on
       2026-08-27 (found 2026-09-29), so this step is the deploy, not a domain bind. The 6
       links into the now-public engine repo go live here.
-- [ ] Owner (Cloudflare dashboard, any time before this deploy): the zone's bot **JavaScript
+- [x] Owner (Cloudflare dashboard, any time before this deploy): the zone's bot **JavaScript
       detections** snippet is injected per request with a ray ID, so the site's hash-only
       `script-src` can never allow it; it is the last console error behind best-practices 93
       (manual-test-protocol §7 row 6). Bot Fight Mode is off (2026-10-23, Security → Settings →
       DDoS attacks). JavaScript detections cannot be switched off on the Free plan, and the
       snippet was still injected after Bot Fight Mode went off, so this box closes on the owner's
-      decision recorded in §7 row 6, not on a toggle.
+      decision recorded in §7 row 6, not on a toggle. **Decided 2026-10-26 (owner):** accept the
+      console error; the per-request CSP nonce is a post-flip page task.
 
 **Rollback:** reversible (unbind domain).
 

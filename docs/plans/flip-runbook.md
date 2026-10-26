@@ -205,10 +205,11 @@ Provenance was removed in S4b; re-add it now that the repo is public.
       **Done 2026-10-26** in the step-4 flip commit. All 42 manifests carry
       `repository.url` `git+https://github.com/grzott/flare-engine.git` with their own
       `directory`, which provenance checks against the workflow's repository.
-- [ ] Owner: confirm the release runner has **npm ≥ 11.5.1** — `release.yml` installs
+- [x] Owner: confirm the release runner has **npm ≥ 11.5.1** — `release.yml` installs
       `npm@11` after `actions/setup-node` since 2026-10-09 and prints `npm --version`;
       read that line in the run log. Provenance also requires a public repo (step 1) +
       public packages (steps 3–5) — all true by publish time.
+      **2026-10-26:** the release run (`40301178379`) printed `11.21.1`.
 
 **Rollback:** trivial (revert the env line).
 
@@ -275,7 +276,7 @@ is done).
 
 Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 scoped packages.
 
-- [ ] Owner: `bun run version` — a **four-stage chain**, not two
+- [x] Owner: `bun run version` — a **four-stage chain**, not two
       (`package.json:52`): `check:bump` → `changeset version` →
       `scripts/concretize-workspace-deps.ts` → `bun install`. The omitted stages are the
       ones that bite: **`check:bump` refuses an above-`patch` changeset that cites no
@@ -285,15 +286,19 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
       *(No `GITHUB_TOKEN` is needed locally. The earlier note claiming otherwise was
       wrong and is struck at the F2 box above — the configured changelog generator is
       the built-in `@changesets/cli/changelog`, which makes no network calls.)*
-- [ ] Owner: review the version bump + regenerated `CHANGELOG`s; commit.
-- [ ] Owner: publish through **CI only** — push `main` with `vars.ENABLE_RELEASE
+- [x] Owner: review the version bump + regenerated `CHANGELOG`s; commit.
+      **2026-10-26:** `0.4.5`, `e27b5b0` (`bun.lock` unchanged; frozen install passes).
+- [x] Owner: publish through **CI only** — push `main` with `vars.ENABLE_RELEASE
       == 'true'` so `release.yml` runs `bun run release` with the step-2
       `NPM_CONFIG_PROVENANCE` env + OIDC (`id-token: write`). A **local** `bun run
       release` produces **no provenance** (npm provenance requires a CI/OIDC runner —
       a laptop has no OIDC token) and silently ships a non-provenance release, so it
       is **not** the flip path — reserve local `bun run release` for the F2 verdaccio
       rehearsal, where provenance is not asserted.
-- [ ] **Owner** (not agent — see the lane note below): no `workspace:`/`0.0.0` leaks in the
+      **Published 2026-10-26** by release run `40301178379` (success): "packages published
+      successfully" lists all 42 at `0.4.5`, with 42 tags and 42 GitHub releases. The registry
+      showed the last few about two minutes after the run ended.
+- [x] **Owner** (not agent — see the lane note below): no `workspace:`/`0.0.0` leaks in the
       published tarballs — fetch each with an
       explicit `npm pack --registry https://registry.npmjs.org/ @flare-engine/<pkg>@<version>`
       into an empty directory, never by installing in a tree that carries a lockfile.
@@ -305,6 +310,9 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
       verdaccio-resolved lockfile or an ambient `registry=` hands you the local build, and
       it passes this check because concretize ran locally too (XR-11); provenance
       shows on the fresh release (`npm view @flare-engine/engine`).
+      **2026-10-26, checked without npm or a token:** the public registry's `0.4.5` manifest of
+      all 42 packages (the `package.json` inside each tarball) is `latest`, carries a SLSA v1
+      provenance attestation, has no `workspace:` or `0.0.0` range and reads `Apache-2.0`.
 
 **Rollback:** publishes are **not** cleanly reversible (unpublish restrictions).
 
@@ -340,13 +348,21 @@ Run the full battery — see road-to-oss §12 / the OSS-I2 row:
       machine with no npm token,
       each into a **new empty directory** — no lockfile or `node_modules` reused from the
       freeze window, whose scaffolds installed the restricted `0.4.3` and `0.4.4` with a token.
-- [ ] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.
-- [ ] Docs-site links into the public repo resolve; README badges live (add the CI badge).
-- [ ] Lighthouse on the live site (`/`, `/getting-started/`, `/showcases/`,
+- [x] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.
+      **2026-10-26:** all 42 at `0.4.5` with SLSA v1 provenance, read anonymously (step 5 box).
+- [x] Docs-site links into the public repo resolve; README badges live (add the CI badge).
+      **2026-10-26:** a crawl of the live site found 241 distinct links into this repo, all 200.
+      README now carries a CI badge (passing) and an npm version badge (`0.4.5`).
+- [x] Lighthouse on the live site (`/`, `/getting-started/`, `/showcases/`,
       `/showcases/overrun/`, mobile + desktop): accessibility and best-practices 100,
       getting-started desktop CLS 0 — the live re-check of manual-test-protocol §7 rows 6-8.
-- [ ] GitHub **Community Standards** checklist green (Insights → Community).
-- [ ] Owner: enable **Discussions**.
+      **2026-10-26 (12.8.2, mobile median of 3):** accessibility 100 and SEO 100 on every page,
+      performance 97-100, getting-started desktop CLS 0. Best-practices 93 from one console error:
+      Cloudflare's injected bot-detection script, the only inline script without a hash, accepted
+      by the owner in §7 row 6.
+- [x] GitHub **Community Standards** checklist green (Insights → Community).
+      **2026-10-26:** the community profile API reports 100%.
+- [x] Owner: enable **Discussions**. **On 2026-10-26**, before the site deploy, with Announcements.
 - [ ] Agent: flip `docs/plans/roadmap.md` + `road-to-oss-2026-09.md` to "shipped"
       state; update memory.
 

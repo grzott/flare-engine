@@ -8,6 +8,14 @@ For next-row tracking: [todo.md](todo.md). For history: [SESSION_LOG.md](../../S
 
 ## State (2026-07-03; version + publish facts refreshed 2026-09-01; harness reconciliation 2026-09-08)
 
+**SHIPPED 2026-10-26 — public open source.** The repo is public and all 42 `@flare-engine/*`
+packages are public on npm; `0.4.5` is the first public release, published from CI with npm
+provenance. The freeze window closed the same morning with the owner's sign-off
+([manual-test-protocol.md](manual-test-protocol.md)); the flip steps and their evidence are in
+[flip-runbook.md](flip-runbook.md). The **Engine** and **Active focus** lines below are the
+pre-flip record; read [CHANGELOG.md](../../CHANGELOG.md) for the current version. Next: the
+post-flip backlog (road-to-oss §13) and `todo.md`.
+
 **Positioning (2026-07-03):** public framing = "a 2D engine that runs the same code on Web + React Native — animation, gamification, interactive UI, and games"; not "the first RN game engine", not a Unity/Godot/Unreal competitor. Games (Pan Tvardowski, Berek, a planned platformer) are showcases/dogfooding. **Scope caveat (2026-09-08):** the "same code on Web" half is backed for the renderer, the headless sim, and a scaffolded app in a browser (Arc WEB, WEB-5, 2026-08-24) — not for a hosted, publicly reachable game, which lands at WEB-H4 and has not run; and postfx-using games render unfiltered on web (web-target-2026-08.md:435-437). [web-target-2026-08.md](web-target-2026-08.md) §10 correction 2 required this caveat on 2026-08-21; it was applied 2026-09-08.
 **License (2026-07-03 owner decision):** engine relicenses MIT → Apache-2.0 before the flip (patent grant + §6 name reservation); games licensed separately (PT = PolyForm Noncommercial). Owning row: **OSS-E2** (road-to-oss §16) — full scope is 41 per-package LICENSE files + 41 manifests + NOTICE + TRADEMARK.md + prose, not just the root LICENSE. license-compat is clean (zero copyleft). Name collision is LIVE (flarerpg's `flare-engine` shipped v1.15 2026-05).
 

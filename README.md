@@ -2,6 +2,8 @@
 
 > Modular 2D engine for React Native + Web — animation, gamification, interactive UI, and games — built on Skia
 
+[![CI](https://github.com/grzott/flare-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/grzott/flare-engine/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@flare-engine/engine)](https://www.npmjs.com/package/@flare-engine/engine)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](./tsconfig.base.json)
 

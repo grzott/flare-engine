@@ -45,21 +45,21 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 
 - Conventional Commits: `feat(math): add Vec2.lerp` — ≤72 chars, no body, no emoji, no Co-Authored-By trailer
 - One source per fact (no mirror rows, no duplicate changelogs)
-- Status: current line is `0.3.1` on npm (restricted) — read `CHANGELOG.md` rather than trusting a
-  version literal here; **public OSS flip October 2026** — queue + full specs in [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)
+- Status: **public since 2026-10-26** — the repo and every `@flare-engine/*` package; read
+  `CHANGELOG.md` for the current version rather than trusting a literal here. The launch record is
+  [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)
 
-### Release posture (verified 2026-10-09 at HEAD `9d9d898` + working tree)
+### Release posture (verified 2026-10-26 at `e27b5b0`)
 
-- **5 published versions**, all `access: restricted`: `0.1.0` (36 scoped pkgs), `0.2.0` and `0.2.1`
-  (40), `0.3.0` and `0.3.1` (41). Nothing is anonymously installable before the October 2026 flip.
-  `0.4.0` is the first publish of the 42nd, `@flare-engine/create` (ADR-0007).
-- **HEAD is ahead of npm, and the next publish is `0.4.0`, not a patch.** 29 unreleased changesets
-  sit under `.changeset/`, and two of them (`xr13-worklets-scheduleonui.md`,
-  `oss-m10-render-table-stakes.md`) are **`minor`**, authorised by the accepted ADR-0002 and ADR-0006
-  — `bun run check:bump` says so. Per
-  [`docs/plans/versioning-and-announcements.md`](docs/plans/versioning-and-announcements.md), a
-  pre-freeze minor rides into the `0.4.0` freeze cut rather than getting its own release, so the
-  pending set resolves to `0.4.0`. Do not describe the next version as `0.3.2`.
+- **Public, with provenance from `0.4.5`.** `0.1.0` through `0.4.4` were published restricted; npm
+  visibility is retroactive, so every version installs anonymously now. `0.4.5` is the first release
+  published as public.
+- **Releases go through CI only.** Run `bun run version` locally, add the root `CHANGELOG.md` entry,
+  commit and push `main`; `release.yml` (gated on the `ENABLE_RELEASE` variable) runs
+  `bun run release` with npm provenance. A local `bun run release` ships without provenance.
+- **The publish token has a deadline.** The `NPM_TOKEN` secret is a Bypass-2FA granular token that
+  expires 2026-12-01, and npm is removing direct publishing from such tokens (target January 2027);
+  they already cannot change package access. Move `release.yml` to Trusted Publishing before then.
 - **A release commit bumps every `package.json` but does not publish.** Git and npm can diverge at
   any moment, in either direction. Never infer one from the other; `CHANGELOG.md` is the index and
   each package's own `CHANGELOG.md` is the source of truth for what changed.

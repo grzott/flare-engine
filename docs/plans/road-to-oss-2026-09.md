@@ -1,6 +1,11 @@
 # Road to OSS — the single roadmap to the October 2026 public flip
 
-**Status: ACTIVE — this is the only execution queue for the OSS launch.** Created 2026-07-03 from the
+**Status: SHIPPED 2026-10-26.** The repo and all 42 `@flare-engine/*` packages are public;
+`0.4.5` is the first public release, from CI with npm provenance. What remains is the post-flip
+backlog (§13) and the open boxes in [flip-runbook.md](flip-runbook.md) step 7. Everything below is
+the record of the plan.
+
+**Status before the flip: ACTIVE — this was the only execution queue for the OSS launch.** Created 2026-07-03 from the
 July audit corpus; every bug row below was re-verified against HEAD (file:line) on 2026-07-03 by an
 independent 7-agent pass before this plan was written.
 

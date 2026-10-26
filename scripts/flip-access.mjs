@@ -15,6 +15,12 @@
  *   bun scripts/flip-access.mjs --execute       # live: `npm access set status=public <pkg>` serially
  *   bun scripts/flip-access.mjs --execute --otp 123456   # pass a 2FA one-time password through
  *
+ * Without `--otp`, each `set` runs on this terminal, so npm can show its own 2FA prompt. That is
+ * the path for a security-key account (npmjs.com offers no authenticator codes any more): npm
+ * prints a link, the key is approved in the browser, and the run continues. A Bypass-2FA token
+ * cannot change access at all (E403 since 2026-07-31), so run it under a browser login; see
+ * flip-runbook.md step 3.
+ *
  * Serial + resumable: before each set, the package's current status is probed
  * (`npm access get status <pkg>`) and already-public packages are SKIPPED, so a
  * re-run after a mid-list failure (expired OTP, network) continues where it left
@@ -111,8 +117,8 @@ for (const pkg of scoped) {
   }
   try {
     const args = ['access', 'set', 'status=public', pkg];
-    if (otp) args.push(`--otp=${otp}`);
-    npm(...args);
+    if (otp) npm(...args, `--otp=${otp}`);
+    else execFileSync('npm', args, { cwd: root, stdio: 'inherit' });
     console.log(`  OK    ${pkg}`);
     flipped++;
   } catch (err) {
@@ -120,7 +126,7 @@ for (const pkg of scoped) {
     console.error(String(err.stderr || err.message || err).trim());
     console.error(
       `\n[flip-access] stopped at ${pkg} (${flipped} flipped, ${skipped} already public). ` +
-        'Fix the error (often an expired --otp) and re-run — completed packages are skipped.',
+        'Fix the error (often an expired --otp or an unapproved 2FA prompt) and re-run — completed packages are skipped.',
     );
     process.exit(1);
   }

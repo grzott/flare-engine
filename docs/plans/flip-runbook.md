@@ -39,10 +39,12 @@ no clean rollback.
 
 ## Pre-flight (before flip day — completed by freeze, Oct 12)
 
-- [ ] **H1 done:** `0.4.0` published **restricted** — all **42** scoped packages, the first
+- [x] **H1 done:** `0.4.0` published **restricted** — all **42** scoped packages, the first
       publish of `@flare-engine/create` included; the two-week manual window
       (Oct 12–25) passed with no launch-blockers (road-to-oss §11).
-      **Publish half done 2026-10-12** (`c00b173`, 42 tags pushed); open for the window.
+      **Publish half done 2026-10-12** (`c00b173`, 42 tags pushed). **Window half done
+      2026-10-26:** every launch-blocker closed (FREEZE-FIX-1 to 4, `0.4.1`-`0.4.4`), exit
+      criteria met and owner sign-off recorded in manual-test-protocol.md.
 - [x] **F2 done (2026-07-15):** rehearsed on verdaccio — engine resolves with zero
       `workspace:`/`0.0.0` leaks, `render-web` installs with no RN tree, published
       tarballs carry `Apache-2.0` + `LICENSE` + `NOTICE`. Three rehearsal rules folded
@@ -87,7 +89,7 @@ no clean rollback.
       (manual-test-protocol.md, owner decision), so this is a check rather than a teardown.
       **Passed 2026-10-26:** the window runner's `exit` stage, after the last §1 run, checked all
       four.
-- [ ] **Nothing stale goes public with the repo (added 2026-10-23):** every branch and open
+- [x] **Nothing stale goes public with the repo (added 2026-10-23):** every branch and open
       PR becomes visible at Step 1. Delete the six April `copilot/*` remote branches (five
       point at `996ce1f`, an abandoned line 14 commits off `main` whose `.claude/settings.json`
       carries local paths; `market-research-rn-mobile-games` is already merged), and close the
@@ -95,6 +97,9 @@ no clean rollback.
       #7 fails `bench-dashboard`'s build and #9 fails `check:perf-bytes`). Done when
       `git ls-remote --heads origin` lists only `main` (plus any branch you mean to publish)
       and `gh pr list` is empty.
+      **Done 2026-10-26:** the `copilot/*` branches and #7-#9 went on 10-23; Dependabot's weekly
+      run opened #10-#13 that morning, closed with their branches before step 1. Only `main`
+      remains and no PR is open.
 - [x] **F3 done:** tarball audit clean (or every old-version hit has an owner
       disposition, §14). **This box stays open even though todo.md records OSS-F3 as
       Done — both are right, read carefully.** The HEAD-tarball half shipped in session
@@ -125,10 +130,12 @@ no clean rollback.
       expiry date into the owner ledger. Also note npm's August 2026 change — a
       Bypass-2FA token can no longer perform account-identity or account-governance
       actions, though publishing still works; that is what the `--otp` device is for.
-- [ ] **Token still valid on flip day (FW-0):** `npm whoami` locally, and check the
+- [x] **Token still valid on flip day (FW-0):** `npm whoami` locally, and check the
       recorded expiry — "the Actions secret holds the rotated token" is not the same as
       "the token still works". If it would lapse inside the window, rotate **before** the
       access flip, never after.
+      **2026-10-26:** `npm whoami` prints `grzott` (the window runner's preflight, three runs that
+      morning, and the `0.4.4` publish); the ledger records expiry 2026-12-01, after the window.
 - [x] ~~**`create-flare-app` name still free**~~ — **failed 2026-09-11 and retired
       2026-10-09.** An unrelated publisher (`oksigen`) took the unscoped name. Per
       [ADR-0007](../design/adr-0007-scaffolder-is-flare-engine-create.md) the scaffolder is
@@ -148,7 +155,8 @@ no clean rollback.
 
 ## Step 1 — GitHub repo → public **(owner, first)**
 
-- [ ] Owner: GitHub → **Settings → General → Danger Zone → Change visibility → Public**.
+- [x] Owner: GitHub → **Settings → General → Danger Zone → Change visibility → Public**.
+      **Public 2026-10-26.**
 
 **Side effects (acknowledge before clicking):** stars/watchers reset to 0; the
 Actions run history becomes publicly visible; existing **private forks detach**
@@ -168,11 +176,13 @@ repository public"*.
       FW-13**, so nothing on the critical path can be blocked by a ruleset that has
       never been exercised.
 
-- [ ] Owner: **Settings → Security → Code security** — enable **Private vulnerability
+- [x] Owner: **Settings → Security → Code security** — enable **Private vulnerability
       reporting** (added 2026-10-23: `SECURITY.md` tells reporters to use GitHub's "Report a
       vulnerability" button, which does not exist until this is on), **Secret scanning** and
       **Push protection** (free on public repos), and **Dependabot alerts**. None of these were
       available while the repo was private on the free plan.
+      **On 2026-10-26** (read back through the API): vulnerability reporting enabled, Dependabot
+      alerts on, secret scanning and push protection enabled.
 - [ ] Owner: **Settings → General → Social preview** — upload an image (1280×640). The API
       cannot set it; without one, link previews show a generated card. Description, homepage
       (`https://flareengine.dev`) and 14 topics were set 2026-10-23, Projects tab off,
@@ -185,13 +195,16 @@ links do **not** come back. Safe to pause here.
 
 Provenance was removed in S4b; re-add it now that the repo is public.
 
-- [ ] Agent: add `NPM_CONFIG_PROVENANCE: "true"` to **the `env:` block of the
+- [x] Agent: add `NPM_CONFIG_PROVENANCE: "true"` to **the `env:` block of the
       `changesets/action` step** in `.github/workflows/release.yml` — beside
       `GITHUB_TOKEN` and `NPM_TOKEN` at `:56-58` — not to a job-level `env`
       (fold into the step-4 flip commit). `release.yml` already declares
       `id-token: write`. **Note the file has two `env:` blocks**, not one: the other is
       `FLARE_PERF_BASE_REF` on the `check:perf` step at `:44-45`. Anything that calls
       one of them "the only env block in the file" is describing an older file.
+      **Done 2026-10-26** in the step-4 flip commit. All 42 manifests carry
+      `repository.url` `git+https://github.com/grzott/flare-engine.git` with their own
+      `directory`, which provenance checks against the workflow's repository.
 - [ ] Owner: confirm the release runner has **npm ≥ 11.5.1** — `release.yml` installs
       `npm@11` after `actions/setup-node` since 2026-10-09 and prints `npm --version`;
       read that line in the run log. Provenance also requires a public repo (step 1) +
@@ -204,11 +217,25 @@ Provenance was removed in S4b; re-add it now that the repo is public.
 Flip the **42 scoped** `@flare-engine/*` packages from restricted → public. This
 exposes every already-published version.
 
-- [ ] Owner (dry-run): `bun scripts/flip-access.mjs` → confirm it lists **exactly
+- [x] Owner (dry-run): `bun scripts/flip-access.mjs` → confirm it lists **exactly
       42** `@flare-engine/*` names, `@flare-engine/create` among them, and mutates nothing.
-- [ ] Owner (live): `bun scripts/flip-access.mjs --execute --otp <code>`.
+- [x] Owner (live): `bun scripts/flip-access.mjs --execute --otp <code>`.
+      **Done 2026-10-26:** `done — 42 flipped`, under a browser login with a security key.
+      All 42 packages then answered an anonymous registry request with 200.
       Serial + resumable — already-public packages are skipped, so on an
       expired-OTP / network failure just re-run with a fresh `--otp`.
+      **Not with the publish token (found 2026-10-26):** run with the Bypass-2FA token in
+      `~/.npmrc`, the first `npm access set` returned `E403` and nothing changed. Since
+      2026-07-31 npm requires an interactive 2FA challenge for changing package access, which
+      such a token cannot give ([GitHub changelog](https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/);
+      the same tokens lose direct publishing around January 2027). The account needs 2FA of its
+      own, and npmjs.com now offers security keys only (Windows Hello, a phone passkey, a
+      hardware key; no authenticator-app codes): without it a browser login also gets `E403`.
+      With a key enabled, sign in through the browser into a separate config file, so the token
+      stays put, and run the script against it with no `--otp`, so npm can show its approval link:
+      `npm login --auth-type=web --userconfig C:/Users/user/.npmrc-flip`, then
+      `NPM_CONFIG_USERCONFIG=C:/Users/user/.npmrc-flip bun scripts/flip-access.mjs --execute`,
+      then `npm logout --userconfig C:/Users/user/.npmrc-flip` and delete the file.
 
 **Rollback:** ⚠ **effectively NONE.** Public npm visibility is retroactive and
 one-way (re-privatizing requires unpublish, which npm restricts to a 72h window
@@ -221,21 +248,24 @@ possible right up until publish. Without the version-bump changeset, `changeset
 publish` would skip all 42 already-published packages and no fresh
 provenance-stamped release would exist.
 
-- [ ] Agent: `packages/*/package.json` — 42× `"publishConfig": { "access":
+- [x] Agent: `packages/*/package.json` — 42× `"publishConfig": { "access":
       "restricted" }` → `"public"` (keep each `registry` pin).
-- [ ] Agent: `.changeset/config.json` — `"access": "restricted"` → `"public"`.
-- [ ] Agent: add a version-bump-only lockstep **patch** changeset (all 42
+- [x] Agent: `.changeset/config.json` — `"access": "restricted"` → `"public"`.
+- [x] Agent: add a version-bump-only lockstep **patch** changeset (all 42
       `@flare-engine/*`) so the fixed group cuts a fresh
       release. (H1 already shipped the `0.4.0` minor; this is the patch bump that
-      re-cuts the group public.)
-- [ ] Agent: also fold in the step-2 `NPM_CONFIG_PROVENANCE` edit.
-- [ ] Agent (added 2026-10-23): the root docs that describe the pre-flip state —
+      re-cuts the group public.) `.changeset/oss-flip-public.md`; it cuts `0.4.5`.
+- [x] Agent: also fold in the step-2 `NPM_CONFIG_PROVENANCE` edit.
+- [x] Agent (added 2026-10-23): the root docs that describe the pre-flip state —
       `README.md` "Status" (the "Public OSS launch: October 2026 … flips from restricted to
       public" line), `README.md` "Getting Started" (the "Until the October 2026 public launch
       the scope is restricted on npm; from a clone, run …" sentence) and `CONTRIBUTING.md:5`
       ("Before the public OSS launch (October 2026)"). Rewrite them to the shipped state.
       No package README carries pre-flip wording (checked 2026-10-23), so nothing stale
       ships to npm with the fresh release.
+      **Done 2026-10-26** (all in the working tree; gates green: lint, publish-safety, bump,
+      changeset, changeset-symbols, readme, exports, nodenext, peers, deps; the access-flip dry
+      run lists 42 names, `@flare-engine/create` among them).
 - [ ] Owner: commit + tag (e.g. `git tag v0.4.x-public`), do **not** push yet.
 
 **Rollback:** revert the commit (npm access from step 3 stays flipped — that part

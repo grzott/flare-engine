@@ -2,7 +2,7 @@
 
 Thanks for your interest in Flare! This is a modular 2D engine for React Native + Web (animation, gamification, interactive UI, and games), built on Skia. We welcome bug reports, feature requests, documentation fixes, and code contributions — no contribution is too small.
 
-> **Before the public OSS launch (October 2026)** the public API can still move. If you're planning a substantial change, open an issue or discussion first so we can align before you invest the effort.
+> **Flare is pre-1.0**, so the public API can still change between minor releases. If you're planning a substantial change, open an issue or discussion first so we can align before you invest the effort.
 
 ---
 

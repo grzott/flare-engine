@@ -4,7 +4,7 @@
   "commit": false,
   "fixed": [["@flare-engine/*"]],
   "linked": [],
-  "access": "restricted",
+  "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": ["@flare-engine/benchmarks", "@flare-engine-apps/bench-web"]

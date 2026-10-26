@@ -11,7 +11,7 @@
 
 ## Status
 
-**Public OSS launch: October 2026.** The `@flare-engine/*` scope cuts a `0.4.0` lockstep release and flips from restricted to public npm access during the launch window.
+**Open source since October 2026.** Every `@flare-engine/*` package is public on npm, and releases from `0.4.5` on are published from CI with npm provenance.
 
 - 42 scoped `@flare-engine/*` packages, scaffolder included, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
 - Real consumers, not just a workspace: the three games and five animations on [flareengine.dev](https://flareengine.dev) run on the published packages in the browser, and Pan Tvardowski — a private, unreleased game in alpha — consumes the engine from npm on a real Android device
@@ -112,9 +112,8 @@ npm create @flare-engine my-game
 ```
 
 Pick `blank`, `topdown` or `shmup` with `-- --template <name>`. `npm create flare-app` is a
-different, unrelated package — the scaffolder is `@flare-engine/create`. Until the October 2026
-public launch the scope is restricted on npm; from a clone, run
-`bun packages/create/src/bin.ts my-game` instead.
+different, unrelated package — the scaffolder is `@flare-engine/create`. From a clone of this
+repo, `bun packages/create/src/bin.ts my-game` runs the same scaffolder from source.
 
 ---
 

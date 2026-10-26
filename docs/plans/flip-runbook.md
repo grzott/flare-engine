@@ -167,7 +167,7 @@ plan, and both `gh api repos/grzott/flare-engine/rulesets` and
 `.../branches/main/protection` return 403 *"Upgrade to GitHub Pro or make this
 repository public"*.
 
-- [ ] Owner: apply branch protection on `main` **for the first time** — this is not a
+- [x] Owner: apply branch protection on `main` **for the first time** — this is not a
       re-application. Two constraints, or it breaks the flip it is meant to protect:
       the ruleset **must allow the owner's direct push to `main`** (FW-9 pushes `main`
       directly; FW-13/FW-15 commit directly) and **must not block `GITHUB_TOKEN` from
@@ -175,6 +175,9 @@ repository public"*.
       grants `contents: write` for exactly that). **Safer still: do this after FW-9 and
       FW-13**, so nothing on the critical path can be blocked by a ruleset that has
       never been exercised.
+      **Active 2026-10-26, after the publish:** ruleset `main` on the default branch blocks only
+      deletion and non-fast-forward pushes, so direct pushes and CI's tags and releases still
+      work. The next push (`feebe48`) went through and both workflows ran green.
 
 - [x] Owner: **Settings → Security → Code security** — enable **Private vulnerability
       reporting** (added 2026-10-23: `SECURITY.md` tells reporters to use GitHub's "Report a
@@ -267,7 +270,8 @@ provenance-stamped release would exist.
       **Done 2026-10-26** (all in the working tree; gates green: lint, publish-safety, bump,
       changeset, changeset-symbols, readme, exports, nodenext, peers, deps; the access-flip dry
       run lists 42 names, `@flare-engine/create` among them).
-- [ ] Owner: commit + tag (e.g. `git tag v0.4.x-public`), do **not** push yet.
+- [x] Owner: commit + tag (e.g. `git tag v0.4.x-public`), do **not** push yet.
+      **2026-10-26:** `8814ec2`, annotated tag `oss-flip`; pushed with the `0.4.5` release commit.
 
 **Rollback:** revert the commit (npm access from step 3 stays flipped — that part
 is done).
@@ -318,11 +322,14 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
 
 ## Step 6 — Docs-site domain bind **(owner)**
 
-- [ ] Owner (flare-engine-page repo): run the final production deploy (G2 pre-flip work
+- [x] Owner (flare-engine-page repo): run the final production deploy (G2 pre-flip work
       already green). **flareengine.dev is already bound and serving** — the page repo
       deployed to it on 2026-07-01 and verified the WASM MIME type on the live Worker on
       2026-08-27 (found 2026-09-29), so this step is the deploy, not a domain bind. The 6
       links into the now-public engine repo go live here.
+      **Deployed 2026-10-26:** `feat/oss-flip` fast-forwarded to `main` with deps `^0.4.5`, the
+      catalog and the API reference synced at `@flare-engine/core@0.4.5`; every link into this
+      repo then answered 200 on the live site.
 - [x] Owner (Cloudflare dashboard, any time before this deploy): the zone's bot **JavaScript
       detections** snippet is injected per request with a ray ID, so the site's hash-only
       `script-src` can never allow it; it is the last console error behind best-practices 93
@@ -338,16 +345,25 @@ Cut and ship the fresh, public, provenance-stamped lockstep release for all 42 s
 
 Run the full battery — see road-to-oss §12 / the OSS-I2 row:
 
-- [ ] **Registry proven, before anything else in this step:** verdaccio not running;
+- [x] **Registry proven, before anything else in this step:** verdaccio not running;
       `npm config get registry` → `https://registry.npmjs.org/`; no `.npmrc` `registry=`
       line in the test directory or `$HOME`. "No token" is not an isolation — verdaccio
       serves anonymous reads too, so a tokenless run against a stale override passes
       while testing the local build (XR-11).
-- [ ] Tokenless cold scaffold from the **public** registry:
+      **2026-10-26:** the window runner's `exit` stage that morning (all four checks), and the
+      `public` stage's preflight (`npm config get registry` is npmjs) before the scaffold below.
+- [x] Tokenless cold scaffold from the **public** registry:
       `npm create @flare-engine my-<tpl> -- --template <tpl>` (all three templates) on a
       machine with no npm token,
       each into a **new empty directory** — no lockfile or `node_modules` reused from the
       freeze window, whose scaffolds installed the restricted `0.4.3` and `0.4.4` with a token.
+      **Passed 2026-10-26** (the window runner's `public` stage, `results/20261026-112903`): a fresh
+      `node:22` container with no `NPM_TOKEN` and no `~/.npmrc`, where `npm whoami` fails. All three
+      templates scaffolded with `npm create @flare-engine`, installed `0.4.5` with every lockfile URL
+      on `registry.npmjs.org`, no `ERESOLVE`, and passed `tsc`, the Android and web exports (web
+      ships `canvaskit.wasm`) and the README check: 34 of 34. The flare-engine-page also installs
+      and builds with no token: its CI and its docs-sync workflow ran green after both secrets were
+      deleted.
 - [x] `npm view @flare-engine/engine` shows **public** + **provenance** on the fresh release.
       **2026-10-26:** all 42 at `0.4.5` with SLSA v1 provenance, read anonymously (step 5 box).
 - [x] Docs-site links into the public repo resolve; README badges live (add the CI badge).
@@ -363,8 +379,8 @@ Run the full battery — see road-to-oss §12 / the OSS-I2 row:
 - [x] GitHub **Community Standards** checklist green (Insights → Community).
       **2026-10-26:** the community profile API reports 100%.
 - [x] Owner: enable **Discussions**. **On 2026-10-26**, before the site deploy, with Announcements.
-- [ ] Agent: flip `docs/plans/roadmap.md` + `road-to-oss-2026-09.md` to "shipped"
-      state; update memory.
+- [x] Agent: flip `docs/plans/roadmap.md` + `road-to-oss-2026-09.md` to "shipped"
+      state; update memory. **Done 2026-10-26** (`feebe48`), with `AGENTS.md`.
 
 ---
 

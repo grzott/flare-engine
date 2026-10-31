@@ -1,2 +1,28 @@
-# Default owner for everything in the repo.
-* @grzott
+# Review requests go to the owner only where a tap is needed: the held paths of
+# .github/risk-policy.json, with root-only names anchored by a leading slash
+# (scripts/tests/codeowners-sync.test.ts keeps the two in step).
+**/.claude/** @grzott
+**/AGENTS.md @grzott
+**/CLAUDE.md @grzott
+.github/** @grzott
+.husky/** @grzott
+docs/design/adr-*.md @grzott
+.changeset/config.json @grzott
+/LICENSE @grzott
+**/LICENSE @grzott
+/NOTICE @grzott
+**/NOTICE @grzott
+/TRADEMARK.md @grzott
+/README.md @grzott
+/SECURITY.md @grzott
+**/CHANGELOG.md @grzott
+/biome.json @grzott
+/tsconfig.json @grzott
+/turbo.json @grzott
+/.perf-baseline.json @grzott
+scripts/check-*.mjs @grzott
+scripts/classify-pr-risk.mjs @grzott
+scripts/risk-gate.mjs @grzott
+scripts/audit-tarballs.mjs @grzott
+scripts/scan-history.mjs @grzott
+scripts/runner/** @grzott

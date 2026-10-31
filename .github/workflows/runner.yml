@@ -1,0 +1,67 @@
+name: runner
+
+# Workstation-off runner: takes the next approved issue (`/start next`) and turns it into a PR as the
+# agent bot. Chained on every merged claude/* PR, startable by hand, and resumed every six hours in
+# case a usage limit stopped the chain. One PR in flight at a time.
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+concurrency:
+  group: runner
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.head.ref, 'claude/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.BOT_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      BOT_LOGIN: ${{ vars.BOT_LOGIN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.BOT_TOKEN }}
+
+      # free -> start the next issue; blocked -> start /start anyway so it pings the owner;
+      # inflight -> a PR is running its checks or waiting for the owner: nothing to do.
+      - id: probe
+        run: echo "state=$(bash scripts/runner/inflight.sh)" >> "$GITHUB_OUTPUT"
+
+      - if: steps.probe.outputs.state != 'inflight'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      - if: steps.probe.outputs.state != 'inflight'
+        run: bun install --frozen-lockfile
+
+      - if: steps.probe.outputs.state != 'inflight'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.BOT_TOKEN }}
+          bot_name: ${{ vars.BOT_LOGIN }}
+          bot_id: ${{ vars.BOT_ID }}
+          prompt: Run the /start skill with the argument `next`, following .claude/skills/start/SKILL.md exactly.
+          claude_args: |
+            --model fable
+            --allowedTools Read,Grep,Glob,Edit,Write,Task,Bash(bun:*),Bash(bash .claude/hooks/verify.sh:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git switch:*),Bash(git fetch:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git ls-remote:*),Bash(gh api:*)

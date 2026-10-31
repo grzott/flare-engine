@@ -1,9 +1,25 @@
 <!-- Thanks for contributing to Flare! Keep the subject as a Conventional Commit,
      e.g. `feat(math): add Vec2.lerp` (≤72 chars, enforced by commitlint). -->
 
+Closes #
+
 ## Summary
 
 <!-- What does this change and why? Link any related issue/discussion. -->
+
+## Verification
+
+<!-- The commands you ran and what they printed (e.g. `bash .claude/hooks/verify.sh engine` → all gates green). -->
+
+## Risk
+
+<!-- Expected classifier verdict (`risk:auto` or `risk:held`) and why — see .github/risk-policy.json.
+     Say plainly if the change is breaking. -->
+
+## Frictions
+
+<!-- Agent PRs: `corr:N deny:N gate:N fixup:N drift:N` with causes, or `none` (grammar: the /close skill).
+     Contributors: delete this section. -->
 
 ## Gate checklist
 

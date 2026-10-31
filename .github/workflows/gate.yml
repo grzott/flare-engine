@@ -1,0 +1,111 @@
+name: gate
+
+# The one merge gate for agent PRs. The `risk-gate` job's own check run is what the main ruleset
+# requires, pinned to the GitHub Actions app (integration 15368): a personal token cannot create a
+# check run, so the bot cannot forge it. The gate scripts and the review prompt come from the PR's
+# BASE commit, and the bot's token has no `workflow` scope, so an agent PR can change neither this
+# file nor what it runs. The reviewer's verdict reaches the gate only as a comment written by
+# github-actions[bot] — a user the bot cannot write as.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+concurrency:
+  group: gate-${{ github.event.pull_request.number }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      # A verdict file committed in the PR must never stand in for the reviewer's.
+      - run: rm -f review-verdict.json
+
+      - id: prompt
+        run: |
+          {
+            echo 'text<<FLARE_REVIEW_PROMPT'
+            git show "$BASE_SHA:.github/review-prompt.md"
+            echo
+            echo "PR: #$PR. Base: $BASE_SHA. Head: $HEAD_SHA."
+            echo 'FLARE_REVIEW_PROMPT'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: |
+            --model opus
+            --allowedTools Read,Grep,Glob,Write,Bash(git diff:*),Bash(git log:*),Bash(git show:*)
+
+      - name: Publish the verdict as a github-actions comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          verdict=$(jq -r '.verdict // empty' review-verdict.json 2>/dev/null || true)
+          summary=$(jq -r '.summary // empty' review-verdict.json 2>/dev/null | head -c 300 || true)
+          findings=$(jq -r '.findings // empty' review-verdict.json 2>/dev/null | head -c 60000 || true)
+          rm -f review-verdict.json
+          case "$verdict" in
+            pass|changes|held) ;;
+            *) verdict=changes; summary="the reviewer produced no verdict" ;;
+          esac
+          printf 'Agent review: **%s** — %s\n\n%s\n\n<!-- flare-review verdict=%s sha=%s -->\n' \
+            "$verdict" "$summary" "$findings" "$verdict" "$HEAD_SHA" > "$RUNNER_TEMP/review.md"
+          gh api -X POST "repos/$REPO/issues/$PR/comments" -F body=@"$RUNNER_TEMP/review.md"
+
+  risk-gate:
+    needs: review
+    # Runs after the review on PR events, alone on review events, and for Dependabot. Fork PRs get
+    # no secrets; the owner reviews and merges those by hand.
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      # Reads, labels and the owner review request. The gate's answer is this job's exit code.
+      GH_TOKEN: ${{ secrets.BOT_TOKEN || github.token }}
+      PR: ${{ github.event.pull_request.number }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      AUTHOR: ${{ github.event.pull_request.user.login }}
+      BOT_LOGIN: ${{ vars.BOT_LOGIN }}
+      OWNER_LOGIN: grzott
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.sha }}
+      - run: git fetch --no-tags origin "$HEAD_SHA"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - run: bun scripts/risk-gate.mjs

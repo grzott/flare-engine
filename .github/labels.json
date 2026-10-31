@@ -1,0 +1,34 @@
+[
+  { "name": "status:ready", "color": "0e8a16", "description": "Approved: the runner may start it" },
+  { "name": "status:in-progress", "color": "0e8a16", "description": "A runner is working on it" },
+  { "name": "status:in-review", "color": "0e8a16", "description": "Its PR is open" },
+  {
+    "name": "status:blocked",
+    "color": "0e8a16",
+    "description": "Needs the owner; see the latest comment"
+  },
+  { "name": "risk:auto", "color": "d93f0b", "description": "Merges on green checks and review" },
+  { "name": "risk:held", "color": "d93f0b", "description": "Waits for the owner's approval" },
+  { "name": "size:s", "color": "bfdadc", "description": "Under one session" },
+  { "name": "size:m", "color": "bfdadc", "description": "About one session" },
+  {
+    "name": "size:l",
+    "color": "bfdadc",
+    "description": "Several sessions; needs a design doc first"
+  },
+  { "name": "priority:p1", "color": "5319e7", "description": "Do first" },
+  { "name": "priority:p2", "color": "5319e7", "description": "Do next" },
+  { "name": "priority:p3", "color": "5319e7", "description": "When there is room" },
+  { "name": "type:phase", "color": "1d76db", "description": "Tracks one milestone's phase" },
+  { "name": "type:deadline", "color": "1d76db", "description": "Has a hard date" },
+  { "name": "type:defect", "color": "1d76db", "description": "Something is broken" },
+  { "name": "type:verification", "color": "1d76db", "description": "Prove something works" },
+  { "name": "type:hygiene", "color": "1d76db", "description": "Cleanup with no behaviour change" },
+  { "name": "type:feature", "color": "1d76db", "description": "New capability" },
+  { "name": "type:owner-action", "color": "1d76db", "description": "Only the owner can do it" },
+  { "name": "type:perf", "color": "1d76db", "description": "Performance or benchmark work" },
+  { "name": "scope:engine", "color": "c5def5", "description": "packages/**" },
+  { "name": "scope:demo", "color": "c5def5", "description": "apps/** demo games" },
+  { "name": "scope:harness", "color": "c5def5", "description": ".claude, .github, scripts" },
+  { "name": "scope:docs", "color": "c5def5", "description": "Documentation only" }
+]

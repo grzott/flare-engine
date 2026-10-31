@@ -1,0 +1,24 @@
+name: auto-merge
+
+# Turns on GitHub auto-merge for agent and Dependabot PRs. It merges only once
+# the ruleset's required checks (ci, risk-gate) are green, so a held PR still
+# waits for the owner's approval.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  enable:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.pull_request.user.login == vars.BOT_LOGIN ||
+       github.event.pull_request.user.login == 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: gh pr merge "${{ github.event.pull_request.number }}" --auto --squash --repo "${{ github.repository }}"

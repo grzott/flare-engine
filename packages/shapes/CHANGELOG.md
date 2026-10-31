@@ -1,5 +1,7 @@
 # @flare-engine/shapes
 
+## 0.4.6
+
 ## 0.4.5
 
 ### Patch Changes

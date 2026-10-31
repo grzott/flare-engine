@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/devtools",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Devtools partial — entity inspector, time scrub, pause/step",
   "keywords": ["flare-engine", "devtools", "inspector", "debug"],
   "license": "Apache-2.0",
@@ -40,8 +40,8 @@
     "@types/react": "^19.0.0"
   },
   "dependencies": {
-    "@flare-engine/core": "^0.4.5",
-    "@flare-engine/ecs": "^0.4.5"
+    "@flare-engine/core": "^0.4.6",
+    "@flare-engine/ecs": "^0.4.6"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

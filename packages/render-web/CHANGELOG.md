@@ -1,5 +1,12 @@
 # @flare-engine/render-web
 
+## 0.4.6
+
+### Patch Changes
+
+- @flare-engine/postfx@0.4.6
+- @flare-engine/render@0.4.6
+
 ## 0.4.5
 
 ### Patch Changes

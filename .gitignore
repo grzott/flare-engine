@@ -55,3 +55,6 @@ docs/plans/_local/
 # every capture — the published baselines beside them (web.json, web-gpu.json,
 # web-android.json) are folds, written only by bench:web:promote (PERF-18).
 benchmarks/results/*-latest.json
+
+# superpowers plan workspaces and scratch logs (local only)
+.superpowers/

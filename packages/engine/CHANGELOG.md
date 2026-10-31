@@ -1,5 +1,27 @@
 # @flare-engine/engine
 
+## 0.4.6
+
+### Patch Changes
+
+- @flare-engine/animation@0.4.6
+- @flare-engine/assets@0.4.6
+- @flare-engine/audio@0.4.6
+- @flare-engine/core@0.4.6
+- @flare-engine/debug@0.4.6
+- @flare-engine/dynamics@0.4.6
+- @flare-engine/ecs@0.4.6
+- @flare-engine/events@0.4.6
+- @flare-engine/input@0.4.6
+- @flare-engine/math@0.4.6
+- @flare-engine/particles@0.4.6
+- @flare-engine/physics@0.4.6
+- @flare-engine/postfx@0.4.6
+- @flare-engine/react@0.4.6
+- @flare-engine/render@0.4.6
+- @flare-engine/scene@0.4.6
+- @flare-engine/tilemap@0.4.6
+
 ## 0.4.5
 
 ### Patch Changes

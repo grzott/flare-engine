@@ -1,5 +1,11 @@
 # @flare-engine/cli
 
+## 0.4.6
+
+### Patch Changes
+
+- Bump the sharp dependency of `flare pack-atlas` to 0.35.5, fixing three high-severity advisories in the image libraries it bundles: GHSA-f88m-g3jw-g9cj (libvips), GHSA-rgj7-g3m4-5g8c (libheif) and GHSA-wq5f-xc86-pv6w (librsvg). sharp 0.35 requires Node 20.9 or later.
+
 ## 0.4.5
 
 ### Patch Changes

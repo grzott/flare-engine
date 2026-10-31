@@ -1,5 +1,11 @@
 # @flare-engine/pathfinding
 
+## 0.4.6
+
+### Patch Changes
+
+- @flare-engine/math@0.4.6
+
 ## 0.4.5
 
 ### Patch Changes

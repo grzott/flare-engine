@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/share",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Screenshot capture + cross-platform share sheet",
   "keywords": ["flare-engine", "share", "screenshot", "skia"],
   "license": "Apache-2.0",

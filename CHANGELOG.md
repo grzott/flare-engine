@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.6](#046) | 2026-10-31 | 42 | `@flare-engine/cli`: sharp 0.35.5 fixes three high-severity advisories |
 | [0.4.5](#045) | 2026-10-26 | 42 | Public release: the scope is public on npm, published with provenance |
 | [0.4.4](#044) | 2026-10-26 | 42 | Freeze-window fix: `<VirtualJoystick>` follows its own finger on device |
 | [0.4.3](#043) | 2026-10-23 | 42 | Freeze-window fix: `react-native-audio-api` is an optional peer |
@@ -26,6 +27,16 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.6
+
+A security patch for `@flare-engine/cli`. Its `flare pack-atlas` command depends on sharp, which is
+now 0.35.5, fixing three high-severity advisories in the image libraries sharp bundles:
+GHSA-f88m-g3jw-g9cj (libvips), GHSA-rgj7-g3m4-5g8c (libheif) and GHSA-wq5f-xc86-pv6w (librsvg).
+sharp 0.35 requires Node 20.9 or later. The other 41 packages change only their version. This is
+the first release published through npm Trusted Publishing.
 
 ---
 

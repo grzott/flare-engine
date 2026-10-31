@@ -10,19 +10,17 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 - **Changesets** lockstep (`fixed`) versioning across `@flare-engine/*` — never bump a single package
 - **`patch` is the default and needs no permission.** A `minor` or `major` changeset is an owner
   decision, not an implementation detail: lockstep means one word moves all **42 scoped
-  `@flare-engine/*` packages** at once (the scaffolder is `@flare-engine/create` since ADR-0007) —
-  `minor`
-  opens `0.4.0` (reserved for the freeze cut), `major` publishes `1.0.0`, and npm does not take a
-  publish back. `check:bump` refuses any pending changeset above `patch` unless it cites an
-  `ADR-NNNN` in `docs/design/` whose `Status` is `Accepted`. There is no env-var override.
-  Write the ADR from [`adr-0000-template.md`](docs/design/adr-0000-template.md) and get it accepted
-  first — and write one for a consumer-observable behaviour change even when it ships as a `patch`,
-  which the gate cannot see.
-- **Pre-flip, the answer to that decision is often "yes".** The scope is `restricted` with no public
-  consumers, so a break costs a migration we control. Minors are deliberately unblocked until the
-  flip, announced version numbers are provisional, and an accepted breaking ADR carries a
-  **posting obligation** to `flare-engine-page` and the portfolio. Posture, reserved numbers
-  (`0.4.0` = freeze cut, `1.0.0` = launch) and the obligation:
+  `@flare-engine/*` packages** at once (the scaffolder is `@flare-engine/create` since ADR-0007) — a
+  `minor` opens the next `0.x` line, a `major` publishes `1.0.0`, and npm does not take a publish
+  back. `check:bump` refuses any pending changeset above `patch` unless it cites an `ADR-NNNN` in
+  `docs/design/` whose `Status` is `Accepted`. There is no env-var override. Write the ADR from
+  [`adr-0000-template.md`](docs/design/adr-0000-template.md) and get it accepted first. **ADRs are
+  for breaking changes** — an exported symbol removed or changed, a peer floor raised, a documented
+  contract changed. A bug fix needs none, even when it changes observable behaviour.
+- **Public since 2026-10-26, so a break costs strangers their build.** Breaking changes batch into
+  the next planned minor behind a deprecation window, and an accepted breaking ADR carries a
+  **posting obligation** to `flare-engine-page` and the portfolio. Posture, deprecation policy,
+  stability tiers, reserved numbers and the obligation:
   [`docs/plans/versioning-and-announcements.md`](docs/plans/versioning-and-announcements.md).
 
 ## Code style

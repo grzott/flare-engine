@@ -8,7 +8,7 @@
  * [["@flare-engine/*"]]` in `.changeset/config.json`, that
  * means **one word in one markdown frontmatter moves all 42 packages**:
  *
- *   - a stray `minor` opens `0.4.0`, the version reserved for the freeze cut;
+ *   - a stray `minor` opens the next `0.x` line across all 42 packages;
  *   - a stray `major` publishes `1.0.0` across the whole scope, and npm does not
  *     take publishes back.
  *
@@ -172,7 +172,7 @@ if (problems.length === 0) {
 const consequence =
   highest === 'major'
     ? 'publishes 1.0.0 across every @flare-engine/* package. npm does not take a publish back.'
-    : 'opens 0.4.0 across every @flare-engine/* package — the version reserved for the freeze cut.';
+    : 'opens the next 0.x minor across every @flare-engine/* package — a planned release, cut under an accepted ADR.';
 
 console.error(
   `\ncheck-bump-level: REFUSED — a "${highest}" bump needs your decision, not a changeset.\n`,

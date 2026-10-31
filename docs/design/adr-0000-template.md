@@ -14,18 +14,16 @@
 **Always, before a `minor` or `major` changeset lands.** `check:bump` enforces exactly this: it
 refuses any pending changeset above `patch` unless the changeset body cites an `ADR-NNNN` that
 exists here with `Status: Accepted`. Versioning is lockstep (`.changeset/config.json` → `fixed`), so
-one word in one changeset moves all 41 scoped packages — a `minor` opens `0.4.0`, a `major` publishes
-`1.0.0`, and npm does not take a publish back.
+one word in one changeset moves all 42 scoped packages — a `minor` opens the next `0.x` line, a
+`major` publishes `1.0.0`, and npm does not take a publish back.
 
-**Also — and the gate cannot see these — for any consumer-observable behaviour change that ships as
-a `patch`.** Level is a proxy for risk, not risk itself. Flipping a boundary comparison from `<=` to
-`<` in a collision predicate is a `patch` by semver and can still change what a consumer's game
-does on screen. If a reasonable consumer could be surprised after `bun update`, write the ADR even
-though nothing will stop you.
+**ADRs are for breaking changes:** an exported symbol removed or changed, a peer floor raised, a
+documented contract changed. Those land in a planned minor behind the deprecation policy in
+[`versioning-and-announcements.md`](../plans/versioning-and-announcements.md#deprecation-policy).
 
-An ADR is *not* required for: bug fixes that restore documented behaviour, additive APIs that
-cannot change an existing call's result, docs, tests, tooling, or performance work that leaves
-observable behaviour identical.
+An ADR is *not* required for: bug fixes — including ones that change observable behaviour, since a
+fix makes the code match its documented contract — additive APIs that cannot change an existing
+call's result, docs, tests, tooling, or performance work.
 
 ## Context
 

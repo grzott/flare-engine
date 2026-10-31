@@ -39,7 +39,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -100,7 +100,7 @@ jobs:
       BOT_LOGIN: ${{ vars.BOT_LOGIN }}
       OWNER_LOGIN: grzott
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.sha }}

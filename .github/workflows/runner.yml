@@ -35,7 +35,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BOT_LOGIN: ${{ vars.BOT_LOGIN }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0

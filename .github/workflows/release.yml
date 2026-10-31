@@ -28,11 +28,11 @@ jobs:
           bun-version: 1.3.11
 
       # `changeset publish` shells out to npm. Pin a known npm rather than
-      # inheriting the runner image's: provenance on the flip publish needs
-      # npm >= 11.5.1 (flip-runbook FW-3b), and the image's npm is not that.
+      # inheriting the runner image's: trusted publishing (OIDC) and provenance
+      # need npm >= 11.5.1, and the image's npm is not that.
       # No `registry-url` here on purpose: it makes setup-node write its own
-      # .npmrc keyed to NODE_AUTH_TOKEN and point npm at it, which shadows the
-      # NPM_TOKEN .npmrc changesets/action writes below — the publish would 401.
+      # .npmrc keyed to NODE_AUTH_TOKEN, and that token line would shadow the
+      # OIDC exchange the publish relies on.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -58,6 +58,9 @@ jobs:
       - run: bun run check:perf-bytes
       - run: bun run check:perf-freshness
 
+      # No NPM_TOKEN: npm trusted publishing authenticates through the
+      # `id-token: write` permission above. changesets/action v1 writes no
+      # .npmrc token when NPM_TOKEN is unset and an OIDC token is available.
       - name: Create release PR or publish to npm
         uses: changesets/action@v1
         with:
@@ -66,6 +69,9 @@ jobs:
           commit: "chore(release): version packages"
           title: "chore(release): version packages"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # The bot's token, not GITHUB_TOKEN: the "version packages" PR it opens must trigger CI
+          # and the gate, and is held for the owner's tap (it changes every CHANGELOG). Merging that
+          # PR is the release. GITHUB_TOKEN-created PRs trigger no workflows, so it is only the
+          # fallback until the bot secret exists.
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"

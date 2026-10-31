@@ -1,6 +1,8 @@
 # Todo
 
-Next work, in order. Pick top → `/start`. When done → `/close`. History appends to `SESSION_LOG.md`.
+Next work, in order. **The queue is moving to GitHub Issues** (`/start next` takes the next
+`status:ready` issue; the backlog reset migrates the open rows below). Until a row has an issue, it
+lives here. History: merged PR descriptions (`SESSION_LOG.md` is frozen as of 2026-10-30).
 
 ## Active
 

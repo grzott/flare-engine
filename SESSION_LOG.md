@@ -12939,3 +12939,36 @@ warned of 3.2 C battery drift, owner accepted on flat timings.
 **Next:** see `docs/plans/todo.md`.
 
 ---
+
+## Session 335 — 2026-10-30 (scope: engine)
+
+**Goal:** A1 release health: biome 2.6, typescript hold, sharp advisories
+
+**Touched files**
+- `.changeset/cli-sharp-advisory.md`
+- `.github/dependabot.yml`
+- `apps/bench-dashboard/biome.json`
+- `biome.json`
+- `bun.lock`
+- `docs/plans/a1-release-health-2026-11-tasks.md`
+- `docs/plans/a2-agent-workflow-2026-11-tasks.md`
+- `package.json`
+- `packages/cli/package.json`
+
+**Gates**
+- lint: green
+- typecheck: green
+- test: green
+- build: green
+
+**Frictions:** corr:1 drift:1
+
+**Next:** see `docs/plans/todo.md`.
+
+---
+
+## Frozen — 2026-10-30
+
+This log is frozen. From the 2026-11 PR workflow on, each merged PR description carries what a
+session block carried (summary, verification, risk, frictions); `/retro` mines those. The blocks
+above stay as history.

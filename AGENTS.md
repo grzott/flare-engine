@@ -47,7 +47,7 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
   `CHANGELOG.md` for the current version rather than trusting a literal here. The launch record is
   [docs/plans/road-to-oss-2026-09.md](docs/plans/road-to-oss-2026-09.md)
 
-### Release posture (verified 2026-10-26 at `e27b5b0`)
+### Release posture (verified 2026-10-31 at `da9de24`)
 
 - **Public, with provenance from `0.4.5`.** `0.1.0` through `0.4.4` were published restricted; npm
   visibility is retroactive, so every version installs anonymously now. `0.4.5` is the first release
@@ -55,9 +55,10 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 - **Releases go through CI only.** Run `bun run version` locally, add the root `CHANGELOG.md` entry,
   commit and push `main`; `release.yml` (gated on the `ENABLE_RELEASE` variable) runs
   `bun run release` with npm provenance. A local `bun run release` ships without provenance.
-- **The publish token has a deadline.** The `NPM_TOKEN` secret is a Bypass-2FA granular token that
-  expires 2026-12-01, and npm is removing direct publishing from such tokens (target January 2027);
-  they already cannot change package access. Move `release.yml` to Trusted Publishing before then.
+- **Publishing uses npm Trusted Publishing.** `release.yml` authenticates by OIDC (`id-token: write`);
+  there is no publish token. Each of the 42 packages lists `grzott/flare-engine` + `release.yml` as
+  its trusted publisher with direct `npm publish` allowed — a package missing that entry fails with
+  `ENEEDAUTH`. First published this way: `0.4.6`. A local `bun run release` cannot publish.
 - **A release commit bumps every `package.json` but does not publish.** Git and npm can diverge at
   any moment, in either direction. Never infer one from the other; `CHANGELOG.md` is the index and
   each package's own `CHANGELOG.md` is the source of truth for what changed.

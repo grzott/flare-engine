@@ -44,13 +44,11 @@ at `Status: Accepted` before its cut. Order (owner 2026-10-19): FREEZE-FIX-1 shi
   [manual-test-protocol.md](manual-test-protocol.md) §7 row 16. Tiled writes XML under a `.tmj`
   name when Save as type is left on TMX, and the CLI prints `Unexpected token '<'`. Detect a leading
   `<` and say to save as "JSON map files"; JSON-only stays the contract.
-- **RELEASE-OIDC-1 — publish through npm Trusted Publishing before the token dies (P1, owner +
-  agent, `.github/workflows/release.yml`, due before 2026-12-01).** The `NPM_TOKEN` secret is a
-  Bypass-2FA granular token that expires 2026-12-01, and npm is removing direct publishing from such
-  tokens (target January 2027); since 2026-07-31 they cannot change package access at all (the flip's
-  `E403`, flip-runbook step 3). Owner: on npmjs.com, add `grzott/flare-engine` + `release.yml` as the
-  trusted publisher of each of the 42 packages (an interactive 2FA action). Agent: drop `NPM_TOKEN`
-  from the changesets step, keep `id-token: write`, then prove it with the next patch release.
+- **RELEASE-OIDC-1 — DONE 2026-10-31 (published `0.4.6` by Trusted Publishing).** Release run
+  `41186158741` attempt 2: all 42 packages at `0.4.6` with provenance, 42 tags. Attempt 1 failed
+  `ENEEDAUTH` on all 42 before anything published — 41 packages had no trusted publisher yet and the
+  first allowed only `npm stage publish`; the entry needs direct `npm publish` ticked. Owner teardown
+  of the old token is A1 Task 6 (`docs/plans/a1-release-health-2026-11-tasks.md`).
 - **HAPTICS-ANDROID-1 — Expo haptics cues are too faint to feel on Android (P3, engine-builder,
   `packages/haptics`, post-flip).** Evidence: [manual-test-protocol.md](manual-test-protocol.md)
   §7 row 17. `createExpoHapticsProvider` forwards to `impactAsync`/`notificationAsync`, which play

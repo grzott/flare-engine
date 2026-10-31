@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -24,6 +24,9 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "complexity": {
+        "useMathMinMax": "off"
+      },
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedVariables": "error"
@@ -48,13 +51,30 @@
       "!**/.turbo",
       "!**/coverage",
       "!**/*.d.ts",
-      "!**/packages/create/templates"
+      "!**/packages/create/templates",
+      "!**/*.md",
+      "!**/*.yml",
+      "!**/*.yaml"
     ]
   },
   "overrides": [
     {
       "includes": ["**/*.config.ts", "**/apps/**", "**/app/**"],
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
+      "includes": ["**/packages/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noReactNativeRawText": { "level": "error", "options": { "skip": ["Label"] } }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/tests/**"],
+      "linter": { "rules": { "correctness": { "noComponentHookFactories": "off" } } }
     }
   ]
 }

@@ -18,6 +18,7 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
+    "test:scripts": "bun test scripts/tests",
     "lint": "biome check .",
     "typecheck": "turbo typecheck",
     "typecheck:tests": "tsc --noEmit -p tsconfig.json",
@@ -57,7 +58,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.4",
-    "@biomejs/biome": "^2",
+    "@biomejs/biome": "^2.6.4",
     "@changesets/changelog-github": "^0.5.0",
     "@changesets/cli": "^2.27.0",
     "@commitlint/cli": "^19.0.0",

@@ -1,0 +1,32 @@
+{
+  "heldGlobs": [
+    "**/.claude/**",
+    "**/AGENTS.md",
+    "**/CLAUDE.md",
+    ".github/**",
+    ".husky/**",
+    "docs/design/adr-*.md",
+    ".changeset/config.json",
+    "LICENSE",
+    "**/LICENSE",
+    "NOTICE",
+    "**/NOTICE",
+    "TRADEMARK.md",
+    "README.md",
+    "SECURITY.md",
+    "**/CHANGELOG.md",
+    "biome.json",
+    "tsconfig.json",
+    "turbo.json",
+    ".perf-baseline.json",
+    "scripts/check-*.mjs",
+    "scripts/classify-pr-risk.mjs",
+    "scripts/risk-gate.mjs",
+    "scripts/audit-tarballs.mjs",
+    "scripts/scan-history.mjs",
+    "scripts/runner/**"
+  ],
+  "manifestGlobs": ["**/package.json", "bun.lock"],
+  "dependencyBots": ["dependabot[bot]"],
+  "exportScopeGlobs": ["packages/*/src/**"]
+}

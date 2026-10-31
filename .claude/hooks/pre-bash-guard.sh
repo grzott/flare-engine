@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse (Bash) guard - blocks state-changing git and non-bun package managers.
+# PreToolUse (Bash) guard - keeps agents inside the claude/* PR lane: blocks history
+# rewrites, pushes outside claude/*, other state-changing git, and non-bun package managers.
 #
 # Defense in depth: settings.json `deny` is the primary gate; this hook catches the
 # variants a prefix matcher misses.
@@ -160,11 +161,104 @@ def tokens(seg):
 def basename(tok):
     return re.split(r"[\\\\/]", tok)[-1]
 
-def check_git(args):
+# The agent PR flow (2026-11): agents stage, commit, and push claude/* branches,
+# then open a PR. main is protected by a ruleset; these rules keep a local agent
+# inside that lane - no history rewrites, no skipped hooks, no other branches.
+CLAUDE_BRANCH = re.compile(r"^claude/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$")
+SHORT_FLAG_CLUSTER = re.compile(r"^-[A-Za-z]+$")
+
+def is_claude_branch(name):
+    return bool(CLAUDE_BRANCH.match(name)) and ".." not in name and not name.endswith(".lock")
+
+def check_commit(tail):
+    for a in tail:
+        if a == "--no-verify" or a.startswith("--amend"):
+            return "git commit %s rewrites history or skips hooks" % a
+        if SHORT_FLAG_CLUSTER.match(a) and "n" in a[1:]:
+            return "git commit -n skips the commit hooks"
+    return None
+
+def check_branch_move(tail):
+    if len(tail) in (2, 3) and tail[0] in ("-c", "-b") and is_claude_branch(tail[1]):
+        # Start from main, or resume the same branch from origin after an interrupted run.
+        if len(tail) == 2 or tail[2] in ("origin/main", "origin/" + tail[1]):
+            return None
+    if len(tail) == 1 and is_claude_branch(tail[0]):
+        return None
+    return "agents may only create or enter a claude/* branch"
+
+def check_push(tail):
+    opts = [a for a in tail if a.startswith("-")]
+    pos = [a for a in tail if not a.startswith("-")]
+    for o in opts:
+        if o not in ("-u", "--set-upstream"):
+            return "git push %s is not allowed for agents" % o
+    if len(pos) != 2 or pos[0] != "origin":
+        return "git push must name origin and exactly one claude/* branch"
+    ref = pos[1][len("HEAD:"):] if pos[1].startswith("HEAD:") else pos[1]
+    if not is_claude_branch(ref):
+        return "git push may only target a claude/* branch, never %r" % pos[1]
+    return None
+
+def check_add(tail):
+    for a in tail:
+        if a.startswith("--fo") or (SHORT_FLAG_CLUSTER.match(a) and "f" in a[1:]):
+            return "git add -f stages ignored files - private notes stay out of the repo"
+    return None
+
+# gh: agents open PRs and manage issue labels and comments. Merging, reviewing, check runs,
+# statuses, refs, contents, rulesets and repo settings belong to the owner and the gate - a
+# local session may run on the owner credentials, so these are refused whoever is logged in.
+GH_WRITE_FORBIDDEN = re.compile(
+    r"/(reviews|merges?|statuses|check-runs|check-suites|rulesets|protection|collaborators"
+    r"|hooks|keys|secrets|variables|environments|actions|dispatches|automated-security-fixes"
+    r"|git|contents)(/|$|[?])"
+)
+GH_FIELD_FLAGS = {"-f", "-F", "--field", "--raw-field", "--input"}
+
+def check_gh(args):
+    if not args:
+        return None
+    group, rest = args[0], args[1:]
+    if group == "auth":
+        if rest[:1] == ["status"]:
+            return None
+        return "gh auth exposes or changes credentials"
+    if group in ("secret", "variable", "ruleset", "workflow", "repo"):
+        if group == "repo" and rest[:1] == ["view"]:
+            return None
+        return "gh %s changes repository settings or workflows" % group
+    if group == "pr" and rest[:1] and rest[0] in ("merge", "review"):
+        return "gh pr %s is for the owner and the gate to decide" % rest[0]
+    if group == "api":
+        if "graphql" in rest:
+            return "gh api graphql is not allowed for agents"
+        method = None
+        for j, a in enumerate(rest):
+            if a in ("-X", "--method") and j + 1 < len(rest):
+                method = rest[j + 1].upper()
+            elif a.startswith("--method="):
+                method = a.split("=", 1)[1].upper()
+            elif a.startswith("-X") and len(a) > 2:
+                method = a[2:].upper()
+        fields = any(
+            a in GH_FIELD_FLAGS or a.startswith("--field=") or a.startswith("--raw-field=")
+            for a in rest
+        )
+        if (method is not None and method != "GET") or fields:
+            for a in rest:
+                if not a.startswith("-") and GH_WRITE_FORBIDDEN.search("/" + a.lstrip("/")):
+                    return "gh api write to %s touches merges, reviews, checks, refs or settings" % a
+    return None
+
+def check_git(args, env_names=()):
     """args = everything after the `git` token."""
     i = 0
+    saw_config = False
     while i < len(args):
         a = args[i]
+        if a in ("-c", "--config-env") or a.startswith("--config-env="):
+            saw_config = True
         if a in GIT_OPT_WITH_VALUE:
             i += 2
             continue
@@ -178,13 +272,30 @@ def check_git(args):
             i += 1
             continue
         if a.startswith("-c") and len(a) > 2:
+            saw_config = True
             i += 1
             continue
         break
     if i >= len(args):
         return None  # bare `git`, prints usage
     sub = args[i]
-    rest = " ".join(args[i + 1:])
+    tail = args[i + 1:]
+    rest = " ".join(tail)
+    if sub in ("push", "commit"):
+        if saw_config:
+            return "git %s with -c or --config-env can re-point where it goes or skip hooks" % sub
+        if any(n.startswith("GIT_") for n in env_names):
+            return "git %s with GIT_* environment overrides is not allowed" % sub
+    if sub == "add":
+        return check_add(tail)
+    if sub == "commit":
+        return check_commit(tail)
+    if sub in ("switch", "checkout"):
+        return check_branch_move(tail)
+    if sub == "push":
+        return check_push(tail)
+    if sub == "fetch" and tail in (["origin"], ["origin", "main"]):
+        return None
     if sub in GIT_READONLY:
         return None
     if sub in GIT_CONDITIONAL:
@@ -203,8 +314,10 @@ def walk(seg, depth=0):
     tok = tokens(seg)
     if not tok:
         return None
-    # Peel leading VAR=value assignments.
+    # Peel leading VAR=value assignments, remembering their names.
+    env_names = []
     while tok and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tok[0]):
+        env_names.append(tok[0].split("=", 1)[0])
         tok = tok[1:]
     if not tok:
         return None
@@ -239,7 +352,10 @@ def walk(seg, depth=0):
         # A wrapper invoked without its eval flag is an ordinary command.
 
     if head == "git":
-        return check_git(args)
+        return check_git(args, env_names)
+
+    if head == "gh":
+        return check_gh(args)
 
     if head in FORBIDDEN_PM:
         return "this is a bun-only project - use bun equivalents (saw %r)" % head
@@ -269,7 +385,7 @@ fi
 
 if [ -n "$VERDICT" ]; then
   echo "BLOCKED by .claude/hooks/pre-bash-guard.sh: $VERDICT" >&2
-  echo "Rationale: repo contract - agents produce paste-ready commit blocks; the user runs them." >&2
+  echo "Rationale: repo contract - agents commit on claude/* branches and open PRs; main is protected by a ruleset." >&2
   echo "Read-only git is allowed (status, diff, log, show, rev-parse, ls-files, ...)." >&2
   exit 2
 fi

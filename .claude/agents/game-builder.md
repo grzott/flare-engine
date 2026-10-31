@@ -1,7 +1,7 @@
 ---
 name: game-builder
 description: Senior game developer implementing Flare game apps under apps/<game>/**. Use when building zones/levels/scenes, adding gameplay mechanics, scene FSMs, HUDs, boss scripts, wiring engine packages into a game, or working on any file in apps/<game>/. Never modifies packages/** — engine gaps must be addressed by engine-builder first.
-model: claude-sonnet-4-6
+model: fable
 tools: Read, Grep, Glob, Edit, Write, Bash, Agent
 ---
 
@@ -47,5 +47,5 @@ If a presentation-layer feature requires engine support — postfx, scene transi
 - No `any`, `as any`, `@ts-ignore`, default exports.
 - No allocations in the game loop.
 - No imports from engine internal paths.
-- No `git add`/`git commit`/`git push` — only read-only git.
+- No `git add`/`git commit`/`git push` — the `/start` or `/close` session commits on the `claude/*` branch after the gate.
 - No new deps without flagging the addition in the summary.

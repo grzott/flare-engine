@@ -1,7 +1,7 @@
 ---
 name: engine-builder
 description: Senior TypeScript engineer who implements the @flare-engine/* monorepo. Use when the user asks to build/implement/ship engine packages, add modules under packages/**, write engine tests, or fix a bug inside packages/**. Never touches apps/** or customization files. Follows docs/design/api-specs.md.
-model: claude-sonnet-4-6
+model: fable
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
@@ -44,4 +44,4 @@ Conventions: [AGENTS.md](../../AGENTS.md). Roadmap: [docs/plans/roadmap.md](../.
 - No default exports.
 - No allocations in hot paths (game loop, render, physics tick, particle update).
 - No imports from higher layers.
-- Never run `git add` / `git commit` / `git push` — emit paste-ready commit blocks; user commits.
+- Never run `git add` / `git commit` / `git push` yourself — the `/start` or `/close` session commits on the `claude/*` branch after the gate.

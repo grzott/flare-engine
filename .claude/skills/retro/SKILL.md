@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Mine the last N SESSION_LOG blocks (engine + Pan-Tvardowski) and both project-memory indexes for repeated frictions, drift, and chores; emit a report with concrete harness recommendations. Read-only; report to chat, never committed. Run at each arc close or every ~15 sessions.
+description: Mine the frictions of the last N merged engine PRs (SESSION_LOG.md before the 2026-11 freeze), Pan-Tvardowski's SESSION_LOG, and both project-memory indexes for repeated frictions, drift, and chores; emit a report with concrete harness recommendations. Read-only; report to chat, never committed. Run at each arc close or every ~15 sessions.
 argument-hint: "[N=20] [engine|pt|all]"
 ---
 
@@ -17,7 +17,8 @@ Answer "what do I keep repeating?" from the recorded evidence. Read-only.
 
 | Source | Path |
 |---|---|
-| Engine session log | `SESSION_LOG.md` (this repo) |
+| Engine merged PRs (from the 2026-11 freeze) | `gh api "repos/{owner}/{repo}/pulls?state=closed&per_page=100"` — merged only; the `## Frictions` section of each body |
+| Engine session log (history, frozen 2026-11) | `SESSION_LOG.md` (this repo) |
 | PT session log | `../Pan-Tvardowski/SESSION_LOG.md` (sibling repo) |
 | Engine memory index | `~/.claude/projects/c---PROG-flare-engine-workspace-flare-engine/memory/MEMORY.md` |
 | PT memory index | `~/.claude/projects/c---PROG-flare-engine-workspace-Pan-Tvardowski/memory/MEMORY.md` |
@@ -27,9 +28,10 @@ PT paths are read via absolute path — works regardless of which repo the sessi
 
 ## Steps
 
-1. Read the last N `## Session` blocks of each in-scope SESSION_LOG. Parse Goal /
-   Touched files / Gates / **Frictions** (blocks before 2026-06-10 have no Frictions
-   line — treat as unknown, not `none`).
+1. Engine: read the last N merged PRs' bodies (title = goal, `## Frictions` = frictions); if fewer
+   than N exist since the freeze, top up from the last `## Session` blocks of SESSION_LOG.md.
+   PT: read the last N `## Session` blocks of its SESSION_LOG. Parse Goal / Touched files / Gates /
+   **Frictions** (blocks before 2026-06-10 have no Frictions line — treat as unknown, not `none`).
 2. Tally frictions by category (`corr` / `deny` / `gate` / `fixup` / `drift`) and group
    repeated cause-strings fuzzily (same file, same package, same kind of mistake).
 3. Read both MEMORY.md indexes. Flag memory entries describing a problem that STILL

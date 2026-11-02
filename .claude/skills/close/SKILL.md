@@ -48,11 +48,12 @@ re-run; count each failure in `gate:N`.
    characters). The work moves with you.
 2. `git add <files>`, then `git commit -m "<subject>"` — no body, no `Co-Authored-By` trailer.
 3. `git push -u origin claude/<slug>`.
-4. Fill `.github/PULL_REQUEST_TEMPLATE.md` into a temp file (summary, verification with results,
-   expected risk class, frictions line), then:
+4. Fill `.github/PULL_REQUEST_TEMPLATE.md` into `.superpowers/pr-body.md` with the Write tool (in the
+   repo and gitignored: no permission prompt, never committed) — summary, verification with
+   results, expected risk class, frictions line — then:
 
    ```bash
-   gh api repos/{owner}/{repo}/pulls -f title="<subject>" -f head="claude/<slug>" -f base=main -F body=@<file>
+   gh api repos/{owner}/{repo}/pulls -f title="<subject>" -f head="claude/<slug>" -f base=main -F body=@.superpowers/pr-body.md
    ```
 
 5. Print the PR URL. Never merge, approve or label it.

@@ -11,8 +11,9 @@ gives it `status:ready` (a phase is approved by labelling its milestone's issues
 label yourself.
 
 Use `gh api` for every GitHub read and write: cloud sessions block `gh pr` and `gh issue`.
-`{owner}/{repo}` placeholders are filled from the git remote by `gh api` itself. `$BOT_LOGIN` comes
-from the environment (`scripts/runner/claude-as-bot.sh` or `runner.yml`).
+`{owner}/{repo}` placeholders are filled from the git remote by `gh api` itself. `BOT_LOGIN` comes
+from the environment (`scripts/runner/claude-as-bot.sh` or `runner.yml`); use it only inside a
+`--jq` filter as `env.BOT_LOGIN` — never echo or print the environment.
 
 Runner sentinels — print exactly one, as the last line, so `scripts/runner/loop.sh` can branch on it:
 `RUNNER: PR OPENED #<pr>` · `RUNNER: QUEUE EMPTY` · `RUNNER: PR IN FLIGHT #<pr>` · `RUNNER: BLOCKED #<issue>`.
@@ -28,8 +29,13 @@ Runner sentinels — print exactly one, as the last line, so `scripts/runner/loo
      already says so, comment `@grzott blocked: <check> failed`. Print `RUNNER: BLOCKED #<pr>`, stop.
    - Otherwise (checks running, or `risk:held` waiting for the owner) → print
      `RUNNER: PR IN FLIGHT #<pr>`, stop.
-2. **An open issue labelled `status:in-progress` with no open PR** → an earlier run was interrupted.
-   Resume that issue: skip Steps 2–3 and take the resume path in Step 4.
+2. **An open issue labelled `status:in-progress` with no open PR** — read when that label was added:
+   `gh api "repos/{owner}/{repo}/issues/<n>/events" --jq '[.[] | select(.event == "labeled" and
+   .label.name == "status:in-progress")] | last | .created_at'`.
+   - **Less than 2 hours ago** → another runner is working on it right now. Print
+     `RUNNER: PR IN FLIGHT #<n>`, stop. Never take over a fresh claim.
+   - **2 hours or more** (longer than any run's timeout) → that run was interrupted. Resume the issue:
+     skip Steps 2–3 and take the resume path in Step 4.
 
 ## Step 2 — Pick the issue
 
@@ -87,12 +93,13 @@ attempts. Still red → swap to `status:blocked`, comment the failing gate's las
 1. Commit: a Conventional Commit subject, at most 72 characters, no body, no `Co-Authored-By`
    trailer. `git add <files>`, then `git commit -m "<subject>"`.
 2. `git push -u origin claude/issue-<n>-<slug>`.
-3. Write the PR body from `.github/PULL_REQUEST_TEMPLATE.md` into a temp file — `Closes #<n>`, a
-   summary, the verification you ran with its results, the expected risk class and why, and the
-   frictions line (grammar in the `/close` skill) — then:
+3. Write the PR body from `.github/PULL_REQUEST_TEMPLATE.md` to `.superpowers/pr-body.md` (inside
+   the repo and gitignored, so writing it needs no permission and it is never committed) with the
+   Write tool — `Closes #<n>`, a summary, the verification you ran with its results, the expected
+   risk class and why, and the frictions line (grammar in the `/close` skill) — then:
 
    ```bash
-   gh api repos/{owner}/{repo}/pulls -f title="<subject>" -f head="claude/issue-<n>-<slug>" -f base=main -F body=@<file>
+   gh api repos/{owner}/{repo}/pulls -f title="<subject>" -f head="claude/issue-<n>-<slug>" -f base=main -F body=@.superpowers/pr-body.md
    ```
 
 4. Swap the issue's `status:in-progress` for `status:in-review`.

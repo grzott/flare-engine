@@ -13,7 +13,9 @@ label yourself.
 Use `gh api` for every GitHub read and write: cloud sessions block `gh pr` and `gh issue`.
 `{owner}/{repo}` placeholders are filled from the git remote by `gh api` itself. `BOT_LOGIN` comes
 from the environment (`scripts/runner/claude-as-bot.sh` or `runner.yml`); use it only inside a
-`--jq` filter as `env.BOT_LOGIN` — never echo or print the environment.
+`--jq` filter as `env.BOT_LOGIN` — never echo or print the environment. Run git commands bare: no
+`2>&1`, `> file` or other redirects (the guard reads a redirect's `&` as a command separator and
+refuses the command); pipe to `tail` if output is long.
 
 Runner sentinels — print exactly one, as the last line, so `scripts/runner/loop.sh` can branch on it:
 `RUNNER: PR OPENED #<pr>` · `RUNNER: QUEUE EMPTY` · `RUNNER: PR IN FLIGHT #<pr>` · `RUNNER: BLOCKED #<issue>`.

@@ -28,6 +28,16 @@ updates:
       # it is its own evaluated migration, not a weekly bump.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # Changesets CLI 3 must move together with changesets/action 2 (renamed inputs, explicit
+      # github-token, Node ^22.11) — one planned migration, never a weekly bump.
+      - dependency-name: "@changesets/cli"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@changesets/changelog-github"
+        update-types: ["version-update:semver-major"]
+      # commander 15 is ESM-only and needs Node >=22.12; @flare-engine/cli promises Node >=20, so
+      # taking it is a breaking change for the next planned minor. 14.x stays allowed.
+      - dependency-name: "commander"
+        versions: [">=15"]
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
@@ -52,6 +62,10 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 3
+    ignore:
+      # v2 renames every input release.yml uses and needs Changesets CLI 3 — migrated with it.
+      - dependency-name: "changesets/action"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(ci)"
     groups:

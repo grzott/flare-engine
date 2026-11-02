@@ -54,6 +54,16 @@ jobs:
       - if: steps.probe.outputs.state != 'inflight'
         run: bun install --frozen-lockfile
 
+      # A fresh checkout is an untrusted workspace: Claude Code runs the repo's hooks but ignores
+      # its permissions.allow until the folder is trusted, which a headless run never is (the local
+      # loop works because the workstation's checkout is trusted). CLI flags are not trust-gated,
+      # so pass the same rules as flags — read from .claude/settings.json, the one source.
+      - if: steps.probe.outputs.state != 'inflight'
+        id: perms
+        run: |
+          echo "allow=$(jq -r '.permissions.allow | join(",")' .claude/settings.json)" >> "$GITHUB_OUTPUT"
+          echo "deny=$(jq -r '.permissions.deny | join(",")' .claude/settings.json)" >> "$GITHUB_OUTPUT"
+
       - if: steps.probe.outputs.state != 'inflight'
         uses: anthropics/claude-code-action@v1
         with:
@@ -64,16 +74,14 @@ jobs:
           # The literal slash command, exactly what scripts/runner/loop.sh sends: it expands the
           # skill directly instead of asking the model to call the Skill tool.
           prompt: /start next
-          # Diagnostic, temporary: print the whole session so every permission denial is visible
-          # (runs 41480788762, 41485801866, 41488934815 each had 10-12 and claimed nothing).
-          # Remove once the runner opens a PR.
+          # Diagnostic, temporary: print the whole session so every permission denial is visible.
+          # Run 41491031073 showed the cause (untrusted workspace, see the perms step). Remove once
+          # the runner opens a PR.
           show_full_output: true
           display_report: true
-          # Same permissions as the proven local runner (scripts/runner/loop.sh): accept edits, and
-          # take Bash rules from the repo's .claude/settings.json (loaded as a project setting source)
-          # with the pre-bash guard hook in front. A hand-written --allowedTools list here drifted
-          # (it named `Task`, now `Agent`, and was narrower than settings.json): 11-12 denials per
-          # run and no issue claimed (runs 41480788762, 41485801866).
+          # Quoted: each rule like "Bash(gh api:*)" contains a space, and an unquoted list splits.
           claude_args: |
             --model fable
             --permission-mode acceptEdits
+            --allowedTools "${{ steps.perms.outputs.allow }}"
+            --disallowedTools "${{ steps.perms.outputs.deny }}"

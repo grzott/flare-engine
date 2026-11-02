@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { rmSync } from 'node:fs';
 import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,9 +14,18 @@ import {
 
 const TEMPLATES_DIR = join(__dirname, '..', 'templates');
 
+const tmpDirs: string[] = [];
+
 async function tmp(): Promise<string> {
-  return await mkdtemp(join(tmpdir(), 'flare-scaffold-'));
+  const dir = await mkdtemp(join(tmpdir(), 'flare-scaffold-'));
+  tmpDirs.push(dir);
+  return dir;
 }
+
+afterEach(() => {
+  for (const dir of tmpDirs) rmSync(dir, { recursive: true, force: true });
+  tmpDirs.length = 0;
+});
 
 describe('manifest', () => {
   test('exposes blank, topdown, and shmup templates', () => {

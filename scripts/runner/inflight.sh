@@ -17,6 +17,18 @@ fi
 pr=$(gh api "repos/{owner}/{repo}/pulls?state=open&per_page=100" --jq \
   "first(.[] | select(.user.login == \"$BOT_LOGIN\")) | [.number, .head.sha, ([.labels[].name] | join(\",\"))] | @tsv")
 if [ -z "$pr" ]; then
+  # No PR yet, but an issue claimed in the last 2 hours means a runner is working on it now
+  # (the same rule /start applies before resuming an in-progress issue).
+  cutoff=$(date -u -d '2 hours ago' +%s)
+  for n in $(gh api "repos/{owner}/{repo}/issues?state=open&labels=status:in-progress&per_page=100" \
+    --jq '.[] | select(.pull_request | not) | .number'); do
+    claimed=$(gh api "repos/{owner}/{repo}/issues/$n/events" --jq \
+      '[.[] | select(.event == "labeled" and .label.name == "status:in-progress")] | last | .created_at // empty')
+    if [ -n "$claimed" ] && [ "$(date -u -d "$claimed" +%s)" -gt "$cutoff" ]; then
+      echo inflight
+      exit 0
+    fi
+  done
   echo free
   exit 0
 fi

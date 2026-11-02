@@ -62,6 +62,11 @@ jobs:
           bot_name: ${{ vars.BOT_LOGIN }}
           bot_id: ${{ vars.BOT_ID }}
           prompt: Run the /start skill with the argument `next`, following .claude/skills/start/SKILL.md exactly.
+          # Same permissions as the proven local runner (scripts/runner/loop.sh): accept edits, and
+          # take Bash rules from the repo's .claude/settings.json (loaded as a project setting source)
+          # with the pre-bash guard hook in front. A hand-written --allowedTools list here drifted
+          # (it named `Task`, now `Agent`, and was narrower than settings.json): 11-12 denials per
+          # run and no issue claimed (runs 41480788762, 41485801866).
           claude_args: |
             --model fable
-            --allowedTools Read,Grep,Glob,Edit,Write,Task,Bash(bun:*),Bash(bash .claude/hooks/verify.sh:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git switch:*),Bash(git fetch:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git ls-remote:*),Bash(gh api:*)
+            --permission-mode acceptEdits

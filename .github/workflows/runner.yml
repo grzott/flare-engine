@@ -61,7 +61,14 @@ jobs:
           github_token: ${{ secrets.BOT_TOKEN }}
           bot_name: ${{ vars.BOT_LOGIN }}
           bot_id: ${{ vars.BOT_ID }}
-          prompt: Run the /start skill with the argument `next`, following .claude/skills/start/SKILL.md exactly.
+          # The literal slash command, exactly what scripts/runner/loop.sh sends: it expands the
+          # skill directly instead of asking the model to call the Skill tool.
+          prompt: /start next
+          # Diagnostic, temporary: print the whole session so every permission denial is visible
+          # (runs 41480788762, 41485801866, 41488934815 each had 10-12 and claimed nothing).
+          # Remove once the runner opens a PR.
+          show_full_output: true
+          display_report: true
           # Same permissions as the proven local runner (scripts/runner/loop.sh): accept edits, and
           # take Bash rules from the repo's .claude/settings.json (loaded as a project setting source)
           # with the pre-bash guard hook in front. A hand-written --allowedTools list here drifted

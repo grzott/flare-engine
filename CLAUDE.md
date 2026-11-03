@@ -13,12 +13,14 @@ Two builders, no planners. You pick the next row from `todo.md`.
 
 ## Workflow
 
-1. `/start [N | keyword]` — pick the top row (or top N, max 5) from `todo.md`, route to builder by scope, present all plans, halt ONCE for batch approval.
-2. Implement row by row — per-row gate, per-row commit block (batch state in `.claude/.batch-baseline`).
-3. `/close` — runs the full gate sequence in `.claude/hooks/verify.sh` (lint, typecheck, test, build, and more — that script is the authoritative list), appends a block (incl. a frictions self-report) to `SESSION_LOG.md`, emits commit blocks. You run the commits.
-4. `/retro` every ~15 sessions — mines SESSION_LOG frictions into harness recommendations.
+Work comes from GitHub issues; each issue becomes one PR. Mechanics, policy and the gate workflows: [docs/plans/a2-agent-workflow-2026-11-tasks.md](docs/plans/a2-agent-workflow-2026-11-tasks.md).
+
+1. `/start next` — take the next `status:ready` issue (or `/start <n>` interactively, halting for plan approval), route to builder by scope, gate with `.claude/hooks/verify.sh` (that script is the authoritative list), open one PR on a `claude/*` branch as the agent bot.
+2. `/close` — turn hand-started work into a PR the same way. The PR description (incl. the frictions self-report) is the session record; `SESSION_LOG.md` is frozen.
+3. `/retro` every ~15 PRs — mines merged PR descriptions' frictions into harness recommendations.
 
 ## Boundaries
 
-- Builders never run `git add`/`commit`/`push` (blocked in `.claude/settings.json` + `pre-bash-guard.sh`).
+- Builders never commit. The `/start` or `/close` session commits and pushes only `claude/*` branches (enforced by `.claude/hooks/pre-bash-guard.sh`).
+- `main` takes changes only through PRs whose `ci` and `risk-gate` checks pass (the `main` ruleset). Held classes (`.github/risk-policy.json`) wait for the owner.
 - Commit format and the one-source-per-fact rule come from the imported `AGENTS.md`. If a plan changes, edit `roadmap.md` or `todo.md` directly.

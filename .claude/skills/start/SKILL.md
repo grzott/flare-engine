@@ -17,6 +17,14 @@ from the environment (`scripts/runner/claude-as-bot.sh` or `runner.yml`); use it
 `2>&1`, `> file` or other redirects (the guard reads a redirect's `&` as a command separator and
 refuses the command); pipe to `tail` if output is long.
 
+One command per Bash call. The allow list in `.claude/settings.json` is checked against every part
+of a compound command, so `a; echo ---; b` or a pipe into an unlisted tool is denied as a whole.
+Read files with Read, Grep or `cat` (a dependency's version and engines: Read
+`node_modules/<name>/package.json`), not `node -e`.
+
+In runner mode (`next`) nobody reads a question. Never end a turn asking for permission or for a
+decision: a denied command you cannot replace with an allowed one is a stop, handled as in Step 5.
+
 Runner sentinels — print exactly one, as the last line, so `scripts/runner/loop.sh` can branch on it:
 `RUNNER: PR OPENED #<pr>` · `RUNNER: QUEUE EMPTY` · `RUNNER: PR IN FLIGHT #<pr>` · `RUNNER: BLOCKED #<issue>`.
 

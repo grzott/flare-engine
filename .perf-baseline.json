@@ -172,9 +172,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/cli": {
-      "ceiling": 21073,
-      "measured": 20735,
-      "measuredAt": "2026-09-08"
+      "ceiling": 23521,
+      "measured": 21383,
+      "measuredAt": "2026-11-03"
     },
     "@flare-engine/core": {
       "ceiling": 36993,
@@ -422,6 +422,10 @@
     {
       "date": "2026-10-09",
       "reason": "Nine ceilings raised to measured x1.1, owner-authorized 2026-10-09 (pre-freeze audit). check:perf-bytes had been red since the September feature rows landed and nobody saw it, because it runs in neither verify.sh nor the release script — only in release.yml. Packed 0.3.1 -> now, with the commits that grew them: particles 13524 -> 22821 (OSS-M8 emitter shapes + drawParticles, ddd8116/2740004); errors 9658 -> 15386 (OSS-M7 global capture, 15424ba); core 21319 -> 33630 (PF-2b coroutine end states, fb5a0c5 — JSDoc-heavy); physics 33146 -> 50884 (OSS-M11 MTV + raycast, PF-6 addCollider/typed SolidGrid, HYG13 clamp, plus the 2026-10-09 boundary fix); ecs 29597 -> 38894 (PF-2a contracts, XR-7 swap-remove); math 61261 -> 77049 (OSS-M9 curves + RNG state, PF-2b); input 44353 -> 51805 (PF-3, OSS-B23b, HYG5-PRE docs); render 118178 -> 130368 (OSS-M10, PF-5); create 30570 -> 32794 (topdown door template, 5ce6021; renamed from create-flare-app, ADR-0007). Toolchain ruled out: every package whose source did not change measured exactly 0.0% different. Why a 95-line source diff costs core 12 KB: each source line ships up to six times — CJS and ESM output, two .d.ts files, and two source maps carrying sourcesContent — so JSDoc-heavy contract work is the expensive kind. Dropping sourcesContent from the published maps is the lever if these ceilings are ever to come back down; that is post-flip work, not a freeze change. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-03",
+      "reason": "cli ceiling raised 21073 -> 23521 B (measured 21383 x1.1), authorized by the owner's approval of PR #32. Issue #24 (CLI-TMX-1): tiled-to-flare now names a TMX (XML) map input instead of failing in the JSON parser — 15 source lines, measured 20735 -> 21383 B (+3.1%) on the CI runner. Added behaviour, not a regression."
     }
   ]
 }

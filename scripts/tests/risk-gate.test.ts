@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { GateInput, Review } from '../risk-gate.mjs';
-import { decideGate, parseReviewVerdict } from '../risk-gate.mjs';
+import { decideGate, gateMessage, parseReviewVerdict } from '../risk-gate.mjs';
 
 const HEAD = 'abc123';
 
@@ -134,5 +134,29 @@ describe('parseReviewVerdict', () => {
   it('ignores markers for another commit', () => {
     const comments = [{ user: 'github-actions[bot]', body: marker('pass', 'other') }];
     expect(parseReviewVerdict(comments, HEAD)).toBeNull();
+  });
+});
+
+describe('gateMessage', () => {
+  it('names a held PR as waiting for the owner, not as broken', () => {
+    const m = gateMessage(decideGate(gate({ verdict: held })));
+    expect(m.title).toBe('Held: approve this PR to merge');
+    expect(m.body).toContain('held path AGENTS.md');
+  });
+
+  it('names an auto PR blocked by its review as needing changes', () => {
+    const m = gateMessage(decideGate(gate({ reviewVerdict: 'changes' })));
+    expect(m.title).toBe('Blocked: the review asked for changes');
+  });
+
+  it('names a missing review verdict as still waiting for the review', () => {
+    const m = gateMessage(decideGate(gate({ reviewVerdict: null })));
+    expect(m.title).toBe('Waiting: no review verdict for this commit yet');
+  });
+
+  it('names a passing gate', () => {
+    expect(gateMessage(decideGate(gate({}))).title).toBe(
+      'Pass: auto: classifier and review passed',
+    );
   });
 });

@@ -36,6 +36,8 @@ export type GateDecision = {
 
 export declare function decideGate(input: GateInput): GateDecision;
 
+export declare function gateMessage(decision: GateDecision): { title: string; body: string };
+
 export declare function parseReviewVerdict(
   comments: Array<{ user: string; body: string }>,
   headSha: string,

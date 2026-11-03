@@ -200,6 +200,17 @@ def check_push(tail):
         return "git push may only target a claude/* branch, never %r" % pos[1]
     return None
 
+# Resyncing main after a merge: fetch from origin, or a fast-forward-only pull of origin main.
+# Neither can create a commit on main, and pushing main stays refused above.
+QUIET_FLAGS = ("-q", "--quiet")
+
+def is_main_sync(sub, tail):
+    opts = [a for a in tail if a.startswith("-") and a not in QUIET_FLAGS]
+    pos = [a for a in tail if not a.startswith("-")]
+    if sub == "fetch":
+        return not opts and pos in (["origin"], ["origin", "main"])
+    return opts == ["--ff-only"] and pos == ["origin", "main"]
+
 def check_add(tail):
     for a in tail:
         if a.startswith("--fo") or (SHORT_FLAG_CLUSTER.match(a) and "f" in a[1:]):
@@ -290,11 +301,13 @@ def check_git(args, env_names=()):
         return check_add(tail)
     if sub == "commit":
         return check_commit(tail)
+    if sub == "switch" and tail == ["main"]:
+        return None
     if sub in ("switch", "checkout"):
         return check_branch_move(tail)
     if sub == "push":
         return check_push(tail)
-    if sub == "fetch" and tail in (["origin"], ["origin", "main"]):
+    if sub in ("fetch", "pull") and is_main_sync(sub, tail):
         return None
     if sub in GIT_READONLY:
         return None

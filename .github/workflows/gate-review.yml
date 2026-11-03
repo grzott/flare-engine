@@ -1,0 +1,35 @@
+name: gate-review
+
+# An owner review has to re-evaluate the PR's own gate run, not start a new one: GitHub treats each
+# workflow run as its own check suite, and a required check that failed in any suite keeps the PR
+# blocked (PRs #19-#21 and #32 sat blocked with one failed and one passed risk-gate run). So on a
+# review this re-runs the risk-gate job of the PR's latest `gate` run, which then reads the review.
+# If that run is still in progress, its risk-gate job has not run yet and will read the review
+# itself, so a refused re-run is not an error.
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  rerun-risk-gate:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - run: |
+          run=$(gh api "repos/$REPO/actions/workflows/gate.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=1" --jq '.workflow_runs[0].id // empty')
+          if [ -z "$run" ]; then
+            echo "no gate run for $HEAD_SHA yet; it will read the review when it runs"
+            exit 0
+          fi
+          job=$(gh api "repos/$REPO/actions/runs/$run/jobs" --jq '.jobs[] | select(.name == "risk-gate") | .id')
+          gh api -X POST "repos/$REPO/actions/jobs/$job/rerun" \
+            || echo "gate run $run is still in progress; its risk-gate job will read the review"

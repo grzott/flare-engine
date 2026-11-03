@@ -7,14 +7,15 @@ name: gate
 # file nor what it runs. The reviewer's verdict reaches the gate only as a comment written by
 # github-actions[bot] — a user the bot cannot write as.
 
+# Owner reviews do not trigger this workflow: a second run would be a second check suite, and a
+# required check that failed in any suite keeps the PR blocked. gate-review.yml re-runs this run's
+# risk-gate job instead.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  pull_request_review:
-    types: [submitted, dismissed]
 
 concurrency:
-  group: gate-${{ github.event.pull_request.number }}-${{ github.event_name }}
+  group: gate-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:

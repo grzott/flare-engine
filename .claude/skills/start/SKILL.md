@@ -22,8 +22,10 @@ Runner sentinels — print exactly one, as the last line, so `scripts/runner/loo
 
 ## Step 1 — One issue at a time
 
-1. **An open bot PR** — `gh api "repos/{owner}/{repo}/pulls?state=open&per_page=100" --jq '.[] |
-   select(.user.login == env.BOT_LOGIN) | [.number, .head.sha] | @tsv'`. For it, list failed checks:
+1. **An open bot PR on a `claude/*` branch** — `gh api "repos/{owner}/{repo}/pulls?state=open&per_page=100"
+   --jq '.[] | select(.user.login == env.BOT_LOGIN and (.head.ref | startswith("claude/"))) |
+   [.number, .head.sha] | @tsv'`. The release PR (`changeset-release/main`) is the bot's too but
+   waits for the owner's release, so it never counts. For the claude/* PR, list failed checks:
    `gh api "repos/{owner}/{repo}/commits/<sha>/check-runs" --jq '.check_runs[] | select(.conclusion
    == "failure") | .name'`.
    - `ci` failed, or `risk-gate` failed while the PR carries `risk:auto` (the review asked for

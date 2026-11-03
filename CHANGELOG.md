@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.7](#047) | 2026-11-03 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |
 | [0.4.6](#046) | 2026-10-31 | 42 | `@flare-engine/cli`: sharp 0.35.5 fixes three high-severity advisories |
 | [0.4.5](#045) | 2026-10-26 | 42 | Public release: the scope is public on npm, published with provenance |
 | [0.4.4](#044) | 2026-10-26 | 42 | Freeze-window fix: `<VirtualJoystick>` follows its own finger on device |
@@ -27,6 +28,20 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.7
+
+A patch for `@flare-engine/cli`. The other 41 packages change only their version.
+
+- **`cli`** — `flare tiled-to-flare` now names a TMX (XML) input instead of failing inside the JSON
+  parser. Tiled takes the format from "Save as type", not from the file extension, so a map saved
+  with that list left on TMX is XML under a `.tmj` name. The command now says so and asks you to
+  re-save the map as `JSON map files (*.tmj *.json)`. JSON stays the only supported input.
+- **`cli`** — two runtime dependencies moved to a new major: commander 13 to 14 and maxrects-packer
+  2 to 3. Neither changes what the CLI exports or how its commands behave. commander 14 requires
+  Node 20, which the CLI already declared, so the floor does not move.
 
 ---
 

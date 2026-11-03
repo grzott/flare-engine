@@ -92,6 +92,11 @@ Gate: `bash .claude/hooks/verify.sh <engine|game|mixed>`. On failure fix and re-
 attempts. Still red → swap to `status:blocked`, comment the failing gate's last 30 lines mentioning
 `@grzott`, print `RUNNER: BLOCKED #<n>`, stop.
 
+Any other stop is blocked too: a denied command, a claim the issue asks you to verify that you
+cannot, a plan that does not fit the issue. Swap `status:in-progress` for `status:blocked`, comment
+`@grzott blocked: <what stopped you>` on the issue (quote a denied command exactly), print
+`RUNNER: BLOCKED #<n>`, stop. A run never ends with the issue claimed and no PR, comment or sentinel.
+
 ## Step 6 — Commit, push, open the PR
 
 1. Commit: a Conventional Commit subject, at most 72 characters, no body, no `Co-Authored-By`

@@ -65,6 +65,7 @@ jobs:
           echo "deny=$(jq -r '.permissions.deny | join(",")' .claude/settings.json)" >> "$GITHUB_OUTPUT"
 
       - if: steps.probe.outputs.state != 'inflight'
+        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -80,3 +81,12 @@ jobs:
             --permission-mode acceptEdits
             --allowedTools "${{ steps.perms.outputs.allow }}"
             --disallowedTools "${{ steps.perms.outputs.deny }}"
+
+      # The session transcript stays out of this public log, but the denied tool calls are printed:
+      # without them a run that stops on a permission leaves no trace of which rule was missing.
+      - if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          jq -r '.[] | select(.type == "result") | .permission_denials[]?
+            | "denied: \(.tool_name) \(.tool_input | tostring | .[0:300])"' "$EXECUTION_FILE" || true

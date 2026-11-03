@@ -96,7 +96,11 @@ Scope from the issue's `scope:` label or the paths it names: `packages/**` → *
 
 **Interactive mode only:** present the plan and stop for the owner's approval before implementing.
 
-Gate: `bash .claude/hooks/verify.sh <engine|game|mixed>`. On failure fix and re-run — at most two fix
+Gate: `bash .claude/hooks/verify.sh <engine|game|mixed>`, in the foreground with the Bash tool's
+`timeout` at 900000 (15 minutes; the runners raise the cap). A command that outlives its timeout
+moves to the background. Then wait for its completion notice and read its output. Never end the
+turn while a command still runs: in a headless run, ending the turn ends the session and kills the
+gate. On failure fix and re-run — at most two fix
 attempts. Still red → swap to `status:blocked`, comment the failing gate's last 30 lines mentioning
 `@grzott`, print `RUNNER: BLOCKED #<n>`, stop.
 

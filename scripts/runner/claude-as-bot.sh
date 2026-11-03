@@ -27,4 +27,9 @@ export GIT_CONFIG_COUNT=2
 export GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0=
 export GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1='!gh auth git-credential'
 
+# The gate runs longer than Bash's 2-minute default; a command past its timeout moves to the
+# background, and a headless session that then ends its turn kills it. Same values as runner.yml.
+export BASH_DEFAULT_TIMEOUT_MS="${BASH_DEFAULT_TIMEOUT_MS:-900000}"
+export BASH_MAX_TIMEOUT_MS="${BASH_MAX_TIMEOUT_MS:-1800000}"
+
 exec claude "$@"

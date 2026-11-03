@@ -67,6 +67,11 @@ jobs:
       - if: steps.probe.outputs.state != 'inflight'
         id: claude
         uses: anthropics/claude-code-action@v1
+        # The gate runs longer than Bash's 2-minute default; a command past its timeout moves to the
+        # background, and a headless session that then ends its turn kills it (run 41628599164).
+        env:
+          BASH_DEFAULT_TIMEOUT_MS: '900000'
+          BASH_MAX_TIMEOUT_MS: '1800000'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.BOT_TOKEN }}

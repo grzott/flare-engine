@@ -107,6 +107,18 @@ const testConfig = {
   apiKeyAndroid: 'android-key',
 };
 
+/**
+ * `onTransaction` registers its listener only after `await import('react-native-purchases')`, and
+ * how many event-loop turns that import takes is a runtime detail: two microtasks were enough under
+ * bun 1.3.11 and not under 1.4.4. Wait for the effect itself; the bound turns a regression into a
+ * failed assertion instead of a hang.
+ */
+async function waitFor(done: () => boolean): Promise<void> {
+  for (let turn = 0; turn < 100 && !done(); turn++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
 describe('createRevenueCatProvider', () => {
   beforeEach(() => {
     configureMock.mockClear();
@@ -247,17 +259,14 @@ describe('createRevenueCatProvider', () => {
     const provider = createRevenueCatProvider(testConfig);
     const unsub = provider.onTransaction(() => {});
 
-    await Promise.resolve();
-    await Promise.resolve();
-
+    await waitFor(() => addListenerMock.mock.calls.length > 0);
     expect(addListenerMock).toHaveBeenCalledTimes(1);
 
     unsub();
 
-    await Promise.resolve();
-    await Promise.resolve();
-
+    await waitFor(() => removeListenerMock.mock.calls.length > 0);
     expect(removeListenerMock).toHaveBeenCalledTimes(1);
+    expect(removeListenerMock.mock.calls[0]![0]).toBe(addListenerMock.mock.calls[0]![0]);
   });
 
   test('productCategory is passed as second arg to getProducts', async () => {
@@ -438,13 +447,27 @@ describe('createRevenueCatProvider', () => {
 
   test('unsubscribe before SDK resolves prevents listener registration', async () => {
     const provider = createRevenueCatProvider(testConfig);
-    const unsub = provider.onTransaction(() => {});
+    const cancelled: string[] = [];
+    const later: string[] = [];
+    const unsub = provider.onTransaction((tx) => cancelled.push(tx.productId));
     unsub(); // synchronously, before any microtasks run
 
-    await Promise.resolve();
-    await Promise.resolve();
+    // The later subscription's SDK import resolves after the cancelled one's (imports settle in
+    // call order), so once it has registered, the cancelled one has had its chance to.
+    provider.onTransaction((tx) => later.push(tx.productId));
+    await waitFor(() => addListenerMock.mock.calls.length > 0);
 
-    expect(addListenerMock).not.toHaveBeenCalled();
+    const info = {
+      entitlements: {
+        active: { a: { identifier: 'a', productIdentifier: 'p', latestPurchaseDateMillis: 1 } },
+      },
+    };
+    for (const [listener] of addListenerMock.mock.calls) {
+      (listener as (info: unknown) => void)(info);
+    }
+    expect(later).toEqual(['p']);
+    expect(cancelled).toEqual([]);
+    expect(addListenerMock).toHaveBeenCalledTimes(1);
     expect(removeListenerMock).not.toHaveBeenCalled();
   });
 
@@ -452,17 +475,18 @@ describe('createRevenueCatProvider', () => {
     const provider = createRevenueCatProvider(testConfig);
     const unsub = provider.onTransaction(() => {});
 
-    await Promise.resolve();
-    await Promise.resolve();
+    await waitFor(() => addListenerMock.mock.calls.length > 0);
     expect(addListenerMock).toHaveBeenCalledTimes(1);
 
     unsub();
-    await Promise.resolve();
-    await Promise.resolve();
+    await waitFor(() => removeListenerMock.mock.calls.length > 0);
 
     unsub(); // second call: registered is null → early return
-    await Promise.resolve();
-    await Promise.resolve();
+
+    // A removal the second call scheduled would run before a subscription made after it.
+    provider.onTransaction(() => {});
+    await waitFor(() => addListenerMock.mock.calls.length > 1);
+    expect(addListenerMock).toHaveBeenCalledTimes(2);
 
     expect(removeListenerMock).toHaveBeenCalledTimes(1);
   });
@@ -474,8 +498,7 @@ describe('createRevenueCatProvider', () => {
       received.push({ productId: tx.productId, purchasedAt: tx.purchasedAt });
     });
 
-    await Promise.resolve();
-    await Promise.resolve();
+    await waitFor(() => addListenerMock.mock.calls.length > 0);
 
     const listener = addListenerMock.mock.calls[0]![0] as (info: unknown) => void;
     listener({

@@ -82,11 +82,14 @@ jobs:
             --allowedTools "${{ steps.perms.outputs.allow }}"
             --disallowedTools "${{ steps.perms.outputs.deny }}"
 
-      # The session transcript stays out of this public log, but the denied tool calls are printed:
-      # without them a run that stops on a permission leaves no trace of which rule was missing.
+      # The session transcript stays out of this public log, but the denied tool calls and the
+      # session's last message are printed: without them a run that stops early leaves no trace of
+      # which rule was missing or why it stopped.
       - if: always() && steps.claude.outputs.execution_file != ''
         env:
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: |
           jq -r '.[] | select(.type == "result") | .permission_denials[]?
             | "denied: \(.tool_name) \(.tool_input | tostring | .[0:300])"' "$EXECUTION_FILE" || true
+          jq -r '.[] | select(.type == "result") | "last message: \(.result // "-" | .[0:2000])"' \
+            "$EXECUTION_FILE" || true

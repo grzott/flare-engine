@@ -3,6 +3,9 @@
 # session — loop.sh polls this while it waits. `blocked` means the PR will not merge on its own:
 # `ci` failed, or `risk-gate` failed on a `risk:auto` PR (the review asked for changes or gave no
 # verdict). A `risk:held` PR waiting for the owner is `inflight`.
+#
+# Only claude/* PRs count. The bot also opens the release PR (changeset-release/main), which stays
+# open until the owner releases; counting it would stall the runner on the very issues that feed it.
 set -u
 
 ENV_FILE="${FLARE_BOT_ENV:-$HOME/.config/flare-bot/env}"
@@ -15,7 +18,7 @@ fi
 : "${BOT_LOGIN:?BOT_LOGIN is not set}"
 
 pr=$(gh api "repos/{owner}/{repo}/pulls?state=open&per_page=100" --jq \
-  "first(.[] | select(.user.login == \"$BOT_LOGIN\")) | [.number, .head.sha, ([.labels[].name] | join(\",\"))] | @tsv")
+  "first(.[] | select(.user.login == \"$BOT_LOGIN\" and (.head.ref | startswith(\"claude/\")))) | [.number, .head.sha, ([.labels[].name] | join(\",\"))] | @tsv")
 if [ -z "$pr" ]; then
   # No PR yet, but an issue claimed in the last 2 hours means a runner is working on it now
   # (the same rule /start applies before resuming an in-progress issue).

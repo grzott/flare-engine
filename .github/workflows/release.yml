@@ -19,9 +19,12 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
+      # The bot's token, so changesets/action pushes the version branch as the bot. A push made
+      # with GITHUB_TOKEN leaves the version PR's CI and gate runs at `action_required` (#35).
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          token: ${{ secrets.BOT_TOKEN || github.token }}
 
       - uses: oven-sh/setup-bun@v2
         with:

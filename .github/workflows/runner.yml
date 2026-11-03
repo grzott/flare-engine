@@ -74,11 +74,6 @@ jobs:
           # The literal slash command, exactly what scripts/runner/loop.sh sends: it expands the
           # skill directly instead of asking the model to call the Skill tool.
           prompt: /start next
-          # Diagnostic, temporary: print the whole session so every permission denial is visible.
-          # Run 41491031073 showed the cause (untrusted workspace, see the perms step). Remove once
-          # the runner opens a PR.
-          show_full_output: true
-          display_report: true
           # Quoted: each rule like "Bash(gh api:*)" contains a space, and an unquoted list splits.
           claude_args: |
             --model fable

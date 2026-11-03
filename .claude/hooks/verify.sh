@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Gate script. Runs the full gate sequence below (lint, typecheck, test, build,
 # typecheck:tests, test:scripts, check:deps, check:changeset, check:peers,
-# check:bump, hook-guard, runner-loop, check:perf — the run_gate calls are the authoritative,
+# check:bump, hook-guard, runner-loop, check:perf, check:perf-bytes — the run_gate calls are the authoritative,
 # order-accurate list). It only gates: since the 2026-11 PR workflow the agent
 # commits on a claude/* branch, and the PR description carries the session
 # record that SESSION_LOG.md used to hold.
@@ -83,10 +83,13 @@ run_gate "hook-guard" bash .claude/hooks/pre-bash-guard.test.sh
 # The workstation runner's contract (scripts/runner/loop.sh) against a scripted stub.
 run_gate "runner-loop" bash scripts/runner/loop.test.sh
 
-# Perf counters (Track A). Engine + mixed only: a game-scope change cannot move an
-# engine counter, and the gate needs built dists. `check:perf-bytes` runs in CI.
+# Perf counters (Track A) and published package sizes. Engine + mixed only: a game-scope
+# change cannot move an engine counter, and both gates need built dists. perf-bytes packs all
+# 42 packages (~60 s); it runs here too so an agent sees size growth before opening a PR —
+# PR #32 found it only in CI. Raising a ceiling stays an owner decision (a hand edit).
 if [ "$SCOPE" != "game" ]; then
   run_gate "perf" bun run check:perf
+  run_gate "perf-bytes" bun run check:perf-bytes
 fi
 
 echo ""

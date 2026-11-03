@@ -18,7 +18,7 @@
  * reads a label, so removing one changes nothing.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { classifyPrRisk, collectInput } from './classify-pr-risk.mjs';
 
 const DEPENDENCY_BOT = 'dependabot[bot]';
@@ -33,6 +33,19 @@ export function parseReviewVerdict(comments, headSha) {
     if (m && m[2] === headSha) verdict = m[1];
   }
   return verdict;
+}
+
+// A blocked gate is a red check either way; the title is what tells "waiting for you" apart
+// from "something is wrong".
+export function gateMessage(decision) {
+  if (decision.pass) return { title: `Pass: ${decision.summary}`, body: decision.summary };
+  if (decision.risk === 'held') {
+    return { title: 'Held: approve this PR to merge', body: decision.reasons.join('; ') };
+  }
+  if (decision.summary === 'review requested changes') {
+    return { title: 'Blocked: the review asked for changes', body: decision.summary };
+  }
+  return { title: `Waiting: ${decision.summary}`, body: decision.summary };
 }
 
 export function decideGate(input) {
@@ -157,6 +170,11 @@ if (import.meta.main) {
   }
 
   console.log(JSON.stringify(decision));
+  const message = gateMessage(decision);
   console.log(`risk-gate: ${decision.pass ? 'PASS' : 'BLOCKED'} — ${decision.summary}`);
+  if (!decision.pass) console.log(`::error title=${message.title}::${message.body}`);
+  if (env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(env.GITHUB_STEP_SUMMARY, `### ${message.title}\n\n${message.body}\n`);
+  }
   process.exit(decision.pass ? 0 : 1);
 }

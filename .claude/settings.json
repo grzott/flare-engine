@@ -5,7 +5,7 @@
       "Bash(bun install)",
       "Bash(bun run lint:*)",
       "Bash(bun run lint)",
-      "Bash(bun run typecheck:*)",
+      "Bash(bun run typecheck*)",
       "Bash(bun run typecheck)",
       "Bash(bun run test:*)",
       "Bash(bun run test)",
@@ -50,7 +50,7 @@
       "Bash(git ls-remote:*)",
       "Bash(gh api:*)",
       "Bash(bun run test:scripts)",
-      "Bash(bun run check:*)"
+      "Bash(bun run check*)"
     ],
     "deny": [
       "Bash(git reset:*)",

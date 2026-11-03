@@ -194,6 +194,25 @@ describe('convertTiled', () => {
     expect(r.layers[0]?.name).toBe('a');
   });
 
+  test('names a TMX (XML) map saved under a .tmj name instead of failing in JSON.parse', async () => {
+    const dir = await tmp();
+    const inPath = join(dir, 'map.tmj');
+    await writeFile(
+      inPath,
+      '﻿\n<?xml version="1.0" encoding="UTF-8"?>\n<map version="1.10" orientation="orthogonal" width="4" height="2" tilewidth="16" tileheight="16"></map>\n',
+    );
+
+    const err = await convertTiled({ input: inPath, out: join(dir, 'out.json') }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(Error);
+    if (!(err instanceof Error)) throw new Error('unexpected');
+    expect(err.message).toContain(inPath);
+    expect(err.message).toContain('TMX (XML)');
+    expect(err.message).toContain('JSON map files (*.tmj *.json)');
+    expect(err.message).not.toContain('Unexpected token');
+  });
+
   test('round-trips through parseTiled, surviving solidTiles for an external tileset', async () => {
     const dir = await tmp();
     const tsPath = join(dir, 'external.json');

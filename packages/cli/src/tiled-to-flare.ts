@@ -57,6 +57,15 @@ function absPath(p: string, base: string): string {
   return isAbsolute(p) ? p : resolve(base, p);
 }
 
+/**
+ * Tiled takes the format from "Save as type", not the extension, so a `.tmj`
+ * may hold TMX (XML). JSON can never start with `<`, so a leading one (after an
+ * optional BOM and whitespace) is the whole check — no XML parsing.
+ */
+function looksLikeXml(raw: string): boolean {
+  return /^﻿?\s*</.test(raw);
+}
+
 async function resolveTileset(
   ref: RawTiledTilesetRef,
   mapDir: string,
@@ -154,6 +163,12 @@ export async function convertTiled(opts: TiledConvertOptions): Promise<TiledResu
   const embed = opts.embedTilesets !== false;
 
   const raw = await readFile(inputPath, 'utf8');
+  if (looksLikeXml(raw)) {
+    throw new Error(
+      `[tiled-to-flare] ${inputPath} is a TMX (XML) map, not JSON. ` +
+        'Re-save it in Tiled with "Save as type" set to "JSON map files (*.tmj *.json)" and run again.',
+    );
+  }
   const parsed = JSON.parse(raw) as RawTiledMap;
   const mapDir = dirname(inputPath);
 

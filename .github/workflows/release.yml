@@ -19,9 +19,14 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
+      # No persisted credential: changesets/action writes a .netrc from its GITHUB_TOKEN env (the
+      # bot's), and a persisted checkout token would override it, pushing the version branch as
+      # github-actions, whose CI and gate runs then sit at `action_required` (#35). Persisting the
+      # bot's token instead would expose it to every later step, including dependency install scripts.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
         with:

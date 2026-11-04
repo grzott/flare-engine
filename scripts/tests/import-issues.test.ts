@@ -159,6 +159,41 @@ describe('validateManifest', () => {
     expect(validateManifest(manifest([bad]), knownLabels, always)).toHaveLength(1);
   });
 
+  it('refuses private material however it is spelled', () => {
+    const variants = [
+      'See docs\\plans\\_local\\notes.md.',
+      'See `docs/plans/_local` for why.',
+      'Per Roadmap-Design.',
+      'Per roadmap_design.',
+      'This lands in Horizon B.',
+    ];
+    const issues = variants.map((body, i) => ({ ...hyg14, id: `P-${i}`, body }));
+    expect(validateManifest(manifest(issues), knownLabels, always)).toHaveLength(variants.length);
+  });
+
+  it('refuses private material in an id or a milestone', () => {
+    const m = manifest([{ ...hyg14, id: 'roadmap-design-1' }]);
+    m.milestones[1] = { ...m.milestones[1]!, description: 'from docs/plans/_local/x.md' };
+    const problems = validateManifest(m, knownLabels, always);
+    expect(problems).toHaveLength(2);
+    expect(problems.some((p) => p.includes('milestone Perf'))).toBe(true);
+    expect(problems.some((p) => p.includes('roadmap-design-1'))).toBe(true);
+  });
+
+  it('refuses a Design path outside the repo without asking pathExists', () => {
+    const asked: string[] = [];
+    const record = (p: string) => {
+      asked.push(p);
+      return true;
+    };
+    const up = { ...desk, body: 'Design: `../scan.mjs`' };
+    const abs = { ...desk, id: 'EPIC-ABS', body: 'Design: `/etc/passwd`' };
+    const drive = { ...desk, id: 'EPIC-DRIVE', body: 'Design: `C:/x.md`' };
+    const problems = validateManifest(manifest([up, abs, drive]), knownLabels, record);
+    expect(problems).toHaveLength(3);
+    expect(asked).toEqual([]);
+  });
+
   it('refuses an issue without exactly one type, scope, size and priority label', () => {
     const missingSize = { ...hyg14, labels: ['type:hygiene', 'scope:engine', 'priority:p3'] };
     const twoTypes = {

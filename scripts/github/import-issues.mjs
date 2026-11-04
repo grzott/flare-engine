@@ -8,13 +8,18 @@
  * CLI: bun scripts/github/import-issues.mjs <owner/repo> <manifest.json> [--apply]
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const ONE_EACH = ['type:', 'scope:', 'size:', 'priority:'];
-const PRIVATE = [/_local\//, /roadmap-design/];
+const PRIVATE = [/_local\b/i, /roadmap[-_ ]?design/i, /\bhorizon[- ]?[A-D]\b/i];
 const DESIGN_LINE = /^Design:\s*`?([^`\s]+)`?/m;
+const OUTSIDE_REPO = /^([A-Za-z]:|[\\/])|(^|[\\/])\.\.([\\/]|$)/;
 const DUE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isPrivate(...texts) {
+  return PRIVATE.some((re) => texts.some((t) => re.test(t)));
+}
 
 export function backlogMarker(id) {
   return `<!-- backlog-id: ${id} -->`;
@@ -27,6 +32,9 @@ export function validateManifest(m, knownLabels, pathExists) {
   for (const ms of m.milestones) {
     if (ms.due_on !== null && !DUE_DATE.test(ms.due_on)) {
       problems.push(`milestone ${ms.title}: due_on ${ms.due_on} is not YYYY-MM-DD`);
+    }
+    if (isPrivate(ms.title, ms.description)) {
+      problems.push(`milestone ${ms.title}: private material in a public milestone`);
     }
   }
   const seen = new Set();
@@ -55,12 +63,14 @@ export function validateManifest(m, knownLabels, pathExists) {
       const design = issue.body.match(DESIGN_LINE);
       if (!design) {
         problems.push(`${at} size:l needs a Design: <path> line`);
+      } else if (OUTSIDE_REPO.test(design[1])) {
+        problems.push(`${at} Design path ${design[1]} is not a repo-relative path`);
       } else if (!pathExists(design[1])) {
-        problems.push(`${at} Design path ${design[1]} does not exist`);
+        problems.push(`${at} Design path ${design[1]} is not tracked in the repo`);
       }
     }
-    if (PRIVATE.some((re) => re.test(issue.title) || re.test(issue.body))) {
-      problems.push(`${at} private material (_local/ or roadmap-design) in a public issue`);
+    if (isPrivate(issue.id, issue.title, issue.body)) {
+      problems.push(`${at} private material (_local, roadmap-design, horizons) in a public issue`);
     }
   }
   return problems;
@@ -77,6 +87,17 @@ export function planIssueImport(m, existingIssues, existingMilestones) {
     else createIssues.push(issue);
   }
   return { createMilestones, createIssues, skipped };
+}
+
+// `/start` checks a Design path on a Linux runner, so only a path committed at HEAD counts:
+// an untracked file or a case-insensitive match on Windows would pass here and block there.
+function trackedAtHead(root, path) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `HEAD:${path}`], { cwd: root, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function gh(args) {
@@ -103,7 +124,7 @@ if (import.meta.main) {
     (l) => l.name,
   );
   const m = JSON.parse(readFileSync(file, 'utf8'));
-  const problems = validateManifest(m, knownLabels, (p) => existsSync(`${root}${p}`));
+  const problems = validateManifest(m, knownLabels, (p) => trackedAtHead(root, p));
   if (problems.length > 0) {
     for (const p of problems) console.error(`import-issues: ${p}`);
     process.exit(1);

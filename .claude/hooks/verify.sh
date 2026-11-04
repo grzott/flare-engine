@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gate script. Runs the full gate sequence below (lint, typecheck, test, build,
+# Gate script. Runs the full gate sequence below (bun-pin, lint, typecheck, test, build,
 # typecheck:tests, test:scripts, check:deps, check:changeset, check:peers,
 # check:bump, hook-guard, runner-loop, check:perf, check:perf-bytes — the run_gate calls are the authoritative,
 # order-accurate list). It only gates: since the 2026-11 PR workflow the agent
@@ -40,6 +40,18 @@ run_gate() {
   fi
 }
 
+# A gate on a Bun other than the pin fails on tests that pass in CI (run 41632397559 ran 1.4.4),
+# so name the skew first instead of letting it surface as an unrelated red test.
+check_bun_pin() {
+  local want have
+  want=$(sed -n 's/.*"packageManager": *"bun@\([^"]*\)".*/\1/p' package.json)
+  have=$(bun --version)
+  [ -n "$want" ] && [ "$have" = "$want" ] && return 0
+  echo "bun $have is running, package.json pins bun@$want"
+  return 1
+}
+
+run_gate "bun-pin"   check_bun_pin
 run_gate "lint"      bun run lint
 run_gate "typecheck" bun run typecheck
 run_gate "test"      bun run test

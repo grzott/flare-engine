@@ -54,6 +54,19 @@ jobs:
       - if: steps.probe.outputs.state != 'inflight'
         run: bun install --frozen-lockfile
 
+      # claude-code-action installs its own Bun into the same ~/.bun/bin, so the session ran the gate
+      # on that version, not the pin (run 41632397559: bun 1.4.4). Keep a copy of the pinned binary and
+      # put it first on the session's PATH: Claude Code sources CLAUDE_ENV_FILE before every Bash
+      # command, while the action's own steps keep the Bun they ship with.
+      - if: steps.probe.outputs.state != 'inflight'
+        run: |
+          pin="$RUNNER_TEMP/bun-pin"
+          mkdir -p "$pin"
+          cp "$(command -v bun)" "$pin/bun"
+          ln -sf bun "$pin/bunx"
+          "$pin/bun" --version
+          echo "export PATH=\"$pin:\$PATH\"" > "$RUNNER_TEMP/bun-pin.sh"
+
       # A fresh checkout is an untrusted workspace: Claude Code runs the repo's hooks but ignores
       # its permissions.allow until the folder is trusted, which a headless run never is (the local
       # loop works because the workstation's checkout is trusted). CLI flags are not trust-gated,
@@ -72,6 +85,7 @@ jobs:
         env:
           BASH_DEFAULT_TIMEOUT_MS: '900000'
           BASH_MAX_TIMEOUT_MS: '1800000'
+          CLAUDE_ENV_FILE: ${{ runner.temp }}/bun-pin.sh
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.BOT_TOKEN }}

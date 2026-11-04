@@ -1,5 +1,11 @@
 # @flare-engine/assets
 
+## 0.4.7
+
+### Patch Changes
+
+- @flare-engine/events@0.4.7
+
 ## 0.4.6
 
 ### Patch Changes

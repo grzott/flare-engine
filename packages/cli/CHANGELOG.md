@@ -1,5 +1,24 @@
 # @flare-engine/cli
 
+## 0.4.7
+
+### Patch Changes
+
+- 0769b73: Two runtime dependencies of the CLI moved to a new major: commander 13 to 14 and maxrects-packer
+  2 to 3. Neither changes what the CLI exports or how its commands behave. commander 14 requires
+  Node 20, which the package already declared in its engines field, so the floor does not move.
+  maxrects-packer 3 defaults its packer and bin generic to the input-rectangle interface instead of
+  the Rectangle class, stops copying the first rect's tag onto a non-exclusive bin, and closes deep
+  imports behind its exports map; the atlas packer passes tag off, reads only a rect's x, y and data
+  plus the bin's width and height, and imports the package by name, so none of those apply.
+- 5a1e4aa: CLI-TMX-1: `flare tiled-to-flare` now names a TMX (XML) input instead of failing inside the JSON
+  parser. Tiled takes the format from "Save as type", not from the file extension, so a map saved
+  with that list left on TMX is XML under a `.tmj` name, and the command printed the raw
+  `Unexpected token '<', "<?xml vers"... is not valid JSON`. The converter now checks for a leading
+  `<` (after an optional BOM and whitespace) before parsing and fails with a message that names the
+  file and says to re-save it in Tiled as `JSON map files (*.tmj *.json)`. JSON stays the only
+  supported input; no XML is parsed, and no exported name, signature or type changes.
+
 ## 0.4.6
 
 ### Patch Changes

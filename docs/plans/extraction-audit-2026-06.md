@@ -6,8 +6,9 @@ deep-dives → an adversarial verifier per candidate that grepped the real engin
 defaulted to reject if already-covered or genre-coupled. 37 candidates verified.
 
 Companion to the roadmap's
-[Engine extraction history](roadmap.md#engine-extraction-history) (history of what already
-landed) and its Rejected list (which still holds). This doc is the forward queue.
+[Engine extraction history](https://github.com/grzott/flare-engine/blob/b8dd4a6/docs/plans/roadmap.md#engine-extraction-history)
+(history of what already landed) and its Rejected list (which still holds), both in the roadmap as it
+stood before the 2026-11-04 rewrite. This doc is the forward queue.
 
 Verdict tally: 12 lift-with-strip · 21 extend-existing · 1 needs-new-package · 3 reject.
 

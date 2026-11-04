@@ -1,8 +1,10 @@
 # Flare Roadmap
 
 Flare is a 2D engine that runs the same code on Web and React Native: animation, gamification,
-interactive UI, and games. This page says where the engine stands and how its work is tracked. The
-work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issues).
+interactive UI, and games. One gap so far: on the web, postfx effects do not render under
+`GameView` yet ([#60](https://github.com/grzott/flare-engine/issues/60)). This page says where the
+engine stands and how its work is tracked. The work itself lives in
+[GitHub issues](https://github.com/grzott/flare-engine/issues).
 
 ## Where things stand
 
@@ -25,8 +27,9 @@ work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issu
 
 - **One issue, one PR.** Every piece of engine work is an issue with a type, a scope, a size and a
   priority label, in a milestone.
-- **The owner approves a phase** by labelling its issues `status:ready`. `/start next` takes the next
-  approved issue in milestone due-date order and opens one PR on a `claude/*` branch.
+- **The owner approves a phase** by labelling its issues `status:ready`, except `type:owner-action`
+  issues, which are the owner's own. `/start next` takes the next approved issue in milestone
+  due-date order and opens one PR on a `claude/*` branch.
 - **PRs merge through the gate:** `ci` and `risk-gate` must pass; held changes
   ([risk-policy.json](../../.github/risk-policy.json)) wait for the owner.
 - **History:** merged PR descriptions. `todo.md` was the queue until 2026-11-04; its last full
@@ -34,18 +37,19 @@ work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issu
 
 ## Milestones
 
-| Milestone | Due | What it holds |
-| --- | --- | --- |
-| [Release health](https://github.com/grzott/flare-engine/milestone/2) | 2026-11-19 | The token teardown and the bench baselines before the 30-day refusal |
-| [Deferred defects](https://github.com/grzott/flare-engine/milestone/3) | 2026-12-18 | Consumer-visible defects held past the October freeze, and the CI gaps |
-| [Post-release verification](https://github.com/grzott/flare-engine/milestone/4) | 2027-01-15 | The npm install path, fresh machines, Expo SDK 58 templates |
-| [Hygiene](https://github.com/grzott/flare-engine/milestone/5) | 2027-01-29 | Audit findings, one issue per finding |
-| [Consumer asks](https://github.com/grzott/flare-engine/milestone/6) | 2027-02-12 | Additive features a named consumer asked for |
-| [Perf](https://github.com/grzott/flare-engine/milestone/7) | 2027-02-12 | Benchmark suites, device lanes, perf-protocol automation |
-| [Adoption basics](https://github.com/grzott/flare-engine/milestone/8) | 2027-02-26 | Quickstart, recipes, first issues, Discussions |
-| [0.5.0](https://github.com/grzott/flare-engine/milestone/9) | 2027-03-31 | The breaking changes held back during `0.4.x`, each behind an ADR |
+| Milestone | What it holds |
+| --- | --- |
+| [Release health](https://github.com/grzott/flare-engine/milestone/2) | The token teardown and the bench baselines before the 30-day refusal |
+| [Deferred defects](https://github.com/grzott/flare-engine/milestone/3) | Consumer-visible defects held past the October freeze, and the CI gaps |
+| [Post-release verification](https://github.com/grzott/flare-engine/milestone/4) | The npm install path, fresh machines, Expo SDK 58 templates |
+| [Hygiene](https://github.com/grzott/flare-engine/milestone/5) | Audit findings, one issue per finding |
+| [Consumer asks](https://github.com/grzott/flare-engine/milestone/6) | Additive features a named consumer asked for |
+| [Perf](https://github.com/grzott/flare-engine/milestone/7) | Benchmark suites, device lanes, perf-protocol automation |
+| [Adoption basics](https://github.com/grzott/flare-engine/milestone/8) | Quickstart, recipes, first issues, Discussions |
+| [0.5.0](https://github.com/grzott/flare-engine/milestone/9) | The breaking changes held back during `0.4.x`, each behind an ADR |
 
-Due dates are targets, not promises; the owner moves them.
+In due-date order. The dates live on the [milestones page](https://github.com/grzott/flare-engine/milestones);
+they are targets, and the owner moves them.
 
 ## Epics
 

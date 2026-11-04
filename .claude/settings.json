@@ -50,7 +50,11 @@
       "Bash(git ls-remote:*)",
       "Bash(gh api:*)",
       "Bash(bun run test:scripts)",
-      "Bash(bun run check*)"
+      "Bash(bun run check*)",
+      "Bash(bash .claude/hooks/pre-bash-guard.test.sh)",
+      "Bash(bash scripts/runner/loop.test.sh)",
+      "Bash(bun --version)",
+      "Bash(git pull --ff-only origin main)"
     ],
     "deny": [
       "Bash(git reset:*)",

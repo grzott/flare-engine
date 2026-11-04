@@ -73,10 +73,33 @@ async function init(
   try {
     const wasmBinary = await fetchWithProgress(wasmUrl, onProgress, options);
     onProgress?.(1);
-    return await mod.default({ locateFile: () => wasmUrl, wasmBinary });
+    return await initFromBytes(mod.default, wasmUrl, wasmBinary);
   } catch {
     onProgress?.(1);
     return mod.default({ locateFile: () => wasmUrl });
+  }
+}
+
+// canvaskit-wasm ≤0.40 reads `wasmBinary`; 0.41+ ignores it and fetches `locateFile()` itself, so
+// the same bytes are also offered as a Blob URL — either glue then takes the wasm from memory
+// instead of downloading it again. Without `fetch` the bytes came from `node:fs`, and the Node-mode
+// glue reads `locateFile()` with `fs.readFileSync`, which cannot open a `blob:` URL.
+async function initFromBytes(
+  initFn: CanvasKitInitFn,
+  wasmUrl: string,
+  wasmBinary: Uint8Array<ArrayBuffer>,
+): Promise<CanvasKit> {
+  const canBlob =
+    typeof fetch !== 'undefined' &&
+    typeof Blob !== 'undefined' &&
+    typeof URL.createObjectURL === 'function';
+  if (!canBlob) return initFn({ locateFile: () => wasmUrl, wasmBinary });
+
+  const blobUrl = URL.createObjectURL(new Blob([wasmBinary], { type: 'application/wasm' }));
+  try {
+    return await initFn({ locateFile: () => blobUrl, wasmBinary });
+  } finally {
+    URL.revokeObjectURL(blobUrl);
   }
 }
 
@@ -84,11 +107,10 @@ async function fetchWithProgress(
   url: string,
   onProgress: ((fraction: number) => void) | undefined,
   options: LoadCanvasKitOptions,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   if (typeof fetch === 'undefined') {
     const fs = await import('node:fs/promises');
-    const buf = await fs.readFile(url);
-    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+    return new Uint8Array(await fs.readFile(url));
   }
 
   const stallMs = options.stallMs ?? DEFAULT_STALL_MS;

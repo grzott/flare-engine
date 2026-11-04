@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { type CrashPayload, createCrashPayload } from './crash-payload.js';
-import type { CrashTransport } from './transport.js';
+import { type CrashTransport, reportSafely } from './transport.js';
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -37,7 +37,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
     const payload = createCrashPayload(error, context);
     this.setState({ payload });
-    this.props.transport?.report(payload);
+    const { transport } = this.props;
+    if (transport !== undefined) reportSafely(transport, payload, 'reporting');
     this.props.onError?.(error, payload);
   }
 

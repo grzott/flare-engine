@@ -217,9 +217,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/errors": {
-      "ceiling": 16925,
-      "measured": 15386,
-      "measuredAt": "2026-09-08"
+      "ceiling": 18836,
+      "measured": 17123,
+      "measuredAt": "2026-11-04"
     },
     "@flare-engine/events": {
       "ceiling": 9706,
@@ -430,6 +430,10 @@
     {
       "date": "2026-11-04",
       "reason": "react ceiling raised 66349 -> 76323 B (measured 69384 x1.1), authorized by the owner's approval of the PR closing issue #53. Native GameView gains a second postfx render path: a pass with sampler children (color-grading-lut) and every pass before it now render as a nested <Shader> chain on a <Rect>, because RN-Skia's <RuntimeShader> image filter cannot bind extra children. main packed under 66349 B at the #52 gate the same morning, so this change adds at least 3035 B gzipped; about 70 source lines plus a rationale comment, each shipped in CJS and ESM output and both source maps' sourcesContent. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-04",
+      "reason": "errors ceiling raised 16925 -> 18836 B (measured 17123 x1.1), authorized by the owner's approval of the PR closing issue #61. installGlobalErrorCapture (live path and setTransport drain) and ErrorBoundary now route every transport.report through one internal reportSafely helper that also catches a rejected promise, so a consumer async transport that rejects can no longer feed the capture's own unhandledrejection listener. main packed at or under 16925 B at the 26af019 ci run, so this change adds at least 198 B gzipped: a 21-line helper with its rationale JSDoc, shipped in CJS and ESM output and both source maps' sourcesContent. Not part of the public surface (absent from dist/index.d.ts). Added behaviour, not a regression."
     }
   ]
 }

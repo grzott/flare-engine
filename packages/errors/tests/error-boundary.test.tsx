@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import type { ErrorInfo } from 'react';
 import type { CrashPayload } from '../src/crash-payload.js';
 import { ErrorBoundary } from '../src/error-boundary.js';
@@ -69,5 +69,32 @@ describe('ErrorBoundary', () => {
     expect(() =>
       instance.componentDidCatch(new Error('x'), { componentStack: null }),
     ).not.toThrow();
+  });
+
+  test('a rejecting transport reports once and its rejection is logged, not left unhandled', async () => {
+    // bun's runner claims any rejection nobody handles and fails the running
+    // test. In a browser one would reach `installGlobalErrorCapture`'s listener
+    // and start the same report-reject loop from the boundary.
+    const reason = new Error('offline');
+    let reports = 0;
+    const transport: CrashTransport = {
+      report() {
+        reports += 1;
+        return Promise.reject(reason);
+      },
+    };
+    const { instance } = makeBoundary({ transport });
+    const log = spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      instance.componentDidCatch(new Error('explode'), { componentStack: null });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      expect(reports).toBe(1);
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls[0]![0]).toContain('[@flare-engine/errors]');
+      expect(log.mock.calls[0]![1]).toBe(reason);
+    } finally {
+      log.mockRestore();
+    }
   });
 });

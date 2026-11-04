@@ -224,7 +224,7 @@ changes, both guarded against redundant sets.
 
 > **The engine does not use `useRSXformBuffer`, and never has.** Earlier revisions
 > of this document said the retained path computed "transforms via `useRSXformBuffer`
-> worklet on UI thread". That call does not appear in any of the 41 scoped packages,
+> worklet on UI thread". That call does not appear in any of the 42 scoped packages,
 > and transforms are computed on the JS thread in `ctx.batch.flush(bridge.drawAtlas, …)`.
 > `useRSXformBuffer` is a real *Skia* API — see `ecosystem.md` — but it is a
 > capability Flare has not adopted, not a description of this render path.

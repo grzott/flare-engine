@@ -15,7 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
-| [0.4.7](#047) | 2026-11-03 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |
+| [0.4.7](#047) | 2026-11-04 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |
 | [0.4.6](#046) | 2026-10-31 | 42 | `@flare-engine/cli`: sharp 0.35.5 fixes three high-severity advisories |
 | [0.4.5](#045) | 2026-10-26 | 42 | Public release: the scope is public on npm, published with provenance |
 | [0.4.4](#044) | 2026-10-26 | 42 | Freeze-window fix: `<VirtualJoystick>` follows its own finger on device |

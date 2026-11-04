@@ -12,15 +12,17 @@ Select packages, choose bump type (patch/minor/major), and write a short summary
 
 ## Releasing
 
-1. `bun run version` — `check:bump`, then `changeset version` (consumes pending changesets, bumps versions, writes each package's `CHANGELOG.md`), then `scripts/concretize-workspace-deps.ts` (rewrites `workspace:*` to `^x.y.z`), then `bun install`. Run the whole chain, not `changeset version` alone: the last two stages are what keep a published manifest installable.
-2. Review the diff, commit, merge to `main`.
-3. `bun run release` — builds every package, runs the publish-safety and perf gates, and publishes to npm.
+Releases run in CI (`.github/workflows/release.yml`), never from a laptop:
+
+1. A push to `main` with pending changesets makes `release.yml` open or refresh the "chore(release): version packages" PR on `changeset-release/main`. It runs `bun run version`: `check:bump`, then `changeset version` (consumes the changesets, bumps every package, writes each package's `CHANGELOG.md`), then `scripts/concretize-workspace-deps.ts` (rewrites `workspace:*` to `^x.y.z`), then `bun install`.
+2. Add the root `CHANGELOG.md` row and section by hand in a separate PR; the version PR does not write it.
+3. The version PR is held: the owner approves it once `ci` is green, and merging it is the release. `release.yml` then runs `bun run release` (build, publish-safety and perf gates) and publishes with npm provenance.
 
 All `@flare-engine/*` packages are versioned in lockstep via the `fixed` group in `config.json` — one word in one changeset moves all 42. `@flare-engine/benchmarks` and `@flare-engine-apps/bench-web` are ignored (never published).
 
 ## Publishing prerequisites (one-time)
 
-- The `@flare-engine` org on npm (a paid plan while packages publish `restricted`).
-- Authenticate locally with a granular access token in `~/.npmrc`.
-- For CI release: set the `NPM_TOKEN` repo secret and the `ENABLE_RELEASE=true` repo variable.
-- Every package carries `publishConfig.access`: `restricted` until the public flip, `public` after it (`docs/plans/flip-runbook.md`). A `private` package with `access: "public"` fails `check:publish-safety`.
+- The `@flare-engine` org on npm.
+- npm Trusted Publishing: each published package lists `grzott/flare-engine` + `release.yml` as its trusted publisher, with direct publish allowed. `release.yml` authenticates by OIDC (`id-token: write`); there is no `NPM_TOKEN`, and a local `bun run release` cannot publish.
+- The `ENABLE_RELEASE=true` repo variable (`release.yml` does nothing without it) and the `BOT_TOKEN` secret (the version PR must be opened by the bot so that CI and the gate run on it).
+- Every published package carries `publishConfig.access: "public"`. A `private` package with `access: "public"` fails `check:publish-safety`.

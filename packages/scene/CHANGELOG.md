@@ -1,5 +1,13 @@
 # @flare-engine/scene
 
+## 0.4.7
+
+### Patch Changes
+
+- @flare-engine/ecs@0.4.7
+- @flare-engine/math@0.4.7
+- @flare-engine/render@0.4.7
+
 ## 0.4.6
 
 ### Patch Changes

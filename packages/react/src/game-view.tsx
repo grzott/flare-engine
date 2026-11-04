@@ -7,7 +7,18 @@ import { InputManager } from '@flare-engine/input';
 import { Camera2D, createRenderSystem, Renderer, Sprite, SpriteBatch } from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
 import type { CanvasRef, SkImage, SkPicture, SkSurface } from '@shopify/react-native-skia';
-import { Canvas, Image, RuntimeShader, Skia, useCanvasRef } from '@shopify/react-native-skia';
+import {
+  Canvas,
+  FilterMode,
+  Image,
+  ImageShader,
+  MipmapMode,
+  Rect,
+  RuntimeShader,
+  Shader,
+  Skia,
+  useCanvasRef,
+} from '@shopify/react-native-skia';
 import type React from 'react';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
@@ -355,10 +366,74 @@ export function GameView({
   );
 
   const containerStyle = useMemo(() => [styles.container, style], [style]);
-  const passElements = useMemo(
-    () => passes.map((p) => <RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />),
-    [passes],
-  );
+  // RN-Skia's <RuntimeShader> image filter binds the implicit source only
+  // (MakeRuntimeShader(rtb, null, null)) and never consumes child shaders, so a
+  // pass with extra sampler children (color-grading-lut) would be dropped by
+  // it. Such a pass, and every pass before it, runs as one paint shader on a
+  // <Rect> instead: nested <Shader>s bind their children positionally (src,
+  // then each entry of pass.children), the convention render-web uses. Passes
+  // after the last child-bearing one stay <RuntimeShader> image filters — a
+  // nested <Shader> re-evaluates src per tap, which would multiply reads for
+  // multi-tap effects. A chain with no children keeps the plain <Image> tree.
+  const canvasContent = useMemo(() => {
+    if (viewportSize.w === 0) return null;
+    const w = viewportSize.w;
+    const h = viewportSize.h;
+    const last = lastPassWithChildren(passes);
+    if (last < 0) {
+      return (
+        <Image image={sceneImage} x={0} y={0} width={w} height={h} fit="cover">
+          {passes.map((p) => (
+            <RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />
+          ))}
+        </Image>
+      );
+    }
+    let shader: React.ReactElement = (
+      <ImageShader
+        image={sceneImage}
+        fit="cover"
+        rect={{ x: 0, y: 0, width: w, height: h }}
+        tx="clamp"
+        ty="clamp"
+        sampling={LINEAR_SAMPLING}
+      />
+    );
+    for (let i = 0; i <= last; i++) {
+      const p = passes[i];
+      if (p === undefined) continue;
+      const samplers: React.ReactElement[] = [];
+      for (let c = 0; c < p.children.length; c++) {
+        samplers.push(
+          <ImageShader
+            key={c}
+            image={p.children[c] ?? null}
+            tx="clamp"
+            ty="clamp"
+            sampling={LINEAR_SAMPLING}
+          />,
+        );
+      }
+      shader = (
+        <Shader source={p.source} uniforms={p.uniforms}>
+          {shader}
+          {samplers}
+        </Shader>
+      );
+    }
+    const filters: React.ReactElement[] = [];
+    for (let i = last + 1; i < passes.length; i++) {
+      const p = passes[i];
+      if (p === undefined) continue;
+      filters.push(<RuntimeShader key={p.id} source={p.source} uniforms={p.uniforms} />);
+    }
+    return (
+      <Rect x={0} y={0} width={w} height={h}>
+        {shader}
+        {filters}
+      </Rect>
+    );
+  }, [passes, viewportSize, sceneImage]);
 
   return (
     <SafeAreaContext.Provider value={resolvedSafeArea}>
@@ -378,18 +453,7 @@ export function GameView({
             pointerEvents="none"
             opaque={config?.opaque ?? false}
           >
-            {viewportSize.w === 0 ? null : (
-              <Image
-                image={sceneImage}
-                x={0}
-                y={0}
-                width={viewportSize.w}
-                height={viewportSize.h}
-                fit="cover"
-              >
-                {passElements}
-              </Image>
-            )}
+            {canvasContent}
           </Canvas>
           {children}
         </View>
@@ -405,6 +469,19 @@ function returnTrue(): boolean {
 /** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses
  *  to this so the `passes` state never changes for a postfx-free GameView. */
 const EMPTY_PASSES: readonly PostFxPassDescriptor[] = [];
+
+/** Linear, mipmap-free sampling for every ImageShader in the pass chain — the
+ *  options render-web hands makeShaderOptions, so both backends sample alike. */
+const LINEAR_SAMPLING = { filter: FilterMode.Linear, mipmap: MipmapMode.None };
+
+/** Index of the last pass carrying extra sampler children, or -1 when none does. */
+function lastPassWithChildren(passes: readonly PostFxPassDescriptor[]): number {
+  for (let i = passes.length - 1; i >= 0; i--) {
+    const p = passes[i];
+    if (p !== undefined && p.children.length > 0) return i;
+  }
+  return -1;
+}
 
 /** Fallback insets when no `<SafeAreaProvider>` ancestor supplies a context value. */
 const ZERO_INSETS: SafeArea = { top: 0, right: 0, bottom: 0, left: 0 };

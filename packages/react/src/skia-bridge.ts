@@ -31,7 +31,8 @@ export interface SkSurfaceLike {
 
 /**
  * A single post-processing pass descriptor built by `buildPostFxPasses`.
- * GameView maps each descriptor to a `<RuntimeShader>` child of `<Image>`.
+ * GameView maps each descriptor to a `<RuntimeShader>` image filter, or to a
+ * nested `<Shader>` when a pass carries `children` (see that field).
  */
 export interface PostFxPassDescriptor {
   /** Stable id, used as React key. */
@@ -45,9 +46,13 @@ export interface PostFxPassDescriptor {
    */
   readonly uniforms: Record<string, number | readonly number[]>;
   /**
-   * Extra child shader slots beyond the implicit scene sampler. Empty for every
-   * built-in effect; only color-grading-lut would populate it. Each entry
-   * is an SkImage that GameView wraps in `<ImageShader>`.
+   * Extra sampler children beyond the implicit scene sampler, in SkSL
+   * declaration order with `src` excluded. Empty for every built-in effect
+   * except color-grading-lut (its LUT image). RN-Skia's `<RuntimeShader>`
+   * image filter cannot bind them — it calls `MakeRuntimeShader(rtb, null,
+   * null)`, source only — so GameView renders a pass with children, and every
+   * pass before it, as a nested `<Shader>` chain whose children are bound
+   * positionally: `src` first, then one `<ImageShader>` per entry here.
    */
   readonly children: readonly SkImage[];
 }

@@ -9,6 +9,16 @@ const _effectCleanups: Array<() => void> = [];
 // Override viewport initial state for high-DPI tests. Set before mount(), reset in beforeEach.
 let _viewportOverride: { w: number; h: number } | null = null;
 
+// Override the passes state — when non-null the mocked useState hands this to
+// GameView as the current `passes` value, so a mount renders a postfx tree
+// directly (the mocked setter never re-renders). Reset in beforeEach.
+let _passesOverride: readonly unknown[] | null = null;
+
+// Every shared value the mocked useSharedValue created, in call order. GameView
+// creates sceneImage first (game-view.tsx), so _sharedValues[0] is the scene
+// texture the rendered tree must sample.
+let _sharedValues: unknown[] = [];
+
 // Controllable postfx-pass source — the mocked bridge.buildPostFxPasses returns
 // _buildPasses() each frame, so a test can vary the chain between onPreRender ticks.
 let _buildPasses: () => readonly unknown[] = () => [];
@@ -70,7 +80,7 @@ mock.module('react', () => ({
     // count its setter's invocations so tests can assert the per-frame gate.
     if (Array.isArray(init)) {
       return [
-        init,
+        _passesOverride ?? init,
         (val: unknown) => {
           _setPassesCount++;
           _lastPasses = val;
@@ -80,7 +90,15 @@ mock.module('react', () => ({
     return [typeof init === 'function' ? (init as () => unknown)() : init, () => {}];
   },
 }));
-function captureContainerView(type: unknown, props: Record<string, unknown> | null): null {
+// A rendered element as the mocked jsx runtime records it: the component (a
+// string for every mocked Skia / RN component) plus its props, children included.
+interface El {
+  type: unknown;
+  props: Record<string, unknown>;
+  key: unknown;
+}
+
+function recordElement(type: unknown, props: Record<string, unknown> | null, key?: unknown): El {
   if (
     _capturedContainerProps === null &&
     type === 'View' &&
@@ -89,13 +107,13 @@ function captureContainerView(type: unknown, props: Record<string, unknown> | nu
   ) {
     _capturedContainerProps = props;
   }
-  return null;
+  return { type, props: props ?? {}, key };
 }
 
 const jsxMock = {
-  jsx: captureContainerView,
-  jsxs: captureContainerView,
-  jsxDEV: captureContainerView,
+  jsx: recordElement,
+  jsxs: recordElement,
+  jsxDEV: recordElement,
   Fragment: null,
 };
 mock.module('react/jsx-runtime', () => jsxMock);
@@ -135,7 +153,7 @@ let _runOnUILastArgs: unknown[] = [];
 mock.module('react-native-reanimated', () => ({
   useSharedValue: (init: unknown) => {
     let _val = init;
-    return {
+    const sv = {
       get value() {
         return _val;
       },
@@ -145,6 +163,8 @@ mock.module('react-native-reanimated', () => ({
         _sharedValueLastSet = v;
       },
     };
+    _sharedValues.push(sv);
+    return sv;
   },
 }));
 
@@ -172,7 +192,12 @@ mock.module('react-native-worklets', () => ({
 mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
   Image: 'Image',
+  ImageShader: 'ImageShader',
+  Rect: 'Rect',
   RuntimeShader: 'RuntimeShader',
+  Shader: 'Shader',
+  FilterMode: { Nearest: 0, Linear: 1 },
+  MipmapMode: { None: 0, Nearest: 1, Linear: 2 },
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
   Skia: {
     Surface: {
@@ -514,8 +539,8 @@ mock.module('@flare-engine/scene', () => ({
 
 const reactModule = await import('../src/game-view.js');
 
-function mount(props: Parameters<typeof reactModule.GameView>[0] = {}): void {
-  reactModule.GameView(props);
+function mount(props: Parameters<typeof reactModule.GameView>[0] = {}): unknown {
+  return reactModule.GameView(props);
 }
 
 function unmountAll(): void {
@@ -542,6 +567,8 @@ beforeEach(() => {
   _mockPixelRatio = 1;
   _mockPlatformOS = 'ios';
   _viewportOverride = null;
+  _passesOverride = null;
+  _sharedValues = [];
   _beginRecordingBounds = [];
   _beginFramePdArgs = [];
   _buildPasses = () => [];
@@ -1524,6 +1551,146 @@ describe('GameView — XR-1c: the scene capture runs on the right thread', () =>
     if (DISPOSE !== undefined) {
       expect(_surfaceDisposeCount).toBe(1);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #53: passes with sampler children bind through a nested <Shader> chain.
+//
+// RN-Skia's <RuntimeShader> image filter calls MakeRuntimeShader(rtb, null,
+// null) — it binds the implicit source only and never consumes child shaders
+// (sksg/Recorder/commands/ImageFilters.ts, 2.4.18 and 2.6.0 alike). For a
+// two-child effect such as color-grading-lut Skia returns a null filter and
+// the frame draws ungraded. GameView therefore renders every pass up to the
+// LAST child-bearing one as a paint shader on a <Rect>: nested <Shader>s whose
+// children are bound positionally (src first, then each pass.children entry as
+// an <ImageShader>), with any later child-free passes kept as <RuntimeShader>
+// image filters on the same <Rect>. A chain with no children keeps today's
+// <Image>{RuntimeShader…}</Image> tree.
+//
+// The trees are inspected through the element records the mocked jsx runtime
+// returns (recordElement above): component identity is the mocked string type,
+// image identity is the exact object handed in.
+// ---------------------------------------------------------------------------
+
+function isEl(v: unknown): v is El {
+  return typeof v === 'object' && v !== null && 'type' in v && 'props' in v;
+}
+
+/** Direct child elements of `el`, with nested arrays flattened and holes dropped. */
+function flatChildren(el: El): El[] {
+  const out: El[] = [];
+  const visit = (v: unknown): void => {
+    if (Array.isArray(v)) {
+      for (const x of v) visit(x);
+    } else if (isEl(v)) {
+      out.push(v);
+    }
+  };
+  visit(el.props.children);
+  return out;
+}
+
+/** Depth-first search for the first element whose type is `type`. */
+function findByType(root: unknown, type: string): El | null {
+  if (Array.isArray(root)) {
+    for (const x of root) {
+      const found = findByType(x, type);
+      if (found !== null) return found;
+    }
+    return null;
+  }
+  if (!isEl(root)) return null;
+  if (root.type === type) return root;
+  return findByType(root.props.children, type);
+}
+
+const LINEAR_NO_MIPMAP = { filter: 1, mipmap: 0 };
+
+describe('GameView — postfx passes with sampler children (#53)', () => {
+  it('[A, LUT(children), C] renders Rect{ Shader(LUT){ Shader(A){ ImageShader(scene) }, ImageShader(lut) }, RuntimeShader(C) } (fail-old: Image with three RuntimeShaders)', () => {
+    const srcA = {};
+    const srcLut = {};
+    const srcC = {};
+    const lutImage = {};
+    _viewportOverride = { w: 400, h: 600 };
+    _passesOverride = [
+      makePass('a', srcA, { amount: 1 }),
+      makePass('lut', srcLut, { intensity: 0.5 }, [lutImage]),
+      makePass('c', srcC, { strength: 2 }),
+    ];
+    const tree = mount();
+    const sceneImage = _sharedValues[0];
+
+    // The whole chain is drawn by one Rect covering the viewport, not an Image.
+    expect(findByType(tree, 'Image')).toBeNull();
+    const rect = findByType(tree, 'Rect');
+    expect(rect).not.toBeNull();
+    expect(rect!.props.x).toBe(0);
+    expect(rect!.props.y).toBe(0);
+    expect(rect!.props.width).toBe(400);
+    expect(rect!.props.height).toBe(600);
+
+    // Rect children: the paint shader (LUT, the last child-bearing pass) and
+    // then C as an image filter — the split leaves C on the rasterizing path.
+    const rectKids = flatChildren(rect!);
+    expect(rectKids.map((k) => k.type)).toEqual(['Shader', 'RuntimeShader']);
+    const lutShader = rectKids[0]!;
+    expect(lutShader.props.source).toBe(srcLut);
+    expect(lutShader.props.uniforms).toEqual({ intensity: 0.5 });
+    const cFilter = rectKids[1]!;
+    expect(cFilter.props.source).toBe(srcC);
+    expect(cFilter.props.uniforms).toEqual({ strength: 2 });
+    expect(cFilter.key).toBe('c');
+
+    // LUT's children, positional: src = pass A's shader, then the LUT image.
+    const lutKids = flatChildren(lutShader);
+    expect(lutKids.map((k) => k.type)).toEqual(['Shader', 'ImageShader']);
+    const aShader = lutKids[0]!;
+    expect(aShader.props.source).toBe(srcA);
+    expect(aShader.props.uniforms).toEqual({ amount: 1 });
+    const lutChild = lutKids[1]!;
+    expect(lutChild.props.image).toBe(lutImage);
+    expect(lutChild.props.tx).toBe('clamp');
+    expect(lutChild.props.ty).toBe('clamp');
+    expect(lutChild.props.sampling).toEqual(LINEAR_NO_MIPMAP);
+
+    // A's only child is the scene texture, fitted to the viewport like <Image>.
+    const aKids = flatChildren(aShader);
+    expect(aKids.map((k) => k.type)).toEqual(['ImageShader']);
+    const scene = aKids[0]!;
+    expect(scene.props.image).toBe(sceneImage);
+    expect(scene.props.fit).toBe('cover');
+    expect(scene.props.rect).toEqual({ x: 0, y: 0, width: 400, height: 600 });
+    expect(scene.props.tx).toBe('clamp');
+    expect(scene.props.ty).toBe('clamp');
+    expect(scene.props.sampling).toEqual(LINEAR_NO_MIPMAP);
+    unmountAll();
+  });
+
+  it('a chain with no children still renders an Image whose only children are RuntimeShaders', () => {
+    const srcA = {};
+    const srcB = {};
+    _viewportOverride = { w: 320, h: 240 };
+    _passesOverride = [makePass('a', srcA, { amount: 1 }), makePass('b', srcB, {})];
+    const tree = mount();
+
+    const image = findByType(tree, 'Image');
+    expect(image).not.toBeNull();
+    expect(image!.props.image).toBe(_sharedValues[0]);
+    expect(image!.props.fit).toBe('cover');
+    expect(image!.props.width).toBe(320);
+    expect(image!.props.height).toBe(240);
+    const kids = flatChildren(image!);
+    expect(kids.map((k) => k.type)).toEqual(['RuntimeShader', 'RuntimeShader']);
+    expect(kids[0]!.props.source).toBe(srcA);
+    expect(kids[0]!.key).toBe('a');
+    expect(kids[1]!.props.source).toBe(srcB);
+    expect(kids[1]!.key).toBe('b');
+    expect(findByType(tree, 'Rect')).toBeNull();
+    expect(findByType(tree, 'Shader')).toBeNull();
+    expect(findByType(tree, 'ImageShader')).toBeNull();
+    unmountAll();
   });
 });
 

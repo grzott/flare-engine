@@ -287,9 +287,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/react": {
-      "ceiling": 66349,
-      "measured": 63589,
-      "measuredAt": "2026-09-08"
+      "ceiling": 76323,
+      "measured": 69384,
+      "measuredAt": "2026-11-04"
     },
     "@flare-engine/render": {
       "ceiling": 143405,
@@ -426,6 +426,10 @@
     {
       "date": "2026-11-03",
       "reason": "cli ceiling raised 21073 -> 23521 B (measured 21383 x1.1), authorized by the owner's approval of PR #32. Issue #24 (CLI-TMX-1): tiled-to-flare now names a TMX (XML) map input instead of failing in the JSON parser — 15 source lines, measured 20735 -> 21383 B (+3.1%) on the CI runner. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-04",
+      "reason": "react ceiling raised 66349 -> 76323 B (measured 69384 x1.1), authorized by the owner's approval of the PR closing issue #53. Native GameView gains a second postfx render path: a pass with sampler children (color-grading-lut) and every pass before it now render as a nested <Shader> chain on a <Rect>, because RN-Skia's <RuntimeShader> image filter cannot bind extra children. main packed under 66349 B at the #52 gate the same morning, so this change adds at least 3035 B gzipped; about 70 source lines plus a rationale comment, each shipped in CJS and ESM output and both source maps' sourcesContent. Added behaviour, not a regression."
     }
   ]
 }

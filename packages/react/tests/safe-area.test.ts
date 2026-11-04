@@ -65,7 +65,12 @@ mock.module('@shopify/react-native-skia', () => ({
   Canvas: 'Canvas',
   Picture: 'Picture',
   Image: 'Image',
+  ImageShader: 'ImageShader',
+  Rect: 'Rect',
   RuntimeShader: 'RuntimeShader',
+  Shader: 'Shader',
+  FilterMode: { Nearest: 0, Linear: 1 },
+  MipmapMode: { None: 0, Nearest: 1, Linear: 2 },
   useCanvasRef: () => ({ current: { redraw: () => {} } }),
   Skia: {
     Surface: {

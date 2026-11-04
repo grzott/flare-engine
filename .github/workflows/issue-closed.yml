@@ -1,0 +1,27 @@
+name: issue-closed
+
+# A closed issue keeps whatever status:* label it had, so the queue's labels drift from the truth
+# (the pilot left status:in-review on #23-#26 after their PRs merged). Status labels describe open
+# work only: drop every one of them when an issue closes.
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  drop-status-labels:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - run: |
+          jq -r '.issue.labels[].name | select(startswith("status:"))' "$GITHUB_EVENT_PATH" |
+            while read -r label; do
+              gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/${label//:/%3A}" --silent
+              echo "removed $label from #$NUMBER"
+            done

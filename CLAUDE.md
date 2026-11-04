@@ -2,11 +2,11 @@
 
 @AGENTS.md
 
-Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Next-up: [docs/plans/todo.md](docs/plans/todo.md). API contract: [docs/design/api-specs.md](docs/design/api-specs.md).
+Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Queue: [open issues labelled `status:ready`](https://github.com/grzott/flare-engine/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Aready), in [milestone](https://github.com/grzott/flare-engine/milestones) order. API contract: [docs/design/api-specs.md](docs/design/api-specs.md).
 
 ## Agents
 
-Two builders, no planners. You pick the next row from `todo.md`.
+Two builders, no planners. `/start` takes the next approved issue.
 
 - `engine-builder` — implements `packages/**`. Never touches `apps/**`.
 - `game-builder` — implements `apps/<game>/**`. Never touches `packages/**`. Engine gaps must split into engine-first work in `packages/**` before the game-side wire. **Dormant since 2026-06-10:** Pan Tvardowski moved to [its own repo](https://github.com/grzott/Pan-Tvardowski) (own `.claude/` harness there); no game app lives in this repo. `apps/bench-dashboard` and `apps/bench-web` are owner-maintained tooling, not game apps.
@@ -23,4 +23,4 @@ Work comes from GitHub issues; each issue becomes one PR. Mechanics, policy and 
 
 - Builders never commit. The `/start` or `/close` session commits and pushes only `claude/*` branches (enforced by `.claude/hooks/pre-bash-guard.sh`).
 - `main` takes changes only through PRs whose `ci` and `risk-gate` checks pass (the `main` ruleset). Held classes (`.github/risk-policy.json`) wait for the owner.
-- Commit format and the one-source-per-fact rule come from the imported `AGENTS.md`. If a plan changes, edit `roadmap.md` or `todo.md` directly.
+- Commit format and the one-source-per-fact rule come from the imported `AGENTS.md`. If a plan changes, edit `roadmap.md` or the issue.

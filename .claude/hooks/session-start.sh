@@ -15,10 +15,7 @@ cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)" || exit 0
     echo "Dirty files: $DIRTY (uncommitted changes in tree)"
   fi
 
-  if [ -f "docs/plans/todo.md" ]; then
-    ACTIVE=$(awk '/^## Active/{flag=1; next} /^## /{flag=0} flag && /^- /{print; exit}' docs/plans/todo.md)
-    [ -n "$ACTIVE" ] && echo "Next:        $ACTIVE"
-  fi
+  echo "Queue:       GitHub issues labelled status:ready (/start next)"
 
   if [ -f "SESSION_LOG.md" ]; then
     LAST=$(grep -E '^## Session [0-9]+' SESSION_LOG.md | tail -n 1 || true)

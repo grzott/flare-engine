@@ -26,8 +26,8 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 
 ### plans/
 
-- [roadmap.md](plans/roadmap.md) — Phase-by-phase roadmap through the October 2026 OSS launch.
-- [todo.md](plans/todo.md) — the next-work queue. `/start` picks from the top of `## Active`.
+- [roadmap.md](plans/roadmap.md) — Where the engine stands, how work is tracked, the milestones and the epics.
+- [todo.md](plans/todo.md) — retired 2026-11-04; the queue is [GitHub issues](https://github.com/grzott/flare-engine/issues) by [milestone](https://github.com/grzott/flare-engine/milestones).
 - [road-to-oss-2026-09.md](plans/road-to-oss-2026-09.md) — **the launch SoT**: row specs, freeze protocol, flip sequencing.
 - Pan Tvardowski — a private, unreleased consumer game (alpha), in its own repo since 2026-06-10. Public showcases: [flareengine.dev](https://flareengine.dev).
 

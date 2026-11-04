@@ -224,7 +224,7 @@ changes, both guarded against redundant sets.
 
 > **The engine does not use `useRSXformBuffer`, and never has.** Earlier revisions
 > of this document said the retained path computed "transforms via `useRSXformBuffer`
-> worklet on UI thread". That call does not appear in any of the 41 scoped packages,
+> worklet on UI thread". That call does not appear in any of the 42 scoped packages,
 > and transforms are computed on the JS thread in `ctx.batch.flush(bridge.drawAtlas, …)`.
 > `useRSXformBuffer` is a real *Skia* API — see `ecosystem.md` — but it is a
 > capability Flare has not adopted, not a description of this render path.
@@ -280,7 +280,7 @@ Two draw modes:
 
 ## Phase 11 — OSS-launch additions
 
-Phase 11 extends the core 16 packages with the horizontal concerns a full-stack, launchable engine needs. Detailed API contracts in [api-specs.md](api-specs.md); roadmap stages in [../plans/roadmap.md](../plans/roadmap.md).
+Phase 11 extends the core 16 packages with the horizontal concerns a full-stack, launchable engine needs. Detailed API contracts in [api-specs.md](api-specs.md); current work in [../plans/roadmap.md](../plans/roadmap.md).
 
 ### Layer 2.5 — Persistence & reliability
 

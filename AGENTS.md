@@ -52,9 +52,10 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 - **Public, with provenance from `0.4.5`.** `0.1.0` through `0.4.4` were published restricted; npm
   visibility is retroactive, so every version installs anonymously now. `0.4.5` is the first release
   published as public.
-- **Releases go through CI only.** Run `bun run version` locally, add the root `CHANGELOG.md` entry,
-  commit and push `main`; `release.yml` (gated on the `ENABLE_RELEASE` variable) runs
-  `bun run release` with npm provenance. A local `bun run release` ships without provenance.
+- **Releases go through CI only.** A push to `main` with pending changesets makes `release.yml`
+  (gated on the `ENABLE_RELEASE` variable) open the bot's "version packages" PR; the root
+  `CHANGELOG.md` entry is added by hand in its own PR; the owner approves the version PR, and
+  merging it publishes with npm provenance. Steps: [`.changeset/README.md`](.changeset/README.md).
 - **Publishing uses npm Trusted Publishing.** `release.yml` authenticates by OIDC (`id-token: write`);
   there is no publish token. Each of the 42 packages lists `grzott/flare-engine` + `release.yml` as
   its trusted publisher with direct `npm publish` allowed — a package missing that entry fails with

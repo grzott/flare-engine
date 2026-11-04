@@ -16,7 +16,7 @@
 **Open source since October 2026.** Every `@flare-engine/*` package is public on npm, and releases from `0.4.5` on are published from CI with npm provenance.
 
 - 42 scoped `@flare-engine/*` packages, scaffolder included, versioned in **lockstep** — one shared version across the whole scope, cut together with Changesets
-- Real consumers, not just a workspace: the three games and five animations on [flareengine.dev](https://flareengine.dev) run on the published packages in the browser, and Pan Tvardowski — a private, unreleased game in alpha — consumes the engine from npm on a real Android device
+- Real consumers, not just a workspace: the three playable demos and five animations on [flareengine.dev](https://flareengine.dev) run on the published packages in the browser, and Pan Tvardowski — a private, unreleased game in alpha — consumes the engine from npm on a real Android device
 - Not affiliated with [FLARE (flarerpg.org)](https://flarerpg.org), a separate action-RPG game engine — this project is the `@flare-engine/*` TypeScript packages for React Native + Web
 - Full roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md)
 

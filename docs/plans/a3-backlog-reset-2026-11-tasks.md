@@ -14,9 +14,9 @@ the issues in held PRs.
 
 **Tech Stack:** Bun 1.3.11 scripts + `bun:test`, `gh api` (REST), GitHub issues and milestones.
 
-**Spec:** `docs/plans/_local/roadmap-design-2026-10-30.md` §5 Horizon A item A3, decisions D15,
-D20, D22 (private). Owner choices of 2026-11-03: one issue per live horizon-A item, milestones by
-theme, horizon-B work as a few epic issues without `status:ready`. Audit inputs:
+**Spec:** `docs/plans/_local/roadmap-design-2026-10-30.md` §5 item A3, decisions D15,
+D20, D22 (private). Owner choices of 2026-11-03: one issue per live item, milestones by
+theme, later work as a few epic issues without `status:ready`. Audit inputs:
 `docs/plans/_local/post-flip-audit-2026-10/audit-engine-backlog.md` and the 2026-11-03 backlog
 audit (todo.md: ≈91 rows, ≈59 live; an estimated 85–100 issues).
 
@@ -31,8 +31,8 @@ audit (todo.md: ≈91 rows, ≈59 live; an estimated 85–100 issues).
 - A `size:l` issue carries a `Design:` line naming an existing repo path (or `/start` blocks it).
 - Issue body shape (the pilot's): a context paragraph; `**Do:**`; `**Done when:**`;
   `Source: docs/plans/todo.md row <ID>`; `Expected risk: risk:auto|risk:held (<why>)`.
-- Horizon A is patch-only `0.4.x` (D20). Breaking halves go to milestone `0.5.0` and are not
-  approved inside horizon A.
+- The `0.4.x` line is patch-only (D20). Breaking halves go to milestone `0.5.0` and are not
+  approved before it.
 - A stale claim is verified at HEAD before a row is closed (AGENTS.md: findings are arguments).
 - Commits: Conventional Commits ≤72, no body, no `Co-Authored-By`. Every PR from an owner session is
   held; harness, workflow, `CLAUDE.md` and `README.md` files are held paths anyway.
@@ -137,7 +137,7 @@ committed).
 | `Adoption basics` | 2027-02-26 | README GIF and quickstart, recipes, `good first issue`, Discussions seeding |
 | `0.5.0` | 2027-03-31 | `_resetComponentIds` removal, the 128-component mask, ADR posting obligations |
 
-  Horizon-B work (the DESK arc, inspector, playground and the remaining horizon bets) becomes **three
+  Later work (the DESK arc, inspector, playground and the remaining module proposals) becomes **three
   epic issues** with `milestone: null`, `size:l`, a `Design:` line pointing at the existing doc
   (for example `docs/plans/desktop-steam-2026-09.md`), and a checklist of the row IDs.
 - [ ] **Step 3: Issues** — one entry per live item, `id` = the todo.md row ID (with a suffix for a
@@ -220,7 +220,7 @@ committed).
 - [ ] **Step 1: `roadmap.md`** — rewrite to at most 80 lines: the current state (the `0.4.x` line;
   42 scoped packages; public since 2026-10-26; read `CHANGELOG.md` for the version), how work is
   tracked (issues and milestones), the milestones from Task 2 one line each with links, the `0.5.0`
-  pointer to `versioning-and-announcements.md`, and the epics. Engine work only; no horizon names
+  pointer to `versioning-and-announcements.md`, and the epics. Engine work only; no private phase names
   and no aims beyond the current positioning (D3, D22).
 - [ ] **Step 2: Small fixes** — `architecture.md:227` "41 scoped packages" → 42.
   `.changeset/README.md`: the publishing prerequisites describe Trusted Publishing through

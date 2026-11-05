@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import type { CrashPayload } from '../src/crash-payload.js';
 import type { ErrorUtilsLike, GlobalErrorTarget } from '../src/global-capture.js';
 import { createClientTransport, installGlobalErrorCapture } from '../src/global-capture.js';
@@ -18,6 +18,25 @@ function recorder(): CrashTransport & { readonly seen: CrashPayload[] } {
     },
   };
 }
+
+/** A transport whose `report` rejects, as an `async report` awaiting `fetch` does offline. */
+function rejecting(): CrashTransport & { readonly reports: number; readonly reason: Error } {
+  const reason = new Error('offline');
+  let reports = 0;
+  return {
+    reason,
+    get reports() {
+      return reports;
+    },
+    report() {
+      reports += 1;
+      return Promise.reject(reason);
+    },
+  };
+}
+
+/** Crosses a macrotask boundary so every microtask, and the unhandled-rejection check, has run. */
+const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
 /** A fake global exposing the web half. */
 function fakeWebTarget(): GlobalErrorTarget & {
@@ -255,6 +274,50 @@ describe('installGlobalErrorCapture — misc', () => {
     installGlobalErrorCapture(target, { transport: thrower });
 
     expect(() => target.fire('error', { error: new Error('original') })).not.toThrow();
+  });
+});
+
+describe('installGlobalErrorCapture — rejecting transport', () => {
+  // bun's runner claims any rejection nobody handles and fails the running test,
+  // so these pass only when the capture handles it itself. In a browser an
+  // unhandled one surfaces as `unhandledrejection` on the same global, re-enters
+  // `emit`, and rejects again for as long as the transport stays down.
+  test('one unhandledrejection yields one report and a logged, handled rejection', async () => {
+    const target = fakeWebTarget();
+    const transport = rejecting();
+    const log = spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      installGlobalErrorCapture(target, { transport });
+      target.fire('unhandledrejection', { reason: new Error('asset 404') });
+      await flush();
+
+      expect(transport.reports).toBe(1);
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls[0]![0]).toContain('[@flare-engine/errors]');
+      expect(log.mock.calls[0]![1]).toBe(transport.reason);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  test('draining the buffer into a rejecting transport reports once per entry', async () => {
+    const target = fakeWebTarget();
+    const capture = installGlobalErrorCapture(target);
+    target.fire('unhandledrejection', { reason: new Error('boot') });
+    const transport = rejecting();
+    const log = spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      capture.setTransport(transport);
+      await flush();
+
+      expect(capture.buffered).toBe(0);
+      expect(transport.reports).toBe(1);
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls[0]![0]).toContain('[@flare-engine/errors]');
+      expect(log.mock.calls[0]![1]).toBe(transport.reason);
+    } finally {
+      log.mockRestore();
+    }
   });
 });
 

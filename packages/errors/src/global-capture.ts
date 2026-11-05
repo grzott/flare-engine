@@ -1,5 +1,5 @@
 import { createCrashPayload } from './crash-payload.js';
-import type { CrashTransport } from './transport.js';
+import { type CrashTransport, reportSafely } from './transport.js';
 
 /**
  * React Native's `global.ErrorUtils`, described structurally so this package
@@ -107,11 +107,7 @@ export function installGlobalErrorCapture(
       pending.push(payload);
       return;
     }
-    try {
-      void transport.report(payload);
-    } catch (err) {
-      console.error('[@flare-engine/errors] transport threw while reporting', err);
-    }
+    reportSafely(transport, payload, 'reporting');
   };
 
   const onError = (event: unknown): void => {
@@ -154,12 +150,7 @@ export function installGlobalErrorCapture(
     setTransport(next: CrashTransport): void {
       transport = next;
       while (pending.length > 0) {
-        const payload = pending.shift()!;
-        try {
-          void next.report(payload);
-        } catch (err) {
-          console.error('[@flare-engine/errors] transport threw while draining', err);
-        }
+        reportSafely(next, pending.shift()!, 'draining');
       }
     },
     get buffered(): number {

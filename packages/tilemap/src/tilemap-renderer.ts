@@ -5,6 +5,12 @@ import { SpriteBatch } from '@flare-engine/render';
 import type { TileLayer, TilemapData } from './tilemap-data.js';
 import { getTileAt, getTileSourceRectInto, getTilesetForGid } from './tilemap-data.js';
 
+// Tiled GID flag bits (kept module-private; tilemap-data.ts owns the public mask).
+const FLIP_H = 0x80000000;
+const FLIP_V = 0x40000000;
+const FLIP_D = 0x20000000;
+const QUARTER_TURN = Math.PI / 2;
+
 /**
  * Per-draw options for `TilemapRenderer.drawInto` / `draw`.
  *
@@ -91,9 +97,12 @@ export class TilemapRenderer {
     flush(this.batch);
   }
 
-  // Flip rendering transforms (horizontal/vertical/diagonal) are a deferred
-  // limitation — render-flip support is post-flip M10. Tileset resolution and
-  // collider extraction are correct for flipped GIDs as of B8.
+  // Tiled flip bits: H/V become the batch's flipX/flipY; the diagonal bit is a
+  // quarter turn about the tile centre composed with the flip Tiled defines
+  // (D+H = 90° CW, D+V = 90° CCW, D = flipY + CW, D+H+V = flipX + CW).
+  // @flare-engine/render's flip draw path ignores `rotation` (see
+  // SpriteDrawCommand.flipX), so D alone and D+H+V queue the right command
+  // but draw without the turn until render composes the two.
   private _drawTileLayer(
     layer: TileLayer,
     viewX: number,
@@ -128,24 +137,41 @@ export class TilemapRenderer {
 
         // Strips flip bits; writes into the reusable buffer, no per-tile allocation.
         const src = getTileSourceRectInto(tileset, gid, this._srcBuf);
-        const dstX = col * tw + offsetX;
-        const dstY = row * th + offsetY;
 
-        // Positional into drawRaw's (effect, anchorX, anchorY, alpha) slots — no per-tile object.
+        // Bit tests only — `gid & FLIP_H` is a negative Int32 when set, so compare to 0.
+        const h = (gid & FLIP_H) !== 0;
+        const v = (gid & FLIP_V) !== 0;
+        const d = (gid & FLIP_D) !== 0;
+        let flipX = h;
+        let flipY = v;
+        let rotation = 0;
+        if (d) {
+          rotation = !h && v ? -QUARTER_TURN : QUARTER_TURN;
+          flipX = h && v;
+          flipY = !h && !v;
+        }
+
+        // Centre anchor keeps a turned tile in its cell; the stored dstX/dstY
+        // stay the cell's top-left. Positional slots — no per-tile object.
         batch.drawRaw(
           image,
           src.x,
           src.y,
           src.width,
           src.height,
-          dstX,
-          dstY,
+          col * tw + offsetX + tw * 0.5,
+          row * th + offsetY + th * 0.5,
           tw,
           th,
           effect,
-          0,
-          0,
+          0.5,
+          0.5,
           alpha,
+          rotation,
+          false,
+          'normal',
+          flipX,
+          flipY,
         );
       }
     }

@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.8](#048) | 2026-11-05 | 42 | Tilemap flips and layer opacity, the native LUT pass, one wasm download |
 | [0.4.7](#047) | 2026-11-04 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |
 | [0.4.6](#046) | 2026-10-31 | 42 | `@flare-engine/cli`: sharp 0.35.5 fixes three high-severity advisories |
 | [0.4.5](#045) | 2026-10-26 | 42 | Public release: the scope is public on npm, published with provenance |
@@ -28,6 +29,36 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.8
+
+Fixes in `@flare-engine/tilemap`, `react`, `render-web` and `errors`. The other 38 packages change
+only their version.
+
+- **`tilemap`** — `TilemapRenderer` draws Tiled's flip bits instead of stripping them. A
+  horizontally or vertically flipped GID draws mirrored, and the diagonal bit becomes a quarter turn
+  combined with the flip Tiled defines. Two combinations need both a flip and a turn: the diagonal
+  bit alone, and all three bits. They queue the correct command but still draw without the turn,
+  because `@flare-engine/render`'s flip path does not yet apply `rotation`.
+- **`tilemap`** — `TileLayer.opacity` is drawn, so a layer authored at 40% renders at 40%.
+  `drawInto` and `draw` take an optional third argument, `{ effect?, alphaScale? }`
+  (`TilemapDrawOptions`). It sets one effect on every tile and scales each layer's opacity. The
+  two-argument calls are unchanged.
+- **`react`** — the native `GameView` binds a postfx pass's image children, so the color-grading
+  LUT pass (`createColorGradingLut`) grades on device instead of being dropped. A chain without
+  image children renders as before.
+- **`render-web`** — `loadCanvasKit` downloads `canvaskit.wasm` once on `canvaskit-wasm` 0.41+,
+  instead of fetching the binary a second time after the progress bar reached 100%. On the
+  simulated 4G profile, cold start falls from 32.5 s to 16.7 s. One cost was measured: with
+  CanvasKit's software rasterizer (no WebGL), the two heaviest benchmark scenarios draw 7–16% slower.
+  The WebGL lanes, desktop and Android, are unchanged. This is tracked in
+  [#210](https://github.com/grzott/flare-engine/issues/210).
+- **`errors`** — `installGlobalErrorCapture` and `ErrorBoundary` catch a transport whose `report`
+  rejects, and log it as they already logged a synchronous throw. Before, a rejecting `async report`
+  on web looped through the capture's own `unhandledrejection` listener until the transport
+  recovered. The bundled transports were not affected.
 
 ---
 

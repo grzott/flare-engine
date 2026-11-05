@@ -1,5 +1,30 @@
 # @flare-engine/tilemap
 
+## 0.4.8
+
+### Patch Changes
+
+- 980e807: `TilemapRenderer` now draws Tiled's flip bits instead of stripping them: a horizontally or
+  vertically flipped GID queues the tile with the sprite batch's `flipX` / `flipY`, and the diagonal
+  bit becomes a quarter turn about the tile centre combined with the flip Tiled defines (D+H is 90°
+  clockwise, D+V is 90° counter-clockwise). Before, every tile drew unflipped. Tileset resolution and
+  collider extraction already handled flipped GIDs and are unchanged. The two combinations that need
+  both a flip and a turn (the diagonal bit alone, and all three bits) queue the correct command, but
+  `@flare-engine/render`'s flip draw path does not yet apply `rotation`, so they still draw without
+  the turn until that lands.
+- 40a43d3: `TilemapRenderer` now draws `TileLayer.opacity`: every queued tile carries the layer's opacity as its
+  `alpha`, so a layer authored at 40 % in Tiled or LDtk renders at 40 % instead of fully opaque. Both
+  parsers already populated the field; the renderer never read it. `drawInto(camera, batch)` and
+  `draw(camera, flush)` take an optional third argument `{ effect?, alphaScale? }`
+  (`TilemapDrawOptions`): `effect` is set on every tile command, so one shared `tint()` instance can
+  cover the ground in the same batch run as the actors, and `alphaScale` multiplies each layer's
+  opacity (default 1). The two-argument calls are unchanged. No per-tile allocation: the fields pass
+  positionally into `SpriteBatch.drawRaw`.
+  - @flare-engine/assets@0.4.8
+  - @flare-engine/math@0.4.8
+  - @flare-engine/physics@0.4.8
+  - @flare-engine/render@0.4.8
+
 ## 0.4.7
 
 ### Patch Changes

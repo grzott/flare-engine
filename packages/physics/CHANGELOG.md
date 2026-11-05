@@ -1,5 +1,12 @@
 # @flare-engine/physics
 
+## 0.4.8
+
+### Patch Changes
+
+- @flare-engine/events@0.4.8
+- @flare-engine/math@0.4.8
+
 ## 0.4.7
 
 ### Patch Changes

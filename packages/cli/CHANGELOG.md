@@ -1,5 +1,7 @@
 # @flare-engine/cli
 
+## 0.4.8
+
 ## 0.4.7
 
 ### Patch Changes

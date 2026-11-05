@@ -1168,7 +1168,11 @@ restricted, both exposed by the flip like the rest (F3-EXTEND, 2026-09-07; §4.1
   [manual-test-protocol.md](manual-test-protocol.md) §2 and §7.
 - **PT3 (post-flip):** wire haptics (M6's adapter) — PT's own docs call it "the one true engine gap".
 
-**Berek:** **BK1 — DEFERRED post-flip (owner decision 2026-10-19; was: manual window):** bump
+**Berek:** **BK1 — DONE 2026-11-05 (post-flip, owner).** Berek's 7 deps are on `^0.4.0`, resolving
+`0.4.7`, with no `src/` change, and its gate is green. The play check ran on an Android emulator:
+the tilemap draws, walls and water stop the player, movement slides along them, and there were no JS
+errors. [manual-test-protocol.md](manual-test-protocol.md) §3 is ticked. The original row follows.
+**DEFERRED post-flip (owner decision 2026-10-19; was: manual window):** bump
 7 deps to `^0.4.0` (the 0.2.1 migration is confirmed committed at 2b1733f); fix README:23's reference to deleted `src/movement.ts` (folded into
 `@flare-engine/physics` at 0.2.1); gate + a short play check.
 **Status 2026-09-29:** the README half is done (`df02342`). The deps are still `^0.2.1`, so the
@@ -1254,7 +1258,8 @@ Written as `docs/plans/manual-test-protocol.md` by an agent session; the checkli
 2. **PT** on the reference device at ^0.4.0: full campaign sweep (saves/settings round-trip, shop,
    locale PL↔EN, reduced-motion, colorblind atlas), plus the B5 scene-restart and B12 IAP-restore
    paths explicitly.
-3. **Berek** walk on 0.4.0 (tilemap + solid-grid path). Deferred post-flip 2026-10-19 (§10 BK1).
+3. **Berek** walk on 0.4.0 (tilemap + solid-grid path). Deferred post-flip 2026-10-19; done
+   2026-11-05 on an Android emulator (§10 BK1).
 4. **Web:** page hero demos at ^0.4.0 on desktop Chrome/Firefox/Safari + Android Chrome + iOS
    Safari (real devices), WASM load on throttled 4G, Lighthouse 100 re-check.
 5. **New surfaces:** keyboard demo on desktop web (M1); headless bun script (M2); a Tiled map

@@ -131,7 +131,12 @@ The boxes ticked below passed in the owner's manual run on the Pixel 7 at `^0.4.
       **Passed 2026-10-23 on the device (owner):** the flash covers only the sprite's shape, and
       the effect after a dodge looks better too.
 
-## §3 — `tilemap` + solid-grid coverage, vehicle Berek, at `0.4.0` — DEFERRED post-flip
+## §3 — `tilemap` + solid-grid coverage, vehicle Berek, at `0.4.0` — DEFERRED post-flip, DONE 2026-11-05
+
+**Done 2026-11-05 (owner), with road-to-oss §10 `BK1`.** Berek moved to `^0.4.0`, resolving `0.4.7`
+from the public registry, with no `src/` change, and its gate was green. The proof was played on an
+Android emulator, not on the reference phone. The tilemap draws, walls and water stop the player,
+movement slides along them, and there were no JS errors.
 
 **Deferred until after the flip (owner decision 2026-10-19)**, with road-to-oss §10 `BK1`. Not run
 in this window and not an exit criterion; what it covered now rests on §1's real-Android topdown box
@@ -143,9 +148,9 @@ already clears the ADR-0002 floor (`react-native-reanimated 4.3.0`, `react-nativ
 `newArchEnabled: true` at `app.json:8` — verified 2026-09-08), so this is a dep bump, not a
 migration.
 
-- [ ] Tilemap renders; **solid-grid** movement/collision behaves (the XP5 physics + tilemap lift path
+- [x] Tilemap renders; **solid-grid** movement/collision behaves (the XP5 physics + tilemap lift path
       — the exact code B33 just de-referenced).
-- [ ] A representative level walk: no crash, no regression vs the last known-good engine version.
+- [x] A representative level walk: no crash, no regression vs the last known-good engine version.
 
 ## §4 — Web (page hero demos) at `^0.4.0`
 

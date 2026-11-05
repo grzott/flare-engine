@@ -332,9 +332,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/tilemap": {
-      "ceiling": 38735,
-      "measured": 37276,
-      "measuredAt": "2026-09-08"
+      "ceiling": 43123,
+      "measured": 39202,
+      "measuredAt": "2026-11-05"
     },
     "@flare-engine/ui": {
       "ceiling": 52631,
@@ -434,6 +434,10 @@
     {
       "date": "2026-11-04",
       "reason": "errors ceiling raised 16925 -> 18836 B (measured 17123 x1.1), authorized by the owner's approval of the PR closing issue #61. installGlobalErrorCapture (live path and setTransport drain) and ErrorBoundary now route every transport.report through one internal reportSafely helper that also catches a rejected promise, so a consumer async transport that rejects can no longer feed the capture's own unhandledrejection listener. main packed at or under 16925 B at the 26af019 ci run, so this change adds at least 198 B gzipped: a 21-line helper with its rationale JSDoc, shipped in CJS and ESM output and both source maps' sourcesContent. Not part of the public surface (absent from dist/index.d.ts). Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-05",
+      "reason": "tilemap ceiling raised 38735 -> 43123 B (measured 39202 x1.1), authorized by the owner's approval of the PR closing issue #54. TilemapRenderer now passes layer.opacity as each tile's alpha and drawInto / draw take an optional third argument { effect, alphaScale } (exported TilemapDrawOptions), threaded positionally into SpriteBatch.drawRaw. main packed at or under 38735 B at the 584a1fb ci run, so this change adds at least 467 B gzipped: one documented interface in both .d.ts outputs, two widened signatures with their JSDoc, and the extra drawRaw arguments, shipped in CJS and ESM output and both source maps' sourcesContent. Added behaviour, not a regression."
     }
   ]
 }

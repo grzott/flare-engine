@@ -29,4 +29,4 @@ export {
   type TilemapData,
   type TilesetRef,
 } from './tilemap-data.js';
-export { TilemapRenderer } from './tilemap-renderer.js';
+export { type TilemapDrawOptions, TilemapRenderer } from './tilemap-renderer.js';

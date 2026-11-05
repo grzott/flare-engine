@@ -5,6 +5,69 @@
 > Revised: 2026-05-08 (research validation)
 > Author: design discussion (Otto + Claude)
 > Scope: new packages `@flare-engine/lighting`, `@flare-engine/asset-normals`; extension to `@flare-engine/render`.
+> Consumer: Berek, named by the owner on 2026-11-05. Gate 0 spike: [#206](https://github.com/grzott/flare-engine/issues/206).
+
+---
+
+## Review notes (2026-11-05)
+
+Berek's design (its decision `V2-08`) sent four notes on this proposal. **They are review notes. They
+do not approve the proposal, schedule it, or change any gate except Gate 0, which L6 re-aims.** The
+text below stands except where a note corrects a fact, and those passages point here. Berek's other
+lighting needs wait until its look-target screen has measured numbers, so they are not recorded here.
+
+**L1. World shadows are ground-plane sprites. 1D polar shadow maps are for interiors and caves only.**
+The world model is a shadow sprite lying on the ground plane and rotated around the caster's foot
+anchor. Each caster gets one for the sun and one for each of the 2–3 nearest lights, drawn from
+about ten reusable shapes. Small things get a blob, and tall props may take an optional height-map
+shadow.
+
+- **Why not polar maps in the world.** A 1D polar map casts its shadow in the screen plane. In a 3/4
+  view the screen plane is not the ground, so the shadow slides up walls and over roofs. Inside an
+  interior or a cave, walls bound the space, and the polar map stays a useful tool there.
+- **Precedent.** *Graveyard Keeper* draws its shadows as sprites rotated around a point: at most four
+  per object, the sun's plus one for each of the three nearest dynamic lights, from about ten
+  reusable shadow sprites ([Svyatoslav Cherkasov, "Graveyard Keeper: How the graphics effects are
+  made", Game Developer, 2018-10-23](https://www.gamedeveloper.com/programming/graveyard-keeper-how-the-graphics-effects-are-made)).
+- **Cost.** The reference polar technique makes two offscreen passes per shadowed light before the
+  lit draw: occluders into a light-centred target, then a reduction to the 1D map ([mattdesl,
+  2D Pixel-Perfect Shadows](https://github.com/mattdesl/lwjgl-basics/wiki/2D-Pixel-Perfect-Shadows)).
+  That page's own optimisation notes pack several lights into shared targets, but every pass is still
+  a render-target switch. On a tile-based mobile GPU, each switch writes the finished tiles back to
+  main memory, and Arm advises keeping the number of render passes to a minimum ([Arm, *Understanding
+  Render Passes*, 2021](https://documentation-service.arm.com/static/6560a5942c8b3557fee70a16)).
+  Shadow sprites draw in the existing sprite batch with no offscreen pass.
+
+**L2. Hand-authored normal and height maps are the primary input.** `flare gen-normals --algo bevel`
+is a fallback for props whose geometry really is bevelled. Sobel from colour is only for texture-like
+tiles. This replaces the proposal's "default to bevelling" (Research Validation, change 2). The
+runtime is unaffected, because it never cares where a normal map came from.
+
+**L3. The normal-map citation is corrected.** arXiv 2212.09692, ["Analysis and Compilation of Normal
+Map Generation Techniques for Pixel Art"](https://arxiv.org/abs/2212.09692), is by Rodrigo D.
+Moreira, Flávio Coutinho and Luiz Chaimowicz (SBGames 2022), not "Araujo et al. 2022".
+
+- **What it compares.** Six methods: hand painting, Sobel on the colour map, Sobel on a hand-painted
+  height map, bevelling, merging four painted light directions, and a generative model. It compares
+  them qualitatively, on one sprite, and ranks none of them. The 1st-to-6th ranking this proposal
+  quoted is not in the paper.
+- **What it finds.** Only the hand-painted normal map and the four-light merge are geometrically
+  consistent with the expected shape. It calls bevelling useful for objects expected to have a
+  bevelled geometry, and does not recommend it as a default.
+
+**L6. Gate 0 is re-aimed: measure the cost, not the uniform ceiling.** The uniform-buffer ceiling is
+unlikely to bind. OpenGL ES 2.0 guarantees only 16 fragment uniform vectors ([Khronos, `glGet`](https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glGet.xml)),
+but even an Adreno 320 reports 224 ([gpuinfo report](https://opengles.gpuinfo.org/displayreport.php?id=17)).
+At two vectors a light (position and radius, colour and intensity), 16 lights need about 32. The
+spike measures these instead, on one Mali phone and one Adreno phone at Berek's device floor, a
+mid-range Android phone:
+
+1. the light loop's cost per lit fragment, as the light count grows;
+2. lighting computed at art resolution and scaled up, against lighting computed at screen resolution;
+3. the cost of an offscreen pass, which prices both the polar maps L1 keeps and any art-resolution
+   light buffer.
+
+Filed as [#206](https://github.com/grzott/flare-engine/issues/206).
 
 ---
 
@@ -21,13 +84,13 @@ The original proposal was validated against current 2026 research (Skia/RN Skia 
 
 1. **Shadow algorithm: switch from raymarched SkSL to 1D polar shadow maps.** The LWJGL/mattdesl technique (render occluders to FBO → reduce to 1D shadow map per light → sample in polar space during light render) is production-proven by Defold's official sample and LibGDX Box2D Lights. Cost: ~0.5–1ms per light on mid-tier mobile, scales linearly with light count, fill-rate efficient, GLES2-compatible. Raymarched shadows have parallel-edge pathologies and worse cost curves. References: [LWJGL 2D Pixel-Perfect Shadows](https://github.com/mattdesl/lwjgl-basics/wiki/2D-Pixel-Perfect-Shadows), [Defold sample](https://github.com/defold/sample-lights-and-shadows).
 
-2. **`asset-normals` default algorithm: beveling, not Sobel-from-luminance.** Araujo et al. (2022, [arXiv 2212.09692](https://arxiv.org/pdf/2212.09692)) systematically ranked 6 normal-map generation methods for pixel art. Sobel-from-color-map ranked worst — produces incoherent geometry and inverted volumes. Hand-painted ranks 1st, four-illumination-angle merge 2nd, beveling 3rd, Sobel-from-height-map 4th. Default the CLI tool to beveling; offer Sobel-from-height as a fast fallback with quality caveat in docs.
+2. **`asset-normals` default algorithm: beveling, not Sobel-from-luminance.** Moreira, Coutinho and Chaimowicz (SBGames 2022, [arXiv 2212.09692](https://arxiv.org/abs/2212.09692)) compared 6 normal-map generation methods for pixel art. Default the CLI tool to beveling; offer Sobel-from-height as a fast fallback with quality caveat in docs. *(This paragraph credited the paper to "Araujo et al." and quoted a ranking the paper does not contain; review note L3 states what it finds, and L2 replaces the bevel default.)*
 
 3. **Reference target: Don't Starve, not Hades.** Hades' "2D lighting" is pre-baked 3D rendering (Maya → Substance → ambient occlusion + curvature + thickness maps baked into 2D animation frames) composited at runtime — it is art-direction quality, not runtime technique. Don't Starve uses a single darkness overlay + additive light discs and feels excellent at near-zero cost. Realistic Flare aim: Don't Starve baseline + normal-mapped sprites + 1D polar shadows. Higher than that requires asset-pipeline investment, not engine code.
 
 **New blocker before any package work:**
 
-- **Spike: measure RN Skia uniform-buffer ceiling on a 2018-class Android device.** Spec floor is 16 vec4 fragment uniforms; practical maximum varies 16–256 across drivers. Need to compile + run a SkSL shader with `uniform float4 lights[16]` and confirm 60fps. ~2 hours. Gates the entire design — if the ceiling is 8 lights, the architecture changes (deferred / additive-blend path required).
+- *(Re-aimed by review note L6: the spike measures cost, not this ceiling.)* **Spike: measure RN Skia uniform-buffer ceiling on a 2018-class Android device.** Spec floor is 16 vec4 fragment uniforms; practical maximum varies 16–256 across drivers. Need to compile + run a SkSL shader with `uniform float4 lights[16]` and confirm 60fps. ~2 hours. Gates the entire design — if the ceiling is 8 lights, the architecture changes (deferred / additive-blend path required).
 
 **One sobering data point:**
 
@@ -113,7 +176,7 @@ export function createShadowPass(opts: {
 // shadow.render(ctx, lights, occluders) → Skia image
 ```
 
-**Shadow algorithm (revised 2026-05-08): 1D polar shadow maps.** For each shadow-casting light: (1) render occluders into a small FBO centered on the light; (2) reduce that occlusion map to a 1D shadow map (one distance-to-nearest-occluder per angle, typically 256 angles); (3) in the lit-sprite shader, sample the 1D shadow map in polar space using `atan2(fragPos − lightPos)`. Cost ~0.5–1ms per light on mid-tier mobile, scales linearly with light count, fill-rate efficient on GLES2. Production-proven in Defold's official `sample-lights-and-shadows` and LibGDX Box2D Lights. Originally proposed raymarched approach has parallel-edge pathologies and worse cost curves — superseded.
+**Shadow algorithm (revised 2026-05-08): 1D polar shadow maps.** *(Review note L1 limits these to interiors and caves; the world model is ground-plane shadow sprites.)* For each shadow-casting light: (1) render occluders into a small FBO centered on the light; (2) reduce that occlusion map to a 1D shadow map (one distance-to-nearest-occluder per angle, typically 256 angles); (3) in the lit-sprite shader, sample the 1D shadow map in polar space using `atan2(fragPos − lightPos)`. Cost ~0.5–1ms per light on mid-tier mobile, scales linearly with light count, fill-rate efficient on GLES2. Production-proven in Defold's official `sample-lights-and-shadows` and LibGDX Box2D Lights. Originally proposed raymarched approach has parallel-edge pathologies and worse cost curves — superseded.
 
 ### Extension: `@flare-engine/render`
 
@@ -149,7 +212,7 @@ flare gen-normals --in assets/sprites --out assets/sprites/normals --algo bevel
 flare gen-normals --in sprite.png --algo sobel-height --strength 1.5
 ```
 
-- **Default algorithm: beveling** (revised per Araujo et al. 2022). Sobel-from-color-map ranked worst of 6 generation methods in published evaluation — produces incoherent geometry. Beveling ranked 3rd of 6 (behind hand-painted and four-illumination-angle merge). Sobel-from-height-map (4th) offered as fast fallback when a height map exists.
+- **Default algorithm: beveling** (revised 2026-05-08 from Moreira, Coutinho and Chaimowicz 2022). Sobel-from-height-map offered as fast fallback when a height map exists. *(The ranking once quoted here is not in the paper, see review note L3; review note L2 makes hand-authored maps the primary input and bevelling a fallback for bevelled props.)*
 - Hand-authored normal maps (Aseprite Normal Map Preview / Normal Toolkit plugins, Laigter, SpriteIlluminator) bypass this entirely. Runtime doesn't care where the normal came from.
 - This package is optional. Games can ship without it. **Defer authoring this package** until a sprite-based Flare game (not PT — PT uses analytical normals from shape primitives) needs it.
 
@@ -159,7 +222,7 @@ flare gen-normals --in sprite.png --algo sobel-height --strength 1.5
 
 Before promoting shaders into the package, gates run in order:
 
-0. **Spike: uniform-buffer ceiling on a 2018-class Android device.** Compile + run a SkSL shader with `uniform float4 lights[16]` (= 48 vec4 = 192 floats per draw). Confirm it compiles, links, and renders at 60fps on the lowest target device. ~2 hours. **Gates the entire design** — if practical ceiling is <16 lights, the architecture changes (deferred / additive-blend path required, not a single forward pass).
+0. *(Re-aimed by review note L6; filed as #206.)* **Spike: uniform-buffer ceiling on a 2018-class Android device.** Compile + run a SkSL shader with `uniform float4 lights[16]` (= 48 vec4 = 192 floats per draw). Confirm it compiles, links, and renders at 60fps on the lowest target device. ~2 hours. **Gates the entire design** — if practical ceiling is <16 lights, the architecture changes (deferred / additive-blend path required, not a single forward pass).
 0.5 **Free postfx wins (parallel, no dependency on lighting work):** add **god rays** (~20 lines SkSL, GPU Gems 3 single-pass) and **color-grading LUT** (~15 lines SkSL, 64×64×64 texture sample) to the existing `EffectChain`. These ship visible upgrades without waiting on lighting and validate that boss-tier presentation is engine-budget-feasible.
 1. **Single boss, single rim light.** Pick the next boss intro. Add one moving point light overhead. PT's shape-primitive renderer computes normals analytically (no normal map asset). Measure FPS impact on lowest target device.
 2. **Add one shadow-caster (1D polar shadow map).** Per folio XIIIa (ship anatomy: hull + N rect weapons + 1 square engine), the rect weapons cast shadows from the rim light using the 1D polar shadow map technique. Visual + perf assessment.

@@ -23,7 +23,9 @@ title in design: a 2.5D JRPG with two coexisting modes — a Zelda-like open wor
 "Expeditions" — plus a day/night system that gates content, base building and weapon crafting. Its
 design corpus lives in the Berek repo at `docs/design-refs/`; its build is deferred until after the flip,
 but its requirements are not hypothetical. **T7 (TM-LEVEL) and T8 (SHAPES-ATLAS) therefore have a
-named consumer**, and their "second wave — wait for demand" ranking predates that fact. Re-ranking
+named consumer**, and their "second wave — wait for demand" ranking predates that fact. *(2026-11-05:
+Berek's settled design loads one map per realm with explicit transitions, so T7 no longer has Berek
+as its consumer: [berek-needs-2026-09.md](berek-needs-2026-09.md) §4.5.)* Re-ranking
 these tracks against both named consumers is its own arc; brief in
 `_local/game-driven-audit-handoff.md` (private, untracked).
 

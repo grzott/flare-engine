@@ -255,7 +255,7 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 | `parseTiled(json)`     | → `TilemapData`. Orthogonal maps, tile/object layers, properties, collision shapes.                   |
 | `parseLDtk(json)`      | → `TilemapData`. Levels, tile/entity layers, enums.                                                   |
 | `parseLDtkEntities(map)` | → `LDtkEntity[]`. Flattens all object layers into spawn-ready `{ id, x, y, width, height, fields }` — `id` is the LDtk entity identifier (its type). Feed each to `world.spawn`. |
-| `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles into `this.batch`, then calls `flush(this.batch)` — delegates to `drawInto`. `drawInto(camera, batch)` queues visible tiles into the caller-owned `batch` without flushing — zero-alloc, enables single-flush z-ordering (tiles under sprites). |
+| `TilemapRenderer`      | Owns its own `SpriteBatch`. `draw(camera, flush)` culls, queues tiles into `this.batch`, then calls `flush(this.batch)` — delegates to `drawInto`. `drawInto(camera, batch, opts?)` queues visible tiles into the caller-owned `batch` without flushing — zero-alloc, enables single-flush z-ordering (tiles under sprites). Each tile's `alpha` is `layer.opacity * opts.alphaScale` (scale default 1); `opts.effect` (`AnySpriteEffect`) is set on every tile command so one shared instance keeps tiles and sprites in one batch run. `draw` threads the same `opts`. |
 | `extractColliders(data)` | → `TileCollider[]`. Extracts solid tiles → collision shapes for physics.                             |
 
 #### Authoring pipeline

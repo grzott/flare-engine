@@ -1,9 +1,22 @@
 import type { SkImageLike } from '@flare-engine/assets';
 import type { Rect } from '@flare-engine/math';
-import type { Camera2D } from '@flare-engine/render';
+import type { AnySpriteEffect, Camera2D } from '@flare-engine/render';
 import { SpriteBatch } from '@flare-engine/render';
 import type { TileLayer, TilemapData } from './tilemap-data.js';
 import { getTileAt, getTileSourceRectInto, getTilesetForGid } from './tilemap-data.js';
+
+/**
+ * Per-draw options for `TilemapRenderer.drawInto` / `draw`.
+ *
+ * `effect` is set on every queued tile command. Batch runs key on the effect
+ * by reference, so one shared instance (e.g. an ambient `tint()`) keeps every
+ * tile — and any sprite drawn with the same instance — in a single run.
+ * `alphaScale` multiplies each layer's own `opacity` (default 1).
+ */
+export interface TilemapDrawOptions {
+  effect?: AnySpriteEffect;
+  alphaScale?: number;
+}
 
 /**
  * TilemapRenderer — draws a tilemap with viewport culling.
@@ -39,25 +52,42 @@ export class TilemapRenderer {
    * Queue visible tile layers into a caller-owned `batch` using the camera for
    * culling. Does NOT flush — the caller owns the single flush so tiles z-order
    * under sprites. Zero-alloc: reuses the internal bounds buffer.
+   *
+   * Each tile's `alpha` is `layer.opacity * opts.alphaScale`; `opts.effect`
+   * is applied to every tile (see `TilemapDrawOptions`).
    */
-  drawInto(camera: Camera2D, batch: SpriteBatch): void {
+  drawInto(camera: Camera2D, batch: SpriteBatch, opts?: TilemapDrawOptions): void {
     const bounds = camera.getBoundsInto(this._boundsBuf);
     const tw = this.map.tileWidth;
     const th = this.map.tileHeight;
+    const effect = opts?.effect;
+    const alphaScale = opts?.alphaScale ?? 1;
 
     for (const layer of this.map.layers) {
       if (layer.type !== 'tile' || !layer.visible) continue;
-      this._drawTileLayer(layer, bounds.x, bounds.y, bounds.width, bounds.height, tw, th, batch);
+      this._drawTileLayer(
+        layer,
+        bounds.x,
+        bounds.y,
+        bounds.width,
+        bounds.height,
+        tw,
+        th,
+        batch,
+        effect,
+        layer.opacity * alphaScale,
+      );
     }
   }
 
   /**
    * Draw visible tile layers using the camera for culling.
    * Call `flush` on a callback to issue the actual draw calls.
-   * Delegates to `drawInto` so culling and queuing logic live in one place.
+   * Delegates to `drawInto` so culling and queuing logic live in one place;
+   * `opts` is threaded through unchanged.
    */
-  draw(camera: Camera2D, flush: (batch: SpriteBatch) => void): void {
-    this.drawInto(camera, this.batch);
+  draw(camera: Camera2D, flush: (batch: SpriteBatch) => void, opts?: TilemapDrawOptions): void {
+    this.drawInto(camera, this.batch, opts);
     flush(this.batch);
   }
 
@@ -73,6 +103,8 @@ export class TilemapRenderer {
     tw: number,
     th: number,
     batch: SpriteBatch,
+    effect: AnySpriteEffect | undefined,
+    alpha: number,
   ): void {
     const offsetX = layer.offsetX;
     const offsetY = layer.offsetY;
@@ -99,7 +131,22 @@ export class TilemapRenderer {
         const dstX = col * tw + offsetX;
         const dstY = row * th + offsetY;
 
-        batch.drawRaw(image, src.x, src.y, src.width, src.height, dstX, dstY, tw, th);
+        // Positional into drawRaw's (effect, anchorX, anchorY, alpha) slots — no per-tile object.
+        batch.drawRaw(
+          image,
+          src.x,
+          src.y,
+          src.width,
+          src.height,
+          dstX,
+          dstY,
+          tw,
+          th,
+          effect,
+          0,
+          0,
+          alpha,
+        );
       }
     }
   }

@@ -13,7 +13,7 @@ mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 // with stub Camera2D classes that lack getBoundsInto / setViewport.
 const _realRender = await import('@flare-engine/render');
 mock.module('@flare-engine/render', () => ({ ..._realRender }));
-const { Camera2D, SpriteBatch } = await import('@flare-engine/render');
+const { Camera2D, SpriteBatch, tint } = await import('@flare-engine/render');
 
 // Dynamically import TilemapRenderer AFTER mocks are restored — tilemap-renderer.ts
 // imports SpriteBatch from '@flare-engine/render' (package name → dist), which
@@ -270,6 +270,110 @@ describe('TilemapRenderer.drawInto', () => {
     renderer.draw(camera, (batch) => {
       expect(batch.count).toBe(0); // invisible layer → nothing queued
     });
+  });
+});
+
+describe('TilemapRenderer — layer opacity and draw options', () => {
+  function fullCamera() {
+    const camera = new Camera2D();
+    camera.setViewport(160, 160);
+    camera.x = 80;
+    camera.y = 80;
+    return camera;
+  }
+
+  function flushAll(batch: InstanceType<typeof SpriteBatch>) {
+    const commands: Array<{ alpha: number; effect: unknown }> = [];
+    let runs = 0;
+    batch.flush((_image, run) => {
+      runs++;
+      for (const cmd of run) commands.push({ alpha: cmd.alpha, effect: cmd.effect });
+    });
+    return { commands, runs };
+  }
+
+  test('a layer with opacity 0.4 queues every tile with alpha 0.4', () => {
+    const map = makeMap();
+    (map.layers[0] as TileLayer).opacity = 0.4;
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+
+    const external = new SpriteBatch();
+    renderer.drawInto(fullCamera(), external);
+
+    const { commands } = flushAll(external);
+    expect(commands.length).toBeGreaterThan(0);
+    for (const cmd of commands) expect(cmd.alpha).toBe(0.4);
+  });
+
+  test('alphaScale multiplies layer.opacity', () => {
+    const map = makeMap();
+    (map.layers[0] as TileLayer).opacity = 0.5;
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+
+    const external = new SpriteBatch();
+    renderer.drawInto(fullCamera(), external, { alphaScale: 0.5 });
+
+    const { commands } = flushAll(external);
+    expect(commands.length).toBeGreaterThan(0);
+    for (const cmd of commands) expect(cmd.alpha).toBe(0.25);
+  });
+
+  test('drawInto with a shared effect sets it on every tile and keeps one batch run', () => {
+    const map = makeMap();
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+    const night = tint({ r: 0.2, g: 0.2, b: 0.6, a: 1 }, 0.5);
+
+    const external = new SpriteBatch();
+    renderer.drawInto(fullCamera(), external, { effect: night });
+
+    const { commands, runs } = flushAll(external);
+    expect(commands.length).toBeGreaterThan(0);
+    for (const cmd of commands) expect(cmd.effect).toBe(night);
+    expect(runs).toBe(1);
+  });
+
+  test('draw(camera, flush, opts) threads the same options', () => {
+    const map = makeMap();
+    (map.layers[0] as TileLayer).opacity = 0.8;
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+    const night = tint({ r: 0.2, g: 0.2, b: 0.6, a: 1 }, 0.5);
+
+    let seen = 0;
+    renderer.draw(
+      fullCamera(),
+      (batch) => {
+        const { commands, runs } = flushAll(batch);
+        seen = commands.length;
+        for (const cmd of commands) {
+          expect(cmd.alpha).toBe(0.4);
+          expect(cmd.effect).toBe(night);
+        }
+        expect(runs).toBe(1);
+      },
+      { effect: night, alphaScale: 0.5 },
+    );
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  test('the two-argument call is unchanged: alpha 1, no effect', () => {
+    const map = makeMap();
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+
+    const external = new SpriteBatch();
+    renderer.drawInto(fullCamera(), external);
+
+    const { commands, runs } = flushAll(external);
+    expect(commands.length).toBeGreaterThan(0);
+    for (const cmd of commands) {
+      expect(cmd.alpha).toBe(1);
+      expect(cmd.effect).toBeUndefined();
+    }
+    expect(runs).toBe(1);
   });
 });
 

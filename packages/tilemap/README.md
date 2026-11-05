@@ -1,6 +1,6 @@
 # @flare-engine/tilemap
 
-Tiled `.tmj` and LDtk parsing + culled rendering + collider extraction. `parseTiled` / `parseLDtk` return a normalized `TilemapData`; `TilemapRenderer` owns its own `SpriteBatch` and only queues tiles inside the camera bounds; `drawInto(camera, batch)` queues into a caller-owned batch for single-flush z-ordering with sprites; `extractColliders` produces collision shapes for `@flare-engine/physics`.
+Tiled `.tmj` and LDtk parsing + culled rendering + collider extraction. `parseTiled` / `parseLDtk` return a normalized `TilemapData`; `TilemapRenderer` owns its own `SpriteBatch` and only queues tiles inside the camera bounds; `drawInto(camera, batch, opts?)` queues into a caller-owned batch for single-flush z-ordering with sprites, honouring each layer's `opacity` and taking an optional shared `effect` / `alphaScale`; `extractColliders` produces collision shapes for `@flare-engine/physics`.
 
 ## Install
 

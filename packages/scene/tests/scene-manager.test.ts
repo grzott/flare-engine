@@ -196,6 +196,195 @@ describe('SceneManager — stack', () => {
     expect(log).toContain('a:exit');
     expect(log).toContain('a:destroy');
   });
+
+  it('push with {} or { overlay: false } behaves like a plain push', async () => {
+    for (const options of [{}, { overlay: false }]) {
+      const log: string[] = [];
+      const mgr = new SceneManager();
+      mgr.register('a', createTestScene('a', log));
+      mgr.register('b', createTestScene('b', log));
+      await mgr.go('a');
+      log.length = 0;
+      await mgr.push('b', undefined, options);
+      expect(log).toEqual(['a:exit', 'b:preload', 'b:init', 'b:enter']);
+      log.length = 0;
+      mgr.update(0.016);
+      expect(log).toEqual(['b:update:0.016', 'b:draw']);
+      log.length = 0;
+      mgr.pop();
+      expect(log).toEqual(['b:exit', 'b:destroy', 'a:enter']);
+    }
+  });
+});
+
+describe('SceneManager — overlay push', () => {
+  it('overlay push logs no exit on the scene below', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    log.length = 0;
+    await mgr.push('b', undefined, { overlay: true });
+    expect(mgr.current?.name).toBe('b');
+    expect(mgr.stackSize).toBe(2);
+    expect(log).toEqual(['b:preload', 'b:init', 'b:enter']);
+  });
+
+  it('passes data when pushing an overlay', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b', 'hello', { overlay: true });
+    expect(log).toContain('b:enter:hello');
+  });
+
+  it('update drives the scene below then the overlay, update-then-draw each', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    log.length = 0;
+    mgr.update(0.016);
+    expect(log).toEqual(['a:update:0.016', 'a:draw', 'b:update:0.016', 'b:draw']);
+  });
+
+  it('nested overlays update and draw bottom-up', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    await mgr.push('c', undefined, { overlay: true });
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['a:update:1', 'a:draw', 'b:update:1', 'b:draw', 'c:update:1', 'c:draw']);
+  });
+
+  it('a plain push on top of an overlay exits the overlay only and hides the stack', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    log.length = 0;
+    await mgr.push('c');
+    expect(log).toEqual(['b:exit', 'c:preload', 'c:init', 'c:enter']);
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['c:update:1', 'c:draw']);
+  });
+
+  it('pop of an overlay logs no re-enter on the scene below', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    log.length = 0;
+    mgr.pop();
+    expect(mgr.current?.name).toBe('a');
+    expect(mgr.stackSize).toBe(1);
+    expect(log).toEqual(['b:exit', 'b:destroy']);
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['a:update:1', 'a:draw']);
+  });
+
+  it('after popping an overlay above a plain push, only the plain scene is driven', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    await mgr.push('c', undefined, { overlay: true });
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['b:update:1', 'b:draw', 'c:update:1', 'c:draw']);
+    log.length = 0;
+    mgr.pop();
+    expect(log).toEqual(['c:exit', 'c:destroy']);
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['b:update:1', 'b:draw']);
+    log.length = 0;
+    mgr.pop();
+    expect(log).toEqual(['b:exit', 'b:destroy', 'a:enter']);
+  });
+
+  it('go from an overlay stack destroys both scenes and clears the overlay flags', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    log.length = 0;
+    await mgr.go('c');
+    expect(mgr.stackSize).toBe(1);
+    expect(log).toEqual([
+      'b:exit',
+      'b:destroy',
+      'a:exit',
+      'a:destroy',
+      'c:preload',
+      'c:init',
+      'c:enter',
+    ]);
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['c:update:1', 'c:draw']);
+  });
+
+  it('destroy then re-go does not leak overlay flags', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    mgr.destroy();
+    await mgr.go('a');
+    await mgr.push('b');
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['b:update:1', 'b:draw']);
+  });
+
+  it('a fade transition started while an overlay is up still drives the scene below', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    log.length = 0;
+    void mgr.go('c');
+    expect(mgr.transitionPhase).toBe('out');
+    log.length = 0;
+    mgr.update(0.5);
+    expect(log).toEqual(['a:update:0.5', 'a:draw', 'b:update:0.5', 'b:draw']);
+
+    mgr.update(0.5); // 'out' done → switch to c
+    mgr.update(1.0); // 'in' done
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['c:update:1', 'c:draw']);
+  });
 });
 
 describe('SceneManager — transitions', () => {

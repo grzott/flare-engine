@@ -1,5 +1,5 @@
 export type { Scene, SceneFactory } from './scene.js';
-export { SceneManager } from './scene-manager.js';
+export { SceneManager, type ScenePushOptions } from './scene-manager.js';
 export {
   fadeTransition,
   noneTransition,

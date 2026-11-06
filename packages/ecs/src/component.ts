@@ -1,15 +1,15 @@
 /**
  * Component definition and factory.
  *
- * Components are plain data objects. Each component type gets a unique
- * bit for archetype-based query matching.
+ * Components are plain data objects. A `World` keys storage by the definition
+ * object itself; `id` and `bit` are informational.
  */
 
 /** A unique component definition. */
 export interface ComponentDef<T> {
-  /** Internal unique ID (auto-assigned). */
+  /** Sequential ID from this module's counter. Not a storage key. */
   readonly id: number;
-  /** Bitmask for this component (1 << id). */
+  /** `1 << id`. Not the archetype bit — each World assigns its own. */
   readonly bit: number;
   /** Component name for debugging. */
   readonly name: string;

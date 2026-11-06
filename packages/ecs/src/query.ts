@@ -144,26 +144,34 @@ export class Query {
  * the World it came from, which is what keeps it populated; the registration
  * hook is a required constructor argument so a builder cannot exist without a
  * World behind it, and the orphan `new QueryBuilder().build()` does not compile.
+ *
+ * `bitOf` maps a definition to the World's own bit (masks are world-local); the
+ * `def.bit` fallback only serves a builder with no World behind it.
  */
 export class QueryBuilder {
   private required = 0;
   private excluded = 0;
   private readonly register: (q: Query) => void;
+  private readonly bitOf: (def: ComponentDef<unknown>) => number;
 
-  constructor(register: (q: Query) => void) {
+  constructor(
+    register: (q: Query) => void,
+    bitOf: (def: ComponentDef<unknown>) => number = (def) => def.bit,
+  ) {
     this.register = register;
+    this.bitOf = bitOf;
   }
 
   with(...components: ComponentDef<unknown>[]): this {
     for (const c of components) {
-      this.required |= c.bit;
+      this.required |= this.bitOf(c);
     }
     return this;
   }
 
   without(...components: ComponentDef<unknown>[]): this {
     for (const c of components) {
-      this.excluded |= c.bit;
+      this.excluded |= this.bitOf(c);
     }
     return this;
   }

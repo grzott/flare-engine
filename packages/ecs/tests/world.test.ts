@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { defineComponent } from '../src/component.js';
+import { type ComponentDef, defineComponent } from '../src/component.js';
 import { World } from '../src/world.js';
 
 // Components are defined once at module scope.  Each test creates a fresh
@@ -330,5 +330,128 @@ describe('component data mutation', () => {
     const data = world.get(e, Position)!;
     data.x = 42;
     expect(world.get(e, Position)!.x).toBe(42);
+  });
+});
+
+// Hand-built definitions stand in for a second loaded copy of this module: its
+// counter also starts at 0, so its definitions carry the same `id` / `bit` as
+// ours. Literals keep the module-global counter untouched, so this file never
+// needs _resetComponentIds and cannot push a later file past the 32 cap.
+const literalDef = <T>(name: string, id: number, create: () => T): ComponentDef<T> => ({
+  id,
+  bit: 1 << id,
+  name,
+  create,
+});
+
+describe('World component registry (keyed by ComponentDef identity)', () => {
+  it('stores and queries two definitions with equal id and bit independently', () => {
+    const A = literalDef('A', 0, () => ({ a: 1 }));
+    const B = literalDef('B', 0, () => ({ b: 2 }));
+    expect(A.id).toBe(B.id);
+    expect(A.bit).toBe(B.bit);
+
+    const world = new World();
+    const e1 = world.spawn();
+    const e2 = world.spawn();
+    world.add(e1, A);
+    world.add(e2, B);
+
+    expect(world.has(e1, A)).toBe(true);
+    expect(world.has(e1, B)).toBe(false);
+    expect(world.has(e2, B)).toBe(true);
+    expect(world.has(e2, A)).toBe(false);
+    expect(world.get(e1, A)).toEqual({ a: 1 });
+    expect(world.get(e1, B)).toBeUndefined();
+    expect(world.get(e2, B)).toEqual({ b: 2 });
+
+    const qA = world.query(A);
+    const qB = world.query(B);
+    const qAnotB = world.queryBuilder().with(A).without(B).build();
+    expect([...qA]).toEqual([e1]);
+    expect([...qB]).toEqual([e2]);
+    expect([...qAnotB]).toEqual([e1]);
+
+    world.add(e1, B);
+    expect([...qAnotB]).toEqual([]);
+    expect(qB.count).toBe(2);
+
+    world.remove(e1, A);
+    expect(world.has(e1, B)).toBe(true);
+    expect(world.get(e1, B)).toEqual({ b: 2 });
+    expect(qA.count).toBe(0);
+    expect(qB.count).toBe(2);
+  });
+
+  it('each World assigns its own slots, so the same definitions work in two Worlds', () => {
+    const X = literalDef('X', 5, () => ({ x: 1 }));
+    const Y = literalDef('Y', 5, () => ({ y: 2 }));
+    const w1 = new World();
+    const w2 = new World();
+    const a = w1.spawn();
+    const b = w2.spawn();
+    w1.add(a, X);
+    w2.add(b, Y);
+    w2.add(b, X);
+
+    expect(w1.query(X).count).toBe(1);
+    expect(w1.query(Y).count).toBe(0);
+    expect(w2.query(X, Y).count).toBe(1);
+    expect(w1.get(a, X)).toEqual({ x: 1 });
+    expect(w2.get(b, Y)).toEqual({ y: 2 });
+  });
+
+  it('has / get / remove on a definition never added read absent and spend no slot', () => {
+    const world = new World();
+    const e = world.spawn();
+    for (let i = 0; i < 40; i++) {
+      const Probe = literalDef(`Probe${i}`, i, () => i);
+      expect(world.has(e, Probe)).toBe(false);
+      expect(world.get(e, Probe)).toBeUndefined();
+      world.remove(e, Probe);
+    }
+    // 40 reads consumed nothing: all 32 slots are still free.
+    for (let i = 0; i < 32; i++) {
+      world.add(
+        e,
+        literalDef(`Real${i}`, i, () => i),
+      );
+    }
+  });
+
+  it('registers at most 32 component types per World, independent of the global counter', () => {
+    // Every definition carries id 0 / bit 1: the per-World cap counts distinct
+    // definitions, not ids, and the slot a World hands out is its own.
+    const defs = Array.from({ length: 32 }, (_, i) => literalDef(`Cap${i}`, 0, () => i));
+    const world = new World();
+    const e = world.spawn();
+    for (const def of defs) world.add(e, def);
+    for (const def of defs) expect(world.has(e, def)).toBe(true);
+
+    // The 32nd registration lands in slot 31, whose bit is negative in int32.
+    const Slot31 = defs[31] as ComponentDef<number>;
+    const q31 = world.query(Slot31);
+    expect(q31.requiredMask).toBe(-2147483648);
+    expect(q31.count).toBe(1);
+    expect(world.get(e, Slot31)).toBe(31);
+    world.remove(e, Slot31);
+    expect(world.has(e, Slot31)).toBe(false);
+    expect(q31.count).toBe(0);
+
+    const Overflow = literalDef('Overflow', 0, () => 0);
+    expect(() => world.add(e, Overflow)).toThrow(
+      'Maximum 32 component types per World exceeded (registering "Overflow")',
+    );
+    expect(() => world.query(Overflow)).toThrow(
+      'Maximum 32 component types per World exceeded (registering "Overflow")',
+    );
+    expect(world.has(e, Overflow)).toBe(false);
+    expect(world.get(e, Overflow)).toBeUndefined();
+
+    // A second World starts with every slot free.
+    const fresh = new World();
+    const f = fresh.spawn();
+    fresh.add(f, Overflow);
+    expect(fresh.has(f, Overflow)).toBe(true);
   });
 });

@@ -1010,6 +1010,7 @@ Procedural 2D shape primitives for Skia — a `ShapeSpec` vocabulary of 12 named
 | `friendlyGlowArgb()` / `hazardGlowArgb()` | The two glow ARGB constants (`#6FA66B` @ α≈0.25; `#E84B2A` @ α≈0.6). |
 | `applyFriendlyGlow(canvas, paint, cx, cy, r)` / `applyHazardGlow(…)` | Draw the glow rings directly — used internally by `drawShape`, exported for custom compositing. |
 | `singleShapeRadius(spec)` / `shapeBoundsRadius(specs)` | Bounding-radius helpers — `singleShapeRadius` for one spec (glow sizing + atlas tiles), `shapeBoundsRadius` for the max over a `readonly ShapeSpec[]` composite; the latter adds a stroke-width margin where a stroke is actually painted and the full extent of a `glow` ring (+5.5 friendly, +2.25 hazard) on top of the base `+2`, so an atlas tile sized from it fully contains what `drawShape` paints. |
+| `shapeBoundsBox(specs)` / `shapeBoundsBoxInto(specs, out)` | Per-axis sibling of `shapeBoundsRadius` for hitboxes — a `ShapeBoundsBox` `{ minX, minY, maxX, maxY }` in the composition-local frame (the frame `ox`/`oy` live in): the union of every spec's extents at its offset, each widened by the same `+2` + stroke + glow margin the radius adds. Exact for unrotated geometry (`triangle`/`ngon`/`star`/`polyline` from their vertices; a `ship` unions its hull, weapons and engine); a spec with a non-zero `rot` falls back to its radial reach, so the box never exceeds the radius on any axis. Empty `specs` give all zeros (no 4-unit floor). `…Into` writes the caller's box and allocates nothing. |
 
 **Implementation notes:**
 

@@ -86,7 +86,12 @@ const amulet: readonly ShapeSpec[] = [
 ## Bounds
 
 ```ts
-import { shapeBoundsRadius, singleShapeRadius, type ShapeSpec } from '@flare-engine/shapes';
+import {
+  shapeBoundsBox,
+  shapeBoundsRadius,
+  singleShapeRadius,
+  type ShapeSpec,
+} from '@flare-engine/shapes';
 
 declare const playerShip: ShapeSpec;
 
@@ -95,6 +100,13 @@ declare const playerShip: ShapeSpec;
 // painted, and the full extent of a glow ring (+5.5 friendly, +2.25 hazard),
 // so a tile sized from this fully contains what `drawShape` paints.
 const tileRadius = shapeBoundsRadius([playerShip]);
+
+// For hitboxes — per-axis extents with the same margins, so an asymmetric
+// ship gets no dead space where a radius would. `shapeBoundsBoxInto(specs, out)`
+// is the zero-alloc form for a caller-owned box.
+const hit = shapeBoundsBox([playerShip]);
+const hitWidth = hit.maxX - hit.minX;
+const hitHeight = hit.maxY - hit.minY;
 
 // For glow halo sizing — radius of one primitive.
 const glowR = singleShapeRadius({ kind: 'circle', r: 14 });

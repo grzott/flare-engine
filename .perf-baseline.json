@@ -307,9 +307,9 @@
       "measuredAt": "2026-11-06"
     },
     "@flare-engine/shapes": {
-      "ceiling": 20696,
-      "measured": 20552,
-      "measuredAt": "2026-09-08"
+      "ceiling": 34034,
+      "measured": 30940,
+      "measuredAt": "2026-11-06"
     },
     "@flare-engine/share": {
       "ceiling": 15256,
@@ -450,6 +450,10 @@
     {
       "date": "2026-11-06",
       "reason": "dynamics ceiling raised 37650 -> 45703 B (measured 41548 x1.1), authorized by the owner's approval of the PR closing issue #147. New timeline.ts exports createTimeline plus the Timeline, TimelineOptions and TimelineWriter types: a bake-once/scrub-often recorder over one pre-allocated Float32Array, with record(writer, until?), a zero-alloc sampleInto lerp, argument validation, and JSDoc on why the fall is baked and why angles stay unwrapped. main packs at 34222 B: the published 0.4.8 tarball, and no dynamics commit has landed since the 0.4.8 release commit 55aaf28. So this change adds 7326 B gzipped (unpacked +19770 B): +1.7 KB in each of dist/index.js and index.mjs, +5.2 KB in each source map, +2.1 KB in each .d.ts and a Record and replay README section (+1.6 KB). Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-06",
+      "reason": "shapes ceiling raised 20696 -> 34034 B (measured 30940 x1.1), authorized by the owner's approval of the PR closing issue #149. bounds.ts gains shapeBoundsBox / shapeBoundsBoxInto (exported ShapeBoundsBox): per-axis extents per kind with the same +2 / stroke / glow margins as shapeBoundsRadius, an in-place ship walk and a radial fallback for rotated specs. main packs at 20494 B: the published 0.4.8 tarball, and no shapes commit has landed since the 0.4.8 release commit 55aaf28. So the tarball grows 10446 B, but each file gzipped on its own grows only 6248 B (33360 -> 39608) and dist/index.mjs gzipped grows 937 B (3397 -> 4334). The other ~4.2 KB is lost cross-file compression: at 0.4.8 the tarball was 12.9 KB smaller than its files gzipped separately, now only 8.7 KB, because the grown files push repeated text beyond deflate's 32 KB back-reference window. Added behaviour, not a regression."
     }
   ]
 }

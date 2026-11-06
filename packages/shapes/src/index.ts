@@ -1,4 +1,10 @@
-export { shapeBoundsRadius, singleShapeRadius } from './bounds.js';
+export {
+  type ShapeBoundsBox,
+  shapeBoundsBox,
+  shapeBoundsBoxInto,
+  shapeBoundsRadius,
+  singleShapeRadius,
+} from './bounds.js';
 
 export {
   applyFriendlyGlow,

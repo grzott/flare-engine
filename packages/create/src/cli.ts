@@ -41,12 +41,16 @@ export function buildProgram(): Command {
           manifest?.displayName ?? result.template
         } at ${result.targetDir}\n`,
       );
+      const pm = result.packageManager;
+      const next = manifest?.postInstall ? `${pm} ${manifest.postInstall} (or: ${pm} run ios)` : '';
       if (!result.installed) {
         process.stdout.write(
-          `[flare-create] skipped install — run \`cd ${name} && ${result.packageManager} install\` when ready\n`,
+          next
+            ? `[flare-create] skipped install — next: cd ${name} && ${pm} install && ${next}\n`
+            : `[flare-create] skipped install — run \`cd ${name} && ${pm} install\` when ready\n`,
         );
-      } else if (manifest?.postInstall) {
-        process.stdout.write(`[flare-create] next: cd ${name} && ${manifest.postInstall}\n`);
+      } else if (next) {
+        process.stdout.write(`[flare-create] next: cd ${name} && ${next}\n`);
       }
     });
   return program;

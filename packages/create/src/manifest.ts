@@ -8,7 +8,10 @@ export interface TemplateManifest {
   description: string;
   /** Engines required — mirrors Node/npm engines field in scaffolded package.json. */
   engines: { node: string };
-  /** Optional post-install instructions printed after scaffold completes. */
+  /**
+   * Optional post-install script, without the package-manager prefix (e.g. `run android`).
+   * The CLI prefixes the detected package manager when printing the next step.
+   */
   postInstall?: string;
 }
 
@@ -19,14 +22,14 @@ export const TEMPLATES = {
     displayName: 'Blank',
     description: 'Empty scene with a single sprite — smallest starting point.',
     engines: { node: '>=20' },
-    postInstall: 'bun run start',
+    postInstall: 'run android',
   },
   topdown: {
     id: 'topdown',
     displayName: 'Top-down',
     description: 'Analog player movement with tilemap collision + camera follow.',
     engines: { node: '>=20' },
-    postInstall: 'bun run start',
+    postInstall: 'run android',
   },
   shmup: {
     id: 'shmup',
@@ -34,7 +37,7 @@ export const TEMPLATES = {
     description:
       'Auto-fire player, enemy spawner, HUD score — mirrors a minimum vertical-slice shmup.',
     engines: { node: '>=20' },
-    postInstall: 'bun run start',
+    postInstall: 'run android',
   },
 } satisfies Record<string, TemplateManifest>;
 

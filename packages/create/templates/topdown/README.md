@@ -74,6 +74,10 @@ bun test
 
 Runs `tests/tilemap.test.ts` — validates the map parse, collider extraction, solid-grid query, and that the closed door blocks while the open door and wall/rock collision are unaffected by opening it.
 
+The tests use Bun's runner (`bun:test`), so they need Bun even when the app was
+installed with npm or pnpm. Install it with `npm install -g bun` (or run
+`npx bun test` without a global install), then run `bun test`.
+
 ## Docs
 
 - [Flare engine](https://github.com/grzott/flare-engine)

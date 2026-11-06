@@ -778,7 +778,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 | API | Description |
 | --- | --- |
-| `flare-create <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`. |
+| `flare-create <name> [--template blank\|topdown\|shmup] [--package-manager bun\|npm\|pnpm] [--skip-install]` | Copies the selected template into `<name>/`, rewrites `package.json` name, runs the detected package manager's install unless `--skip-install`, then prints the next step as `<pm> run android` (and `run ios`) using the detected package manager. |
 | `scaffoldApp(opts)` | Programmatic form. `opts`: `{ name, template?, packageManager?, skipInstall?, targetDir?, templatesDir?, flareVersion? }`; resolves to `{ targetDir, template, packageManager, installed }`. |
 | Template `blank` | Empty scene, single sprite, `GameView` wired via `@flare-engine/react`. Smallest starting point. |
 | Template `topdown` | Player with analog joystick movement, tilemap + tile-collision + camera follow. Exercises `tilemap` + `physics` + `input` + `ecs`. |

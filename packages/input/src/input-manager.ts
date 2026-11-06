@@ -73,8 +73,19 @@ export class InputManager {
     this._addOrUpdateTouch(id, x, y, true);
   }
 
-  /** Feed a touch/pointer move event. */
+  /**
+   * Feed a touch/pointer move event.
+   *
+   * A move for an id that was never pressed, while no primary is active, is a
+   * hover (a mouse with no button held): `pointer.position` and `delta`
+   * follow it, but `isDown` / `justPressed` stay untouched and no `TouchPoint`
+   * is recorded.
+   */
   onPointerMove(id: number, x: number, y: number): void {
+    if (this._primaryTouchId === null && !this._touchMap.has(id)) {
+      pointerMove(this.pointer, x, y);
+      return;
+    }
     if (id === this._primaryTouchId) {
       pointerMove(this.pointer, x, y);
     }

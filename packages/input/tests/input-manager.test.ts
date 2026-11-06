@@ -31,6 +31,43 @@ describe('InputManager', () => {
     expect(input.touches[0]?.position).toEqual({ x: 150, y: 250 });
   });
 
+  // DESK-2 (hover half) — a move with no prior press is a hover: the pointer
+  // follows it, but nothing is pressed and no touch is recorded.
+  describe('onPointerMove with no prior press is a hover', () => {
+    it('moves pointer.position and delta without pressing or adding a touch', () => {
+      const input = new InputManager();
+      input.onPointerMove(1, 150, 250);
+      expect(input.pointer.position).toEqual({ x: 150, y: 250 });
+      expect(input.pointer.delta).toEqual({ x: 150, y: 250 });
+      expect(input.pointer.isDown).toBe(false);
+      expect(input.pointer.justPressed).toBe(false);
+      expect(input.touches).toEqual([]);
+    });
+
+    it('a press after a hover starts from the hovered position', () => {
+      const input = new InputManager();
+      input.onPointerMove(1, 150, 250);
+      input.update();
+      input.onPointerDown(1, 160, 260);
+      expect(input.pointer.isDown).toBe(true);
+      expect(input.pointer.justPressed).toBe(true);
+      expect(input.pointer.position).toEqual({ x: 160, y: 260 });
+      expect(input.pointer.delta).toEqual({ x: 10, y: 10 });
+      expect(input.touches).toHaveLength(1);
+    });
+
+    it('a hover after the gesture ends moves the pointer again', () => {
+      const input = new InputManager();
+      input.onPointerDown(1, 100, 200);
+      input.onPointerUp(1, 100, 200);
+      input.update();
+      input.onPointerMove(1, 300, 400);
+      expect(input.pointer.position).toEqual({ x: 300, y: 400 });
+      expect(input.pointer.isDown).toBe(false);
+      expect(input.touches).toEqual([]);
+    });
+  });
+
   it('onPointerUp clears pointer and removes touch', () => {
     const input = new InputManager();
     input.onPointerDown(1, 100, 200);

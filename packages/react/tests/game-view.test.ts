@@ -45,6 +45,20 @@ let _surfaceDisposeCount = 0;
 // Controls what the mocked bridge's hasPostFxBinding() returns.
 let _hasPostFxBinding = false;
 
+// #60: controllable compiled-pass source for the web composite — the mocked
+// bridge.compilePostFxPasses returns _compilePasses() and logs its args.
+let _compilePasses: () => readonly unknown[] = () => [];
+let _compilePassesCalls: unknown[][] = [];
+
+// #60: the web compositor's footprint on the mocked Skia module — one Paint
+// per compositor (disposed on unmount), one drawRect per pass on the offscreen
+// surface's canvas.
+let _paintCount = 0;
+let _paintBlendModes: number[] = [];
+let _paintDisposeCount = 0;
+let _drawRectCount = 0;
+let _drawRectLast: { x: number; y: number; width: number; height: number } | null = null;
+
 // Captured console.warn messages — installed/cleared per test.
 let _warnMessages: string[] = [];
 let _origWarn: typeof console.warn | null = null;
@@ -208,14 +222,31 @@ mock.module('@shopify/react-native-skia', () => ({
             drawPicture: () => {
               _drawPictureCount++;
             },
-          }),
-          flush: () => {},
-          makeImageSnapshot: () => ({
-            makeNonTextureImage: () => {
-              _makeNonTextureImageCount++;
-              return {};
+            drawRect: (rect: { x: number; y: number; width: number; height: number }) => {
+              _drawRectCount++;
+              _drawRectLast = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
             },
           }),
+          flush: () => {},
+          makeImageSnapshot: () => {
+            const snapshot: Record<string | symbol, unknown> = {
+              kind: 'snapshot',
+              makeNonTextureImage: () => {
+                _makeNonTextureImageCount++;
+                return {};
+              },
+              makeShaderOptions: () => {
+                const shader: Record<string | symbol, unknown> = {
+                  kind: 'srcShader',
+                  from: snapshot,
+                };
+                if (DISPOSE !== undefined) shader[DISPOSE] = () => {};
+                return shader;
+              },
+            };
+            if (DISPOSE !== undefined) snapshot[DISPOSE] = () => {};
+            return snapshot;
+          },
         };
         if (DISPOSE !== undefined) {
           (surface as unknown as Record<symbol, unknown>)[DISPOSE] = () => {
@@ -241,13 +272,25 @@ mock.module('@shopify/react-native-skia', () => ({
       return r;
     },
     RSXform: () => ({ set: () => {} }),
-    Paint: () => ({
-      setColorFilter: () => {},
-      setShader: () => {},
-      setAlphaf: () => {},
-      setColor: () => {},
-      setImageFilter: () => {},
-    }),
+    Paint: () => {
+      _paintCount++;
+      const paint: Record<string | symbol, unknown> = {
+        setColorFilter: () => {},
+        setShader: () => {},
+        setAlphaf: () => {},
+        setColor: () => {},
+        setImageFilter: () => {},
+        setBlendMode: (mode: number) => {
+          _paintBlendModes.push(mode);
+        },
+      };
+      if (DISPOSE !== undefined) {
+        paint[DISPOSE] = () => {
+          _paintDisposeCount++;
+        };
+      }
+      return paint;
+    },
     PictureRecorder: () => ({
       beginRecording: (bounds: { width: number; height: number }) => {
         if (bounds !== undefined) {
@@ -454,6 +497,10 @@ mock.module('@flare-engine/render', () => ({
       },
       drawAtlas: () => {},
       buildPostFxPasses: () => _buildPasses(),
+      compilePostFxPasses: (...args: unknown[]) => {
+        _compilePassesCalls.push(args);
+        return _compilePasses();
+      },
       setPostFxBinding: () => {},
       hasPostFxBinding: () => _hasPostFxBinding,
       endFrame: () => {
@@ -572,6 +619,13 @@ beforeEach(() => {
   _beginRecordingBounds = [];
   _beginFramePdArgs = [];
   _buildPasses = () => [];
+  _compilePasses = () => [];
+  _compilePassesCalls = [];
+  _paintCount = 0;
+  _paintBlendModes = [];
+  _paintDisposeCount = 0;
+  _drawRectCount = 0;
+  _drawRectLast = null;
   _setPassesCount = 0;
   _lastPasses = null;
   _beginFrameTimeArgs.length = 0;
@@ -1044,39 +1098,181 @@ describe('GameView — frame time forwarded to beginFrame', () => {
 });
 
 // ---------------------------------------------------------------------------
-// WEB-3: postfx pass gate on web.
-// On web, RuntimeShader image filters are unavailable (RN-Skia 2.4.18 throws
-// "Not implemented on React Native Web" from both Skia.RuntimeShaderBuilder and
-// ImageFilter.MakeRuntimeShaderWithChildren). GameView must never call
-// buildPostFxPasses or setPasses on web — even when the hook supplies a chain —
-// to avoid a per-frame throw.
+// #60: postfx on web runs imperatively inside the scene capture.
+//
+// RN-Skia's declarative shader nodes cannot run on web (Skia.RuntimeShaderBuilder
+// and ImageFilter.MakeRuntimeShaderWithChildren both throw "Not implemented on
+// React Native Web"), so the old code (WEB-3/WEB-7) skipped the chain and warned
+// once per instance. Now GameView compiles the bound chain at physical pixels
+// (w*pd × h*pd — the surface's size, the space the pass rect is drawn in) and
+// hands it to the capture, whose compositor draws each pass in place over the
+// one offscreen surface before the snapshot. setPasses still never fires on
+// web, so the tree stays the plain <Image> — the shape proven leak-free.
 // ---------------------------------------------------------------------------
 
-describe('GameView — web postfx gate (WEB-3)', () => {
-  it('setPasses is never called on web even when the chain is non-empty', () => {
+interface CompositeShaderCall {
+  uniforms: unknown;
+  children: unknown[];
+}
+
+/** A compiled pass whose shader records what the compositor hands it. The
+ *  children array is copied at call time: the compositor reuses and nulls it. */
+function makeCompiledPass(
+  id: string,
+  uniforms: Float32Array,
+  children: readonly unknown[] = [],
+): { pass: unknown; calls: CompositeShaderCall[] } {
+  const calls: CompositeShaderCall[] = [];
+  const shader = {
+    makeShaderWithChildren: (u: unknown, c: unknown[]) => {
+      calls.push({ uniforms: u, children: c.slice() });
+      return { kind: 'passShader' };
+    },
+  };
+  return { pass: { id, shader, uniforms, children }, calls };
+}
+
+describe('GameView — web postfx composite (#60)', () => {
+  it('web + binding: composite receives the scene snapshot and the pass list, compiled at physical pixels (fail-old: nothing is called)', () => {
     _mockPlatformOS = 'web';
-    const shader = {};
-    _buildPasses = () => [
-      { id: 'flash', source: shader, uniforms: { intensity: 1 }, children: [] },
-    ];
+    _mockPixelRatio = 2;
+    _hasPostFxBinding = true;
+    const uniforms = new Float32Array([0.5, 800, 1200]);
+    const { pass, calls } = makeCompiledPass('flash', uniforms);
+    _compilePasses = () => [pass];
     mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+
     tick();
-    tick();
-    tick();
-    expect(_setPassesCount).toBe(0);
+
+    expect(_compilePassesCalls).toEqual([[null, null, 800, 1200]]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.uniforms).toBe(uniforms);
+    expect(calls[0]!.children).toHaveLength(1);
+    const src = calls[0]!.children[0] as { kind: string; from: { kind: string } };
+    expect(src.kind).toBe('srcShader');
+    expect(src.from.kind).toBe('snapshot');
+    expect(_makeOffscreenCalls).toEqual([{ width: 800, height: 1200 }]);
+    expect(_drawRectCount).toBe(1);
+    expect(_drawRectLast).toEqual({ x: 0, y: 0, width: 800, height: 1200 });
+    expect(_makeNonTextureImageCount).toBe(1);
+    expect(_sharedValueSetCount).toBe(1);
+    expect(_sharedValueLastSet).not.toBeNull();
     unmountAll();
   });
 
-  it('setPasses fires on native when the chain is non-empty (baseline unchanged)', () => {
-    _mockPlatformOS = 'ios';
-    const shader = {};
-    _buildPasses = () => [
-      { id: 'flash', source: shader, uniforms: { intensity: 1 }, children: [] },
-    ];
-    mount();
+  it('web + binding: never warns, never pushes passes, and the tree is the plain <Image> of the scene texture', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    _viewportOverride = { w: 400, h: 600 };
+    const { pass } = makeCompiledPass('flash', new Float32Array([1]));
+    _compilePasses = () => [pass];
+    _buildPasses = () => [makePass('flash', {}, { intensity: 1 })];
+    const tree = mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+
     tick();
-    expect(_setPassesCount).toBe(1);
+    tick();
+    tick();
+
+    expect(_warnMessages.filter((m) => m.includes('postfx chain skipped'))).toHaveLength(0);
+    expect(_warnMessages).toHaveLength(0);
+    expect(_setPassesCount).toBe(0);
+    expect(_drawRectCount).toBe(3);
+    const image = findByType(tree, 'Image');
+    expect(image).not.toBeNull();
+    expect(image!.props.image).toBe(_sharedValues[0]);
+    expect(flatChildren(image!).filter((k) => k.type === 'RuntimeShader')).toHaveLength(0);
+    expect(findByType(tree, 'RuntimeShader')).toBeNull();
+    expect(findByType(tree, 'Shader')).toBeNull();
     unmountAll();
+  });
+
+  it('web, no binding: compilePostFxPasses is not called, no shader is built, no warn', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = false;
+    const { pass, calls } = makeCompiledPass('flash', new Float32Array([1]));
+    _compilePasses = () => [pass];
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    tick();
+    tick();
+    tick();
+
+    expect(_compilePassesCalls).toHaveLength(0);
+    expect(calls).toHaveLength(0);
+    expect(_drawRectCount).toBe(0);
+    expect(_drawPictureCount).toBe(3);
+    expect(_warnMessages).toHaveLength(0);
+    unmountAll();
+  });
+
+  it('web, binding but an empty compiled chain: the capture still happens, nothing is drawn over it', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    _compilePasses = () => [];
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    tick();
+
+    expect(_compilePassesCalls).toHaveLength(1);
+    expect(_drawPictureCount).toBe(1);
+    expect(_makeNonTextureImageCount).toBe(1);
+    expect(_sharedValueSetCount).toBe(1);
+    expect(_drawRectCount).toBe(0);
+    unmountAll();
+  });
+
+  it('native with a binding: setPasses fires once (baseline), the web composite path is never taken', () => {
+    _mockPlatformOS = 'ios';
+    _hasPostFxBinding = true;
+    const { pass, calls } = makeCompiledPass('flash', new Float32Array([1]));
+    _compilePasses = () => [pass];
+    _buildPasses = () => [makePass('flash', {}, { intensity: 1 })];
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    tick();
+
+    expect(_setPassesCount).toBe(1);
+    expect(_compilePassesCalls).toHaveLength(0);
+    expect(calls).toHaveLength(0);
+    expect(_drawRectCount).toBe(0);
+    expect(_warnMessages).toHaveLength(0);
+    unmountAll();
+  });
+
+  it('web: one Paint set to BlendMode.Src backs the compositor and unmount disposes it', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    const { pass } = makeCompiledPass('flash', new Float32Array([1]));
+    _compilePasses = () => [pass];
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    tick();
+    tick();
+    tick();
+
+    expect(_paintCount).toBe(1);
+    expect(_paintBlendModes).toEqual([1]);
+    expect(_paintDisposeCount).toBe(0);
+    unmountAll();
+    expect(_paintDisposeCount).toBe(1);
   });
 });
 
@@ -1192,119 +1388,6 @@ describe('GameView — web scene capture (WEB-6)', () => {
     if (DISPOSE !== undefined) {
       expect(_surfaceDisposeCount).toBe(1);
     }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// WEB-7: postfx warn gate — gated on binding, per-instance, no version literal.
-//
-// Two defects fixed:
-//   1. The warn fired unconditionally on web even when no postfx binding
-//      exists (the blank scaffolder template has no chain and still warned).
-//   2. The warn hardcoded "RN-Skia 2.4.18" while templates ship 2.6.0.
-//
-// The fix:
-//   - Warn only when bridge.hasPostFxBinding() is true (safe: never calls
-//     runtime.buildPass, so it cannot throw on web).
-//   - Move the warn-once flag from module scope to a per-<GameView> useRef,
-//     so each independently mounted instance with a chain warns once.
-//   - Remove the version literal from the message.
-//
-// Note on fail-old verification: the pre-fix flag (_webPostFxWarned) is
-// module-level and never resets between tests. The WEB-3 suite above runs
-// first and mounts a web GameView, which trips the flag. By the time the
-// WEB-7 suite runs, the flag is already true on the old source — meaning
-// tests 1 and 3 may see NO warning on old source for that reason, not
-// because the binding gate works. That flag-pollution hazard is precisely
-// why the plan moves it to a per-instance ref; it is reported in the
-// implementation notes rather than claimed as a clean fail-old.
-// ---------------------------------------------------------------------------
-
-describe('GameView — web postfx warn gate (WEB-7)', () => {
-  it('web: no postfx binding — never warns across frames (fail-old: warned on the first tick)', () => {
-    _mockPlatformOS = 'web';
-    _hasPostFxBinding = false;
-    mount();
-    const camera = _cameraInstance!;
-    camera.viewportWidth = 320;
-    camera.viewportHeight = 240;
-    tick();
-    tick();
-    tick();
-    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
-    expect(postfxWarns).toHaveLength(0);
-    unmountAll();
-  });
-
-  it('web: with a postfx binding — warns exactly once across frames', () => {
-    _mockPlatformOS = 'web';
-    _hasPostFxBinding = true;
-    mount();
-    const camera = _cameraInstance!;
-    camera.viewportWidth = 320;
-    camera.viewportHeight = 240;
-    tick();
-    tick();
-    tick();
-    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
-    expect(postfxWarns).toHaveLength(1);
-    unmountAll();
-  });
-
-  it('the warning names no RN-Skia version (fail-old: said 2.4.18)', () => {
-    _mockPlatformOS = 'web';
-    _hasPostFxBinding = true;
-    mount();
-    const camera = _cameraInstance!;
-    camera.viewportWidth = 320;
-    camera.viewportHeight = 240;
-    tick();
-    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
-    expect(postfxWarns).toHaveLength(1);
-    const msg = postfxWarns[0] as string;
-    expect(msg).not.toMatch(/\d+\.\d+\.\d+/);
-    expect(msg).toContain('Skia.RuntimeShaderBuilder');
-    expect(msg).toContain('ImageFilter.MakeRuntimeShaderWithChildren');
-    unmountAll();
-  });
-
-  it('native: never warns even with a binding', () => {
-    _mockPlatformOS = 'ios';
-    _hasPostFxBinding = true;
-    mount();
-    const camera = _cameraInstance!;
-    camera.viewportWidth = 320;
-    camera.viewportHeight = 240;
-    tick();
-    tick();
-    tick();
-    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
-    expect(postfxWarns).toHaveLength(0);
-    unmountAll();
-  });
-
-  it('warn-once is per GameView instance', () => {
-    // Each independently mounted <GameView> with a binding should warn once.
-    // On the old source the flag was module-level: the second mount reused
-    // the already-set flag and emitted no second warning — only one total.
-    _mockPlatformOS = 'web';
-    _hasPostFxBinding = true;
-    mount();
-    const cam1 = _cameraInstance!;
-    cam1.viewportWidth = 320;
-    cam1.viewportHeight = 240;
-    tick();
-    unmountAll();
-
-    mount();
-    const cam2 = _cameraInstance!;
-    cam2.viewportWidth = 320;
-    cam2.viewportHeight = 240;
-    tick();
-    unmountAll();
-
-    const postfxWarns = _warnMessages.filter((m) => m.includes('postfx chain skipped'));
-    expect(postfxWarns).toHaveLength(2);
   });
 });
 

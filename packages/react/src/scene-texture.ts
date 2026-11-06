@@ -1,4 +1,6 @@
 import type { SkImageLike } from '@flare-engine/assets';
+import type { FrameRendererCompiledPass } from '@flare-engine/render';
+import type { WebPostFxCompositor } from './web-postfx.js';
 
 /**
  * Structural offscreen surface — the subset `GameView`'s scene capture needs.
@@ -10,9 +12,10 @@ export interface SceneSurfaceLike<TImage = SkImageLike> {
   flush(): void;
 }
 
-/** The canvas subset used when capturing a frame's picture. */
+/** The canvas subset used when capturing a frame's picture and compositing postfx over it. */
 export interface SceneSurfaceCanvasLike {
   drawPicture(picture: unknown): void;
+  drawRect(rect: { x: number; y: number; width: number; height: number }, paint: unknown): void;
 }
 
 /** Structural Skia module — only the offscreen-surface factory is needed. */
@@ -40,7 +43,8 @@ export interface SceneSurfaceCache<TImage = SkImageLike> {
  */
 const DISPOSE = (Symbol as unknown as { dispose?: symbol }).dispose;
 
-function releaseSkiaObject(target: unknown): void {
+/** Release an RN-Skia wrapper through its `Symbol.dispose`; a no-op for null or non-disposable values. */
+export function releaseSkiaObject(target: unknown): void {
   if (DISPOSE === undefined || target === null || target === undefined) return;
   const disposer = (target as Record<symbol, unknown>)[DISPOSE];
   if (typeof disposer === 'function') {
@@ -100,11 +104,17 @@ interface DetachableImage<TImage> {
 /** Per-frame scene capture over a reused surface. */
 export interface SceneCapture<TImage> {
   /**
-   * Draw `picture` into the reused surface and return an image detached from
-   * that surface's GL context. Returns null for a zero-sized viewport.
+   * Draw `picture` into the reused surface, run `passes` over it in place when
+   * a compositor was supplied, and return an image detached from that surface's
+   * GL context. Returns null for a zero-sized viewport.
    */
-  capture(picture: unknown, width: number, height: number): TImage | null;
-  /** Release the surface and the frame image still held. */
+  capture(
+    picture: unknown,
+    width: number,
+    height: number,
+    passes?: readonly FrameRendererCompiledPass[],
+  ): TImage | null;
+  /** Release the surface, the frame images still held, and the compositor. */
   dispose(): void;
 }
 
@@ -126,10 +136,14 @@ export interface SceneCapture<TImage> {
  *
  * `retentionDepth` defaults to 3 — the web-measured minimum, and the only
  * platform this runs on.
+ *
+ * `postfx` runs the passes `capture` receives over the surface before the
+ * snapshot; the capture owns it and `dispose()` disposes it.
  */
-export interface SceneCaptureOptions {
+export interface SceneCaptureOptions<TImage = SkImageLike> {
   nonTextureImage?: boolean;
   retentionDepth?: number;
+  postfx?: WebPostFxCompositor<TImage>;
 }
 
 /**
@@ -159,24 +173,40 @@ export interface SceneCaptureOptions {
  * The snapshot is released as soon as it has been copied. Frame images are
  * released once the ring exceeds depth 3, ensuring the canvas's rAF always has
  * a live image to paint from.
+ *
+ * The postfx chain runs **here, in place**, for the same reasons: the `postfx`
+ * compositor draws each pass back over this one surface between the picture
+ * and the snapshot (Skia's copy-on-write keeps each pass's snapshot valid), so
+ * the chain costs no second surface or WebGL context, and the image RN-Skia's
+ * `<Image>` draws is already filtered — no shader node (the per-paint leak of
+ * §14) is ever mounted on web.
  */
 
 export function createSceneCapture<TImage>(
   Skia: SceneSurfaceModuleLike<TImage>,
-  opts?: SceneCaptureOptions,
+  opts?: SceneCaptureOptions<TImage>,
 ): SceneCapture<TImage> {
   const useNonTexture = opts?.nonTextureImage ?? true;
   const retentionDepth = opts?.retentionDepth ?? 3;
+  const postfx = opts?.postfx ?? null;
   const surfaces = createSceneSurfaceCache(Skia);
   const ring: TImage[] = [];
 
   return {
-    capture(picture: unknown, width: number, height: number): TImage | null {
+    capture(
+      picture: unknown,
+      width: number,
+      height: number,
+      passes?: readonly FrameRendererCompiledPass[],
+    ): TImage | null {
       const surface = surfaces.acquire(width, height);
       if (surface === null) return null;
 
       surface.getCanvas().drawPicture(picture);
       surface.flush();
+      if (postfx !== null && passes !== undefined && passes.length > 0) {
+        postfx.composite(surface, passes, width, height);
+      }
 
       const snapshot = surface.makeImageSnapshot();
       const detachable = snapshot as DetachableImage<TImage>;
@@ -198,6 +228,7 @@ export function createSceneCapture<TImage>(
       }
       ring.length = 0;
       surfaces.dispose();
+      postfx?.dispose();
     },
   };
 }

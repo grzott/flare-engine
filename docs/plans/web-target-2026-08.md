@@ -435,6 +435,14 @@ scene drawn through `<Image image={scene}>` with no shader node ran **1378 frame
 **Consequence for §5 and the roadmap:** PT uses postfx, so PT's browser pass renders unfiltered on
 web until RN-Skia fixes the `<ImageShader>` per-paint leak. The `roadmap.md:11` positioning claim
 (§10 correction 2) stays unbacked for postfx-using games regardless of WEB-H4.
+**CORRECTED 2026-11-06 — no longer true at HEAD.** #60 runs the chain without any RN-Skia shader
+node: `packages/react/src/web-postfx.ts` draws each pass imperatively over the scene-capture surface
+(`makeShaderWithChildren` + a `BlendMode.Src` rect, every Skia object released the same frame)
+before the snapshot RN-Skia's `<Image>` draws. Soaked in headless Chrome 156 over RN-Skia 2.4.18's
+own canvaskit-wasm 0.40.0 with the same two-pass chain (vignette + grayscale-flash animating): 1500
+frames at 2560×1215 and at 1280×720, wasm memory constant at its initial 128 MiB from frame 0 to
+1499, zero errors, pixel probes confirming the vignette and the flash on screen. The PR body carries
+the full tables. The `<ImageShader>` leak above is untouched upstream and simply no longer on the path.
 
 ### Verified after the fix (same session, same spike)
 

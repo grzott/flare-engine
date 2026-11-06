@@ -364,15 +364,19 @@ image on the next capture frees an object the canvas is still reading (BindingEr
 Measured minimum safe depth is 3 (hold=1 and hold=2 both blank; hold=3 stable at 1378 frames).
 Background: `docs/plans/web-target-2026-08.md` §12.
 
-**PostFx on web.** The postfx chain is **unavailable on web** in this release and is silently
-skipped. `Skia.RuntimeShaderBuilder` (used inside `buildPostFxPasses`) and
-`ImageFilter.MakeRuntimeShaderWithChildren` (used to compose the `<RuntimeShader>` children) both
-throw `Not implemented on React Native Web`. `GameView` detects `Platform.OS === 'web'` and skips
-`buildPostFxPasses` and the `setPasses` state update entirely, keeping the scene rendering
-unfiltered. A one-time `console.warn` per `<GameView>` instance is emitted naming both throwing call
-sites, but only when a postfx binding actually exists (`bridge.hasPostFxBinding()` is true) — a
-`<GameView>` with no chain loads silently. `onRenderPostFx` still fires on web (the hook receives
-the bridge), but any `setPostFxBinding` call has no visible effect. Native postfx is unchanged.
+**PostFx on web.** On web the bound chain renders **inside the scene capture**, imperatively.
+`GameView` compiles the passes at physical pixels (`w*pd × h*pd` — the offscreen surface's size, and
+the space every SkSL `resolution` uniform must match) through `compilePostFxPasses` and hands them to
+`capture(picture, width, height, passes)`, whose compositor runs them in place on the one cached
+offscreen surface before the snapshot: one full-surface `BlendMode.Src` rect draw per pass, each
+pass sampling a snapshot of the previous result as its `src` child, extra sampler children
+(color-grading-lut) bound positionally after `src`, and every Skia object the pass created (pass
+shader, child shaders, snapshot) released the same frame. The filtered result reaches `<Image>`
+through the existing `makeNonTextureImage()` + retention ring, so no RN-Skia shader node is mounted
+on web — `Skia.RuntimeShaderBuilder` and `ImageFilter.MakeRuntimeShaderWithChildren` (both throw
+`Not implemented on React Native Web`) are never called, and no second surface or WebGL context is
+created. `onRenderPostFx` + `setPostFxBinding` therefore work on web; `setPasses` still never fires
+there, so the tree stays the plain `<Image>`. Native postfx is unchanged.
 
 | API                     | Description                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -388,7 +392,7 @@ the bridge), but any `setPostFxBinding` call has no visible effect. Native postf
 | `SafeAreaContext`       | `React.Context<SafeArea \| null>`. Provided by `<GameView>`; `null` outside it. Prefer `useSafeArea()` for direct consumption. |
 | `PostFxRenderHook`      | `(ctx: GameContextValue, canvas: unknown, bridge: SkiaFrameRenderer \| null) => void`. Callback type for `GameConfig.onRenderPostFx`. The `bridge` arg exposes `setPostFxBinding(runtime, chain)` so the hook can register the runtime and chain for the current frame. `bridge` is `null` only on future non-Skia render paths. |
 | `RenderHook`            | `(ctx: GameContextValue, canvas: unknown) => void`. Callback type for `GameConfig.onRenderBackground`. |
-| `SkiaFrameRenderer`     | Interface returned by `createSkiaFrameRenderer`. Methods: `beginFrame(w, h, time?)`, `drawAtlas(image, commands)`, `setPostFxBinding(runtime, chain)`, `hasPostFxBinding(): boolean`, `buildPostFxPasses(runtime, chain, w, h): readonly PostFxPassDescriptor[]`, `endFrame(): SkPicture \| null`. `hasPostFxBinding` returns true only when the bound runtime is non-null, supported, has a `buildPass` method, and a chain is bound — it never calls `runtime.buildPass`, so it is safe on web. `buildPostFxPasses` maps each `CompiledPassLike` from `runtime.buildPass` to a `PostFxPassDescriptor` keyed by SkSL uniform name for use with JSX `<RuntimeShader>`. Returns an empty array when the runtime is null, unsupported, has no `buildPass`, or the chain has no enabled effects. |
+| `SkiaFrameRenderer`     | Interface returned by `createSkiaFrameRenderer`. Methods: `beginFrame(w, h, time?)`, `drawAtlas(image, commands)`, `setPostFxBinding(runtime, chain)`, `hasPostFxBinding(): boolean`, `buildPostFxPasses(runtime, chain, w, h): readonly PostFxPassDescriptor[]`, `compilePostFxPasses(runtime, chain, w, h): readonly FrameRendererCompiledPass[]`, `endFrame(): SkPicture \| null`. `hasPostFxBinding` returns true only when the bound runtime is non-null, supported, has a `buildPass` method, and a chain is bound — it never calls `runtime.buildPass`, so it is safe on web. `compilePostFxPasses` returns `runtime.buildPass`'s compiled passes as built (packed `Float32Array` uniforms) — what the web composite draws from; `buildPostFxPasses` derives from the same passes a `PostFxPassDescriptor` per pass keyed by SkSL uniform name for use with JSX `<RuntimeShader>`. Both resolve `runtime ?? bound`, `chain ?? bound` and return an empty array when the runtime is null, unsupported, has no `buildPass`, or the chain has no enabled effects. |
 | `SkOffscreenCanvasLike` | Structural canvas interface. `drawPicture(p)`, `drawImageRect(img, src, dst, paint)`, `drawRect(rect, paint)`, `clear(color)`. Returned by `SkSurfaceLike.getCanvas()`. |
 | `SkSurfaceLike`         | Structural interface for offscreen Skia surfaces. `getCanvas(): SkOffscreenCanvasLike; makeImageSnapshot(): SkImageLike`. Used by `renderShapesToImage`. |
 | `ShapeRect`             | `{ x, y, w, h, color: number }` — axis-aligned rect with ARGB-packed color (`0xAARRGGBB`). Input to `renderShapesToImage`. |

@@ -1538,6 +1538,103 @@ describe('createSkiaFrameRenderer — buildPostFxPasses', () => {
 // per-sprite rotation — fillXforms
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// compilePostFxPasses (#60) — the runtime's own compiled passes, for the
+// imperative web compositor. Same resolution rules as buildPostFxPasses, but
+// the result is rt.buildPass's array itself (packed Float32Array uniforms),
+// not the named-uniform JSX descriptors.
+// ---------------------------------------------------------------------------
+
+describe('createSkiaFrameRenderer — compilePostFxPasses (#60)', () => {
+  it("returns rt.buildPass's array unchanged — same identity, Float32Array uniforms intact", () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('composite', [{ name: 'i', columns: 1, rows: 1 }], [0.5]);
+    const built = [pass];
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => built };
+    const result = bridge.compilePostFxPasses(runtime, makeMockChain(), 800, 600);
+    expect(result).toBe(built);
+    expect(result[0]).toBe(pass);
+    expect(result[0]?.uniforms).toBeInstanceOf(Float32Array);
+    expect(result[0]?.uniforms[0]).toBeCloseTo(0.5);
+  });
+
+  it('returns [] when runtime is null', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    expect(bridge.compilePostFxPasses(null, makeMockChain(), 800, 600)).toEqual([]);
+  });
+
+  it('returns [] when runtime.supported is false', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('p', [{ name: 'x', columns: 1, rows: 1 }], [1]);
+    const runtime: PostFxRuntimeLike = { supported: false, buildPass: () => [pass] };
+    expect(bridge.compilePostFxPasses(runtime, makeMockChain(), 800, 600)).toEqual([]);
+  });
+
+  it('returns [] when runtime.buildPass is undefined', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const runtime: PostFxRuntimeLike = { supported: true };
+    expect(bridge.compilePostFxPasses(runtime, makeMockChain(), 800, 600)).toEqual([]);
+  });
+
+  it('returns [] when chain is null and nothing is bound', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('p', [{ name: 'x', columns: 1, rows: 1 }], [1]);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    expect(bridge.compilePostFxPasses(runtime, null, 800, 600)).toEqual([]);
+  });
+
+  it('uses the bound runtime and chain when both args are null', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('p', [{ name: 'x', columns: 1, rows: 1 }], [1]);
+    const built = [pass];
+    const chain = makeMockChain();
+    const seenChains: unknown[] = [];
+    const runtime: PostFxRuntimeLike = {
+      supported: true,
+      buildPass: (ch) => {
+        seenChains.push(ch);
+        return built;
+      },
+    };
+    bridge.setPostFxBinding(runtime, chain);
+    const result = bridge.compilePostFxPasses(null, null, 800, 600);
+    expect(result).toBe(built);
+    expect(seenChains).toEqual([chain]);
+  });
+
+  it('forwards width/height to buildPass as given (physical pixels on web)', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(400, 600, 0, 2);
+    const buildPassArgs: [number, number][] = [];
+    const runtime: PostFxRuntimeLike = {
+      supported: true,
+      buildPass: (_ch, w, h) => {
+        buildPassArgs.push([w, h]);
+        return [];
+      },
+    };
+    bridge.compilePostFxPasses(runtime, makeMockChain(), 800, 1200);
+    expect(buildPassArgs).toEqual([[800, 1200]]);
+  });
+
+  it('buildPostFxPasses still derives its descriptors from the same compiled passes', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const pass = makePassWithUniforms('p', [{ name: 'x', columns: 1, rows: 1 }], [7]);
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => [pass] };
+    const compiled = bridge.compilePostFxPasses(runtime, makeMockChain(), 800, 600);
+    const [desc] = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    expect(desc?.source).toBe(compiled[0]?.shader);
+    expect((desc!.uniforms as Record<string, unknown>).x).toBe(7);
+  });
+});
+
 describe('createSkiaFrameRenderer — per-sprite rotation', () => {
   it('θ=0 top-left anchor: RSXform matches current non-rotation path', () => {
     // scale = dstW/srcW = 32/32 = 1; tx = dstX, ty = dstY

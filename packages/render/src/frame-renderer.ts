@@ -281,6 +281,9 @@ export interface FrameRenderer {
 // Internal constants
 // ---------------------------------------------------------------------------
 
+/** `SpriteDrawCommand.rotation` is radians; `DrawSurfaceLike.rotate` takes degrees. */
+const RAD_TO_DEG = 180 / Math.PI;
+
 const BLEND_SRC_OVER = 3;
 const BLEND_SRC_IN = 5;
 /** Skia BlendMode.SrcATop — r = s·da + d·(1−sa): keeps the art's alpha, lerps colour by the filter's alpha. */
@@ -891,6 +894,16 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
             const cx = cmd.dstX + cmd.dstW * 0.5;
             const cy = cmd.dstY + cmd.dstH * 0.5;
             current.save();
+            // Canvas ops apply to geometry in reverse call order: the rect is
+            // mirrored about its centre first, then turned about the anchor
+            // pivot — the same pivot the atlas path rotates about.
+            if (cmd.rotation !== 0) {
+              current.rotate(
+                cmd.rotation * RAD_TO_DEG,
+                cmd.dstX + cmd.anchorX * cmd.dstW,
+                cmd.dstY + cmd.anchorY * cmd.dstH,
+              );
+            }
             current.translate(cx, cy);
             current.scale(cmd.flipX ? -1 : 1, cmd.flipY ? -1 : 1);
             current.translate(-cx, -cy);

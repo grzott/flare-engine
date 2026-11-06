@@ -616,6 +616,25 @@ describe('TilemapRenderer — flipped GIDs draw mirrored', () => {
     expect(cmd.anchorY).toBe(0.5);
   });
 
+  test('a diagonal-only gid queues flipY plus a CW quarter turn about the tile centre', () => {
+    // D alone is a transpose: render draws it as flipY, then rotates 90° CW.
+    const cmd = at(6);
+    expect(cmd.flipX).toBe(false);
+    expect(cmd.flipY).toBe(true);
+    expect(cmd.rotation).toBe(QUARTER);
+    expect(cmd.anchorX).toBe(0.5);
+    expect(cmd.anchorY).toBe(0.5);
+  });
+
+  test('a D+H+V gid queues flipX plus a CW quarter turn about the tile centre', () => {
+    const cmd = at(7);
+    expect(cmd.flipX).toBe(true);
+    expect(cmd.flipY).toBe(false);
+    expect(cmd.rotation).toBe(QUARTER);
+    expect(cmd.anchorX).toBe(0.5);
+    expect(cmd.anchorY).toBe(0.5);
+  });
+
   test('every flip combination maps to the Tiled table and stays in its cell', () => {
     const captured = drawRow();
     expect(captured).toHaveLength(8);

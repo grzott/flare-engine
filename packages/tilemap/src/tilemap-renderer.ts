@@ -126,9 +126,6 @@ export class TilemapRenderer {
   // Tiled flip bits: H/V become the batch's flipX/flipY; the diagonal bit is a
   // quarter turn about the tile centre composed with the flip Tiled defines
   // (D+H = 90° CW, D+V = 90° CCW, D = flipY + CW, D+H+V = flipX + CW).
-  // @flare-engine/render's flip draw path ignores `rotation` (see
-  // SpriteDrawCommand.flipX), so D alone and D+H+V queue the right command
-  // but draw without the turn until render composes the two.
   private _drawTileLayer(
     layer: TileLayer,
     viewX: number,

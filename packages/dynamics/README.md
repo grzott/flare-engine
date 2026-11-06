@@ -53,6 +53,9 @@ scrub, reverse or replay at another speed is **baked once** into a `Timeline` an
 sampling. `record` takes a writer callback instead of a body array, so the timeline never has to know
 what it is recording; with an `until` predicate it bakes in one call, without one it records a single
 frame, which suits a time-budgeted loop that calls it once per tick.
+`stepUntil(world, dt, { budgetMs: 6, done: isSettled })` is that loop: it steps until `done()` returns
+true, `maxSteps` is reached or the budget is spent (always at least once), and reports
+`{ steps, complete }`; `stepUntilInto` is the zero-alloc form.
 
 ```ts
 import { createTimeline, createWorld, step } from '@flare-engine/dynamics';

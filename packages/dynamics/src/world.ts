@@ -25,10 +25,35 @@ export interface World {
   iterations: number;
 }
 
+export interface StepUntilOptions {
+  /** Time budget in ms, compared against `now()` after every step. */
+  budgetMs: number;
+  /** Step cap per call (integer >= 1). */
+  maxSteps?: number;
+  /** Polled after each step; `true` ends the call with `complete: true`. */
+  done?: () => boolean;
+  /** Clock in ms. Default `performance.now`, else `Date.now`; inject for deterministic tests. */
+  now?: () => number;
+}
+
+export interface StepUntilResult {
+  /** Steps taken by this call, always >= 1. */
+  steps: number;
+  /** `true` when `done()` ended the call; `false` for `maxSteps` or the budget. */
+  complete: boolean;
+}
+
 const BAUMGARTE = 0.2;
 const PENETRATION_SLOP = 0.5;
 
 const pools = new WeakMap<World, SolverPool>();
+
+function nowMs(): number {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
 
 export function createWorld(opts: WorldOptions = {}): World {
   const world: World = {
@@ -249,4 +274,51 @@ export function step(world: World, dt: number): void {
     body.position.y += body.velocity.y * dt;
     body.angle += body.angularVelocity * dt;
   }
+}
+
+/** Repeats `step(world, dt)` until, checked in this order after each step,
+ *  `done()` returns true (`complete: true`), `steps >= maxSteps`, or
+ *  `now() - start >= budgetMs` (both `complete: false`). Always takes at least
+ *  one step, so a zero budget still makes progress. Writes `out` and returns it;
+ *  the zero-alloc per-frame form of `stepUntil`. Throws `RangeError` for a
+ *  non-finite or non-positive `dt`, a negative or non-finite `budgetMs`, or a
+ *  `maxSteps` that is not an integer >= 1. */
+export function stepUntilInto(
+  world: World,
+  dt: number,
+  opts: StepUntilOptions,
+  out: StepUntilResult,
+): StepUntilResult {
+  if (!Number.isFinite(dt) || dt <= 0) {
+    throw new RangeError(`stepUntil: dt must be a finite number > 0, got ${dt}`);
+  }
+  const { budgetMs, maxSteps, done } = opts;
+  if (!Number.isFinite(budgetMs) || budgetMs < 0) {
+    throw new RangeError(`stepUntil: budgetMs must be a finite number >= 0, got ${budgetMs}`);
+  }
+  if (maxSteps !== undefined && (!Number.isInteger(maxSteps) || maxSteps < 1)) {
+    throw new RangeError(`stepUntil: maxSteps must be an integer >= 1, got ${maxSteps}`);
+  }
+  const now = opts.now ?? nowMs;
+  const start = now();
+  let steps = 0;
+  let complete = false;
+  for (;;) {
+    step(world, dt);
+    steps++;
+    if (done?.()) {
+      complete = true;
+      break;
+    }
+    if (maxSteps !== undefined && steps >= maxSteps) break;
+    if (now() - start >= budgetMs) break;
+  }
+  out.steps = steps;
+  out.complete = complete;
+  return out;
+}
+
+/** Allocating form of `stepUntilInto`; see it for the stop rules. */
+export function stepUntil(world: World, dt: number, opts: StepUntilOptions): StepUntilResult {
+  return stepUntilInto(world, dt, opts, { steps: 0, complete: false });
 }

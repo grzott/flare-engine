@@ -302,9 +302,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/scene": {
-      "ceiling": 15126,
-      "measured": 14064,
-      "measuredAt": "2026-09-08"
+      "ceiling": 17618,
+      "measured": 16016,
+      "measuredAt": "2026-11-06"
     },
     "@flare-engine/shapes": {
       "ceiling": 20696,
@@ -438,6 +438,10 @@
     {
       "date": "2026-11-05",
       "reason": "tilemap ceiling raised 38735 -> 43123 B (measured 39202 x1.1), authorized by the owner's approval of the PR closing issue #54. TilemapRenderer now passes layer.opacity as each tile's alpha and drawInto / draw take an optional third argument { effect, alphaScale } (exported TilemapDrawOptions), threaded positionally into SpriteBatch.drawRaw. main packed at or under 38735 B at the 584a1fb ci run, so this change adds at least 467 B gzipped: one documented interface in both .d.ts outputs, two widened signatures with their JSDoc, and the extra drawRaw arguments, shipped in CJS and ESM output and both source maps' sourcesContent. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-06",
+      "reason": "scene ceiling raised 15126 -> 17618 B (measured 16016 x1.1), authorized by the owner's approval of the PR closing issue #57. SceneManager.pop takes an optional ScenePopOptions { keep, data }: a kept scene gets onExit only and stays initialized for its next push, data is forwarded to the revealed scene's onEnter, and a private _destroyKept sweep is called from go (instant and animated), _activateScene and destroy so a kept scene off the stack is still destroyed. main packed at or under 15126 B at the ccf09e0 ci run, so this change adds at least 890 B gzipped: one documented interface in both .d.ts outputs, the widened pop signature with its JSDoc, the sweep helper with its rationale JSDoc and four call sites, shipped in CJS and ESM output and both source maps' sourcesContent. Added behaviour, not a regression."
     }
   ]
 }

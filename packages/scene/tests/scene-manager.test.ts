@@ -197,6 +197,35 @@ describe('SceneManager — stack', () => {
     expect(log).toContain('a:destroy');
   });
 
+  it('pop with {} or { keep: false } behaves like a plain pop', async () => {
+    for (const options of [{}, { keep: false }]) {
+      const log: string[] = [];
+      const mgr = new SceneManager();
+      mgr.register('a', createTestScene('a', log));
+      mgr.register('b', createTestScene('b', log));
+      await mgr.go('a');
+      await mgr.push('b');
+      log.length = 0;
+      mgr.pop(options);
+      expect(log).toEqual(['b:exit', 'b:destroy', 'a:enter']);
+      log.length = 0;
+      await mgr.push('b');
+      expect(log).toEqual(['a:exit', 'b:preload', 'b:init', 'b:enter']);
+    }
+  });
+
+  it('pop({ data }) delivers data to the revealed scene', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    log.length = 0;
+    mgr.pop({ data: 'resumed' });
+    expect(log).toEqual(['b:exit', 'b:destroy', 'a:enter:resumed']);
+  });
+
   it('push with {} or { overlay: false } behaves like a plain push', async () => {
     for (const options of [{}, { overlay: false }]) {
       const log: string[] = [];
@@ -214,6 +243,202 @@ describe('SceneManager — stack', () => {
       mgr.pop();
       expect(log).toEqual(['b:exit', 'b:destroy', 'a:enter']);
     }
+  });
+});
+
+describe('SceneManager — kept pop', () => {
+  it('pop({ keep: true }) logs exit without destroy and the next push enters only', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    log.length = 0;
+    mgr.pop({ keep: true });
+    expect(mgr.current?.name).toBe('a');
+    expect(mgr.stackSize).toBe(1);
+    expect(log).toEqual(['b:exit', 'a:enter']);
+    log.length = 0;
+    await mgr.push('b');
+    expect(mgr.current?.name).toBe('b');
+    expect(mgr.stackSize).toBe(2);
+    expect(log).toEqual(['a:exit', 'b:enter']);
+  });
+
+  it('a kept scene is the same instance on the next push', async () => {
+    const mgr = new SceneManager();
+    const instances: Scene[] = [];
+    mgr.register('a', createTestScene('a', []));
+    mgr.register('b', (world, camera) => {
+      const s = createTestScene('b', [])(world, camera);
+      instances.push(s);
+      return s;
+    });
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    await mgr.push('b');
+    expect(instances.length).toBe(1);
+    expect(mgr.current).toBe(instances[0]);
+  });
+
+  it('pop({ keep: true, data }) delivers data to the revealed scene', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    log.length = 0;
+    mgr.pop({ keep: true, data: 'closed' });
+    expect(log).toEqual(['b:exit', 'a:enter:closed']);
+  });
+
+  it('keeping a popped overlay logs exit only and no re-enter below', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b', undefined, { overlay: true });
+    log.length = 0;
+    mgr.pop({ keep: true, data: 'dropped' });
+    expect(log).toEqual(['b:exit']);
+    log.length = 0;
+    await mgr.push('b', undefined, { overlay: true });
+    expect(log).toEqual(['b:enter']);
+  });
+
+  it('a kept scene is neither updated nor drawn while off the stack', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    log.length = 0;
+    mgr.update(1);
+    expect(log).toEqual(['a:update:1', 'a:draw']);
+  });
+
+  it('go() after a kept pop destroys the kept instance', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    log.length = 0;
+    await mgr.go('c');
+    expect(log).toEqual(['a:exit', 'a:destroy', 'b:destroy', 'c:preload', 'c:init', 'c:enter']);
+    log.length = 0;
+    await mgr.push('b');
+    expect(log).toEqual(['c:exit', 'b:preload', 'b:init', 'b:enter']);
+  });
+
+  it('go() to the kept scene itself restarts it from a fresh instance', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    const instances: Scene[] = [];
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', (world, camera) => {
+      const s = createTestScene('b', log)(world, camera);
+      instances.push(s);
+      return s;
+    });
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    log.length = 0;
+    await mgr.go('b');
+    expect(log).toEqual(['a:exit', 'a:destroy', 'b:destroy', 'b:preload', 'b:init', 'b:enter']);
+    expect(instances.length).toBe(2);
+    expect(mgr.current).toBe(instances[1]);
+  });
+
+  it('an animated go() after a kept pop destroys the kept instance when the out phase ends', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    log.length = 0;
+    void mgr.go('c');
+    expect(log).toEqual(['c:preload']);
+    mgr.update(1.0); // 'out' done → switch to c, then the tick drives c
+    expect(log).toEqual([
+      'c:preload',
+      'a:exit',
+      'a:destroy',
+      'b:destroy',
+      'c:init',
+      'c:enter',
+      'c:update:1',
+      'c:draw',
+    ]);
+    mgr.update(1.0); // 'in' done
+    log.length = 0;
+    await mgr.push('b');
+    expect(log).toEqual(['c:exit', 'b:preload', 'b:init', 'b:enter']);
+  });
+
+  it('an animated go() to the kept scene itself restarts it from a fresh instance', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    const instances: Scene[] = [];
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', (world, camera) => {
+      const s = createTestScene('b', log)(world, camera);
+      instances.push(s);
+      return s;
+    });
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    log.length = 0;
+    void mgr.go('b');
+    mgr.update(1.0); // 'out' done → switch, then the tick drives the new b
+    expect(log).toEqual([
+      'b:preload',
+      'a:exit',
+      'a:destroy',
+      'b:destroy',
+      'b:init',
+      'b:enter',
+      'b:update:1',
+      'b:draw',
+    ]);
+    mgr.update(1.0); // 'in' done
+    expect(instances.length).toBe(2);
+    expect(mgr.current).toBe(instances[1]);
+    log.length = 0;
+    await mgr.push('b');
+    expect(log).toEqual(['b:exit', 'b:enter']);
+  });
+
+  it('destroy() destroys a kept instance and the next go re-inits it', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    mgr.pop({ keep: true });
+    log.length = 0;
+    mgr.destroy();
+    expect(log).toEqual(['a:exit', 'a:destroy', 'b:destroy']);
+    log.length = 0;
+    await mgr.go('b');
+    expect(log).toEqual(['b:preload', 'b:init', 'b:enter']);
   });
 });
 

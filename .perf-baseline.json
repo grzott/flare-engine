@@ -297,9 +297,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/render-web": {
-      "ceiling": 40947,
-      "measured": 39145,
-      "measuredAt": "2026-09-08"
+      "ceiling": 47268,
+      "measured": 42971,
+      "measuredAt": "2026-11-06"
     },
     "@flare-engine/scene": {
       "ceiling": 17618,
@@ -454,6 +454,10 @@
     {
       "date": "2026-11-06",
       "reason": "shapes ceiling raised 20696 -> 34034 B (measured 30940 x1.1), authorized by the owner's approval of the PR closing issue #149. bounds.ts gains shapeBoundsBox / shapeBoundsBoxInto (exported ShapeBoundsBox): per-axis extents per kind with the same +2 / stroke / glow margins as shapeBoundsRadius, an in-place ship walk and a radial fallback for rotated specs. main packs at 20494 B: the published 0.4.8 tarball, and no shapes commit has landed since the 0.4.8 release commit 55aaf28. So the tarball grows 10446 B, but each file gzipped on its own grows only 6248 B (33360 -> 39608) and dist/index.mjs gzipped grows 937 B (3397 -> 4334). The other ~4.2 KB is lost cross-file compression: at 0.4.8 the tarball was 12.9 KB smaller than its files gzipped separately, now only 8.7 KB, because the grown files push repeated text beyond deflate's 32 KB back-reference window. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-06",
+      "reason": "render-web ceiling raised 40947 -> 47268 B (measured 42971 x1.1), authorized by the owner's approval of the PR closing issue #235. createWebSkiaModule pre-creates two CanvasKit FilterOptions; its drawAtlas wrapper passes one as CanvasKit's sampling argument when the frame renderer hands it a SamplingOptionsLike, and a new drawImageRectOptions maps the numeric FilterMode/MipmapMode onto CanvasKit's enums. main packs at 40683 B, only 264 B under the old ceiling: the published 0.4.8 tarball, and no render-web commit has landed since the 0.4.8 release commit 55aaf28. So this change adds 2288 B gzipped (each file gzipped alone +2229 B): +1201 B raw (+346 B gzipped) in each of dist/index.js and index.mjs, +2369 B in each source map and +243 B in each .d.ts. Added behaviour, not a regression."
     }
   ]
 }

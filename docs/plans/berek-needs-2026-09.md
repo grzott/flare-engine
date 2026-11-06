@@ -46,6 +46,9 @@ architecture by section. Nothing here comes from Berek's private `_local/` notes
   look-target screen has measured numbers. The notes it sent now are review notes in
   [lighting-2-5d.md](../design/lighting-2-5d.md).
 
+**Revised 2026-11-06 from Berek's H1 answers (`M-05`, `H1-05`).** §9 Q4 and Q5 are answered, and §4.1
+and §7 no longer wait on `M-05`. §1, §3.1–§3.3, §7 and §8 record the `0.4.8` release.
+
 ---
 
 ## 1. The loop, in engine terms
@@ -59,7 +62,7 @@ architecture by section. Nothing here comes from Berek's private `_local/` notes
 | 18 | Upgrade Berek's body, spend resources | upgrade curve, price, buy | **covered** — `createUpgradeTrack`, `resolveStats` |
 | 18 | Tech / unlock progression | prerequisite DAG, frontier | **covered** — `createUnlockDag` |
 | 19–20 | Day ⇄ night cycle | a persisted game clock: a rate per segment of the day, steps in a fight, jumps on a sleep (`S3-05`, `S9-06`) | **absent** (§4.1) |
-| 19–20 | Night looks different | global ambient grade over tiles *and* sprites | **fixed on `main`, unreleased**: §3.1 (#54) and §3.3 (#53) merged; #53 still awaits the owner's device check |
+| 19–20 | Night looks different | global ambient grade over tiles *and* sprites | **fixed in `0.4.8`**: §3.1 (#54) and §3.3 (#53); #53 still awaits the owner's device check |
 | 19–20 | Night is harder / richer | spawn rate, enemy tier, drop weighting by phase | **covered as primitives** — `resolveTier`, `DropTable.rollInto` with pity |
 | 21 | Activity choice, no forced path | scene routing | **covered** — `SceneManager.go/push/pop` |
 | 21 | Zelda-like open world | one finite map per realm with a second-world layer, explicit transitions between realms (`S3-01`) | **covered** — the single-map path, with `extractColliders(map, layerName)` giving each layer its own grid (§4.5) |
@@ -71,7 +74,7 @@ architecture by section. Nothing here comes from Berek's private `_local/` notes
 | 25 | New expedition types unlock over time | DAG frontier | **covered** — `UnlockDag.frontier` |
 | 26 | Small loop: explore → risk → return | tile movement, wall slide, encounters | **covered** — `buildSolidGrid`, `moveAndSlideInto`, `isBlockedAABB` |
 | 26 | 2.5D: billboarded actors over a tilemap | y-sorted single-flush draw | **covered, with a caveat** — `sortByDrawOrder` + `drawInto`; rotated tiles draw unrotated (§3.2, §5.1) |
-| `S2-10` | Fights: taps and swipes timed at touch-down, calibrated per device | a press stamped when the finger lands, the gesture recognised afterwards | **partial** — `GestureRecognizer` recognises after release and stamps no touch-down time; engine or game work is open (§9 Q5) |
+| `S2-10` | Fights: taps and swipes timed at touch-down, calibrated per device | a press stamped when the finger lands, the gesture recognised afterwards | **partial** — `GestureRecognizer` recognises after release and stamps no touch-down time; Berek builds it first, then it moves into `input` (`M-05`, §9 Q5) |
 | `S9-03` | A hit's sound ahead of the hit, earlier still for wireless headphones | a sound started at a scheduled time | **absent** (§4.7) |
 | `S9-10` | Simulators and a determinism test | seeded randomness, injectable rolls, a fixed step | **covered** (§2) |
 | 27 | Return to base, convert resources | none — pure game state | **consumer-owned** |
@@ -156,7 +159,7 @@ those nine arguments. The tilemap passes none of them. Two consequences, one sma
 optional `effect` and an `alphaScale`, and pass `layer.opacity` through as `alpha` by default. A
 bounded addition to exactly one package; the existing two-argument call keeps working.
 
-**Status 2026-11-05:** fixed on `main` by #54 (PR #199) and not yet released.
+**Status 2026-11-05:** fixed on `main` by #54 (PR #199). Released in `0.4.8` (2026-11-05).
 
 ### 3.2 GID flip flags are decoded and then undrawable
 
@@ -174,7 +177,7 @@ will render mirror-wrong with no error.
 **Ask:** none new — this is the `flipX`/`flipY` bullet already inside `OSS-M10`. See §5.1 for the two
 things Berek changes about that row.
 
-**Status 2026-11-05:** fixed on `main` by #55 (PR #200) and not yet released, with one exception.
+**Status 2026-11-05:** fixed on `main` by #55 (PR #200), with one exception. Released in `0.4.8`.
 Two of the eight flip-bit combinations, the diagonal bit alone and all three bits, need both a flip
 and a quarter turn. `render`'s flip draw path ignores `rotation`, so those tiles draw mirrored but
 unrotated. Tiled sets the diagonal bit whenever an artist rotates a tile. Filed as #207.
@@ -203,10 +206,10 @@ not gated on T3's larger enum work.
 
 **Ask:** bind `pass.children` on the native `RuntimeShader`. One line, and it should not wait for T3.
 
-**Status 2026-11-05:** fixed on `main` by #53 (`971029bf`) and not yet released. The cause was
-RN-Skia's single-child `<RuntimeShader>` filter, not a missing prop, so the fix is a nested
-`<Shader>` chain rather than one line. Its changeset is in the pending `0.4.8` patch. The owner's
-device check, that a LUT chain grades on Android, is still open.
+**Status 2026-11-05:** fixed on `main` by #53 (`971029bf`). The cause was RN-Skia's single-child
+`<RuntimeShader>` filter, not a missing prop, so the fix is a nested `<Shader>` chain rather than one
+line. Released in `0.4.8`. The owner's device check, that a LUT chain grades on Android, is still
+open.
 
 ### 3.4 The scene stack cannot draw the scene beneath it
 
@@ -317,12 +320,11 @@ The engine piece is still small and shared:
 What must **not** come with it is any of Berek's content. Rates, band lengths, the round's cost, spawn
 tables, enemy tiers, difficulty curves and night-only gating are all game design (§6).
 
-**Where Berek stands.** Berek's architecture §6 keeps its clock game-owned, in one module, and leaves
-open whether it moves to the engine once its shape is proven. Whether an engine gap is built
-engine-first or game-first is Berek's open `M-05`.
+**Where Berek stands (`M-05`, settled 2026-11-05).** The clock is built in Berek first, and moves
+into `progression` once it is proven.
 
-**Ask:** consider a `createGameClock(config)`, filed as #202. That issue recommends `progression` as
-its home (§9 Q1) and waits for the owner to choose engine-first. **If declined:** say so, because
+**Ask:** consider a `createGameClock(config)`, filed as #202. #202 stays open as the target of that
+move; it no longer waits for an engine-first call. **If declined:** say so, because
 every consumer with a cycle will otherwise write the same sixty lines, and each will disagree about
 what the clock does while the app is backgrounded.
 
@@ -530,7 +532,7 @@ Re-ranked 2026-11-05 against Berek's settled design. Each live item has exactly 
 
 | # | Item | Value here | Value to other consumers | Effort | Issue |
 |---|---|---|---|---|---|
-| 1 | **Day/night clock** (§4.1) | high — the loop's unit of time; Berek builds it in-game until `M-05` is settled | medium | S–M | #202 |
+| 1 | **Day/night clock** (§4.1) | high — the loop's unit of time; built in Berek first, moving into `progression` once proven (`M-05`) | medium | S–M | #202 |
 | 2 | **Scheduled SFX start** (§4.7) | medium — every fight cue | medium — any timing-driven game | XS | #205 |
 | 3 | **Flip with rotation** (§3.2's remainder) | medium — rotated tiles draw unrotated, silently | medium | S | #207 |
 | 4 | **Animated tiles** (§4.4) | medium — a hand-authored world expects them | medium | M | #204 |
@@ -539,12 +541,12 @@ Re-ranked 2026-11-05 against Berek's settled design. Each live item has exactly 
 | 7 | **`pop()` keeps the instance; `onEnter(data)`** (§3.5) | low — Berek's scenes switch with `go` | medium | S | #57, #179 |
 | 8 | **Out-of-bounds option on `SolidGrid`** (§3.6) | low — explicit transitions need no open edge | low | XS | #58 |
 
-**Landed on `main`, unreleased:** §3.3 (#53), §3.1 (#54) and §3.2 (#55, except #207). All three ship
-in the next `0.4.x` patch. **Retired:** §4.2 (wall-clock effects) and §4.5's T7 streaming and `.world`
+**Released in `0.4.8` (2026-11-05):** §3.3 (#53), §3.1 (#54) and §3.2 (#55, except #207).
+**Retired:** §4.2 (wall-clock effects) and §4.5's T7 streaming and `.world`
 ask.
 
 **Nothing here blocks Berek today.** Its design is settled and its build has not started. It has been
-on `^0.4.0` since 2026-11-05 (road-to-oss §10 `BK1`), so the landed rows reach it with the next patch.
+on `^0.4.0` since 2026-11-05 (road-to-oss §10 `BK1`), so its next install resolves `0.4.8`.
 
 ---
 
@@ -572,8 +574,8 @@ landed (#54, #55), so they are due for exactly that check.
 - **Passed.** The first three bullets above: the map draws, walls and water stop the player,
   movement slides along them, and `GameView` runs on a second app with no JS errors.
 - **Not reported.** Whether the joystick and button pair was exercised on a move-and-attack scheme.
-- **Still owed.** `0.4.7` predates #54 and #55, so §3.1 and §3.2's check waits for the release that
-  carries them. A run on the reference phone is still to come.
+- **Still owed.** `0.4.7` predates #54 and #55. `0.4.8` carries them, so §3.1 and §3.2's check is
+  due on it. A run on the reference phone is still to come.
 
 ---
 
@@ -584,7 +586,7 @@ landed (#54, #55), so they are due for exactly that check.
    package call before anyone writes it, per the one-package constraint. *(2026-11-05: #202
    recommends `progression`. That package holds the primitives that read a clock, depends only on
    `math`, and sits outside every bench lane, while a `core` edit stales them all. The owner confirms
-   when approving.)*
+   when approving. 2026-11-06: Berek's `M-05` names `progression` as where the clock moves, §4.1.)*
 2. **Is `.world` in scope for T7, or a row of its own?** It is an authoring-format question as much as
    a loader question, and Tiled 1.12.x is already fixed as the primary format. *(Moot 2026-11-05:
    §4.5.)*
@@ -594,7 +596,10 @@ landed (#54, #55), so they are due for exactly that check.
 4. **Scaffolder drift, noticed while verifying the floor.** Berek and Pan-Tvardowski both run Expo ~55
    / RN 0.83.x, while ADR-0002 §Consumer impact records the `create-flare-app` templates at Expo 57 /
    RN 0.86. Not a floor violation — both apps set New Arch explicitly — but the drift between what the
-   scaffolder pins and what both real consumers run is unrecorded anywhere.
+   scaffolder pins and what both real consumers run is unrecorded anywhere. *(Answered 2026-11-06
+   by Berek's `H1-05`: record and hold. Berek follows the ADR-0002 peer floor, not the scaffolder
+   templates, and holds at Expo 55 with Pan-Tvardowski. It moves to the templates' stack in the first
+   build row its plan session files. No engine change.)*
 5. **Is Berek's timed input engine or game work?** *(Added 2026-11-05. A question, not a
    commitment, so nothing is filed.)*
    - **What Berek needs.** `S2-10` stamps a press when the finger lands and recognises the gesture
@@ -604,5 +609,5 @@ landed (#54, #55), so they are due for exactly that check.
      at release from an elapsed time. `pointerDown(x, y)` (`:78`) takes no timestamp, and the tap and
      swipe it emits (`:117`, `:123`) carry no touch-down time. A consumer today stamps the press
      itself from the native touch event.
-   - **Who decides.** Whether the engine should carry a touch-down timestamp and a calibration offset
-     is Berek's open `M-05`. Berek's architecture §6 lists it as open and blocking.
+   - **Answered 2026-11-06 by Berek's `M-05`.** Berek builds it first, on the engine's exports, as its
+     own module, and moves it into `@flare-engine/input` after its timing lab.

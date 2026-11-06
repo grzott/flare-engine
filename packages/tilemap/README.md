@@ -39,6 +39,22 @@ const colliders = extractColliders(data);
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginetilemap--8kb-gzip).
 
+## Animated tiles
+
+Tiled per-tile animations are parsed onto `TilesetRef.animations` (local tile id → `TileAnimation` with `frames`, cumulative `ends` in seconds and `duration`). They play when you pass `time` in seconds — e.g. your clock's elapsed — in the `drawInto` / `draw` opts; without it every tile draws as authored. LDtk has no tile animation. Colliders and `getTileAt` always see the authored tile.
+
+```ts
+import type { Camera2D, SpriteBatch } from '@flare-engine/render';
+import type { TilemapRenderer } from '@flare-engine/tilemap';
+
+declare const renderer: TilemapRenderer;
+declare const camera: Camera2D;
+declare const batch: SpriteBatch;
+declare const elapsed: number; // seconds since the scene started, advanced by your game clock
+
+renderer.drawInto(camera, batch, { time: elapsed });
+```
+
 ## License
 
 Apache-2.0

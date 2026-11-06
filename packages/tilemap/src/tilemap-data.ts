@@ -100,6 +100,19 @@ export interface ObjectLayer {
 /** Union of layer types. */
 export type MapLayer = TileLayer | ObjectLayer;
 
+/**
+ * A Tiled per-tile animation, parsed into flat per-frame arrays so a renderer
+ * can resolve the current frame without allocating.
+ */
+export interface TileAnimation {
+  /** Local tile id of each frame, in order. */
+  frames: Uint32Array;
+  /** Cumulative end time of each frame, in seconds (frame i covers [ends[i-1], ends[i])). */
+  ends: Float64Array;
+  /** Total cycle length, seconds. */
+  duration: number;
+}
+
 /** Information about a tileset used in the map. */
 export interface TilesetRef {
   /** First GID in this tileset. */
@@ -124,6 +137,8 @@ export interface TilesetRef {
   tileProperties: Map<number, Record<string, unknown>>;
   /** Tile IDs marked as solid/collision. */
   solidTiles: Set<number>;
+  /** Tiled per-tile animations keyed by local tile id; absent when no tile is animated. */
+  animations?: Map<number, TileAnimation>;
 }
 
 /** Complete parsed tilemap data — format-independent. */

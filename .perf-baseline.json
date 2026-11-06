@@ -332,9 +332,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/tilemap": {
-      "ceiling": 43123,
-      "measured": 39202,
-      "measuredAt": "2026-11-05"
+      "ceiling": 51095,
+      "measured": 46450,
+      "measuredAt": "2026-11-06"
     },
     "@flare-engine/ui": {
       "ceiling": 52631,
@@ -442,6 +442,10 @@
     {
       "date": "2026-11-06",
       "reason": "scene ceiling raised 15126 -> 17618 B (measured 16016 x1.1), authorized by the owner's approval of the PR closing issue #57. SceneManager.pop takes an optional ScenePopOptions { keep, data }: a kept scene gets onExit only and stays initialized for its next push, data is forwarded to the revealed scene's onEnter, and a private _destroyKept sweep is called from go (instant and animated), _activateScene and destroy so a kept scene off the stack is still destroyed. main packed at or under 15126 B at the ccf09e0 ci run, so this change adds at least 890 B gzipped: one documented interface in both .d.ts outputs, the widened pop signature with its JSDoc, the sweep helper with its rationale JSDoc and four call sites, shipped in CJS and ESM output and both source maps' sourcesContent. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-06",
+      "reason": "tilemap ceiling raised 43123 -> 51095 B (measured 46450 x1.1), authorized by the owner's approval of the PR closing issue #204. parseTiled now reads Tiled per-tile animations onto an optional TilesetRef.animations (exported TileAnimation: Uint32Array frames, Float64Array cumulative ends, duration) with two validation errors, and TilemapDrawOptions gains time, which picks each animated tile's frame through a module-level lookup in the tile loop. main packs at 40553 B: the published 0.4.8 tarball, and no tilemap commit has landed since the 0.4.8 release commit 55aaf28. So this change adds 5897 B gzipped (unpacked +17473 B): +2.2 KB in each of dist/index.js and index.mjs and +5.4 KB in each source map, plus one documented interface and two widened ones in both .d.ts outputs and an Animated tiles README section. Added behaviour, not a regression."
     }
   ]
 }

@@ -4,6 +4,7 @@ import type {
   AudioContextLike,
   GainNodeLike,
 } from './audio-manager.js';
+import { setSourceEndHandler } from './audio-manager.js';
 
 /**
  * Music player — one track at a time, with crossfade support.
@@ -55,14 +56,14 @@ export class Music {
     this.currentGain = gain;
     this.currentName = name;
 
-    source.onended = () => {
+    setSourceEndHandler(source, () => {
       if (this.currentSource === source) {
         this.currentSource = null;
         this.currentGain = null;
         this.currentName = null;
       }
       gain.disconnect();
-    };
+    });
   }
 
   /** Stop the current track. */
@@ -111,14 +112,14 @@ export class Music {
     this.currentGain = gain;
     this.currentName = name;
 
-    source.onended = () => {
+    setSourceEndHandler(source, () => {
       if (this.currentSource === source) {
         this.currentSource = null;
         this.currentGain = null;
         this.currentName = null;
       }
       gain.disconnect();
-    };
+    });
   }
 
   private stopInternal(): void {

@@ -11,13 +11,20 @@ export interface ScenePushOptions {
   overlay?: boolean;
 }
 
+export interface ScenePopOptions {
+  /** Keep the popped scene initialized: it gets `onExit` only, and the next `push` of its name goes straight to `onEnter`. */
+  keep?: boolean;
+  /** Forwarded to the revealed scene's `onEnter` (dropped when the popped scene was an overlay). */
+  data?: unknown;
+}
+
 /**
  * SceneManager — manages scene registration, navigation, and a scene stack.
  *
  * - `register(name, factory)` — register a scene factory
  * - `go(name, data?)` — switch to a scene (clears the stack)
  * - `push(name, data?, options?)` — push a scene onto the stack (pauses current unless `options.overlay`)
- * - `pop()` — pop the top scene and resume the one below
+ * - `pop(options?)` — pop the top scene and resume the one below (destroys it unless `options.keep`)
  * - `update(dt)` — update the live scenes (bottom-up) and any active transition
  */
 export class SceneManager {
@@ -27,6 +34,8 @@ export class SceneManager {
   private _stack: Scene[] = [];
   /** Parallel to `_stack`: whether the scene at that index was pushed as an overlay. */
   private _overlay: boolean[] = [];
+  /** Scenes popped with `keep: true`: initialized and cached, but off the stack until pushed again. */
+  private _kept = new Set<Scene>();
   private _transition: Transition = noneTransition();
   private _transitionState: TransitionState | null = null;
   private _pendingScene: Scene | null = null;
@@ -132,26 +141,33 @@ export class SceneManager {
     const overlay = options?.overlay === true;
     if (!overlay) this.current?.onExit?.();
     await this._initIfNeeded(scene);
+    this._kept.delete(scene);
     this._stack.push(scene);
     this._overlay.push(overlay);
     scene.onEnter?.(data);
   }
 
   /**
-   * Pop the top scene. Calls onExit + onDestroy on it, and onEnter on the one
-   * below unless the popped scene was pushed as an overlay.
+   * Pop the top scene. Calls onExit on it, then onDestroy unless
+   * `options.keep` is true — a kept scene stays initialized so the next `push`
+   * of its name goes straight to onEnter. The scene below gets
+   * onEnter(options.data) unless the popped scene was pushed as an overlay.
    */
-  pop(): void {
+  pop(options?: ScenePopOptions): void {
     if (this._stack.length <= 1) return;
 
     const top = this._stack.pop()!;
     const wasOverlay = this._overlay.pop() === true;
     top.onExit?.();
-    top.onDestroy?.();
-    this._scenes.delete(top.name);
-    this._initialized.delete(top.name);
+    if (options?.keep === true) {
+      this._kept.add(top);
+    } else {
+      top.onDestroy?.();
+      this._scenes.delete(top.name);
+      this._initialized.delete(top.name);
+    }
 
-    if (!wasOverlay) this.current?.onEnter?.();
+    if (!wasOverlay) this.current?.onEnter?.(options?.data);
   }
 
   /** Update the live scenes (bottom-up, overlays last) and any active transition. */
@@ -173,6 +189,7 @@ export class SceneManager {
     }
     this._stack.length = 0;
     this._overlay.length = 0;
+    this._destroyKept();
     this._scenes.clear();
     this._initialized.clear();
     this._transitionState = null;
@@ -220,6 +237,7 @@ export class SceneManager {
     }
     this._stack.length = 0;
     this._overlay.length = 0;
+    this._destroyKept();
 
     await this._initIfNeeded(scene);
     this._stack.push(scene);
@@ -237,6 +255,24 @@ export class SceneManager {
     }
     this._stack.length = 0;
     this._overlay.length = 0;
+    this._destroyKept();
+  }
+
+  /**
+   * Destroy scenes popped with `keep: true` that were never pushed again. They
+   * already got `onExit` on the pop. The cache entry is dropped only when it is
+   * still this instance — an animated `go()` to the same name has already
+   * replaced it with the pending scene.
+   */
+  private _destroyKept(): void {
+    for (const s of this._kept) {
+      s.onDestroy?.();
+      if (this._scenes.get(s.name) === s) {
+        this._scenes.delete(s.name);
+        this._initialized.delete(s.name);
+      }
+    }
+    this._kept.clear();
   }
 
   private _finishOutPhase(): void {
@@ -257,6 +293,7 @@ export class SceneManager {
       }
       this._stack.length = 0;
       this._overlay.length = 0;
+      this._destroyKept();
 
       // Preload already ran in go(); call onInit then enter.
       this._scenes.set(pending.name, pending);

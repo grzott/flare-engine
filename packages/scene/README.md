@@ -1,6 +1,6 @@
 # @flare-engine/scene
 
-Scene lifecycle + transitions — `SceneManager` with `register` / `go(name, data?)` / `push` / `pop`, `Scene` interface (`onPreload` / `onInit` / `onEnter` / `onUpdate` / `onDraw` / `onExit` / `onDestroy`), and three transition factories (`noneTransition`, `fadeTransition`, `slideTransition`).
+Scene lifecycle + transitions — `SceneManager` with `register` / `go(name, data?)` / `push(name, data?, { overlay? })` / `pop` (an overlay keeps the scene below live, drawn beneath it), `Scene` interface (`onPreload` / `onInit` / `onEnter` / `onUpdate` / `onDraw` / `onExit` / `onDestroy`), and three transition factories (`noneTransition`, `fadeTransition`, `slideTransition`).
 
 ## Install
 

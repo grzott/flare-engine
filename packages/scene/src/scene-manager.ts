@@ -6,20 +6,27 @@ import { noneTransition } from './transition.js';
 
 declare const __DEV__: boolean | undefined;
 
+export interface ScenePushOptions {
+  /** Keep the scene below live: it is updated and drawn first, gets no `onExit` on push and no `onEnter` on the matching `pop()`. */
+  overlay?: boolean;
+}
+
 /**
  * SceneManager — manages scene registration, navigation, and a scene stack.
  *
  * - `register(name, factory)` — register a scene factory
  * - `go(name, data?)` — switch to a scene (clears the stack)
- * - `push(name, data?)` — push a scene onto the stack (pauses current)
+ * - `push(name, data?, options?)` — push a scene onto the stack (pauses current unless `options.overlay`)
  * - `pop()` — pop the top scene and resume the one below
- * - `update(dt)` — update the active scene and any active transition
+ * - `update(dt)` — update the live scenes (bottom-up) and any active transition
  */
 export class SceneManager {
   private _factories = new Map<string, SceneFactory>();
   private _scenes = new Map<string, Scene>();
   private _initialized = new Set<string>();
   private _stack: Scene[] = [];
+  /** Parallel to `_stack`: whether the scene at that index was pushed as an overlay. */
+  private _overlay: boolean[] = [];
   private _transition: Transition = noneTransition();
   private _transitionState: TransitionState | null = null;
   private _pendingScene: Scene | null = null;
@@ -114,44 +121,47 @@ export class SceneManager {
   }
 
   /**
-   * Push a scene onto the stack. The current scene gets onExit.
-   * The new scene gets onPreload → onInit → onEnter.
+   * Push a scene onto the stack. The current scene gets onExit, unless
+   * `options.overlay` is true — then it stays live and is updated and drawn
+   * before the pushed scene. The new scene gets onPreload → onInit → onEnter.
    */
-  async push(name: string, data?: unknown): Promise<void> {
+  async push(name: string, data?: unknown, options?: ScenePushOptions): Promise<void> {
     const scene = this._getOrCreate(name);
     if (!scene) return;
 
-    this.current?.onExit?.();
+    const overlay = options?.overlay === true;
+    if (!overlay) this.current?.onExit?.();
     await this._initIfNeeded(scene);
     this._stack.push(scene);
+    this._overlay.push(overlay);
     scene.onEnter?.(data);
   }
 
-  /** Pop the top scene. Calls onExit + onDestroy on it, onEnter on the one below. */
+  /**
+   * Pop the top scene. Calls onExit + onDestroy on it, and onEnter on the one
+   * below unless the popped scene was pushed as an overlay.
+   */
   pop(): void {
     if (this._stack.length <= 1) return;
 
     const top = this._stack.pop()!;
+    const wasOverlay = this._overlay.pop() === true;
     top.onExit?.();
     top.onDestroy?.();
     this._scenes.delete(top.name);
     this._initialized.delete(top.name);
 
-    this.current?.onEnter?.();
+    if (!wasOverlay) this.current?.onEnter?.();
   }
 
-  /** Update the active scene and any active transition. */
+  /** Update the live scenes (bottom-up, overlays last) and any active transition. */
   update(dt: number): void {
     if (this._transitionState) {
       this._updateTransition(dt);
       return;
     }
 
-    const scene = this.current;
-    if (scene) {
-      scene.onUpdate?.(dt);
-      scene.onDraw?.();
-    }
+    this._updateStack(dt);
   }
 
   /** Destroy all scenes and clear state. */
@@ -162,6 +172,7 @@ export class SceneManager {
       scene.onDestroy?.();
     }
     this._stack.length = 0;
+    this._overlay.length = 0;
     this._scenes.clear();
     this._initialized.clear();
     this._transitionState = null;
@@ -208,9 +219,11 @@ export class SceneManager {
       this._initialized.delete(s.name);
     }
     this._stack.length = 0;
+    this._overlay.length = 0;
 
     await this._initIfNeeded(scene);
     this._stack.push(scene);
+    this._overlay.push(false);
     scene.onEnter?.(data);
   }
 
@@ -223,6 +236,7 @@ export class SceneManager {
       this._initialized.delete(s.name);
     }
     this._stack.length = 0;
+    this._overlay.length = 0;
   }
 
   private _finishOutPhase(): void {
@@ -242,16 +256,31 @@ export class SceneManager {
         this._initialized.delete(s.name);
       }
       this._stack.length = 0;
+      this._overlay.length = 0;
 
       // Preload already ran in go(); call onInit then enter.
       this._scenes.set(pending.name, pending);
       this._initialized.add(pending.name);
       pending.onInit?.();
       this._stack.push(pending);
+      this._overlay.push(false);
       pending.onEnter?.(data);
     }
 
     this._transitionState = this._transition.start('in');
+  }
+
+  /** Update then draw each live scene bottom-up: from the lowest scene not under an overlay to the top. */
+  private _updateStack(dt: number): void {
+    const stack = this._stack;
+    let from = stack.length - 1;
+    if (from < 0) return;
+    while (from > 0 && this._overlay[from]) from--;
+    for (let i = from; i < stack.length; i++) {
+      const scene = stack[i]!;
+      scene.onUpdate?.(dt);
+      scene.onDraw?.();
+    }
   }
 
   private _updateTransition(dt: number): void {
@@ -263,8 +292,7 @@ export class SceneManager {
       if (this._transitionState.phase === 'out') {
         // Hold until preload (started concurrently in go()) resolves.
         if (!this._preloadResolved) {
-          this.current?.onUpdate?.(dt);
-          this.current?.onDraw?.();
+          this._updateStack(dt);
           return;
         }
 
@@ -275,8 +303,7 @@ export class SceneManager {
       }
     }
 
-    // Still update the current scene during transition
-    this.current?.onUpdate?.(dt);
-    this.current?.onDraw?.();
+    // Still update the live scenes during transition
+    this._updateStack(dt);
   }
 }

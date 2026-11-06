@@ -188,6 +188,29 @@ describe('installGlobalErrorCapture — React Native target', () => {
 
     expect(errorUtils.current).toBe(prior);
   });
+
+  test('uninstall detaches the handler when no previous handler existed', () => {
+    // With nothing to restore, the installed closure used to stay live and
+    // keep reporting to a transport the consumer believed was detached.
+    const errorUtils = fakeErrorUtils();
+    const transport = recorder();
+    const capture = installGlobalErrorCapture({ ErrorUtils: errorUtils }, { transport });
+
+    capture.uninstall();
+    errorUtils.throwFatal(new Error('after uninstall'));
+
+    expect(transport.seen.length).toBe(0);
+  });
+
+  test('uninstall with no transport and no previous handler stops buffering', () => {
+    const errorUtils = fakeErrorUtils();
+    const capture = installGlobalErrorCapture({ ErrorUtils: errorUtils });
+
+    capture.uninstall();
+    errorUtils.throwFatal(new Error('after uninstall'));
+
+    expect(capture.buffered).toBe(0);
+  });
 });
 
 describe('installGlobalErrorCapture — early-error buffer', () => {

@@ -129,6 +129,12 @@ export function installGlobalErrorCapture(
   const previousHandler = errorUtils?.getGlobalHandler?.();
   if (errorUtils !== undefined) {
     errorUtils.setGlobalHandler((error: unknown, isFatal?: boolean) => {
+      // Something may have re-captured a reference to this closure; after
+      // uninstall it must only forward, never report.
+      if (!installed) {
+        previousHandler?.(error, isFatal);
+        return;
+      }
       emit(error, { source: 'errorUtils', isFatal: isFatal ?? false });
       // Chain, so the platform's own reporting still happens.
       previousHandler?.(error, isFatal);
@@ -143,8 +149,9 @@ export function installGlobalErrorCapture(
         target.removeEventListener?.('error', onError);
         target.removeEventListener?.('unhandledrejection', onRejection);
       }
-      if (errorUtils !== undefined && previousHandler !== undefined) {
-        errorUtils.setGlobalHandler(previousHandler);
+      if (errorUtils !== undefined) {
+        // With nothing to restore, leave a no-op rather than the dead closure.
+        errorUtils.setGlobalHandler(previousHandler ?? (() => {}));
       }
     },
     setTransport(next: CrashTransport): void {

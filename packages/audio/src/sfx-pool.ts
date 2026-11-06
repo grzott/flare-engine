@@ -1,4 +1,5 @@
 import type { AudioBufferLike, AudioContextLike, GainNodeLike } from './audio-manager.js';
+import { setSourceEndHandler } from './audio-manager.js';
 
 /** Options for playing a sound effect. */
 export interface PlaySFXOptions {
@@ -111,13 +112,13 @@ export class SFXPool {
     this.active.push(entry);
 
     // Clean up when playback ends
-    source.onended = () => {
+    setSourceEndHandler(source, () => {
       const idx = this.active.indexOf(entry);
       if (idx !== -1) {
         this.active.splice(idx, 1);
       }
       gain.disconnect();
-    };
+    });
 
     source.start();
 

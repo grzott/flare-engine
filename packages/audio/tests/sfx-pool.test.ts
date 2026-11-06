@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import type { AudioBufferLike, AudioContextLike, GainNodeLike } from '../src/audio-manager.js';
+import type {
+  AudioBufferLike,
+  AudioBufferSourceNodeLike,
+  AudioContextLike,
+  GainNodeLike,
+} from '../src/audio-manager.js';
 import { SFXPool } from '../src/sfx-pool.js';
 
 function mockBuffer(): AudioBufferLike {
@@ -12,6 +17,13 @@ function mockGainNode(): GainNodeLike {
     connect() {},
     disconnect() {},
   };
+}
+
+/** react-native-audio-api shape: an `onEnded` accessor and no `onended` at all. */
+function libraryShapedNode(
+  node: Omit<AudioBufferSourceNodeLike, 'onended'>,
+): AudioBufferSourceNodeLike {
+  return node as AudioBufferSourceNodeLike;
 }
 
 function mockAudioContext(): AudioContextLike {
@@ -268,6 +280,96 @@ describe('SFXPool', () => {
 
     expect(() => pool.play('a', { rate: 2 })).not.toThrow();
     expect(pool.activeCount).toBe(1);
+  });
+
+  it('releases the voice when the library fires onEnded (no onended accessor)', () => {
+    const sink = { handler: null as (() => void) | null, gainDisconnects: 0 };
+    const ctx: AudioContextLike = {
+      state: 'running',
+      currentTime: 0,
+      destination: { channelCount: 2 },
+      createGain() {
+        return {
+          gain: { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {} },
+          connect() {},
+          disconnect() {
+            sink.gainDisconnects++;
+          },
+        };
+      },
+      createBufferSource() {
+        return libraryShapedNode({
+          buffer: null,
+          loop: false,
+          connect() {},
+          disconnect() {},
+          start() {},
+          stop() {},
+          get onEnded() {
+            return sink.handler;
+          },
+          set onEnded(h: (() => void) | null) {
+            sink.handler = h;
+          },
+        });
+      },
+      async resume() {},
+      async suspend() {},
+      async close() {},
+    };
+
+    const pool = new SFXPool();
+    pool.connect(ctx, mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a');
+    expect(pool.activeCount).toBe(1);
+    expect(sink.handler).not.toBeNull();
+
+    sink.handler?.();
+    expect(pool.activeCount).toBe(0);
+    expect(sink.gainDisconnects).toBe(1);
+  });
+
+  it('releases the voice when a DOM-shaped node fires onended', () => {
+    let gainDisconnects = 0;
+    const source: AudioBufferSourceNodeLike = {
+      buffer: null,
+      loop: false,
+      connect() {},
+      disconnect() {},
+      start() {},
+      stop() {},
+      onended: null,
+    };
+    const ctx: AudioContextLike = {
+      state: 'running',
+      currentTime: 0,
+      destination: { channelCount: 2 },
+      createGain() {
+        return {
+          gain: { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {} },
+          connect() {},
+          disconnect() {
+            gainDisconnects++;
+          },
+        };
+      },
+      createBufferSource: () => source,
+      async resume() {},
+      async suspend() {},
+      async close() {},
+    };
+
+    const pool = new SFXPool();
+    pool.connect(ctx, mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a');
+    expect(pool.activeCount).toBe(1);
+    expect(source.onended).not.toBeNull();
+
+    source.onended?.call(source, undefined);
+    expect(pool.activeCount).toBe(0);
+    expect(gainDisconnects).toBe(1);
   });
 
   it('throws when maxPolyphony is 0', () => {

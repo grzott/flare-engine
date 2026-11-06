@@ -39,6 +39,11 @@ export interface AudioBufferSourceNodeLike {
   start(when?: number): void;
   stop(when?: number): void;
   onended: ((this: AudioBufferSourceNodeLike, ev: unknown) => void) | null;
+  /**
+   * End-of-playback callback as `react-native-audio-api` spells it; the DOM spells it
+   * `onended`. A node exposes one or the other — register through `setSourceEndHandler`.
+   */
+  onEnded?: ((ev: unknown) => void) | null;
 }
 
 export interface AudioContextLike {
@@ -50,6 +55,15 @@ export interface AudioContextLike {
   resume(): Promise<void>;
   suspend(): Promise<void>;
   close(): Promise<void>;
+}
+
+/** Registers the end-of-playback handler on whichever accessor the node exposes. */
+export function setSourceEndHandler(source: AudioBufferSourceNodeLike, handler: () => void): void {
+  if ('onEnded' in source) {
+    source.onEnded = handler;
+  } else {
+    source.onended = handler;
+  }
 }
 
 /** Audio context state. */

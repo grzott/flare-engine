@@ -170,6 +170,7 @@ mock.module('@flare-engine/render', () => ({
     beginFrame: () => {},
     drawAtlas: () => {},
     buildPostFxPasses: () => [],
+    compilePostFxPasses: () => [],
     setPostFxBinding: () => {},
     hasPostFxBinding: () => false,
     endFrame: () => null,

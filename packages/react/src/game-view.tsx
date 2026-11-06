@@ -4,7 +4,14 @@ import { AudioManager } from '@flare-engine/audio';
 import { GameLoop } from '@flare-engine/core';
 import { Position, World } from '@flare-engine/ecs';
 import { InputManager } from '@flare-engine/input';
-import { Camera2D, createRenderSystem, Renderer, Sprite, SpriteBatch } from '@flare-engine/render';
+import {
+  Camera2D,
+  createRenderSystem,
+  type FrameRendererCompiledPass,
+  Renderer,
+  Sprite,
+  SpriteBatch,
+} from '@flare-engine/render';
 import { SceneManager } from '@flare-engine/scene';
 import type { CanvasRef, SkImage, SkPicture, SkSurface } from '@shopify/react-native-skia';
 import {
@@ -30,6 +37,7 @@ import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
 import { createSceneCapture, type SceneCapture } from './scene-texture.js';
 import { createSkiaFrameRenderer, type PostFxPassDescriptor } from './skia-bridge.js';
+import { createWebPostFxCompositor } from './web-postfx.js';
 
 /**
  * Capture the frame's picture into an offscreen surface **on the UI thread**.
@@ -80,9 +88,10 @@ export type RenderHook = (ctx: GameContextValue, canvas: unknown) => void;
 /** Render hook for post-processing passes. Receives the game context, the
  *  active Skia canvas, and the `SkiaFrameRenderer` bridge so the hook can
  *  call `bridge.setPostFxBinding(runtime, chain)` to register the runtime
- *  and chain for the current frame.
- *  `bridge` is `null` only on platforms where no Skia renderer was created
- *  (future web fallback). */
+ *  and chain for the current frame. The bound chain renders on native through
+ *  RN-Skia shader nodes and on web through the imperative composite inside the
+ *  scene capture (see `createWebPostFxCompositor`).
+ *  `bridge` is `null` only on platforms where no Skia renderer was created. */
 export type PostFxRenderHook = (
   ctx: GameContextValue,
   canvas: unknown,
@@ -105,7 +114,7 @@ export interface GameConfig {
   /** Called after the sprite batch has been flushed, before `renderer.end()`.
    *  Receives the bridge as 3rd arg so the hook can call
    *  `bridge.setPostFxBinding(runtime, chain)` to register the postfx runtime
-   *  and chain for the current frame. */
+   *  and chain for the current frame, on native and on web alike. */
   onRenderPostFx?: PostFxRenderHook;
   /**
    * Promote the underlying Skia surface from a TextureView (default) to a
@@ -206,10 +215,6 @@ export function GameView({
     return { world, camera, input, audio, assets, scenes, loop, renderer, batch };
   }, []);
 
-  // Warn once per <GameView> instance (not per page load) so each independently
-  // mounted instance with a postfx binding gets its own one-time notice.
-  const webPostFxWarnedRef = useRef(false);
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   useEffect(() => {
     const bridge = createSkiaFrameRenderer(Skia);
@@ -257,14 +262,22 @@ export function GameView({
           // Web has one thread, so the JS-thread capture is same-context by
           // construction; this is the path WEB-1..WEB-7 verified in Chrome,
           // including the surface cache that keeps Chrome from evicting the
-          // on-screen canvas (web-target-2026-08.md §12). Left untouched.
+          // on-screen canvas (web-target-2026-08.md §12). The postfx chain runs
+          // inside the capture, in place on that same surface (#60), so the
+          // image the plain <Image> below samples is already filtered.
           if (captureRef.current === null) {
             captureRef.current = createSceneCapture(Skia, {
               nonTextureImage: true,
               retentionDepth: 3,
+              postfx: createWebPostFxCompositor<SkImage>(Skia),
             });
           }
-          const img = captureRef.current.capture(pic, w * pd, h * pd);
+          // Physical pixels: the surface is w*pd × h*pd and every SkSL
+          // `resolution` uniform must match the space the pass is drawn in.
+          const fx = bridge.hasPostFxBinding()
+            ? bridge.compilePostFxPasses(null, null, w * pd, h * pd)
+            : EMPTY_COMPILED;
+          const img = captureRef.current.capture(pic, w * pd, h * pd, fx);
           if (img !== null) sceneImage.value = img;
         } else {
           // Native must build the surface on the UI thread — see captureSceneOnUI.
@@ -282,19 +295,14 @@ export function GameView({
           );
         }
       }
+      // Web never pushes passes: its chain was composited into the scene image
+      // above, so `passes` stays EMPTY_PASSES and the tree is the plain <Image>.
       if (!isWeb) {
         const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
         if (!samePasses(prevBuilt, built)) {
           prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
           setPasses(prevBuilt);
         }
-      } else if (bridge.hasPostFxBinding() && !webPostFxWarnedRef.current) {
-        console.warn(
-          'postfx chain skipped: Skia.RuntimeShaderBuilder and' +
-            ' ImageFilter.MakeRuntimeShaderWithChildren both throw' +
-            ' "Not implemented on React Native Web".',
-        );
-        webPostFxWarnedRef.current = true;
       }
       canvasRef.current?.redraw();
     });
@@ -469,6 +477,9 @@ function returnTrue(): boolean {
 /** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses
  *  to this so the `passes` state never changes for a postfx-free GameView. */
 const EMPTY_PASSES: readonly PostFxPassDescriptor[] = [];
+
+/** Stable empty compiled-pass list handed to the web capture when no chain is bound. */
+const EMPTY_COMPILED: readonly FrameRendererCompiledPass[] = Object.freeze([]);
 
 /** Linear, mipmap-free sampling for every ImageShader in the pass chain — the
  *  options render-web hands makeShaderOptions, so both backends sample alike. */

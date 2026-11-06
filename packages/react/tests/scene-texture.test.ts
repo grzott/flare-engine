@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
+import type { FrameRendererCompiledPass } from '@flare-engine/render';
 import type { SceneSurfaceLike, SceneSurfaceModuleLike } from '../src/scene-texture.js';
 import { createSceneCapture, createSceneSurfaceCache } from '../src/scene-texture.js';
+import type { WebPostFxCompositor } from '../src/web-postfx.js';
 
 /**
  * Regression cover for the WEB-1 defect: on web, RN-Skia's `MakeOffscreen`
@@ -131,8 +133,13 @@ interface StubImage {
 function makeCaptureStub(): {
   module: SceneSurfaceModuleLike<StubImage>;
   images: StubImage[];
+  /** Every call on the stub surface, in order (`drawPicture`, `flush`, `makeImageSnapshot`). */
+  ops: string[];
+  surfaces: SceneSurfaceLike<StubImage>[];
 } {
   const images: StubImage[] = [];
+  const ops: string[] = [];
+  const surfaces: SceneSurfaceLike<StubImage>[] = [];
   const attachDispose = (record: StubImage, extra: Record<string, unknown> = {}) => {
     const obj: Record<string | symbol, unknown> = { ...extra };
     if (DISPOSE !== undefined) {
@@ -146,10 +153,18 @@ function makeCaptureStub(): {
   const module: SceneSurfaceModuleLike<StubImage> = {
     Surface: {
       MakeOffscreen(width: number, height: number) {
-        return {
-          getCanvas: () => ({ drawPicture: () => {} }),
-          flush: () => {},
+        const surface = {
+          getCanvas: () => ({
+            drawPicture: () => {
+              ops.push('drawPicture');
+            },
+            drawRect: () => {},
+          }),
+          flush: () => {
+            ops.push('flush');
+          },
           makeImageSnapshot: () => {
+            ops.push('makeImageSnapshot');
             const snapRecord: StubImage = { disposed: false, kind: 'snapshot' };
             images.push(snapRecord);
             const snapshot = attachDispose(snapRecord, {
@@ -164,10 +179,51 @@ function makeCaptureStub(): {
           width,
           height,
         } as unknown as SceneSurfaceLike<StubImage>;
+        surfaces.push(surface);
+        return surface;
       },
     },
   };
-  return { module, images };
+  return { module, images, ops, surfaces };
+}
+
+interface CompositeCall {
+  surface: unknown;
+  passes: readonly FrameRendererCompiledPass[];
+  width: number;
+  height: number;
+}
+
+/** A compositor stub that records its calls into the surface op log. */
+function makeCompositorStub(ops: string[]): {
+  compositor: WebPostFxCompositor<StubImage>;
+  calls: CompositeCall[];
+  disposeCount: () => number;
+} {
+  const calls: CompositeCall[] = [];
+  let disposed = 0;
+  return {
+    compositor: {
+      composite(surface, passes, width, height) {
+        ops.push('composite');
+        calls.push({ surface, passes, width, height });
+      },
+      dispose() {
+        disposed++;
+      },
+    },
+    calls,
+    disposeCount: () => disposed,
+  };
+}
+
+function makeCompiledPass(id: string): FrameRendererCompiledPass {
+  return {
+    id,
+    shader: { makeShaderWithChildren: () => null },
+    uniforms: new Float32Array([1]),
+    children: [],
+  };
 }
 
 describe('createSceneCapture', () => {
@@ -284,6 +340,66 @@ describe('createSceneCapture', () => {
     const snapshots = images.filter((i) => i.kind === 'snapshot');
     expect(snapshots.length).toBe(1);
     expect(snapshots[0]?.disposed).toBe(false);
+  });
+
+  it('#60: capture(pic, w, h, passes) hands the compositor the cached surface and the same pass array', () => {
+    const { module, ops, surfaces } = makeCaptureStub();
+    const { compositor, calls } = makeCompositorStub(ops);
+    const capture = createSceneCapture(module, { postfx: compositor });
+    const passes = [makeCompiledPass('a'), makeCompiledPass('b')];
+
+    capture.capture({}, 800, 600, passes);
+    capture.capture({}, 800, 600, passes);
+
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.surface).toBe(surfaces[0]);
+    expect(calls[1]?.surface).toBe(surfaces[0]);
+    expect(calls[0]?.passes).toBe(passes);
+    expect(calls[0]?.width).toBe(800);
+    expect(calls[0]?.height).toBe(600);
+  });
+
+  it('#60: the composite runs after drawPicture + flush and before the snapshot', () => {
+    const { module, ops } = makeCaptureStub();
+    const { compositor } = makeCompositorStub(ops);
+    const capture = createSceneCapture(module, { postfx: compositor });
+
+    capture.capture({}, 800, 600, [makeCompiledPass('a')]);
+
+    expect(ops).toEqual(['drawPicture', 'flush', 'composite', 'makeImageSnapshot']);
+  });
+
+  it('#60: the compositor is not called for an empty or absent pass list', () => {
+    const { module, ops } = makeCaptureStub();
+    const { compositor, calls } = makeCompositorStub(ops);
+    const capture = createSceneCapture(module, { postfx: compositor });
+
+    capture.capture({}, 800, 600, []);
+    capture.capture({}, 800, 600);
+
+    expect(calls).toHaveLength(0);
+    expect(ops.filter((o) => o === 'makeImageSnapshot')).toHaveLength(2);
+  });
+
+  it('#60: passes without a compositor are ignored', () => {
+    const { module, images } = makeCaptureStub();
+    const capture = createSceneCapture(module);
+
+    const img = capture.capture({}, 800, 600, [makeCompiledPass('a')]);
+
+    expect(img).not.toBeNull();
+    expect(images.filter((i) => i.kind === 'snapshot')).toHaveLength(1);
+  });
+
+  it('#60: dispose() disposes the compositor', () => {
+    const { module, ops } = makeCaptureStub();
+    const { compositor, disposeCount } = makeCompositorStub(ops);
+    const capture = createSceneCapture(module, { postfx: compositor });
+
+    capture.capture({}, 800, 600, [makeCompiledPass('a')]);
+    capture.dispose();
+
+    expect(disposeCount()).toBe(1);
   });
 
   it('retentionDepth: 2 — image at frame N released when frame N+2 is captured', () => {

@@ -250,6 +250,20 @@ export interface FrameRenderer {
     width: number,
     height: number,
   ): readonly FrameRendererPostFxDescriptor[];
+  /**
+   * The compiled passes exactly as the runtime builds them — `uniforms` is the
+   * packed Float32Array `makeShaderWithChildren` takes. `buildPostFxPasses`
+   * derives its named JSX descriptors from these; an imperative compositor
+   * (GameView's web path) draws from them directly. Same null/unsupported/
+   * no-chain rules as `buildPostFxPasses` (empty array), same
+   * `runtime ?? bound`, `chain ?? bound` resolution.
+   */
+  compilePostFxPasses(
+    runtime: FrameRendererPostFxRuntime | null,
+    chain: FrameRendererPostFxChain | null,
+    width: number,
+    height: number,
+  ): readonly FrameRendererCompiledPass[];
   setPostFxBinding(
     runtime: FrameRendererPostFxRuntime | null,
     chain: FrameRendererPostFxChain | null,
@@ -273,6 +287,9 @@ const BLEND_SRC_IN = 5;
 const BLEND_SRC_ATOP = 9;
 /** Skia BlendMode.Plus — additive: dst = clamp(src + dst). */
 const BLEND_PLUS = 12;
+
+/** Shared empty result for `compilePostFxPasses`, so a chain-free frame allocates nothing. */
+const EMPTY_COMPILED_PASSES: readonly FrameRendererCompiledPass[] = [];
 
 const OUTLINE_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
@@ -377,6 +394,23 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     if (_loggedOnce.has(msg)) return;
     _loggedOnce.add(msg);
     console.warn(`[postfx] ${msg}`);
+  }
+
+  function compilePostFxPasses(
+    runtime: FrameRendererPostFxRuntime | null,
+    chain: FrameRendererPostFxChain | null,
+    width: number,
+    height: number,
+  ): readonly FrameRendererCompiledPass[] {
+    const rt = runtime ?? _boundRuntime;
+    const ch = chain ?? _boundChain;
+    if (rt === null || !rt.supported) return EMPTY_COMPILED_PASSES;
+    if (rt.buildPass === undefined) {
+      logOnce('buildPostFxPasses: runtime.supported but buildPass absent — no passes');
+      return EMPTY_COMPILED_PASSES;
+    }
+    if (ch === null) return EMPTY_COMPILED_PASSES;
+    return rt.buildPass(ch, width, height);
   }
 
   const canvas: CanvasLike = {
@@ -912,16 +946,10 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       );
     },
 
+    compilePostFxPasses,
+
     buildPostFxPasses(runtime, chain, width, height): readonly FrameRendererPostFxDescriptor[] {
-      const rt = runtime ?? _boundRuntime;
-      const ch = chain ?? _boundChain;
-      if (rt === null || !rt.supported) return [];
-      if (rt.buildPass === undefined) {
-        logOnce('buildPostFxPasses: runtime.supported but buildPass absent — no passes');
-        return [];
-      }
-      if (ch === null) return [];
-      const passes = rt.buildPass(ch, width, height);
+      const passes = compilePostFxPasses(runtime, chain, width, height);
       if (passes.length === 0) return [];
       const out: FrameRendererPostFxDescriptor[] = [];
       for (const pass of passes) {

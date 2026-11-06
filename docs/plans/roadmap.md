@@ -1,10 +1,8 @@
 # Flare Roadmap
 
 Flare is a 2D engine that runs the same code on Web and React Native: animation, gamification,
-interactive UI, and games. One gap so far: on the web, postfx effects do not render under
-`GameView` yet ([#60](https://github.com/grzott/flare-engine/issues/60)). This page says where the
-engine stands and how its work is tracked. The work itself lives in
-[GitHub issues](https://github.com/grzott/flare-engine/issues).
+interactive UI, and games. This page says where the engine stands and how its work is tracked. The
+work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issues).
 
 ## Where things stand
 

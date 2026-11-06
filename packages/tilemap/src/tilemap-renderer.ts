@@ -2,8 +2,13 @@ import type { SkImageLike } from '@flare-engine/assets';
 import type { Rect } from '@flare-engine/math';
 import type { AnySpriteEffect, Camera2D } from '@flare-engine/render';
 import { SpriteBatch } from '@flare-engine/render';
-import type { TileLayer, TilemapData } from './tilemap-data.js';
-import { getTileAt, getTileSourceRectInto, getTilesetForGid } from './tilemap-data.js';
+import type { TileAnimation, TileLayer, TilemapData } from './tilemap-data.js';
+import {
+  GID_FLIP_MASK,
+  getTileAt,
+  getTileSourceRectInto,
+  getTilesetForGid,
+} from './tilemap-data.js';
 
 // Tiled GID flag bits (kept module-private; tilemap-data.ts owns the public mask).
 const FLIP_H = 0x80000000;
@@ -18,10 +23,27 @@ const QUARTER_TURN = Math.PI / 2;
  * by reference, so one shared instance (e.g. an ambient `tint()`) keeps every
  * tile — and any sprite drawn with the same instance — in a single run.
  * `alphaScale` multiplies each layer's own `opacity` (default 1).
+ * `time` (seconds, e.g. the clock's elapsed) advances Tiled tile animations
+ * parsed onto `TilesetRef.animations`; it wraps in both directions. Without
+ * it (or when non-finite) every tile draws as authored.
  */
 export interface TilemapDrawOptions {
   effect?: AnySpriteEffect;
   alphaScale?: number;
+  time?: number;
+}
+
+/** Local tile id of the frame an animation shows at `time` (seconds, finite). */
+function animatedLocalId(anim: TileAnimation, time: number): number {
+  let t = time % anim.duration;
+  if (t < 0) t += anim.duration;
+  const ends = anim.ends;
+  const last = ends.length - 1;
+  let i = 0;
+  // A frame boundary belongs to the next frame; ends[last] === duration > t stops the scan.
+  while (i < last && t >= (ends[i] ?? 0)) i++;
+  // The `?? 0` is unreachable (i <= last < frames.length) — it satisfies noUncheckedIndexedAccess.
+  return anim.frames[i] ?? 0;
 }
 
 /**
@@ -60,7 +82,8 @@ export class TilemapRenderer {
    * under sprites. Zero-alloc: reuses the internal bounds buffer.
    *
    * Each tile's `alpha` is `layer.opacity * opts.alphaScale`; `opts.effect`
-   * is applied to every tile (see `TilemapDrawOptions`).
+   * is applied to every tile; `opts.time` picks each animated tile's frame
+   * (see `TilemapDrawOptions`).
    */
   drawInto(camera: Camera2D, batch: SpriteBatch, opts?: TilemapDrawOptions): void {
     const bounds = camera.getBoundsInto(this._boundsBuf);
@@ -68,6 +91,8 @@ export class TilemapRenderer {
     const th = this.map.tileHeight;
     const effect = opts?.effect;
     const alphaScale = opts?.alphaScale ?? 1;
+    // NaN stands for "no time": the layer pass animates only when `time` is finite.
+    const time = opts?.time ?? Number.NaN;
 
     for (const layer of this.map.layers) {
       if (layer.type !== 'tile' || !layer.visible) continue;
@@ -82,6 +107,7 @@ export class TilemapRenderer {
         batch,
         effect,
         layer.opacity * alphaScale,
+        time,
       );
     }
   }
@@ -114,9 +140,11 @@ export class TilemapRenderer {
     batch: SpriteBatch,
     effect: AnySpriteEffect | undefined,
     alpha: number,
+    time: number,
   ): void {
     const offsetX = layer.offsetX;
     const offsetY = layer.offsetY;
+    const animate = Number.isFinite(time);
 
     // Calculate visible tile range (clamped to layer bounds)
     const startCol = Math.max(0, Math.floor((viewX - offsetX) / tw));
@@ -135,8 +163,15 @@ export class TilemapRenderer {
         const image = this._images.get(tileset.name);
         if (!image) continue;
 
+        // An animated tile sources its current frame; flip bits still come from `gid`.
+        let srcGid = gid;
+        if (animate && tileset.animations !== undefined) {
+          const anim = tileset.animations.get((gid & GID_FLIP_MASK) - tileset.firstGid);
+          if (anim !== undefined) srcGid = tileset.firstGid + animatedLocalId(anim, time);
+        }
+
         // Strips flip bits; writes into the reusable buffer, no per-tile allocation.
-        const src = getTileSourceRectInto(tileset, gid, this._srcBuf);
+        const src = getTileSourceRectInto(tileset, srcGid, this._srcBuf);
 
         // Bit tests only — `gid & FLIP_H` is a negative Int32 when set, so compare to 0.
         const h = (gid & FLIP_H) !== 0;

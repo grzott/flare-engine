@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
-import type { TileLayer, TilemapData, TilesetRef } from '../src/tilemap-data.js';
+import type { Rect } from '@flare-engine/math';
+import type { TileAnimation, TileLayer, TilemapData, TilesetRef } from '../src/tilemap-data.js';
 
 // Restore real @flare-engine/ecs FIRST — render/dist/index.mjs has a static
 // `import { defineComponent } from "@flare-engine/ecs"`.  If the ecs cache
@@ -638,5 +639,287 @@ describe('TilemapRenderer — flipped GIDs draw mirrored', () => {
     expect(cmd.flipX).toBe(true);
     expect(cmd.dstX).toBe(1 * 16 + 4);
     expect(cmd.dstY).toBe(6);
+  });
+});
+
+describe('TilemapRenderer — animated tiles', () => {
+  // Unsigned Tiled flip bits, combined with + as Tiled's JSON exports them.
+  const H = 0x80000000;
+  const V = 0x40000000;
+  const D = 0x20000000;
+  const QUARTER = Math.PI / 2;
+
+  // 4-column tileset, firstGid 1. Local 0 (gid 1) is animated over row 1 of the
+  // sheet — frames 4, 5, 6 → src (0,16), (16,16), (32,16) — so every frame differs
+  // from the authored local 0 at src (0,0). Local 3 (gid 4, src (48,0)) is static.
+  const ANIMATED_GID = 1;
+  const STATIC_GID = 4;
+
+  function makeAnimation(): TileAnimation {
+    return {
+      frames: Uint32Array.of(4, 5, 6),
+      ends: Float64Array.of(0.1, 0.35, 0.5),
+      duration: 0.5,
+    };
+  }
+
+  function makeAnimatedMap(gids: number[]): TilemapData {
+    const tileset: TilesetRef = {
+      firstGid: 1,
+      name: 'terrain',
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 4,
+      tileCount: 16,
+      image: 'terrain.png',
+      imageWidth: 64,
+      imageHeight: 64,
+      tileProperties: new Map(),
+      solidTiles: new Set(),
+      animations: new Map([[0, makeAnimation()]]),
+    };
+    const layer: TileLayer = {
+      type: 'tile',
+      name: 'ground',
+      width: gids.length,
+      height: 1,
+      tiles: new Uint32Array(gids),
+      visible: true,
+      opacity: 1,
+      offsetX: 0,
+      offsetY: 0,
+      properties: {},
+    };
+    return {
+      width: gids.length,
+      height: 1,
+      tileWidth: 16,
+      tileHeight: 16,
+      layers: [layer],
+      tilesets: [tileset],
+      properties: {},
+    };
+  }
+
+  function rowCamera(cols: number) {
+    const camera = new Camera2D();
+    camera.setViewport(cols * 16, 16);
+    camera.x = cols * 8;
+    camera.y = 8;
+    return camera;
+  }
+
+  interface Captured {
+    srcX: number;
+    srcY: number;
+    dstX: number;
+    flipX: boolean;
+    flipY: boolean;
+    rotation: number;
+  }
+
+  function capture(batch: InstanceType<typeof SpriteBatch>): Captured[] {
+    const captured: Captured[] = [];
+    batch.flush((_image, commands) => {
+      for (const cmd of commands) {
+        captured.push({
+          srcX: cmd.srcX,
+          srcY: cmd.srcY,
+          dstX: cmd.dstX,
+          flipX: cmd.flipX,
+          flipY: cmd.flipY,
+          rotation: cmd.rotation,
+        });
+      }
+    });
+    captured.sort((a, b) => a.dstX - b.dstX);
+    return captured;
+  }
+
+  function drawRow(gids: number[], opts?: { time?: number; alphaScale?: number }): Captured[] {
+    const renderer = new TilemapRenderer(makeAnimatedMap(gids));
+    renderer.setTilesetImage('terrain', mockImage());
+    const external = new SpriteBatch();
+    if (opts === undefined) renderer.drawInto(rowCamera(gids.length), external);
+    else renderer.drawInto(rowCamera(gids.length), external, opts);
+    const captured = capture(external);
+    expect(captured).toHaveLength(gids.length);
+    return captured;
+  }
+
+  function src(cmd: Captured): [number, number] {
+    return [cmd.srcX, cmd.srcY];
+  }
+
+  test('time 0 draws the first frame, not the authored tile', () => {
+    expect(src(drawRow([ANIMATED_GID], { time: 0 })[0]!)).toEqual([0, 16]);
+  });
+
+  test('a time inside the first frame still draws the first frame', () => {
+    expect(src(drawRow([ANIMATED_GID], { time: 0.05 })[0]!)).toEqual([0, 16]);
+  });
+
+  test('a time exactly on the first frame boundary draws the next frame', () => {
+    expect(src(drawRow([ANIMATED_GID], { time: 0.1 })[0]!)).toEqual([16, 16]);
+  });
+
+  test('a time inside the last frame draws the last frame', () => {
+    expect(src(drawRow([ANIMATED_GID], { time: 0.4 })[0]!)).toEqual([32, 16]);
+  });
+
+  test('a time past the duration wraps around the cycle', () => {
+    // 1.2 s = two full 0.5 s cycles + 0.2 s → second frame.
+    expect(src(drawRow([ANIMATED_GID], { time: 1.2 })[0]!)).toEqual([16, 16]);
+  });
+
+  test('a negative time wraps forward from the end of the cycle', () => {
+    // -0.1 s → 0.4 s into the cycle → third frame.
+    expect(src(drawRow([ANIMATED_GID], { time: -0.1 })[0]!)).toEqual([32, 16]);
+  });
+
+  test('flip bits of the authored gid survive on an animated tile', () => {
+    const captured = drawRow(
+      [ANIMATED_GID + H, ANIMATED_GID + V, ANIMATED_GID + D + H, ANIMATED_GID + D + V],
+      { time: 0.2 },
+    );
+    for (const cmd of captured) expect(src(cmd)).toEqual([16, 16]);
+    expect(captured[0]!.flipX).toBe(true);
+    expect(captured[0]!.flipY).toBe(false);
+    expect(captured[0]!.rotation).toBe(0);
+    expect(captured[1]!.flipX).toBe(false);
+    expect(captured[1]!.flipY).toBe(true);
+    expect(captured[1]!.rotation).toBe(0);
+    expect(captured[2]!.flipX).toBe(false);
+    expect(captured[2]!.flipY).toBe(false);
+    expect(captured[2]!.rotation).toBe(QUARTER);
+    expect(captured[3]!.flipX).toBe(false);
+    expect(captured[3]!.flipY).toBe(false);
+    expect(captured[3]!.rotation).toBe(-QUARTER);
+  });
+
+  test('an unanimated tile is unchanged when time is set', () => {
+    const captured = drawRow([ANIMATED_GID, STATIC_GID], { time: 0.2 });
+    expect(src(captured[0]!)).toEqual([16, 16]);
+    expect(src(captured[1]!)).toEqual([48, 0]);
+  });
+
+  test('the two-argument drawInto draws the authored tile', () => {
+    const captured = drawRow([ANIMATED_GID, STATIC_GID]);
+    expect(src(captured[0]!)).toEqual([0, 0]);
+    expect(src(captured[1]!)).toEqual([48, 0]);
+  });
+
+  test('opts without time draw the authored tile', () => {
+    expect(src(drawRow([ANIMATED_GID], { alphaScale: 0.5 })[0]!)).toEqual([0, 0]);
+  });
+
+  test('a non-finite time draws the authored tile', () => {
+    for (const time of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(src(drawRow([ANIMATED_GID], { time })[0]!)).toEqual([0, 0]);
+    }
+  });
+
+  test('draw(camera, flush, opts) threads time the same way', () => {
+    const renderer = new TilemapRenderer(makeAnimatedMap([ANIMATED_GID]));
+    renderer.setTilesetImage('terrain', mockImage());
+    let seen: Captured[] = [];
+    renderer.draw(
+      rowCamera(1),
+      (batch) => {
+        seen = capture(batch);
+      },
+      { time: 0.4 },
+    );
+    expect(seen).toHaveLength(1);
+    expect(src(seen[0]!)).toEqual([32, 16]);
+  });
+
+  test('a tileset without animations draws the authored tile when time is set', () => {
+    const map = makeAnimatedMap([ANIMATED_GID]);
+    delete map.tilesets[0]!.animations;
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+    const external = new SpriteBatch();
+    renderer.drawInto(rowCamera(1), external, { time: 0.2 });
+    const captured = capture(external);
+    expect(captured).toHaveLength(1);
+    expect(src(captured[0]!)).toEqual([0, 0]);
+  });
+});
+
+describe('TilemapRenderer — animated frame lookup keeps buffer identity (identity pin, not a heap measure)', () => {
+  // JS cannot observe a transient allocation directly, so this pins what the lookup
+  // must reuse: the tileset's animations map, each TileAnimation and its typed arrays,
+  // and the renderer's one source-rect buffer, across many draws at varying times.
+  function internals(renderer: InstanceType<typeof TilemapRenderer>): { _srcBuf: Rect } {
+    return renderer as unknown as { _srcBuf: Rect };
+  }
+
+  test('after warm-up, 200 draws at different times keep every animation object and _srcBuf identity', () => {
+    const anim: TileAnimation = {
+      frames: Uint32Array.of(4, 5, 6),
+      ends: Float64Array.of(0.1, 0.35, 0.5),
+      duration: 0.5,
+    };
+    const animations = new Map([[0, anim]]);
+    const tileset: TilesetRef = {
+      firstGid: 1,
+      name: 'terrain',
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 4,
+      tileCount: 16,
+      image: 'terrain.png',
+      imageWidth: 64,
+      imageHeight: 64,
+      tileProperties: new Map(),
+      solidTiles: new Set(),
+      animations,
+    };
+    const layer: TileLayer = {
+      type: 'tile',
+      name: 'ground',
+      width: 4,
+      height: 1,
+      tiles: new Uint32Array([1, 1 + 0x80000000, 4, 1]),
+      visible: true,
+      opacity: 1,
+      offsetX: 0,
+      offsetY: 0,
+      properties: {},
+    };
+    const map: TilemapData = {
+      width: 4,
+      height: 1,
+      tileWidth: 16,
+      tileHeight: 16,
+      layers: [layer],
+      tilesets: [tileset],
+      properties: {},
+    };
+    const renderer = new TilemapRenderer(map);
+    renderer.setTilesetImage('terrain', mockImage());
+    const camera = new Camera2D();
+    camera.setViewport(64, 16);
+    camera.x = 32;
+    camera.y = 8;
+    const external = new SpriteBatch();
+
+    renderer.drawInto(camera, external, { time: 0.05 });
+    external.flush(() => {});
+    const frames = anim.frames;
+    const ends = anim.ends;
+    const srcBuf = internals(renderer)._srcBuf;
+
+    for (let i = 0; i < 200; i++) {
+      renderer.drawInto(camera, external, { time: i * 0.037 - 1 });
+      expect(external.count).toBe(4);
+      external.flush(() => {});
+      expect(tileset.animations).toBe(animations);
+      expect(animations.get(0)).toBe(anim);
+      expect(anim.frames).toBe(frames);
+      expect(anim.ends).toBe(ends);
+      expect(internals(renderer)._srcBuf).toBe(srcBuf);
+    }
   });
 });

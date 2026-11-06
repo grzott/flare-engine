@@ -26,6 +26,44 @@ function libraryShapedNode(
   return node as AudioBufferSourceNodeLike;
 }
 
+interface StartSink {
+  /** One entry per `start` call: its argument list, so a bare `start()` is told apart from `start(undefined)`. */
+  starts: [when?: number][];
+  stops: number;
+}
+
+function startSink(): StartSink {
+  return { starts: [], stops: 0 };
+}
+
+/** Context at a non-zero clock whose sources record every `start`/`stop` call. */
+function recordingContext(sink: StartSink): AudioContextLike {
+  return {
+    state: 'running',
+    currentTime: 2,
+    destination: { channelCount: 2 },
+    createGain: mockGainNode,
+    createBufferSource() {
+      return {
+        buffer: null,
+        loop: false,
+        connect() {},
+        disconnect() {},
+        start(...args: [when?: number]) {
+          sink.starts.push(args);
+        },
+        stop() {
+          sink.stops++;
+        },
+        onended: null,
+      };
+    },
+    async resume() {},
+    async suspend() {},
+    async close() {},
+  };
+}
+
 function mockAudioContext(): AudioContextLike {
   return {
     state: 'running',
@@ -280,6 +318,51 @@ describe('SFXPool', () => {
 
     expect(() => pool.play('a', { rate: 2 })).not.toThrow();
     expect(pool.activeCount).toBe(1);
+  });
+
+  it('schedules start at currentTime + delay on the context clock', () => {
+    const sink = startSink();
+    const pool = new SFXPool();
+    pool.connect(recordingContext(sink), mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a', { delay: 0.35 });
+
+    expect(sink.starts).toEqual([[2 + 0.35]]);
+  });
+
+  it('calls start with no argument when delay is omitted', () => {
+    const sink = startSink();
+    const pool = new SFXPool();
+    pool.connect(recordingContext(sink), mockGainNode());
+    pool.register('a', mockBuffer());
+    pool.play('a');
+
+    expect(sink.starts.map((args) => args.length)).toEqual([0]);
+  });
+
+  it('calls start with no argument when delay is 0, negative, NaN or Infinity', () => {
+    for (const delay of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const sink = startSink();
+      const pool = new SFXPool();
+      pool.connect(recordingContext(sink), mockGainNode());
+      pool.register('a', mockBuffer());
+      pool.play('a', { delay });
+
+      expect(sink.starts.map((args) => args.length)).toEqual([0]);
+    }
+  });
+
+  it('stop on a scheduled handle stops the source and releases the voice', () => {
+    const sink = startSink();
+    const pool = new SFXPool();
+    pool.connect(recordingContext(sink), mockGainNode());
+    pool.register('a', mockBuffer());
+    const handle = pool.play('a', { delay: 0.35 })!;
+    expect(pool.activeCount).toBe(1);
+
+    handle.stop();
+    expect(sink.stops).toBe(1);
+    expect(pool.activeCount).toBe(0);
   });
 
   it('releases the voice when the library fires onEnded (no onended accessor)', () => {

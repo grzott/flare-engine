@@ -37,6 +37,7 @@ sfx.connect(ctx, channels.get('sfx')!.node);
 // Register pre-decoded buffers (decode with react-native-audio-api), then play.
 sfx.register('shoot', shootBuffer);
 sfx.play('shoot', { volume: 0.8, rate: 1.25 });
+sfx.play('hit', { delay: 0.35 }); // start 350 ms from now on the audio clock
 ```
 
 ## Lifecycle (manual)

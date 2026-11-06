@@ -5,8 +5,10 @@
  * The scaffolder's own suite runs with `skipInstall: true`, so nothing in the
  * repo proves that a template's pins resolve, that its `tsconfig.json` compiles
  * the generated app against the pinned Expo / React Native / Skia, or that its
- * shipped tests pass. The two first-run defects found by hand in the freeze
- * window (manual-test-protocol.md §7 rows 13 and 14) are the class this catches.
+ * shipped tests pass. This catches a template pin that no longer installs, a
+ * generated app that no longer typechecks against its pins or the workspace's
+ * current exports, and a failing template test. It does not catch a wrong
+ * next-step hint printed by the CLI or a native-build failure (neither runs).
  *
  * Mechanics: `bun pm pack` the workspace closure of every `@flare-engine/*`
  * dependency the templates name (the published artifact, not the source tree),
@@ -18,9 +20,9 @@
  * one. The scratch dir is removed afterwards unless `--keep` is passed.
  *
  * The bar is install, typecheck and unit tests: no native build and no Expo
- * start. `SKIP_SKIA_DOWNLOAD=1` is set for the install so react-native-skia's
- * postinstall does not fetch its native binaries (hundreds of MB) that nothing
- * here would link.
+ * start. The install still fetches react-native-skia's native libraries: since
+ * 2.6 they are ordinary `react-native-skia-*` dependencies that its postinstall
+ * (`scripts/install-libs.js`) copies locally, with no download to skip.
  *
  * Needs `bun run build` first (reads `packages/create/dist/bin.js` and every
  * package's `dist/`) and the npm registry for the templates' third-party pins.
@@ -50,9 +52,6 @@ const CREATE_DIR = join(PACKAGES_DIR, 'create');
 const TEMPLATES_DIR = join(CREATE_DIR, 'templates');
 const BIN = join(CREATE_DIR, 'dist', 'bin.js');
 const SCOPE = '@flare-engine/';
-
-/** The variable `@shopify/react-native-skia`'s postinstall reads to skip its binary download. */
-export const SKIA_SKIP_ENV = 'SKIP_SKIA_DOWNLOAD';
 
 const DEP_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
 
@@ -119,6 +118,25 @@ export const registryResolutions = (lockText) => {
   for (const match of lockText.matchAll(/"(@flare-engine\/[^@"/]+)@\d[^"]*"/g)) names.add(match[1]);
   return [...names].sort();
 };
+
+const flagValue = (argv, name) => {
+  const i = argv.indexOf(name);
+  if (i < 0) return undefined;
+  const value = argv[i + 1];
+  if (value === undefined || value.startsWith('--')) throw new Error(`${name} needs a value`);
+  return value;
+};
+
+/**
+ * Pure: the CLI options. A value flag with nothing after it, or with another
+ * flag after it (`--only --keep`), throws rather than silently running every
+ * template or taking the next flag as its value.
+ */
+export const parseArgs = (argv) => ({
+  keep: argv.includes('--keep'),
+  only: flagValue(argv, '--only'),
+  workDir: flagValue(argv, '--work-dir'),
+});
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
@@ -202,13 +220,7 @@ const runTemplate = (template, workDir, tarballs) => {
   const linked = linkToTarballs(readJson(manifestPath), tarballs, tarballsRel);
   writeFileSync(manifestPath, `${JSON.stringify(linked, null, 2)}\n`);
 
-  if (
-    !step(
-      template,
-      'bun install',
-      run(process.execPath, ['install'], appDir, { [SKIA_SKIP_ENV]: '1' }),
-    )
-  ) {
+  if (!step(template, 'bun install', run(process.execPath, ['install'], appDir))) {
     return 'bun install';
   }
 
@@ -241,10 +253,14 @@ const runTemplate = (template, workDir, tarballs) => {
 };
 
 if (import.meta.main) {
-  const args = process.argv.slice(2);
-  const keep = args.includes('--keep');
-  const flag = (name) => (args.indexOf(name) >= 0 ? args[args.indexOf(name) + 1] : undefined);
-  const only = flag('--only');
+  let opts;
+  try {
+    opts = parseArgs(process.argv.slice(2));
+  } catch (err) {
+    console.error(`scaffold-e2e: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  }
+  const { keep, only } = opts;
 
   if (!existsSync(BIN)) {
     console.error(`scaffold-e2e: ${relative(ROOT, BIN)} is missing — run \`bun run build\` first.`);
@@ -268,7 +284,7 @@ if (import.meta.main) {
   const closure = flareClosure([...wanted], manifests);
 
   // Absolute: `bun pm pack --destination` resolves against the package being packed.
-  const workRoot = resolve(flag('--work-dir') ?? tmpdir());
+  const workRoot = resolve(opts.workDir ?? tmpdir());
   mkdirSync(workRoot, { recursive: true });
   const workDir = mkdtempSync(join(workRoot, 'flare-scaffold-e2e-'));
   const tarballsDir = join(workDir, 'tarballs');

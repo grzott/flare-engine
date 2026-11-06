@@ -3,6 +3,7 @@ import type {
   MapLayer,
   MapObject,
   ObjectLayer,
+  TileAnimation,
   TileLayer,
   TilemapData,
   TilesetRef,
@@ -57,11 +58,18 @@ interface TiledObjectLayer {
 
 type TiledLayer = TiledTileLayer | TiledObjectLayer;
 
+interface TiledAnimationFrame {
+  tileid: number;
+  /** Milliseconds. */
+  duration: number;
+}
+
 interface TiledTile {
   id: number;
   properties?: TiledProperty[];
   type?: string;
   class?: string;
+  animation?: TiledAnimationFrame[];
 }
 
 interface TiledTileset {
@@ -99,6 +107,40 @@ function parseProperties(props?: TiledProperty[]): Record<string, unknown> {
     result[p.name] = p.value;
   }
   return result;
+}
+
+/**
+ * Build a tile's Tiled animation (frame durations in ms) into cumulative seconds.
+ * Returns `undefined` for an empty animation or one whose durations sum to 0 —
+ * such a tile draws as authored.
+ */
+function parseTileAnimation(ts: TiledTileset, tile: TiledTile): TileAnimation | undefined {
+  const source = tile.animation;
+  if (source === undefined || source.length === 0) return undefined;
+  const frames = new Uint32Array(source.length);
+  const ends = new Float64Array(source.length);
+  // Summed in ms and divided once per frame so integer-ms inputs give exact seconds.
+  let totalMs = 0;
+  for (let i = 0; i < source.length; i++) {
+    const frame = source[i]!;
+    const tileid = frame.tileid;
+    const duration = frame.duration;
+    if (!Number.isInteger(tileid) || tileid < 0 || tileid >= ts.tilecount) {
+      throw new TilemapParseError(
+        `parseTiled: tileset "${ts.name}" tile ${tile.id} animation frame ${i} has tileid ${tileid} — expected an integer in [0, ${ts.tilecount}).`,
+      );
+    }
+    if (!Number.isFinite(duration) || duration < 0) {
+      throw new TilemapParseError(
+        `parseTiled: tileset "${ts.name}" tile ${tile.id} animation frame ${i} has duration ${duration} — expected a finite number of milliseconds >= 0.`,
+      );
+    }
+    totalMs += duration;
+    frames[i] = tileid;
+    ends[i] = totalMs / 1000;
+  }
+  if (totalMs === 0) return undefined;
+  return { frames, ends, duration: totalMs / 1000 };
 }
 
 /**
@@ -147,6 +189,7 @@ export function parseTiled(json: unknown): TilemapData {
 
     const tileProperties = new Map<number, Record<string, unknown>>();
     const solidTiles = new Set<number>();
+    let animations: Map<number, TileAnimation> | undefined;
 
     if (ts.tiles) {
       for (const tile of ts.tiles) {
@@ -158,6 +201,11 @@ export function parseTiled(json: unknown): TilemapData {
         const tileType = tile.type ?? tile.class ?? '';
         if (tileType === 'solid' || props.solid === true || props.collision === true) {
           solidTiles.add(tile.id);
+        }
+        const animation = parseTileAnimation(ts, tile);
+        if (animation !== undefined) {
+          animations ??= new Map();
+          animations.set(tile.id, animation);
         }
       }
     }
@@ -175,6 +223,7 @@ export function parseTiled(json: unknown): TilemapData {
       tileProperties,
       solidTiles,
     };
+    if (animations !== undefined) ref.animations = animations;
     map.tilesets.push(ref);
   }
 

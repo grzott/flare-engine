@@ -24,6 +24,7 @@ export {
   type MapObject,
   type ObjectLayer,
   stripGidFlags,
+  type TileAnimation,
   type TileFlipFlags,
   type TileLayer,
   type TilemapData,

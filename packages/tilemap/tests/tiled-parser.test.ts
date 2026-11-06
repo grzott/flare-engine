@@ -403,6 +403,178 @@ describe('parseTiled — validation errors', () => {
   });
 });
 
+describe('parseTiled — tile animations', () => {
+  // A 4x4 tileset (tilecount 16) whose `tiles[]` carries the per-tile animation arrays.
+  function withTiles(tiles: unknown[]) {
+    return makeTiledJSON({
+      tilesets: [
+        {
+          firstgid: 1,
+          name: 'water',
+          tilewidth: 16,
+          tileheight: 16,
+          columns: 4,
+          tilecount: 16,
+          image: 'water.png',
+          imagewidth: 64,
+          imageheight: 64,
+          tiles,
+        },
+      ],
+    });
+  }
+
+  function messageOf(json: unknown): string {
+    try {
+      parseTiled(json);
+    } catch (e) {
+      return (e as Error).message;
+    }
+    throw new Error('expected parseTiled to throw');
+  }
+
+  test('an animated tile yields frames, cumulative ends in seconds and the cycle duration', () => {
+    const map = parseTiled(
+      withTiles([
+        {
+          id: 3,
+          animation: [
+            { tileid: 3, duration: 100 },
+            { tileid: 7, duration: 250 },
+            { tileid: 11, duration: 150 },
+          ],
+        },
+      ]),
+    );
+    const ts = map.tilesets[0]!;
+    const anim = ts.animations!.get(3)!;
+    expect(anim.frames).toBeInstanceOf(Uint32Array);
+    expect(Array.from(anim.frames)).toEqual([3, 7, 11]);
+    expect(anim.ends).toBeInstanceOf(Float64Array);
+    // Tiled durations are milliseconds; ends are cumulative seconds.
+    expect(Array.from(anim.ends)).toEqual([0.1, 0.35, 0.5]);
+    expect(anim.duration).toBe(0.5);
+  });
+
+  test('a one-frame animation registers with its single end equal to the duration', () => {
+    const map = parseTiled(withTiles([{ id: 0, animation: [{ tileid: 5, duration: 1000 }] }]));
+    const anim = map.tilesets[0]!.animations!.get(0)!;
+    expect(Array.from(anim.frames)).toEqual([5]);
+    expect(Array.from(anim.ends)).toEqual([1]);
+    expect(anim.duration).toBe(1);
+  });
+
+  test('animated tiles keep their properties and solid flag', () => {
+    const map = parseTiled(
+      withTiles([
+        {
+          id: 2,
+          type: 'solid',
+          properties: [{ name: 'damage', type: 'int', value: 4 }],
+          animation: [
+            { tileid: 2, duration: 200 },
+            { tileid: 6, duration: 200 },
+          ],
+        },
+      ]),
+    );
+    const ts = map.tilesets[0]!;
+    expect(ts.solidTiles.has(2)).toBe(true);
+    expect(ts.tileProperties.get(2)).toEqual({ damage: 4 });
+    expect(Array.from(ts.animations!.get(2)!.frames)).toEqual([2, 6]);
+  });
+
+  test('a tileset without animated tiles has no animations field', () => {
+    const map = parseTiled(
+      withTiles([{ id: 1, properties: [{ name: 'solid', type: 'bool', value: true }] }]),
+    );
+    const ts = map.tilesets[0]!;
+    expect('animations' in ts).toBe(false);
+    expect(ts.animations).toBeUndefined();
+  });
+
+  test('an empty animation array is not registered', () => {
+    const map = parseTiled(withTiles([{ id: 0, animation: [] }]));
+    expect(map.tilesets[0]!.animations).toBeUndefined();
+  });
+
+  test('an animation whose durations sum to 0 is not registered', () => {
+    const map = parseTiled(
+      withTiles([
+        {
+          id: 0,
+          animation: [
+            { tileid: 0, duration: 0 },
+            { tileid: 1, duration: 0 },
+          ],
+        },
+        { id: 4, animation: [{ tileid: 4, duration: 100 }] },
+      ]),
+    );
+    const animations = map.tilesets[0]!.animations!;
+    expect(animations.has(0)).toBe(false);
+    expect(animations.has(4)).toBe(true);
+    expect(animations.size).toBe(1);
+  });
+
+  test('throws TilemapParseError for a frame tileid outside [0, tilecount)', () => {
+    for (const tileid of [16, -1, 100]) {
+      const bad = withTiles([
+        {
+          id: 2,
+          animation: [
+            { tileid: 2, duration: 100 },
+            { tileid, duration: 100 },
+          ],
+        },
+      ]);
+      expect(() => parseTiled(bad)).toThrow(TilemapParseError);
+      const message = messageOf(bad);
+      expect(message).toContain('water');
+      expect(message).toContain('tile 2');
+      expect(message).toContain(String(tileid));
+    }
+  });
+
+  test('throws TilemapParseError for a non-integer frame tileid', () => {
+    for (const tileid of [1.5, Number.NaN, '3']) {
+      const bad = withTiles([{ id: 0, animation: [{ tileid, duration: 100 }] }]);
+      expect(() => parseTiled(bad)).toThrow(TilemapParseError);
+      const message = messageOf(bad);
+      expect(message).toContain('water');
+      expect(message).toContain('tile 0');
+    }
+  });
+
+  test('throws TilemapParseError for a negative frame duration', () => {
+    const bad = withTiles([
+      {
+        id: 5,
+        animation: [
+          { tileid: 5, duration: 100 },
+          { tileid: 6, duration: -1 },
+        ],
+      },
+    ]);
+    expect(() => parseTiled(bad)).toThrow(TilemapParseError);
+    const message = messageOf(bad);
+    expect(message).toContain('water');
+    expect(message).toContain('tile 5');
+    expect(message).toContain('-1');
+  });
+
+  test('throws TilemapParseError for a NaN or infinite frame duration', () => {
+    // JSON cannot carry these, but parseTiled accepts in-memory objects.
+    for (const duration of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      const bad = withTiles([{ id: 5, animation: [{ tileid: 5, duration }] }]);
+      expect(() => parseTiled(bad)).toThrow(TilemapParseError);
+      const message = messageOf(bad);
+      expect(message).toContain('water');
+      expect(message).toContain('tile 5');
+    }
+  });
+});
+
 function makeTiledJSON(overrides: Record<string, unknown> = {}) {
   return {
     width: 4,

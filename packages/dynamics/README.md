@@ -46,6 +46,42 @@ going through an accessor.
 points, broadphase scratch buffers) lives in a pool owned by the `World` and is reused across calls,
 growing only when body count grows.
 
+## Record and replay
+
+Semi-implicit Euler with friction and restitution is not time-reversible, so a fall you want to
+scrub, reverse or replay at another speed is **baked once** into a `Timeline` and read back by
+sampling. `record` takes a writer callback instead of a body array, so the timeline never has to know
+what it is recording; with an `until` predicate it bakes in one call, without one it records a single
+frame, which suits a time-budgeted loop that calls it once per tick.
+
+```ts
+import { createTimeline, createWorld, step } from '@flare-engine/dynamics';
+
+const world = createWorld(); // add a floor and some boxes as above
+const dt = 1 / 60;
+const timeline = createTimeline(world.bodies.length, dt); // stride 3: x, y, angle
+timeline.record(
+  (buf, base) => {
+    step(world, dt);
+    for (let i = 0; i < world.bodies.length; i++) {
+      const b = world.bodies[i]!;
+      buf[base + i * 3] = b.position.x;
+      buf[base + i * 3 + 1] = b.position.y;
+      buf[base + i * 3 + 2] = b.angle;
+    }
+  },
+  () => world.bodies.every((b) => Math.abs(b.velocity.y) < 1), // your own settle rule
+);
+
+const out = new Float32Array(timeline.elementCount * 3);
+timeline.sampleInto(0.5, out); // body i at out[i * 3 ..], lerped between frames
+```
+
+Storage is `Float32Array` on purpose — playback precision at half the bytes of f64 — and angles are
+kept exactly as written: `Body.angle` is cumulative and never wrapped, so a plain lerp is correct
+across multi-turn spins where a shortest-path lerp would unravel them. `sampleInto` allocates
+nothing; the one scratch buffer above serves the whole replay.
+
 ## Limits (v1)
 
 - **Resting bodies do not go perfectly still.** A box settling on a floor reaches a stable

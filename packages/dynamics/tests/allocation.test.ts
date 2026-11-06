@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { addBody, createBody, createWorld, step } from '../src/index.js';
+import { addBody, createBody, createTimeline, createWorld, step } from '../src/index.js';
 
 describe('step allocation', () => {
   it('does not grow the heap in steady state', () => {
@@ -18,6 +18,29 @@ describe('step allocation', () => {
     Bun.gc(true);
     const before = process.memoryUsage().heapUsed;
     for (let i = 0; i < 20_000; i++) step(world, 1 / 120);
+    Bun.gc(true);
+    const after = process.memoryUsage().heapUsed;
+
+    expect(after - before).toBeLessThan(256 * 1024);
+  });
+});
+
+describe('sampleInto allocation', () => {
+  it('does not grow the heap across repeated samples', () => {
+    const t = createTimeline(16, 1 / 60, { maxFrames: 120 });
+    t.record(
+      (buf, base) => {
+        for (let o = 0; o < 48; o++) buf[base + o] = base + o;
+      },
+      () => false,
+    );
+    const out = new Float32Array(48);
+
+    for (let i = 0; i < 1_000; i++) t.sampleInto((i % 101) / 100, out);
+
+    Bun.gc(true);
+    const before = process.memoryUsage().heapUsed;
+    for (let i = 0; i < 20_000; i++) t.sampleInto((i % 101) / 100, out);
     Bun.gc(true);
     const after = process.memoryUsage().heapUsed;
 

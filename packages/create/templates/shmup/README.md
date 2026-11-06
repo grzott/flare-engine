@@ -54,6 +54,18 @@ the loader.
   web build.
 - `app.json` — Expo configuration.
 
+## Tests
+
+```bash
+bun test
+```
+
+Runs `tests/logic.test.ts` — headless tests over a real `World` with no Skia or React Native: AABB overlap, bullet and enemy pool exhaustion without throwing, culled bullets returning every `Position` to the pool, and a bullet-enemy hit destroying both, scoring, and returning both pools.
+
+The tests use Bun's runner (`bun:test`), so they need Bun even when the app was
+installed with npm or pnpm. Install it with `npm install -g bun` (or run
+`npx bun test` without a global install), then run `bun test`.
+
 ## Docs
 
 - [Flare engine](https://github.com/grzott/flare-engine)

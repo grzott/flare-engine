@@ -69,7 +69,8 @@ export interface SpriteDrawCommand {
    * Participates in the batch key. Flipped sprites are drawn via
    * `drawImageRect` with a canvas scale(-1, 1) transform — one draw call
    * per sprite (per-sprite draw call trade-off, documented).
-   * Unsupported in combination with rotation (same constraint as stretch mode).
+   * `rotation` is honoured: the renderer rotates about the anchor point (as
+   * the atlas path does) and then mirrors about the sprite centre.
    */
   flipX: boolean;
   /**

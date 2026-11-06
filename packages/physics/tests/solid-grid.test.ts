@@ -69,6 +69,38 @@ describe('buildSolidGrid', () => {
     expect(grid.solid[2 * W + 4]).toBe(1);
     expect(countSolid(grid)).toBe(1);
   });
+
+  test('outside defaults to solid and stores open when requested', () => {
+    expect(makeGrid([]).outside).toBe('solid');
+    expect(buildSolidGrid(W, H, TS, [], { outside: 'open' }).outside).toBe('open');
+  });
+});
+
+describe('isBlockedAABB on an open grid', () => {
+  const openGrid = (tiles: SolidTile[]) => buildSolidGrid(W, H, TS, tiles, { outside: 'open' });
+
+  test('out-of-map left/top/right/bottom return false', () => {
+    const grid = openGrid([]);
+    expect(isBlockedAABB(grid, 4, 8, 8, 4)).toBe(false);
+    expect(isBlockedAABB(grid, 8, 4, 4, 8)).toBe(false);
+    expect(isBlockedAABB(grid, 158, 8, 8, 4)).toBe(false);
+    expect(isBlockedAABB(grid, 8, 158, 4, 8)).toBe(false);
+  });
+
+  test('box fully outside the grid returns false', () => {
+    const grid = openGrid([{ row: 0, col: 0 }]);
+    expect(isBlockedAABB(grid, -40, 8, 4, 4)).toBe(false);
+  });
+
+  test('box straddling the edge over a solid edge tile returns true', () => {
+    const grid = openGrid([{ row: 0, col: 0 }]);
+    expect(isBlockedAABB(grid, 4, 8, 8, 4)).toBe(true);
+  });
+
+  test('box straddling the edge over an empty edge tile returns false', () => {
+    const grid = openGrid([{ row: 0, col: 1 }]);
+    expect(isBlockedAABB(grid, 4, 8, 8, 4)).toBe(false);
+  });
 });
 
 describe('isBlockedAABB', () => {
@@ -207,6 +239,22 @@ describe('moveAndSlideInto', () => {
     const out = { x: 0, y: 0 };
     moveAndSlideInto(grid, 8, 8, 4, 0, halfW, halfH, out);
     expect(out.x).toBe(12);
+    expect(out.y).toBe(8);
+  });
+
+  test('a body can leave an open grid', () => {
+    const grid = buildSolidGrid(W, H, TS, [], { outside: 'open' });
+    const out = { x: 0, y: 0 };
+    moveAndSlideInto(grid, 8, 8, -16, 0, halfW, halfH, out);
+    expect(out.x).toBe(-8);
+    expect(out.y).toBe(8);
+  });
+
+  test('the default grid still blocks leaving the map', () => {
+    const grid = makeGrid([]);
+    const out = { x: 0, y: 0 };
+    moveAndSlideInto(grid, 8, 8, -16, 0, halfW, halfH, out);
+    expect(out.x).toBe(8);
     expect(out.y).toBe(8);
   });
 });

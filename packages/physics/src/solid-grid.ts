@@ -11,6 +11,19 @@ export interface SolidTile {
 }
 
 /**
+ * How `isBlockedAABB` treats cells outside the grid.
+ * `'solid'` — the map edge is a wall; any box that leaves the map is blocked.
+ * `'open'` — cells outside the grid are empty, so a body can walk off the map;
+ * use it for seams between adjacent region maps.
+ */
+export type SolidGridOutside = 'solid' | 'open';
+
+export interface SolidGridOptions {
+  /** Defaults to `'solid'`. */
+  readonly outside?: SolidGridOutside;
+}
+
+/**
  * Precomputed solid-tile lookup used by `isBlockedAABB` and `moveAndSlideInto`.
  * `solid` has `width * height` cells indexed `row * width + col`; non-zero means
  * solid. Build once per map load via `buildSolidGrid`.
@@ -20,6 +33,7 @@ export interface SolidGrid {
   readonly height: number;
   readonly tileSize: number;
   readonly solid: Uint8Array;
+  readonly outside: SolidGridOutside;
 }
 
 /**
@@ -32,12 +46,13 @@ export function buildSolidGrid(
   height: number,
   tileSize: number,
   tiles: readonly SolidTile[],
+  options?: SolidGridOptions,
 ): SolidGrid {
   const solid = new Uint8Array(width * height);
   for (const t of tiles) {
     solid[t.row * width + t.col] = 1;
   }
-  return { width, height, tileSize, solid };
+  return { width, height, tileSize, solid, outside: options?.outside ?? 'solid' };
 }
 
 /**
@@ -48,8 +63,10 @@ const EDGE = 1e-4;
 
 /**
  * Returns `true` when an axis-aligned box centered at (`x`, `y`) with
- * half-extents (`halfW`, `halfH`) overlaps a solid tile or lies outside the
- * map boundary. Uses half-open EDGE semantics on max edges.
+ * half-extents (`halfW`, `halfH`) overlaps a solid tile. Leaving the map
+ * blocks only when the grid was built with `outside: 'solid'` (the default);
+ * with `'open'` the out-of-grid cells are empty and only the in-grid cells the
+ * box overlaps are tested. Uses half-open EDGE semantics on max edges.
  */
 export function isBlockedAABB(
   grid: SolidGrid,
@@ -59,12 +76,17 @@ export function isBlockedAABB(
   halfH: number,
 ): boolean {
   const ts = grid.tileSize;
-  const minCol = Math.floor((x - halfW) / ts);
-  const maxCol = Math.floor((x + halfW - EDGE) / ts);
-  const minRow = Math.floor((y - halfH) / ts);
-  const maxRow = Math.floor((y + halfH - EDGE) / ts);
+  let minCol = Math.floor((x - halfW) / ts);
+  let maxCol = Math.floor((x + halfW - EDGE) / ts);
+  let minRow = Math.floor((y - halfH) / ts);
+  let maxRow = Math.floor((y + halfH - EDGE) / ts);
   if (minCol < 0 || minRow < 0 || maxCol >= grid.width || maxRow >= grid.height) {
-    return true;
+    if (grid.outside === 'solid') return true;
+    // Clamp to the in-grid cells; a box fully outside yields an empty range.
+    if (minCol < 0) minCol = 0;
+    if (minRow < 0) minRow = 0;
+    if (maxCol >= grid.width) maxCol = grid.width - 1;
+    if (maxRow >= grid.height) maxRow = grid.height - 1;
   }
   for (let row = minRow; row <= maxRow; row++) {
     for (let col = minCol; col <= maxCol; col++) {

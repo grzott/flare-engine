@@ -50,6 +50,10 @@ jobs:
       - run: bun run check:nodenext
       - run: bun run check:readme
 
+      # Scaffolds each @flare-engine/create template against the built workspace's packed
+      # tarballs, installs its registry pins, then typechecks and tests it (~3 min, mostly install).
+      - run: bun run check:scaffold
+
       # Track A — exact integers, safe to hard-gate on a shared runner.
       # Wall-clock (Track B) is never gated here: a GitHub-hosted runner swings
       # ±50% and the gate would be noise. See perf-measurement-2026-07.md §4.

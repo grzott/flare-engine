@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { WorkspaceManifest } from '../scaffold-e2e.mjs';
-import {
-  flareClosure,
-  linkToTarballs,
-  registryResolutions,
-  SKIA_SKIP_ENV,
-} from '../scaffold-e2e.mjs';
+import { flareClosure, linkToTarballs, parseArgs, registryResolutions } from '../scaffold-e2e.mjs';
 
 // The pure halves of scaffold-e2e.mjs. The install / tsc / test runs need the
 // registry and a built workspace, so CI is where they are exercised; what is
@@ -141,8 +136,28 @@ describe('registryResolutions', () => {
   });
 });
 
-describe('SKIA_SKIP_ENV', () => {
-  it('is the variable react-native-skia reads to skip its binary download', () => {
-    expect(SKIA_SKIP_ENV).toBe('SKIP_SKIA_DOWNLOAD');
+describe('parseArgs', () => {
+  it('reads every option', () => {
+    expect(parseArgs(['--only', 'shmup', '--keep', '--work-dir', 'tmp/e2e'])).toEqual({
+      keep: true,
+      only: 'shmup',
+      workDir: 'tmp/e2e',
+    });
+  });
+
+  it('defaults to every template, no keep, the OS temp dir', () => {
+    expect(parseArgs([])).toEqual({ keep: false, only: undefined, workDir: undefined });
+  });
+
+  it('rejects --only with nothing after it instead of running every template', () => {
+    expect(() => parseArgs(['--only'])).toThrow('--only needs a value');
+  });
+
+  it('rejects --only followed by another flag instead of taking the flag as its value', () => {
+    expect(() => parseArgs(['--only', '--keep'])).toThrow('--only needs a value');
+  });
+
+  it('rejects --work-dir with nothing after it', () => {
+    expect(() => parseArgs(['--keep', '--work-dir'])).toThrow('--work-dir needs a value');
   });
 });

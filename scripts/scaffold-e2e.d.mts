@@ -4,7 +4,13 @@
  * helpers `scripts/tests/scaffold-e2e.test.ts` exercises.
  */
 
-export declare const SKIA_SKIP_ENV: 'SKIP_SKIA_DOWNLOAD';
+export interface ScaffoldArgs {
+  keep: boolean;
+  only: string | undefined;
+  workDir: string | undefined;
+}
+
+export declare function parseArgs(argv: readonly string[]): ScaffoldArgs;
 
 export type DependencyMap = Record<string, string>;
 

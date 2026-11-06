@@ -183,6 +183,9 @@ shapes, ECS coupling, and any broadphase beyond the brute-force all-pairs AABB p
 | `SFXPool`      | Pre-decoded buffers. `play(name, { volume?, rate?, loop?, delay? })`. `rate` applies only when the injected node exposes a `playbackRate` param. `delay` (seconds) schedules the start on the context clock. Polyphony management (max N, oldest killed). |
 | `Music`        | `play`, `stop`, `crossfadeTo`. One track at a time, loops by default.                      |
 | `createChannels(ctx)` | Factory returning a `Channel` map keyed by `ChannelName` (`master`, `sfx`, `music`). Gains 0.0–1.0. In-memory only — MMKV persistence is deferred. |
+| `renderSynth(sound, sampleRate, out)` | Renders a `SynthSound` (`wave`: sine / square / saw / noise, `frequency` → optional `endFrequency` linear sweep, `duration`, ADSR `envelope?`, `volume?`, noise `seed?`) as mono PCM into the caller's `Float32Array`; returns samples written, allocates nothing. `synthSampleCount(duration, sampleRate)` sizes the array; `fillPCMBuffer(buffer, pcm)` copies it into every channel of a `PCMBufferLike`. |
+
+`AudioContextLike.createBuffer?` is optional so hand-written contexts keep type-checking; it returns a `PCMBufferLike`, which adds `copyToChannel` to `AudioBufferLike`.
 
 Lifecycle is manual — the package wires no automatic listener. Call `AudioManager.suspend()`/`resume()` from your own `AppState` (native) or `visibilitychange` (web) handler.
 

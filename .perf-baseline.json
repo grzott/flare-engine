@@ -167,9 +167,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/audio": {
-      "ceiling": 14922,
-      "measured": 13521,
-      "measuredAt": "2026-09-08"
+      "ceiling": 19534,
+      "measured": 17758,
+      "measuredAt": "2026-11-06"
     },
     "@flare-engine/cli": {
       "ceiling": 23521,
@@ -454,6 +454,10 @@
     {
       "date": "2026-11-06",
       "reason": "shapes ceiling raised 20696 -> 34034 B (measured 30940 x1.1), authorized by the owner's approval of the PR closing issue #149. bounds.ts gains shapeBoundsBox / shapeBoundsBoxInto (exported ShapeBoundsBox): per-axis extents per kind with the same +2 / stroke / glow margins as shapeBoundsRadius, an in-place ship walk and a radial fallback for rotated specs. main packs at 20494 B: the published 0.4.8 tarball, and no shapes commit has landed since the 0.4.8 release commit 55aaf28. So the tarball grows 10446 B, but each file gzipped on its own grows only 6248 B (33360 -> 39608) and dist/index.mjs gzipped grows 937 B (3397 -> 4334). The other ~4.2 KB is lost cross-file compression: at 0.4.8 the tarball was 12.9 KB smaller than its files gzipped separately, now only 8.7 KB, because the grown files push repeated text beyond deflate's 32 KB back-reference window. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-06",
+      "reason": "audio ceiling raised 14922 -> 19534 B (measured 17758 x1.1), authorized by the owner's approval of the PR closing issue #151. New synth.ts exports renderSynth, synthSampleCount and fillPCMBuffer plus the SynthSound, SynthEnvelope and SynthWaveform types: a zero-alloc PCM renderer (sine / square / saw / seeded noise, ADSR, linear sweep) into a caller-owned Float32Array; audio-manager.ts gains PCMBufferLike and an optional AudioContextLike.createBuffer?. main packed under 14922 B at the dd46af11 ci run (the 0.4.9 release commit; no audio commit has landed since), so this change adds at least 2836 B gzipped: +0.84 KB in each of dist/index.js and index.mjs (2.25 -> 3.09 KB), +1.68 KB in each source map (4.74 -> 6.42 KB), +0.76 KB in each .d.ts (1.97 -> 2.73 KB) and a Synthesised SFX README section. Added behaviour, not a regression."
     }
   ]
 }

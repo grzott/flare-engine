@@ -1,6 +1,6 @@
 # @flare-engine/audio
 
-Web-Audio-shaped runtime audio — `AudioManager` (init / suspend / resume), `SFXPool` (pre-decoded buffers + polyphony cap), `Music` (single-track with crossfade), `createChannels` (master / sfx / music gain mixer). Lifecycle is manual: call `suspend()`/`resume()` from your own background/foreground handler (see below).
+Web-Audio-shaped runtime audio — `AudioManager` (init / suspend / resume), `SFXPool` (pre-decoded buffers + polyphony cap), `Music` (single-track with crossfade), `createChannels` (master / sfx / music gain mixer), `renderSynth` (procedural SFX to PCM). Lifecycle is manual: call `suspend()`/`resume()` from your own background/foreground handler (see below).
 
 ## Install
 
@@ -38,6 +38,24 @@ sfx.connect(ctx, channels.get('sfx')!.node);
 sfx.register('shoot', shootBuffer);
 sfx.play('shoot', { volume: 0.8, rate: 1.25 });
 sfx.play('hit', { delay: 0.35 }); // start 350 ms from now on the audio clock
+```
+
+## Synthesised SFX
+
+`renderSynth` renders a described sound (sine / square / saw / noise, ADSR envelope, linear frequency sweep) into a caller-owned mono `Float32Array`; `fillPCMBuffer` copies it into a buffer the context created.
+
+```ts
+import { fillPCMBuffer, renderSynth, synthSampleCount } from '@flare-engine/audio';
+
+const rate = 44100;
+const n = synthSampleCount(0.15, rate);
+const pcm = new Float32Array(n);
+renderSynth({ wave: 'square', frequency: 880, endFrequency: 220, duration: 0.15 }, rate, pcm);
+const buffer = ctx.createBuffer?.(1, n, rate); // optional on AudioContextLike
+if (buffer) {
+  fillPCMBuffer(buffer, pcm);
+  sfx.register('blip', buffer);
+}
 ```
 
 ## Lifecycle (manual)

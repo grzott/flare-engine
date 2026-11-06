@@ -9,6 +9,8 @@ export interface PlaySFXOptions {
   rate?: number;
   /** Whether to loop. Default: false. */
   loop?: boolean;
+  /** Seconds to wait before starting, on the context clock. Default: 0 (start at once). Non-finite or non-positive values start at once. */
+  delay?: number;
 }
 
 /** A handle to a playing SFX instance. */
@@ -120,7 +122,12 @@ export class SFXPool {
       gain.disconnect();
     });
 
-    source.start();
+    const delay = opts?.delay;
+    if (delay !== undefined && Number.isFinite(delay) && delay > 0) {
+      source.start(this.ctx.currentTime + delay);
+    } else {
+      source.start();
+    }
 
     return {
       stop: () => {

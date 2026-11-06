@@ -1,5 +1,21 @@
 # @flare-engine/react
 
+## 0.4.9
+
+### Patch Changes
+
+- Updated dependencies [ccf09e0]
+- Updated dependencies [7622c15]
+  - @flare-engine/scene@0.4.9
+  - @flare-engine/assets@0.4.9
+  - @flare-engine/audio@0.4.9
+  - @flare-engine/core@0.4.9
+  - @flare-engine/ecs@0.4.9
+  - @flare-engine/events@0.4.9
+  - @flare-engine/input@0.4.9
+  - @flare-engine/math@0.4.9
+  - @flare-engine/render@0.4.9
+
 ## 0.4.8
 
 ### Patch Changes

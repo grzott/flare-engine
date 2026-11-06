@@ -1,5 +1,28 @@
 # @flare-engine/scene
 
+## 0.4.9
+
+### Patch Changes
+
+- ccf09e0: `SceneManager.push(name, data?, options?)` takes a `ScenePushOptions` with `overlay?: boolean`. An
+  overlay scene is updated and drawn after the scene below instead of replacing it: the scene below
+  gets no `onExit` on the push and no `onEnter` on the matching `pop()`, and nested overlays update
+  and draw bottom-up (each scene `onUpdate` then `onDraw`). A transition started while an overlay is
+  up keeps driving the whole live stack. A plain `push` (no options, `{}` or `{ overlay: false }`) is
+  unchanged. `update()` stays allocation-free: it walks the existing stack from the lowest scene not
+  under an overlay, tracked by a parallel flag array kept in lockstep with the stack.
+- 7622c15: `SceneManager.pop(options?)` takes a `ScenePopOptions` with `keep?: boolean` and `data?: unknown`.
+  With `keep: true` the popped scene gets `onExit` only and stays initialized, so the next `push` of
+  its name goes straight to `onEnter` instead of re-running `onPreload` → `onInit`; a later `go()`
+  (instant or animated) or `destroy()` still calls `onDestroy` on a kept scene that was never pushed
+  again, and `go()` to the kept name restarts it from a fresh instance. `data` is forwarded to the
+  revealed scene's `onEnter`, as `go` and `push` already do; it is dropped when the popped scene was
+  an overlay, which gives the scene below no `onEnter`. A plain `pop()` (no options, `{}` or
+  `{ keep: false }`) is unchanged: `onExit` + `onDestroy`, then `onEnter()` below.
+  - @flare-engine/ecs@0.4.9
+  - @flare-engine/math@0.4.9
+  - @flare-engine/render@0.4.9
+
 ## 0.4.8
 
 ### Patch Changes

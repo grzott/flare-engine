@@ -12,6 +12,13 @@ export {
   rollDrop,
 } from './drop-roll.js';
 export {
+  createGameClock,
+  type GameClock,
+  type GameClockConfig,
+  type GameClockSegment,
+  type GameClockState,
+} from './game-clock.js';
+export {
   resolveTier,
   resolveTierIndex,
   type TierEntry,

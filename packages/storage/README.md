@@ -79,6 +79,48 @@ const settings = await store.load();
 await store.save({ ...settings, volume: 0.8 });
 ```
 
+## Slot headers
+
+A slot menu needs one line per save ("Day 12 · Kaszuby · 6 h played") without paying for `loadSlot` on each: that runs every migration and the full schema parse per slot, and one corrupt save throws and takes the menu down. Pass a small, JSON-serialisable header as the third argument of `saveSlot`; `listSlotHeaders()` returns `{ name, version, header }` for every slot from the envelope alone, with no migration and no schema. A slot saved without a header, or written before headers existed, lists with `header: null`; a slot whose envelope cannot be read lists with `version: null` and `header: null`. A bad slot never fails the others.
+
+```ts
+import { createStorage, createMemoryAdapter, s, san } from '@flare-engine/storage';
+
+const SaveSchema = s.object({ day: s.number(), zone: s.string(), inventory: s.array(s.string()) });
+
+// Lenient and never throwing: a header written before `playedSeconds` existed lists it as 0.
+const parseHeader = san.object({
+  day: san.number(0),
+  zone: san.string('unknown'),
+  playedSeconds: san.number(0),
+});
+
+const storage = createStorage({
+  adapter: createMemoryAdapter(),
+  schema: SaveSchema,
+  version: 1,
+  parseHeader,
+});
+
+await storage.saveSlot(
+  'slot1',
+  { day: 12, zone: 'Kaszuby', inventory: ['key'] },
+  { day: 12, zone: 'Kaszuby', playedSeconds: 21_600 },
+);
+
+for (const slot of await storage.listSlotHeaders()) {
+  const label = slot.header
+    ? `Day ${slot.header.day} · ${slot.header.zone} · ${Math.round(slot.header.playedSeconds / 3600)} h played`
+    : 'Unreadable save';
+  console.log(slot.name, slot.version ?? '?', label);
+}
+```
+
+- **Headers are not migrated.** `listSlotHeaders` returns an old header as it was written, so a consumer that changes its header shape reads the old shape unless `parseHeader` repairs it. `parseHeader` is a lenient `Sanitizer<H>` like `createDocumentStore`'s `parse`; it also types `H`, runs only in `listSlotHeaders` (`saveSlot` stores the header as given), and a header that makes it throw lists as `null`.
+- **Cost.** `listSlotHeaders` still reads and JSON-parses each slot's full string; it skips only the migrations and the schema. The saving is per-slot CPU and the no-throw contract, not I/O.
+- **Overwrite drops the header.** `saveSlot(name, data)` without a header removes the slot's previous header; pass it on every save.
+- A header-less `saveSlot` writes the same `{ version, data }` envelope as before, and `loadSlot` ignores the header, so existing saves need no migration.
+
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginestorage--4kb-gzip).
 
 ## License

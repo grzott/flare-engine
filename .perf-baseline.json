@@ -322,9 +322,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/storage": {
-      "ceiling": 38395,
-      "measured": 36978,
-      "measuredAt": "2026-09-08"
+      "ceiling": 45991,
+      "measured": 41810,
+      "measuredAt": "2026-11-07"
     },
     "@flare-engine/testing": {
       "ceiling": 18303,
@@ -474,6 +474,10 @@
     {
       "date": "2026-11-07",
       "reason": "dynamics ceiling raised 45703 -> 64293 B (measured 58448 x1.1), authorized by the owner's approval of the PR closing issue #158. WorldOptions.sleep opts into per-body sleeping: per-slot sleep state in the world pool (counter, flag, position/angle snapshot, slot owner), write wake, contact wake by a body that moved on the previous step, sleepers as infinite mass in the solver via per-manifold effective inverse mass, and new exports isSleeping, isAtRest, wakeBody and SleepOptions; the sleep-off path is pinned bit-identical to main by a golden hash. main packs at 45258 B, 445 B under the old ceiling, measured by building origin/main 0974e191's packages/dynamics outside the checkout (#225, #229 and #246 landed after the 0.4.8 release). So this change adds 13190 B gzipped (each file gzipped alone +13369 B, so not a deflate-window artifact): +7538 / +7597 B raw (+2011 / +2027 B gzipped) in dist/index.mjs / index.js, whose output keeps the JSDoc, +13604 B raw in each source map, +2142 B raw in each .d.ts and +2717 B of README for the Sleeping section. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-07",
+      "reason": "storage ceiling raised 38395 -> 45991 B (measured 41810 x1.1), authorized by the owner's approval of the PR closing issue #203. saveSlot(name, data, header?) stores an optional header in the slot envelope (omitted when absent, so header-less saves are byte-identical); listSlotHeaders() lists { name, version, header } per slot from the envelope alone with no migration or schema, tolerating malformed slots; Storage and createStorage gain a second generic H = unknown, inferred from a new parseHeader Sanitizer option; SlotHeader is exported. main packs at 36923 B, measured by building origin/main bd5e6411's packages/storage outside the checkout (only #246's package.json keywords landed after the 0.4.8 release). So this change adds 4887 B gzipped (each file gzipped alone +5067 B): +1163 B raw (+185 / +187 B gzipped) in each of dist/index.mjs and index.js, +4421 B raw in each source map, +1935 B raw in each .d.ts (JSDoc) and +2509 B of README for the Slot headers section. Added behaviour, not a regression."
     }
   ]
 }

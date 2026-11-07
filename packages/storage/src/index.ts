@@ -13,5 +13,5 @@ export type { Sanitizer } from './sanitize.js';
 export { san } from './sanitize.js';
 export type { Infer, ParseResult, Schema } from './schema.js';
 export { s } from './schema.js';
-export type { Storage, StorageOptions } from './storage.js';
+export type { SlotHeader, Storage, StorageOptions } from './storage.js';
 export { createStorage } from './storage.js';

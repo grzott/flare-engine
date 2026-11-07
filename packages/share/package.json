@@ -2,7 +2,7 @@
   "name": "@flare-engine/share",
   "version": "0.4.9",
   "description": "Screenshot capture + cross-platform share sheet",
-  "keywords": ["flare-engine", "share", "screenshot", "skia"],
+  "keywords": ["flare-engine", "share", "screenshot", "skia", "react-native", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

@@ -2,7 +2,7 @@
   "name": "@flare-engine/create",
   "version": "0.4.9",
   "description": "One-shot scaffolder for Flare engine apps — `npm create @flare-engine`",
-  "keywords": ["flare-engine", "scaffold", "create-app", "expo", "react-native"],
+  "keywords": ["flare-engine", "scaffold", "create-app", "expo", "react-native", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

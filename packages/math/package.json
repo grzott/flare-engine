@@ -2,7 +2,16 @@
   "name": "@flare-engine/math",
   "version": "0.4.9",
   "description": "Vec2, Rect, Transform, Color, easings, intersection tests",
-  "keywords": ["flare-engine", "math", "vec2", "2d"],
+  "keywords": [
+    "flare-engine",
+    "math",
+    "vec2",
+    "2d",
+    "react-native",
+    "typescript",
+    "easing",
+    "seeded-random"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

@@ -2,7 +2,7 @@
   "name": "@flare-engine/cli",
   "version": "0.4.9",
   "description": "Flare engine CLI — pack-atlas, tiled-to-flare, new app scaffolder",
-  "keywords": ["flare-engine", "cli", "atlas", "tiled", "sprite-sheet", "scaffold"],
+  "keywords": ["flare-engine", "cli", "atlas", "tiled", "sprite-sheet", "scaffold", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

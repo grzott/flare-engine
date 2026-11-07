@@ -2,7 +2,15 @@
   "name": "@flare-engine/leaderboards",
   "version": "0.4.9",
   "description": "Leaderboard provider interface (consumer-supplied adapter)",
-  "keywords": ["flare-engine", "leaderboards", "provider", "interface"],
+  "keywords": [
+    "flare-engine",
+    "leaderboards",
+    "provider",
+    "interface",
+    "react-native",
+    "typescript",
+    "gamification"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

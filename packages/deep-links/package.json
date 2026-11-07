@@ -2,7 +2,7 @@
   "name": "@flare-engine/deep-links",
   "version": "0.4.9",
   "description": "URL → scene+params router with web history + native Linking adapters",
-  "keywords": ["flare-engine", "deep-links", "router", "url"],
+  "keywords": ["flare-engine", "deep-links", "router", "url", "react-native", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

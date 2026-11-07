@@ -2,7 +2,16 @@
   "name": "@flare-engine/particles",
   "version": "0.4.9",
   "description": "Particle emitter, pool, immediate-mode Skia rendering",
-  "keywords": ["flare-engine", "particles", "emitter", "skia"],
+  "keywords": [
+    "flare-engine",
+    "particles",
+    "emitter",
+    "skia",
+    "react-native",
+    "typescript",
+    "particle-system",
+    "react-native-skia"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

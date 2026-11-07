@@ -2,7 +2,16 @@
   "name": "@flare-engine/assets",
   "version": "0.4.9",
   "description": "Asset loading, sprite sheet parsing",
-  "keywords": ["flare-engine", "assets", "sprite-sheet", "loader"],
+  "keywords": [
+    "flare-engine",
+    "assets",
+    "sprite-sheet",
+    "loader",
+    "react-native",
+    "typescript",
+    "texturepacker",
+    "aseprite"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

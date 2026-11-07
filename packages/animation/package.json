@@ -2,7 +2,17 @@
   "name": "@flare-engine/animation",
   "version": "0.4.9",
   "description": "Sprite animation, tweens, springs, step sequences",
-  "keywords": ["flare-engine", "animation", "tween", "spring"],
+  "keywords": [
+    "flare-engine",
+    "animation",
+    "tween",
+    "spring",
+    "react-native",
+    "typescript",
+    "easing",
+    "tweening",
+    "sprite-animation"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

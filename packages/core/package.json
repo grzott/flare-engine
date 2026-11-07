@@ -2,7 +2,7 @@
   "name": "@flare-engine/core",
   "version": "0.4.9",
   "description": "GameLoop, Clock, AppLifecycle, Pool, Coroutines",
-  "keywords": ["flare-engine", "game-loop", "coroutines", "pool"],
+  "keywords": ["flare-engine", "game-loop", "coroutines", "pool", "react-native", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

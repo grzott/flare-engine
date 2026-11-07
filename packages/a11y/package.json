@@ -2,7 +2,14 @@
   "name": "@flare-engine/a11y",
   "version": "0.4.9",
   "description": "Accessibility primitives — reduced motion, contrast tokens",
-  "keywords": ["flare-engine", "a11y", "accessibility", "reduced-motion"],
+  "keywords": [
+    "flare-engine",
+    "a11y",
+    "accessibility",
+    "reduced-motion",
+    "react-native",
+    "typescript"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

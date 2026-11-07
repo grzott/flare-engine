@@ -2,6 +2,11 @@
 
 Skia-free UI kit for HUDs, menus, modals — `Panel`, `Button`, `Label`, `List`, `Modal`, `HUDBar`, `ProgressBar`, plus `DialoguePanel`, `MainMenuKit` higher-level components. `ThemeProvider` injects design tokens; `FocusProvider` + `FocusManager` drive focus navigation; `createFocusKeyboardDriver` wires arrows/Tab/Enter/Space onto the manager (gamepad driver pending); `resolveLayout` is a pure flex-like layout resolver. A shop list ships in `@flare-engine/ui-shop`, wired to `@flare-engine/iap`.
 
+## Entry points
+
+- **`.` (default)** — the whole kit: components, theme, focus, layout. Pulls in React Native at module scope.
+- **`./focus`** — the RN-free focus core: `createFocusManager` + `createFocusKeyboardDriver` and their types (`FocusManager`, `FocusNode`, `FocusKeyboardDriver`, `FocusKeyboardDriverOptions`, `FocusKeySource`). No React or React Native import, so it is safe for `bun test` and Node harnesses. `.` re-exports the same names.
+
 ## Install
 
 ```sh
@@ -32,7 +37,7 @@ function PauseMenu({ onResume }: { onResume: () => void }) {
 ## Keyboard navigation
 
 ```ts
-import { createFocusManager, createFocusKeyboardDriver, type FocusKeySource } from '@flare-engine/ui';
+import { createFocusManager, createFocusKeyboardDriver, type FocusKeySource } from '@flare-engine/ui/focus';
 // keys is any { wasPressed(code: string): boolean } — createKeyboard() from
 // @flare-engine/input is structurally assignable, no hard dependency required.
 declare const keys: FocusKeySource;

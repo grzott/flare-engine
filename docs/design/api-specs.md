@@ -1102,7 +1102,7 @@ Agents are never destroyed (the network is seamless by construction — continuo
 
 ### `@flare-engine/progression`
 
-Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weighted drop rolling, prerequisite unlock DAG, tier resolution, and collectible-unlock registry. Pure, zero-alloc on hot paths. Depends on `@flare-engine/math` only; no DOM/Skia/RN imports.
+Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weighted drop rolling, prerequisite unlock DAG, tier resolution, collectible-unlock registry, and a segmented game-day clock. Pure, zero-alloc on hot paths. Depends on `@flare-engine/math` only; no DOM/Skia/RN imports.
 
 | API | Description |
 | --- | --- |
@@ -1122,6 +1122,10 @@ Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weig
 | `TierEntry<T>` | `{ at: number; tier: T }`. |
 | `createCollectibleRegistry<K>(ids, capstoneId?)` → `CollectibleRegistry<K>` | Immutable unlock-set + capstone. `ids` is the collectible set; `capstoneId` (optional) is auto-unlocked when all ids are collected. Duplicate ids throw. Methods: `unlock(id)` → new registry (idempotent; throws on unknown id; auto-fires capstone on full completion); `partition()` → `{ have: K[], missing: K[] }` (capstone excluded from both lists); `list()` → ids in insertion order. Properties: `all`, `capstoneId`, `unlocked`, `isComplete`, `isCapstone`. |
 | `CollectibleRegistry<K>` | Interface (see above). Returned by `createCollectibleRegistry`. |
+| `createGameClock(config, state?)` → `GameClock` | Game-day clock: 1440 game minutes per day split into ordered `GameClockSegment`s, each running at its own `secondsPerGameHour`. Validates at creation (throws `Error`): non-empty table, first `startMinute` is 0, every `startMinute` an integer in `0..1439` strictly increasing, every rate finite and `> 0`; the last segment runs to 1440. `state` restores `absoluteMinutes` (throws when negative or not finite) and `paused`, and re-derives the segment as the last one whose `startMinute <= minuteOfDay`. Readouts: `absoluteMinutes` (fractional game minutes since day 0 00:00, never decreases), `day` = `floor(absoluteMinutes / 1440)`, `hour` `0..23`, `minute` `0..59` integer, `segment`, `phase`, `paused`, `held`. Methods: `update(dt)` — real seconds, no-op while paused or when `dt` is not finite or `<= 0`, lands float-exactly on each boundary it crosses; `advanceMinutes(n)` — game minutes, no rate, works while paused, throws `RangeError` when `n` is negative or not finite; `skipTo(name)` — advances to the next start of that segment strictly after now (throws on unknown name); `pause()` / `resume()` — gate `update` only; `hold()` / `release()` — a held clock stops at the next boundary whose next segment changes phase and stays there (same-phase segment boundaries still cross); `serialize()` → `GameClockState` (allocates; `held` is not persisted). All four toggles are idempotent. |
+| `GameClockConfig` | `{ segments: readonly GameClockSegment[]; onSegmentChange?(segment, previous); onPhaseChange?(phase, previous) }`. Callbacks fire after the state has moved — readouts inside already show the new segment/phase and the boundary time — and only when the name / phase actually differs (a `night`→`night` midnight wrap fires nothing). Segment first, then phase. |
+| `GameClockSegment` | `{ name: string; phase: string; startMinute: number; secondsPerGameHour: number }`. Names may repeat (a night that wraps midnight is two rows). |
+| `GameClockState` | `{ absoluteMinutes: number; paused: boolean }`. |
 
 **Implementation notes:**
 
@@ -1129,5 +1133,6 @@ Consolidated meta-progression surface: geometric upgrade tracks, pity-aware weig
 - `createDropTable` closes over a single `weightAt` accessor (not re-allocated per roll) and a `currentIsAllowed` binding (reassigned before each `weightedIndexBy` call). Biome `biome-ignore lint/style/noVar` comment guards the hoisted var.
 - `resolveTier` / `resolveTierIndex` scan all entries to find the largest satisfied `at` — O(n), no sort required, stable for small tiers (≤10 typical).
 - `CollectibleRegistry` is a persistent (copy-on-write) data structure. Each `unlock` call returns a fresh object; the input is never mutated.
+- `GameClock` keeps the segment index as explicit state (derived only at creation/restore) and moves it only on boundary crossings, which is what lets a held clock sit on a boundary with the old segment. `update`, `advanceMinutes` and `skipTo` share one stepping loop over a per-segment end-minute `Float64Array` precomputed at creation; a step that begins on a boundary (`toBoundary === 0`) runs the crossing check first, so a held clock stays put across repeated calls and the first advance after `release()` crosses before moving. Zero-alloc except `serialize()`.
 - Not barrelled into `@flare-engine/engine` (curated, matches XP6/XP7). Publish owner-gated.
 

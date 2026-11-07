@@ -282,9 +282,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/progression": {
-      "ceiling": 17837,
-      "measured": 16214,
-      "measuredAt": "2026-09-08"
+      "ceiling": 35764,
+      "measured": 32512,
+      "measuredAt": "2026-11-07"
     },
     "@flare-engine/react": {
       "ceiling": 76323,
@@ -473,6 +473,7 @@
     },
     {
       "date": "2026-11-07",
+      "reason": "progression ceiling raised 17837 -> 35764 B (measured 32512 x1.1), authorized by the owner's approval of the PR closing issue #202. New game-clock.ts exports createGameClock plus the GameClock, GameClockConfig, GameClockSegment and GameClockState types: a 1440-minute game-day clock with a validated per-segment real-seconds-per-game-hour table, one shared stepping loop for update / advanceMinutes / skipTo that lands float-exactly on each boundary, pause, hold at the next phase boundary, segment and phase change callbacks and a plain serialize state. main packs at 16212 B, measured by building origin/main 89cc4cc5's packages/progression outside the checkout: the published 0.4.9 tarball plus the #246 keyword list. So this change adds 16300 B gzipped (each file gzipped alone +11878 B): +5699 / +5673 B raw (+1608 / +1603 B gzipped) in dist/index.js / index.mjs, +12275 B raw (+3212 B gzipped) in each source map, +2536 B raw (+862 B gzipped) in each .d.ts (JSDoc) and +737 B of README for the clock snippet. The package was small, so one module of ~250 lines doubles it; nothing else in the package moved. Added behaviour, not a regression."
       "reason": "dynamics ceiling raised 45703 -> 64293 B (measured 58448 x1.1), authorized by the owner's approval of the PR closing issue #158. WorldOptions.sleep opts into per-body sleeping: per-slot sleep state in the world pool (counter, flag, position/angle snapshot, slot owner), write wake, contact wake by a body that moved on the previous step, sleepers as infinite mass in the solver via per-manifold effective inverse mass, and new exports isSleeping, isAtRest, wakeBody and SleepOptions; the sleep-off path is pinned bit-identical to main by a golden hash. main packs at 45258 B, 445 B under the old ceiling, measured by building origin/main 0974e191's packages/dynamics outside the checkout (#225, #229 and #246 landed after the 0.4.8 release). So this change adds 13190 B gzipped (each file gzipped alone +13369 B, so not a deflate-window artifact): +7538 / +7597 B raw (+2011 / +2027 B gzipped) in dist/index.mjs / index.js, whose output keeps the JSDoc, +13604 B raw in each source map, +2142 B raw in each .d.ts and +2717 B of README for the Sleeping section. Added behaviour, not a regression."
     },
     {

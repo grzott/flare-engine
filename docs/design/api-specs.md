@@ -64,7 +64,7 @@
 | `Query`                               | `entities: readonly number[]` — the live array of matching ids; walk it by index on hot paths (zero-alloc). `count`, `has(id)`. Also iterable: `for...of` is the convenience form — it allocates an iterator and, on Hermes, a result object per entity, so keep it off the frame path. `onEntityAdded`, `onEntityRemoved` signals. Archetype bitmask caching. |
 | `QueryBuilder`                        | `with(...defs)`, `without(...defs)`, `build() → Query`. Obtained from `world.queryBuilder()` only — the constructor takes the world's registration hook, so `build()` returns a query the world keeps populated and a bare `new QueryBuilder()` does not compile. |
 | `defineComponent<T>(name, defaults?)` | Type-safe component factory. Returns `ComponentDef<T>` used by `world.add/get/remove`.                                                  |
-| `defineSystem(query, fn)`             | Helper that binds a query to a per-frame update fn. Register with `world.addSystem(sys._worldFn)`.                                       |
+| `defineSystem(query, fn)`             | Helper that binds a query to a per-frame update fn. Register with `world.addSystem(sys.worldFn)`.                                        |
 | `definePrefab(name, ...[def, data?])` | Prefab factory; `prefab.spawn(world) → entityId`. Plain-object data is stored by reference and shared by every spawn; pass `() => T` for per-entity mutable state. |
 | `FSM`                                 | Lightweight state machine. `onEnter`, `onExit`, `onUpdate`, transitions.                                                                 |
 | `createMovementSystem(world)` | Integrates `Position` by `Velocity * dt`. Zero-alloc — indexed walk over `query.entities`, no iterator. |
@@ -74,7 +74,7 @@
 | `createOrphanCullSystem(world, onOrphan)` | Fires `onOrphan(id, world)` for each `Follower` whose target entity no longer exists. Deferred. Opt-in — separate from follower pin logic. |
 | `CullBounds` (type) | `{ readonly minX: number; readonly minY: number; readonly maxX: number; readonly maxY: number }`. Plain numbers; no physics dep. |
 
-**Recommended system priority order:** `createMovementSystem` (0) → `createFollowerSystem` (1) → `createBoundsCullSystem` / `createOrphanCullSystem` (2+). Priority and registration are caller-owned via `world.addSystem(sys._worldFn, priority)`.
+**Recommended system priority order:** `createMovementSystem` (0) → `createFollowerSystem` (1) → `createBoundsCullSystem` / `createOrphanCullSystem` (2+). Priority and registration are caller-owned via `world.addSystem(sys.worldFn, priority)`.
 
 **Built-in components:** Position, Velocity, Rotation, Scale, Parent (from math types), Lifetime (countdown seconds), Follower (target + offsetX/offsetY).
 

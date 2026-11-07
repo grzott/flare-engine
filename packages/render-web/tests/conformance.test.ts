@@ -11,7 +11,12 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { resolve } from 'node:path';
 import type { SkImageLike } from '@flare-engine/assets';
-import type { AnySpriteEffect, CanvasLike, SpriteDrawCommand } from '@flare-engine/render';
+import type {
+  AnySpriteEffect,
+  CanvasLike,
+  ImageSampling,
+  SpriteDrawCommand,
+} from '@flare-engine/render';
 import { createFrameRenderer, Renderer, water } from '@flare-engine/render';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { createWebFrameRenderer } from '../src/web-frame-renderer.js';
@@ -890,5 +895,117 @@ describe('createWebSkiaModule conformance (CPU surface)', () => {
     greenPaint.delete();
     atlasSurface.delete();
     rasterSurface.delete();
+  });
+
+  /**
+   * Draws a 2×1 image — one black texel, then one white — scaled ×4 onto an
+   * 8×4 frame through `createFrameRenderer(createWebSkiaModule(kit))`, on the
+   * atlas path (`stretch: false`) or the stretch path (`stretch: true`), with
+   * or without a `setImageSampling` call, and returns row 0's red channel per
+   * column. Nearest sampling gives a hard edge at column 4; linear sampling
+   * blends across the middle columns.
+   */
+  function renderTwoTexelRow(sampling: ImageSampling | undefined, stretch: boolean): number[] {
+    const W = 8;
+    const H = 4;
+
+    const ckImage = kit.MakeImage(
+      {
+        width: 2,
+        height: 1,
+        alphaType: kit.AlphaType.Unpremul,
+        colorType: kit.ColorType.RGBA_8888,
+        colorSpace: kit.ColorSpace.SRGB,
+      },
+      new Uint8Array([0, 0, 0, 255, 255, 255, 255, 255]),
+      8,
+    );
+    expect(ckImage).not.toBeNull();
+    if (!ckImage) return [];
+    const image = ckImage as unknown as SkImageLike;
+
+    const renderer = createFrameRenderer(createWebSkiaModule(kit));
+    if (sampling !== undefined) renderer.setImageSampling(image, sampling);
+
+    renderer.beginFrame(W, H, 0, 1);
+    const cmd: SpriteDrawCommand = {
+      image,
+      srcX: 0,
+      srcY: 0,
+      srcW: 2,
+      srcH: 1,
+      dstX: 0,
+      dstY: 0,
+      dstW: W,
+      dstH: H,
+      rotation: 0,
+      alpha: 1,
+      anchorX: 0,
+      anchorY: 0,
+      effect: undefined,
+      stretch,
+      blend: 'normal',
+      flipX: false,
+      flipY: false,
+    };
+    renderer.drawAtlas(image, [cmd]);
+    const pic = renderer.endFrame();
+    expect(pic).not.toBeNull();
+    if (!pic) return [];
+
+    const rasterSurface = kit.MakeSurface(W, H);
+    expect(rasterSurface).not.toBeNull();
+    if (!rasterSurface) return [];
+    const rc = rasterSurface.getCanvas();
+    rc.clear(kit.Color4f(0, 0, 0, 1));
+    rc.drawPicture(pic as Parameters<typeof rc.drawPicture>[0]);
+    rasterSurface.flush();
+
+    const imageInfo = {
+      width: W,
+      height: H,
+      colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul,
+      colorSpace: kit.ColorSpace.SRGB,
+    };
+    const pixels = rasterSurface.makeImageSnapshot().readPixels(0, 0, imageInfo) as Uint8Array;
+    expect(pixels).not.toBeNull();
+
+    const reds: number[] = [];
+    for (let col = 0; col < W; col++) reds.push(pixels[col * 4]!);
+
+    if (typeof (pic as { delete?: () => void }).delete === 'function') {
+      (pic as { delete: () => void }).delete();
+    }
+    ckImage.delete();
+    rasterSurface.delete();
+    return reds;
+  }
+
+  const HARD_EDGE = [0, 0, 0, 0, 255, 255, 255, 255];
+
+  /** True when at least one column holds an interpolated value, neither black nor white. */
+  function blends(reds: number[]): boolean {
+    return reds.some((v) => v > 10 && v < 245);
+  }
+
+  it('setImageSampling nearest on the atlas path gives a hard edge', () => {
+    expect(renderTwoTexelRow('nearest', false)).toEqual(HARD_EDGE);
+  });
+
+  it('setImageSampling linear on the stretch path blends', () => {
+    const reds = renderTwoTexelRow('linear', true);
+    expect(reds).toHaveLength(8);
+    expect(blends(reds)).toBe(true);
+  });
+
+  it("an unset image blends on the atlas path (CanvasKit drawAtlas's default)", () => {
+    const reds = renderTwoTexelRow(undefined, false);
+    expect(reds).toHaveLength(8);
+    expect(blends(reds)).toBe(true);
+  });
+
+  it("an unset image gives a hard edge on the stretch path (CanvasKit drawImageRect's default)", () => {
+    expect(renderTwoTexelRow(undefined, true)).toEqual(HARD_EDGE);
   });
 });

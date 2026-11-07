@@ -16,6 +16,7 @@ export {
   type FrameRendererPostFxRuntime,
   getXformCounters,
   type ImageFilterFactoryLike,
+  type ImageSampling,
   type PaintLike,
   type PictureLike,
   type PictureRecorderLike,
@@ -24,6 +25,7 @@ export {
   type RuntimeEffectFactoryLike,
   type RuntimeEffectLike,
   resetXformCounters,
+  type SamplingOptionsLike,
 } from './frame-renderer.js';
 export { drawNineSlice } from './nine-slice.js';
 export {

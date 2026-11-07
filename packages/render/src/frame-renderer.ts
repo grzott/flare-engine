@@ -143,6 +143,18 @@ export interface PaintLike {
   setBlendMode?(mode: number): void;
 }
 
+/** Texture sampling mode for `FrameRenderer.setImageSampling`. */
+export type ImageSampling = 'nearest' | 'linear';
+
+/**
+ * RN Skia's `FilterOptions` shape: `filter` is the FilterMode (0 = Nearest,
+ * 1 = Linear), `mipmap` the MipmapMode (0 = None, 1 = Nearest, 2 = Linear).
+ */
+export interface SamplingOptionsLike {
+  filter: number;
+  mipmap?: number;
+}
+
 /** Minimal draw surface the frame-renderer calls into. */
 export interface DrawSurfaceLike {
   save(): number;
@@ -152,8 +164,36 @@ export interface DrawSurfaceLike {
   /** rotate(degrees, cx, cy) — DEGREES, forwarded verbatim (both Skia backends take degrees). */
   rotate(degrees: number, cx: number, cy: number): void;
   clear(color: Float32Array): void;
-  drawAtlas(image: unknown, srcRects: RectLike[], dstXforms: RSXformLike[], paint: PaintLike): void;
+  /**
+   * `blendMode` and `colors` are positional placeholders in RN Skia's argument
+   * order; the renderer never fills them. `sampling` is passed only for an
+   * image with a `setImageSampling` setting — otherwise the call stops at `paint`.
+   */
+  drawAtlas(
+    image: unknown,
+    srcRects: RectLike[],
+    dstXforms: RSXformLike[],
+    paint: PaintLike,
+    blendMode?: undefined,
+    colors?: undefined,
+    sampling?: SamplingOptionsLike,
+  ): void;
   drawImageRect(image: unknown, src: RectLike, dst: RectLike, paint: PaintLike): void;
+  /**
+   * Sampled stretch/flip draw — `filterMode` and `mipmapMode` are the numeric
+   * Skia enum values (see `SamplingOptionsLike`). `paint` is optional only to
+   * mirror RN Skia's `paint?: SkPaint | null`; the renderer always passes one.
+   * Optional — absent on some test stubs; when it is missing, a stretch draw
+   * of an image with a sampling setting falls back to `drawImageRect`.
+   */
+  drawImageRectOptions?(
+    image: unknown,
+    src: RectLike,
+    dst: RectLike,
+    filterMode: number,
+    mipmapMode: number,
+    paint?: PaintLike | null,
+  ): void;
   drawRect(rect: RectLike, paint: PaintLike): void;
 }
 
@@ -244,6 +284,14 @@ export interface FrameRenderer {
     pixelDensity?: number,
   ): void;
   drawAtlas(image: SkImageLike, commands: SpriteDrawCommand[]): void;
+  /**
+   * Set the texture sampling for every draw of `image` (an atlas or a texture)
+   * on both the atlas path and the stretch/flip path. The last call wins. An
+   * image with no setting keeps each path's own Skia default: linear on the
+   * atlas path (`drawAtlas`), nearest on the stretch path (`drawImageRect`).
+   * Throws `RangeError` for a mode other than `'nearest'` or `'linear'`.
+   */
+  setImageSampling(image: SkImageLike, sampling: ImageSampling): void;
   buildPostFxPasses(
     runtime: FrameRendererPostFxRuntime | null,
     chain: FrameRendererPostFxChain | null,
@@ -293,6 +341,12 @@ const BLEND_PLUS = 12;
 
 /** Shared empty result for `compilePostFxPasses`, so a chain-free frame allocates nothing. */
 const EMPTY_COMPILED_PASSES: readonly FrameRendererCompiledPass[] = [];
+
+/** The two sampling objects `setImageSampling` hands to the surface — shared, never rebuilt. */
+const SAMPLING_NEAREST: SamplingOptionsLike = { filter: 0 };
+const SAMPLING_LINEAR: SamplingOptionsLike = { filter: 1 };
+/** Skia MipmapMode.None — the stretch path never mipmaps. */
+const MIPMAP_NONE = 0;
 
 const OUTLINE_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
@@ -365,6 +419,8 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   let stretchPaint: PaintLike | null = null;
 
   const zoneBgRects: RectLike[] = [];
+
+  const imageSampling = new WeakMap<SkImageLike, SamplingOptionsLike>();
 
   let _cachedSrcSlice: RectLike[] | null = null;
   let _cachedSrcSliceLen = 0;
@@ -770,6 +826,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     n: number,
     effect: OutlineEffect,
     alpha: number,
+    sampling: SamplingOptionsLike | undefined,
   ): void {
     const paint = applyOutlinePaint(effect);
     paint.setAlphaf(alpha);
@@ -778,13 +835,13 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const offset = OUTLINE_OFFSETS[k] as readonly [number, number];
       fillXforms(commands, n, offset[0] * effect.width, offset[1] * effect.width);
       const dsts = getCachedXformSlice(n);
-      cvs.drawAtlas(image, srcs, dsts, paint);
+      drawAtlasSampled(cvs, image, srcs, dsts, paint, sampling);
     }
     paint.setAlphaf(1);
     defaultPaint.setAlphaf(alpha);
     fillXforms(commands, n, 0, 0);
     const mainDsts = getCachedXformSlice(n);
-    cvs.drawAtlas(image, srcs, mainDsts, defaultPaint);
+    drawAtlasSampled(cvs, image, srcs, mainDsts, defaultPaint, sampling);
     defaultPaint.setAlphaf(1);
   }
 
@@ -848,6 +905,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const blendAdditive = cmd0.blend === 'additive';
       const flipX = cmd0.flipX;
       const flipY = cmd0.flipY;
+      const sampling = imageSampling.get(image);
       currentSpriteW = cmd0.dstW;
       currentSpriteH = cmd0.dstH;
 
@@ -907,10 +965,10 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
             current.translate(cx, cy);
             current.scale(cmd.flipX ? -1 : 1, cmd.flipY ? -1 : 1);
             current.translate(-cx, -cy);
-            current.drawImageRect(image, srcR, dstR, sPaint);
+            drawImageRectSampled(current, image, srcR, dstR, sPaint, sampling);
             current.restore();
           } else {
-            current.drawImageRect(image, srcR, dstR, sPaint);
+            drawImageRectSampled(current, image, srcR, dstR, sPaint, sampling);
           }
         }
         sPaint.setAlphaf(1);
@@ -926,7 +984,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
           outlinePaint?.setBlendMode?.(BLEND_PLUS);
           defaultPaint.setBlendMode?.(BLEND_PLUS);
         }
-        drawOutlined(current, image, commands, n, effect, alpha);
+        drawOutlined(current, image, commands, n, effect, alpha, sampling);
         if (blendAdditive) {
           outlinePaint?.setBlendMode?.(BLEND_SRC_OVER);
           defaultPaint.setBlendMode?.(BLEND_SRC_OVER);
@@ -940,9 +998,21 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const paint = effect === undefined ? defaultPaint : resolveEffectPaint(effect);
       if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
       paint.setAlphaf(alpha);
-      current.drawAtlas(image, srcs, dsts, paint);
+      drawAtlasSampled(current, image, srcs, dsts, paint, sampling);
       paint.setAlphaf(1);
       if (blendAdditive) paint.setBlendMode?.(BLEND_SRC_OVER);
+    },
+
+    setImageSampling(image, sampling): void {
+      if (sampling === 'nearest') {
+        imageSampling.set(image, SAMPLING_NEAREST);
+      } else if (sampling === 'linear') {
+        imageSampling.set(image, SAMPLING_LINEAR);
+      } else {
+        throw new RangeError(
+          `setImageSampling: unknown sampling '${String(sampling)}' (expected 'nearest' or 'linear')`,
+        );
+      }
     },
 
     setPostFxBinding(runtime, chain): void {
@@ -1035,6 +1105,37 @@ export function getXformCounters(): { rotated: number; unrotated: number } {
 // ---------------------------------------------------------------------------
 // Private helpers (module-private, not exported)
 // ---------------------------------------------------------------------------
+
+/** Without a sampling setting this is exactly the 4-argument call the surface always received. */
+function drawAtlasSampled(
+  cvs: DrawSurfaceLike,
+  image: unknown,
+  srcs: RectLike[],
+  dsts: RSXformLike[],
+  paint: PaintLike,
+  sampling: SamplingOptionsLike | undefined,
+): void {
+  if (sampling === undefined) {
+    cvs.drawAtlas(image, srcs, dsts, paint);
+  } else {
+    cvs.drawAtlas(image, srcs, dsts, paint, undefined, undefined, sampling);
+  }
+}
+
+function drawImageRectSampled(
+  cvs: DrawSurfaceLike,
+  image: unknown,
+  src: RectLike,
+  dst: RectLike,
+  paint: PaintLike,
+  sampling: SamplingOptionsLike | undefined,
+): void {
+  if (sampling === undefined || cvs.drawImageRectOptions === undefined) {
+    cvs.drawImageRect(image, src, dst, paint);
+  } else {
+    cvs.drawImageRectOptions(image, src, dst, sampling.filter, MIPMAP_NONE, paint);
+  }
+}
 
 function writeColor(out: Float32Array, color: SpriteColor, alphaMul: number): void {
   out[0] = color.r;

@@ -17,6 +17,7 @@ import type {
   Image as CKImage,
   Paint as CKPaint,
   ColorFilter,
+  FilterOptions,
   ImageFilter,
   RuntimeEffect,
   Shader,
@@ -71,14 +72,34 @@ function rawPaint(paint: PaintLike): CKPaint {
   return (paint as CKPaintLike)._ckPaint;
 }
 
+// The two CK sampling objects, pre-created once per module so the frame loop
+// hands the same instances to drawAtlas instead of building one per call.
+interface CKSampling {
+  readonly nearest: FilterOptions;
+  readonly linear: FilterOptions;
+}
+
 function wrapCKCanvas(
   ck: CKCanvas,
   atlasBuffers: ReturnType<typeof makeAtlasBuffers>,
+  kit: CanvasKit,
+  ckSampling: CKSampling,
 ): DrawSurfaceLike {
   // Pre-allocated LTRB scratch buffers for zero-alloc drawImageRect / drawRect.
   // CK accepts a Float32Array as InputRect (LTRB layout).
   const imgSrcScratch = new Float32Array(4);
   const imgDstScratch = new Float32Array(4);
+
+  function fillImageScratch(src: RectLike, dst: RectLike): void {
+    imgSrcScratch[0] = src.x;
+    imgSrcScratch[1] = src.y;
+    imgSrcScratch[2] = src.x + src.width;
+    imgSrcScratch[3] = src.y + src.height;
+    imgDstScratch[0] = dst.x;
+    imgDstScratch[1] = dst.y;
+    imgDstScratch[2] = dst.x + dst.width;
+    imgDstScratch[3] = dst.y + dst.height;
+  }
 
   return {
     save: () => ck.save(),
@@ -88,7 +109,7 @@ function wrapCKCanvas(
     // DrawSurfaceLike.rotate is degrees (contract); CanvasKit Canvas.rotate takes degrees — pass-through.
     rotate: (degrees, cx, cy) => ck.rotate(degrees, cx, cy),
     clear: (color) => ck.clear(color),
-    drawAtlas(image, srcRects, dstXforms, paint) {
+    drawAtlas(image, srcRects, dstXforms, paint, _blendMode, _colors, sampling) {
       const n = srcRects.length;
       if (n === 0) return;
       atlasBuffers.ensureCapacity(n);
@@ -107,27 +128,44 @@ function wrapCKCanvas(
         atlasBuffers.xforms[o + 2] = xf.tx;
         atlasBuffers.xforms[o + 3] = xf.ty;
       }
-      ck.drawAtlas(
-        image as CKImage,
-        atlasBuffers.srcs.subarray(0, n * 4),
-        atlasBuffers.xforms.subarray(0, n * 4),
-        rawPaint(paint),
-        null,
-        null,
-      );
+      const img = image as CKImage;
+      const srcs = atlasBuffers.srcs.subarray(0, n * 4);
+      const xforms = atlasBuffers.xforms.subarray(0, n * 4);
+      if (sampling === undefined) {
+        ck.drawAtlas(img, srcs, xforms, rawPaint(paint), null, null);
+      } else {
+        ck.drawAtlas(
+          img,
+          srcs,
+          xforms,
+          rawPaint(paint),
+          null,
+          null,
+          sampling.filter === 0 ? ckSampling.nearest : ckSampling.linear,
+        );
+      }
     },
     drawImageRect(image, src, dst, paint) {
-      const s = src as RectLike;
-      imgSrcScratch[0] = s.x;
-      imgSrcScratch[1] = s.y;
-      imgSrcScratch[2] = s.x + s.width;
-      imgSrcScratch[3] = s.y + s.height;
-      const d = dst as RectLike;
-      imgDstScratch[0] = d.x;
-      imgDstScratch[1] = d.y;
-      imgDstScratch[2] = d.x + d.width;
-      imgDstScratch[3] = d.y + d.height;
+      fillImageScratch(src, dst);
       ck.drawImageRect(image as CKImage, imgSrcScratch, imgDstScratch, rawPaint(paint), false);
+    },
+    drawImageRectOptions(image, src, dst, filterMode, mipmapMode, paint) {
+      fillImageScratch(src, dst);
+      const fm = filterMode === 0 ? kit.FilterMode.Nearest : kit.FilterMode.Linear;
+      const mm =
+        mipmapMode === 0
+          ? kit.MipmapMode.None
+          : mipmapMode === 1
+            ? kit.MipmapMode.Nearest
+            : kit.MipmapMode.Linear;
+      ck.drawImageRectOptions(
+        image as CKImage,
+        imgSrcScratch,
+        imgDstScratch,
+        fm,
+        mm,
+        paint == null ? null : rawPaint(paint),
+      );
     },
     drawRect(rect, paint) {
       const r = rect as RectLike;
@@ -167,9 +205,16 @@ function wrapRuntimeEffect(eff: RuntimeEffect): RuntimeEffectLike {
  * - `ColorFilter.MakeBlend(color, mode)` takes an EmbindEnumEntity — the
  *   wrapper maps the numeric literal (3=SrcOver, 5=SrcIn, 9=SrcATop) to the CK enum.
  * - `RSXform` objects carry `scos/ssin/tx/ty` fields for flat-array flattening.
+ * - Sampling: `drawAtlas`'s 7th argument and `drawImageRectOptions` take the
+ *   renderer's numeric FilterMode/MipmapMode (0=Nearest, 1=Linear) — the wrapper
+ *   maps them to the CK enum entries, with the two `FilterOptions` pre-created.
  */
 export function createWebSkiaModule(kit: CanvasKit): FrameRendererModule {
   const atlasBuffers = makeAtlasBuffers();
+  const ckSampling: CKSampling = {
+    nearest: { filter: kit.FilterMode.Nearest, mipmap: kit.MipmapMode.None },
+    linear: { filter: kit.FilterMode.Linear, mipmap: kit.MipmapMode.None },
+  };
 
   const colorFilterFactory: ColorFilterFactoryLike = {
     MakeBlend(color, mode) {
@@ -264,7 +309,7 @@ export function createWebSkiaModule(kit: CanvasKit): FrameRendererModule {
         beginRecording(bounds) {
           const r = bounds as RectLike;
           const ck = rec.beginRecording(kit.XYWHRect(r.x, r.y, r.width, r.height));
-          return wrapCKCanvas(ck, atlasBuffers);
+          return wrapCKCanvas(ck, atlasBuffers, kit, ckSampling);
         },
         finishRecordingAsPicture(): PictureLike {
           return rec.finishRecordingAsPicture();

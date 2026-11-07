@@ -1,4 +1,4 @@
-import type { FocusManager } from './focus.js';
+import type { FocusManager } from './focus-manager.js';
 
 /** Structural key source — createKeyboard() from @flare-engine/input is assignable; no hard dep. */
 export interface FocusKeySource {

@@ -568,6 +568,7 @@ Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, me
 
 - React + React Native are **peer deps**; the package itself only ships theme tokens, focus logic, layout math, and thin view wrappers.
 - `FocusManager` is the single source of truth for keyboard / gamepad navigation. `createFocusKeyboardDriver` ships the keyboard driver (arrows/Tab/Enter/Space); gamepad wiring lands in stage 11.4 without any UI-kit changes.
+- `@flare-engine/ui/focus` is a second entry point exporting only the focus core — `createFocusManager`, `createFocusKeyboardDriver` and their types (`FocusManager`, `FocusNode`, `FocusKeyboardDriver`, `FocusKeyboardDriverOptions`, `FocusKeySource`). Its module graph has no `react` or `react-native` import, so a `bun test` / Node harness can drive focus without React Native installed. `.` re-exports the same names.
 - `resolveLayout` is pure and allocation-light (one output array); useful for Skia-rendered HUD that needs deterministic pixel positions outside the React Native flex engine.
 - Component tests use a hand-rolled React/RN mock (see `tests/primitives.test.ts` pattern); all component props are exercised. The heavy-logic modules (`theme`, `focus`, `layout`) are also fully unit-tested.
 - All `style` props are typed `StyleProp<ViewStyle>` (or `StyleProp<TextStyle>` on `Label`), so callers may pass an array, `null`, or a plain object — the same convention as every RN primitive.

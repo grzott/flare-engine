@@ -27,6 +27,16 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./focus": {
+      "import": {
+        "types": "./dist/focus.d.mts",
+        "default": "./dist/focus.mjs"
+      },
+      "require": {
+        "types": "./dist/focus.d.ts",
+        "default": "./dist/focus.js"
+      }
     }
   },
   "files": ["dist", "README.md", "LICENSE", "NOTICE"],

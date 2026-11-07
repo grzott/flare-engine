@@ -26,6 +26,11 @@ export interface AudioBufferLike {
   readonly length: number;
 }
 
+/** Writable `AudioBuffer` shape (`copyToChannel` exists on the DOM and in react-native-audio-api). */
+export interface PCMBufferLike extends AudioBufferLike {
+  copyToChannel(source: Float32Array, channelNumber: number, startInChannel?: number): void;
+}
+
 export interface AudioBufferSourceNodeLike {
   buffer: AudioBufferLike | null;
   loop: boolean;
@@ -52,6 +57,11 @@ export interface AudioContextLike {
   readonly destination: AudioDestinationNodeLike;
   createGain(): GainNodeLike;
   createBufferSource(): AudioBufferSourceNodeLike;
+  /**
+   * Allocates a writable buffer for `fillPCMBuffer`. Optional so hand-written contexts
+   * keep type-checking.
+   */
+  createBuffer?(numberOfChannels: number, length: number, sampleRate: number): PCMBufferLike;
   resume(): Promise<void>;
   suspend(): Promise<void>;
   close(): Promise<void>;

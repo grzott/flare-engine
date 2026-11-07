@@ -347,9 +347,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/dynamics": {
-      "ceiling": 45703,
-      "measured": 41548,
-      "measuredAt": "2026-11-06"
+      "ceiling": 64293,
+      "measured": 58448,
+      "measuredAt": "2026-11-07"
     }
   },
   "freshness": {
@@ -470,6 +470,10 @@
     {
       "date": "2026-11-07",
       "reason": "errors ceiling raised 18836 -> 21904 B (measured 19913 x1.1), authorized by the owner's approval of the PR closing issue #157. SentryTransportOptions gains an integrations hook (kept, defaults) => SentryIntegrationLike[] over the unchanged ADR-0008 allowlist, falling back to it when the hook throws; CrashTransport gains an optional close(), which createSentryTransport implements (SDK close once, report a no-op afterwards, no init when close lands during the pending import) and composeTransports forwards to each child. main packs at 17266 B, measured by building origin/main f799f697's packages/errors outside the checkout: the published 0.4.8 tarball plus #218. So this change adds 2647 B gzipped (each file gzipped alone +4060 B): +1063 B raw (+242 B gzipped) in each of dist/index.js and index.mjs, +3553 B raw in each source map, +1170 B raw in each .d.ts (JSDoc) and +1716 B of README for the integrations warning and the consent-revocation section. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-07",
+      "reason": "dynamics ceiling raised 45703 -> 64293 B (measured 58448 x1.1), authorized by the owner's approval of the PR closing issue #158. WorldOptions.sleep opts into per-body sleeping: per-slot sleep state in the world pool (counter, flag, position/angle snapshot, slot owner), write wake, contact wake by a body that moved on the previous step, sleepers as infinite mass in the solver via per-manifold effective inverse mass, and new exports isSleeping, isAtRest, wakeBody and SleepOptions; the sleep-off path is pinned bit-identical to main by a golden hash. main packs at 45258 B, 445 B under the old ceiling, measured by building origin/main 0974e191's packages/dynamics outside the checkout (#225, #229 and #246 landed after the 0.4.8 release). So this change adds 13190 B gzipped (each file gzipped alone +13369 B, so not a deflate-window artifact): +7538 / +7597 B raw (+2011 / +2027 B gzipped) in dist/index.mjs / index.js, whose output keeps the JSDoc, +13604 B raw in each source map, +2142 B raw in each .d.ts and +2717 B of README for the Sleeping section. Added behaviour, not a regression."
     }
   ]
 }

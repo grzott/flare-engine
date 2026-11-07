@@ -141,7 +141,7 @@ export function aabbOverlap(
  */
 export function setupShmup(world: World): ShmupSetup {
   const moveSys = createMovementSystem(world);
-  world.addSystem(moveSys._worldFn, 0); // priority 0: integrate positions first
+  world.addSystem(moveSys.worldFn, 0); // priority 0: integrate positions first
 
   // Sensible defaults for a portrait phone; shell mutates after layout if needed.
   const bounds: ShmupBounds = { minX: -32, minY: -64, maxX: 432, maxY: 900 };
@@ -168,7 +168,7 @@ export function setupShmup(world: World): ShmupSetup {
       }
     },
   );
-  world.addSystem(cullSys._worldFn, 2); // priority 2: cull after movement
+  world.addSystem(cullSys.worldFn, 2); // priority 2: cull after movement
 
   return { bounds, stateRef };
 }

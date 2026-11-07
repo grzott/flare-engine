@@ -29,7 +29,7 @@ describe('defineSystem', () => {
       }
     });
 
-    world.addSystem(moveSys._worldFn);
+    world.addSystem(moveSys.worldFn);
     world.step(1);
 
     expect(world.get(e1, SysPos)).toEqual({ x: 10, y: 20 });
@@ -43,7 +43,7 @@ describe('defineSystem', () => {
     const sys = defineSystem(q, (_entities, dt) => {
       receivedDt = dt;
     });
-    world.addSystem(sys._worldFn);
+    world.addSystem(sys.worldFn);
     world.step(0.016);
     expect(receivedDt).toBeCloseTo(0.016);
   });
@@ -59,6 +59,40 @@ describe('defineSystem', () => {
     world.step(0);
     expect(count).toBe(1);
     world.removeSystem(sys._worldFn);
+    world.step(0);
+    expect(count).toBe(1);
+  });
+
+  it('worldFn and _worldFn are the same reference', () => {
+    const world = new World();
+    const sys = defineSystem(world.query(SysTag), () => {});
+    expect(sys.worldFn).toBe(sys._worldFn);
+  });
+
+  it('a system added via worldFn is removed via _worldFn', () => {
+    const world = new World();
+    let count = 0;
+    const sys = defineSystem(world.query(SysTag), () => {
+      count++;
+    });
+    world.addSystem(sys.worldFn);
+    world.step(0);
+    expect(count).toBe(1);
+    world.removeSystem(sys._worldFn);
+    world.step(0);
+    expect(count).toBe(1);
+  });
+
+  it('a system added via _worldFn is removed via worldFn', () => {
+    const world = new World();
+    let count = 0;
+    const sys = defineSystem(world.query(SysTag), () => {
+      count++;
+    });
+    world.addSystem(sys._worldFn);
+    world.step(0);
+    expect(count).toBe(1);
+    world.removeSystem(sys.worldFn);
     world.step(0);
     expect(count).toBe(1);
   });

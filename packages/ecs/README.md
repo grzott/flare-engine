@@ -33,6 +33,30 @@ for (let i = 0; i < ids.length; i++) {
 
 `query.entities` is the live `readonly number[]` of matching ids — walk it by index, as above, and nothing is allocated. `for (const id of query)` also works and is fine outside the frame, but it creates an iterator per loop and, on Hermes (React Native), one result object per entity, so keep it out of systems and render code. The array is live: destroying an entity or changing its components mid-walk moves another entity into the slot under you — collect first, act after.
 
+## Systems
+
+`defineSystem` binds a query to a per-frame function; register the returned `worldFn` with `world.addSystem` (lower priority runs first) and pass the same reference to `removeSystem`.
+
+```ts
+import { World, defineSystem, Position, Velocity } from '@flare-engine/ecs';
+
+const world = new World();
+const movers = world.query(Position, Velocity);
+const moveSys = defineSystem(movers, (query, dt, w) => {
+  const ids = query.entities;
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]!;
+    const pos = w.get(id, Position)!;
+    const vel = w.get(id, Velocity)!;
+    pos.x += vel.x * dt;
+    pos.y += vel.y * dt;
+  }
+});
+world.addSystem(moveSys.worldFn, 0);
+world.step(1 / 60);
+world.removeSystem(moveSys.worldFn);
+```
+
 ## Prefab data
 
 `definePrefab` plain-object data is stored by reference and shared by every spawn; pass `() => T` for per-entity mutable state:

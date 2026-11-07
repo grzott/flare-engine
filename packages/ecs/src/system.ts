@@ -8,7 +8,12 @@ export type SystemFn = (query: Query, dt: number, world: World) => void;
 export interface SystemDef {
   readonly query: Query;
   readonly fn: SystemFn;
-  /** The wrapper registered on the World (used for removal). */
+  /**
+   * The wrapper to register on the World via `world.addSystem(sys.worldFn)`;
+   * pass the same reference to `removeSystem`.
+   */
+  readonly worldFn: (world: World, dt: number) => void;
+  /** @deprecated Use `worldFn` — the same function reference. Removed in the next planned minor. */
   readonly _worldFn: (world: World, dt: number) => void;
 }
 
@@ -24,7 +29,7 @@ export interface SystemDef {
  *     const ids = query.entities;
  *     for (let i = 0; i < ids.length; i++) { const id = ids[i]!; ... }
  *   });
- *   world.addSystem(moveSys._worldFn);
+ *   world.addSystem(moveSys.worldFn);
  *
  * Walk `query.entities` by index — that is the zero-alloc form. `for...of`
  * over the query works too but allocates an iterator per loop (and, on
@@ -35,5 +40,5 @@ export function defineSystem(query: Query, fn: SystemFn): SystemDef {
   const worldFn = (world: World, dt: number) => {
     fn(query, dt, world);
   };
-  return { query, fn, _worldFn: worldFn };
+  return { query, fn, worldFn, _worldFn: worldFn };
 }

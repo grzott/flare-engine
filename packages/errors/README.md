@@ -42,6 +42,47 @@ front of the transport holds. Process-wide JS errors reach it through `installGl
 past ANRs on its own; if consent must cover those, set the `io.sentry.anr.enable` meta-data to
 `false` in your Android manifest ([Sentry Android docs](https://docs.sentry.io/platforms/android/configuration/app-not-respond/)).
 
+Opting a dropped integration back in is a deliberate act: the `integrations` hook receives the
+allowlist (`kept`) and the SDK's own default list (`defaults`) and returns what `init` uses. Each
+entry is a `SentryIntegrationLike` (`{ name }`), so no `@sentry/react-native` type is needed.
+
+```ts
+import { createSentryTransport } from '@flare-engine/errors';
+
+const transport = createSentryTransport({
+  dsn: 'https://xxx@o0.ingest.sentry.io/0',
+  integrations: (kept, defaults) => [
+    ...kept,
+    ...defaults.filter((integration) => integration.name === 'Breadcrumbs'),
+  ],
+});
+```
+
+Returning `defaults`, or passing through any capture integration such as
+`ReactNativeErrorHandlers`, re-enables Sentry's own global handlers, which report outside the
+transport and so outside any consent check placed in front of it. A hook that throws is logged and
+the allowlist is used.
+
+On consent revocation, close the transport. The Sentry transport awaits the SDK's `close()` once
+(only if it was ever loaded), and every later `report()` sends nothing; a second `close()` resolves
+without closing again. `composeTransports` forwards `close()` to each child that has one, so the
+chain from the first example shuts down in one call:
+
+```ts
+import { composeTransports, createConsoleTransport, createSentryTransport } from '@flare-engine/errors';
+
+const transport = composeTransports(
+  createConsoleTransport(),
+  createSentryTransport({ dsn: 'https://xxx@o0.ingest.sentry.io/0' }),
+);
+
+// later, when the user withdraws consent:
+await transport.close?.();
+```
+
+`close` is optional on `CrashTransport`; `createNoopTransport`, `createConsoleTransport` and the
+noop a DSN-less `createSentryTransport` returns leave it undefined.
+
 ## Catching what the boundary cannot
 
 `ErrorBoundary` only sees errors thrown during React's render phase. Most of a game's crashes are

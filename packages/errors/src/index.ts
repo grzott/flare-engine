@@ -13,5 +13,5 @@ export type {
 export { createClientTransport, installGlobalErrorCapture } from './global-capture.js';
 export type { CrashTransport } from './transport.js';
 export { createConsoleTransport, createNoopTransport } from './transport.js';
-export type { SentryTransportOptions } from './transports/sentry.js';
+export type { SentryIntegrationLike, SentryTransportOptions } from './transports/sentry.js';
 export { createSentryTransport } from './transports/sentry.js';

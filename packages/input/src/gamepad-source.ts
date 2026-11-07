@@ -19,11 +19,11 @@ export interface GamepadSource {
   poll(): (GamepadSnapshot | null)[];
 }
 
-interface NavigatorLike {
+export interface NavigatorLike {
   getGamepads?: () => (WebGamepad | null)[];
 }
 
-interface WebGamepad {
+export interface WebGamepad {
   id: string;
   index: number;
   connected: boolean;

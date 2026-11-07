@@ -26,7 +26,7 @@ import type {
   TriangleSpec,
 } from './types.js';
 
-type Skia = typeof SkiaModule;
+type SkiaApi = typeof SkiaModule;
 
 // ---- Glow recipes -----------------------------------------------------------
 
@@ -91,7 +91,7 @@ function applyStroke(paint: SkPaint, argb: number, width: number): void {
 // ---- Dispatcher -------------------------------------------------------------
 
 export function drawShape(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: ShapeSpec,
@@ -168,7 +168,7 @@ export function drawShape(
 // ---- Per-primitive renderers -----------------------------------------------
 
 function drawRect(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: RectSpec,
@@ -192,7 +192,7 @@ function drawRect(
 }
 
 function drawTriangle(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: TriangleSpec,
@@ -221,7 +221,7 @@ function drawTriangle(
 }
 
 function drawNgon(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: NgonSpec,
@@ -253,7 +253,7 @@ function drawNgon(
 }
 
 function drawStar(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: StarSpec,
@@ -287,7 +287,7 @@ function drawStar(
 }
 
 function drawPolyline(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: PolylineSpec,
@@ -311,7 +311,7 @@ function drawPolyline(
 }
 
 function drawGradientRect(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: GradientRectSpec,
@@ -346,7 +346,7 @@ function radToDeg(rad: number): number {
 }
 
 function drawArc(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: ArcSpec,
@@ -380,7 +380,7 @@ function drawArc(
 }
 
 function drawAnnulus(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: AnnulusSpec,
@@ -413,7 +413,7 @@ function drawAnnulus(
 }
 
 function drawTrapezoid(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: TrapezoidSpec,
@@ -446,7 +446,7 @@ function drawTrapezoid(
 }
 
 function drawPath(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: PathSpec,
@@ -472,7 +472,7 @@ function drawPath(
 }
 
 function drawSquare(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: SquareSpec,
@@ -503,7 +503,7 @@ function drawSquare(
  * loop: classic indexed for-loop over the readonly array.
  */
 function drawShip(
-  Skia: Skia,
+  Skia: SkiaApi,
   canvas: SkCanvas,
   paint: SkPaint,
   spec: ShipSpec,

@@ -17,6 +17,8 @@ export {
 export {
   createWebGamepadSource,
   type GamepadSource,
+  type NavigatorLike,
+  type WebGamepad,
 } from './gamepad-source.js';
 export {
   type GestureConfig,

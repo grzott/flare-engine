@@ -10,5 +10,6 @@ export {
   createNativeSource,
   createWebSource,
   type LinkingLike,
+  type WebWindowLike,
 } from './sources.js';
 export type { DeepLinkMatch, Params, ParamValue } from './types.js';

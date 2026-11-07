@@ -9,7 +9,7 @@ export type FrameBudgetHandle = {
   resetFpsRing(): void;
 };
 
-type FrameBudgetOpts = {
+export type FrameBudgetOpts = {
   limits: FrameBudgetLimits;
   fpsThreshold?: number;
   ringSize?: number;

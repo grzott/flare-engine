@@ -30,7 +30,7 @@ export interface ShareTransport {
 
 // ---------- Web Share API adapter -----------------------------------------
 
-interface WebNavigatorLike {
+export interface WebNavigatorLike {
   share?(data: { title?: string; text?: string; url?: string; files?: File[] }): Promise<void>;
   canShare?(data: { files?: File[] }): boolean;
   clipboard?: {
@@ -38,7 +38,7 @@ interface WebNavigatorLike {
   };
 }
 
-interface FileCtorLike {
+export interface FileCtorLike {
   new (parts: BlobPart[], name: string, options?: { type?: string }): File;
 }
 

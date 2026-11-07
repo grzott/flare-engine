@@ -4,6 +4,7 @@ export {
   createFrameBudget,
   type FrameBudgetHandle,
   type FrameBudgetLimits,
+  type FrameBudgetOpts,
   type FrameBudgetSnapshot,
 } from './frame-budget.js';
 export {
@@ -19,6 +20,7 @@ export {
   createPerfRecorder,
   type PerfCounterStats,
   type PerfRecorderHandle,
+  type PerfRecorderOpts,
   type PerfReport,
   type PerfSectionStats,
 } from './perf-recorder.js';

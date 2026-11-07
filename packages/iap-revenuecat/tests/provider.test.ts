@@ -1,51 +1,32 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import type {
+  RevenueCatCustomerInfo,
+  RevenueCatEntitlement,
+  RevenueCatNonSubscriptionTransaction,
+  RevenueCatStoreProduct,
+} from '../src/index.js';
 
 const configureMock = mock(() => {});
-const getProductsMock = mock(async (_ids: string[], _category?: string) => [
-  {
-    identifier: 'x',
-    title: 'X Title',
-    description: 'X Desc',
-    priceString: '$0.99',
-    price: 0.99,
-    currencyCode: 'USD',
-    productCategory: 'NON_SUBSCRIPTION',
-    productType: 'CONSUMABLE',
-  },
-]);
-/**
- * The RevenueCat customer-info shape these mocks stand in for. Declared explicitly because the
- * mocks' return types were otherwise inferred from whichever object literal happened to be written
- * first, which froze the entitlement keys of that one example (`premium`) and the empty
- * `nonSubscriptionTransactions` array into the contract — so a `mockImplementationOnce` using any
- * other entitlement id, or any transaction at all, failed to typecheck against a shape that was
- * never intended to be that narrow.
- */
-type RcEntitlement = {
-  identifier: string;
-  productIdentifier: string;
-  latestPurchaseDateMillis: number;
-  expirationDate: string | null;
-};
-
-type RcTransaction = {
-  transactionIdentifier: string;
-  productIdentifier: string;
-  purchaseDateMillis?: number;
-  purchaseDate?: string;
-};
-
-type RcCustomerInfo = {
-  originalPurchaseDate: string | null;
-  entitlements: {
-    active: Record<string, RcEntitlement>;
-    all: Record<string, RcEntitlement>;
-  };
-  nonSubscriptionTransactions: RcTransaction[];
-};
-
+// The mocks are annotated with the package's exported SDK shapes. Left to inference, their return
+// types froze whichever object literal was written first (one entitlement key, an empty
+// `nonSubscriptionTransactions`) into the contract, so a `mockImplementationOnce` using any other
+// entitlement id, or any transaction at all, failed to typecheck.
+const getProductsMock = mock(
+  async (_ids: string[], _category?: string): Promise<RevenueCatStoreProduct[]> => [
+    {
+      identifier: 'x',
+      title: 'X Title',
+      description: 'X Desc',
+      priceString: '$0.99',
+      price: 0.99,
+      currencyCode: 'USD',
+      productCategory: 'NON_SUBSCRIPTION',
+      productType: 'CONSUMABLE',
+    },
+  ],
+);
 const purchaseMock = mock(
-  async (_product: unknown): Promise<{ customerInfo: RcCustomerInfo }> => ({
+  async (_product: unknown): Promise<{ customerInfo: RevenueCatCustomerInfo }> => ({
     customerInfo: {
       originalPurchaseDate: '2024-01-01T00:00:00Z',
       entitlements: { all: {}, active: {} },
@@ -54,7 +35,7 @@ const purchaseMock = mock(
   }),
 );
 const restoreMock = mock(
-  async (): Promise<RcCustomerInfo> => ({
+  async (): Promise<RevenueCatCustomerInfo> => ({
     originalPurchaseDate: null,
     entitlements: {
       active: {
@@ -161,6 +142,68 @@ describe('createRevenueCatProvider', () => {
     expect(p.priceMicros).toBeCloseTo(990000);
     expect(p.currency).toBe('USD');
     expect(p.type).toBe('consumable');
+  });
+
+  test('fakes typed as the exported RevenueCat SDK shapes map to Product and PurchaseResult', async () => {
+    const product: RevenueCatStoreProduct = {
+      identifier: 'typed_sku',
+      title: 'Typed SKU',
+      description: 'typed',
+      priceString: '€2.50',
+      price: 2.5,
+      currencyCode: 'EUR',
+      productType: 'NON_CONSUMABLE',
+    };
+    const entitlement: RevenueCatEntitlement = {
+      identifier: 'typed_ent',
+      productIdentifier: 'typed_sku',
+      latestPurchaseDateMillis: 1700000000000,
+    };
+    const tx: RevenueCatNonSubscriptionTransaction = {
+      transactionIdentifier: 'txn_typed',
+      productIdentifier: 'typed_sku',
+      purchaseDateMillis: 1700000001000,
+    };
+    const info: RevenueCatCustomerInfo = {
+      entitlements: { active: { typed_ent: entitlement } },
+      nonSubscriptionTransactions: [tx],
+    };
+    // getProducts is hit once directly and once inside purchase().
+    getProductsMock.mockImplementationOnce(async () => [product]);
+    getProductsMock.mockImplementationOnce(async () => [product]);
+    purchaseMock.mockImplementationOnce(async () => ({ customerInfo: info }));
+    restoreMock.mockImplementationOnce(async () => info);
+
+    const provider = createRevenueCatProvider(testConfig);
+
+    const products = await provider.getProducts(['typed_sku']);
+    expect(products).toEqual([
+      {
+        id: 'typed_sku',
+        title: 'Typed SKU',
+        description: 'typed',
+        priceDisplay: '€2.50',
+        priceMicros: 2500000,
+        currency: 'EUR',
+        type: 'non-consumable',
+      },
+    ]);
+
+    const purchased = await provider.purchase('typed_sku');
+    expect(purchaseMock.mock.calls[0]![0]).toBe(product);
+    expect(purchased.status).toBe('purchased');
+    expect(purchased.transaction?.id).toBe('txn_typed');
+    expect(purchased.transaction?.productId).toBe('typed_sku');
+    expect(purchased.transaction?.purchasedAt).toBe(1700000001000);
+    expect(purchased.transaction?.raw).toBe(info);
+
+    const restored = await provider.restore();
+    expect(restored.map((r) => [r.status, r.transaction?.id, r.transaction?.purchasedAt])).toEqual([
+      ['purchased', 'typed_ent', 1700000000000],
+      ['purchased', 'txn_typed', 1700000001000],
+    ]);
+    expect(restored[0]?.transaction?.raw).toBe(entitlement);
+    expect(restored[1]?.transaction?.raw).toBe(tx);
   });
 
   test('concurrent first getProducts+restore call configure exactly once', async () => {

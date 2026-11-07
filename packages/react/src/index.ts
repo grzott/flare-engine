@@ -23,6 +23,7 @@ export {
   type SkiaFrameRenderer,
   type SkiaModuleLike,
   type SkOffscreenCanvasLike,
+  type SkOffscreenSurfaceLike,
 } from './skia-bridge.js';
 export { VirtualButton, type VirtualButtonProps } from './virtual-button.js';
 export {

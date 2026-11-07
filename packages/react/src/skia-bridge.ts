@@ -19,8 +19,8 @@ export interface SkOffscreenCanvasLike {
   clear(color: unknown): void;
 }
 
-/** Structural canvas surface — minimal subset needed for offscreen capture. */
-export interface SkSurfaceLike {
+/** Structural offscreen surface — what `SkiaModuleLike.Surface.Make` / `MakeOffscreen` return. */
+export interface SkOffscreenSurfaceLike {
   getCanvas(): SkOffscreenCanvasLike;
   makeImageSnapshot(): SkImageLike;
   /** Force queued draws to execute. Required for GPU-backed surfaces before
@@ -68,7 +68,7 @@ export interface PostFxPassDescriptor {
  * Falls back to the raw snapshot when the method is absent (CPU surfaces,
  * test mocks) — no behavioural change in those paths.
  */
-function detachSnapshot(surface: SkSurfaceLike): SkImageLike {
+function detachSnapshot(surface: SkOffscreenSurfaceLike): SkImageLike {
   const snap = surface.makeImageSnapshot();
   if (typeof snap.makeNonTextureImage === 'function') {
     return snap.makeNonTextureImage();
@@ -106,8 +106,8 @@ export interface RenderShapesOpts {
 export type SkiaModuleLike = FrameRendererModule & {
   RuntimeEffect?: { Make(sksl: string): SkRuntimeEffect | null };
   Surface?: {
-    Make(width: number, height: number): SkSurfaceLike | null;
-    MakeOffscreen?(width: number, height: number): SkSurfaceLike | null;
+    Make(width: number, height: number): SkOffscreenSurfaceLike | null;
+    MakeOffscreen?(width: number, height: number): SkOffscreenSurfaceLike | null;
   };
   /** Optional — present on device builds; absent in CPU/test mocks (drop-shadow falls back to the default paint). */
   ImageFilter?: {

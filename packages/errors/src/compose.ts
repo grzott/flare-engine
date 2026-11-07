@@ -11,5 +11,17 @@ export function composeTransports(...transports: CrashTransport[]): CrashTranspo
         }
       }
     },
+    async close() {
+      for (const t of transports) {
+        try {
+          await t.close?.();
+        } catch (err) {
+          console.error(
+            '[@flare-engine/errors] composeTransports: child transport close threw',
+            err,
+          );
+        }
+      }
+    },
   };
 }

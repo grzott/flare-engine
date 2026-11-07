@@ -66,4 +66,86 @@ describe('composeTransports', () => {
     const t = composeTransports();
     await expect(t.report(createCrashPayload(new Error('x')))).resolves.toBeUndefined();
   });
+
+  test('close() closes every closable child once, in order', async () => {
+    const closed: string[] = [];
+    const closable = (id: string): CrashTransport => ({
+      report() {},
+      async close() {
+        closed.push(id);
+      },
+    });
+
+    const t = composeTransports(closable('a'), closable('b'), closable('c'));
+    await expect(t.close?.()).resolves.toBeUndefined();
+
+    expect(closed).toEqual(['a', 'b', 'c']);
+  });
+
+  test('close() skips children without close', async () => {
+    const closed: string[] = [];
+    const plain: CrashTransport = {
+      report() {},
+    };
+    const closable: CrashTransport = {
+      report() {},
+      async close() {
+        closed.push('closable');
+      },
+    };
+
+    const t = composeTransports(plain, closable, plain);
+    await t.close?.();
+
+    expect(closed).toEqual(['closable']);
+  });
+
+  test('a child whose close throws or rejects is logged and later children still close', async () => {
+    const closed: string[] = [];
+    const consoleCalls: unknown[][] = [];
+    const originalError = console.error;
+    console.error = ((...args: unknown[]) => consoleCalls.push(args)) as typeof console.error;
+
+    try {
+      const thrown = new Error('sync close exploded');
+      const rejected = new Error('async close exploded');
+      const good1: CrashTransport = {
+        report() {},
+        async close() {
+          closed.push('before');
+        },
+      };
+      const throws: CrashTransport = {
+        report() {},
+        close() {
+          throw thrown;
+        },
+      };
+      const rejects: CrashTransport = {
+        report() {},
+        close() {
+          return Promise.reject(rejected);
+        },
+      };
+      const good2: CrashTransport = {
+        report() {},
+        async close() {
+          closed.push('after');
+        },
+      };
+
+      const t = composeTransports(good1, throws, rejects, good2);
+      await expect(t.close?.()).resolves.toBeUndefined();
+
+      expect(closed).toEqual(['before', 'after']);
+      expect(consoleCalls.length).toBe(2);
+      expect(consoleCalls[0]?.[0]).toBe(
+        '[@flare-engine/errors] composeTransports: child transport close threw',
+      );
+      expect(consoleCalls[0]?.[1]).toBe(thrown);
+      expect(consoleCalls[1]?.[1]).toBe(rejected);
+    } finally {
+      console.error = originalError;
+    }
+  });
 });

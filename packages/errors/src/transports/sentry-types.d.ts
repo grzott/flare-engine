@@ -18,4 +18,5 @@ declare module '@sentry/react-native' {
     enableWatchdogTerminationTracking?: boolean;
     sendClientReports?: boolean;
   }): void;
+  export function close(): Promise<void>;
 }

@@ -217,9 +217,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/errors": {
-      "ceiling": 18836,
-      "measured": 17123,
-      "measuredAt": "2026-11-04"
+      "ceiling": 21904,
+      "measured": 19913,
+      "measuredAt": "2026-11-07"
     },
     "@flare-engine/events": {
       "ceiling": 9706,
@@ -466,6 +466,10 @@
     {
       "date": "2026-11-07",
       "reason": "testing ceiling raised 15248 -> 18303 B (measured 16639 x1.1), authorized by the owner's approval of the PR closing issue #153. New headless-context.ts exports createHeadlessContext plus the CreateHeadlessContextOptions and HeadlessContext types: createTestWorld plus a real Camera2D, a MockInputManager, a resolve-null AssetManager, a permissive SpriteSheet and a caller-supplied scenes slot, with camera.update / input.update wired on loop.onLateUpdate as GameView does; the package gains @flare-engine/assets and @flare-engine/render dependencies. main packs at 13808 B: the published 0.4.8 tarball, and no testing commit has landed since the 0.4.8 release commit 55aaf28 except the dd46af11 version bump. So this change adds 2831 B gzipped (each file gzipped alone +6786 B): +1365 / +1273 B raw (+416 / +404 B gzipped) in dist/index.js / index.mjs, about +4.9 KB raw in each source map, +2615 B raw in each .d.ts (JSDoc) and a Headless context README section. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-07",
+      "reason": "errors ceiling raised 18836 -> 21904 B (measured 19913 x1.1), authorized by the owner's approval of the PR closing issue #157. SentryTransportOptions gains an integrations hook (kept, defaults) => SentryIntegrationLike[] over the unchanged ADR-0008 allowlist, falling back to it when the hook throws; CrashTransport gains an optional close(), which createSentryTransport implements (SDK close once, report a no-op afterwards, no init when close lands during the pending import) and composeTransports forwards to each child. main packs at 17266 B, measured by building origin/main f799f697's packages/errors outside the checkout: the published 0.4.8 tarball plus #218. So this change adds 2647 B gzipped (each file gzipped alone +4060 B): +1063 B raw (+242 B gzipped) in each of dist/index.js and index.mjs, +3553 B raw in each source map, +1170 B raw in each .d.ts (JSDoc) and +1716 B of README for the integrations warning and the consent-revocation section. Added behaviour, not a regression."
     }
   ]
 }

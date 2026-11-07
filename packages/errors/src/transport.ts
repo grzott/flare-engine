@@ -6,6 +6,12 @@ import type { CrashPayload } from './crash-payload.js';
  */
 export interface CrashTransport {
   report(payload: CrashPayload): void | Promise<void>;
+  /**
+   * Tear the sink down, e.g. on consent revocation. Idempotent: a second call
+   * resolves without closing twice. `report()` after `close()` sends nothing.
+   * Transports with nothing to tear down leave it undefined.
+   */
+  close?(): Promise<void>;
 }
 
 /**

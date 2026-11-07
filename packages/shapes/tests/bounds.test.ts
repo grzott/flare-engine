@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { shapeBoundsRadius, singleShapeRadius } from '../src/bounds.js';
+import { friendlyGlowArgb } from '../src/draw.js';
 import type { ShapeSpec } from '../src/types.js';
 
 describe('singleShapeRadius — atomic primitive bounds', () => {
@@ -222,6 +223,30 @@ describe('shapeBoundsRadius — glow-ring margin (F017)', () => {
     ]);
     expect(r).toBe(16.25); // 10 + 2 (base) + max(2, 2) (stroke) + 2.25 (glow)
   });
+
+  test('a GlowSpec adds exactly 2.5 + width, the outer edge of the ring applyGlow paints', () => {
+    const r = shapeBoundsRadius([{ kind: 'circle', r: 10, glow: { color: 0xff00ffff, width: 8 } }]);
+    expect(r).toBe(22.5); // 10 + 2 + (2.5 + 8)
+    // drawShape's ring centre is r + 2.5 + 4 = 16.5, outer edge 20.5.
+    expect(r).toBeGreaterThan(10 + 2.5 + 8);
+  });
+
+  test("{ color: friendlyGlowArgb(), width: 3 } reaches exactly as far as 'friendly'", () => {
+    const named = shapeBoundsRadius([{ kind: 'circle', r: 10, glow: 'friendly' }]);
+    const themed = shapeBoundsRadius([
+      { kind: 'circle', r: 10, glow: { color: friendlyGlowArgb(), width: 3 } },
+    ]);
+    expect(themed).toBe(named);
+    expect(themed).toBe(17.5);
+  });
+
+  test.each([Number.NaN, -1, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'a GlowSpec with width %p adds nothing',
+    (width) => {
+      const r = shapeBoundsRadius([{ kind: 'circle', r: 10, glow: { color: 0xffffffff, width } }]);
+      expect(r).toBe(12);
+    },
+  );
 
   test('a ship engine glow ring widens the ship tile relative to no glow', () => {
     const glowedShip: ShapeSpec = {

@@ -64,6 +64,26 @@ export function applyHazardGlow(
   canvas.drawCircle(cx, cy, r + 2, paint);
 }
 
+/**
+ * One stroked ring of `width` px in `color` (ARGB) whose inner edge sits
+ * 2.5 px outside `r` — the gap `applyFriendlyGlow` uses, so `width: 3` with
+ * `friendlyGlowArgb()` paints exactly the friendly ring. A non-finite or
+ * negative `width` paints nothing.
+ */
+export function applyGlow(
+  canvas: SkCanvas,
+  paint: SkPaint,
+  cx: number,
+  cy: number,
+  r: number,
+  color: number,
+  width: number,
+): void {
+  if (!Number.isFinite(width) || width < 0) return;
+  applyStroke(paint, color, width);
+  canvas.drawCircle(cx, cy, r + (2.5 + width / 2), paint);
+}
+
 // ---- Color plumbing ---------------------------------------------------------
 
 const COLOR = new Float32Array(4);
@@ -107,8 +127,10 @@ export function drawShape(
     const gr = singleShapeRadius(spec);
     if (spec.glow === 'friendly') {
       applyFriendlyGlow(canvas, paint, cx, cy, gr);
-    } else {
+    } else if (spec.glow === 'hazard') {
       applyHazardGlow(canvas, paint, cx, cy, gr);
+    } else {
+      applyGlow(canvas, paint, cx, cy, gr, spec.glow.color, spec.glow.width);
     }
   }
 

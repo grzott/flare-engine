@@ -8,6 +8,7 @@ export {
 
 export {
   applyFriendlyGlow,
+  applyGlow,
   applyHazardGlow,
   argbTo,
   drawShape,
@@ -19,6 +20,7 @@ export type {
   ArcSpec,
   BaseSpec,
   CircleSpec,
+  GlowSpec,
   GradientRectSpec,
   NgonSpec,
   PathSpec,

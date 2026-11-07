@@ -16,6 +16,18 @@
  * `draw.ts` to feed Skia paints.
  */
 
+/**
+ * A themed glow ring: one stroke of `width` px in `color` (32-bit ARGB, like
+ * every other shape colour), its inner edge 2.5 px outside
+ * `singleShapeRadius(spec)`. `{ color: friendlyGlowArgb(), width: 3 }` paints
+ * exactly what `'friendly'` paints. A non-finite or negative `width` paints
+ * no ring and adds no bounds reach.
+ */
+export interface GlowSpec {
+  readonly color: number;
+  readonly width: number;
+}
+
 export interface BaseSpec {
   readonly fill?: number;
   readonly stroke?: number;
@@ -26,13 +38,14 @@ export interface BaseSpec {
   /** Local rotation in radians, composed with the entity rotation. */
   readonly rot?: number;
   /**
-   * Optional glow tag. When present, `drawShape` emits the corresponding glow
+   * Optional glow. When present, `drawShape` emits the corresponding glow
    * ring behind the body geometry.
    *
    *   'friendly' — safe-green rim  (player ship, weapon/upgrade pickups)
    *   'hazard'   — orange double-stroke (danger cues, enemy bullets)
+   *   GlowSpec   — one ring in the caller's colour and width (themeable)
    */
-  readonly glow?: 'friendly' | 'hazard';
+  readonly glow?: 'friendly' | 'hazard' | GlowSpec;
 }
 
 export interface CircleSpec extends BaseSpec {

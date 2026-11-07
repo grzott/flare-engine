@@ -42,7 +42,7 @@ function demo(skia: Skia, canvas: SkCanvas, paint: SkPaint): void {
 
 ## Primitives
 
-13 spec kinds covering every common 2D shape. All accept optional `fill` (ARGB int), `stroke`, `strokeWidth`, `ox`/`oy` (local offset), `rot` (radians), and `glow: 'friendly' | 'hazard'`.
+13 spec kinds covering every common 2D shape. All accept optional `fill` (ARGB int), `stroke`, `strokeWidth`, `ox`/`oy` (local offset), `rot` (radians), and `glow: 'friendly' | 'hazard' | { color, width }`.
 
 | Kind | Fields | Use case |
 |---|---|---|
@@ -97,8 +97,9 @@ declare const playerShip: ShapeSpec;
 
 // For atlas tile sizing — max half-extent across a composition. Includes each
 // shape's ox/oy offset, a stroke-width margin where a stroke is actually
-// painted, and the full extent of a glow ring (+5.5 friendly, +2.25 hazard),
-// so a tile sized from this fully contains what `drawShape` paints.
+// painted, and the full extent of a glow ring (+5.5 friendly, +2.25 hazard,
+// +2.5 + width for a themed ring), so a tile sized from this fully contains
+// what `drawShape` paints.
 const tileRadius = shapeBoundsRadius([playerShip]);
 
 // For hitboxes — per-axis extents with the same margins, so an asymmetric
@@ -131,14 +132,24 @@ Three ways, in order of friction:
    compile. It does **not** catch a missing step 2 — `drawShape` returns `void` and its switch has no
    `default`, so a new kind without a draw branch compiles and silently draws nothing.
 
-## Glow tags
+## Glow
 
-Two visual halos for free, set `glow: 'friendly' | 'hazard'` on any primitive:
+Set `glow` on any primitive and `drawShape` paints a ring behind the body. Two named halos come for free, and a `GlowSpec` object paints a ring in your own palette:
 
-| Tag | Color | Use |
+| Glow | Color | Use |
 |---|---|---|
-| `friendly` | safe-green `#6FA66B` at α=0.25, single 3 px ring at `r+4` | Player ships, pickups, safe markers |
-| `hazard` | hazard-orange `#E84B2A` at α=0.6, double 0.5 px ring at `r+1` and `r+2` | Enemy bullets, danger cues |
+| `'friendly'` | safe-green `#6FA66B` at α=0.25, single 3 px ring at `r+4` | Player ships, pickups, safe markers |
+| `'hazard'` | hazard-orange `#E84B2A` at α=0.6, double 0.5 px ring at `r+1` and `r+2` | Enemy bullets, danger cues |
+| `{ color, width }` | one `width` px ring in `color` (ARGB), inner edge 2.5 px outside the body | Any theme |
+
+`{ color: friendlyGlowArgb(), width: 3 }` paints exactly what `'friendly'` paints. The bounds helpers widen by `2.5 + width` for the object form, so an atlas tile or hitbox grows with the ring. A non-finite or negative `width` paints no ring and adds no reach. `applyGlow(canvas, paint, cx, cy, r, color, width)` draws the themed ring directly for custom compositing.
+
+```ts
+import type { GlowSpec, ShapeSpec } from '@flare-engine/shapes';
+
+const brandGlow: GlowSpec = { color: 0x40c9a24a, width: 4 };
+const relic: ShapeSpec = { kind: 'star', points: 5, rOuter: 12, rInner: 5, fill: 0xffc9a24a, glow: brandGlow };
+```
 
 ## License
 

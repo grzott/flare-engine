@@ -85,19 +85,79 @@ kept exactly as written: `Body.angle` is cumulative and never wrapped, so a plai
 across multi-turn spins where a shortest-path lerp would unravel them. `sampleInto` allocates
 nothing; the one scratch buffer above serves the whole replay.
 
+## Sleeping
+
+Sleeping is off by default (see Limits). `createWorld({ sleep })` opts in: a dynamic body whose
+speed stays under `linearThreshold` (px/s) and whose angular speed stays under `angularThreshold`
+(rad/s) for `steps` consecutive steps has its velocities set to exactly 0 and is skipped by
+integration and by pair tests against other sleeping or static bodies. It wakes when an awake body
+that moved on the previous step touches it, when you write its `velocity`, `angularVelocity`,
+`position` or `angle`, or when you call `wakeBody`. `isSleeping(world, body)` reads one body (an
+`indexOf` over `world.bodies`); `isAtRest(world)` is true once every dynamic body sleeps, which makes
+it the stop rule for a `stepUntil` bake:
+
+```ts
+import {
+  addBody,
+  createBody,
+  createWorld,
+  isAtRest,
+  isSleeping,
+  stepUntil,
+  wakeBody,
+} from '@flare-engine/dynamics';
+
+const world = createWorld({
+  gravity: { x: 0, y: 1800 },
+  sleep: { linearThreshold: 14, angularThreshold: 1.5, steps: 30 },
+});
+addBody(
+  world,
+  createBody({ position: { x: 0, y: 100 }, half: { x: 500, y: 10 }, static: true }),
+);
+const box = addBody(world, createBody({ position: { x: 0, y: 0 }, half: { x: 5, y: 5 } }));
+
+const result = stepUntil(world, 1 / 120, {
+  budgetMs: 8,
+  maxSteps: 600,
+  done: () => isAtRest(world),
+});
+if (result.complete) console.log(isSleeping(world, box), box.velocity.y); // true 0
+
+wakeBody(world, box); // e.g. after removing the floor from world.bodies
+```
+
+Thresholds must clear the resting jitter described under Limits, which depends on body size and
+`dt`: in the package's own tests (half-5 boxes, `dt = 1/120`) a resting box peaks at about 5.8 px/s
+and 1.12 rad/s (the angular peak scales with 1 / half-width), so 14 / 1.5 sleeps it in 91 steps,
+while 0.6 rad/s never sees 30 quiet steps in a row. Measure your own scene before pinning values.
+
+What sleeping does not do:
+
+- **No islands.** A woken body wakes the sleepers it touches on the *next* step, so a landed box
+  wakes a stack one level per step, and a sleeper touched only by a body that is itself settling
+  (under the thresholds, counting down) stays asleep.
+- **A sleeper does not follow a moved static body.** Moving the floor under a sleeping box leaves
+  the box where it is; call `wakeBody` after moving or removing a support.
+- **Removing a body from `world.bodies` wakes the bodies that shift down a slot** and nothing else.
+  A sleeper whose support was removed without shifting it stays asleep in mid-air until `wakeBody`.
+  Inserting a body before a sleeper likewise wakes it (it re-sleeps after `steps` quiet steps).
+- **A world that never went through `createWorld`** (a spread copy or `structuredClone` handed to
+  `step`) is adopted with sleeping off; `isSleeping` and `isAtRest` are then false for any dynamic
+  body.
+
 ## Limits (v1)
 
-- **Resting bodies do not go perfectly still.** A box settling on a floor reaches a stable
-  *position* — in the package's own test scenario, position moves less than 0.1 units over 600
-  further steps — but `velocity` keeps a small, bounded oscillation (roughly 2.6 units/s in that same
-  scenario) at the penetration-slop equilibrium. This is inherent to a Baumgarte-biased
-  sequential-impulse solver run without sleeping, not a bug, and not something a bigger iteration
-  count or a tuning tweak resolves. Sleeping and resting-velocity damping are deliberately out of
-  scope for v1 (tracked as future work). If your use case needs pixel-exact stillness, clamp small
-  resting velocities at your own layer once a body's position has stabilized.
+- **Resting bodies do not go perfectly still unless you opt into sleeping.** A box settling on a
+  floor reaches a stable *position* — in the package's own test scenario, position moves less than
+  0.1 units over 600 further steps — but `velocity` keeps a small, bounded oscillation (roughly 2.6
+  units/s in that same scenario) at the penetration-slop equilibrium. This is inherent to a
+  Baumgarte-biased sequential-impulse solver, not a bug, and not something a bigger iteration count
+  or a tuning tweak resolves. `createWorld({ sleep })` (above) zeroes the velocity of bodies that
+  stay under your thresholds; resting-velocity damping stays out of scope.
 - **Boxes only.** No circle or polygon shapes.
-- **No joints, no sleeping, no CCD (continuous collision detection).** Fast-moving thin bodies can
-  tunnel through each other within a single step.
+- **No joints, no CCD (continuous collision detection).** Fast-moving thin bodies can tunnel
+  through each other within a single step.
 - **No ECS coupling.** `World`/`Body` are plain data; wire them into an ECS yourself if you use one.
 - **Broadphase is brute-force** (all-pairs AABB reject) — fine at small body counts, not a spatial
   partition. There is no broadphase beyond that pass.

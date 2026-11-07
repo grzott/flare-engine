@@ -4,6 +4,8 @@ export type { SnapshotProjector, SnapshotSchema } from './define-snapshot.js';
 export { defineSnapshot } from './define-snapshot.js';
 export type { FakeClock } from './fake-clock.js';
 export { createFakeClock } from './fake-clock.js';
+export type { CreateHeadlessContextOptions, HeadlessContext } from './headless-context.js';
+export { createHeadlessContext } from './headless-context.js';
 export { createMockInputManager, MockInputManager } from './mock-input.js';
 export type { SceneSnapshot, SceneSnapshotEntity } from './scene-snapshot.js';
 export { serializeScene, snapshotsEqual } from './scene-snapshot.js';

@@ -44,6 +44,8 @@ function variants(s: ShapeSpec): readonly ShapeSpec[] {
     { ...s, ox: -11, oy: 5, stroke: 0xff000000, strokeWidth: 6, glow: 'hazard' },
     { ...s, rot: 0.7 },
     { ...s, rot: 0.7, ox: 7, oy: -3, glow: 'friendly' },
+    { ...s, glow: { color: 0xff00ffff, width: 8 } },
+    { ...s, rot: 0.7, ox: 7, oy: -3, glow: { color: 0xff00ffff, width: 8 } },
   ];
 }
 
@@ -197,6 +199,21 @@ describe('shapeBoundsBox — margins match shapeBoundsRadius', () => {
     expect(d.radius).toBe(2.25);
     expect(d.box).toEqual([2.25, 2.25, 2.25, 2.25]);
   });
+
+  test('a GlowSpec widens every side by exactly 2.5 + width', () => {
+    const d = deltas({ ...rect, glow: { color: 0xff00ffff, width: 8 } });
+    expect(d.radius).toBe(10.5);
+    expect(d.box).toEqual([10.5, 10.5, 10.5, 10.5]);
+  });
+
+  test.each([Number.NaN, -1, Number.POSITIVE_INFINITY])(
+    'a GlowSpec with width %p widens nothing',
+    (width) => {
+      const d = deltas({ ...rect, glow: { color: 0xff00ffff, width } });
+      expect(d.radius).toBe(0);
+      expect(d.box).toEqual([0, 0, 0, 0]);
+    },
+  );
 
   test('gradient-rect ignores a stroke field, as the radius does', () => {
     const d = deltas({

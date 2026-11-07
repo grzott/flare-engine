@@ -11,6 +11,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   applyFriendlyGlow,
+  applyGlow,
   applyHazardGlow,
   argbTo,
   drawShape,
@@ -24,13 +25,19 @@ interface Call {
   readonly args: readonly unknown[];
 }
 
+/**
+ * Paint calls are kept out of `calls` so the canvas-sequence assertions stay
+ * exact; `setColor` copies the shared colour buffer at call time.
+ */
 function createStubSkia(svgPathReturnsNull = false): {
   Skia: unknown;
   canvas: unknown;
   paint: unknown;
   calls: Call[];
+  paintCalls: Call[];
 } {
   const calls: Call[] = [];
+  const paintCalls: Call[] = [];
 
   const path = {
     moveTo: (x: number, y: number) => calls.push({ method: 'path.moveTo', args: [x, y] }),
@@ -55,9 +62,9 @@ function createStubSkia(svgPathReturnsNull = false): {
   };
 
   const paint = {
-    setColor: (_c: Float32Array) => {},
-    setStyle: (_s: number) => {},
-    setStrokeWidth: (_w: number) => {},
+    setColor: (c: Float32Array) => paintCalls.push({ method: 'paint.setColor', args: [...c] }),
+    setStyle: (s: number) => paintCalls.push({ method: 'paint.setStyle', args: [s] }),
+    setStrokeWidth: (w: number) => paintCalls.push({ method: 'paint.setStrokeWidth', args: [w] }),
   };
 
   const Skia = {
@@ -72,7 +79,20 @@ function createStubSkia(svgPathReturnsNull = false): {
     Paint: () => paint,
   };
 
-  return { Skia, canvas, paint, calls };
+  return { Skia, canvas, paint, calls, paintCalls };
+}
+
+/** Every canvas and paint call `drawShape` makes for `spec` at the origin. */
+function record(spec: ShapeSpec): { calls: Call[]; paintCalls: Call[] } {
+  const { Skia, canvas, paint, calls, paintCalls } = createStubSkia();
+  drawShape(Skia as never, canvas as never, paint as never, spec, 0, 0, 0);
+  return { calls, paintCalls };
+}
+
+function argb(value: number): number[] {
+  const out = new Float32Array(4);
+  argbTo(out, value);
+  return [...out];
 }
 
 function methodCounts(calls: readonly Call[]): Record<string, number> {
@@ -579,6 +599,102 @@ describe('drawShape — glow halo', () => {
     drawShape(Skia as never, canvas as never, paint as never, spec, 0, 0, 0);
     // 2 glow rings (r+1, r+2) + 1 body = 3 drawCircle
     expect(calls.filter((c) => c.method === 'canvas.drawCircle')).toHaveLength(3);
+  });
+
+  test("'friendly' output is unchanged: one 3 px #6FA66B@0x40 stroke at r + 4", () => {
+    const { calls, paintCalls } = record({ kind: 'circle', r: 10, glow: 'friendly' });
+    expect(calls).toEqual([{ method: 'canvas.drawCircle', args: [0, 0, 14] }]);
+    expect(paintCalls).toEqual([
+      { method: 'paint.setColor', args: argb((0x40 << 24) | 0x6fa66b) },
+      { method: 'paint.setStyle', args: [1] },
+      { method: 'paint.setStrokeWidth', args: [3] },
+    ]);
+  });
+
+  test("'hazard' output is unchanged: two 0.5 px #E84B2A@0x99 strokes at r + 1 and r + 2", () => {
+    const { calls, paintCalls } = record({ kind: 'circle', r: 10, glow: 'hazard' });
+    expect(calls).toEqual([
+      { method: 'canvas.drawCircle', args: [0, 0, 11] },
+      { method: 'canvas.drawCircle', args: [0, 0, 12] },
+    ]);
+    expect(paintCalls).toEqual([
+      { method: 'paint.setColor', args: argb((0x99 << 24) | 0xe84b2a) },
+      { method: 'paint.setStyle', args: [1] },
+      { method: 'paint.setStrokeWidth', args: [0.5] },
+    ]);
+  });
+});
+
+describe('drawShape — glow object form', () => {
+  test('paints one stroke of the given colour and width, inner edge 2.5 px outside the body', () => {
+    const { calls, paintCalls } = record({
+      kind: 'circle',
+      r: 10,
+      glow: { color: 0x80ff00ff, width: 8 },
+    });
+    // ring centre = r + 2.5 + width/2 = 16.5; inner edge 12.5, outer edge 20.5
+    expect(calls).toEqual([{ method: 'canvas.drawCircle', args: [0, 0, 16.5] }]);
+    expect(paintCalls).toEqual([
+      { method: 'paint.setColor', args: argb(0x80ff00ff) },
+      { method: 'paint.setStyle', args: [1] },
+      { method: 'paint.setStrokeWidth', args: [8] },
+    ]);
+  });
+
+  test('draws at the spec offset, behind the body, using singleShapeRadius', () => {
+    const { Skia, canvas, paint, calls } = createStubSkia();
+    drawShape(
+      Skia as never,
+      canvas as never,
+      paint as never,
+      { kind: 'rect', w: 20, h: 10, fill: 0xff112233, ox: 3, oy: -4, glow: { color: 1, width: 1 } },
+      100,
+      100,
+      0,
+    );
+    // gr = max(20,10)*0.6 = 12; ring = 12 + 2.5 + 0.5 = 15
+    expect(calls[0]).toEqual({ method: 'canvas.drawCircle', args: [103, 96, 15] });
+    expect(calls.map((c) => c.method)).toEqual([
+      'canvas.drawCircle',
+      'canvas.save',
+      'canvas.translate',
+      'canvas.drawRect',
+      'canvas.restore',
+    ]);
+  });
+
+  test("{ color: friendlyGlowArgb(), width: 3 } issues the same calls as 'friendly'", () => {
+    const named = record({ kind: 'circle', r: 10, fill: 0xff00ff00, glow: 'friendly' });
+    const themed = record({
+      kind: 'circle',
+      r: 10,
+      fill: 0xff00ff00,
+      glow: { color: friendlyGlowArgb(), width: 3 },
+    });
+    expect(themed.calls).toEqual(named.calls);
+    expect(themed.paintCalls).toEqual(named.paintCalls);
+  });
+
+  test.each([Number.NaN, -1, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'width %p paints no ring',
+    (width) => {
+      const { calls, paintCalls } = record({
+        kind: 'circle',
+        r: 10,
+        fill: 0xff00ff00,
+        glow: { color: 0xffffffff, width },
+      });
+      // only the body
+      expect(calls).toEqual([{ method: 'canvas.drawCircle', args: [0, 0, 10] }]);
+      expect(paintCalls.filter((c) => c.method === 'paint.setStrokeWidth')).toHaveLength(0);
+    },
+  );
+
+  test('applyGlow is exported for custom compositing and skips an invalid width', () => {
+    const { canvas, paint, calls } = createStubSkia();
+    applyGlow(canvas as never, paint as never, 5, 7, 10, 0xffffffff, 2);
+    applyGlow(canvas as never, paint as never, 5, 7, 10, 0xffffffff, -2);
+    expect(calls).toEqual([{ method: 'canvas.drawCircle', args: [5, 7, 13.5] }]);
   });
 });
 

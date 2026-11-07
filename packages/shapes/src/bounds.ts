@@ -69,8 +69,8 @@ export function singleShapeRadius(spec: ShapeSpec): number {
  * size atlas tiles. Returns the max half-extent from origin across all
  * shapes, including their `ox`/`oy` offsets, a stroke-width margin added on
  * top of the base `+2` where a stroke is actually painted, and the extent of
- * a glow ring when `glow` is set (+5.5 friendly, +2.25 hazard) — enough to
- * fully contain what `drawShape` paints.
+ * a glow ring when `glow` is set (+5.5 friendly, +2.25 hazard, +2.5 + `width`
+ * for a `GlowSpec`) — enough to fully contain what `drawShape` paints.
  */
 export function shapeBoundsRadius(specs: readonly ShapeSpec[]): number {
   let max = 0;
@@ -237,11 +237,18 @@ function strokeMargin(spec: Part): number {
   return painted ? Math.max(2, (spec.strokeWidth ?? 1) / 2) : 0;
 }
 
-/** Extra reach for the glow ring `drawShape` paints outside the body (see `applyFriendlyGlow`/`applyHazardGlow`). */
+/**
+ * Extra reach for the glow ring `drawShape` paints outside the body (see
+ * `applyFriendlyGlow`/`applyHazardGlow`/`applyGlow`). A `GlowSpec` ring sits
+ * 2.5 px out and is `width` wide, so its outer edge is `2.5 + width` beyond
+ * the body; a width `applyGlow` refuses to paint adds nothing.
+ */
 function glowMargin(spec: BaseSpec): number {
-  if (spec.glow === 'friendly') return 5.5;
-  if (spec.glow === 'hazard') return 2.25;
-  return 0;
+  const glow = spec.glow;
+  if (glow === undefined) return 0;
+  if (glow === 'friendly') return 5.5;
+  if (glow === 'hazard') return 2.25;
+  return Number.isFinite(glow.width) && glow.width >= 0 ? 2.5 + glow.width : 0;
 }
 
 /** Tighter atlas-tile-sizing radius (rect/gradient-rect use 0.75 to fit corners). */

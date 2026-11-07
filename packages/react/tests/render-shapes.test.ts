@@ -5,13 +5,13 @@ import type { SkImageLike } from '@flare-engine/assets';
 const realRender = await import('../../render/src/frame-renderer.js');
 mock.module('@flare-engine/render', () => ({ ...realRender }));
 
+import type { SkOffscreenSurfaceLike } from '../src/index.js';
 import {
   type RenderShapesOpts,
   renderShapesToImage,
   type ShapeRect,
   type SkiaModuleLike,
   type SkOffscreenCanvasLike,
-  type SkSurfaceLike,
 } from '../src/skia-bridge.js';
 
 // ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ interface MockCanvas extends SkOffscreenCanvasLike {
   drawRectCalls: Array<{ rect: unknown; paint: unknown }>;
 }
 
-interface MockSurface extends SkSurfaceLike {
+interface MockSurface extends SkOffscreenSurfaceLike {
   canvas: MockCanvas;
   snapshotCount: number;
   flush(): void;
@@ -100,7 +100,7 @@ function makeMockSkia(surfaceReturnNull = false): MockSkia {
     PictureRecorder: () => ({}) as unknown as ReturnType<SkiaModuleLike['PictureRecorder']>,
     ColorFilter: {} as SkiaModuleLike['ColorFilter'],
     Surface: {
-      Make(w: number, h: number): SkSurfaceLike | null {
+      Make(w: number, h: number): SkOffscreenSurfaceLike | null {
         mock.allocCount++;
         mock.lastW = w;
         mock.lastH = h;
@@ -206,5 +206,67 @@ describe('renderShapesToImage', () => {
     renderShapesToImage(mock.skia, makeOpts({ width: 128, height: 256 }));
     expect(mock.lastW).toBe(128);
     expect(mock.lastH).toBe(256);
+  });
+
+  it('consumer probe: a fake Skia module typed with the exported SkOffscreenSurfaceLike renders through', () => {
+    const paintColor = new Float32Array(4);
+    const paint = {
+      setColor(c: Float32Array) {
+        paintColor.set(c);
+      },
+    } as unknown as ReturnType<SkiaModuleLike['Paint']>;
+    const cleared: Float32Array[] = [];
+    const drawn: Array<{ rect: unknown; color: Float32Array }> = [];
+    const canvas: SkOffscreenCanvasLike = {
+      drawPicture: () => {},
+      drawImageRect: () => {},
+      drawRect(rect: unknown) {
+        drawn.push({ rect, color: new Float32Array(paintColor) });
+      },
+      clear(color: unknown) {
+        cleared.push(new Float32Array(color as Float32Array));
+      },
+    };
+    const detached: SkImageLike = { width: () => 8, height: () => 4, readPixels: () => null };
+    const snapshot: SkImageLike = {
+      width: () => 8,
+      height: () => 4,
+      readPixels: () => null,
+      makeNonTextureImage: () => detached,
+    };
+    const surface: SkOffscreenSurfaceLike = {
+      getCanvas: () => canvas,
+      makeImageSnapshot: () => snapshot,
+      flush() {},
+    };
+    const skia: SkiaModuleLike = {
+      ...makeMockSkia().skia,
+      Paint: () => paint,
+      Surface: {
+        Make(): SkOffscreenSurfaceLike | null {
+          return surface;
+        },
+      },
+    };
+
+    const image = renderShapesToImage(
+      skia,
+      makeOpts({
+        width: 8,
+        height: 4,
+        clearColor: 0x80ff0000,
+        shapes: [
+          makeRect({ x: 1, y: 2, w: 3, h: 4, color: 0xff00ff00 }),
+          makeRect({ x: 5, y: 6, w: 7, h: 8, color: 0x400000ff }),
+        ],
+      }),
+    );
+
+    expect(image).toBe(detached);
+    expect(cleared).toEqual([new Float32Array([1, 0, 0, 0x80 / 255])]);
+    expect(drawn).toEqual([
+      { rect: { x: 1, y: 2, w: 3, h: 4 }, color: new Float32Array([0, 1, 0, 1]) },
+      { rect: { x: 5, y: 6, w: 7, h: 8 }, color: new Float32Array([0, 0, 1, 0x40 / 255]) },
+    ]);
   });
 });

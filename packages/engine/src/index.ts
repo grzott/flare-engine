@@ -100,6 +100,7 @@ export {
   type SkiaFrameRenderer,
   type SkiaModuleLike,
   type SkOffscreenCanvasLike,
+  type SkOffscreenSurfaceLike,
   skiaAtlasModule,
   useCountUp,
   useEntity,

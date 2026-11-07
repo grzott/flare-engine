@@ -20,9 +20,11 @@ export {
   createWebClipboardTransport,
   createWebShareTransport,
   type ExpoSharingLike,
+  type FileCtorLike,
   type NativeShareLike,
   ShareManager,
   type SharePayload,
   type ShareResult,
   type ShareTransport,
+  type WebNavigatorLike,
 } from './share.js';

@@ -1,7 +1,36 @@
 import { describe, expect, test } from 'bun:test';
 import { createWebGamepadSource } from '../src/gamepad-source.js';
+import type { NavigatorLike, WebGamepad } from '../src/index.js';
 
 describe('createWebGamepadSource', () => {
+  test('accepts a navigator typed as the exported NavigatorLike yielding WebGamepad fakes', () => {
+    const pad: WebGamepad = {
+      id: 'typed-pad',
+      index: 1,
+      connected: true,
+      timestamp: 42,
+      buttons: [
+        { pressed: false, value: 0 },
+        { pressed: true, value: 0.5 },
+      ],
+      axes: [0.25, -1],
+    };
+    const nav: NavigatorLike = { getGamepads: () => [null, pad] };
+    const pads = createWebGamepadSource(nav).poll();
+    expect(pads.length).toBe(2);
+    expect(pads[0]).toBe(null);
+    expect(pads[1]).toEqual({
+      id: 'typed-pad',
+      index: 1,
+      timestamp: 42,
+      buttons: [
+        { pressed: false, value: 0 },
+        { pressed: true, value: 0.5 },
+      ],
+      axes: [0.25, -1],
+    });
+  });
+
   test('returns empty array when navigator has no getGamepads', () => {
     const src = createWebGamepadSource({});
     expect(src.poll()).toEqual([]);

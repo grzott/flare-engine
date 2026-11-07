@@ -1,9 +1,28 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { createFrameBudget } from '../src/frame-budget.js';
+import type { FrameBudgetOpts } from '../src/index.js';
 
 const LIMITS = { draws: 100, particles: 50 };
 
 describe('createFrameBudget', () => {
+  test('accepts an options object typed as the exported FrameBudgetOpts', () => {
+    let fired = 0;
+    const opts: FrameBudgetOpts = {
+      limits: { draws: 10 },
+      ringSize: 4,
+      fpsThreshold: 55,
+      onWatchdog: () => {
+        fired += 1;
+      },
+    };
+    const h = createFrameBudget(opts);
+    for (let i = 0; i < 4; i++) h.recordFrame(1 / 30);
+    expect(h.getAvgFps()).toBeCloseTo(30, 3);
+    expect(fired).toBe(1);
+    h.recordCounters({ draws: 7 });
+    expect(h.getSnapshot().draws).toBe(7);
+  });
+
   test('getAvgFps returns 0 before ring is full', () => {
     const h = createFrameBudget({ limits: LIMITS, ringSize: 10 });
     for (let i = 0; i < 9; i++) h.recordFrame(1 / 60);

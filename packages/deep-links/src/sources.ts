@@ -29,7 +29,7 @@ export function createMemorySource(initialUrl: string | null = null): DeepLinkSo
  * Minimal shape of the globals a web browser exposes. Defined locally so
  * we don't pull in DOM lib types across the monorepo.
  */
-interface WebWindowLike {
+export interface WebWindowLike {
   location: { href: string };
   addEventListener: (type: string, listener: () => void) => void;
   removeEventListener: (type: string, listener: () => void) => void;

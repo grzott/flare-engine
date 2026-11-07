@@ -51,7 +51,7 @@ type CounterState = {
   sum: number;
 };
 
-type PerfRecorderOpts = {
+export type PerfRecorderOpts = {
   label?: string;
   ringSize?: number;
 };

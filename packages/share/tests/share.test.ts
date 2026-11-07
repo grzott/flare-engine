@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { FileCtorLike, WebNavigatorLike } from '../src/index.js';
 import {
   createNativeShareTransport,
   createWebClipboardTransport,
@@ -7,6 +8,33 @@ import {
 } from '../src/share.js';
 
 describe('createWebShareTransport', () => {
+  test('accepts a navigator typed as the exported WebNavigatorLike plus a FileCtorLike', async () => {
+    const shared: { title?: string; text?: string; url?: string; files?: File[] }[] = [];
+    const nav: WebNavigatorLike = {
+      share: async (data) => {
+        shared.push(data);
+      },
+      canShare: () => true,
+    };
+    const fileCtor: FileCtorLike = File;
+    const t = createWebShareTransport(nav, fileCtor);
+    const shot = {
+      bytes: new Uint8Array([1, 2]),
+      base64: '',
+      format: 'png' as const,
+      width: 1,
+      height: 1,
+    };
+    expect(t.canShare({ screenshot: shot })).toBe(true);
+    const res = await t.share({ title: 't', url: 'u', screenshot: shot });
+    expect(res).toEqual({ dispatched: true, via: 'web-share' });
+    expect(shared.length).toBe(1);
+    expect(shared[0]?.title).toBe('t');
+    expect(shared[0]?.url).toBe('u');
+    expect(shared[0]?.files?.[0]?.name).toBe('screenshot.png');
+    expect(shared[0]?.files?.[0]?.type).toBe('image/png');
+  });
+
   test('reports canShare when navigator.share exists and no screenshot', () => {
     const t = createWebShareTransport({ share: async () => {} });
     expect(t.canShare({ url: 'https://x' })).toBe(true);
@@ -54,6 +82,22 @@ describe('createWebShareTransport', () => {
 });
 
 describe('createWebClipboardTransport', () => {
+  test('accepts a navigator typed as the exported WebNavigatorLike', async () => {
+    const written: string[] = [];
+    const nav: WebNavigatorLike = {
+      clipboard: {
+        async writeText(text) {
+          written.push(text);
+        },
+      },
+    };
+    const t = createWebClipboardTransport(nav);
+    expect(t.canShare({ message: 'hi' })).toBe(true);
+    const res = await t.share({ message: 'hi', url: 'https://f' });
+    expect(res).toEqual({ dispatched: true, via: 'web-clipboard' });
+    expect(written).toEqual(['hi https://f']);
+  });
+
   test('copies message + url', async () => {
     let written: string | null = null;
     const t = createWebClipboardTransport({

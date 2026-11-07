@@ -167,9 +167,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/audio": {
-      "ceiling": 14922,
-      "measured": 13521,
-      "measuredAt": "2026-09-08"
+      "ceiling": 19534,
+      "measured": 17758,
+      "measuredAt": "2026-11-06"
     },
     "@flare-engine/cli": {
       "ceiling": 23521,
@@ -327,9 +327,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/testing": {
-      "ceiling": 15248,
-      "measured": 13874,
-      "measuredAt": "2026-09-08"
+      "ceiling": 18303,
+      "measured": 16639,
+      "measuredAt": "2026-11-07"
     },
     "@flare-engine/tilemap": {
       "ceiling": 51095,
@@ -458,6 +458,14 @@
     {
       "date": "2026-11-06",
       "reason": "render-web ceiling raised 40947 -> 47268 B (measured 42971 x1.1), authorized by the owner's approval of the PR closing issue #235. createWebSkiaModule pre-creates two CanvasKit FilterOptions; its drawAtlas wrapper passes one as CanvasKit's sampling argument when the frame renderer hands it a SamplingOptionsLike, and a new drawImageRectOptions maps the numeric FilterMode/MipmapMode onto CanvasKit's enums. main packs at 40683 B, only 264 B under the old ceiling: the published 0.4.8 tarball, and no render-web commit has landed since the 0.4.8 release commit 55aaf28. So this change adds 2288 B gzipped (each file gzipped alone +2229 B): +1201 B raw (+346 B gzipped) in each of dist/index.js and index.mjs, +2369 B in each source map and +243 B in each .d.ts. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-06",
+      "reason": "audio ceiling raised 14922 -> 19534 B (measured 17758 x1.1), authorized by the owner's approval of the PR closing issue #151. New synth.ts exports renderSynth, synthSampleCount and fillPCMBuffer plus the SynthSound, SynthEnvelope and SynthWaveform types: a zero-alloc PCM renderer (sine / square / saw / seeded noise, ADSR, linear sweep) into a caller-owned Float32Array; audio-manager.ts gains PCMBufferLike and an optional AudioContextLike.createBuffer?. main packed under 14922 B at the dd46af11 ci run (the 0.4.9 release commit; no audio commit has landed since), so this change adds at least 2836 B gzipped: +0.84 KB in each of dist/index.js and index.mjs (2.25 -> 3.09 KB), +1.68 KB in each source map (4.74 -> 6.42 KB), +0.76 KB in each .d.ts (1.97 -> 2.73 KB) and a Synthesised SFX README section. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-07",
+      "reason": "testing ceiling raised 15248 -> 18303 B (measured 16639 x1.1), authorized by the owner's approval of the PR closing issue #153. New headless-context.ts exports createHeadlessContext plus the CreateHeadlessContextOptions and HeadlessContext types: createTestWorld plus a real Camera2D, a MockInputManager, a resolve-null AssetManager, a permissive SpriteSheet and a caller-supplied scenes slot, with camera.update / input.update wired on loop.onLateUpdate as GameView does; the package gains @flare-engine/assets and @flare-engine/render dependencies. main packs at 13808 B: the published 0.4.8 tarball, and no testing commit has landed since the 0.4.8 release commit 55aaf28 except the dd46af11 version bump. So this change adds 2831 B gzipped (each file gzipped alone +6786 B): +1365 / +1273 B raw (+416 / +404 B gzipped) in dist/index.js / index.mjs, about +4.9 KB raw in each source map, +2615 B raw in each .d.ts (JSDoc) and a Headless context README section. Added behaviour, not a regression."
     }
   ]
 }

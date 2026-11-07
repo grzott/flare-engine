@@ -37,10 +37,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@flare-engine/assets": "^0.4.9",
     "@flare-engine/core": "^0.4.9",
     "@flare-engine/ecs": "^0.4.9",
     "@flare-engine/input": "^0.4.9",
-    "@flare-engine/math": "^0.4.9"
+    "@flare-engine/math": "^0.4.9",
+    "@flare-engine/render": "^0.4.9"
   },
   "engines": {
     "node": ">=20"

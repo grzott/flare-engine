@@ -144,3 +144,49 @@ describe('FocusManager', () => {
     expect(() => mgr.activate()).not.toThrow();
   });
 });
+
+describe('createFocusManager({ refocusOnUnregister: false })', () => {
+  test('unregistering the focused node leaves focus null and notifies once', () => {
+    const m = createFocusManager({ refocusOnUnregister: false });
+    const calls: (string | null)[] = [];
+    m.register({ id: 'a', tabIndex: 0 });
+    m.register({ id: 'b', tabIndex: 1 });
+    m.focus('a');
+    m.subscribe((id) => calls.push(id));
+    m.unregister('a');
+    expect(m.getFocused()).toBe(null);
+    expect(calls).toEqual([null]);
+  });
+
+  test('unregistering a non-focused node leaves focus untouched', () => {
+    const m = createFocusManager({ refocusOnUnregister: false });
+    m.register({ id: 'a', tabIndex: 0 });
+    m.register({ id: 'b', tabIndex: 1 });
+    m.focus('b');
+    m.unregister('a');
+    expect(m.getFocused()).toBe('b');
+  });
+
+  test('a later next() / prev() starts from the first / last node', () => {
+    const m = createFocusManager({ refocusOnUnregister: false });
+    m.register({ id: 'a', tabIndex: 0 });
+    m.register({ id: 'b', tabIndex: 1 });
+    m.register({ id: 'c', tabIndex: 2 });
+    m.focus('b');
+    m.unregister('b');
+    m.next();
+    expect(m.getFocused()).toBe('a');
+    m.blur();
+    m.prev();
+    expect(m.getFocused()).toBe('c');
+  });
+
+  test('an empty options bag keeps the re-home default', () => {
+    const m = createFocusManager({});
+    m.register({ id: 'a', tabIndex: 0 });
+    m.register({ id: 'b', tabIndex: 1 });
+    m.focus('a');
+    m.unregister('a');
+    expect(m.getFocused()).toBe('b');
+  });
+});

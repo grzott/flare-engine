@@ -1,6 +1,32 @@
 import { describe, expect, spyOn, test } from 'bun:test';
+import type { PerfRecorderOpts } from '../src/index.js';
 import { emitPerfReport, PERF_BENCH_TAG } from '../src/perf-output.js';
 import { createPerfRecorder } from '../src/perf-recorder.js';
+
+describe('createPerfRecorder — exported option type', () => {
+  test('accepts an options object typed as the exported PerfRecorderOpts', () => {
+    const opts: PerfRecorderOpts = { label: 'typed-opts', ringSize: 3 };
+    const rec = createPerfRecorder(opts);
+    let clock = 0;
+    const spy = spyOn(performance, 'now').mockImplementation(() => clock);
+    try {
+      for (const ms of [1, 2, 3, 4]) {
+        rec.beginSection('render');
+        clock += ms;
+        rec.endSection('render');
+      }
+    } finally {
+      spy.mockRestore();
+    }
+    const report = rec.flush();
+    expect(report.label).toBe('typed-opts');
+    // ringSize 3 keeps only the last three of the four samples.
+    const s = report.sections.find((x) => x.name === 'render');
+    expect(s?.count).toBe(3);
+    expect(s?.min).toBeCloseTo(2, 5);
+    expect(s?.max).toBeCloseTo(4, 5);
+  });
+});
 
 describe('createPerfRecorder — percentile correctness', () => {
   /**

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { WebWindowLike } from '../src/index.js';
 import { DeepLinkManager } from '../src/manager.js';
 import { DeepLinkRouter } from '../src/router.js';
 import { createMemorySource, createNativeSource, createWebSource } from '../src/sources.js';
@@ -42,6 +43,29 @@ describe('DeepLinkManager', () => {
 });
 
 describe('createWebSource', () => {
+  test('accepts a window typed as the exported WebWindowLike', () => {
+    const popstate = new Set<() => void>();
+    const win: WebWindowLike = {
+      location: { href: '/typed' },
+      addEventListener: (_type, listener) => {
+        popstate.add(listener);
+      },
+      removeEventListener: (_type, listener) => {
+        popstate.delete(listener);
+      },
+    };
+    const src = createWebSource(win);
+    expect(src.getInitialUrl()).toBe('/typed');
+    const seen: string[] = [];
+    const unsub = src.subscribe((u) => seen.push(u));
+    win.location.href = '/after-pop';
+    for (const fn of popstate) fn();
+    src.notify('/manual');
+    expect(seen).toEqual(['/after-pop', '/manual']);
+    unsub();
+    expect(popstate.size).toBe(0);
+  });
+
   test('bridges popstate + location.href', () => {
     const listeners: Record<string, Array<() => void>> = {};
     const win = {

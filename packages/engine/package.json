@@ -2,7 +2,17 @@
   "name": "@flare-engine/engine",
   "version": "0.4.9",
   "description": "Flare Engine umbrella — curated barrel (14 headless packages + postfx + react); ./headless subpath for web-only and Node consumers",
-  "keywords": ["flare-engine", "2d", "react-native", "web", "skia"],
+  "keywords": [
+    "flare-engine",
+    "2d",
+    "react-native",
+    "web",
+    "skia",
+    "typescript",
+    "game-engine",
+    "react-native-skia",
+    "canvaskit"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

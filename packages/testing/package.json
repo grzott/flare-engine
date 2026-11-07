@@ -2,7 +2,7 @@
   "name": "@flare-engine/testing",
   "version": "0.4.9",
   "description": "Deterministic World factory, fake Clock, mock InputManager, and scene snapshot helpers",
-  "keywords": ["flare-engine", "testing", "ecs", "fake-clock", "snapshot"],
+  "keywords": ["flare-engine", "testing", "ecs", "fake-clock", "snapshot", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

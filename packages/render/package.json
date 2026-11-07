@@ -2,7 +2,16 @@
   "name": "@flare-engine/render",
   "version": "0.4.9",
   "description": "SpriteBatch (Skia Atlas), Camera2D, SpriteEffects",
-  "keywords": ["flare-engine", "rendering", "skia", "sprite-batch", "camera"],
+  "keywords": [
+    "flare-engine",
+    "rendering",
+    "skia",
+    "sprite-batch",
+    "camera",
+    "react-native",
+    "typescript",
+    "react-native-skia"
+  ],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

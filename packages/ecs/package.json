@@ -2,7 +2,7 @@
   "name": "@flare-engine/ecs",
   "version": "0.4.9",
   "description": "Entity-Component-System with archetype queries",
-  "keywords": ["flare-engine", "ecs", "entity-component-system"],
+  "keywords": ["flare-engine", "ecs", "entity-component-system", "react-native", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

@@ -2,7 +2,7 @@
   "name": "@flare-engine/render-web",
   "version": "0.4.9",
   "description": "CanvasKit-backed web renderer for @flare-engine/render frame-renderer",
-  "keywords": ["flare-engine", "rendering", "web", "canvaskit", "wasm"],
+  "keywords": ["flare-engine", "rendering", "web", "canvaskit", "wasm", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

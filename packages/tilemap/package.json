@@ -2,7 +2,7 @@
   "name": "@flare-engine/tilemap",
   "version": "0.4.9",
   "description": "Tiled/LDtk parser, culled tilemap renderer",
-  "keywords": ["flare-engine", "tilemap", "tiled", "ldtk"],
+  "keywords": ["flare-engine", "tilemap", "tiled", "ldtk", "react-native", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

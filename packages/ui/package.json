@@ -2,7 +2,7 @@
   "name": "@flare-engine/ui",
   "version": "0.4.9",
   "description": "UI kit — themed primitives, focus navigation, flex layout resolver",
-  "keywords": ["flare-engine", "ui", "react-native", "menu", "hud", "theme"],
+  "keywords": ["flare-engine", "ui", "react-native", "menu", "hud", "theme", "typescript"],
   "license": "Apache-2.0",
   "author": "Grzegorz Otto",
   "homepage": "https://github.com/grzott/flare-engine#readme",

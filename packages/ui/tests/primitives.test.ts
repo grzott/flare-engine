@@ -224,6 +224,39 @@ describe('Button + FocusProvider (reactive focus)', () => {
     expect(pressed).toBe(1);
   });
 
+  it('focusOnPress: false presses without changing getFocused()', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'other', tabIndex: 0 });
+    mgr.register({ id: 'x', tabIndex: 1 });
+    mgr.focus('other');
+    setFocusContext({ manager: mgr, focusedId: 'other' });
+    let pressed = 0;
+    resetHookIndices();
+    const el = Button({
+      label: 'A',
+      focusId: 'x',
+      focusOnPress: false,
+      onPress: () => {
+        pressed++;
+      },
+    });
+    (el as { props: { onPress: () => void } }).props.onPress();
+
+    expect(mgr.getFocused()).toBe('other');
+    expect(pressed).toBe(1);
+  });
+
+  it('focusOnPress: false with no focus keeps it null after a press', () => {
+    const mgr = createFocusManager();
+    mgr.register({ id: 'x', tabIndex: 0 });
+    setFocusContext({ manager: mgr, focusedId: null });
+    resetHookIndices();
+    const el = Button({ label: 'A', focusId: 'x', focusOnPress: false });
+    (el as { props: { onPress: () => void } }).props.onPress();
+
+    expect(mgr.getFocused()).toBe(null);
+  });
+
   it('Disabled Button ignores press', () => {
     const mgr = createFocusManager();
     mgr.register({ id: 'a', tabIndex: 0 });

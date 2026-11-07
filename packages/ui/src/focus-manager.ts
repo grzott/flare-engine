@@ -36,11 +36,22 @@ export interface FocusManager {
   subscribe(listener: (focusedId: string | null) => void): () => void;
 }
 
+export interface FocusManagerOptions {
+  /**
+   * When the focused node unregisters, move focus to the first node in tab
+   * order (`true`, the default — keyboard users keep a focus target) or clear
+   * it to `null` (`false`). Subscribers are notified either way, and a later
+   * `next()` / `prev()` starts from the first / last node as it does from `null`.
+   */
+  refocusOnUnregister?: boolean;
+}
+
 interface Entry extends FocusNode {
   seq: number;
 }
 
-export function createFocusManager(): FocusManager {
+export function createFocusManager(opts?: FocusManagerOptions): FocusManager {
+  const refocusOnUnregister = opts?.refocusOnUnregister ?? true;
   const nodes = new Map<string, Entry>();
   let seqCounter = 0;
   let focusedId: string | null = null;
@@ -102,8 +113,7 @@ export function createFocusManager(): FocusManager {
       if (!nodes.has(id)) return;
       nodes.delete(id);
       if (focusedId === id) {
-        const order = orderedIds();
-        setFocused(order[0] ?? null);
+        setFocused(refocusOnUnregister ? (orderedIds()[0] ?? null) : null);
       }
     },
     focus(id) {

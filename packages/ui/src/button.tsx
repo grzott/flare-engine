@@ -14,6 +14,12 @@ export interface ButtonProps {
   tabIndex?: number;
   /** Stable focus id. If omitted, a generated id is used. */
   focusId?: string;
+  /**
+   * Move focus to this button when it is pressed. Defaults to `true`. Set
+   * `false` on touch-first screens so a tap leaves no focus ring behind;
+   * `onPress` still fires.
+   */
+  focusOnPress?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,6 +30,7 @@ export function Button({
   disabled = false,
   tabIndex = 0,
   focusId,
+  focusOnPress = true,
   style,
 }: ButtonProps): ReactNode {
   const theme = useTheme();
@@ -86,7 +93,7 @@ export function Button({
     <Pressable
       onPress={() => {
         if (disabled) return;
-        manager?.focus(id);
+        if (focusOnPress) manager?.focus(id);
         onPress?.();
       }}
       disabled={disabled}

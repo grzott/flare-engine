@@ -5,7 +5,7 @@ Skia-free UI kit for HUDs, menus, modals — `Panel`, `Button`, `Label`, `List`,
 ## Entry points
 
 - **`.` (default)** — the whole kit: components, theme, focus, layout. Pulls in React Native at module scope.
-- **`./focus`** — the RN-free focus core: `createFocusManager` + `createFocusKeyboardDriver` and their types (`FocusManager`, `FocusNode`, `FocusKeyboardDriver`, `FocusKeyboardDriverOptions`, `FocusKeySource`). No React or React Native import, so it is safe for `bun test` and Node harnesses. `.` re-exports the same names.
+- **`./focus`** — the RN-free focus core: `createFocusManager` + `createFocusKeyboardDriver` and their types (`FocusManager`, `FocusManagerOptions`, `FocusNode`, `FocusKeyboardDriver`, `FocusKeyboardDriverOptions`, `FocusKeySource`). No React or React Native import, so it is safe for `bun test` and Node harnesses. `.` re-exports the same names.
 
 ## Install
 

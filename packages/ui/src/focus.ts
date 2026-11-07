@@ -15,5 +15,6 @@ export {
 export {
   createFocusManager,
   type FocusManager,
+  type FocusManagerOptions,
   type FocusNode,
 } from './focus-manager.js';

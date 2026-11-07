@@ -11,6 +11,7 @@ export {
   type FocusKeyboardDriverOptions,
   type FocusKeySource,
   type FocusManager,
+  type FocusManagerOptions,
   type FocusNode,
 } from './focus.js';
 export {

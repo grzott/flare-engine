@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gate script. Runs the full gate sequence below (bun-pin, lint, typecheck, test, build,
-# typecheck:tests, test:scripts, check:deps, check:changeset, check:peers,
+# typecheck:tests, check:exported-types, test:scripts, check:deps, check:changeset, check:peers,
 # check:bump, hook-guard, runner-loop, check:perf, check:perf-bytes — the run_gate calls are the authoritative,
 # order-accurate list). It only gates: since the 2026-11 PR workflow the agent
 # commits on a claude/* branch, and the PR description carries the session
@@ -68,6 +68,11 @@ if [ "$SCOPE" != "game" ]; then
   # (@flare-engine/render) resolves to that package's dist/*.d.mts, not its src.
   # Run before build and the probes measure the previous build.
   run_gate "typecheck:tests" bun run typecheck:tests
+
+  # A type an exported signature reaches must itself be exported (#156). It reads the
+  # built dist/*.d.mts, so it runs after build. ci.yml runs it too; running it here
+  # keeps it from becoming another CI-only gate that drifts.
+  run_gate "exported-types" bun run check:exported-types
 fi
 
 # The repo's own tooling tests (risk classifier, gate, label sync, history scan).

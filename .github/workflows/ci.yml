@@ -47,6 +47,8 @@ jobs:
       # a test importing a sibling by package name resolves to its dist/*.d.mts.
       - run: bun run typecheck:tests
       - run: bun run check:exports
+      # A type an exported signature reaches must itself be exported (#156).
+      - run: bun run check:exported-types
       - run: bun run check:nodenext
       - run: bun run check:readme
 

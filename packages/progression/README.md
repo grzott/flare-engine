@@ -1,6 +1,6 @@
 # @flare-engine/progression
 
-Meta-progression primitives: geometric upgrade tracks, pity-aware weighted drop rolling, unlock DAG, tier resolution, and collectible-unlock registry. Pure, zero-alloc on hot paths. Depends on `@flare-engine/math`.
+Meta-progression primitives: geometric upgrade tracks, pity-aware weighted drop rolling, unlock DAG, tier resolution, collectible-unlock registry, and a segmented game-day clock. Pure, zero-alloc on hot paths. Depends on `@flare-engine/math`.
 
 ## Install
 
@@ -18,6 +18,7 @@ import {
   createUnlockDag,
   resolveTier,
   createCollectibleRegistry,
+  createGameClock,
 } from '@flare-engine/progression';
 
 // Upgrade track — geometric price curve
@@ -57,6 +58,20 @@ const tier = resolveTier([{ at: 1, tier: 'bronze' }, { at: 10, tier: 'silver' }]
 const reg = createCollectibleRegistry(['item-1', 'item-2', 'item-3'], 'set-complete');
 const reg2 = reg.unlock('item-1').unlock('item-2').unlock('item-3');
 reg2.isCapstone; // true
+
+// Game clock — 1440-minute day, each segment runs at its own real-time rate
+const clock = createGameClock({
+  segments: [
+    { name: 'day', phase: 'day', startMinute: 0, secondsPerGameHour: 90 },
+    { name: 'night', phase: 'night', startMinute: 720, secondsPerGameHour: 120 },
+  ],
+  onPhaseChange: (phase, previous) => console.log(previous, '->', phase),
+});
+const dt = 1 / 60;
+clock.update(dt); // real seconds, zero-alloc; crosses boundaries exactly
+clock.skipTo('night'); // jump forward to the next start of that segment
+clock.hold(); // stop at the next phase boundary until release()
+const saved = clock.serialize(); // { absoluteMinutes, paused } — pass back as the 2nd arg
 ```
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineprogression).

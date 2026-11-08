@@ -282,9 +282,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/progression": {
-      "ceiling": 17837,
-      "measured": 16214,
-      "measuredAt": "2026-09-08"
+      "ceiling": 35765,
+      "measured": 32514,
+      "measuredAt": "2026-11-08"
     },
     "@flare-engine/react": {
       "ceiling": 76323,
@@ -478,6 +478,10 @@
     {
       "date": "2026-11-07",
       "reason": "storage ceiling raised 38395 -> 45991 B (measured 41810 x1.1), authorized by the owner's approval of the PR closing issue #203. saveSlot(name, data, header?) stores an optional header in the slot envelope (omitted when absent, so header-less saves are byte-identical); listSlotHeaders() lists { name, version, header } per slot from the envelope alone with no migration or schema, tolerating malformed slots; Storage and createStorage gain a second generic H = unknown, inferred from a new parseHeader Sanitizer option; SlotHeader is exported. main packs at 36923 B, measured by building origin/main bd5e6411's packages/storage outside the checkout (only #246's package.json keywords landed after the 0.4.8 release). So this change adds 4887 B gzipped (each file gzipped alone +5067 B): +1163 B raw (+185 / +187 B gzipped) in each of dist/index.mjs and index.js, +4421 B raw in each source map, +1935 B raw in each .d.ts (JSDoc) and +2509 B of README for the Slot headers section. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-08",
+      "reason": "progression ceiling raised 17837 -> 35765 B (measured 32514 x1.1), authorized by the owner's approval of the PR closing issue #202 (rebuilt from the runner's #254 after a merge of main corrupted this file). New game-clock.ts exports createGameClock plus the GameClock, GameClockConfig, GameClockSegment and GameClockState types: a 1440-minute game-day clock with a validated per-segment real-seconds-per-game-hour table, one shared stepping loop for update / advanceMinutes / skipTo that lands float-exactly on each boundary, pause, hold at the next phase boundary, segment and phase change callbacks and a plain serialize state. Measured against the published 0.4.10 tarball, which equals main for this package (16211 B). So this change adds 16303 B gzipped (each file gzipped alone +12340 B): +5699 / +5673 B raw (+1675 / +1665 B gzipped) in dist/index.js / index.mjs, +12275 B raw (+3364 / +3367 B gzipped) in each source map, +2536 B raw (+875 B gzipped) in each .d.ts (JSDoc) and +737 B of README for the clock snippet. The package was small, so one module of ~250 lines doubles it; nothing else in the package moved. Added behaviour, not a regression."
     }
   ]
 }

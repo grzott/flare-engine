@@ -128,9 +128,13 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
   let index = 0;
 
   if (state !== undefined) {
-    if (!Number.isFinite(state.absoluteMinutes) || state.absoluteMinutes < 0) {
+    if (
+      !Number.isFinite(state.absoluteMinutes) ||
+      state.absoluteMinutes < 0 ||
+      state.absoluteMinutes > Number.MAX_SAFE_INTEGER
+    ) {
       throw new Error(
-        `createGameClock: state.absoluteMinutes must be finite and >= 0, got ${state.absoluteMinutes}`,
+        `createGameClock: state.absoluteMinutes must be finite, >= 0 and <= Number.MAX_SAFE_INTEGER, got ${state.absoluteMinutes}`,
       );
     }
     if (typeof state.paused !== 'boolean') {
@@ -224,7 +228,8 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
         }
         absolute = boundary;
       }
-      if (!cross()) return;
+      // A callback that paused the clock stops this step at the boundary just crossed.
+      if (!cross() || paused) return;
     }
   }
 

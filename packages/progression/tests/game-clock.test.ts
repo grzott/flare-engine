@@ -75,6 +75,13 @@ describe('createGameClock — pause', () => {
     clock.update(120);
     expect(clock.absoluteMinutes).toBe(165);
   });
+
+  it('a callback that pauses stops the update in progress at the boundary it crossed', () => {
+    let clock: ReturnType<typeof createGameClock> | undefined;
+    clock = at(1199, { onPhaseChange: () => clock?.pause() });
+    clock.update(1000);
+    expect([clock.absoluteMinutes, clock.segment, clock.paused]).toEqual([1200, 'dusk', true]);
+  });
 });
 
 describe('createGameClock — skipTo', () => {
@@ -343,9 +350,12 @@ describe('createGameClock — validation', () => {
     expect(() => createGameClock({ segments: [seg(0, Number.POSITIVE_INFINITY)] })).toThrow();
   });
 
-  it('rejects a negative or NaN restored absoluteMinutes', () => {
+  it('rejects a negative, NaN or beyond-safe-integer restored absoluteMinutes', () => {
     expect(() => createGameClock(config, { absoluteMinutes: -1, paused: false })).toThrow();
     expect(() => createGameClock(config, { absoluteMinutes: Number.NaN, paused: false })).toThrow();
+    expect(() =>
+      createGameClock(config, { absoluteMinutes: Number.MAX_SAFE_INTEGER + 2, paused: false }),
+    ).toThrow();
   });
 
   it('advanceMinutes throws RangeError on negative or NaN', () => {

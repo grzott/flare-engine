@@ -10,7 +10,7 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 | [plans/](plans/)           | Forward-looking execution plans. The active roadmap lives here; completed phase details move to archival over time.                                         |
 | [references/](references/) | Living reference material: benchmarks, CanvasKit parity audit, CLI tooling background.                                                                       |
 | [conventions/](conventions/) | Code style and git conventions the builders and the gate enforce.                                                                                          |
-| [recipes/](recipes/)       | Task-shaped how-tos for consumers (save migrations, and more as they are written).                                                                           |
+| [recipes/](recipes/)       | Task-shaped how-tos for consumers (save migrations, testing ui under bun, and more as they are written).                                                     |
 | [history/](history/)       | Archived plans kept for provenance, not for execution.                                                                                                       |
 
 ## Files
@@ -41,6 +41,7 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 
 - [conventions/code.md](conventions/code.md) · [conventions/git.md](conventions/git.md) — the rules the gate enforces.
 - [recipes/save-migrations.md](recipes/save-migrations.md) — versioned save files with `@flare-engine/storage`.
+- [recipes/testing-ui-under-bun.md](recipes/testing-ui-under-bun.md) — import `@flare-engine/ui` and `@flare-engine/ui-shop` under `bun test`.
 - [history/build-plan-archive.md](history/build-plan-archive.md) — archived build plan; provenance only.
 
 ## See also

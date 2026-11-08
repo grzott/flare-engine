@@ -79,3 +79,7 @@ function ShopExample() {
   );
 }
 ```
+
+## Testing
+
+This package loads `react-native` at module scope (directly and through `@flare-engine/ui`), so importing it under `bun test` needs the four `mock.module` stubs described in [Testing ui and ui-shop under bun test](https://github.com/grzott/flare-engine/blob/main/docs/recipes/testing-ui-under-bun.md).

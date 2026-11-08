@@ -49,6 +49,10 @@ driver.update(); // ArrowDown/ArrowRight/Tab → next, ArrowUp/ArrowLeft → pre
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineui--6kb-gzip-target).
 
+## Testing
+
+The `.` entry loads `react-native` at module scope, and the `react-native` entry file is Flow source that bun does not parse, so importing it under `bun test` needs four `mock.module` stubs (`react`, `react/jsx-runtime`, `react/jsx-dev-runtime`, `react-native`). `./focus` needs none. The stubs, the load-order rules and a worked assertion: [Testing ui and ui-shop under bun test](https://github.com/grzott/flare-engine/blob/main/docs/recipes/testing-ui-under-bun.md).
+
 ## License
 
 Apache-2.0

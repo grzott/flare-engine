@@ -1,5 +1,40 @@
 # @flare-engine/dynamics
 
+## 0.4.10
+
+### Patch Changes
+
+- 266593b: `createTimeline(elementCount, dt, opts?)` records a fixed-step simulation once into a pre-allocated
+  `Float32Array` and replays it by sampling. `opts.stride` (default 3: dx, dy, angle) sets the floats
+  per element per frame and `opts.maxFrames` (default 900) the cap; the buffer is sized at creation.
+  `record(writer, until?)` writes frames until `until()` returns true or the buffer is full, exactly one
+  frame when `until` is omitted, and never calls the writer once full or when `elementCount` is 0; the
+  writer gets `(buf, frameBase)` with element `i` at `frameBase + i * stride`. `sampleInto(progress,
+out)` clamps `progress` to `[0, 1]` (NaN reads as 0), lerps the two bracketing frames into `out`
+  without allocating, writes zeros before the first frame and copies a lone frame; values are stored as
+  written, so cumulative angles lerp forward across multi-turn spins. `frameCount` and `duration`
+  (`(frameCount - 1) * dt`, 0 below two frames) are read-only getters. A non-integer or negative
+  `elementCount`, a non-finite or non-positive `dt`, or a `stride` / `maxFrames` below 1 throws a
+  `RangeError` naming the argument. `Timeline`, `TimelineOptions` and `TimelineWriter` are exported.
+- bd5e641: `createWorld({ sleep: { linearThreshold, angularThreshold, steps } })` opts into per-body sleeping
+  (off when absent, so existing worlds are unchanged): a dynamic body under both thresholds for
+  `steps` consecutive steps has its velocities set to exactly 0 and is skipped by integration and by
+  pair tests against other sleeping or static bodies, until an awake body that moved on the previous
+  step touches it, its `velocity`, `angularVelocity`, `position` or `angle` is written, or
+  `wakeBody(world, body)` is called; a world not created by `createWorld` steps with sleeping off.
+  `isSleeping(world, body)` reads one body and `isAtRest(world)` is true once every dynamic body
+  sleeps. A negative or non-finite threshold, or a `steps` that is not an integer >= 1, throws a
+  `RangeError`. `SleepOptions` is exported.
+- 2d2663a: `stepUntil(world, dt, opts)` repeats `step(world, dt)` and, after each step, stops when `opts.done()`
+  returns true (`complete: true`), when `steps >= opts.maxSteps`, or when `now() - start >= opts.budgetMs`
+  (both `complete: false`), checked in that order; it always takes at least one step, so a zero budget
+  still makes progress. `opts.now` defaults to `performance.now` (falling back to `Date.now`) and can
+  be injected for deterministic tests. `stepUntilInto(world, dt, opts, out)` is the zero-alloc form that
+  writes `out` and returns it. A non-finite or non-positive `dt`, a negative or non-finite `budgetMs`,
+  or a `maxSteps` that is not an integer >= 1 throws a `RangeError` naming the argument.
+  `StepUntilOptions` and `StepUntilResult` are exported.
+  - @flare-engine/math@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

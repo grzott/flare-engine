@@ -1,5 +1,26 @@
 # @flare-engine/render-web
 
+## 0.4.10
+
+### Patch Changes
+
+- d2339b2: A frame renderer can now set the texture sampling per image: `FrameRenderer.setImageSampling(image,
+sampling)` takes `'nearest'` or `'linear'` (`ImageSampling`) and applies it to every draw of that
+  image — an atlas or a texture — on both the atlas path and the stretch/flip path, so pixel art scaled
+  through `drawAtlas` stops blurring. The last call wins; any other mode throws `RangeError`. An image
+  with no setting draws exactly as before — linear on the atlas path, nearest on the stretch path — and
+  its surface receives the same calls it did. For a surface implementing `DrawSurfaceLike`, `drawAtlas`
+  now takes RN Skia's optional 5th–7th arguments (blend mode and colors, which the renderer always
+  leaves `undefined`, then `SamplingOptionsLike`), and
+  the optional `drawImageRectOptions` carries a sampled stretch draw, falling back to `drawImageRect`
+  when the surface lacks it. `createWebSkiaModule` maps both onto CanvasKit's `drawAtlas` sampling
+  argument and its `drawImageRectOptions`.
+- Updated dependencies [30fba17]
+- Updated dependencies [1d79926]
+- Updated dependencies [d2339b2]
+  - @flare-engine/render@0.4.10
+  - @flare-engine/postfx@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

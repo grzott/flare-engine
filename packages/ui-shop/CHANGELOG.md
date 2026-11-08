@@ -1,5 +1,14 @@
 # @flare-engine/ui-shop
 
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [f799f69]
+- Updated dependencies [0025135]
+  - @flare-engine/ui@0.4.10
+  - @flare-engine/iap@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

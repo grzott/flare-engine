@@ -1,5 +1,44 @@
 # @flare-engine/render
 
+## 0.4.10
+
+### Patch Changes
+
+- 30fba17: `GameView` runs a bound postfx chain on web. The chain is compiled at physical pixels (w*pd × h*pd,
+  the offscreen surface's size, so every SkSL resolution uniform matches the space the pass is drawn
+  in) and composited imperatively inside the scene capture: each pass snapshots the one cached
+  offscreen surface, binds that snapshot as its first child (extra sampler children such as the
+  color-grading LUT follow positionally), and draws itself back over the same surface as one
+  full-surface BlendMode.Src rect; the pass shader, every child shader and the snapshot are released
+  the same frame. The filtered result reaches the plain Image node through the existing
+  makeNonTextureImage() + retention ring, so no RN-Skia shader node is mounted on web, no second
+  surface or WebGL context is created, and RuntimeShaderBuilder / MakeRuntimeShaderWithChildren are
+  never called. The one-time "postfx chain skipped" warning is gone. Native is unchanged.
+  `FrameRenderer.compilePostFxPasses(runtime, chain, width, height)` returns the runtime's compiled
+  passes as built (packed Float32Array uniforms) with the same `runtime ?? bound`, `chain ?? bound`
+  resolution and empty-array rules as `buildPostFxPasses`, which now derives its descriptors from it.
+- 1d79926: A frame renderer now draws a flipped sprite with its `rotation`: it rotates about the anchor point,
+  as the atlas path does, and then mirrors about the sprite centre — still one `drawImageRect` per
+  flipped sprite. Before, a `flipX`/`flipY` command drew mirrored but unrotated, whatever its
+  `rotation`. A flip with zero rotation draws exactly as before; stretch without flip is unchanged.
+  Tiled's diagonal-only and all-three-bits tiles, which `TilemapRenderer` queues as a flip plus a
+  quarter turn, now draw with the turn.
+- d2339b2: A frame renderer can now set the texture sampling per image: `FrameRenderer.setImageSampling(image,
+sampling)` takes `'nearest'` or `'linear'` (`ImageSampling`) and applies it to every draw of that
+  image — an atlas or a texture — on both the atlas path and the stretch/flip path, so pixel art scaled
+  through `drawAtlas` stops blurring. The last call wins; any other mode throws `RangeError`. An image
+  with no setting draws exactly as before — linear on the atlas path, nearest on the stretch path — and
+  its surface receives the same calls it did. For a surface implementing `DrawSurfaceLike`, `drawAtlas`
+  now takes RN Skia's optional 5th–7th arguments (blend mode and colors, which the renderer always
+  leaves `undefined`, then `SamplingOptionsLike`), and
+  the optional `drawImageRectOptions` carries a sampled stretch draw, falling back to `drawImageRect`
+  when the surface lacks it. `createWebSkiaModule` maps both onto CanvasKit's `drawAtlas` sampling
+  argument and its `drawImageRectOptions`.
+- Updated dependencies [89cc4cc]
+  - @flare-engine/ecs@0.4.10
+  - @flare-engine/assets@0.4.10
+  - @flare-engine/math@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

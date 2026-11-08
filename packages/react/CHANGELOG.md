@@ -1,5 +1,45 @@
 # @flare-engine/react
 
+## 0.4.10
+
+### Patch Changes
+
+- 0b7ea24: Exports `SkOffscreenSurfaceLike`, the surface `SkiaModuleLike.Surface.Make` and `MakeOffscreen`
+  return, from `@flare-engine/react` and the `@flare-engine/engine` umbrella, so a host typing a fake
+  Skia module can name it. It was declared as `SkSurfaceLike` but never exported; the new name avoids
+  clashing with `@flare-engine/assets`' different `SkSurfaceLike`. Nothing else changes.
+- 30fba17: `GameView` runs a bound postfx chain on web. The chain is compiled at physical pixels (w*pd × h*pd,
+  the offscreen surface's size, so every SkSL resolution uniform matches the space the pass is drawn
+  in) and composited imperatively inside the scene capture: each pass snapshots the one cached
+  offscreen surface, binds that snapshot as its first child (extra sampler children such as the
+  color-grading LUT follow positionally), and draws itself back over the same surface as one
+  full-surface BlendMode.Src rect; the pass shader, every child shader and the snapshot are released
+  the same frame. The filtered result reaches the plain Image node through the existing
+  makeNonTextureImage() + retention ring, so no RN-Skia shader node is mounted on web, no second
+  surface or WebGL context is created, and RuntimeShaderBuilder / MakeRuntimeShaderWithChildren are
+  never called. The one-time "postfx chain skipped" warning is gone. Native is unchanged.
+  `FrameRenderer.compilePostFxPasses(runtime, chain, width, height)` returns the runtime's compiled
+  passes as built (packed Float32Array uniforms) with the same `runtime ?? bound`, `chain ?? bound`
+  resolution and empty-array rules as `buildPostFxPasses`, which now derives its descriptors from it.
+- Updated dependencies [756f4c1]
+- Updated dependencies [dec518b]
+- Updated dependencies [27952f7]
+- Updated dependencies [89cc4cc]
+- Updated dependencies [be02a9c]
+- Updated dependencies [dffe095]
+- Updated dependencies [30fba17]
+- Updated dependencies [1d79926]
+- Updated dependencies [d2339b2]
+  - @flare-engine/audio@0.4.10
+  - @flare-engine/ecs@0.4.10
+  - @flare-engine/input@0.4.10
+  - @flare-engine/render@0.4.10
+  - @flare-engine/assets@0.4.10
+  - @flare-engine/core@0.4.10
+  - @flare-engine/events@0.4.10
+  - @flare-engine/math@0.4.10
+  - @flare-engine/scene@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

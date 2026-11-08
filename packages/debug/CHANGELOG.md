@@ -1,5 +1,13 @@
 # @flare-engine/debug
 
+## 0.4.10
+
+### Patch Changes
+
+- be02a9c: Exports `FrameBudgetOpts` and `PerfRecorderOpts`, the option types `createFrameBudget` and
+  `createPerfRecorder` take, so a consumer can name them. Nothing else changes.
+  - @flare-engine/core@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

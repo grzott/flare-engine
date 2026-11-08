@@ -1,5 +1,23 @@
 # @flare-engine/shapes
 
+## 0.4.10
+
+### Patch Changes
+
+- b9a8785: `shapeBoundsBox(specs)` and the zero-alloc `shapeBoundsBoxInto(specs, out)` return a `ShapeBoundsBox`
+  `{ minX, minY, maxX, maxY }` in the composition-local frame: the union of every spec's extents at its
+  `ox`/`oy`, each widened by the same `+2` + stroke + glow margin `shapeBoundsRadius` adds. Unrotated
+  geometry is exact (a `ship` unions its hull, weapons and engine); a spec with a non-zero `rot` falls
+  back to its radial reach, so the box never exceeds the radius on any axis. Empty `specs` give zeros.
+- f172545: `BaseSpec.glow` also takes a `GlowSpec` `{ color, width }`: `drawShape` paints one `width` px ring in
+  `color` (ARGB) with its inner edge 2.5 px outside the body, so `{ color: friendlyGlowArgb(), width: 3 }`
+  paints exactly what `'friendly'` paints. `shapeBoundsRadius` and `shapeBoundsBox` widen by `2.5 + width`
+  for the object form; a non-finite or negative `width` paints no ring and adds no reach. `applyGlow(canvas,
+paint, cx, cy, r, color, width)` draws the ring directly. `'friendly'` and `'hazard'` are unchanged.
+- be02a9c: Renames the file-local alias for the Skia module type that `drawShape` and its helpers take, so the
+  emitted declaration file no longer carries a generated dollar-one-suffixed copy of that alias as the
+  type of the first parameter. No exported symbol changes.
+
 ## 0.4.9
 
 ## 0.4.8

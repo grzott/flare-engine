@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/iap",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "In-app purchase provider interface (consumer-supplied adapter)",
   "keywords": [
     "flare-engine",
@@ -48,7 +48,7 @@
     "@types/react": "^19.3.0"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.4.9"
+    "@flare-engine/events": "^0.4.10"
   },
   "peerDependencies": {
     "react": ">=19.0.0"

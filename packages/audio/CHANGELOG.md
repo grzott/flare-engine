@@ -1,5 +1,26 @@
 # @flare-engine/audio
 
+## 0.4.10
+
+### Patch Changes
+
+- 756f4c1: `PlaySFXOptions` gains an optional `delay` in seconds. When it is a finite number above 0,
+  `SFXPool.play` passes `ctx.currentTime + delay` to the source's `start`, so a cue scheduled ahead
+  lands on the audio clock instead of the next frame; the voice counts toward polyphony from `play`
+  and the handle's `stop()` cancels a not-yet-started source. A missing, non-positive or non-finite
+  delay calls `start()` with no argument, as before.
+- dec518b: Fix `SFXPool` and `Music` registering the end-of-playback callback as `onended` while
+  `react-native-audio-api` exposes it as `onEnded`, so the library never called it: finished voices
+  were never released (`activeCount` over-reported, per-voice gains stayed connected, and at
+  `maxPolyphony` every `play()` cut off a possibly still-playing sound) and `Music.playing` stayed set
+  after a non-looping track ended. Both now register through whichever accessor the node exposes.
+  `AudioBufferSourceNodeLike` gains an optional `onEnded` member; `onended` is unchanged.
+- 27952f7: Adds procedural SFX synthesis: `renderSynth(sound, sampleRate, out)` renders a `SynthSound` (sine,
+  square, saw or seeded noise, an ADSR `envelope`, a linear sweep from `frequency` to `endFrequency`)
+  as mono PCM into a caller-owned `Float32Array` without allocating; `synthSampleCount` sizes that
+  array and `fillPCMBuffer` copies it into every channel of a `PCMBufferLike`. `AudioContextLike`
+  gains an optional `createBuffer?` returning one. Nothing existing changes.
+
 ## 0.4.9
 
 ## 0.4.8

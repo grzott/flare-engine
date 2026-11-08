@@ -1,5 +1,13 @@
 # @flare-engine/deep-links
 
+## 0.4.10
+
+### Patch Changes
+
+- be02a9c: Exports `WebWindowLike`, the window shape `createWebSource` takes, so a consumer can name it.
+  Nothing else changes.
+  - @flare-engine/events@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

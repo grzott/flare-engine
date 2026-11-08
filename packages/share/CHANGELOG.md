@@ -1,5 +1,14 @@
 # @flare-engine/share
 
+## 0.4.10
+
+### Patch Changes
+
+- be02a9c: Exports `WebNavigatorLike`, the navigator shape `createWebShareTransport` and
+  `createWebClipboardTransport` take, and `FileCtorLike`, the optional File-constructor shape
+  `createWebShareTransport` attaches screenshots with, so a consumer can name them. Nothing else
+  changes.
+
 ## 0.4.9
 
 ## 0.4.8

@@ -1,5 +1,24 @@
 # @flare-engine/errors
 
+## 0.4.10
+
+### Patch Changes
+
+- 0974e19: `SentryTransportOptions` gains an `integrations` hook, `(kept, defaults) => SentryIntegrationLike[]`,
+  that receives the ADR-0008 allowlist and the SDK's own default list and returns what `init` uses;
+  without it `init` receives the allowlist exactly as before, and a hook that throws is logged and
+  falls back to it. `CrashTransport` gains an optional `close()`: `createSentryTransport` awaits the
+  SDK's `close()` once (only if the module was loaded) and every later `report()` sends nothing, and
+  `composeTransports` forwards `close()` to each child that has one. `createNoopTransport` and
+  `createConsoleTransport` leave `close` undefined.
+- 938c86d: Fix `installGlobalErrorCapture` leaving its React Native `ErrorUtils` handler live after
+  `uninstall()` when no previous global handler existed. `uninstall()` only restored a handler when
+  `getGlobalHandler()` had returned one, so with none the installed closure stayed as the global
+  handler and kept reporting to the transport, or filling the buffer, for a capture the consumer
+  believed detached. `uninstall()` now always calls `setGlobalHandler`, with the previous handler when
+  there was one and a no-op otherwise, and the installed closure itself turns into a pure pass-through
+  once uninstalled. Restoring an existing previous handler is unchanged.
+
 ## 0.4.9
 
 ## 0.4.8

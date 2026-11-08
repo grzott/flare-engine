@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/dialogue",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "Dialogue graph runtime — lines, choices, conditions, variables, text-over-time reveal",
   "keywords": [
     "flare-engine",
@@ -45,7 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.4.9"
+    "@flare-engine/events": "^0.4.10"
   },
   "engines": {
     "node": ">=20"

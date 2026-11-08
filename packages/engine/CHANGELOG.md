@@ -1,5 +1,47 @@
 # @flare-engine/engine
 
+## 0.4.10
+
+### Patch Changes
+
+- 0b7ea24: Exports `SkOffscreenSurfaceLike`, the surface `SkiaModuleLike.Surface.Make` and `MakeOffscreen`
+  return, from `@flare-engine/react` and the `@flare-engine/engine` umbrella, so a host typing a fake
+  Skia module can name it. It was declared as `SkSurfaceLike` but never exported; the new name avoids
+  clashing with `@flare-engine/assets`' different `SkSurfaceLike`. Nothing else changes.
+- Updated dependencies [756f4c1]
+- Updated dependencies [dec518b]
+- Updated dependencies [27952f7]
+- Updated dependencies [be02a9c]
+- Updated dependencies [266593b]
+- Updated dependencies [bd5e641]
+- Updated dependencies [2d2663a]
+- Updated dependencies [89cc4cc]
+- Updated dependencies [be02a9c]
+- Updated dependencies [dffe095]
+- Updated dependencies [10ca079]
+- Updated dependencies [0b7ea24]
+- Updated dependencies [30fba17]
+- Updated dependencies [1d79926]
+- Updated dependencies [d2339b2]
+- Updated dependencies [e369682]
+  - @flare-engine/audio@0.4.10
+  - @flare-engine/debug@0.4.10
+  - @flare-engine/dynamics@0.4.10
+  - @flare-engine/ecs@0.4.10
+  - @flare-engine/input@0.4.10
+  - @flare-engine/physics@0.4.10
+  - @flare-engine/react@0.4.10
+  - @flare-engine/render@0.4.10
+  - @flare-engine/tilemap@0.4.10
+  - @flare-engine/animation@0.4.10
+  - @flare-engine/assets@0.4.10
+  - @flare-engine/core@0.4.10
+  - @flare-engine/events@0.4.10
+  - @flare-engine/math@0.4.10
+  - @flare-engine/particles@0.4.10
+  - @flare-engine/postfx@0.4.10
+  - @flare-engine/scene@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

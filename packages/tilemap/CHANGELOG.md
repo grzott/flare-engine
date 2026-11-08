@@ -1,5 +1,35 @@
 # @flare-engine/tilemap
 
+## 0.4.10
+
+### Patch Changes
+
+- 1d79926: A frame renderer now draws a flipped sprite with its `rotation`: it rotates about the anchor point,
+  as the atlas path does, and then mirrors about the sprite centre — still one `drawImageRect` per
+  flipped sprite. Before, a `flipX`/`flipY` command drew mirrored but unrotated, whatever its
+  `rotation`. A flip with zero rotation draws exactly as before; stretch without flip is unchanged.
+  Tiled's diagonal-only and all-three-bits tiles, which `TilemapRenderer` queues as a flip plus a
+  quarter turn, now draw with the turn.
+- e369682: `parseTiled` reads Tiled per-tile animations (`tiles[].animation`) onto `TilesetRef.animations`, an
+  optional `Map<localId, TileAnimation>` set only when a tileset has an animated tile. A
+  `TileAnimation` holds `frames: Uint32Array` (local ids), cumulative `ends: Float64Array` in seconds
+  and the cycle `duration`; Tiled's millisecond durations are summed and converted once. A frame
+  `tileid` that is not an integer in `[0, tilecount)` or a negative or non-finite `duration` throws
+  `TilemapParseError` naming the tileset and tile; an empty animation or one whose durations sum to 0
+  is not registered. `TilemapDrawOptions` gains `time?: number` (seconds): with a finite `time`,
+  `drawInto` / `draw` source each animated tile from the frame at `time mod duration` (a boundary
+  belongs to the next frame, negative time wraps forward) while flip bits still come from the authored
+  gid, with no allocation in the tile loop. Without `time` the authored tile draws as before; colliders
+  and `getTileAt` are unchanged. `TileAnimation` is exported. LDtk is untouched.
+- Updated dependencies [10ca079]
+- Updated dependencies [30fba17]
+- Updated dependencies [1d79926]
+- Updated dependencies [d2339b2]
+  - @flare-engine/physics@0.4.10
+  - @flare-engine/render@0.4.10
+  - @flare-engine/assets@0.4.10
+  - @flare-engine/math@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

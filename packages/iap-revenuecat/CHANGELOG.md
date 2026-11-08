@@ -1,5 +1,14 @@
 # @flare-engine/iap-revenuecat
 
+## 0.4.10
+
+### Patch Changes
+
+- be02a9c: Exports `RevenueCatStoreProduct`, `RevenueCatEntitlement`, `RevenueCatNonSubscriptionTransaction`
+  and `RevenueCatCustomerInfo`, the SDK payload types the already-exported
+  `RevenueCatPurchasesModule` exchanges, so a consumer can type a fake module. Nothing else changes.
+  - @flare-engine/iap@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

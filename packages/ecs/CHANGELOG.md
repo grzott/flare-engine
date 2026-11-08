@@ -1,5 +1,15 @@
 # @flare-engine/ecs
 
+## 0.4.10
+
+### Patch Changes
+
+- 89cc4cc: `SystemDef` gains `worldFn`, the public name for the wrapper to pass to `world.addSystem` /
+  `removeSystem`; it is the same function reference as `_worldFn`, which is now `@deprecated` and stays
+  until the next planned minor.
+  - @flare-engine/events@0.4.10
+  - @flare-engine/math@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes

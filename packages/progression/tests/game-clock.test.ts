@@ -109,6 +109,17 @@ describe('createGameClock — skipTo', () => {
     expect(clock.absoluteMinutes).toBe(0);
   });
 
+  it('a start the clock was held on is still ahead after release', () => {
+    const changes: string[] = [];
+    const clock = at(1199, { onSegmentChange: (s) => changes.push(s) });
+    clock.hold();
+    clock.advanceMinutes(5);
+    expect([clock.absoluteMinutes, clock.segment]).toEqual([1200, 'day']);
+    clock.release();
+    clock.skipTo('dusk');
+    expect([clock.absoluteMinutes, clock.segment, changes.join()]).toEqual([1200, 'dusk', 'dusk']);
+  });
+
   it('from a fractional time across several boundaries it lands on the start and crosses into it', () => {
     const table: readonly GameClockSegment[] = [
       { name: 'a', phase: 'day', startMinute: 0, secondsPerGameHour: 60 },
@@ -135,6 +146,20 @@ describe('createGameClock — skipTo', () => {
 });
 
 describe('createGameClock — advanceMinutes', () => {
+  it('a callback that advances the clock never makes the outer call move it backwards', () => {
+    let clock: ReturnType<typeof createGameClock> | undefined;
+    let nested = false;
+    clock = at(0, {
+      onSegmentChange: () => {
+        if (nested) return;
+        nested = true;
+        clock?.advanceMinutes(1000);
+      },
+    });
+    clock.advanceMinutes(400);
+    expect([clock.absoluteMinutes, clock.segment]).toEqual([1300, 'night']);
+  });
+
   it('an advance across several boundaries that ends on one crosses it, from any fractional start', () => {
     for (let k = 1; k < 1000; k++) {
       const start = (k / 1000) * 299;

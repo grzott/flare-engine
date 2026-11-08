@@ -54,7 +54,11 @@ export interface GameClock {
    * not finite, or when `absoluteMinutes + n` exceeds `Number.MAX_SAFE_INTEGER`.
    */
   advanceMinutes(n: number): void;
-  /** Jump forward to the next start of `segmentName`, strictly after now. Throws on an unknown name. */
+  /**
+   * Jump forward to the next start of `segmentName`, strictly after now, or to now when the
+   * clock sits on that start without having entered it (held on the boundary, then released).
+   * Throws on an unknown name.
+   */
   skipTo(segmentName: string): void;
   pause(): void;
   resume(): void;
@@ -183,7 +187,8 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
     for (;;) {
       const boundary = currentBoundary();
       if (target < boundary) {
-        absolute = target;
+        // A callback may already have advanced the clock past `target`.
+        if (target > absolute) absolute = target;
         return;
       }
       absolute = boundary;
@@ -243,7 +248,11 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
       const seg = segments[i] as GameClockSegment;
       if (seg.name !== segmentName) continue;
       let candidate = day * MINUTES_PER_DAY + seg.startMinute;
-      if (candidate <= absolute) candidate += MINUTES_PER_DAY;
+      // A start the clock sits on without having entered it (held on the boundary,
+      // then released) is still ahead; one it has entered is a full day away.
+      if (candidate < absolute || (candidate === absolute && index === i)) {
+        candidate += MINUTES_PER_DAY;
+      }
       if (candidate < target) target = candidate;
     }
     if (target === Number.POSITIVE_INFINITY) {

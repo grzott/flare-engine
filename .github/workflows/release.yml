@@ -51,6 +51,7 @@ jobs:
       - run: bun run build
       - run: bun run test
       - run: bun run check:exports
+      - run: bun run check:exported-types
       - run: bun run check:nodenext
 
       # B19: a publish must not be able to bypass the perf gate. ci.yml runs on

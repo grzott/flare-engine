@@ -30,6 +30,7 @@
     "check:changeset-symbols": "bun scripts/check-changeset-symbols.mjs",
     "check:bump": "bun scripts/check-bump-level.mjs",
     "check:exports": "bun scripts/check-exports.mjs",
+    "check:exported-types": "bun scripts/check-exported-types.mjs",
     "check:nodenext": "bun scripts/check-nodenext.mjs",
     "check:publish-safety": "bun scripts/check-publish-safety.mjs",
     "check:readme": "bun scripts/check-readme-snippets.mjs",

@@ -91,8 +91,9 @@ agents; the architecture, the decisions, the verification and the review are the
 7. Commit using Conventional Commits (enforced by commitlint): `feat(math): add Vec2.lerp`.
 8. Push and open a Pull Request. CI runs more than step 5 does — on top of lint / typecheck /
    test / build / typecheck:tests it gates `check:deps`, `check:changeset`, `check:exports`,
-   `check:nodenext`, `check:readme`, `check:perf`, `check:perf-bytes` and `check:perf-freshness`. Run
-   `bun run check:deps && bun run check:changeset && bun run check:exports && bun run check:nodenext && bun run check:readme`
+   `check:exported-types`, `check:nodenext`, `check:readme`, `check:perf`, `check:perf-bytes` and
+   `check:perf-freshness`. Run
+   `bun run check:deps && bun run check:changeset && bun run check:exports && bun run check:exported-types && bun run check:nodenext && bun run check:readme`
    locally if you want the same answer before pushing.
 
 After a publish, Pan Tvardowski (a private, unreleased consumer game in its own repo) runs a nightly

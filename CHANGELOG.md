@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.10](#0410) | 2026-11-08 | 42 | Procedural SFX, dynamics sleeping, per-image sampling, web postfx, slot headers; includes 0.4.9 |
 | [0.4.8](#048) | 2026-11-05 | 42 | Tilemap flips and layer opacity, the native LUT pass, one wasm download |
 | [0.4.7](#047) | 2026-11-04 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |
 | [0.4.6](#046) | 2026-10-31 | 42 | `@flare-engine/cli`: sharp 0.35.5 fixes three high-severity advisories |
@@ -29,6 +30,75 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.10
+
+Additions and fixes in 21 packages. The other 21 change only their version. 0.4.9 was versioned on
+`main` but never published, because its release run stopped at the perf-freshness gate. Its two
+`scene` changes ship here, and each package's own `CHANGELOG.md` still lists them under 0.4.9.
+
+**Deprecation:** `SystemDef._worldFn` (`ecs`) is deprecated in favour of `SystemDef.worldFn`, which
+is the same function reference. `_worldFn` stays until the next planned minor.
+
+- **`scene`** (from 0.4.9) — `SceneManager.push(name, data?, { overlay: true })` updates and draws
+  the new scene above the one below instead of replacing it, and the scene below gets no `onExit` on
+  the push and no `onEnter` on the matching `pop()`. `pop({ keep: true })` leaves the popped scene
+  initialized, so the next `push` of its name goes straight to `onEnter`. `pop({ data })` forwards
+  `data` to the revealed scene's `onEnter`. A plain `push` or `pop` is unchanged.
+- **`audio`** — `renderSynth` renders procedural SFX into a caller-owned `Float32Array` without
+  allocating. Waveforms are sine, square, saw and seeded noise, with an ADSR envelope and a frequency
+  sweep. `synthSampleCount` sizes the array and `fillPCMBuffer` copies it into a buffer.
+  `PlaySFXOptions.delay` schedules a cue on the audio clock. Fix: `SFXPool` and `Music` registered
+  `onended` while `react-native-audio-api` exposes `onEnded`, so finished voices were never released
+  and `Music.playing` stayed set after a non-looping track ended.
+- **`dynamics`** — opt-in per-body sleeping, off when the option is absent: `createWorld({ sleep })`,
+  `isSleeping`, `isAtRest` and `wakeBody`. `stepUntil` and the zero-alloc `stepUntilInto` step until a
+  predicate holds, a step cap is reached or a time budget runs out. `createTimeline` records a
+  fixed-step simulation once into a pre-allocated `Float32Array` and replays it with `sampleInto`.
+- **`render`, `render-web`** — `FrameRenderer.setImageSampling(image, 'nearest' | 'linear')` sets
+  the sampling of one image on both draw paths, so pixel art scaled through `drawAtlas` stops
+  blurring. An image with no setting draws as before. A flipped sprite now draws with its `rotation`,
+  so Tiled's diagonal-only and all-three-bits tiles get the quarter turn 0.4.8 still left out.
+- **`react`, `render`** — `GameView` runs a bound postfx chain on web, composited inside the scene
+  capture on the existing offscreen surface, and the one-time "postfx chain skipped" warning is gone.
+  Native is unchanged. `FrameRenderer.compilePostFxPasses` returns the runtime's compiled passes.
+- **`tilemap`** — `parseTiled` reads Tiled per-tile animations onto `TilesetRef.animations`. With
+  `TilemapDrawOptions.time` (seconds), each animated tile draws its current frame, with no allocation
+  in the tile loop. Without `time` the authored tile draws as before.
+- **`storage`** — `saveSlot(name, data, header?)` stores an optional header beside the data.
+  `listSlotHeaders()` returns every slot's `{ name, version, header }` from the slot envelope alone,
+  running no migration. The new `parseHeader` option repairs stale stored headers when they are listed.
+- **`errors`** — `SentryTransportOptions` gains an `integrations` hook that decides what Sentry's
+  `init` receives. `CrashTransport` gains an optional `close()`, which the Sentry transport awaits and
+  `composeTransports` forwards. Fix: with no previous React Native global handler, `uninstall()` left
+  the capture's `ErrorUtils` handler live.
+- **`input`** — while no primary touch is active, `InputManager.onPointerMove` treats a move for an
+  id that was never pressed as a hover. `pointer.position` and `pointer.delta` follow it, and no
+  phantom pressed touch is recorded.
+- **`physics`** — `buildSolidGrid(…, { outside: 'open' })` lets a body walk off the map edge, for
+  seams between region maps. The default still blocks.
+- **`shapes`** — `BaseSpec.glow` also takes `{ color, width }`. `shapeBoundsBox` and the zero-alloc
+  `shapeBoundsBoxInto` return the bounding box of a composition.
+- **`ui`** — `@flare-engine/ui/focus` is a new entry point with only the focus core. It imports
+  neither `react` nor `react-native`. `Button.focusOnPress` and
+  `FocusManagerOptions.refocusOnUnregister` turn off two focus side effects. Both default to `true`.
+- **`testing`** — `createHeadlessContext(opts?)` is an RN-free, Skia-free stand-in for the React
+  `GameContextValue` (without `audio`, `renderer` and `batch`) for loop-harness tests.
+  `@flare-engine/assets` and `@flare-engine/render` become dependencies of the package.
+- **`create`** — the `flare-create` next-step hint names the detected package manager and
+  `run android`, instead of a hard-coded `bun run start`. The shmup template uses `sys.worldFn`.
+- **Exported types** — option and payload types that exported signatures already used can now be
+  imported:
+  - `debug`: `FrameBudgetOpts` and `PerfRecorderOpts`;
+  - `deep-links`: `WebWindowLike`;
+  - `input`: `NavigatorLike` and `WebGamepad`;
+  - `share`: `WebNavigatorLike` and `FileCtorLike`;
+  - `iap-revenuecat`: its four SDK payload types;
+  - `react` and the `engine` umbrella: `SkOffscreenSurfaceLike`.
+
+  `shapes`' emitted declarations no longer carry a generated dollar-one-suffixed alias.
 
 ---
 

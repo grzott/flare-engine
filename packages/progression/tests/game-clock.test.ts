@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { createGameClock, type GameClockConfig, type GameClockSegment } from '../src/index.js';
+import {
+  createGameClock,
+  type GameClockConfig,
+  type GameClockSegment,
+  type GameClockState,
+} from '../src/index.js';
 
 const segments: readonly GameClockSegment[] = [
   { name: 'night', phase: 'night', startMinute: 0, secondsPerGameHour: 120 },
@@ -102,6 +107,51 @@ describe('createGameClock — skipTo', () => {
     const clock = at(0);
     expect(() => clock.skipTo('noon')).toThrow();
     expect(clock.absoluteMinutes).toBe(0);
+  });
+
+  it('from a fractional time across several boundaries it lands on the start and crosses into it', () => {
+    const table: readonly GameClockSegment[] = [
+      { name: 'a', phase: 'day', startMinute: 0, secondsPerGameHour: 60 },
+      { name: 'b', phase: 'day', startMinute: 300, secondsPerGameHour: 60 },
+      { name: 'c', phase: 'night', startMinute: 720, secondsPerGameHour: 60 },
+    ];
+    for (let k = 1; k < 1000; k++) {
+      const start = (k / 1000) * 299;
+      const changes: string[] = [];
+      const clock = createGameClock(
+        { segments: table, onSegmentChange: (s) => changes.push(s) },
+        { absoluteMinutes: start, paused: false },
+      );
+      clock.skipTo('c');
+      expect([start, clock.absoluteMinutes, clock.segment, clock.phase, changes.join()]).toEqual([
+        start,
+        720,
+        'c',
+        'night',
+        'b,c',
+      ]);
+    }
+  });
+});
+
+describe('createGameClock — advanceMinutes', () => {
+  it('an advance across several boundaries that ends on one crosses it, from any fractional start', () => {
+    for (let k = 1; k < 1000; k++) {
+      const start = (k / 1000) * 299;
+      const clock = at(start);
+      clock.advanceMinutes(1200 - start);
+      expect([start, clock.absoluteMinutes, clock.segment]).toEqual([start, 1200, 'dusk']);
+    }
+  });
+
+  it('an update that rounds onto a boundary crosses it', () => {
+    for (let k = 1; k < 1000; k++) {
+      const start = 360 + (k / 1000) * 839;
+      const clock = at(start);
+      clock.update(((1200 - start) * 86) / 60);
+      if (clock.absoluteMinutes === 1200) expect([start, clock.segment]).toEqual([start, 'dusk']);
+      else expect([start, clock.segment]).toEqual([start, 'day']);
+    }
   });
 });
 
@@ -278,6 +328,26 @@ describe('createGameClock — validation', () => {
     expect(() => clock.advanceMinutes(-1)).toThrow(RangeError);
     expect(() => clock.advanceMinutes(Number.NaN)).toThrow(RangeError);
     expect(clock.absoluteMinutes).toBe(0);
+  });
+
+  it('advanceMinutes throws RangeError past Number.MAX_SAFE_INTEGER instead of looping', () => {
+    const clock = at(0);
+    expect(() => clock.advanceMinutes(1e300)).toThrow(RangeError);
+    expect(() => clock.advanceMinutes(Number.MAX_SAFE_INTEGER + 2)).toThrow(RangeError);
+    expect(clock.absoluteMinutes).toBe(0);
+  });
+
+  it('update throws RangeError for a dt that could pass Number.MAX_SAFE_INTEGER instead of looping', () => {
+    const clock = at(0);
+    expect(() => clock.update(1e300)).toThrow(RangeError);
+    expect(clock.absoluteMinutes).toBe(0);
+    clock.update(1e9);
+    expect(clock.absoluteMinutes).toBeGreaterThan(0);
+  });
+
+  it('rejects a restored paused that is not a boolean', () => {
+    const malformed = { absoluteMinutes: 0, paused: 'false' } as unknown as GameClockState;
+    expect(() => createGameClock(config, malformed)).toThrow();
   });
 });
 

@@ -282,8 +282,8 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/progression": {
-      "ceiling": 35765,
-      "measured": 32514,
+      "ceiling": 37876,
+      "measured": 34433,
       "measuredAt": "2026-11-08"
     },
     "@flare-engine/react": {
@@ -481,7 +481,7 @@
     },
     {
       "date": "2026-11-08",
-      "reason": "progression ceiling raised 17837 -> 35765 B (measured 32514 x1.1), authorized by the owner's approval of the PR closing issue #202 (rebuilt from the runner's #254 after a merge of main corrupted this file). New game-clock.ts exports createGameClock plus the GameClock, GameClockConfig, GameClockSegment and GameClockState types: a 1440-minute game-day clock with a validated per-segment real-seconds-per-game-hour table, one shared stepping loop for update / advanceMinutes / skipTo that lands float-exactly on each boundary, pause, hold at the next phase boundary, segment and phase change callbacks and a plain serialize state. Measured against the published 0.4.10 tarball, which equals main for this package (16211 B). So this change adds 16303 B gzipped (each file gzipped alone +12340 B): +5699 / +5673 B raw (+1675 / +1665 B gzipped) in dist/index.js / index.mjs, +12275 B raw (+3364 / +3367 B gzipped) in each source map, +2536 B raw (+875 B gzipped) in each .d.ts (JSDoc) and +737 B of README for the clock snippet. The package was small, so one module of ~250 lines doubles it; nothing else in the package moved. Added behaviour, not a regression."
+      "reason": "progression ceiling raised 17837 -> 37876 B (measured 34433 x1.1), authorized by the owner's approval of the PR closing issue #202 (rebuilt from the runner's #254 after a merge of main corrupted this file). New game-clock.ts exports createGameClock plus the GameClock, GameClockConfig, GameClockSegment and GameClockState types: a 1440-minute game-day clock with a validated per-segment real-seconds-per-game-hour table, boundary stepping that lands float-exactly on each boundary (advanceMinutes / skipTo compare an absolute target with each boundary; update carries real seconds and crosses when rounding lands on one), a restored paused validated as a boolean, a Number.MAX_SAFE_INTEGER bound on update and advanceMinutes, pause, hold at the next phase boundary, segment and phase change callbacks and a plain serialize state. Measured against the published 0.4.10 tarball, which equals main for this package (16211 B). So this change adds 18222 B gzipped (each file gzipped alone +14090 B): +6716 / +6690 B raw (+1954 / +1944 B gzipped) in dist/index.js / index.mjs, +14302 B raw (+3898 / +3901 B gzipped) in each source map, +2719 B raw (+938 B gzipped) in each .d.ts (JSDoc) and +737 B of README for the clock snippet. The package was small, so one module of ~250 lines doubles it; nothing else in the package moved. Added behaviour, not a regression."
     }
   ]
 }

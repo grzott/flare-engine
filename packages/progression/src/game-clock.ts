@@ -44,9 +44,15 @@ export interface GameClock {
   readonly phase: string;
   readonly paused: boolean;
   readonly held: boolean;
-  /** Advance by `dt` real seconds. No-op while paused, or when `dt` is not finite or <= 0. */
+  /**
+   * Advance by `dt` real seconds. No-op while paused, or when `dt` is not finite or <= 0.
+   * Throws `RangeError` when `dt` could carry `absoluteMinutes` past `Number.MAX_SAFE_INTEGER`.
+   */
   update(dt: number): void;
-  /** Advance by `n` game minutes, even while paused. Throws `RangeError` when `n` is negative or not finite. */
+  /**
+   * Advance by `n` game minutes, even while paused. Throws `RangeError` when `n` is negative or
+   * not finite, or when `absoluteMinutes + n` exceeds `Number.MAX_SAFE_INTEGER`.
+   */
   advanceMinutes(n: number): void;
   /** Jump forward to the next start of `segmentName`, strictly after now. Throws on an unknown name. */
   skipTo(segmentName: string): void;
@@ -106,8 +112,10 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
 
   // Per-segment end minute: the next segment's start, or 1440 for the last.
   const ends = new Float64Array(count);
+  let fastestRate = Number.POSITIVE_INFINITY;
   for (let i = 0; i < count; i++) {
     ends[i] = i + 1 < count ? (segments[i + 1] as GameClockSegment).startMinute : MINUTES_PER_DAY;
+    fastestRate = Math.min(fastestRate, (segments[i] as GameClockSegment).secondsPerGameHour);
   }
 
   let absolute = 0;
@@ -119,6 +127,11 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
     if (!Number.isFinite(state.absoluteMinutes) || state.absoluteMinutes < 0) {
       throw new Error(
         `createGameClock: state.absoluteMinutes must be finite and >= 0, got ${state.absoluteMinutes}`,
+      );
+    }
+    if (typeof state.paused !== 'boolean') {
+      throw new Error(
+        `createGameClock: state.paused must be a boolean, got ${String(state.paused)}`,
       );
     }
     absolute = state.absoluteMinutes;
@@ -150,44 +163,77 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
     return true;
   }
 
-  /** Shared stepping loop; `amount` is real seconds when `realSeconds`, else game minutes. */
-  function step(amount: number, realSeconds: boolean): void {
-    let remaining = amount;
+  /** Absolute minute at which the current segment ends (an integer while below 2^53). */
+  function currentBoundary(): number {
+    let day = Math.floor(absolute / MINUTES_PER_DAY);
+    // Sitting on the midnight boundary with the last segment still current
+    // (a held clock): that is minute 1440 of the previous day.
+    if (absolute - day * MINUTES_PER_DAY < (segments[index] as GameClockSegment).startMinute) {
+      day -= 1;
+    }
+    return day * MINUTES_PER_DAY + (ends[index] as number);
+  }
+
+  /**
+   * Game-minute advance to an absolute target. Each boundary is compared against
+   * the target itself rather than a carried remainder, so a target that equals a
+   * boundary always lands on it and crosses (unless held).
+   */
+  function advanceTo(target: number): void {
     for (;;) {
-      let day = Math.floor(absolute / MINUTES_PER_DAY);
-      let minuteOfDay = absolute - day * MINUTES_PER_DAY;
-      // Sitting on the midnight boundary with the last segment still current
-      // (a held clock): treat it as minute 1440 of the previous day.
-      if (minuteOfDay < (segments[index] as GameClockSegment).startMinute) {
-        day -= 1;
-        minuteOfDay += MINUTES_PER_DAY;
+      const boundary = currentBoundary();
+      if (target < boundary) {
+        absolute = target;
+        return;
       }
-      const end = ends[index] as number;
-      const toBoundary = end - minuteOfDay;
-      if (toBoundary > 0) {
-        const rate = (segments[index] as GameClockSegment).secondsPerGameHour;
-        const cost = realSeconds ? (toBoundary * rate) / 60 : toBoundary;
-        if (remaining < cost) {
-          absolute += realSeconds ? (remaining * 60) / rate : remaining;
-          return;
-        }
-        absolute = day * MINUTES_PER_DAY + end;
-        remaining -= cost;
-      }
+      absolute = boundary;
       if (!cross()) return;
     }
   }
 
   function update(dt: number): void {
     if (paused || !Number.isFinite(dt) || dt <= 0) return;
-    step(dt, true);
+    if (absolute + (dt * 60) / fastestRate > Number.MAX_SAFE_INTEGER) {
+      throw new RangeError(
+        `GameClock.update: dt ${dt} would carry absoluteMinutes past Number.MAX_SAFE_INTEGER`,
+      );
+    }
+    // Rates differ per segment, so real seconds are carried as a remainder.
+    let remaining = dt;
+    for (;;) {
+      const boundary = currentBoundary();
+      const toBoundary = boundary - absolute;
+      if (toBoundary > 0) {
+        const rate = (segments[index] as GameClockSegment).secondsPerGameHour;
+        const cost = (toBoundary * rate) / 60;
+        if (remaining < cost) {
+          const next = absolute + (remaining * 60) / rate;
+          if (next < boundary) {
+            absolute = next;
+            return;
+          }
+          // Rounding reached the boundary: land on it and cross, like an exact step.
+          remaining = 0;
+        } else {
+          remaining -= cost;
+        }
+        absolute = boundary;
+      }
+      if (!cross()) return;
+    }
   }
 
   function advanceMinutes(n: number): void {
     if (!Number.isFinite(n) || n < 0) {
       throw new RangeError(`GameClock.advanceMinutes: n must be finite and >= 0, got ${n}`);
     }
-    step(n, false);
+    const target = absolute + n;
+    if (target > Number.MAX_SAFE_INTEGER) {
+      throw new RangeError(
+        `GameClock.advanceMinutes: absoluteMinutes + n must not exceed Number.MAX_SAFE_INTEGER, got ${target}`,
+      );
+    }
+    advanceTo(target);
   }
 
   function skipTo(segmentName: string): void {
@@ -203,7 +249,7 @@ export function createGameClock(config: GameClockConfig, state?: GameClockState)
     if (target === Number.POSITIVE_INFINITY) {
       throw new Error(`GameClock.skipTo: unknown segment "${segmentName}"`);
     }
-    step(target - absolute, false);
+    advanceTo(target);
   }
 
   return {

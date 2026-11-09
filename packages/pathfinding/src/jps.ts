@@ -12,86 +12,8 @@ import type { PathResult } from './astar.js';
 import { findPath, octileDistance } from './astar.js';
 import type { Grid } from './grid.js';
 import { isWalkable } from './grid.js';
-
-// ─── Binary min-heap (duplicated from astar for tree-shakeability) ─
-
-interface Heap {
-  f: Float64Array;
-  idx: Int32Array;
-  size: number;
-}
-
-function heapCreate(capacity: number): Heap {
-  return {
-    f: new Float64Array(capacity),
-    idx: new Int32Array(capacity),
-    size: 0,
-  };
-}
-
-/**
- * Double the heap's backing arrays.
- *
- * Typed arrays do not throw on an out-of-range write — the store is silently
- * dropped — so without this a push past capacity increments `size`, writes
- * nothing, and every later comparison reads `undefined`. The open set then
- * degrades without any error, and the search returns a valid-looking but
- * non-optimal path. Growth is amortized O(1): allocation happens only when
- * capacity is reached, never per push.
- */
-function heapGrow(h: Heap): void {
-  const next = h.f.length === 0 ? 16 : h.f.length * 2;
-  const f = new Float64Array(next);
-  f.set(h.f);
-  const idx = new Int32Array(next);
-  idx.set(h.idx);
-  h.f = f;
-  h.idx = idx;
-}
-
-function heapPush(h: Heap, f: number, nodeIdx: number): void {
-  if (h.size === h.f.length) heapGrow(h);
-  let i = h.size++;
-  h.f[i] = f;
-  h.idx[i] = nodeIdx;
-  while (i > 0) {
-    const parent = (i - 1) >> 1;
-    if (h.f[parent]! <= h.f[i]!) break;
-    const tf = h.f[parent]!;
-    const ti = h.idx[parent]!;
-    h.f[parent] = h.f[i]!;
-    h.idx[parent] = h.idx[i]!;
-    h.f[i] = tf;
-    h.idx[i] = ti;
-    i = parent;
-  }
-}
-
-function heapPop(h: Heap): number {
-  const result = h.idx[0]!;
-  h.size--;
-  if (h.size > 0) {
-    h.f[0] = h.f[h.size]!;
-    h.idx[0] = h.idx[h.size]!;
-    let i = 0;
-    for (;;) {
-      let smallest = i;
-      const left = 2 * i + 1;
-      const right = 2 * i + 2;
-      if (left < h.size && h.f[left]! < h.f[smallest]!) smallest = left;
-      if (right < h.size && h.f[right]! < h.f[smallest]!) smallest = right;
-      if (smallest === i) break;
-      const tf = h.f[i]!;
-      const ti = h.idx[i]!;
-      h.f[i] = h.f[smallest]!;
-      h.idx[i] = h.idx[smallest]!;
-      h.f[smallest] = tf;
-      h.idx[smallest] = ti;
-      i = smallest;
-    }
-  }
-  return result;
-}
+import { heapPop, heapPush } from './heap.js';
+import { acquireScratch, releaseScratch } from './scratch.js';
 
 // ─── JPS ─────────────────────────────────────────────────────────
 
@@ -134,59 +56,67 @@ export function findPathJPS(
 
   const w = grid.width;
   const h = grid.height;
-  const total = w * h;
-  const maxIter = options?.maxIterations ?? total;
+  const maxIter = options?.maxIterations ?? w * h;
   const heuristic = options?.heuristic ?? octileDistance;
-
-  const g = new Float64Array(total);
-  g.fill(Number.POSITIVE_INFINITY);
-  const closed = new Uint8Array(total);
-  const cameFrom = new Int32Array(total);
-  cameFrom.fill(-1);
 
   const startIdx = sy * w + sx;
   const endIdx = ey * w + ex;
-  g[startIdx] = 0;
 
-  const heap = heapCreate(Math.min(total, 4096));
-  heapPush(heap, heuristic(sx, sy, ex, ey), startIdx);
+  // Per-grid scratch: a cell stamped `openMark` has a valid g / cameFrom for this
+  // search, `closedMark` means settled, any lower stamp reads as g = +Infinity.
+  const scratch = acquireScratch(grid);
+  const { g, cameFrom, stamp, heap } = scratch;
+  const openMark = scratch.open;
+  const closedMark = openMark + 1;
+
+  stamp[startIdx] = openMark;
+  g[startIdx] = 0;
+  cameFrom[startIdx] = -1;
 
   let explored = 0;
 
-  while (heap.size > 0 && explored < maxIter) {
-    const currentIdx = heapPop(heap);
-    if (currentIdx === endIdx) {
-      return buildPath(cameFrom, w, currentIdx, g[currentIdx]!, explored);
-    }
-    if (closed[currentIdx]) continue;
-    closed[currentIdx] = 1;
-    explored++;
+  try {
+    heapPush(heap, heuristic(sx, sy, ex, ey), startIdx);
 
-    const cx = currentIdx % w;
-    const cy = (currentIdx / w) | 0;
+    while (heap.size > 0 && explored < maxIter) {
+      const currentIdx = heapPop(heap);
+      if (currentIdx === endIdx) {
+        return buildPath(cameFrom, w, currentIdx, g[currentIdx]!, explored);
+      }
+      if (stamp[currentIdx] === closedMark) continue;
+      stamp[currentIdx] = closedMark;
+      explored++;
 
-    const neighbors = identifySuccessors(grid, cx, cy, cameFrom, w, h, ex, ey);
-    for (let i = 0; i < neighbors.length; i += 2) {
-      const nx = neighbors[i]!;
-      const ny = neighbors[i + 1]!;
-      const nIdx = ny * w + nx;
-      if (closed[nIdx]) continue;
+      const cx = currentIdx % w;
+      const cy = (currentIdx / w) | 0;
 
-      const dx = Math.abs(nx - cx);
-      const dy = Math.abs(ny - cy);
-      const diag = Math.min(dx, dy);
-      const straight = Math.abs(dx - dy);
-      const dist = diag * SQRT2 + straight;
-      const tentativeG = g[currentIdx]! + dist;
-      if (tentativeG < g[nIdx]!) {
-        g[nIdx] = tentativeG;
-        cameFrom[nIdx] = currentIdx;
-        heapPush(heap, tentativeG + heuristic(nx, ny, ex, ey), nIdx);
+      const neighbors = identifySuccessors(grid, cx, cy, cameFrom, w, h, ex, ey);
+      for (let i = 0; i < neighbors.length; i += 2) {
+        const nx = neighbors[i]!;
+        const ny = neighbors[i + 1]!;
+        const nIdx = ny * w + nx;
+        const nStamp = stamp[nIdx]!;
+        if (nStamp === closedMark) continue;
+
+        const dx = Math.abs(nx - cx);
+        const dy = Math.abs(ny - cy);
+        const diag = Math.min(dx, dy);
+        const straight = Math.abs(dx - dy);
+        const dist = diag * SQRT2 + straight;
+        const tentativeG = g[currentIdx]! + dist;
+        if (nStamp !== openMark || tentativeG < g[nIdx]!) {
+          g[nIdx] = tentativeG;
+          cameFrom[nIdx] = currentIdx;
+          stamp[nIdx] = openMark;
+          heapPush(heap, tentativeG + heuristic(nx, ny, ex, ey), nIdx);
+        }
       }
     }
-  }
 
-  return null;
+    return null;
+  } finally {
+    releaseScratch(scratch);
+  }
 }
 
 function identifySuccessors(

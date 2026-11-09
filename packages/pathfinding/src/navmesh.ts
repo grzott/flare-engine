@@ -157,7 +157,7 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
         id = cameFrom.get(id);
       }
       corridor.reverse();
-      const path = funnelSmooth(mesh, byId, corridor, start, end);
+      const path = funnelSmooth(byId, corridor, start, end);
       return { path, corridor };
     }
 
@@ -208,7 +208,6 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
 // ─── Simple Stupid Funnel Algorithm ──────────────────────────────
 
 function funnelSmooth(
-  _mesh: NavMesh,
   byId: Map<number, NavMeshPolygon>,
   corridor: number[],
   start: Vec2,

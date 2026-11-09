@@ -4,9 +4,14 @@ import { octileDistance } from '../src/astar.js';
 import type { Grid } from '../src/grid.js';
 import { createGrid, setWalkable } from '../src/grid.js';
 import { findPathJPS } from '../src/jps.js';
-import { createNavMesh, findNavMeshPath, type NavMeshPolygon } from '../src/navmesh.js';
+import {
+  createNavMesh,
+  findNavMeshPath,
+  type NavMeshPolygon,
+  type Portal,
+} from '../src/navmesh.js';
 
-// ─── #123 — findNavMeshPath caches the id index and centroids per mesh ───
+// ─── #123 — findNavMeshPath: id index per mesh, centroids once per search ───
 
 function column(x0: number, x1: number, vertex: (x: number, y: number) => Vec2): Vec2[] {
   return [vertex(x0, 0), vertex(x1, 0), vertex(x1, 4), vertex(x0, 4)];
@@ -39,8 +44,29 @@ function rowMesh(order: readonly number[], middleVertex: (x: number, y: number) 
   return createNavMesh(order.map((i) => polys[i]!));
 }
 
+/** Axis-aligned rectangle (x0, y0)-(x1, y1) with plain vertices. */
+function rect(id: number, x0: number, y0: number, x1: number, y1: number, portals: Portal[]) {
+  const vertices: Vec2[] = [
+    { x: x0, y: y0 },
+    { x: x1, y: y0 },
+    { x: x1, y: y1 },
+    { x: x0, y: y1 },
+  ];
+  return { id, vertices, portals } satisfies NavMeshPolygon;
+}
+
+/** Portal across the vertical edge x = `x`, from (x, ya) to (x, yb). */
+function portal(neighborId: number, x: number, ya: number, yb: number): Portal {
+  return { neighborId, a: { x, y: ya }, b: { x, y: yb } };
+}
+
+/** A mesh over a copy of the current polygon list: a never-searched object, so no index to reuse. */
+function fresh(polys: readonly NavMeshPolygon[]) {
+  return createNavMesh(polys.slice());
+}
+
 describe('findNavMeshPath per-mesh index (#123)', () => {
-  test('a repeat search reads no vertex of a route polygon that findPolygonAt never scans', () => {
+  test('a search reads each route polygon vertex once, and every search re-reads them', () => {
     let reads = 0;
     const counted = (x: number, y: number): Vec2 => ({
       get x() {
@@ -62,16 +88,98 @@ describe('findNavMeshPath per-mesh index (#123)', () => {
     const first = findNavMeshPath(mesh, start, end);
     expect(first).not.toBeNull();
     expect(first!.corridor).toEqual([0, 1, 2]);
-    // The counter is live: the first search had to read them to build its index.
-    expect(reads).toBeGreaterThan(0);
+    // 4 vertices x 2 coordinates: one centroid per search, not one per relaxation plus one per pop.
+    expect(reads).toBe(8);
 
+    // Vertices are live data: the next search derives the centroid again.
     reads = 0;
     const second = findNavMeshPath(mesh, start, end);
     expect(second).toEqual(first);
-    expect(reads).toBe(0);
+    expect(reads).toBe(8);
 
     // Same result as the same mesh with plain vertices in natural order.
     expect(first).toEqual(findNavMeshPath(rowMesh([0, 1, 2], plain), start, end));
+  });
+
+  test('a polygon pushed after a search is routed to and from (r1)', () => {
+    const p1Portals: Portal[] = [portal(0, 10, 10, 0)];
+    const polys: NavMeshPolygon[] = [
+      rect(0, 0, 0, 10, 10, [portal(1, 10, 0, 10)]),
+      rect(1, 10, 0, 20, 10, p1Portals),
+    ];
+    const mesh = createNavMesh(polys);
+    expect(findNavMeshPath(mesh, { x: 5, y: 5 }, { x: 15, y: 5 })!.corridor).toEqual([0, 1]);
+
+    p1Portals.push(portal(2, 20, 0, 10));
+    polys.push(rect(2, 20, 0, 30, 10, [portal(1, 20, 10, 0)]));
+
+    const toNew = findNavMeshPath(mesh, { x: 5, y: 5 }, { x: 25, y: 5 });
+    expect(toNew).not.toBeNull();
+    expect(toNew!.corridor).toEqual([0, 1, 2]);
+    expect(toNew).toEqual(findNavMeshPath(fresh(polys), { x: 5, y: 5 }, { x: 25, y: 5 }));
+
+    const fromNew = findNavMeshPath(mesh, { x: 25, y: 5 }, { x: 5, y: 5 });
+    expect(fromNew).not.toBeNull();
+    expect(fromNew!.corridor).toEqual([2, 1, 0]);
+    expect(fromNew).toEqual(findNavMeshPath(fresh(polys), { x: 25, y: 5 }, { x: 5, y: 5 }));
+  });
+
+  test('a vertex edited in place after a search moves the centroid the next search uses (r2)', () => {
+    // S (0) → A (1, upper) or B (2, lower) → E (3). A and B tie exactly, so A
+    // wins on portal order — until A is stretched upward, away from its portals.
+    const aVerts: Vec2[] = [
+      { x: 10, y: 0 },
+      { x: 20, y: 0 },
+      { x: 20, y: 5 },
+      { x: 10, y: 5 },
+    ];
+    const polys: NavMeshPolygon[] = [
+      rect(0, 0, 0, 10, 10, [portal(1, 10, 0, 5), portal(2, 10, 5, 10)]),
+      { id: 1, vertices: aVerts, portals: [portal(0, 10, 5, 0), portal(3, 20, 0, 5)] },
+      rect(2, 10, 5, 20, 10, [portal(0, 10, 10, 5), portal(3, 20, 5, 10)]),
+      rect(3, 20, 0, 30, 10, [portal(1, 20, 5, 0), portal(2, 20, 10, 5)]),
+    ];
+    const mesh = createNavMesh(polys);
+    const start = { x: 5, y: 5 };
+    const end = { x: 25, y: 5 };
+    expect(findNavMeshPath(mesh, start, end)!.corridor).toEqual([0, 1, 3]);
+
+    aVerts[0]!.y = -10;
+    aVerts[1]!.y = -10;
+    const edited = findNavMeshPath(mesh, start, end);
+    expect(edited).not.toBeNull();
+    expect(edited!.corridor).toEqual([0, 2, 3]);
+    expect(edited).toEqual(findNavMeshPath(fresh(polys), start, end));
+  });
+
+  test('a polygon object replaced at its index, or the list reordered, is read live (r3)', () => {
+    const polys: NavMeshPolygon[] = [
+      rect(0, 0, 0, 10, 10, [portal(1, 10, 0, 10)]),
+      rect(1, 10, 0, 20, 10, [portal(0, 10, 10, 0), portal(2, 20, 0, 10)]),
+      rect(2, 20, 0, 30, 10, [portal(1, 20, 10, 0)]),
+    ];
+    const mesh = createNavMesh(polys);
+    const start = { x: 5, y: 5 };
+    const end = { x: 25, y: 5 };
+    const route = findNavMeshPath(mesh, start, end);
+    expect(route!.corridor).toEqual([0, 1, 2]);
+
+    // Same id and shape, but no portal to polygon 2 any more.
+    polys[1] = rect(1, 10, 0, 20, 10, [portal(0, 10, 10, 0)]);
+    expect(findNavMeshPath(mesh, start, end)).toBeNull();
+    expect(findNavMeshPath(fresh(polys), start, end)).toBeNull();
+
+    // Reconnected through another new object.
+    polys[1] = rect(1, 10, 0, 20, 10, [portal(0, 10, 10, 0), portal(2, 20, 0, 10)]);
+    const reconnected = findNavMeshPath(mesh, start, end);
+    expect(reconnected).toEqual(route);
+    expect(reconnected).toEqual(findNavMeshPath(fresh(polys), start, end));
+
+    // Same polygons at new positions.
+    polys.reverse();
+    const reordered = findNavMeshPath(mesh, start, end);
+    expect(reordered).toEqual(route);
+    expect(reordered).toEqual(findNavMeshPath(fresh(polys), start, end));
   });
 });
 

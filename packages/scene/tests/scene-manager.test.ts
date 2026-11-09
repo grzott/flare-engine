@@ -3,7 +3,7 @@ import { World } from '@flare-engine/ecs';
 import { Camera2D } from '@flare-engine/render';
 import type { Scene, SceneFactory } from '../src/scene.js';
 import { SceneManager } from '../src/scene-manager.js';
-import { fadeTransition } from '../src/transition.js';
+import { fadeTransition, noneTransition } from '../src/transition.js';
 
 function createTestScene(name: string, log: string[]): SceneFactory {
   return (world, camera) => ({
@@ -1056,5 +1056,262 @@ describe('SceneManager — overlapping transitions / stall fix', () => {
 
     expect(mgr.current?.name).toBe('c');
     expect(log).toContain('c:enter');
+  });
+});
+
+describe('SceneManager — superseded go()', () => {
+  it('go() during the out-phase destroys the pending target and a later push builds a new instance', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    const aInstances: Scene[] = [];
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', (world, camera) => {
+      const s = createTestScene('a', log)(world, camera);
+      aInstances.push(s);
+      return s;
+    });
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    expect(aInstances.length).toBe(1);
+    void mgr.go('b');
+    expect(log).toEqual(['a:preload', 'a:destroy', 'b:preload']);
+
+    mgr.update(1.0); // 'out' done → switch to b
+    mgr.update(1.0); // 'in' done
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.current?.name).toBe('b');
+    expect(log.filter((e) => e === 'b:init')).toHaveLength(1);
+    expect(log.filter((e) => e === 'b:enter')).toHaveLength(1);
+    expect(log).not.toContain('a:init');
+    expect(log).not.toContain('a:enter');
+
+    log.length = 0;
+    await mgr.push('a');
+    expect(aInstances.length).toBe(2);
+    expect(mgr.current).toBe(aInstances[1]);
+    expect(mgr.current).not.toBe(aInstances[0]);
+    expect(log).toEqual(['b:exit', 'a:preload', 'a:init', 'a:enter']);
+  });
+
+  it('go(name) twice during one out-phase destroys the first instance and enters the second', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    const instances: Scene[] = [];
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', (world, camera) => {
+      const idx = instances.length;
+      const s: Scene = {
+        name: 'a',
+        world,
+        camera,
+        onInit() {
+          log.push(`a${idx}:init`);
+        },
+        onEnter() {
+          log.push(`a${idx}:enter`);
+        },
+        onDestroy() {
+          log.push(`a${idx}:destroy`);
+        },
+      };
+      instances.push(s);
+      return s;
+    });
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    void mgr.go('a');
+    expect(instances.length).toBe(2);
+    expect(log).toEqual(['a0:destroy']);
+
+    mgr.update(1.0); // 'out' done → switch
+    mgr.update(1.0); // 'in' done
+    expect(mgr.current).toBe(instances[1]);
+    expect(log).toEqual(['a0:destroy', 'first:exit', 'first:destroy', 'a1:init', 'a1:enter']);
+  });
+
+  it('destroy() with a pending target destroys it once with no onInit/onEnter; a later go() works', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    mgr.destroy();
+    expect(log).toEqual(['a:preload', 'a:destroy', 'first:exit', 'first:destroy']);
+    expect(mgr.current).toBeUndefined();
+    expect(mgr.isTransitioning).toBe(false);
+
+    log.length = 0;
+    mgr.update(1.0);
+    mgr.update(1.0);
+    expect(log).toEqual([]);
+
+    await mgr.go('a');
+    expect(mgr.current?.name).toBe('a');
+    expect(log).toEqual(['a:preload', 'a:init', 'a:enter']);
+  });
+
+  it('a superseded target whose onPreload resolves late is never inited or entered', async () => {
+    const log: string[] = [];
+    let resolveA!: () => void;
+    const aPreload = new Promise<void>((r) => {
+      resolveA = r;
+    });
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', (world, camera) => ({
+      name: 'a',
+      world,
+      camera,
+      onPreload() {
+        log.push('a:preload');
+        return aPreload;
+      },
+      onInit() {
+        log.push('a:init');
+      },
+      onEnter() {
+        log.push('a:enter');
+      },
+      onDestroy() {
+        log.push('a:destroy');
+      },
+    }));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    void mgr.go('b');
+    mgr.update(1.0); // 'out' done → switch to b
+    mgr.update(1.0); // 'in' done
+    expect(mgr.current?.name).toBe('b');
+
+    resolveA();
+    await Promise.resolve();
+    await Promise.resolve();
+    mgr.update(1.0);
+
+    expect(mgr.current?.name).toBe('b');
+    expect(mgr.isTransitioning).toBe(false);
+    expect(log).not.toContain('a:init');
+    expect(log).not.toContain('a:enter');
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
+  });
+
+  it('an instant go() during a fade-out cancels the fade and destroys the pending target', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    expect(mgr.transitionPhase).toBe('out');
+    mgr.setTransition(noneTransition());
+    await mgr.go('c');
+    expect(log).toEqual([
+      'a:preload',
+      'a:destroy',
+      'first:exit',
+      'first:destroy',
+      'c:preload',
+      'c:init',
+      'c:enter',
+    ]);
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.current?.name).toBe('c');
+
+    log.length = 0;
+    mgr.update(1.0);
+    mgr.update(1.0);
+    expect(mgr.current?.name).toBe('c');
+    expect(log).toEqual(['c:update:1', 'c:draw', 'c:update:1', 'c:draw']);
+  });
+
+  it('a pending target pushed onto the stack is destroyed once when a go() supersedes it', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('first');
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('a');
+    await mgr.push('a');
+    log.length = 0;
+
+    void mgr.go('b');
+    mgr.update(1.0); // 'out' done → switch to b
+    mgr.update(1.0); // 'in' done
+    expect(mgr.current?.name).toBe('b');
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
+  });
+
+  it('a pending target pushed onto the stack is destroyed once by destroy()', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    await mgr.go('first');
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('a');
+    await mgr.push('a');
+    log.length = 0;
+
+    mgr.destroy();
+    expect(mgr.current).toBeUndefined();
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
+  });
+
+  it('a pending target held by a kept pop is destroyed once when a go() supersedes it', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('first');
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('a');
+    await mgr.push('a');
+    mgr.pop({ keep: true });
+    log.length = 0;
+
+    void mgr.go('b');
+    mgr.update(1.0); // 'out' done → switch to b
+    mgr.update(1.0); // 'in' done
+    expect(mgr.current?.name).toBe('b');
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
+  });
+
+  it('a pending target held by a kept pop is destroyed once by destroy()', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    await mgr.go('first');
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('a');
+    await mgr.push('a');
+    mgr.pop({ keep: true });
+    log.length = 0;
+
+    mgr.destroy();
+    expect(mgr.current).toBeUndefined();
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
   });
 });

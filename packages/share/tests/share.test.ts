@@ -142,6 +142,67 @@ describe('createNativeShareTransport', () => {
     const res = await t.share({ title: 'x' });
     expect(res.dispatched).toBe(false);
   });
+
+  type NativeContent = { title?: string; message?: string; url?: string };
+
+  function recordingNative(): {
+    received: NativeContent[];
+    t: ReturnType<typeof createNativeShareTransport>;
+  } {
+    const received: NativeContent[] = [];
+    const t = createNativeShareTransport({
+      async share(content) {
+        received.push(content);
+        return { action: 'sharedAction' };
+      },
+    });
+    return { received, t };
+  }
+
+  const pngShot = {
+    bytes: new Uint8Array([1, 2, 3]),
+    base64: 'AQID',
+    format: 'png' as const,
+    width: 1,
+    height: 1,
+  };
+
+  test('passes a png screenshot as a data URL when url is unset', async () => {
+    const { received, t } = recordingNative();
+    const res = await t.share({ message: 'm', screenshot: pngShot });
+    expect(res).toEqual({ dispatched: true, via: 'native' });
+    expect(received).toEqual([{ message: 'm', url: 'data:image/png;base64,AQID' }]);
+  });
+
+  test('derives the data URL mime type from the screenshot format (jpeg)', async () => {
+    const { received, t } = recordingNative();
+    await t.share({ message: 'm', screenshot: { ...pngShot, format: 'jpeg' } });
+    expect(received).toEqual([{ message: 'm', url: 'data:image/jpeg;base64,AQID' }]);
+  });
+
+  test('an explicit url takes precedence over the screenshot', async () => {
+    const { received, t } = recordingNative();
+    await t.share({ title: 't', message: 'm', url: 'https://f', screenshot: pngShot });
+    expect(received).toEqual([{ title: 't', message: 'm', url: 'https://f' }]);
+  });
+
+  test('a text-only payload is forwarded unchanged, with no url key invented', async () => {
+    const { received, t } = recordingNative();
+    await t.share({ title: 't', message: 'm', url: 'https://f' });
+    await t.share({ message: 'm' });
+    expect(received).toEqual([{ title: 't', message: 'm', url: 'https://f' }, { message: 'm' }]);
+    expect('url' in (received[1] as NativeContent)).toBe(false);
+  });
+
+  test('a screenshot-only payload satisfies RN Share\'s "URL or message" invariant', async () => {
+    const { received, t } = recordingNative();
+    await t.share({ screenshot: pngShot });
+    expect(received.length).toBe(1);
+    const content = received[0] as NativeContent;
+    expect(typeof content.url).toBe('string');
+    expect(content.url?.startsWith('data:image/png;base64,')).toBe(true);
+    expect(content.message).toBeUndefined();
+  });
 });
 
 describe('ShareManager', () => {

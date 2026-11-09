@@ -110,6 +110,9 @@ export const fx = createPostFxController({
   skia: Skia,
   flash: { id: 'flash' }, // must name a grayscale-flash effect in `effects`
 });
+// Effects start enabled. CRT is a timed effect here, so start it off: triggerTimed
+// disables it again on expiry either way.
+fx.chain.setEnabled('crt', false);
 
 ctx.loop.onUpdate.add((dt) => fx.update(dt));
 
@@ -122,7 +125,7 @@ export function onBossPhase(): void {
 }
 ```
 
-`triggerHitFlash()` sets the flash intensity to 1; each `update(dt)` lowers it by `flash.decay` per second (default 4.2, so a flash fades in about a quarter second). The flash pass stays enabled at intensity 0 in between — the controller never toggles its `enabled` flag. `triggerTimed(id, ms)` snapshots the effect's uniforms, enables it, and on expiry restores the snapshot and disables it; re-triggering before expiry resets the countdown. `setMotionScale(k)` forwards to `chain.setGlobalIntensity`.
+`triggerHitFlash()` sets the flash intensity to 1; each `update(dt)` lowers it by `flash.decay` per second (default 4.2, so a flash fades in about a quarter second). The flash pass stays enabled at intensity 0 in between — the controller never toggles its `enabled` flag. `triggerTimed(id, ms)` snapshots the effect's uniforms, enables it, and on expiry restores the snapshot and disables it; re-triggering before expiry resets the countdown. So an effect you only fire with `triggerTimed` should start disabled, as `crt` does above; one that starts enabled stays off after its first expiry. `setMotionScale(k)` forwards to `chain.setGlobalIntensity`. `update(dt)` is not zero-alloc yet: while a flash fades it writes a new uniforms object each frame, and while a timed effect is pending it builds a fresh expired-id array and iterates a `Map` each frame. Idle frames allocate nothing.
 
 ---
 

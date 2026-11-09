@@ -39,7 +39,7 @@ The rest of this recipe is for the `.` entry of `@flare-engine/ui` (components, 
 
 Put the stubs in one file, for example `test/flare-ui-mocks.ts`:
 
-```ts no-check
+```ts
 import { mock } from 'bun:test';
 
 type Props = Record<string, unknown> | null;
@@ -140,7 +140,7 @@ Two caveats:
 
 With the preload in place, components are plain functions that return `{ type, props }` objects:
 
-```ts no-check
+```ts
 import { expect, test } from 'bun:test';
 import { Label } from '@flare-engine/ui';
 import { RestorePurchasesButton } from '@flare-engine/ui-shop';

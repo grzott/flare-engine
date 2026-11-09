@@ -187,7 +187,7 @@ This is the `topdown` template's `openDoor` in `src/map.ts`. Its `App.tsx` trigg
 
 Everything above except the renderer and the atlas is pure data, so it runs under `bun test` with no Skia and no React Native. The `topdown` template's `tests/tilemap.test.ts` covers the parse, the colliders, the door flip and the slide this way.
 
-```ts no-check
+```ts
 import { expect, test } from 'bun:test';
 import { buildSolidGrid, isBlockedAABB, moveAndSlideInto } from '@flare-engine/physics';
 import { extractColliders, type TilemapData } from '@flare-engine/tilemap';

@@ -48,15 +48,29 @@
  * D-passes make snippets self-contained regardless, and dropping DOM would
  * false-FAIL the legitimate web-type snippets above.
  *
+ * `bun:test`: recipes show real `bun test` code, so bun-types' `test.d.ts` (the
+ * `declare module "bun:test"` block alone) is added to the program as a file.
+ * `types` stays empty, so Bun and Node globals (`Bun`, `process`, `Buffer`) are
+ * still unknown to snippets.
+ *
  * Bun-runnable plain ESM. Exit 1 if any checked snippet fails to typecheck; exit 2
  * on a harness error (tsc semantic pass never ran).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// bun-types arrives through the root devDependency @types/bun, so resolve it from there.
+const TYPES_BUN_DIR = dirname(
+  createRequire(join(ROOT, 'package.json')).resolve('@types/bun/package.json'),
+);
+const BUN_TEST_DTS = join(
+  dirname(createRequire(join(TYPES_BUN_DIR, 'package.json')).resolve('bun-types/package.json')),
+  'test.d.ts',
+);
 const PACKAGES_DIR = join(ROOT, 'packages');
 const GEN_DIR = join(ROOT, 'scripts', 'readme-snippets');
 const TSCONFIG = join(GEN_DIR, 'tsconfig.json');
@@ -243,6 +257,7 @@ const tsconfig = {
     baseUrl: toPosix(relative(GEN_DIR, ROOT)) || '.',
     paths,
   },
+  files: [toPosix(relative(GEN_DIR, BUN_TEST_DTS))],
   include: ['*.ts', '*.tsx'],
 };
 writeFileSync(TSCONFIG, `${JSON.stringify(tsconfig, null, 2)}\n`);

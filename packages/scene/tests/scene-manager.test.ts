@@ -1336,4 +1336,41 @@ describe('SceneManager — superseded go()', () => {
     expect(mgr.current).toBeUndefined();
     expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
   });
+
+  it('a pending target pushed then popped is destroyed once when a go() supersedes it', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    await mgr.go('first');
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('a');
+    await mgr.push('a');
+    log.length = 0;
+
+    mgr.pop();
+    void mgr.go('b');
+    mgr.update(1.0); // 'out' done → switch to b
+    mgr.update(1.0); // 'in' done
+    expect(mgr.current?.name).toBe('b');
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
+  });
+
+  it('a pending target pushed then popped is destroyed once by destroy()', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    await mgr.go('first');
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('a');
+    await mgr.push('a');
+    log.length = 0;
+
+    mgr.pop();
+    mgr.destroy();
+    expect(mgr.current).toBeUndefined();
+    expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
+  });
 });

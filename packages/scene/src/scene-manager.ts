@@ -287,20 +287,24 @@ export class SceneManager {
    * Destroy the target of an animated `go()` that was superseded before its
    * out-phase finished. It got `onPreload` but never `onInit`. Fields are
    * cleared first so a re-entrant call from `onDestroy` cannot destroy twice;
-   * an instance the stack or the kept set still holds is left to that owner's
-   * teardown; the cache guard matches `_destroyKept`.
+   * an instance someone else still holds (stack, kept set) or has already
+   * destroyed (evicted from the cache) is left alone.
    */
   private _discardPending(): void {
     const pending = this._pendingScene;
     if (!pending) return;
     this._pendingScene = null;
     this._pendingData = undefined;
-    if (this._stack.includes(pending) || this._kept.has(pending)) return;
-    pending.onDestroy?.();
-    if (this._scenes.get(pending.name) === pending) {
-      this._scenes.delete(pending.name);
-      this._initialized.delete(pending.name);
+    if (
+      this._scenes.get(pending.name) !== pending ||
+      this._stack.includes(pending) ||
+      this._kept.has(pending)
+    ) {
+      return;
     }
+    pending.onDestroy?.();
+    this._scenes.delete(pending.name);
+    this._initialized.delete(pending.name);
   }
 
   private _finishOutPhase(): void {

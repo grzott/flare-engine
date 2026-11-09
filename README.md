@@ -39,9 +39,13 @@ runs three playable demos and five animations on the published packages.
 npm create @flare-engine my-game   # templates: blank, topdown, shmup
 ```
 
-The templates are Expo apps. They need a development build rather than Expo Go, and `bun run web`
-runs the same game in the browser. Pick a template with `-- --template <name>`; with bun, use
-`bunx @flare-engine/create my-game`. (`npm create flare-app` is a different, unrelated package.)
+The templates are Expo apps with native modules (Skia, Reanimated), so a scaffolded app runs in a
+[development build](https://docs.expo.dev/develop/development-builds/introduction/) via
+`expo run:android` / `expo run:ios` (`bun run android` / `bun run ios` in the template), or in the
+browser via `bun run web`. It does not run in Expo Go: `bun run start` then pressing `a`/`i`
+red-screens with a missing-native-module error. Pick a template with `-- --template <name>`; with
+bun, use `bunx @flare-engine/create my-game`. (`npm create flare-app` is a different, unrelated
+package.)
 
 Or add one package to an existing app:
 

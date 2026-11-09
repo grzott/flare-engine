@@ -4,6 +4,7 @@ import {
   createMemoryAchievements,
   createStorageAchievements,
 } from '../src/memory.js';
+import type { AchievementState } from '../src/provider.js';
 
 /** Fake async KV store backed by a Map, recording writes for assertions. */
 function makeStore(): AchievementsStore & { map: Map<string, string>; sets: number } {
@@ -20,6 +21,31 @@ function makeStore(): AchievementsStore & { map: Map<string, string>; sets: numb
     },
   };
 }
+
+/** Store whose first `get` rejects with `error` and every later one serves `saved`. */
+function makeFlakyStore(
+  error: Error,
+  saved: string,
+): AchievementsStore & { gets: number; sets: string[] } {
+  const store = {
+    gets: 0,
+    sets: [] as string[],
+    async get(): Promise<string | null> {
+      store.gets += 1;
+      if (store.gets === 1) throw error;
+      return saved;
+    },
+    async set(_key: string, value: string): Promise<void> {
+      store.sets.push(value);
+    },
+  };
+  return store;
+}
+
+const SAVED: readonly AchievementState[] = [
+  { id: 'a', unlocked: true, progress: 1, unlockedAt: 100 },
+  { id: 'b', unlocked: false, progress: 0.2 },
+];
 
 describe('createMemoryAchievements', () => {
   test('unlock with no progress arg fully unlocks and stamps unlockedAt', async () => {
@@ -164,5 +190,42 @@ describe('createStorageAchievements', () => {
     await a.unlock('k', 1);
     expect(store.map.has('custom.key')).toBe(true);
     expect(store.map.has('flare.achievements')).toBe(false);
+  });
+
+  test('a rejected store.get rejects that call; the next call retries and hydrates', async () => {
+    const store = makeFlakyStore(new Error('io'), JSON.stringify(SAVED));
+    const a = createStorageAchievements(store);
+
+    await expect(a.getAll()).rejects.toThrow('io');
+    expect(await a.getAll()).toEqual(SAVED);
+    expect(store.sets).toEqual([]);
+    expect(store.gets).toBe(2);
+  });
+
+  test('a rejected hydration writes nothing; the retried unlock merges into the saved array', async () => {
+    const store = makeFlakyStore(new Error('io'), JSON.stringify(SAVED));
+    const a = createStorageAchievements(store, { now: () => 5 });
+
+    await expect(a.unlock('b', 0.3)).rejects.toThrow('io');
+    expect(store.sets).toEqual([]);
+
+    await a.unlock('b', 0.3);
+    expect(store.sets).toHaveLength(1);
+    expect(JSON.parse(store.sets[0] ?? '')).toEqual([
+      { id: 'a', unlocked: true, progress: 1, unlockedAt: 100 },
+      { id: 'b', unlocked: false, progress: 0.3 },
+    ]);
+  });
+
+  test('concurrent callers share one failed hydration; the next call reads exactly once more', async () => {
+    const store = makeFlakyStore(new Error('io'), '[]');
+    const a = createStorageAchievements(store);
+
+    const settled = await Promise.allSettled([a.getAll(), a.getState('x')]);
+    expect(settled.map((r) => r.status)).toEqual(['rejected', 'rejected']);
+    expect(store.gets).toBe(1);
+
+    expect(await a.getAll()).toEqual([]);
+    expect(store.gets).toBe(2);
   });
 });

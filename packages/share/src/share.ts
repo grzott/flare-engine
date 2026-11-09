@@ -7,7 +7,10 @@ export interface SharePayload {
   message?: string;
   /** URL to share. */
   url?: string;
-  /** Optional screenshot to share as an image attachment. */
+  /**
+   * Optional screenshot to share as an image attachment. Web attaches it as a `File`; native
+   * attaches it on iOS only, and only when `url` is unset (see `createNativeShareTransport`).
+   */
   screenshot?: Screenshot;
 }
 
@@ -112,6 +115,13 @@ export interface ExpoSharingLike {
   shareAsync(uri: string, options?: { dialogTitle?: string; mimeType?: string }): Promise<void>;
 }
 
+/**
+ * Wraps an RN `Share`-shaped module. When `url` is unset, a `screenshot` goes out as a
+ * `data:image/<format>;base64,…` URL, which iOS's share sheet attaches as the image; an explicit
+ * `url` takes precedence and no image is attached then. Android's RN `Share` forwards only
+ * `title` and `message`, so there neither `url` nor the screenshot reaches the sheet: a payload
+ * with a screenshot and no `message` opens an empty sheet and still reports `dispatched: true`.
+ */
 export function createNativeShareTransport(rnShare: NativeShareLike): ShareTransport {
   return {
     name: 'native',
@@ -123,6 +133,10 @@ export function createNativeShareTransport(rnShare: NativeShareLike): ShareTrans
       if (payload.title !== undefined) content.title = payload.title;
       if (payload.message !== undefined) content.message = payload.message;
       if (payload.url !== undefined) content.url = payload.url;
+      else if (payload.screenshot !== undefined) {
+        const { format, base64 } = payload.screenshot;
+        content.url = `data:image/${format};base64,${base64}`;
+      }
       const res = await rnShare.share(content);
       // RN Share resolves to Share.sharedAction ('sharedAction') or
       // Share.dismissedAction ('dismissedAction') — never a bare 'dismissed'.

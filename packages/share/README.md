@@ -26,9 +26,20 @@ const share = new ShareManager()
   .register(createWebClipboardTransport(navigator));
 
 if (shot) {
-  await share.share({ message: 'New high score!', url: 'https://example.com', screenshot: shot });
+  await share.share({ message: 'New high score! https://example.com', screenshot: shot });
 }
 ```
+
+Platform notes:
+
+- `createWebShareTransport` attaches the screenshot as a `File` when the browser's
+  `navigator.canShare({ files })` accepts it.
+- `createNativeShareTransport` attaches it on iOS as a `data:image/<format>;base64,…` URL, only
+  when `url` is unset — an explicit `url` wins and no image is attached then. Android's RN `Share`
+  forwards only `title` and `message`, so put a link in `message`; the image is not attached there,
+  and a payload with a screenshot but no `message` opens an empty sheet that still reports
+  `dispatched: true`.
+- `createWebClipboardTransport` copies `message` and `url` text only.
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineshare--5kb-raw).
 

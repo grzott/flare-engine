@@ -725,7 +725,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 | `ShareManager` | `.register(transport)` then `.share(payload)`. Picks the first transport whose `canShare(payload)` returns true. Returns `{ dispatched, via: 'web-share' \| 'web-clipboard' \| 'native' \| 'noop' }`. |
 | `createWebShareTransport(navigator, File?)` | Bridges `navigator.share` (with optional `File` ctor for attaching screenshots via `files: [...]`). `navigator` is the exported `WebNavigatorLike`; the ctor is a `FileCtorLike`. |
 | `createWebClipboardTransport(navigator)` | Fallback that writes `message + url` to `navigator.clipboard`. Takes the same `WebNavigatorLike`. |
-| `createNativeShareTransport(rnShare)` | Wraps an RN `Share`-shaped module; inspects `action` to report dispatched vs dismissed. |
+| `createNativeShareTransport(rnShare)` | Wraps an RN `Share`-shaped module; inspects `action` to report dispatched vs dismissed. A `screenshot` goes out as `url: data:image/<format>;base64,…` when `url` is unset (iOS attaches it as the image; an explicit `url` wins); Android's RN `Share` forwards only `title` and `message`. |
 
 **Implementation notes:**
 

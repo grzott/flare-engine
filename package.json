@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@biomejs/biome": "^2.6.4",
+    "@biomejs/biome": "^2.6.5",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.1",
     "@commitlint/cli": "^21.2.4",
@@ -70,7 +70,7 @@
     "husky": "^9.0.0",
     "lint-staged": "^17.6.0",
     "publint": "^0.3.25",
-    "tsdown": "^0.23.4",
+    "tsdown": "^0.23.5",
     "turbo": "^2.11.10",
     "typescript": "^5.9",
     "unrun": "^0.3.1"

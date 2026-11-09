@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { Pressable, type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { useFocusedId, useFocusManager } from './focus-context.js';
 import { useTheme } from './theme.js';
@@ -39,17 +39,30 @@ export function Button({
   const generated = useId();
   const id = focusId ?? generated;
 
+  const latest = useRef({ onPress, disabled, tabIndex });
+  latest.current = { onPress, disabled, tabIndex };
+  const activateRef = useRef(() => {
+    const { onPress: press, disabled: off } = latest.current;
+    if (!off) press?.();
+  });
+
+  // Register once per (manager, id) and own the disposer; prop changes below
+  // re-register in place so focus and tab order survive parent re-renders.
   useEffect(() => {
     if (!manager) return;
+    const { tabIndex: order, disabled: off } = latest.current;
     return manager.register({
       id,
-      tabIndex,
-      disabled,
-      onActivate: () => {
-        if (!disabled) onPress?.();
-      },
+      tabIndex: order,
+      disabled: off,
+      onActivate: activateRef.current,
     });
-  }, [manager, id, tabIndex, disabled, onPress]);
+  }, [manager, id]);
+
+  useEffect(() => {
+    if (!manager) return;
+    manager.register({ id, tabIndex, disabled, onActivate: activateRef.current });
+  }, [manager, id, tabIndex, disabled]);
 
   const focused = focusedId === id;
 

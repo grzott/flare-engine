@@ -267,8 +267,8 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/pathfinding": {
-      "ceiling": 44521,
-      "measured": 40474,
+      "ceiling": 49437,
+      "measured": 44943,
       "measuredAt": "2026-11-09"
     },
     "@flare-engine/physics": {
@@ -486,6 +486,10 @@
     {
       "date": "2026-11-09",
       "reason": "pathfinding ceiling raised 37646 -> 44521 B (measured 40474 x1.1), authorized by the owner's approval of the PR closing issues #122 and #88. findPath and findPathJPS keep their search scratch (g, cameFrom, a Uint32 generation stamp, the open-set heap) per Grid object in a WeakMap instead of allocating and filling three full-grid typed arrays plus a heap on every call; the heap moved from two copies (astar.ts, jps.ts) into one module-private heap.ts, and funnelSmooth lost its unused _mesh parameter. Measured against the published 0.4.10 tarball, which equals main for this package (37351 B). So this change adds 3123 B gzipped (each file gzipped alone +3370 B): dist/index.mjs and index.js shrink by 372 B raw each but grow +409 / +411 B gzipped (the removed heap copy compressed to almost nothing as a duplicate, the new scratch code does not), and each source map grows +972 B raw (+1276 / +1274 B gzipped, sourcesContent now carries heap.ts and scratch.ts). No .d.ts change: both new modules are internal. A performance fix, not a regression."
+    },
+    {
+      "date": "2026-11-09",
+      "reason": "pathfinding ceiling raised 44521 -> 49437 B (measured 44943 x1.1), authorized by the owner's approval of the PR closing issues #123, #124 and #125. findNavMeshPath keeps a per-mesh id index (a WeakMap per NavMesh object, validated against the live polygon list each search and rebuilt when it changed) and computes each polygon's centroid at most once per search into reused per-mesh Float64Array scratch with a generation stamp, instead of rebuilding a Map per call and re-summing a centroid per visited polygon; findPathJPS writes jump points into an 8-slot Int32Array in the per-grid scratch instead of an array per expanded node, and jump() scans in a loop instead of one recursive frame per cell (the recursive scan overflowed V8 at a 1x8192 corridor). main (with #271) packs at 40474 B, measured by building origin/main 11ed3cf0's packages/pathfinding outside the checkout. So this change adds 4469 B gzipped (each file gzipped alone +4725 B): +1991 B raw (+779 B gzipped) in each of dist/index.mjs and index.js, +4208 B raw (+1441 / +1440 B gzipped) in each source map, +267 B raw (+138 B gzipped) in each .d.ts (the findNavMeshPath JSDoc). A performance fix, not a regression."
     }
   ]
 }

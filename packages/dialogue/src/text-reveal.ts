@@ -17,6 +17,8 @@ export interface TextRevealState {
   complete: boolean;
   /** Internal fractional character cursor. */
   _cursor: number;
+  /** Internal punctuation pause still to wait, in seconds. Absent reads as 0. */
+  _pause?: number;
 }
 
 export interface TextRevealOptions {
@@ -35,9 +37,9 @@ const PUNCTUATION = new Set(['.', '!', '?', ':', ';']);
 
 export function createTextReveal(text: string): TextRevealState {
   if (text.length === 0) {
-    return { fullText: text, visibleText: text, complete: true, _cursor: 0 };
+    return { fullText: text, visibleText: text, complete: true, _cursor: 0, _pause: 0 };
   }
-  return { fullText: text, visibleText: '', complete: false, _cursor: 0 };
+  return { fullText: text, visibleText: '', complete: false, _cursor: 0, _pause: 0 };
 }
 
 export function updateTextReveal(
@@ -51,20 +53,45 @@ export function updateTextReveal(
   const punctDelay = options?.punctuationDelay ?? DEFAULT_PUNCT_DELAY;
   const len = state.fullText.length;
 
-  // Determine effective speed — slow down after punctuation
-  const prevCharIdx = Math.floor(state._cursor) - 1;
-  let effectiveSpeed = speed;
-  if (prevCharIdx >= 0 && prevCharIdx < len) {
-    const prevChar = state.fullText[prevCharIdx]!;
-    if (PUNCTUATION.has(prevChar)) {
-      // Slow down: treat the punctuation gap as taking `punctDelay` seconds
-      // Effective speed = 1 / punctDelay so cursor advances ~1 char in punctDelay time
-      effectiveSpeed = punctDelay > 0 ? 1 / punctDelay : speed;
+  // The pause is additive time: the cursor stops for `punctDelay` seconds each
+  // time it crosses a punctuation character, then resumes at `speed`. The
+  // budget is kept in cursor units (speed * dt) and spent boundary by boundary
+  // so one large `dt` still honours every pause inside it.
+  let cursor = state._cursor;
+  let pause = state._pause ?? 0;
+  let progress = speed * dt;
+  while (progress > 0 && cursor < len) {
+    if (pause > 0) {
+      const heldTime = progress / speed;
+      if (pause >= heldTime) {
+        pause -= heldTime;
+        progress = 0;
+      } else {
+        progress -= pause * speed;
+        pause = 0;
+      }
+      continue;
+    }
+    const nextBoundary = Math.floor(cursor) + 1;
+    const distance = nextBoundary - cursor;
+    if (progress < distance) {
+      cursor += progress;
+      break;
+    }
+    cursor = nextBoundary;
+    progress -= distance;
+    if (
+      nextBoundary < len &&
+      punctDelay > 0 &&
+      PUNCTUATION.has(state.fullText[nextBoundary - 1]!)
+    ) {
+      pause = punctDelay;
     }
   }
+  state._cursor = cursor;
+  state._pause = pause;
 
-  state._cursor += effectiveSpeed * dt;
-  const charCount = Math.min(Math.floor(state._cursor), len);
+  const charCount = Math.min(Math.floor(cursor), len);
   state.visibleText = state.fullText.slice(0, charCount);
 
   if (charCount >= len) {
@@ -76,6 +103,7 @@ export function updateTextReveal(
 export function completeTextReveal(state: TextRevealState): void {
   state.visibleText = state.fullText;
   state._cursor = state.fullText.length;
+  state._pause = 0;
   state.complete = true;
 }
 
@@ -84,5 +112,6 @@ export function resetTextReveal(state: TextRevealState, newText?: string): void 
   (state as { fullText: string }).fullText = text;
   state.visibleText = '';
   state._cursor = 0;
+  state._pause = 0;
   state.complete = text.length === 0;
 }

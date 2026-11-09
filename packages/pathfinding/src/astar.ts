@@ -5,6 +5,8 @@
 
 import type { Grid } from './grid.js';
 import { isWalkable } from './grid.js';
+import { heapPop, heapPush } from './heap.js';
+import { acquireScratch, releaseScratch } from './scratch.js';
 
 export interface PathResult {
   /** Grid coordinates from start to end, inclusive. */
@@ -48,91 +50,6 @@ export function euclideanDistance(ax: number, ay: number, bx: number, by: number
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-// ─── Binary min-heap ─────────────────────────────────────────────
-
-// Indices into the heap are stored as flat integers; each entry is (f, node-index).
-// We use two parallel Float64Arrays to avoid object allocation.
-interface Heap {
-  f: Float64Array;
-  idx: Int32Array;
-  size: number;
-}
-
-function heapCreate(capacity: number): Heap {
-  return {
-    f: new Float64Array(capacity),
-    idx: new Int32Array(capacity),
-    size: 0,
-  };
-}
-
-/**
- * Double the heap's backing arrays.
- *
- * Typed arrays do not throw on an out-of-range write — the store is silently
- * dropped — so without this a push past capacity increments `size`, writes
- * nothing, and every later comparison reads `undefined`. The open set then
- * degrades without any error, and the search returns a valid-looking but
- * non-optimal path. Growth is amortized O(1): allocation happens only when
- * capacity is reached, never per push.
- */
-function heapGrow(h: Heap): void {
-  const next = h.f.length === 0 ? 16 : h.f.length * 2;
-  const f = new Float64Array(next);
-  f.set(h.f);
-  const idx = new Int32Array(next);
-  idx.set(h.idx);
-  h.f = f;
-  h.idx = idx;
-}
-
-function heapPush(h: Heap, f: number, nodeIdx: number): void {
-  if (h.size === h.f.length) heapGrow(h);
-  let i = h.size++;
-  h.f[i] = f;
-  h.idx[i] = nodeIdx;
-  // Bubble up
-  while (i > 0) {
-    const parent = (i - 1) >> 1;
-    if (h.f[parent]! <= h.f[i]!) break;
-    // Swap
-    const tf = h.f[parent]!;
-    const ti = h.idx[parent]!;
-    h.f[parent] = h.f[i]!;
-    h.idx[parent] = h.idx[i]!;
-    h.f[i] = tf;
-    h.idx[i] = ti;
-    i = parent;
-  }
-}
-
-function heapPop(h: Heap): number {
-  const result = h.idx[0]!;
-  h.size--;
-  if (h.size > 0) {
-    h.f[0] = h.f[h.size]!;
-    h.idx[0] = h.idx[h.size]!;
-    // Sift down
-    let i = 0;
-    for (;;) {
-      let smallest = i;
-      const left = 2 * i + 1;
-      const right = 2 * i + 2;
-      if (left < h.size && h.f[left]! < h.f[smallest]!) smallest = left;
-      if (right < h.size && h.f[right]! < h.f[smallest]!) smallest = right;
-      if (smallest === i) break;
-      const tf = h.f[i]!;
-      const ti = h.idx[i]!;
-      h.f[i] = h.f[smallest]!;
-      h.idx[i] = h.idx[smallest]!;
-      h.f[smallest] = tf;
-      h.idx[smallest] = ti;
-      i = smallest;
-    }
-  }
-  return result;
-}
-
 // ─── Neighbors (pre-computed offsets) ────────────────────────────
 
 // 4-directional: N, E, S, W
@@ -168,21 +85,19 @@ export function findPath(
   const heuristic = options?.heuristic ?? (diagonal ? octileDistance : manhattanDistance);
 
   const w = grid.width;
-  const total = w * grid.height;
-
-  // gScore and closed set
-  const g = new Float64Array(total);
-  g.fill(Number.POSITIVE_INFINITY);
-  const closed = new Uint8Array(total);
-  const cameFrom = new Int32Array(total);
-  cameFrom.fill(-1);
-
   const startIdx = sy * w + sx;
   const endIdx = ey * w + ex;
-  g[startIdx] = 0;
 
-  const heap = heapCreate(Math.min(total, 4096));
-  heapPush(heap, heuristic(sx, sy, ex, ey), startIdx);
+  // Per-grid scratch: a cell stamped `openMark` has a valid g / cameFrom for this
+  // search, `closedMark` means settled, any lower stamp reads as g = +Infinity.
+  const scratch = acquireScratch(grid);
+  const { g, cameFrom, stamp, heap } = scratch;
+  const openMark = scratch.open;
+  const closedMark = openMark + 1;
+
+  stamp[startIdx] = openMark;
+  g[startIdx] = 0;
+  cameFrom[startIdx] = -1;
 
   const dirX = diagonal ? DIR8_X : DIR4_X;
   const dirY = diagonal ? DIR8_Y : DIR4_Y;
@@ -191,50 +106,58 @@ export function findPath(
 
   let explored = 0;
 
-  while (heap.size > 0 && explored < maxIter) {
-    const currentIdx = heapPop(heap);
-    if (currentIdx === endIdx) {
-      return reconstructPath(cameFrom, w, currentIdx, g[currentIdx]!, explored);
-    }
-    if (closed[currentIdx]) continue;
-    closed[currentIdx] = 1;
-    explored++;
+  try {
+    heapPush(heap, heuristic(sx, sy, ex, ey), startIdx);
 
-    const cx = currentIdx % w;
-    const cy = (currentIdx / w) | 0;
-    const currentG = g[currentIdx]!;
-
-    for (let d = 0; d < dirCount; d++) {
-      const nx = cx + dirX[d]!;
-      const ny = cy + dirY[d]!;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= grid.height) continue;
-
-      const nIdx = ny * w + nx;
-      if (closed[nIdx]) continue;
-
-      const tileCost = grid.data[nIdx]!;
-      if (tileCost === 0) continue;
-
-      // For diagonal movement, check that both cardinal neighbors are walkable (corner-cutting)
-      if (diagonal && d & 1) {
-        const dx = dirX[d]!;
-        const dy = dirY[d]!;
-        if (!isWalkable(grid, cx + dx, cy) || !isWalkable(grid, cx, cy + dy)) continue;
+    while (heap.size > 0 && explored < maxIter) {
+      const currentIdx = heapPop(heap);
+      if (currentIdx === endIdx) {
+        return reconstructPath(cameFrom, w, currentIdx, g[currentIdx]!, explored);
       }
+      if (stamp[currentIdx] === closedMark) continue;
+      stamp[currentIdx] = closedMark;
+      explored++;
 
-      const moveCost = dirCost ? dirCost[d]! * tileCost : tileCost;
-      const tentativeG = currentG + moveCost;
+      const cx = currentIdx % w;
+      const cy = (currentIdx / w) | 0;
+      const currentG = g[currentIdx]!;
 
-      if (tentativeG < g[nIdx]!) {
-        g[nIdx] = tentativeG;
-        cameFrom[nIdx] = currentIdx;
-        const f = tentativeG + heuristic(nx, ny, ex, ey);
-        heapPush(heap, f, nIdx);
+      for (let d = 0; d < dirCount; d++) {
+        const nx = cx + dirX[d]!;
+        const ny = cy + dirY[d]!;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= grid.height) continue;
+
+        const nIdx = ny * w + nx;
+        const nStamp = stamp[nIdx]!;
+        if (nStamp === closedMark) continue;
+
+        const tileCost = grid.data[nIdx]!;
+        if (tileCost === 0) continue;
+
+        // For diagonal movement, check that both cardinal neighbors are walkable (corner-cutting)
+        if (diagonal && d & 1) {
+          const dx = dirX[d]!;
+          const dy = dirY[d]!;
+          if (!isWalkable(grid, cx + dx, cy) || !isWalkable(grid, cx, cy + dy)) continue;
+        }
+
+        const moveCost = dirCost ? dirCost[d]! * tileCost : tileCost;
+        const tentativeG = currentG + moveCost;
+
+        if (nStamp !== openMark || tentativeG < g[nIdx]!) {
+          g[nIdx] = tentativeG;
+          cameFrom[nIdx] = currentIdx;
+          stamp[nIdx] = openMark;
+          const f = tentativeG + heuristic(nx, ny, ex, ey);
+          heapPush(heap, f, nIdx);
+        }
       }
     }
+
+    return null;
+  } finally {
+    releaseScratch(scratch);
   }
-
-  return null;
 }
 
 function reconstructPath(

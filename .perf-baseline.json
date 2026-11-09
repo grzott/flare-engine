@@ -267,9 +267,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/pathfinding": {
-      "ceiling": 37646,
-      "measured": 37367,
-      "measuredAt": "2026-09-08"
+      "ceiling": 44521,
+      "measured": 40474,
+      "measuredAt": "2026-11-09"
     },
     "@flare-engine/physics": {
       "ceiling": 55973,
@@ -482,6 +482,10 @@
     {
       "date": "2026-11-08",
       "reason": "progression ceiling raised 17837 -> 38613 B (measured 35103 x1.1), authorized by the owner's approval of the PR closing issue #202 (rebuilt from the runner's #254 after a merge of main corrupted this file). New game-clock.ts exports createGameClock plus the GameClock, GameClockConfig, GameClockSegment and GameClockState types: a 1440-minute game-day clock with a validated per-segment real-seconds-per-game-hour table, boundary stepping that lands float-exactly on each boundary (advanceMinutes / skipTo compare an absolute target with each boundary; update carries real seconds and crosses when rounding lands on one), a skipTo that enters a start a released hold left the clock on, a pause() from a callback that stops the update in progress, an advance from a callback that cannot move it backwards, a restored state validated (paused a boolean, absoluteMinutes within Number.MAX_SAFE_INTEGER), a Number.MAX_SAFE_INTEGER bound on update and advanceMinutes, pause, hold at the next phase boundary, segment and phase change callbacks and a plain serialize state. Measured against the published 0.4.10 tarball, which equals main for this package (16211 B). So this change adds 18892 B gzipped (each file gzipped alone +14792 B): +6868 / +6842 B raw (+1999 / +1991 B gzipped) in dist/index.js / index.mjs, +15029 B raw (+4154 / +4158 B gzipped) in each source map, +2846 B raw (+984 B gzipped) in each .d.ts (JSDoc) and +737 B of README for the clock snippet. The package was small, so one module of ~250 lines doubles it; nothing else in the package moved. Added behaviour, not a regression."
+    },
+    {
+      "date": "2026-11-09",
+      "reason": "pathfinding ceiling raised 37646 -> 44521 B (measured 40474 x1.1), authorized by the owner's approval of the PR closing issues #122 and #88. findPath and findPathJPS keep their search scratch (g, cameFrom, a Uint32 generation stamp, the open-set heap) per Grid object in a WeakMap instead of allocating and filling three full-grid typed arrays plus a heap on every call; the heap moved from two copies (astar.ts, jps.ts) into one module-private heap.ts, and funnelSmooth lost its unused _mesh parameter. Measured against the published 0.4.10 tarball, which equals main for this package (37351 B). So this change adds 3123 B gzipped (each file gzipped alone +3370 B): dist/index.mjs and index.js shrink by 372 B raw each but grow +409 / +411 B gzipped (the removed heap copy compressed to almost nothing as a duplicate, the new scratch code does not), and each source map grows +972 B raw (+1276 / +1274 B gzipped, sourcesContent now carries heap.ts and scratch.ts). No .d.ts change: both new modules are internal. A performance fix, not a regression."
     }
   ]
 }

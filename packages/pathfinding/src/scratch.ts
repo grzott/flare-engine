@@ -28,6 +28,8 @@ export interface SearchScratch {
   open: number;
   /** Open-set heap; grown on demand and kept at the grown size. */
   readonly heap: Heap;
+  /** JPS successor buffer: cell indices of the jump points of one expanded node, at most 8. */
+  readonly succ: Int32Array;
   /** Set while a search holds this scratch, so a re-entrant search takes its own. */
   inUse: boolean;
 }
@@ -45,6 +47,7 @@ function createScratch(total: number): SearchScratch {
     stamp: new Uint32Array(total),
     open: 0,
     heap: heapCreate(Math.min(total, 4096)),
+    succ: new Int32Array(8),
     inUse: false,
   };
 }

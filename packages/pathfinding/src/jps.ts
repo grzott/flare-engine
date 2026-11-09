@@ -65,7 +65,7 @@ export function findPathJPS(
   // Per-grid scratch: a cell stamped `openMark` has a valid g / cameFrom for this
   // search, `closedMark` means settled, any lower stamp reads as g = +Infinity.
   const scratch = acquireScratch(grid);
-  const { g, cameFrom, stamp, heap } = scratch;
+  const { g, cameFrom, stamp, heap, succ } = scratch;
   const openMark = scratch.open;
   const closedMark = openMark + 1;
 
@@ -90,11 +90,11 @@ export function findPathJPS(
       const cx = currentIdx % w;
       const cy = (currentIdx / w) | 0;
 
-      const neighbors = identifySuccessors(grid, cx, cy, cameFrom, w, h, ex, ey);
-      for (let i = 0; i < neighbors.length; i += 2) {
-        const nx = neighbors[i]!;
-        const ny = neighbors[i + 1]!;
-        const nIdx = ny * w + nx;
+      const count = identifySuccessors(grid, cx, cy, cameFrom, w, h, ex, ey, succ);
+      for (let i = 0; i < count; i++) {
+        const nIdx = succ[i]!;
+        const nx = nIdx % w;
+        const ny = (nIdx / w) | 0;
         const nStamp = stamp[nIdx]!;
         if (nStamp === closedMark) continue;
 
@@ -119,6 +119,11 @@ export function findPathJPS(
   }
 }
 
+/**
+ * Writes the cell index of each jump point reachable from (cx, cy) into `out`
+ * and returns how many. At most one per direction tried — 8 from the start
+ * node, 5 after a diagonal move, 3 after a cardinal one — so `out` needs 8 slots.
+ */
 function identifySuccessors(
   grid: Grid,
   cx: number,
@@ -128,8 +133,9 @@ function identifySuccessors(
   h: number,
   ex: number,
   ey: number,
-): number[] {
-  const results: number[] = [];
+  out: Int32Array,
+): number {
+  let n = 0;
   const parentIdx = cameFrom[cy * w + cx]!;
 
   if (parentIdx === -1) {
@@ -138,9 +144,7 @@ function identifySuccessors(
       for (let dy = -1; dy <= 1; dy++) {
         if (dx === 0 && dy === 0) continue;
         const jp = jump(grid, cx, cy, dx, dy, w, h, ex, ey);
-        if (jp !== -1) {
-          results.push(jp % w, (jp / w) | 0);
-        }
+        if (jp !== -1) out[n++] = jp;
       }
     }
   } else {
@@ -153,57 +157,57 @@ function identifySuccessors(
       // Diagonal move: check straight and diagonal successors
       if (isWalkable(grid, cx, cy + dy)) {
         const jp = jump(grid, cx, cy, 0, dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (isWalkable(grid, cx + dx, cy)) {
         const jp = jump(grid, cx, cy, dx, 0, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (isWalkable(grid, cx + dx, cy + dy)) {
         const jp = jump(grid, cx, cy, dx, dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       // Forced neighbors
       if (!isWalkable(grid, cx - dx, cy) && isWalkable(grid, cx - dx, cy + dy)) {
         const jp = jump(grid, cx, cy, -dx, dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (!isWalkable(grid, cx, cy - dy) && isWalkable(grid, cx + dx, cy - dy)) {
         const jp = jump(grid, cx, cy, dx, -dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
     } else if (dx !== 0) {
       // Horizontal move
       if (isWalkable(grid, cx + dx, cy)) {
         const jp = jump(grid, cx, cy, dx, 0, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (!isWalkable(grid, cx, cy + 1) && isWalkable(grid, cx + dx, cy + 1)) {
         const jp = jump(grid, cx, cy, dx, 1, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (!isWalkable(grid, cx, cy - 1) && isWalkable(grid, cx + dx, cy - 1)) {
         const jp = jump(grid, cx, cy, dx, -1, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
     } else {
       // Vertical move
       if (isWalkable(grid, cx, cy + dy)) {
         const jp = jump(grid, cx, cy, 0, dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (!isWalkable(grid, cx + 1, cy) && isWalkable(grid, cx + 1, cy + dy)) {
         const jp = jump(grid, cx, cy, 1, dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
       if (!isWalkable(grid, cx - 1, cy) && isWalkable(grid, cx - 1, cy + dy)) {
         const jp = jump(grid, cx, cy, -1, dy, w, h, ex, ey);
-        if (jp !== -1) results.push(jp % w, (jp / w) | 0);
+        if (jp !== -1) out[n++] = jp;
       }
     }
   }
 
-  return results;
+  return n;
 }
 
 function jump(
@@ -217,44 +221,48 @@ function jump(
   ex: number,
   ey: number,
 ): number {
-  const nx = cx + dx;
-  const ny = cy + dy;
+  // One loop iteration per cell along the ray, so a long open corridor costs no
+  // stack depth; only a diagonal ray calls back in, for its two cardinal probes
+  // (which loop themselves), so the depth never exceeds two frames.
+  let nx = cx;
+  let ny = cy;
+  for (;;) {
+    nx += dx;
+    ny += dy;
 
-  if (!isWalkable(grid, nx, ny)) return -1;
-  if (nx === ex && ny === ey) return ny * w + nx;
+    if (!isWalkable(grid, nx, ny)) return -1;
+    if (nx === ex && ny === ey) return ny * w + nx;
 
-  // Forced neighbor check
-  if (dx !== 0 && dy !== 0) {
-    // Diagonal
-    if (
-      (!isWalkable(grid, nx - dx, ny) && isWalkable(grid, nx - dx, ny + dy)) ||
-      (!isWalkable(grid, nx, ny - dy) && isWalkable(grid, nx + dx, ny - dy))
-    ) {
-      return ny * w + nx;
-    }
-    // Recurse in cardinal directions
-    if (jump(grid, nx, ny, dx, 0, w, h, ex, ey) !== -1) return ny * w + nx;
-    if (jump(grid, nx, ny, 0, dy, w, h, ex, ey) !== -1) return ny * w + nx;
-  } else if (dx !== 0) {
-    // Horizontal
-    if (
-      (!isWalkable(grid, nx, ny + 1) && isWalkable(grid, nx + dx, ny + 1)) ||
-      (!isWalkable(grid, nx, ny - 1) && isWalkable(grid, nx + dx, ny - 1))
-    ) {
-      return ny * w + nx;
-    }
-  } else {
-    // Vertical
-    if (
-      (!isWalkable(grid, nx + 1, ny) && isWalkable(grid, nx + 1, ny + dy)) ||
-      (!isWalkable(grid, nx - 1, ny) && isWalkable(grid, nx - 1, ny + dy))
-    ) {
-      return ny * w + nx;
+    // Forced neighbor check
+    if (dx !== 0 && dy !== 0) {
+      // Diagonal
+      if (
+        (!isWalkable(grid, nx - dx, ny) && isWalkable(grid, nx - dx, ny + dy)) ||
+        (!isWalkable(grid, nx, ny - dy) && isWalkable(grid, nx + dx, ny - dy))
+      ) {
+        return ny * w + nx;
+      }
+      // Probe the cardinal directions
+      if (jump(grid, nx, ny, dx, 0, w, h, ex, ey) !== -1) return ny * w + nx;
+      if (jump(grid, nx, ny, 0, dy, w, h, ex, ey) !== -1) return ny * w + nx;
+    } else if (dx !== 0) {
+      // Horizontal
+      if (
+        (!isWalkable(grid, nx, ny + 1) && isWalkable(grid, nx + dx, ny + 1)) ||
+        (!isWalkable(grid, nx, ny - 1) && isWalkable(grid, nx + dx, ny - 1))
+      ) {
+        return ny * w + nx;
+      }
+    } else {
+      // Vertical
+      if (
+        (!isWalkable(grid, nx + 1, ny) && isWalkable(grid, nx + 1, ny + dy)) ||
+        (!isWalkable(grid, nx - 1, ny) && isWalkable(grid, nx - 1, ny + dy))
+      ) {
+        return ny * w + nx;
+      }
     }
   }
-
-  // Keep jumping (iterative for cardinal, recursive for diagonal via identifySuccessors)
-  return jump(grid, nx, ny, dx, dy, w, h, ex, ey);
 }
 
 function clampDir(v: number): number {

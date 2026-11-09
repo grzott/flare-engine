@@ -25,6 +25,10 @@ export interface Portal {
   b: Vec2;
 }
 
+/**
+ * Treated as immutable once searched: `findNavMeshPath` caches the id index and
+ * per-polygon centroids per mesh object on its first search.
+ */
 export interface NavMesh {
   readonly polygons: readonly NavMeshPolygon[];
 }
@@ -70,17 +74,41 @@ export function findPolygonAt(mesh: NavMesh, x: number, y: number): number {
   return -1;
 }
 
-// ─── Polygon centroid ────────────────────────────────────────────
+// ─── Per-mesh index ──────────────────────────────────────────────
 
-function centroid(verts: readonly Vec2[]): Vec2 {
-  let cx = 0;
-  let cy = 0;
-  for (let i = 0; i < verts.length; i++) {
-    cx += verts[i]!.x;
-    cy += verts[i]!.y;
+interface MeshIndex {
+  /** Position in `mesh.polygons` per polygon id. */
+  readonly pos: Map<number, number>;
+  /** Centroid per position in `mesh.polygons`. */
+  readonly cx: Float64Array;
+  readonly cy: Float64Array;
+}
+
+const indices = new WeakMap<NavMesh, MeshIndex>();
+
+/** Built once per mesh object, on its first search. */
+function indexMesh(mesh: NavMesh): MeshIndex {
+  let index = indices.get(mesh);
+  if (index !== undefined) return index;
+  const polygons = mesh.polygons;
+  const pos = new Map<number, number>();
+  const cx = new Float64Array(polygons.length);
+  const cy = new Float64Array(polygons.length);
+  for (let i = 0; i < polygons.length; i++) {
+    const verts = polygons[i]!.vertices;
+    pos.set(polygons[i]!.id, i);
+    let sx = 0;
+    let sy = 0;
+    for (let j = 0; j < verts.length; j++) {
+      sx += verts[j]!.x;
+      sy += verts[j]!.y;
+    }
+    cx[i] = sx / verts.length;
+    cy[i] = sy / verts.length;
   }
-  const n = verts.length;
-  return { x: cx / n, y: cy / n };
+  index = { pos, cx, cy };
+  indices.set(mesh, index);
+  return index;
 }
 
 // ─── A* over polygon graph ───────────────────────────────────────
@@ -95,6 +123,11 @@ function dist(ax: number, ay: number, bx: number, by: number): number {
   return Math.sqrt(distSq(ax, ay, bx, by));
 }
 
+/**
+ * A* over the polygon graph, then funnel smoothing. The first search of a mesh
+ * object builds and caches its id index and polygon centroids; a mesh must not
+ * be mutated after that — build a new one with `createNavMesh` instead.
+ */
 export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshPathResult | null {
   const startPolyId = findPolygonAt(mesh, start.x, start.y);
   const endPolyId = findPolygonAt(mesh, end.x, end.y);
@@ -109,12 +142,9 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
     };
   }
 
-  // Build index: id → polygon
-  const byId = new Map<number, NavMeshPolygon>();
-  for (let i = 0; i < mesh.polygons.length; i++) {
-    const p = mesh.polygons[i]!;
-    byId.set(p.id, p);
-  }
+  const index = indexMesh(mesh);
+  const { pos, cx, cy } = index;
+  const polygons = mesh.polygons;
 
   // A* on polygon graph
   const gScore = new Map<number, number>();
@@ -123,12 +153,12 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
 
   gScore.set(startPolyId, 0);
 
-  const endPoly = byId.get(endPolyId)!;
-  const endCenter = centroid(endPoly.vertices);
-  const startPoly = byId.get(startPolyId)!;
-  const startCenter = centroid(startPoly.vertices);
+  const endPos = pos.get(endPolyId)!;
+  const endCx = cx[endPos]!;
+  const endCy = cy[endPos]!;
+  const startPos = pos.get(startPolyId)!;
 
-  fScore.set(startPolyId, dist(startCenter.x, startCenter.y, endCenter.x, endCenter.y));
+  fScore.set(startPolyId, dist(cx[startPos]!, cy[startPos]!, endCx, endCy));
 
   // Simple array-based open set (fine for typical navmeshes with <1000 polygons)
   const open: number[] = [startPolyId];
@@ -157,7 +187,7 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
         id = cameFrom.get(id);
       }
       corridor.reverse();
-      const path = funnelSmooth(byId, corridor, start, end);
+      const path = funnelSmooth(mesh, index, corridor, start, end);
       return { path, corridor };
     }
 
@@ -167,8 +197,10 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
     inOpen.delete(currentId);
     closed.add(currentId);
 
-    const current = byId.get(currentId)!;
-    const currentCenter = centroid(current.vertices);
+    const currentPos = pos.get(currentId)!;
+    const current = polygons[currentPos]!;
+    const currentCx = cx[currentPos]!;
+    const currentCy = cy[currentPos]!;
     const currentG = gScore.get(currentId)!;
 
     for (let i = 0; i < current.portals.length; i++) {
@@ -176,12 +208,12 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
       const neighborId = portal.neighborId;
       if (closed.has(neighborId)) continue;
 
-      const neighbor = byId.get(neighborId);
-      if (!neighbor) continue;
+      const neighborPos = pos.get(neighborId);
+      if (neighborPos === undefined) continue;
 
       const portalMidX = (portal.a.x + portal.b.x) * 0.5;
       const portalMidY = (portal.a.y + portal.b.y) * 0.5;
-      const tentativeG = currentG + dist(currentCenter.x, currentCenter.y, portalMidX, portalMidY);
+      const tentativeG = currentG + dist(currentCx, currentCy, portalMidX, portalMidY);
 
       const prevG = gScore.get(neighborId);
       if (prevG !== undefined && tentativeG >= prevG) continue;
@@ -189,11 +221,7 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
       gScore.set(neighborId, tentativeG);
       cameFrom.set(neighborId, currentId);
 
-      const neighborCenter = centroid(neighbor.vertices);
-      fScore.set(
-        neighborId,
-        tentativeG + dist(neighborCenter.x, neighborCenter.y, endCenter.x, endCenter.y),
-      );
+      fScore.set(neighborId, tentativeG + dist(cx[neighborPos]!, cy[neighborPos]!, endCx, endCy));
 
       if (!inOpen.has(neighborId)) {
         open.push(neighborId);
@@ -208,7 +236,8 @@ export function findNavMeshPath(mesh: NavMesh, start: Vec2, end: Vec2): NavMeshP
 // ─── Simple Stupid Funnel Algorithm ──────────────────────────────
 
 function funnelSmooth(
-  byId: Map<number, NavMeshPolygon>,
+  mesh: NavMesh,
+  index: MeshIndex,
   corridor: number[],
   start: Vec2,
   end: Vec2,
@@ -228,7 +257,8 @@ function funnelSmooth(
   portalsRight.push({ x: start.x, y: start.y });
 
   for (let i = 0; i < corridor.length - 1; i++) {
-    const poly = byId.get(corridor[i]!)!;
+    const polyPos = index.pos.get(corridor[i]!)!;
+    const poly = mesh.polygons[polyPos]!;
     const nextId = corridor[i + 1]!;
     // Find the portal to the next polygon
     let found = false;
@@ -242,7 +272,7 @@ function funnelSmooth(
     }
     if (!found) {
       // Fallback: straight line through centroids
-      const c = centroid(poly.vertices);
+      const c = { x: index.cx[polyPos]!, y: index.cy[polyPos]! };
       portalsLeft.push(c);
       portalsRight.push(c);
     }

@@ -4,7 +4,7 @@
 // tsconfig.templates.json is a STRUCTURAL smoke-check for all three templates:
 // it typechecks their src + tests + index.ts against the monorepo's hoisted
 // deps (whatever RN/skia/flare version is in the workspace node_modules), NOT
-// the templates' pinned Expo-57 versions. It catches missing exports, wrong
+// the templates' pinned Expo-58 versions. It catches missing exports, wrong
 // import paths, and broken cross-file references. Pinned-version validation
 // (verdaccio scaffold + install + tsc) is covered by OSS-F2 and freeze §11.
 //

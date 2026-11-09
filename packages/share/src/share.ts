@@ -119,7 +119,8 @@ export interface ExpoSharingLike {
  * Wraps an RN `Share`-shaped module. When `url` is unset, a `screenshot` goes out as a
  * `data:image/<format>;base64,…` URL, which iOS's share sheet attaches as the image; an explicit
  * `url` takes precedence and no image is attached then. Android's RN `Share` forwards only
- * `title` and `message`, so there neither `url` nor the screenshot reaches the sheet.
+ * `title` and `message`, so there neither `url` nor the screenshot reaches the sheet: a payload
+ * with a screenshot and no `message` opens an empty sheet and still reports `dispatched: true`.
  */
 export function createNativeShareTransport(rnShare: NativeShareLike): ShareTransport {
   return {

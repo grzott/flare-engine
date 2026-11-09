@@ -22,6 +22,10 @@ export interface FocusNode {
 }
 
 export interface FocusManager {
+  /**
+   * Registering an already-registered id updates that node in place: it keeps
+   * its position among equal `tabIndex` and focus is unchanged.
+   */
   register(node: FocusNode): () => void;
   unregister(id: string): void;
   focus(id: string): void;
@@ -98,24 +102,25 @@ export function createFocusManager(opts?: FocusManagerOptions): FocusManager {
     setFocused(order[nextIdx] ?? null);
   }
 
+  function unregister(id: string): void {
+    if (!nodes.has(id)) return;
+    nodes.delete(id);
+    if (focusedId === id) {
+      setFocused(refocusOnUnregister ? (orderedIds()[0] ?? null) : null);
+    }
+  }
+
   return {
     register(node) {
       // No focus side-effect: on a touch-first engine an auto-focused first
       // registrant paints a permanent focus ring with no input. Focus stays null
       // until a driver (keyboard/gamepad) or an explicit focusFirst() acts.
-      const entry: Entry = { ...node, seq: seqCounter++ };
+      const existing = nodes.get(node.id);
+      const entry: Entry = { ...node, seq: existing?.seq ?? seqCounter++ };
       nodes.set(node.id, entry);
-      return () => {
-        this.unregister(node.id);
-      };
+      return () => unregister(node.id);
     },
-    unregister(id) {
-      if (!nodes.has(id)) return;
-      nodes.delete(id);
-      if (focusedId === id) {
-        setFocused(refocusOnUnregister ? (orderedIds()[0] ?? null) : null);
-      }
-    },
+    unregister,
     focus(id) {
       const entry = nodes.get(id);
       if (!entry || entry.disabled) return;
@@ -136,7 +141,9 @@ export function createFocusManager(opts?: FocusManagerOptions): FocusManager {
     },
     activate() {
       if (focusedId === null) return;
-      nodes.get(focusedId)?.onActivate?.();
+      const entry = nodes.get(focusedId);
+      if (!entry || entry.disabled) return;
+      entry.onActivate?.();
     },
     getFocused() {
       return focusedId;

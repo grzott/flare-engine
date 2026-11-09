@@ -6,15 +6,28 @@ const stateStore: unknown[] = [];
 let stateIndex = 0;
 const refStore: Array<{ current: unknown }> = [];
 let refIndex = 0;
+interface EffectSlot {
+  deps: unknown[] | undefined;
+  cleanup: (() => void) | undefined;
+}
+const effectStore: Array<EffectSlot | undefined> = [];
+let effectIndex = 0;
 const pendingEffects: Array<() => (() => void) | undefined> = [];
 
-/** Reset call indices + effects but PRESERVE stateStore (simulates a re-render). */
+/** Reset call indices + effects but PRESERVE stateStore / effectStore (simulates a re-render). */
 function resetHookIndices(): void {
   stateIndex = 0;
   refIndex = 0;
+  effectIndex = 0;
   pendingEffects.length = 0;
 }
 
+function depsChanged(prev: unknown[] | undefined, next: unknown[] | undefined): boolean {
+  if (prev === undefined || next === undefined || prev.length !== next.length) return true;
+  return prev.some((d, i) => !Object.is(d, next[i]));
+}
+
+/** Runs queued effects (each after its slot's previous cleanup) and returns the new cleanups. */
 function flushEffects(): Array<() => void> {
   const cleanups: Array<() => void> = [];
   while (pendingEffects.length > 0) {
@@ -59,8 +72,16 @@ mock.module('react', () => ({
     stateIndex++;
     return [stateStore[idx], setter];
   },
-  useEffect: (fn: () => (() => void) | undefined) => {
-    pendingEffects.push(fn);
+  useEffect: (fn: () => (() => void) | undefined, deps?: unknown[]) => {
+    const idx = effectIndex++;
+    const slot = effectStore[idx];
+    if (slot !== undefined && !depsChanged(slot.deps, deps)) return;
+    pendingEffects.push(() => {
+      slot?.cleanup?.();
+      const cleanup = fn();
+      effectStore[idx] = { deps, cleanup: typeof cleanup === 'function' ? cleanup : undefined };
+      return cleanup;
+    });
   },
   useMemo: (fn: () => unknown) => fn(),
   useCallback: (fn: unknown) => fn,
@@ -122,6 +143,8 @@ beforeEach(() => {
   stateIndex = 0;
   refStore.length = 0;
   refIndex = 0;
+  effectStore.length = 0;
+  effectIndex = 0;
   pendingEffects.length = 0;
   setFocusContext(null);
 });
@@ -301,5 +324,95 @@ describe('Button + FocusProvider (reactive focus)', () => {
 
     for (const c of cleanups) c();
     expect(mgr.getOrder().includes('x')).toBe(false);
+  });
+});
+
+describe('Button re-renders keep focus registration in place', () => {
+  it('a new inline onPress keeps focus + tab order and activate() calls the latest handler', () => {
+    const mgr = createFocusManager();
+    setFocusContext({ manager: mgr, focusedId: null });
+    mgr.register({ id: 'a', tabIndex: 0 });
+    let oldPressed = 0;
+    let newPressed = 0;
+    resetHookIndices();
+    Button({
+      label: 'X',
+      focusId: 'x',
+      onPress: () => {
+        oldPressed++;
+      },
+    });
+    flushEffects();
+    mgr.register({ id: 'b', tabIndex: 0 });
+    mgr.focus('x');
+    const order = mgr.getOrder();
+    expect(order).toEqual(['a', 'x', 'b']);
+
+    resetHookIndices();
+    Button({
+      label: 'X',
+      focusId: 'x',
+      onPress: () => {
+        newPressed++;
+      },
+    });
+    flushEffects();
+
+    expect(mgr.getFocused()).toBe('x');
+    expect(mgr.getOrder()).toEqual(order);
+    mgr.activate();
+    expect(oldPressed).toBe(0);
+    expect(newPressed).toBe(1);
+  });
+
+  it('flipping disabled on a non-focused Button leaves focus alone and keeps its position', () => {
+    const mgr = createFocusManager();
+    setFocusContext({ manager: mgr, focusedId: null });
+    mgr.register({ id: 'a', tabIndex: 0 });
+    resetHookIndices();
+    Button({ label: 'X', focusId: 'x' });
+    flushEffects();
+    mgr.register({ id: 'b', tabIndex: 0 });
+    mgr.focus('a');
+    expect(mgr.getOrder()).toEqual(['a', 'x', 'b']);
+
+    resetHookIndices();
+    Button({ label: 'X', focusId: 'x', disabled: true });
+    flushEffects();
+    expect(mgr.getFocused()).toBe('a');
+    expect(mgr.getOrder()).toEqual(['a', 'b']);
+
+    resetHookIndices();
+    Button({ label: 'X', focusId: 'x', disabled: false });
+    flushEffects();
+    expect(mgr.getFocused()).toBe('a');
+    expect(mgr.getOrder()).toEqual(['a', 'x', 'b']);
+  });
+
+  it('a focused Button disabled in place stays focused; activate() is gated on disabled', () => {
+    const mgr = createFocusManager();
+    setFocusContext({ manager: mgr, focusedId: null });
+    let pressed = 0;
+    const onPress = () => {
+      pressed++;
+    };
+    resetHookIndices();
+    Button({ label: 'X', focusId: 'x', onPress });
+    flushEffects();
+    mgr.focus('x');
+
+    resetHookIndices();
+    Button({ label: 'X', focusId: 'x', onPress, disabled: true });
+    flushEffects();
+    expect(mgr.getFocused()).toBe('x');
+    mgr.activate();
+    expect(pressed).toBe(0);
+
+    resetHookIndices();
+    Button({ label: 'X', focusId: 'x', onPress, disabled: false });
+    flushEffects();
+    expect(mgr.getFocused()).toBe('x');
+    mgr.activate();
+    expect(pressed).toBe(1);
   });
 });

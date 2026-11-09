@@ -10,7 +10,7 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 | [plans/](plans/)           | Forward-looking execution plans. The active roadmap lives here; completed phase details move to archival over time.                                         |
 | [references/](references/) | Living reference material: benchmarks, CanvasKit parity audit, CLI tooling background.                                                                       |
 | [conventions/](conventions/) | Code style and git conventions the builders and the gate enforce.                                                                                          |
-| [recipes/](recipes/)       | Task-shaped how-tos for consumers (save migrations, testing ui under bun, and more as they are written).                                                     |
+| [recipes/](recipes/)       | Task-shaped how-tos for consumers (save migrations, testing ui under bun, tilemap collision, bullet pool, a postfx pass).                                    |
 | [history/](history/)       | Archived plans kept for provenance, not for execution.                                                                                                       |
 
 ## Files
@@ -42,6 +42,9 @@ Entry point for everything under `docs/`. Each subdirectory has a distinct purpo
 - [conventions/code.md](conventions/code.md) · [conventions/git.md](conventions/git.md) — the rules the gate enforces.
 - [recipes/save-migrations.md](recipes/save-migrations.md) — versioned save files with `@flare-engine/storage`.
 - [recipes/testing-ui-under-bun.md](recipes/testing-ui-under-bun.md) — import `@flare-engine/ui` and `@flare-engine/ui-shop` under `bun test`.
+- [recipes/tilemap-collision.md](recipes/tilemap-collision.md) — load a Tiled map, draw it under the sprites, slide a body against its solid tiles.
+- [recipes/bullet-pool.md](recipes/bullet-pool.md) — fire and recycle bullets with a pre-allocated `Position` pool and a permanent ECS query.
+- [recipes/postfx-pass.md](recipes/postfx-pass.md) — bind a `@flare-engine/postfx` chain to `<GameView>` and drive it at runtime.
 - [history/build-plan-archive.md](history/build-plan-archive.md) — archived build plan; provenance only.
 
 ## See also

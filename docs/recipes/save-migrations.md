@@ -47,7 +47,7 @@ Real-world reference: Pan Tvardowski (a private consumer game) runs a hand-rolle
 Keep the migration chain in its own file, separate from the save-file schema.
 
 **Bad:**
-```ts
+```ts no-check
 // schema.ts
 export const defaultSaveFile = () => ({ ... });
 export const migrations = defineMigrationChain([ ... ]); // imports types from schema.ts
@@ -81,7 +81,7 @@ Key points:
   result; writing the new version onto the save is the caller's job (or each step's). Assert on a
   field the migration actually produced, not on `version`, unless your chain sets it.
 
-```ts
+```ts no-check
 import { describe, expect, test } from 'bun:test';
 import { migrations, CURRENT_VERSION } from '../src/save/migrate';
 import { runMigrations } from '@flare-engine/storage';

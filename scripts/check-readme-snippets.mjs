@@ -1,6 +1,7 @@
 /**
  * check-readme-snippets — prove that every ts / tsx example inside a package
- * README (packages/<pkg>/README.md) actually typechecks against the workspace.
+ * README (packages/<pkg>/README.md), the API spec (docs/design/api-specs.md)
+ * and every recipe (docs/recipes/*.md) actually typechecks against the workspace.
  * Public docs that lie (wrong import path, renamed export, wrong argument shape)
  * are worse than no docs; this is the gate that keeps them honest (the OSS-D1
  * finding: README examples fail to compile in ~24 of 41 packages).
@@ -128,11 +129,13 @@ for (const pkg of packages) {
   }
 }
 
-// Also typecheck the ts/tsx fences in the top-level design doc api-specs.md.
-// Public docs that lie are worse than no docs — the api-specs fences resolve
-// @flare-engine/* through the SAME paths map built above and contribute no
-// paths entry of their own. Doc sources carry a `label` used in the report;
-// package sources default to README.md.
+// Also typecheck the ts/tsx fences in the top-level docs: the design doc
+// api-specs.md and every recipe under docs/recipes/. Public docs that lie are
+// worse than no docs — these fences resolve @flare-engine/* through the SAME
+// paths map built above and contribute no paths entry of their own. Doc
+// sources carry a `label` used in the report; package sources default to
+// README.md.
+const RECIPES_DIR = join(ROOT, 'docs', 'recipes');
 const DOC_SOURCES = [
   {
     dir: '__api-specs__',
@@ -140,6 +143,15 @@ const DOC_SOURCES = [
     label: 'api-specs.md',
     readme: join(ROOT, 'docs', 'design', 'api-specs.md'),
   },
+  ...readdirSync(RECIPES_DIR)
+    .filter((file) => file.endsWith('.md'))
+    .sort()
+    .map((file) => ({
+      dir: `__recipe-${file.slice(0, -'.md'.length)}__`,
+      name: `docs/recipes/${file}`,
+      label: `recipes/${file}`,
+      readme: join(RECIPES_DIR, file),
+    })),
 ];
 const sources = [...packages, ...DOC_SOURCES];
 

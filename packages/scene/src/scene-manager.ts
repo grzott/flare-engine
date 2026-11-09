@@ -125,9 +125,9 @@ export class SceneManager {
 
       this._transitionState = this._transition.start('out');
     } else {
-      // A pending animated go() is superseded; drop its out-phase too, or
-      // _finishOutPhase would later replace the instant scene with the stale
-      // target. Its late preload handler is harmless once the state is null.
+      // A pending animated go() is superseded; end any transition in progress
+      // too, or _finishOutPhase would later replace the instant scene with the
+      // stale target. Its late preload handler is harmless once the state is null.
       this._discardPending();
       this._transitionState = null;
       // Instant transition — destroy first so _getOrCreate builds fresh.

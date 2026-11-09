@@ -1243,6 +1243,28 @@ describe('SceneManager — superseded go()', () => {
     expect(log).toEqual(['c:update:1', 'c:draw', 'c:update:1', 'c:draw']);
   });
 
+  it('an instant go() during a fade-in ends the fade-in too', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('first', createTestScene('first', log));
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('first');
+
+    void mgr.go('a');
+    mgr.update(1.0);
+    expect(mgr.transitionPhase).toBe('in');
+    mgr.setTransition(noneTransition());
+    log.length = 0;
+    await mgr.go('c');
+
+    expect(log).toEqual(['a:exit', 'a:destroy', 'c:preload', 'c:init', 'c:enter']);
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.transitionPhase).toBe(null);
+    expect(mgr.current?.name).toBe('c');
+  });
+
   it('a pending target pushed onto the stack is destroyed once when a go() supersedes it', async () => {
     const log: string[] = [];
     const mgr = new SceneManager();

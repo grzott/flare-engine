@@ -69,12 +69,19 @@ function promisify<T>(req: IDBRequestLike<T>): Promise<T> {
 /**
  * IndexedDB-backed adapter for the web. Lazily opens the database on first use;
  * each call opens a fresh transaction and the connection is kept open for the
- * lifetime of the adapter.
+ * lifetime of the adapter. A failed open is not cached; the next call opens again.
  */
 export function createIndexedDbAdapter(dbName = 'flare-engine', storeName = 'kv'): StorageAdapter {
   let dbPromise: Promise<IDBDatabaseLike> | null = null;
   const db = (): Promise<IDBDatabaseLike> => {
-    if (!dbPromise) dbPromise = openDb(dbName, storeName);
+    if (dbPromise === null) {
+      const attempt: Promise<IDBDatabaseLike> = openDb(dbName, storeName).catch((err: unknown) => {
+        // Compare-and-clear: drop only OUR failed attempt so the next call retries the open.
+        if (dbPromise === attempt) dbPromise = null;
+        throw err;
+      });
+      dbPromise = attempt;
+    }
     return dbPromise;
   };
 

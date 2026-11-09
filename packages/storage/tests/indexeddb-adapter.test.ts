@@ -35,6 +35,40 @@ describe('indexeddb-adapter', () => {
       else g.indexedDB = prev;
     }
   });
+
+  test('a failed open is not cached — the next call opens again', async () => {
+    const g = globalThis as { indexedDB?: unknown };
+    const prev = g.indexedDB;
+    const fake = makeFakeIndexedDB();
+    let opens = 0;
+    g.indexedDB = {
+      open: (name: string, version?: number) => {
+        opens += 1;
+        if (opens > 1) return fake.open(name, version);
+        const req: ReqLike = {
+          onsuccess: null,
+          onerror: null,
+          onupgradeneeded: null,
+          result: undefined,
+          error: new Error('open failed'),
+        };
+        queueMicrotask(() => {
+          req.onerror?.({});
+        });
+        return req;
+      },
+    };
+    try {
+      const a = createIndexedDbAdapter('test-db', 'kv');
+      await expect(a.get('k')).rejects.toThrow('open failed');
+      await a.set('k', 'v');
+      expect(await a.get('k')).toBe('v');
+      expect(opens).toBe(2);
+    } finally {
+      if (prev === undefined) g.indexedDB = undefined;
+      else g.indexedDB = prev;
+    }
+  });
 });
 
 // ——— minimal fake IndexedDB shim for tests ———

@@ -93,9 +93,10 @@ export function createMemoryAchievements(opts?: MemoryAchievementsOptions): Achi
  *
  * State hydrates lazily from `store.get(key)` on the first call (a JSON array of
  * `AchievementState`; a parse error hydrates empty) and is written back via
- * `store.set` after every mutation. All mutations are serialized through a single
- * chained tail promise so a read-modify-write can never interleave and lose an
- * update under concurrent unlocks.
+ * `store.set` after every mutation. A rejected `store.get` rejects that call and
+ * the next call retries; nothing is written until a read succeeds. All mutations
+ * are serialized through a single chained tail promise so a read-modify-write can
+ * never interleave and lose an update under concurrent unlocks.
  */
 export function createStorageAchievements(
   store: AchievementsStore,
@@ -109,15 +110,23 @@ export function createStorageAchievements(
 
   function hydrate(): Promise<void> {
     if (hydration === undefined) {
-      hydration = store.get(key).then((raw) => {
-        if (raw === null) return;
-        try {
-          const parsed = JSON.parse(raw) as AchievementState[];
-          for (const state of parsed) states.set(state.id, state);
-        } catch {
-          // Corrupt payload — hydrate empty.
-        }
-      });
+      const attempt: Promise<void> = store
+        .get(key)
+        .then((raw) => {
+          if (raw === null) return;
+          try {
+            const parsed = JSON.parse(raw) as AchievementState[];
+            for (const state of parsed) states.set(state.id, state);
+          } catch {
+            // Corrupt payload — hydrate empty.
+          }
+        })
+        .catch((err: unknown) => {
+          // Compare-and-clear: drop only OUR failed attempt so the next call retries the read.
+          if (hydration === attempt) hydration = undefined;
+          throw err;
+        });
+      hydration = attempt;
     }
     return hydration;
   }

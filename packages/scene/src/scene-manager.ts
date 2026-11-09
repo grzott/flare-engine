@@ -72,6 +72,8 @@ export class SceneManager {
    * Navigate to a scene by name. Clears the entire stack.
    * Calls onExit on the current scene, onDestroy on all stacked scenes,
    * then onPreload → onInit → onEnter on the new scene.
+   * A `go()` issued while an animated `go()` is still fading out supersedes
+   * it: the superseded target gets `onDestroy` (never `onInit` / `onEnter`).
    */
   async go(name: string, data?: unknown): Promise<void> {
     if (!this._factories.has(name)) {
@@ -84,6 +86,7 @@ export class SceneManager {
     }
 
     if (this._transition.duration > 0 && this.current) {
+      this._discardPending();
       // Animated transition — evict target from cache first so restart
       // builds a fresh instance with a fresh World/Camera2D.
       this._scenes.delete(name);
@@ -122,6 +125,11 @@ export class SceneManager {
 
       this._transitionState = this._transition.start('out');
     } else {
+      // A pending animated go() is superseded; end any transition in progress
+      // too, or _finishOutPhase would later replace the instant scene with the
+      // stale target. Its late preload handler is harmless once the state is null.
+      this._discardPending();
+      this._transitionState = null;
       // Instant transition — destroy first so _getOrCreate builds fresh.
       this._exitAndDestroyCurrent();
       const scene = this._getOrCreate(name)!;
@@ -182,6 +190,7 @@ export class SceneManager {
 
   /** Destroy all scenes and clear state. */
   destroy(): void {
+    this._discardPending();
     for (let i = this._stack.length - 1; i >= 0; i--) {
       const scene = this._stack[i]!;
       scene.onExit?.();
@@ -193,7 +202,6 @@ export class SceneManager {
     this._scenes.clear();
     this._initialized.clear();
     this._transitionState = null;
-    this._pendingScene = null;
   }
 
   /** Get the transition progress (0–1) for rendering. 0 during 'out', 1 when done. */
@@ -273,6 +281,30 @@ export class SceneManager {
       }
     }
     this._kept.clear();
+  }
+
+  /**
+   * Destroy the target of an animated `go()` that was superseded before its
+   * out-phase finished. It got `onPreload` but never `onInit`. Fields are
+   * cleared first so a re-entrant call from `onDestroy` cannot destroy twice;
+   * an instance someone else still holds (stack, kept set) or has already
+   * destroyed (evicted from the cache) is left alone.
+   */
+  private _discardPending(): void {
+    const pending = this._pendingScene;
+    if (!pending) return;
+    this._pendingScene = null;
+    this._pendingData = undefined;
+    if (
+      this._scenes.get(pending.name) !== pending ||
+      this._stack.includes(pending) ||
+      this._kept.has(pending)
+    ) {
+      return;
+    }
+    pending.onDestroy?.();
+    this._scenes.delete(pending.name);
+    this._initialized.delete(pending.name);
   }
 
   private _finishOutPhase(): void {

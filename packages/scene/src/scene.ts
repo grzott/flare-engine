@@ -33,7 +33,11 @@ export interface Scene {
   /** Called when the scene is deactivated (pushed or replaced). */
   onExit?(): void;
 
-  /** Called when the scene is permanently removed. Cleanup resources. */
+  /**
+   * Called when the scene is permanently removed. Cleanup resources. Can also follow `onPreload`
+   * with no `onInit` in between — a target superseded by another `go()` during a fade-out, or
+   * still pending at `destroy()` — possibly while the `onPreload` promise is still unresolved.
+   */
   onDestroy?(): void;
 }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { Spring, SpringConfig } from '../src/spring.js';
 import { resetSpring, setSpringTarget, spring, updateSpring } from '../src/spring.js';
 
 describe('Spring', () => {
@@ -86,5 +87,139 @@ describe('Spring', () => {
     }
     expect(s.value).toBeCloseTo(100, 0);
     expect(s.atRest).toBe(true);
+  });
+});
+
+describe('updateSpring — any dt (#135)', () => {
+  const CONFIGS: [string, Partial<SpringConfig>][] = [
+    ['defaults', {}],
+    ['underdamped', { stiffness: 200, damping: 2 }],
+    ['critical', { stiffness: 100, damping: 20, mass: 1 }],
+    ['overdamped', { damping: 100 }],
+    ['stiff', { stiffness: 10000, damping: 10 }],
+    ['heavy', { stiffness: 300, damping: 20, mass: 2 }],
+  ];
+  const DTS = [1 / 60, 0.25, 1, 10];
+  const STARTS: [number, number][] = [
+    [1, 0],
+    [0.5, 3],
+  ];
+  const HUGE_DT_CONFIGS = CONFIGS.filter(([name]) => name !== 'underdamped' && name !== 'heavy');
+
+  function energy(s: Spring): number {
+    const x = s.value - s.target;
+    return 0.5 * s.config.stiffness * x * x + 0.5 * s.config.mass * s.velocity * s.velocity;
+  }
+
+  function expectWithin(actual: number, expected: number, tol: number): void {
+    expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tol * Math.max(1, Math.abs(expected)));
+  }
+
+  it('stays bounded and settles when stepped by clamped 0.25 s hitch frames', () => {
+    const s = spring(1, 0);
+    for (let i = 0; i < 40; i++) {
+      updateSpring(s, 0.25);
+      expect(Math.abs(s.value - s.target)).toBeLessThanOrEqual(1);
+    }
+    expect(s.value).toBe(0);
+    expect(s.atRest).toBe(true);
+  });
+
+  for (const [name, cfg] of CONFIGS) {
+    for (const dt of DTS) {
+      it(`never gains energy: ${name} at dt=${dt}`, () => {
+        for (const [x0, v0] of STARTS) {
+          const s = spring(x0, 0, cfg);
+          s.velocity = v0;
+          const e0 = energy(s);
+          let prev = e0;
+          for (let i = 0; i < 100000 && !s.atRest; i++) {
+            updateSpring(s, dt);
+            const e = energy(s);
+            expect(e).toBeLessThanOrEqual(prev + 1e-12 * e0);
+            prev = e;
+          }
+          expect(s.atRest).toBe(true);
+        }
+      });
+    }
+  }
+
+  for (const [name, cfg] of CONFIGS.slice(0, 4)) {
+    it(`15 steps of 1/60 s equal one step of 0.25 s: ${name}`, () => {
+      const fine = spring(100, 0, cfg);
+      const coarse = spring(100, 0, cfg);
+      for (let i = 0; i < 15; i++) updateSpring(fine, 1 / 60);
+      updateSpring(coarse, 0.25);
+      expect(coarse.atRest).toBe(false);
+      expect(Math.abs(fine.value - coarse.value)).toBeLessThanOrEqual(
+        1e-9 * Math.abs(coarse.value),
+      );
+      expect(Math.abs(fine.velocity - coarse.velocity)).toBeLessThanOrEqual(
+        1e-9 * Math.abs(coarse.velocity),
+      );
+    });
+  }
+
+  it('is continuous across the critical-damping boundary', () => {
+    const k = 100;
+    const m = 1;
+    const after = (zeta: number): Spring => {
+      const s = spring(1, 0, { stiffness: k, damping: 2 * Math.sqrt(k * m) * zeta, mass: m });
+      updateSpring(s, 0.1);
+      expect(Number.isFinite(s.value)).toBe(true);
+      expect(Number.isFinite(s.velocity)).toBe(true);
+      return s;
+    };
+    const crit = after(1);
+    for (const zeta of [1 - 1e-7, 1 + 1e-7]) {
+      const s = after(zeta);
+      expectWithin(s.value, crit.value, 1e-6);
+      expectWithin(s.velocity, crit.velocity, 1e-6);
+    }
+    for (const zeta of [1 - 1e-3, 1 + 1e-3]) {
+      const s = after(zeta);
+      expectWithin(s.value, crit.value, 1e-3);
+      expectWithin(s.velocity, crit.velocity, 1e-3);
+    }
+  });
+
+  for (const [name, cfg] of HUGE_DT_CONFIGS) {
+    it(`a 1000 s step lands exactly at rest: ${name}`, () => {
+      const s = spring(1, 0, cfg);
+      updateSpring(s, 1e3);
+      expect(s.value).toBe(0);
+      expect(s.velocity).toBe(0);
+      expect(s.atRest).toBe(true);
+    });
+  }
+
+  it('matches the textbook underdamped solution and its derivative', () => {
+    const k = 100;
+    const c = 10;
+    const m = 1;
+    const w0 = Math.sqrt(k / m);
+    const zeta = c / (2 * Math.sqrt(k * m));
+    const sigma = zeta * w0;
+    const wd = w0 * Math.sqrt(1 - zeta * zeta);
+    const xOf = (t: number): number =>
+      Math.exp(-sigma * t) * (Math.cos(wd * t) + (sigma / wd) * Math.sin(wd * t));
+    const s = spring(1, 0, { stiffness: k, damping: c, mass: m });
+    updateSpring(s, 0.1);
+    expect(Math.abs(s.value - xOf(0.1))).toBeLessThanOrEqual(1e-12);
+    const h = 1e-5;
+    const central = (xOf(0.1 + h) - xOf(0.1 - h)) / (2 * h);
+    expect(Math.abs(s.velocity - central)).toBeLessThanOrEqual(1e-6);
+  });
+
+  it('decays velocity exponentially with zero stiffness (pure damping)', () => {
+    const s = spring(1, 5, { stiffness: 0, damping: 2 });
+    s.velocity = 4;
+    updateSpring(s, 0.5);
+    const gamma = 2;
+    const e = Math.exp(-gamma * 0.5);
+    const x0 = 1 - 5;
+    expect(Math.abs(s.value - (5 + x0 + (4 * (1 - e)) / gamma))).toBeLessThanOrEqual(1e-12);
+    expect(Math.abs(s.velocity - 4 * e)).toBeLessThanOrEqual(1e-12);
   });
 });

@@ -8,7 +8,7 @@
  * renders behind the geometry.
  */
 
-import type { SkCanvas, Skia as SkiaModule, SkPaint } from '@shopify/react-native-skia';
+import type { SkCanvas, Skia as SkiaModule, SkPaint, SkPath } from '@shopify/react-native-skia';
 import { singleShapeRadius } from './bounds.js';
 import type {
   AnnulusSpec,
@@ -106,6 +106,25 @@ function applyStroke(paint: SkPaint, argb: number, width: number): void {
   paint.setColor(COLOR);
   paint.setStyle(1); // Stroke
   paint.setStrokeWidth(width);
+}
+
+/** Fill, then stroke, the same path; `strokeWidth` defaults to 1. */
+function fillStrokePath(
+  canvas: SkCanvas,
+  paint: SkPaint,
+  path: SkPath,
+  fill: number | undefined,
+  stroke: number | undefined,
+  strokeWidth: number | undefined,
+): void {
+  if (fill !== undefined) {
+    applyFill(paint, fill);
+    canvas.drawPath(path, paint);
+  }
+  if (stroke !== undefined) {
+    applyStroke(paint, stroke, strokeWidth ?? 1);
+    canvas.drawPath(path, paint);
+  }
 }
 
 // ---- Dispatcher -------------------------------------------------------------
@@ -231,14 +250,7 @@ function drawTriangle(
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
-  if (spec.fill !== undefined) {
-    applyFill(paint, spec.fill);
-    canvas.drawPath(path, paint);
-  }
-  if (spec.stroke !== undefined) {
-    applyStroke(paint, spec.stroke, spec.strokeWidth ?? 1);
-    canvas.drawPath(path, paint);
-  }
+  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -263,14 +275,7 @@ function drawNgon(
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
-  if (spec.fill !== undefined) {
-    applyFill(paint, spec.fill);
-    canvas.drawPath(path, paint);
-  }
-  if (spec.stroke !== undefined) {
-    applyStroke(paint, spec.stroke, spec.strokeWidth ?? 1);
-    canvas.drawPath(path, paint);
-  }
+  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -297,14 +302,7 @@ function drawStar(
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
-  if (spec.fill !== undefined) {
-    applyFill(paint, spec.fill);
-    canvas.drawPath(path, paint);
-  }
-  if (spec.stroke !== undefined) {
-    applyStroke(paint, spec.stroke, spec.strokeWidth ?? 1);
-    canvas.drawPath(path, paint);
-  }
+  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -390,14 +388,7 @@ function drawArc(
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate(radToDeg(rot), 0, 0);
-  if (spec.fill !== undefined) {
-    applyFill(paint, spec.fill);
-    canvas.drawPath(path, paint);
-  }
-  if (spec.stroke !== undefined) {
-    applyStroke(paint, spec.stroke, spec.strokeWidth ?? 1);
-    canvas.drawPath(path, paint);
-  }
+  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -456,14 +447,7 @@ function drawTrapezoid(
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate(radToDeg(rot), 0, 0);
-  if (spec.fill !== undefined) {
-    applyFill(paint, spec.fill);
-    canvas.drawPath(path, paint);
-  }
-  if (spec.stroke !== undefined) {
-    applyStroke(paint, spec.stroke, spec.strokeWidth ?? 1);
-    canvas.drawPath(path, paint);
-  }
+  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -482,14 +466,7 @@ function drawPath(
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate(radToDeg(rot), 0, 0);
-  if (spec.fill !== undefined) {
-    applyFill(paint, spec.fill);
-    canvas.drawPath(path, paint);
-  }
-  if (spec.stroke !== undefined) {
-    applyStroke(paint, spec.stroke, spec.strokeWidth ?? 1);
-    canvas.drawPath(path, paint);
-  }
+  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 

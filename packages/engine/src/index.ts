@@ -1,10 +1,7 @@
 // Engine convenience API — curated barrel.
-// Headless tier (14 packages, RN-free):
-export * from '@flare-engine/animation';
-export * from '@flare-engine/assets';
-export * from '@flare-engine/audio';
-export * from '@flare-engine/core';
-export * from '@flare-engine/debug';
+// Everything in ./headless.js (the RN-free tier, createGame and tier2-wiring)
+// plus dynamics, postfx and the curated react subset.
+
 // dynamics — explicit to alias World (clashes with the ecs World class):
 export {
   addBody,
@@ -14,12 +11,6 @@ export {
   step,
   type World as DynamicsWorld,
 } from '@flare-engine/dynamics';
-export * from '@flare-engine/ecs';
-export * from '@flare-engine/events';
-export * from '@flare-engine/input';
-export * from '@flare-engine/math';
-export * from '@flare-engine/particles';
-export * from '@flare-engine/physics';
 // postfx — explicit to alias CompiledShader (clashes with render) and SkImageLike (clashes with assets):
 export {
   BLOOM_SKSL,
@@ -114,21 +105,4 @@ export {
   VirtualJoystick,
   type VirtualJoystickProps,
 } from '@flare-engine/react';
-export * from '@flare-engine/render';
-export * from '@flare-engine/scene';
-export * from '@flare-engine/tilemap';
-// Engine-own exports:
-export { createGame, type GameConfig, type GameInstance } from './engine.js';
-export {
-  type AchievementRule,
-  type AnalyticsRule,
-  createTier2Wiring,
-  type LeaderboardRule,
-  type Tier2AchievementsLike,
-  type Tier2AnalyticsLike,
-  type Tier2EventSource,
-  type Tier2LeaderboardsLike,
-  type Tier2Providers,
-  type Tier2Rule,
-  type Tier2WiringOptions,
-} from './tier2-wiring.js';
+export * from './headless.js';

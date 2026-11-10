@@ -24,7 +24,7 @@ export interface TextRevealState {
 export interface TextRevealOptions {
   /** Characters per second. Default: 30. */
   speed?: number;
-  /** Extra delay (in seconds) after punctuation (.!?). Default: 0.15. */
+  /** Extra delay (in seconds) after punctuation (.!?:;). Default: 0.15. */
   punctuationDelay?: number;
 }
 

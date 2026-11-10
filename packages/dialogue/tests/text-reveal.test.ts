@@ -161,6 +161,45 @@ describe('updateTextReveal', () => {
     expect(s._cursor).toBe(cursor);
     expect(s.visibleText).toBe('A.');
   });
+
+  test('sub-character updates do not re-slice; a changed count slices once', () => {
+    const text = 'Hello there, traveller';
+    const s = createTextReveal(text);
+    updateTextReveal(s, 1 / 30);
+    expect(s.visibleText).toBe('H');
+
+    // Strings compare by value, so a re-slice is only visible as a slice call.
+    const original = String.prototype.slice;
+    let calls = 0;
+    String.prototype.slice = function countingSlice(
+      this: string,
+      start?: number,
+      end?: number,
+    ): string {
+      if (this === text) calls++;
+      return original.call(this, start, end);
+    };
+    let callsWhileUnchanged = -1;
+    try {
+      for (let i = 0; i < 5; i++) updateTextReveal(s, 0.001);
+      callsWhileUnchanged = calls;
+      updateTextReveal(s, 1 / 30);
+    } finally {
+      String.prototype.slice = original;
+    }
+
+    expect(callsWhileUnchanged).toBe(0);
+    expect(s.visibleText).toBe('He');
+    expect(calls).toBe(1);
+    expect(s.complete).toBe(false);
+  });
+
+  test('a hand-built state already showing the full text still completes', () => {
+    const s = { fullText: 'A', visibleText: 'A', complete: false, _cursor: 1 };
+    updateTextReveal(s, 0.016);
+    expect(s.visibleText).toBe('A');
+    expect(s.complete).toBe(true);
+  });
 });
 
 describe('completeTextReveal', () => {

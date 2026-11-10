@@ -37,6 +37,13 @@ export class DialogueError extends Error {
 // ─── Types ───────────────────────────────────────────────────────
 
 export type ConditionResolver = (key: string) => boolean;
+/**
+ * Called synchronously when the runner reaches an `ActionNode`, after
+ * `onAction` has emitted. The return value is ignored: a returned promise is
+ * not awaited, so the runner moves on to the node's `next` before it settles,
+ * and nothing handles its rejection — an async handler must catch its own
+ * errors.
+ */
 export type ActionHandler = (key: string) => void | Promise<void>;
 export type VariableBag = Record<string, string | number>;
 

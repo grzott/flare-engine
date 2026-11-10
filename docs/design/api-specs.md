@@ -329,7 +329,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 | --- | --- |
 | `DialogueGraph` / `DialogueNode` (union) | A graph is a `Map<NodeId, DialogueNode>` plus a `start: NodeId`. Node kinds: `LineNode` (speaker + text), `ChoiceNode` (player picks an `ChoiceOption`), `BranchNode` (predicate-driven `BranchArm[]`), `ActionNode` (fires a side effect via `ActionHandler`), `EndNode`. |
 | `createDialogueGraph(start, nodes)` / `getNode(graph, id)` | Builders + lookup. |
-| `DialogueRunner` / `createDialogueRunner(options?)` | Stateful runner. `DialogueRunnerOptions`: `{ conditions?: ConditionResolver, actions?: ActionHandler, onError?(err: DialogueError) }`. The graph + variables are passed to `runner.start(graph, variables?)`, **not** the factory. Events are **Signals** on the runner: `onLine: Signal<DialogueLineEvent>`, `onChoice: Signal<DialogueChoiceEvent>`, `onAction: Signal<string>`, `onEnd: Signal<string>`. Drive with `advance()` / `selectChoice(index)` / `stop()`; read `state` / `currentNodeId` / `graphId`. `DialogueRunnerState` is a status union: `'idle' \| 'running' \| 'waiting-choice' \| 'ended'`. |
+| `DialogueRunner` / `createDialogueRunner(options?)` | Stateful runner. `DialogueRunnerOptions`: `{ conditions?: ConditionResolver, actions?: ActionHandler, onError?(err: DialogueError) }`. `ActionHandler` is `(key: string) => void \| Promise<void>`; its return value is ignored (see the notes below). The graph + variables are passed to `runner.start(graph, variables?)`, **not** the factory. Events are **Signals** on the runner: `onLine: Signal<DialogueLineEvent>`, `onChoice: Signal<DialogueChoiceEvent>`, `onAction: Signal<string>`, `onEnd: Signal<string>`. Drive with `advance()` / `selectChoice(index)` / `stop()`; read `state` / `currentNodeId` / `graphId`. `DialogueRunnerState` is a status union: `'idle' \| 'running' \| 'waiting-choice' \| 'ended'`. |
 | `interpolate(text, variables)` | Interpolates `{var}` tokens against a `VariableBag` (`Record<string, string \| number>`); an unknown token passes through unchanged. |
 | `createTextReveal(text)` / `updateTextReveal(state, dt, options?)` / `completeTextReveal(state)` / `resetTextReveal(state)` | Typewriter state machine — `createTextReveal` takes no options. `TextRevealState` exposes `visibleText: string` and `complete: boolean`. Per-frame options live on `updateTextReveal`: `TextRevealOptions` = `{ speed? (chars/sec, default 30), punctuationDelay? (extra seconds after `.!?:;`, default 0.15) }`. |
 
@@ -337,6 +337,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 - Single hard dep: `@flare-engine/events` (`Signal`).
 - `ConditionResolver` and `ActionHandler` are caller-supplied — the package owns no game state.
+- The runner is synchronous and ignores what an `ActionHandler` returns. On an `ActionNode` it emits `onAction`, calls the handler, and continues to the node's `next` in the same call; a returned promise is not awaited, and nothing handles its rejection, so an async handler must catch its own errors.
 - Used by Pan Tvardowski, a private consumer game, for the inter-zone dialogue card stack and boss banter.
 
 ---

@@ -8,6 +8,21 @@ export interface Migration {
   migrate: (old: unknown) => unknown;
 }
 
+/** The `{ version, data }` wrapper every stored slot and document is persisted in. */
+export interface VersionedEnvelope {
+  version: number;
+  data: unknown;
+}
+
+export function isVersionedEnvelope(x: unknown): x is VersionedEnvelope {
+  return (
+    x !== null &&
+    typeof x === 'object' &&
+    typeof (x as VersionedEnvelope).version === 'number' &&
+    'data' in (x as Record<string, unknown>)
+  );
+}
+
 /**
  * Run every migration whose `version` is strictly greater than `from` and
  * less than or equal to `to`, in ascending version order. Throws if the

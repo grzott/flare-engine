@@ -1,6 +1,6 @@
 import type { StorageAdapter } from './adapter.js';
-import type { Migration } from './migrations.js';
-import { runMigrations } from './migrations.js';
+import type { Migration, VersionedEnvelope } from './migrations.js';
+import { isVersionedEnvelope, runMigrations } from './migrations.js';
 import type { Sanitizer } from './sanitize.js';
 import type { Schema } from './schema.js';
 
@@ -82,19 +82,8 @@ export interface Storage<T, H = unknown> {
   importJSON(json: string): Promise<void>;
 }
 
-interface SlotEnvelope {
-  version: number;
-  data: unknown;
+interface SlotEnvelope extends VersionedEnvelope {
   header?: unknown;
-}
-
-function isSlotEnvelope(x: unknown): x is SlotEnvelope {
-  return (
-    x !== null &&
-    typeof x === 'object' &&
-    typeof (x as SlotEnvelope).version === 'number' &&
-    'data' in (x as Record<string, unknown>)
-  );
 }
 
 export function createStorage<T, H = unknown>(options: StorageOptions<T, H>): Storage<T, H> {
@@ -110,7 +99,7 @@ export function createStorage<T, H = unknown>(options: StorageOptions<T, H>): St
     } catch {
       return { name, version: null, header: null };
     }
-    if (!isSlotEnvelope(parsed)) return { name, version: null, header: null };
+    if (!isVersionedEnvelope(parsed)) return { name, version: null, header: null };
     if (!('header' in parsed)) return { name, version: parsed.version, header: null };
     if (parseHeader === undefined)
       return { name, version: parsed.version, header: parsed.header as H };
@@ -146,7 +135,7 @@ export function createStorage<T, H = unknown>(options: StorageOptions<T, H>): St
       const raw = await adapter.get(SLOT_PREFIX + name);
       if (raw === null) return null;
       const parsed: unknown = JSON.parse(raw);
-      if (!isSlotEnvelope(parsed))
+      if (!isVersionedEnvelope(parsed))
         throw new Error(`[@flare-engine/storage] slot "${name}" is not a valid envelope`);
       const migrated = runMigrations(parsed.data, parsed.version, version, migrations);
       return schema.parse(migrated);

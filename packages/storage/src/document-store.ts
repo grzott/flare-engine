@@ -1,6 +1,6 @@
 import type { StorageAdapter } from './adapter.js';
-import type { Migration } from './migrations.js';
-import { runMigrations } from './migrations.js';
+import type { Migration, VersionedEnvelope } from './migrations.js';
+import { isVersionedEnvelope, runMigrations } from './migrations.js';
 
 export interface DocumentStoreOptions<T> {
   adapter: StorageAdapter;
@@ -51,20 +51,6 @@ export interface DocumentStore<T> {
   importJSON(json: string): Promise<T>;
 }
 
-interface DocEnvelope {
-  version: number;
-  data: unknown;
-}
-
-function isDocEnvelope(x: unknown): x is DocEnvelope {
-  return (
-    x !== null &&
-    typeof x === 'object' &&
-    typeof (x as DocEnvelope).version === 'number' &&
-    'data' in (x as Record<string, unknown>)
-  );
-}
-
 const UNLOADED = Symbol('unloaded');
 
 export function createDocumentStore<T>(options: DocumentStoreOptions<T>): DocumentStore<T> {
@@ -75,7 +61,7 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
   let cached: T | typeof UNLOADED = UNLOADED;
 
   function makeEnvelope(doc: T): string {
-    const envelope: DocEnvelope = { version, data: doc };
+    const envelope: VersionedEnvelope = { version, data: doc };
     return JSON.stringify(envelope);
   }
 
@@ -105,7 +91,7 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
     } catch {
       return { kind: 'malformed' };
     }
-    if (!isDocEnvelope(parsed)) return { kind: 'malformed' };
+    if (!isVersionedEnvelope(parsed)) return { kind: 'malformed' };
     try {
       return { kind: 'ok', data: runMigrations(parsed.data, parsed.version, version, migrations) };
     } catch {

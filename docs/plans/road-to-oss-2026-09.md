@@ -1323,6 +1323,11 @@ modernization notes (todo.md Closed arcs, docs+harness section — opportunistic
 
 ## 14. Owner ledger (out-of-band actions — nothing here is agent work)
 
+> **Dated note (2026-11-10):** this section was written before the 2026-10-26 flip. The schedule
+> table below is the plan as written on 2026-07-03, before the 2026-10-09 schedule move (top of
+> file), not what happened. Its credential-rotation row is superseded: publishing moved to npm
+> Trusted Publishing (AGENTS.md "Release posture").
+
 Credential specifics, per-hit audit dispositions, and anything business-candid live in
 `docs/plans/_local/owner-ledger.md` (never committed).
 

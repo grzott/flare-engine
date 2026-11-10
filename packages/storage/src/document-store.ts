@@ -2,8 +2,6 @@ import type { StorageAdapter } from './adapter.js';
 import type { Migration } from './migrations.js';
 import { runMigrations } from './migrations.js';
 
-const VERSION_KEY = '__flare_doc_version';
-
 export interface DocumentStoreOptions<T> {
   adapter: StorageAdapter;
   /** Storage key under which the document is persisted. */
@@ -83,7 +81,11 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
 
   async function persistRaw(doc: T): Promise<void> {
     await adapter.set(key, makeEnvelope(doc));
-    await adapter.set(VERSION_KEY, String(version));
+  }
+
+  function seedFirstRun(): T {
+    const doc = parse(undefined);
+    return onFirstRun ? onFirstRun(doc) : doc;
   }
 
   // 'malformed': raw was never a valid envelope (bad JSON, or wrong shape) —
@@ -115,8 +117,7 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
     async load() {
       const raw = await adapter.get(key);
       if (raw === null) {
-        let doc = parse(undefined);
-        if (onFirstRun) doc = onFirstRun(doc);
+        const doc = seedFirstRun();
         await persistRaw(doc);
         cached = doc;
         return doc;
@@ -127,8 +128,7 @@ export function createDocumentStore<T>(options: DocumentStoreOptions<T>): Docume
         cached = doc;
         return doc;
       }
-      let doc = parse(undefined);
-      if (onFirstRun) doc = onFirstRun(doc);
+      const doc = seedFirstRun();
       // Never persist over a document we could not migrate — only over one
       // that was never a valid envelope to begin with.
       if (result.kind === 'malformed') {

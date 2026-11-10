@@ -180,7 +180,7 @@ describe('createStorage — slot headers', () => {
     const storage = createStorage({ adapter, schema: playerSchema(), version: 1 });
     await expect(storage.saveSlot('big', hero, { n: 10n })).rejects.toThrow();
     expect(await adapter.get('slot:big')).toBeNull();
-    expect(await adapter.get('__flare_version')).toBeNull();
+    expect(await adapter.keys()).toEqual([]);
 
     await storage.saveSlot('keep', hero, { day: 1 });
     const before = await adapter.get('slot:keep');
@@ -188,7 +188,7 @@ describe('createStorage — slot headers', () => {
     cycle.self = cycle;
     await expect(storage.saveSlot('keep', { name: 'changed', hp: 0 }, cycle)).rejects.toThrow();
     expect(await adapter.get('slot:keep')).toBe(before);
-    expect(await adapter.get('__flare_version')).toBe('1');
+    expect(await adapter.keys()).toEqual(['slot:keep']);
   });
 
   test('parseHeader repairs a stale-shaped header', async () => {

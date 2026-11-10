@@ -4,7 +4,6 @@ import { runMigrations } from './migrations.js';
 import type { Sanitizer } from './sanitize.js';
 import type { Schema } from './schema.js';
 
-const VERSION_KEY = '__flare_version';
 const SLOT_PREFIX = 'slot:';
 
 export interface StorageOptions<T, H = unknown> {
@@ -141,7 +140,6 @@ export function createStorage<T, H = unknown>(options: StorageOptions<T, H>): St
         header === undefined ? { version, data } : { version, data, header };
       const json = JSON.stringify(envelope);
       await adapter.set(SLOT_PREFIX + name, json);
-      await adapter.set(VERSION_KEY, String(version));
     },
 
     async loadSlot(name) {

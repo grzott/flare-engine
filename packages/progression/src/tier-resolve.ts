@@ -21,15 +21,8 @@ export interface TierEntry<T> {
  * Ties (identical `at`) are broken by iteration order (last entry wins).
  */
 export function resolveTier<T>(entries: readonly TierEntry<T>[], tally: number): T | null {
-  let best: T | null = null;
-  let bestAt = Number.NEGATIVE_INFINITY;
-  for (const e of entries) {
-    if (tally >= e.at && e.at >= bestAt) {
-      best = e.tier;
-      bestAt = e.at;
-    }
-  }
-  return best;
+  const i = resolveTierIndex(entries, tally);
+  return i < 0 ? null : entries[i]!.tier;
 }
 
 /**

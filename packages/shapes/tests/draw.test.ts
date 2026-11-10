@@ -726,3 +726,73 @@ describe('glow helpers — no dead Skia parameter (F032)', () => {
     expect(applyHazardGlow.length).toBe(5);
   });
 });
+
+describe('drawShape — fill/stroke epilogue', () => {
+  const FILL = 0xff336699;
+  const STROKE = 0x80ffcc00;
+
+  /** Paint state changes and `drawPath` in the one order `drawShape` issues them. */
+  function recordOrdered(spec: ShapeSpec): Call[] {
+    const ordered: Call[] = [];
+    const path = { moveTo: () => {}, lineTo: () => {}, close: () => {}, addArc: () => {} };
+    const canvas = {
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      rotate: () => {},
+      drawPath: (_path: unknown, _paint: unknown) =>
+        ordered.push({ method: 'canvas.drawPath', args: [] }),
+    };
+    const paint = {
+      setColor: (c: Float32Array) => ordered.push({ method: 'paint.setColor', args: [...c] }),
+      setStyle: (s: number) => ordered.push({ method: 'paint.setStyle', args: [s] }),
+      setStrokeWidth: (w: number) => ordered.push({ method: 'paint.setStrokeWidth', args: [w] }),
+    };
+    const Skia = {
+      Path: { Make: () => path, MakeFromSVGString: () => path },
+      XYWHRect: (x: number, y: number, w: number, h: number) => ({ x, y, w, h }),
+    };
+    drawShape(Skia as never, canvas as never, paint as never, spec, 0, 0, 0);
+    return ordered;
+  }
+
+  const fillCalls: Call[] = [
+    { method: 'paint.setColor', args: argb(FILL) },
+    { method: 'paint.setStyle', args: [0] },
+    { method: 'canvas.drawPath', args: [] },
+  ];
+
+  function strokeCalls(width: number): Call[] {
+    return [
+      { method: 'paint.setColor', args: argb(STROKE) },
+      { method: 'paint.setStyle', args: [1] },
+      { method: 'paint.setStrokeWidth', args: [width] },
+      { method: 'canvas.drawPath', args: [] },
+    ];
+  }
+
+  const bodies: readonly ShapeSpec[] = [
+    { kind: 'triangle', size: 10 },
+    { kind: 'ngon', n: 6, r: 10 },
+    { kind: 'star', points: 5, rOuter: 10, rInner: 4 },
+    { kind: 'arc', r: 10, startAngle: 0, endAngle: Math.PI, sector: true },
+    { kind: 'trapezoid', topW: 10, botW: 30, h: 20 },
+    { kind: 'path', d: 'M 0 0 L 10 10 Z', boundsR: 14 },
+  ];
+
+  test.each(bodies)('$kind paints fill, then stroke, on the same path', (body) => {
+    expect(recordOrdered(body)).toEqual([]);
+    expect(recordOrdered({ ...body, fill: FILL })).toEqual(fillCalls);
+    // strokeWidth omitted: defaults to 1
+    expect(recordOrdered({ ...body, stroke: STROKE })).toEqual(strokeCalls(1));
+    expect(recordOrdered({ ...body, stroke: STROKE, strokeWidth: 2.5 })).toEqual(strokeCalls(2.5));
+    expect(recordOrdered({ ...body, fill: FILL, stroke: STROKE })).toEqual([
+      ...fillCalls,
+      ...strokeCalls(1),
+    ]);
+    expect(recordOrdered({ ...body, fill: FILL, stroke: STROKE, strokeWidth: 4 })).toEqual([
+      ...fillCalls,
+      ...strokeCalls(4),
+    ]);
+  });
+});

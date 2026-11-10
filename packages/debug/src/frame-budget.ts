@@ -37,7 +37,7 @@ export function createFrameBudget(opts: FrameBudgetOpts): FrameBudgetHandle {
   function recordFrame(dtSec: number): void {
     const old = ring[head] as number;
     ring[head] = dtSec;
-    // Add the f32 value the ring actually stored, so the later subtraction cancels it exactly.
+    // Add the f32 value the ring actually stored, so the later subtraction removes that same value.
     sum += (ring[head] as number) - old;
     head = (head + 1) % ringSize;
     if (filled < ringSize) filled += 1;

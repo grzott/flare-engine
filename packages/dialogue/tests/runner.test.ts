@@ -211,6 +211,34 @@ describe('createDialogueRunner', () => {
     expect(lines).toEqual(['Here you go!']);
   });
 
+  test('does not wait for an async action handler', async () => {
+    let settled = false;
+    let resolveHandler: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      resolveHandler = resolve;
+    }).then(() => {
+      settled = true;
+    });
+    const runner = createDialogueRunner({ actions: () => pending });
+    const lines: string[] = [];
+    runner.onLine.add((e) => lines.push(e.text));
+
+    runner.start(actionGraph());
+
+    expect(settled).toBe(false);
+    expect(runner.currentNodeId).toBe('thanks');
+    expect(runner.state).toBe('running');
+    expect(lines).toEqual(['Here you go!']);
+
+    runner.advance();
+    expect(settled).toBe(false);
+    expect(runner.state).toBe('ended');
+
+    resolveHandler();
+    await pending;
+    expect(settled).toBe(true);
+  });
+
   test('action signal fires', () => {
     const signalActions: string[] = [];
     const runner = createDialogueRunner();

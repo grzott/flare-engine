@@ -49,6 +49,21 @@ describe('TweenManager', () => {
     expect(mgr.tweens[0]).toBe(t2);
   });
 
+  it('updateTweens follows a chained tween on later updates', () => {
+    const mgr = createTweenManager();
+    const t1 = tween(0, 100, 1);
+    const t2 = tween(100, 200, 1);
+    chainTween(t1, t2);
+    addTween(mgr, t1);
+    updateTweens(mgr, 1.0);
+    expect(t2.elapsed).toBe(0);
+    updateTweens(mgr, 0.5);
+    expect(t2.value).toBeCloseTo(150);
+    updateTweens(mgr, 0.5);
+    expect(t2.done).toBe(true);
+    expect(mgr.tweens.length).toBe(0);
+  });
+
   it('clears all tweens', () => {
     const mgr = createTweenManager();
     addTween(mgr, tween(0, 100, 1));

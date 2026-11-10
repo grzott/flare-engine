@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { easeInQuad } from '@flare-engine/math';
+import { easeInQuad, linear } from '@flare-engine/math';
 import { chainTween, resetTween, tween, updateTween } from '../src/tween.js';
 
 describe('Tween', () => {
@@ -10,6 +10,10 @@ describe('Tween', () => {
     expect(tw.duration).toBe(1);
     expect(tw.value).toBe(0);
     expect(tw.done).toBe(false);
+  });
+
+  it('defaults easing to the math package linear, by identity', () => {
+    expect(tween(0, 1, 1).easing).toBe(linear);
   });
 
   it('interpolates linearly by default', () => {
@@ -80,6 +84,19 @@ describe('Tween', () => {
     const tw2 = tween(100, 200, 1);
     chainTween(tw1, tw2);
     expect(tw1.next).toBe(tw2);
+  });
+
+  it('updateTween does not follow a chained tween', () => {
+    const tw1 = tween(0, 100, 1);
+    const tw2 = tween(100, 200, 1);
+    chainTween(tw1, tw2);
+    updateTween(tw1, 1.0);
+    expect(tw1.done).toBe(true);
+    // Further time on the finished head never reaches the chained tween.
+    expect(updateTween(tw1, 0.5)).toBe(100);
+    expect(tw2.elapsed).toBe(0);
+    expect(tw2.value).toBe(100);
+    expect(tw2.done).toBe(false);
   });
 
   it('resets a tween', () => {

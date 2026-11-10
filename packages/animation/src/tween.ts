@@ -1,4 +1,4 @@
-import type { EasingFn } from '@flare-engine/math';
+import { type EasingFn, linear } from '@flare-engine/math';
 
 /** Tween state. */
 export interface Tween {
@@ -22,18 +22,13 @@ export interface Tween {
   next: Tween | null;
 }
 
-/** Linear easing fallback. */
-function linearEasing(t: number): number {
-  return t;
-}
-
 /** Create a tween. */
 export function tween(from: number, to: number, duration: number, easing?: EasingFn): Tween {
   return {
     from,
     to,
     duration,
-    easing: easing ?? linearEasing,
+    easing: easing ?? linear,
     elapsed: 0,
     value: from,
     done: false,
@@ -44,7 +39,7 @@ export function tween(from: number, to: number, duration: number, easing?: Easin
 
 /**
  * Update a tween by dt seconds. Returns the current value.
- * When complete, triggers onComplete callback and advances to chained tween.
+ * When complete, triggers onComplete callback.
  */
 export function updateTween(tw: Tween, dt: number): number {
   if (tw.done) return tw.value;
@@ -64,7 +59,10 @@ export function updateTween(tw: Tween, dt: number): number {
   return tw.value;
 }
 
-/** Chain another tween to run after this one completes. Returns the chained tween. */
+/**
+ * Chain another tween to run after this one completes. Returns the chained tween.
+ * Only `updateTweens` (TweenManager) follows the chain; `updateTween` does not.
+ */
 export function chainTween(tw: Tween, next: Tween): Tween {
   tw.next = next;
   return next;

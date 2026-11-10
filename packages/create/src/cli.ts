@@ -1,11 +1,14 @@
 import { Command } from 'commander';
 import { version } from '../package.json';
-import { TEMPLATES } from './manifest.js';
+import type { TemplateId } from './manifest.js';
+import { isTemplateId, TEMPLATES } from './manifest.js';
 import { scaffoldApp } from './scaffold.js';
 
-function parseTemplateArg(value: string): 'blank' | 'topdown' | 'shmup' {
-  if (value !== 'blank' && value !== 'topdown' && value !== 'shmup') {
-    throw new Error(`invalid --template: ${value} (expected blank|topdown|shmup)`);
+const TEMPLATE_IDS = Object.keys(TEMPLATES).join('|');
+
+function parseTemplateArg(value: string): TemplateId {
+  if (!isTemplateId(value)) {
+    throw new Error(`invalid --template: ${value} (expected ${TEMPLATE_IDS})`);
   }
   return value;
 }
@@ -25,7 +28,7 @@ export function buildProgram(): Command {
     .description('Scaffold a new Flare engine app')
     .version(version)
     .argument('<name>', 'directory name / package name for the new app')
-    .option('-t, --template <name>', 'template (blank|topdown|shmup)', parseTemplateArg, 'blank')
+    .option('-t, --template <name>', `template (${TEMPLATE_IDS})`, parseTemplateArg, 'blank')
     .option('-p, --package-manager <pm>', 'package manager (bun|npm|pnpm)', parsePmArg)
     .option('--skip-install', 'skip running install after scaffolding', false)
     .action(async (name: string, opts) => {

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { version } from '../package.json';
 import { buildProgram } from '../src/cli.js';
+import { TEMPLATES } from '../src/manifest.js';
 
 describe('buildProgram', () => {
   test('registers required options', () => {
@@ -23,6 +24,34 @@ describe('buildProgram', () => {
 
   test('version matches package.json', () => {
     expect(buildProgram().version()).toBe(version);
+  });
+});
+
+describe('--template parsing', () => {
+  const ids = Object.keys(TEMPLATES);
+
+  function templateOption() {
+    const option = buildProgram().options.find((o) => o.long === '--template');
+    if (!option?.parseArg) throw new Error('--template option has no parser');
+    return { option, parseArg: option.parseArg };
+  }
+
+  test('accepts every id in TEMPLATES', () => {
+    const { parseArg } = templateOption();
+    for (const id of ids) {
+      expect(parseArg<string | undefined>(id, undefined)).toBe(id);
+    }
+  });
+
+  test('rejection message lists the ids from TEMPLATES', () => {
+    const { parseArg } = templateOption();
+    expect(() => parseArg<string | undefined>('nope', undefined)).toThrow(
+      `invalid --template: nope (expected ${ids.join('|')})`,
+    );
+  });
+
+  test('help text lists the ids from TEMPLATES', () => {
+    expect(templateOption().option.description).toContain(ids.join('|'));
   });
 });
 

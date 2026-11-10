@@ -92,11 +92,13 @@ export function updateTextReveal(
   state._pause = pause;
 
   const charCount = Math.min(Math.floor(cursor), len);
-  state.visibleText = state.fullText.slice(0, charCount);
-
   if (charCount >= len) {
     state.visibleText = state.fullText;
     state.complete = true;
+    return;
+  }
+  if (charCount !== state.visibleText.length) {
+    state.visibleText = state.fullText.slice(0, charCount);
   }
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createCrashPayload } from '../src/crash-payload.js';
+import { createCrashPayload, payloadToError } from '../src/crash-payload.js';
 
 describe('createCrashPayload', () => {
   test('captures Error instance with message, name, and stack', () => {
@@ -47,5 +47,35 @@ describe('createCrashPayload', () => {
     const roundtrip = JSON.parse(JSON.stringify(p));
     expect(roundtrip.message).toBe('x');
     expect(roundtrip.context).toEqual({ a: 1 });
+  });
+});
+
+describe('payloadToError', () => {
+  test('preserves name, message and stack', () => {
+    const stack = 'TypeError: boom\n    at original (game.ts:1:1)';
+    const err = payloadToError({
+      message: 'boom',
+      name: 'TypeError',
+      stack,
+      timestamp: 1,
+      context: {},
+    });
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toBe('boom');
+    expect(err.name).toBe('TypeError');
+    expect(err.stack).toBe(stack);
+  });
+
+  test("a null stack leaves the Error's own", () => {
+    const err = payloadToError({
+      message: 'ouch',
+      name: 'NonError',
+      stack: null,
+      timestamp: 1,
+      context: {},
+    });
+    expect(err.name).toBe('NonError');
+    expect(typeof err.stack).toBe('string');
+    expect(err.stack).toContain('payloadToError');
   });
 });

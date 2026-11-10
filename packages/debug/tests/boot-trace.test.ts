@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { createBootTrace } from '../src/boot-trace.js';
 
 // Replicated inline from apps/pan-tvardowski/scripts/parse-boot-trace.ts
@@ -104,6 +104,25 @@ describe('createBootTrace', () => {
     // Mutation of the returned array must not affect internal state
     (entries as BootEntry[]).length = 0;
     expect(trace.getEntries().length).toBe(3);
+  });
+
+  test('marks read performance.now at call time and report offsets from the first mark', () => {
+    let clock = 100;
+    const nowSpy = spyOn(performance, 'now').mockImplementation(() => clock);
+    try {
+      const trace = createBootTrace();
+      trace.mark('a');
+      clock = 112.5;
+      trace.mark('b');
+      clock = 130;
+      trace.mark('c');
+      expect(trace.getEntries().map((e) => e.t)).toEqual([0, 12.5, 30]);
+      const out = trace.dump();
+      expect(out).toContain('a->b=12.5ms');
+      expect(out).toContain('total=30.0ms');
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 });
 

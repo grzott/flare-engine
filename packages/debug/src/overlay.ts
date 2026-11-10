@@ -48,7 +48,8 @@ export type DebugDrawCommand = DebugRect | DebugCircle | DebugLine;
 /**
  * DebugOverlay — collects debug draw commands for the current frame.
  * Commands are generated based on active overlay flags, then consumed
- * by the renderer.
+ * by the renderer. Command objects are pooled and reused after `clear()`;
+ * copy one to keep it past the frame.
  */
 export class DebugOverlay {
   /** Active overlay flags. */
@@ -62,6 +63,13 @@ export class DebugOverlay {
   /** Queued debug draw commands for the current frame. */
   private _commands: DebugDrawCommand[] = [];
 
+  private _rects: DebugRect[] = [];
+  private _circles: DebugCircle[] = [];
+  private _lines: DebugLine[] = [];
+  private _rectCursor = 0;
+  private _circleCursor = 0;
+  private _lineCursor = 0;
+
   /** Number of queued commands. */
   get commandCount(): number {
     return this._commands.length;
@@ -74,22 +82,60 @@ export class DebugOverlay {
 
   /** Add a debug rectangle. */
   drawRect(x: number, y: number, width: number, height: number, color = '#00ff00'): void {
-    this._commands.push({ type: 'rect', x, y, width, height, color });
+    let cmd = this._rects[this._rectCursor];
+    if (cmd) {
+      cmd.x = x;
+      cmd.y = y;
+      cmd.width = width;
+      cmd.height = height;
+      cmd.color = color;
+    } else {
+      cmd = { type: 'rect', x, y, width, height, color };
+      this._rects.push(cmd);
+    }
+    this._rectCursor += 1;
+    this._commands.push(cmd);
   }
 
   /** Add a debug circle. */
   drawCircle(x: number, y: number, radius: number, color = '#00ff00'): void {
-    this._commands.push({ type: 'circle', x, y, radius, color });
+    let cmd = this._circles[this._circleCursor];
+    if (cmd) {
+      cmd.x = x;
+      cmd.y = y;
+      cmd.radius = radius;
+      cmd.color = color;
+    } else {
+      cmd = { type: 'circle', x, y, radius, color };
+      this._circles.push(cmd);
+    }
+    this._circleCursor += 1;
+    this._commands.push(cmd);
   }
 
   /** Add a debug line. */
   drawLine(x1: number, y1: number, x2: number, y2: number, color = '#ffff00'): void {
-    this._commands.push({ type: 'line', x1, y1, x2, y2, color });
+    let cmd = this._lines[this._lineCursor];
+    if (cmd) {
+      cmd.x1 = x1;
+      cmd.y1 = y1;
+      cmd.x2 = x2;
+      cmd.y2 = y2;
+      cmd.color = color;
+    } else {
+      cmd = { type: 'line', x1, y1, x2, y2, color };
+      this._lines.push(cmd);
+    }
+    this._lineCursor += 1;
+    this._commands.push(cmd);
   }
 
   /** Clear all commands. Call at the start of each frame. */
   clear(): void {
     this._commands.length = 0;
+    this._rectCursor = 0;
+    this._circleCursor = 0;
+    this._lineCursor = 0;
   }
 
   /** Toggle a specific overlay flag. */

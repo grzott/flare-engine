@@ -114,6 +114,74 @@ describe('createFrameBudget', () => {
     expect(fired).toBe(2);
   });
 
+  test('getAvgFps matches a brute-force window average for non-uniform dts across wraps', () => {
+    const ringSize = 8;
+    const h = createFrameBudget({ limits: LIMITS, ringSize, fpsThreshold: 0 });
+    const dts: number[] = [];
+    const expectedFps = (): number => {
+      let sum = 0;
+      for (let i = dts.length - ringSize; i < dts.length; i++) {
+        sum += Math.fround(dts[i] as number);
+      }
+      return ringSize / sum;
+    };
+    let checkedMidRing = 0;
+    let checkedAtWrap = 0;
+    for (let k = 0; k < ringSize * 5 + 3; k++) {
+      const dt = 1 / 120 + ((k * 37) % 11) * 0.0013;
+      dts.push(dt);
+      h.recordFrame(dt);
+      if (dts.length < ringSize) continue;
+      expect(h.getAvgFps()).toBeCloseTo(expectedFps(), 9);
+      if (dts.length % ringSize === 0) checkedAtWrap += 1;
+      else checkedMidRing += 1;
+    }
+    expect(checkedAtWrap).toBe(5);
+    expect(checkedMidRing).toBe(ringSize * 4 + 3 - 4);
+  });
+
+  for (const [label, bad] of [
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+    ['1e30', 1e30],
+  ] as const) {
+    test(`getAvgFps recovers once a ${label} dt has left the window`, () => {
+      const ringSize = 6;
+      const h = createFrameBudget({ limits: LIMITS, ringSize, fpsThreshold: 0 });
+      for (let i = 0; i < ringSize; i++) h.recordFrame(1 / 60);
+      h.recordFrame(bad);
+      for (let i = 0; i < ringSize * 2; i++) h.recordFrame(1 / 60);
+      // The ring stores f32, so a window of 1/60 reads 1 / fround(1/60) = 59.9999969, not 60.
+      expect(h.getAvgFps()).toBeCloseTo(1 / Math.fround(1 / 60), 6);
+    });
+  }
+
+  test('getAvgFps does not drift over 1e6 frames with the default ring', () => {
+    const ringSize = 180;
+    const frames = 1_000_000;
+    const h = createFrameBudget({ limits: LIMITS, fpsThreshold: 0 });
+    for (let k = 0; k < frames; k++) {
+      h.recordFrame(1 / 60 + (k % 7) * 1e-4);
+    }
+    let sum = 0;
+    for (let k = frames - ringSize; k < frames; k++) {
+      sum += Math.fround(1 / 60 + (k % 7) * 1e-4);
+    }
+    expect(h.getAvgFps()).toBeCloseTo(ringSize / sum, 9);
+  });
+
+  test('resetFpsRing discards the old window so a refill reads only new frames', () => {
+    const ringSize = 5;
+    const h = createFrameBudget({ limits: LIMITS, ringSize, fpsThreshold: 0 });
+    for (let i = 0; i < ringSize; i++) h.recordFrame(1 / 60);
+    expect(h.getAvgFps()).toBeCloseTo(60, 3);
+    h.resetFpsRing();
+    for (let i = 0; i < ringSize - 1; i++) h.recordFrame(1 / 30);
+    expect(h.getAvgFps()).toBe(0);
+    h.recordFrame(1 / 30);
+    expect(h.getAvgFps()).toBeCloseTo(30, 3);
+  });
+
   test('recordCounters copies snapshot and warns on limit breach when debug=true', () => {
     const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const h = createFrameBudget({ limits: LIMITS, debug: true });

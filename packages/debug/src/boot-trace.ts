@@ -1,3 +1,5 @@
+import { nowMs } from './now.js';
+
 export type BootEntry = {
   readonly name: string;
   readonly t: number;
@@ -9,13 +11,6 @@ export type BootTraceHandle = {
   reset(): void;
   getEntries(): readonly BootEntry[];
 };
-
-function nowMs(): number {
-  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-    return performance.now();
-  }
-  return Date.now();
-}
 
 export function createBootTrace(label = 'boot-trace'): BootTraceHandle {
   const entries: BootEntry[] = [];

@@ -6,7 +6,7 @@
  * treats a missing catalog as "all free".
  */
 
-import type { ProductId } from './provider.js';
+import type { Product, ProductId } from './provider.js';
 
 export type EntitlementKey = string;
 
@@ -17,8 +17,10 @@ export interface CatalogEntry {
    * may unlock multiple entitlements (e.g., season pass).
    */
   readonly grants: readonly EntitlementKey[];
+  // Derived from `Product.type` rather than a named alias: an alias both interfaces
+  // mention would have to be exported from the entry, i.e. a new public symbol.
   /** Product type — hint for UI rendering; not used for entitlement logic. */
-  readonly type?: 'consumable' | 'non-consumable' | 'subscription';
+  readonly type?: NonNullable<Product['type']>;
   /** Optional free-form label (localization key or display string). */
   readonly label?: string;
 }
@@ -36,11 +38,7 @@ export function getGrantsForProduct(
   catalog: ProductCatalog,
   productId: ProductId,
 ): readonly EntitlementKey[] {
-  for (let i = 0; i < catalog.entries.length; i++) {
-    const e = catalog.entries[i];
-    if (e && e.productId === productId) return e.grants;
-  }
-  return EMPTY;
+  return getCatalogEntry(catalog, productId)?.grants ?? EMPTY;
 }
 
 /** Return the catalog entry for a product, or `undefined` if unknown. */

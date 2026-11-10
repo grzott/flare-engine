@@ -33,6 +33,20 @@ describe('ProductCatalog', () => {
     expect(getGrantsForProduct(catalog, 'nonexistent')).toEqual([]);
   });
 
+  test('getGrantsForProduct returns the entry grants array by identity', () => {
+    for (const entry of catalog.entries) {
+      expect(getGrantsForProduct(catalog, entry.productId)).toBe(entry.grants);
+    }
+  });
+
+  test('getGrantsForProduct returns one shared frozen empty array for unknown products', () => {
+    const a = getGrantsForProduct(catalog, 'nonexistent');
+    const b = getGrantsForProduct(catalog, 'also-missing');
+    expect(a).toHaveLength(0);
+    expect(Object.isFrozen(a)).toBe(true);
+    expect(b).toBe(a);
+  });
+
   test('getCatalogEntry returns the entry or undefined', () => {
     expect(getCatalogEntry(catalog, 'game.full')?.type).toBe('non-consumable');
     expect(getCatalogEntry(catalog, 'missing')).toBeUndefined();

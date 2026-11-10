@@ -1374,3 +1374,86 @@ describe('SceneManager — superseded go()', () => {
     expect(log.filter((e) => e === 'a:destroy')).toHaveLength(1);
   });
 });
+
+describe('SceneManager — stack teardown sequence', () => {
+  async function stackAThenB(log: string[]): Promise<SceneManager> {
+    const mgr = new SceneManager();
+    mgr.register('a', createTestScene('a', log));
+    mgr.register('b', createTestScene('b', log));
+    mgr.register('c', createTestScene('c', log));
+    await mgr.go('a');
+    await mgr.push('b');
+    log.length = 0;
+    return mgr;
+  }
+
+  it('instant go() exits and destroys each stacked scene once, top first', async () => {
+    const log: string[] = [];
+    const mgr = await stackAThenB(log);
+    await mgr.go('c');
+    expect(log).toEqual([
+      'b:exit',
+      'b:destroy',
+      'a:exit',
+      'a:destroy',
+      'c:preload',
+      'c:init',
+      'c:enter',
+    ]);
+    expect(mgr.stackSize).toBe(1);
+    expect(mgr.current?.name).toBe('c');
+  });
+
+  it('pop() exits and destroys only the top scene, once', async () => {
+    const log: string[] = [];
+    const mgr = await stackAThenB(log);
+    mgr.pop();
+    expect(log).toEqual(['b:exit', 'b:destroy', 'a:enter']);
+    expect(mgr.stackSize).toBe(1);
+    expect(mgr.current?.name).toBe('a');
+  });
+
+  it('destroy() exits and destroys each stacked scene once, top first', async () => {
+    const log: string[] = [];
+    const mgr = await stackAThenB(log);
+    mgr.destroy();
+    expect(log).toEqual(['b:exit', 'b:destroy', 'a:exit', 'a:destroy']);
+    expect(mgr.stackSize).toBe(0);
+
+    // Nothing is left to tear down a second time.
+    log.length = 0;
+    mgr.destroy();
+    expect(log).toEqual([]);
+  });
+
+  it('faded go() exits and destroys each stacked scene once, top first, when the out phase ends', async () => {
+    const log: string[] = [];
+    const mgr = await stackAThenB(log);
+    mgr.setTransition(fadeTransition(1));
+    void mgr.go('c');
+    expect(log).toEqual(['c:preload']);
+
+    mgr.update(0.5); // mid 'out' — the old stack is still live
+    expect(log).toEqual(['c:preload', 'b:update:0.5', 'b:draw']);
+
+    log.length = 0;
+    mgr.update(0.5); // 'out' done → switch to c, then the tick drives c
+    expect(log).toEqual([
+      'b:exit',
+      'b:destroy',
+      'a:exit',
+      'a:destroy',
+      'c:init',
+      'c:enter',
+      'c:update:0.5',
+      'c:draw',
+    ]);
+
+    log.length = 0;
+    mgr.update(1.0); // 'in' done
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.stackSize).toBe(1);
+    expect(mgr.current?.name).toBe('c');
+    expect(log).toEqual(['c:update:1', 'c:draw']);
+  });
+});

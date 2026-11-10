@@ -131,7 +131,7 @@ export class SceneManager {
       this._discardPending();
       this._transitionState = null;
       // Instant transition — destroy first so _getOrCreate builds fresh.
-      this._exitAndDestroyCurrent();
+      this._teardownStack();
       const scene = this._getOrCreate(name)!;
       await this._activateScene(scene, data);
     }
@@ -191,14 +191,7 @@ export class SceneManager {
   /** Destroy all scenes and clear state. */
   destroy(): void {
     this._discardPending();
-    for (let i = this._stack.length - 1; i >= 0; i--) {
-      const scene = this._stack[i]!;
-      scene.onExit?.();
-      scene.onDestroy?.();
-    }
-    this._stack.length = 0;
-    this._overlay.length = 0;
-    this._destroyKept();
+    this._teardownStack();
     this._scenes.clear();
     this._initialized.clear();
     this._transitionState = null;
@@ -235,25 +228,14 @@ export class SceneManager {
   }
 
   private async _activateScene(scene: Scene, data?: unknown): Promise<void> {
-    // Destroy all stacked scenes
-    for (let i = this._stack.length - 1; i >= 0; i--) {
-      const s = this._stack[i]!;
-      s.onExit?.();
-      s.onDestroy?.();
-      this._scenes.delete(s.name);
-      this._initialized.delete(s.name);
-    }
-    this._stack.length = 0;
-    this._overlay.length = 0;
-    this._destroyKept();
-
     await this._initIfNeeded(scene);
     this._stack.push(scene);
     this._overlay.push(false);
     scene.onEnter?.(data);
   }
 
-  private _exitAndDestroyCurrent(): void {
+  /** Exit and destroy every stacked scene, top first, then empty the stack and destroy the kept scenes. */
+  private _teardownStack(): void {
     for (let i = this._stack.length - 1; i >= 0; i--) {
       const s = this._stack[i]!;
       s.onExit?.();
@@ -316,16 +298,7 @@ export class SceneManager {
     this._pendingData = undefined;
 
     if (pending) {
-      for (let i = this._stack.length - 1; i >= 0; i--) {
-        const s = this._stack[i]!;
-        s.onExit?.();
-        s.onDestroy?.();
-        this._scenes.delete(s.name);
-        this._initialized.delete(s.name);
-      }
-      this._stack.length = 0;
-      this._overlay.length = 0;
-      this._destroyKept();
+      this._teardownStack();
 
       // Preload already ran in go(); call onInit then enter.
       this._scenes.set(pending.name, pending);

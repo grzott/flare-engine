@@ -112,4 +112,32 @@ describe('resolveTierIndex', () => {
       }
     }
   });
+
+  it('resolveTier is the tier at resolveTierIndex across duplicate-at entries', () => {
+    const entries = [
+      { at: 20, tier: 't0' },
+      { at: 5, tier: 't1' },
+      { at: 20, tier: 't2' },
+      { at: -3, tier: 't3' },
+      { at: 5, tier: 't4' },
+      { at: 12, tier: 't5' },
+      { at: -3, tier: 't6' },
+      { at: 20, tier: 't7' },
+      { at: 5, tier: 't8' },
+    ];
+    // Last entry per `at` wins: -3 → 6, 5 → 8, 12 → 5, 20 → 7.
+    const wantIdx = (tally: number): number =>
+      tally >= 20 ? 7 : tally >= 12 ? 5 : tally >= 5 ? 8 : tally >= -3 ? 6 : -1;
+
+    for (let tally = -6; tally <= 23; tally++) {
+      const idx = resolveTierIndex(entries, tally);
+      const tier = resolveTier(entries, tally);
+      expect(idx).toBe(wantIdx(tally));
+      if (idx === -1) {
+        expect(tier).toBeNull();
+      } else {
+        expect(tier).toBe(entries[idx]?.tier ?? null);
+      }
+    }
+  });
 });

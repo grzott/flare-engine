@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { StorageAdapter } from '../src/adapter.js';
 import { createMemoryAdapter } from '../src/memory-adapter.js';
 import type { Migration } from '../src/migrations.js';
 import { s } from '../src/schema.js';
@@ -79,6 +80,23 @@ describe('createStorage — slots', () => {
     await storage.saveSlot('two', { name: '2', hp: 2 });
     const slots = await storage.listSlots();
     expect(slots.sort()).toEqual(['one', 'two']);
+  });
+
+  test('saveSlot sets only the slot key', async () => {
+    const inner = createMemoryAdapter();
+    const setKeys: string[] = [];
+    const adapter: StorageAdapter = {
+      ...inner,
+      set(key, value) {
+        setKeys.push(key);
+        return inner.set(key, value);
+      },
+    };
+    const storage = createStorage({ adapter, schema: playerSchema, version: 1 });
+    await storage.saveSlot('auto', { name: 'hero', hp: 10 });
+    await storage.saveSlot('auto', { name: 'hero', hp: 9 }, { day: 2 });
+    expect(setKeys).toEqual(['slot:auto', 'slot:auto']);
+    expect(await adapter.keys()).toEqual(['slot:auto']);
   });
 });
 

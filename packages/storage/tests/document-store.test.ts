@@ -309,3 +309,55 @@ describe('createDocumentStore — exportJSON / importJSON', () => {
     expect(await store2.load()).toEqual(defaultDoc());
   });
 });
+
+describe('createDocumentStore — writes only the document key', () => {
+  function recordingAdapter(): { adapter: StorageAdapter; setKeys: string[] } {
+    const inner = createMemoryAdapter();
+    const setKeys: string[] = [];
+    const adapter: StorageAdapter = {
+      ...inner,
+      set(key, value) {
+        setKeys.push(key);
+        return inner.set(key, value);
+      },
+    };
+    return { adapter, setKeys };
+  }
+
+  test('first-run load() sets only the document key', async () => {
+    const { adapter, setKeys } = recordingAdapter();
+    await makeStore(adapter).load();
+    expect(setKeys).toEqual(['test:doc']);
+    expect(await adapter.keys()).toEqual(['test:doc']);
+  });
+
+  test('load() over a malformed envelope sets only the document key', async () => {
+    const { adapter, setKeys } = recordingAdapter();
+    await adapter.set('test:doc', 'not-valid-json{{{');
+    setKeys.length = 0;
+
+    await makeStore(adapter).load();
+    expect(setKeys).toEqual(['test:doc']);
+    expect(await adapter.keys()).toEqual(['test:doc']);
+  });
+
+  test('save() sets only the document key', async () => {
+    const { adapter, setKeys } = recordingAdapter();
+    const store = makeStore(adapter);
+    await store.load();
+    setKeys.length = 0;
+
+    await store.save({ name: 'saved', count: 7, active: true });
+    expect(setKeys).toEqual(['test:doc']);
+    expect(await adapter.keys()).toEqual(['test:doc']);
+  });
+
+  test('importJSON() sets only the document key', async () => {
+    const { adapter, setKeys } = recordingAdapter();
+    const json = JSON.stringify({ version: 1, data: { name: 'in', count: 1, active: true } });
+
+    await makeStore(adapter).importJSON(json);
+    expect(setKeys).toEqual(['test:doc']);
+    expect(await adapter.keys()).toEqual(['test:doc']);
+  });
+});

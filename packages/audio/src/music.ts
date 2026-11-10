@@ -42,27 +42,8 @@ export class Music {
 
     this.stopInternal();
 
-    const source = this.ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = loop;
-
-    const gain = this.ctx.createGain();
-    gain.gain.value = 1;
-    source.connect(gain);
-    gain.connect(this.output);
-
-    source.start();
-    this.currentSource = source;
-    this.currentGain = gain;
-    this.currentName = name;
-
-    setSourceEndHandler(source, () => {
-      if (this.currentSource === source) {
-        this.currentSource = null;
-        this.currentGain = null;
-        this.currentName = null;
-      }
-      gain.disconnect();
+    this.startTrack(this.ctx, this.output, name, buffer, loop, (g) => {
+      g.gain.value = 1;
     });
   }
 
@@ -97,15 +78,28 @@ export class Music {
     }
 
     // Start new track fading in
-    const source = this.ctx.createBufferSource();
+    this.startTrack(this.ctx, this.output, name, buffer, loop, (g) => {
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(1, now + duration);
+    });
+  }
+
+  private startTrack(
+    ctx: AudioContextLike,
+    output: GainNodeLike,
+    name: string,
+    buffer: AudioBufferLike,
+    loop: boolean,
+    prime: (gain: GainNodeLike) => void,
+  ): void {
+    const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.loop = loop;
 
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(1, now + duration);
+    const gain = ctx.createGain();
+    prime(gain);
     source.connect(gain);
-    gain.connect(this.output);
+    gain.connect(output);
 
     source.start();
     this.currentSource = source;

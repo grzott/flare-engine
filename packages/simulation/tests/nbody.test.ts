@@ -1,6 +1,109 @@
 import { describe, expect, test } from 'bun:test';
 import { createNBodySystem } from '../src/integrate/nbody.js';
 
+// Verbatim copy of the integrator `step()` carried before it delegated to `verletStep` (its own
+// drift / computeAccel / half-kick loops). Frozen here as the golden reference: do not "tidy" it.
+function createReferenceNBody(cap: number) {
+  const px = new Float32Array(cap);
+  const py = new Float32Array(cap);
+  const vx = new Float32Array(cap);
+  const vy = new Float32Array(cap);
+  const mass = new Float32Array(cap);
+  const ax = new Float32Array(cap);
+  const ay = new Float32Array(cap);
+  const axOld = new Float32Array(cap);
+  const ayOld = new Float32Array(cap);
+  let count = 0;
+  let primed = false;
+
+  const computeAccel = (g: number, soft: number, gr: number, rs: number): void => {
+    const soft2 = soft * soft;
+    for (let i = 0; i < count; i++) {
+      ax[i] = 0;
+      ay[i] = 0;
+    }
+    for (let i = 0; i < count; i++) {
+      const xi = px[i] ?? 0;
+      const yi = py[i] ?? 0;
+      const mi = mass[i] ?? 0;
+      for (let j = i + 1; j < count; j++) {
+        const dx = (px[j] ?? 0) - xi;
+        const dy = (py[j] ?? 0) - yi;
+        const d2 = dx * dx + dy * dy + soft2;
+        const invD = 1 / Math.sqrt(d2);
+        const invD3 = g * invD * invD * invD;
+        const mj = mass[j] ?? 0;
+        ax[i] = (ax[i] ?? 0) + dx * invD3 * mj;
+        ay[i] = (ay[i] ?? 0) + dy * invD3 * mj;
+        ax[j] = (ax[j] ?? 0) - dx * invD3 * mi;
+        ay[j] = (ay[j] ?? 0) - dy * invD3 * mi;
+      }
+    }
+    if (gr > 0 && count > 1) {
+      const cxp = px[0] ?? 0;
+      const cyp = py[0] ?? 0;
+      const beta = gr * g * (mass[0] ?? 0) * rs * rs;
+      for (let i = 1; i < count; i++) {
+        const dx = (px[i] ?? 0) - cxp;
+        const dy = (py[i] ?? 0) - cyp;
+        const r2 = dx * dx + dy * dy + soft2;
+        const invr2 = 1 / r2;
+        const k = beta * invr2 * invr2 * Math.sqrt(invr2);
+        ax[i] = (ax[i] ?? 0) - dx * k;
+        ay[i] = (ay[i] ?? 0) - dy * k;
+      }
+    }
+  };
+
+  return {
+    px,
+    py,
+    vx,
+    vy,
+    add(x: number, y: number, vx0: number, vy0: number, m: number): void {
+      const i = count++;
+      px[i] = x;
+      py[i] = y;
+      vx[i] = vx0;
+      vy[i] = vy0;
+      mass[i] = m;
+      primed = false;
+    },
+    step(dt: number, g: number, soft: number, gr = 0, rs = 0): void {
+      if (count === 0 || dt <= 0) return;
+      if (!primed) {
+        computeAccel(g, soft, gr, rs);
+        primed = true;
+      }
+      for (let i = 0; i < count; i++) {
+        const axi = ax[i] ?? 0;
+        const ayi = ay[i] ?? 0;
+        px[i] = (px[i] ?? 0) + (vx[i] ?? 0) * dt + 0.5 * axi * dt * dt;
+        py[i] = (py[i] ?? 0) + (vy[i] ?? 0) * dt + 0.5 * ayi * dt * dt;
+        axOld[i] = axi;
+        ayOld[i] = ayi;
+      }
+      computeAccel(g, soft, gr, rs);
+      for (let i = 0; i < count; i++) {
+        vx[i] = (vx[i] ?? 0) + 0.5 * ((axOld[i] ?? 0) + (ax[i] ?? 0)) * dt;
+        vy[i] = (vy[i] ?? 0) + 0.5 * ((ayOld[i] ?? 0) + (ay[i] ?? 0)) * dt;
+      }
+    },
+  };
+}
+
+// mulberry32 — small deterministic PRNG so the golden system is the same on every run.
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 describe('NBodySystem', () => {
   test('add respects capacity and reports indices', () => {
     const nb = createNBodySystem(2);
@@ -187,4 +290,50 @@ describe('NBodySystem', () => {
     expect(Number.isFinite(nb.px[1] ?? Number.NaN)).toBe(true);
     expect(Number.isFinite(nb.vx[1] ?? Number.NaN)).toBe(true);
   });
+
+  // Golden: step() delegates to verletStep; trajectories must match the pre-delegation integrator
+  // bit for bit (Object.is, so -0 vs +0 and NaN are told apart too).
+  for (const [label, gr, rs] of [
+    ['Newtonian', 0, 0],
+    ['GR precession', 0.3, 12],
+  ] as const) {
+    test(`golden: seeded 8-body, 200 steps, byte-identical to the reference (${label})`, () => {
+      const N = 8;
+      const STEPS = 200;
+      const G = 1;
+      const soft = 3;
+      const rand = mulberry32(0x5eed84);
+      const nb = createNBodySystem(N);
+      const ref = createReferenceNBody(N);
+      for (let i = 0; i < N; i++) {
+        const x = (rand() - 0.5) * 400;
+        const y = (rand() - 0.5) * 400;
+        const vx = (rand() - 0.5) * 30;
+        const vy = (rand() - 0.5) * 30;
+        const m = i === 0 ? 5000 : 1 + rand() * 50;
+        nb.add(x, y, vx, vy, m);
+        ref.add(x, y, vx, vy, m);
+      }
+
+      const x0 = nb.px[1];
+      for (let s = 0; s < STEPS; s++) {
+        // Vary dt so the comparison is not limited to one step size.
+        const dt = s % 3 === 0 ? 0.01 : 0.004;
+        nb.step(dt, G, soft, gr, rs);
+        ref.step(dt, G, soft, gr, rs);
+        for (let i = 0; i < N; i++) {
+          if (
+            !Object.is(nb.px[i], ref.px[i]) ||
+            !Object.is(nb.py[i], ref.py[i]) ||
+            !Object.is(nb.vx[i], ref.vx[i]) ||
+            !Object.is(nb.vy[i], ref.vy[i])
+          ) {
+            throw new Error(`trajectory diverged from the reference at step ${s}, body ${i}`);
+          }
+        }
+      }
+      expect(Object.is(nb.px[1], x0)).toBe(false); // the system evolved — not a vacuous match
+      expect(Number.isFinite(nb.px[N - 1] ?? Number.NaN)).toBe(true);
+    });
+  }
 });

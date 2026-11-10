@@ -15,6 +15,8 @@
 // faster than the centrifugal barrier ⇒ it can't cancel the barrier and plunge an orbit. The
 // precession produces a slowly-rotating (rosette) orbit; the underlying Newtonian potential is unchanged.
 
+import { type AccelFn, verletStep } from './verlet.js';
+
 export interface ClosestPair {
   i: number;
   j: number;
@@ -114,6 +116,14 @@ export function createNBodySystem(capacity: number): NBodySystem {
     }
   };
 
+  // step()'s force parameters, handed to `accel` through these instead of a per-step closure.
+  let stepG = 0;
+  let stepSoft = 0;
+  let stepGr = 0;
+  let stepRs = 0;
+  // Created once per system. verletStep passes the same arrays computeAccel already closes over.
+  const accel: AccelFn = () => computeAccel(stepG, stepSoft, stepGr, stepRs);
+
   return {
     capacity: cap,
     get count() {
@@ -154,21 +164,12 @@ export function createNBodySystem(capacity: number): NBodySystem {
         computeAccel(g, soft, gr, rs);
         primed = true;
       }
-      // Drift + half kick (using a(t)), saving a(t) for the velocity update.
-      for (let i = 0; i < count; i++) {
-        const axi = ax[i] ?? 0;
-        const ayi = ay[i] ?? 0;
-        px[i] = (px[i] ?? 0) + (vx[i] ?? 0) * dt + 0.5 * axi * dt * dt;
-        py[i] = (py[i] ?? 0) + (vy[i] ?? 0) * dt + 0.5 * ayi * dt * dt;
-        axOld[i] = axi;
-        ayOld[i] = ayi;
-      }
-      // a(t+dt) from the new positions, then the second half kick.
-      computeAccel(g, soft, gr, rs);
-      for (let i = 0; i < count; i++) {
-        vx[i] = (vx[i] ?? 0) + 0.5 * ((axOld[i] ?? 0) + (ax[i] ?? 0)) * dt;
-        vy[i] = (vy[i] ?? 0) + 0.5 * ((ayOld[i] ?? 0) + (ay[i] ?? 0)) * dt;
-      }
+      stepG = g;
+      stepSoft = soft;
+      stepGr = gr;
+      stepRs = rs;
+      // ax/ay hold a(t) on entry and a(t+dt) on return, so the next step needs no re-prime.
+      verletStep(count, px, py, vx, vy, dt, accel, ax, ay, axOld, ayOld);
     },
 
     totalEnergy(g, soft, gr = 0, rs = 0) {

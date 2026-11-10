@@ -8,3 +8,5 @@ image; an explicit `url` still wins. A screenshot-only payload no longer trips R
 message" check, so it shares the image on iOS, but on Android, where RN's `Share` forwards only
 `title` and `message`, it now opens an empty sheet that reports `dispatched: true` instead of
 rejecting. The docs say so, and the README example puts the link in `message`.
+
+<!-- symbols-ok: Share -->

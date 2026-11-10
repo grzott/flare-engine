@@ -1,3 +1,5 @@
+import { nowMs } from './now.js';
+
 export type PerfSectionStats = {
   readonly name: string;
   readonly count: number;
@@ -55,13 +57,6 @@ export type PerfRecorderOpts = {
   label?: string;
   ringSize?: number;
 };
-
-function nowMs(): number {
-  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-    return performance.now();
-  }
-  return Date.now();
-}
 
 function percentile(sorted: Float32Array, n: number, p: number): number {
   if (n === 0) return 0;

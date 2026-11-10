@@ -31,12 +31,25 @@ export function createFrameBudget(opts: FrameBudgetOpts): FrameBudgetHandle {
 
   let head = 0;
   let filled = 0;
+  let sum = 0;
   let watchdogFired = false;
 
   function recordFrame(dtSec: number): void {
+    const old = ring[head] as number;
     ring[head] = dtSec;
+    // Add the f32 value the ring actually stored, so the later subtraction removes that same value.
+    sum += (ring[head] as number) - old;
     head = (head + 1) % ringSize;
     if (filled < ringSize) filled += 1;
+
+    // Re-sum once per revolution: bounds rounding drift and flushes a non-finite or huge dt
+    // that would otherwise stay in the running sum after leaving the ring.
+    if (head === 0) {
+      sum = 0;
+      for (let i = 0; i < ringSize; i++) {
+        sum += ring[i] as number;
+      }
+    }
 
     if (filled === ringSize && !watchdogFired) {
       if (getAvgFps() < fpsThreshold) {
@@ -63,16 +76,12 @@ export function createFrameBudget(opts: FrameBudgetOpts): FrameBudgetHandle {
 
   function getAvgFps(): number {
     if (filled < ringSize) return 0;
-    let sum = 0;
-    for (let i = 0; i < ringSize; i++) {
-      sum += ring[i] as number;
-    }
-    const avgDt = sum / ringSize;
-    return avgDt > 0 ? 1 / avgDt : 0;
+    return sum > 0 ? ringSize / sum : 0;
   }
 
   function resetFpsRing(): void {
     ring.fill(0);
+    sum = 0;
     head = 0;
     filled = 0;
     watchdogFired = false;

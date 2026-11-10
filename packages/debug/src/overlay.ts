@@ -45,11 +45,22 @@ export interface DebugLine {
 /** Union of debug draw primitive commands. */
 export type DebugDrawCommand = DebugRect | DebugCircle | DebugLine;
 
+/** Options for {@link DebugOverlay}. */
+export interface DebugOverlayOptions {
+  /**
+   * When true, `drawRect` / `drawCircle` / `drawLine` reuse pooled command
+   * objects, so no command object is created per call once the pools are warm.
+   * A reused object changes after `clear()`, so copy a command to keep it past
+   * the frame. Default `false`: every call creates a fresh object.
+   */
+  reuseCommands?: boolean;
+}
+
 /**
  * DebugOverlay — collects debug draw commands for the current frame.
  * Commands are generated based on active overlay flags, then consumed
- * by the renderer. Command objects are pooled and reused after `clear()`;
- * copy one to keep it past the frame.
+ * by the renderer. Commands are fresh objects by default and pooled with
+ * `reuseCommands` (see {@link DebugOverlayOptions}).
  */
 export class DebugOverlay {
   /** Active overlay flags. */
@@ -69,6 +80,11 @@ export class DebugOverlay {
   private _rectCursor = 0;
   private _circleCursor = 0;
   private _lineCursor = 0;
+  private readonly _reuseCommands: boolean;
+
+  constructor(options: DebugOverlayOptions = {}) {
+    this._reuseCommands = options.reuseCommands === true;
+  }
 
   /** Number of queued commands. */
   get commandCount(): number {
@@ -82,6 +98,10 @@ export class DebugOverlay {
 
   /** Add a debug rectangle. */
   drawRect(x: number, y: number, width: number, height: number, color = '#00ff00'): void {
+    if (!this._reuseCommands) {
+      this._commands.push({ type: 'rect', x, y, width, height, color });
+      return;
+    }
     let cmd = this._rects[this._rectCursor];
     if (cmd) {
       cmd.x = x;
@@ -99,6 +119,10 @@ export class DebugOverlay {
 
   /** Add a debug circle. */
   drawCircle(x: number, y: number, radius: number, color = '#00ff00'): void {
+    if (!this._reuseCommands) {
+      this._commands.push({ type: 'circle', x, y, radius, color });
+      return;
+    }
     let cmd = this._circles[this._circleCursor];
     if (cmd) {
       cmd.x = x;
@@ -115,6 +139,10 @@ export class DebugOverlay {
 
   /** Add a debug line. */
   drawLine(x1: number, y1: number, x2: number, y2: number, color = '#ffff00'): void {
+    if (!this._reuseCommands) {
+      this._commands.push({ type: 'line', x1, y1, x2, y2, color });
+      return;
+    }
     let cmd = this._lines[this._lineCursor];
     if (cmd) {
       cmd.x1 = x1;

@@ -80,7 +80,7 @@ describe('DebugOverlay', () => {
   });
 
   test('reuses the slot-0 command object across frames with the new values', () => {
-    const overlay = new DebugOverlay();
+    const overlay = new DebugOverlay({ reuseCommands: true });
     overlay.drawRect(1, 2, 3, 4, '#111111');
     const first = overlay.commands[0];
     overlay.clear();
@@ -91,7 +91,7 @@ describe('DebugOverlay', () => {
   });
 
   test('a shorter frame after a longer one exposes only its own commands', () => {
-    const overlay = new DebugOverlay();
+    const overlay = new DebugOverlay({ reuseCommands: true });
     overlay.drawRect(1, 1, 1, 1, '#aaaaaa');
     overlay.drawRect(2, 2, 2, 2, '#bbbbbb');
     overlay.drawRect(3, 3, 3, 3, '#cccccc');
@@ -110,7 +110,7 @@ describe('DebugOverlay', () => {
   });
 
   test('preserves mixed draw order and reuses same-type slots in the next frame', () => {
-    const overlay = new DebugOverlay();
+    const overlay = new DebugOverlay({ reuseCommands: true });
     overlay.drawRect(1, 2, 3, 4, '#000001');
     overlay.drawLine(5, 6, 7, 8, '#000002');
     overlay.drawCircle(9, 10, 11, '#000003');
@@ -192,7 +192,7 @@ describe('DebugOverlay', () => {
   });
 
   test('a frame larger than any earlier frame records every command', () => {
-    const overlay = new DebugOverlay();
+    const overlay = new DebugOverlay({ reuseCommands: true });
     overlay.drawRect(0, 0, 1, 1);
     overlay.drawCircle(0, 0, 1);
     overlay.drawLine(0, 0, 1, 1);
@@ -230,6 +230,77 @@ describe('DebugOverlay', () => {
       });
     }
     expect(new Set(overlay.commands).size).toBe(15);
+  });
+
+  test('creates a fresh command object per call by default, across a clear', () => {
+    const overlay = new DebugOverlay();
+    overlay.drawRect(1, 2, 3, 4, '#111111');
+    overlay.drawCircle(9, 10, 11, '#333333');
+    overlay.drawLine(12, 13, 14, 15, '#555555');
+    const firstRect = overlay.commands[0];
+    const firstCircle = overlay.commands[1];
+    const firstLine = overlay.commands[2];
+    overlay.clear();
+    overlay.drawRect(5, 6, 7, 8, '#222222');
+    overlay.drawCircle(19, 20, 21, '#444444');
+    overlay.drawLine(22, 23, 24, 25, '#666666');
+
+    expect(overlay.commands[0]).not.toBe(firstRect);
+    expect(overlay.commands[1]).not.toBe(firstCircle);
+    expect(overlay.commands[2]).not.toBe(firstLine);
+    expect(firstRect).toEqual({ type: 'rect', x: 1, y: 2, width: 3, height: 4, color: '#111111' });
+    expect(firstCircle).toEqual({ type: 'circle', x: 9, y: 10, radius: 11, color: '#333333' });
+    expect(firstLine).toEqual({ type: 'line', x1: 12, y1: 13, x2: 14, y2: 15, color: '#555555' });
+    expect(overlay.commands[0]).toEqual({
+      type: 'rect',
+      x: 5,
+      y: 6,
+      width: 7,
+      height: 8,
+      color: '#222222',
+    });
+    expect(overlay.commands[1]).toEqual({
+      type: 'circle',
+      x: 19,
+      y: 20,
+      radius: 21,
+      color: '#444444',
+    });
+    expect(overlay.commands[2]).toEqual({
+      type: 'line',
+      x1: 22,
+      y1: 23,
+      x2: 24,
+      y2: 25,
+      color: '#666666',
+    });
+  });
+
+  test('reuseCommands: false behaves like the default', () => {
+    const overlay = new DebugOverlay({ reuseCommands: false });
+    overlay.drawRect(1, 2, 3, 4, '#111111');
+    overlay.drawCircle(9, 10, 11, '#333333');
+    overlay.drawLine(12, 13, 14, 15, '#555555');
+    const frame1 = overlay.commands.slice();
+    overlay.clear();
+    overlay.drawRect(5, 6, 7, 8, '#222222');
+    overlay.drawCircle(19, 20, 21, '#444444');
+    overlay.drawLine(22, 23, 24, 25, '#666666');
+
+    for (let i = 0; i < 3; i++) {
+      expect(overlay.commands[i]).not.toBe(frame1[i]);
+    }
+    expect(frame1[0]).toEqual({ type: 'rect', x: 1, y: 2, width: 3, height: 4, color: '#111111' });
+    expect(frame1[1]).toEqual({ type: 'circle', x: 9, y: 10, radius: 11, color: '#333333' });
+    expect(frame1[2]).toEqual({ type: 'line', x1: 12, y1: 13, x2: 14, y2: 15, color: '#555555' });
+    expect(overlay.commands[0]).toEqual({
+      type: 'rect',
+      x: 5,
+      y: 6,
+      width: 7,
+      height: 8,
+      color: '#222222',
+    });
   });
 
   test('toggleFlag flips a flag', () => {

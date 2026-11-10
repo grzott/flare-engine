@@ -12,6 +12,7 @@ export {
   type DebugDrawCommand,
   type DebugLine,
   DebugOverlay,
+  type DebugOverlayOptions,
   type DebugRect,
   type OverlayFlags,
 } from './overlay.js';

@@ -1,8 +1,9 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import type { CrashPayload } from '../src/crash-payload.js';
 import type { ErrorUtilsLike, GlobalErrorTarget } from '../src/global-capture.js';
-import { createClientTransport, installGlobalErrorCapture } from '../src/global-capture.js';
+import { installGlobalErrorCapture } from '../src/global-capture.js';
 import type { CrashTransport } from '../src/transport.js';
+import { createClientTransport } from '../src/transports/client.js';
 
 /**
  * OSS-M7. Everything here runs against hand-built fake globals — no `window`,

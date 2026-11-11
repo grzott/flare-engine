@@ -1,4 +1,4 @@
-import type { CrashPayload } from '../crash-payload.js';
+import { type CrashPayload, payloadToError } from '../crash-payload.js';
 import type { CrashTransport } from '../transport.js';
 import { createNoopTransport } from '../transport.js';
 
@@ -130,9 +130,7 @@ export function createSentryTransport(opts: SentryTransportOptions): CrashTransp
       }
 
       try {
-        const err = Object.assign(new Error(payload.message), { name: payload.name });
-        if (payload.stack !== null) err.stack = payload.stack;
-        mod.captureException(err, {
+        mod.captureException(payloadToError(payload), {
           extra: { ...payload.context, capturedAt: payload.timestamp },
         });
       } catch {

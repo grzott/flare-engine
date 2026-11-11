@@ -43,3 +43,14 @@ export function createCrashPayload(
   }
   return { message, name: 'NonError', stack: null, timestamp: Date.now(), context };
 }
+
+/**
+ * Rebuild a payload into an `Error`, which is what error clients group by. The
+ * captured stack replaces the new Error's own; a `null` stack leaves it as is.
+ */
+export function payloadToError(payload: CrashPayload): Error {
+  const error = new Error(payload.message);
+  error.name = payload.name;
+  if (payload.stack !== null) error.stack = payload.stack;
+  return error;
+}

@@ -225,3 +225,252 @@ describe('Music', () => {
     expect(music.playing).toBeNull();
   });
 });
+
+describe('Music node graph (characterization)', () => {
+  const NOW = 10;
+
+  interface Rig {
+    log: string[];
+    ctx: AudioContextLike;
+    output: GainNodeLike;
+    sources: AudioBufferSourceNodeLike[];
+    gains: GainNodeLike[];
+  }
+
+  function recordingGain(rig: Rig, label: string, names: Map<object, string>): GainNodeLike {
+    let value = 1;
+    const node: GainNodeLike = {
+      gain: {
+        get value() {
+          return value;
+        },
+        set value(v: number) {
+          value = v;
+          rig.log.push(`${label}.gain.value=${v}`);
+        },
+        setValueAtTime(v, time) {
+          rig.log.push(`${label}.gain.setValueAtTime(${v},${time})`);
+        },
+        linearRampToValueAtTime(v, time) {
+          rig.log.push(`${label}.gain.linearRampToValueAtTime(${v},${time})`);
+        },
+      },
+      connect(dest) {
+        rig.log.push(`${label}.connect(${names.get(dest) ?? '?'})`);
+      },
+      disconnect() {
+        rig.log.push(`${label}.disconnect()`);
+      },
+    };
+    names.set(node, label);
+    return node;
+  }
+
+  function recordingSource(
+    rig: Rig,
+    label: string,
+    names: Map<object, string>,
+  ): AudioBufferSourceNodeLike {
+    return {
+      buffer: null,
+      loop: false,
+      connect(dest) {
+        rig.log.push(`${label}.connect(${names.get(dest) ?? '?'})`);
+      },
+      disconnect() {
+        rig.log.push(`${label}.disconnect()`);
+      },
+      start(when) {
+        rig.log.push(`${label}.start(${when ?? ''})`);
+      },
+      stop(when) {
+        rig.log.push(`${label}.stop(${when ?? ''})`);
+      },
+      onended: null,
+    };
+  }
+
+  function createRig(): Rig {
+    const names = new Map<object, string>();
+    const rig: Rig = {
+      log: [],
+      sources: [],
+      gains: [],
+      output: mockGainNode(),
+      ctx: {
+        state: 'running',
+        currentTime: NOW,
+        destination: { channelCount: 2 },
+        createGain() {
+          const label = `gain${rig.gains.length + 1}`;
+          rig.log.push(`createGain:${label}`);
+          const node = recordingGain(rig, label, names);
+          rig.gains.push(node);
+          return node;
+        },
+        createBufferSource() {
+          const label = `source${rig.sources.length + 1}`;
+          rig.log.push(`createBufferSource:${label}`);
+          const node = recordingSource(rig, label, names);
+          rig.sources.push(node);
+          return node;
+        },
+        async resume() {},
+        async suspend() {},
+        async close() {},
+      },
+    };
+    names.set(rig.output, 'output');
+    return rig;
+  }
+
+  function fireEnd(source: AudioBufferSourceNodeLike | undefined): void {
+    source?.onended?.call(source, undefined);
+  }
+
+  it('play builds source -> gain(1) -> output and starts, in order', () => {
+    const rig = createRig();
+    const buffer = mockBuffer();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', buffer);
+
+    music.play('a', false);
+
+    expect(rig.log).toEqual([
+      'createBufferSource:source1',
+      'createGain:gain1',
+      'gain1.gain.value=1',
+      'source1.connect(gain1)',
+      'gain1.connect(output)',
+      'source1.start()',
+    ]);
+    expect(rig.sources[0]?.buffer).toBe(buffer);
+    expect(rig.sources[0]?.loop).toBe(false);
+    expect(rig.sources[0]?.onended).not.toBeNull();
+    expect(music.playing).toBe('a');
+  });
+
+  it('play loops by default', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+
+    music.play('a');
+
+    expect(rig.sources[0]?.loop).toBe(true);
+  });
+
+  it('play over a playing track stops and disconnects the old one first', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.play('a');
+    rig.log.length = 0;
+
+    music.play('b');
+
+    expect(rig.log).toEqual([
+      'source1.stop()',
+      'gain1.disconnect()',
+      'createBufferSource:source2',
+      'createGain:gain2',
+      'gain2.gain.value=1',
+      'source2.connect(gain2)',
+      'gain2.connect(output)',
+      'source2.start()',
+    ]);
+    expect(music.playing).toBe('b');
+  });
+
+  it('crossfadeTo ramps the old gain down, the new gain up, and wires in order', () => {
+    const rig = createRig();
+    const bufferB = mockBuffer();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', bufferB);
+    music.play('a');
+    const oldGain = rig.gains[0];
+    if (!oldGain) throw new Error('play created no gain');
+    oldGain.gain.value = 0.4;
+    rig.log.length = 0;
+
+    music.crossfadeTo('b', 2);
+
+    expect(rig.log).toEqual([
+      'gain1.gain.setValueAtTime(0.4,10)',
+      'gain1.gain.linearRampToValueAtTime(0,12)',
+      'source1.stop(12)',
+      'createBufferSource:source2',
+      'createGain:gain2',
+      'gain2.gain.setValueAtTime(0,10)',
+      'gain2.gain.linearRampToValueAtTime(1,12)',
+      'source2.connect(gain2)',
+      'gain2.connect(output)',
+      'source2.start()',
+    ]);
+    expect(rig.sources[1]?.buffer).toBe(bufferB);
+    expect(rig.sources[1]?.loop).toBe(true);
+    expect(music.playing).toBe('b');
+  });
+
+  it('crossfadeTo passes the loop flag and fades in from nothing', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('b', mockBuffer());
+
+    music.crossfadeTo('b', 3, false);
+
+    expect(rig.log).toEqual([
+      'createBufferSource:source1',
+      'createGain:gain1',
+      'gain1.gain.setValueAtTime(0,10)',
+      'gain1.gain.linearRampToValueAtTime(1,13)',
+      'source1.connect(gain1)',
+      'gain1.connect(output)',
+      'source1.start()',
+    ]);
+    expect(rig.sources[0]?.loop).toBe(false);
+    expect(music.playing).toBe('b');
+  });
+
+  it('end of the current source clears playing and disconnects its gain', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.play('a', false);
+    rig.log.length = 0;
+
+    fireEnd(rig.sources[0]);
+
+    expect(rig.log).toEqual(['gain1.disconnect()']);
+    expect(music.playing).toBeNull();
+  });
+
+  it('end of a superseded source disconnects its gain and keeps playing', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.play('a');
+    music.crossfadeTo('b', 2);
+    rig.log.length = 0;
+
+    fireEnd(rig.sources[0]);
+
+    expect(rig.log).toEqual(['gain1.disconnect()']);
+    expect(music.playing).toBe('b');
+
+    fireEnd(rig.sources[1]);
+
+    expect(rig.log).toEqual(['gain1.disconnect()', 'gain2.disconnect()']);
+    expect(music.playing).toBeNull();
+  });
+});

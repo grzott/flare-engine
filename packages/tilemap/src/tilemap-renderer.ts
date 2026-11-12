@@ -2,7 +2,7 @@ import type { SkImageLike } from '@flare-engine/assets';
 import type { Rect } from '@flare-engine/math';
 import type { AnySpriteEffect, Camera2D } from '@flare-engine/render';
 import { SpriteBatch } from '@flare-engine/render';
-import type { TileAnimation, TileLayer, TilemapData } from './tilemap-data.js';
+import type { TileAnimation, TileLayer, TilemapData, TilesetRef } from './tilemap-data.js';
 import {
   GID_FLIP_MASK,
   getTileAt,
@@ -60,6 +60,9 @@ export class TilemapRenderer {
   /** Map from tileset name → SkImage. Set via setTilesetImage(). */
   private _images = new Map<string, SkImageLike>();
 
+  /** Images in `map.tilesets` order, refreshed from `_images` at the start of each draw. */
+  private _tilesetImages: (SkImageLike | undefined)[] = [];
+
   /** Reusable bounds rect — avoids per-frame allocation from camera.getBounds(). */
   private _boundsBuf: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
@@ -93,6 +96,14 @@ export class TilemapRenderer {
     const alphaScale = opts?.alphaScale ?? 1;
     // NaN stands for "no time": the layer pass animates only when `time` is finite.
     const time = opts?.time ?? Number.NaN;
+
+    const tilesets = this.map.tilesets;
+    const images = this._tilesetImages;
+    images.length = tilesets.length;
+    for (let i = 0; i < tilesets.length; i++) {
+      const tileset = tilesets[i];
+      if (tileset !== undefined) images[i] = this._images.get(tileset.name);
+    }
 
     for (const layer of this.map.layers) {
       if (layer.type !== 'tile' || !layer.visible) continue;
@@ -142,6 +153,14 @@ export class TilemapRenderer {
     const offsetX = layer.offsetX;
     const offsetY = layer.offsetY;
     const animate = Number.isFinite(time);
+    const tilesets = this.map.tilesets;
+    const images = this._tilesetImages;
+
+    // The current run: `tileset` and `image` own every stripped gid in [runLo, runHi).
+    let tileset: TilesetRef | undefined;
+    let image: SkImageLike | undefined;
+    let runLo = 1;
+    let runHi = 0;
 
     // Calculate visible tile range (clamped to layer bounds)
     const startCol = Math.max(0, Math.floor((viewX - offsetX) / tw));
@@ -154,16 +173,33 @@ export class TilemapRenderer {
         const gid = getTileAt(layer, col, row);
         if (gid === 0) continue;
 
-        const tileset = getTilesetForGid(this.map.tilesets, gid);
+        const id = gid & GID_FLIP_MASK;
+        if (id < runLo || id >= runHi) {
+          tileset = getTilesetForGid(tilesets, id);
+          image = undefined;
+          runLo = 1;
+          runHi = 0;
+          if (tileset !== undefined) {
+            // The run covers only gids the front-to-back walk maps to this tileset again:
+            // at or above every firstGid up to it, below the next one and its own end.
+            let index = 0;
+            runLo = tileset.firstGid;
+            for (let ts = tilesets[0]; ts !== undefined && ts !== tileset; ts = tilesets[++index]) {
+              if (ts.firstGid > runLo) runLo = ts.firstGid;
+            }
+            image = images[index];
+            runHi = tileset.firstGid + tileset.tileCount;
+            const next = tilesets[index + 1];
+            if (next !== undefined && next.firstGid < runHi) runHi = next.firstGid;
+          }
+        }
         if (!tileset) continue;
-
-        const image = this._images.get(tileset.name);
         if (!image) continue;
 
         // An animated tile sources its current frame; flip bits still come from `gid`.
         let srcGid = gid;
         if (animate && tileset.animations !== undefined) {
-          const anim = tileset.animations.get((gid & GID_FLIP_MASK) - tileset.firstGid);
+          const anim = tileset.animations.get(id - tileset.firstGid);
           if (anim !== undefined) srcGid = tileset.firstGid + animatedLocalId(anim, time);
         }
 

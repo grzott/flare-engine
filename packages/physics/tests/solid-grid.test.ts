@@ -2,9 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildSolidGrid,
   isBlockedAABB,
+  isSolidAt,
   moveAndSlideInto,
   type SolidGrid,
   type SolidTile,
+  setSolidAt,
 } from '../src/solid-grid.js';
 
 // 10×10 grid, 16px tiles
@@ -256,5 +258,131 @@ describe('moveAndSlideInto', () => {
     moveAndSlideInto(grid, 8, 8, -16, 0, halfW, halfH, out);
     expect(out.x).toBe(8);
     expect(out.y).toBe(8);
+  });
+});
+
+describe('setSolidAt', () => {
+  test('writes 1 for true and 0 for false at row * width + col, returning true', () => {
+    const grid = makeGrid([]);
+    expect(setSolidAt(grid, 5, 3, true)).toBe(true);
+    expect(grid.solid[3 * W + 5]).toBe(1);
+    expect(countSolid(grid)).toBe(1);
+
+    expect(setSolidAt(grid, 5, 3, false)).toBe(true);
+    expect(grid.solid[3 * W + 5]).toBe(0);
+    expect(countSolid(grid)).toBe(0);
+  });
+
+  test('reaches the four corner cells', () => {
+    const grid = makeGrid([]);
+    expect(setSolidAt(grid, 0, 0, true)).toBe(true);
+    expect(setSolidAt(grid, W - 1, 0, true)).toBe(true);
+    expect(setSolidAt(grid, 0, H - 1, true)).toBe(true);
+    expect(setSolidAt(grid, W - 1, H - 1, true)).toBe(true);
+    expect(grid.solid[0]).toBe(1);
+    expect(grid.solid[W - 1]).toBe(1);
+    expect(grid.solid[(H - 1) * W]).toBe(1);
+    expect(grid.solid[H * W - 1]).toBe(1);
+    expect(countSolid(grid)).toBe(4);
+  });
+
+  test('out-of-range or non-integer coordinates return false and leave every cell unchanged', () => {
+    const tiles = [
+      { row: 0, col: 0 },
+      { row: 4, col: 9 },
+      { row: 5, col: 0 },
+    ];
+    for (const outside of ['solid', 'open'] as const) {
+      const grid = buildSolidGrid(W, H, TS, tiles, { outside });
+      const before = Array.from(grid.solid);
+      const rejected: ReadonlyArray<readonly [number, number]> = [
+        [-1, 0],
+        [0, -1],
+        [W, 0],
+        [0, H],
+        // col = W on row 4 would alias to (row 5, col 0) through a raw index.
+        [W, 4],
+        [-1, 5],
+        [0.5, 0],
+        // 0.5 * W is a whole number, so a raw index would hit (row 0, col 5).
+        [0, 0.5],
+        [Number.NaN, 0],
+        [0, Number.NaN],
+        [Number.POSITIVE_INFINITY, 0],
+      ];
+      for (const [col, row] of rejected) {
+        expect(setSolidAt(grid, col, row, true)).toBe(false);
+        expect(setSolidAt(grid, col, row, false)).toBe(false);
+      }
+      expect(Array.from(grid.solid)).toEqual(before);
+    }
+  });
+
+  test('a cell opened by setSolidAt stops blocking isBlockedAABB and moveAndSlideInto', () => {
+    const grid = makeGrid([{ row: 0, col: 1 }]);
+    const out = { x: 0, y: 0 };
+
+    expect(isBlockedAABB(grid, 24, 8, 4, 4)).toBe(true);
+    moveAndSlideInto(grid, 8, 8, 16, 0, 4, 4, out);
+    expect(out.x).toBe(8);
+
+    expect(setSolidAt(grid, 1, 0, false)).toBe(true);
+
+    expect(isBlockedAABB(grid, 24, 8, 4, 4)).toBe(false);
+    moveAndSlideInto(grid, 8, 8, 16, 0, 4, 4, out);
+    expect(out.x).toBe(24);
+    expect(out.y).toBe(8);
+  });
+
+  test('a cell closed by setSolidAt starts blocking', () => {
+    const grid = makeGrid([]);
+    expect(isBlockedAABB(grid, 24, 8, 4, 4)).toBe(false);
+    setSolidAt(grid, 1, 0, true);
+    expect(isBlockedAABB(grid, 24, 8, 4, 4)).toBe(true);
+  });
+});
+
+describe('isSolidAt', () => {
+  test('reads the cell at (col, row), not (row, col)', () => {
+    const grid = makeGrid([{ row: 3, col: 5 }]);
+    expect(isSolidAt(grid, 5, 3)).toBe(true);
+    expect(isSolidAt(grid, 3, 5)).toBe(false);
+    expect(isSolidAt(grid, 0, 0)).toBe(false);
+  });
+
+  test('reads back what setSolidAt wrote', () => {
+    const grid = makeGrid([]);
+    setSolidAt(grid, 2, 7, true);
+    expect(isSolidAt(grid, 2, 7)).toBe(true);
+    setSolidAt(grid, 2, 7, false);
+    expect(isSolidAt(grid, 2, 7)).toBe(false);
+  });
+
+  test('treats any non-zero cell as solid, like isBlockedAABB', () => {
+    const grid = makeGrid([]);
+    grid.solid[4 * W + 4] = 7;
+    expect(isSolidAt(grid, 4, 4)).toBe(true);
+  });
+
+  test("outside the grid is solid on an outside: 'solid' grid", () => {
+    const grid = makeGrid([]);
+    expect(isSolidAt(grid, -1, 0)).toBe(true);
+    expect(isSolidAt(grid, 0, -1)).toBe(true);
+    expect(isSolidAt(grid, W, 0)).toBe(true);
+    expect(isSolidAt(grid, 0, H)).toBe(true);
+    expect(isSolidAt(grid, 0.5, 0)).toBe(true);
+    expect(isSolidAt(grid, Number.NaN, 0)).toBe(true);
+  });
+
+  test("outside the grid is empty on an outside: 'open' grid", () => {
+    // Row 5 col 0 is solid: col = W on row 4 must not alias onto it.
+    const grid = buildSolidGrid(W, H, TS, [{ row: 5, col: 0 }], { outside: 'open' });
+    expect(isSolidAt(grid, -1, 0)).toBe(false);
+    expect(isSolidAt(grid, 0, -1)).toBe(false);
+    expect(isSolidAt(grid, W, 4)).toBe(false);
+    expect(isSolidAt(grid, 0, H)).toBe(false);
+    expect(isSolidAt(grid, 0, 5.5)).toBe(false);
+    expect(isSolidAt(grid, Number.NaN, 0)).toBe(false);
+    expect(isSolidAt(grid, 0, 5)).toBe(true);
   });
 });

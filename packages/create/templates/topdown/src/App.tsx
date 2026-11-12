@@ -5,6 +5,7 @@ import {
   buildSolidGrid,
   createProceduralAtlas,
   extractColliders,
+  isSolidAt,
   moveAndSlideInto,
 } from "@flare-engine/engine";
 import type {
@@ -74,7 +75,6 @@ export function App(): React.ReactElement {
       TILE_SIZE,
       extractColliders(map),
     );
-    const doorIndex = DOOR_ROW * grid.width + DOOR_COL;
 
     const player = ctx.world.spawn();
     ctx.world.add(player, Position, { x: PLAYER_START.x, y: PLAYER_START.y });
@@ -105,7 +105,7 @@ export function App(): React.ReactElement {
       // so walking into the closed door is the open action — no extra button.
       // Checked against the intended (pre-collision) position so the door
       // opens the same frame the player walks into it, not one frame late.
-      if (grid.solid[doorIndex] !== 0 && isTouchingDoor(pos.x + dx, pos.y + dy, PLAYER_HALF, PLAYER_HALF)) {
+      if (isSolidAt(grid, DOOR_COL, DOOR_ROW) && isTouchingDoor(pos.x + dx, pos.y + dy, PLAYER_HALF, PLAYER_HALF)) {
         openDoor(groundLayer, grid);
       }
 

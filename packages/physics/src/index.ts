@@ -18,10 +18,12 @@ export {
 export {
   buildSolidGrid,
   isBlockedAABB,
+  isSolidAt,
   moveAndSlideInto,
   type SolidGrid,
   type SolidGridOptions,
   type SolidGridOutside,
   type SolidTile,
+  setSolidAt,
 } from './solid-grid.js';
 export { SpatialIndex } from './spatial-index.js';

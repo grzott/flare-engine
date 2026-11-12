@@ -1,5 +1,6 @@
+import { setSolidAt } from '@flare-engine/physics';
 import type { SolidGrid } from '@flare-engine/physics';
-import { parseTiled } from '@flare-engine/tilemap';
+import { parseTiled, setTileAt } from '@flare-engine/tilemap';
 import type { TileLayer, TilemapData } from '@flare-engine/tilemap';
 
 export const TILE_SIZE = 16;
@@ -115,12 +116,11 @@ export function isTouchingDoor(x: number, y: number, halfW: number, halfH: numbe
 /**
  * Open the door: flips its cell in the collision grid so it stops blocking
  * movement, and swaps its tile GID so the renderer draws the open frame
- * instead of the closed one. Both are plain index writes into arrays the
- * engine already owns (`SolidGrid.solid`, `TileLayer.tiles`) — no grid
- * rebuild, no allocation. Idempotent: calling it again is a no-op.
+ * instead of the closed one. `setSolidAt` and `setTileAt` each write one cell
+ * of an array the engine already owns (`SolidGrid.solid`, `TileLayer.tiles`)
+ * — no grid rebuild, no allocation. Idempotent: calling it again is a no-op.
  */
 export function openDoor(groundLayer: TileLayer, grid: SolidGrid): void {
-  const idx = DOOR_ROW * grid.width + DOOR_COL;
-  grid.solid[idx] = 0;
-  groundLayer.tiles[idx] = TILE_DOOR_OPEN;
+  setSolidAt(grid, DOOR_COL, DOOR_ROW, false);
+  setTileAt(groundLayer, DOOR_COL, DOOR_ROW, TILE_DOOR_OPEN);
 }

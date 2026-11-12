@@ -186,6 +186,21 @@ export function getTileAt(layer: TileLayer, col: number, row: number): number {
   return layer.tiles[row * layer.width + col] ?? 0;
 }
 
+/**
+ * Write a tile GID at a grid position in a tile layer; `getTileAt` and the
+ * renderer read it back. Returns `true` when the cell was written, `false` (and
+ * writes nothing) when the position is out of bounds or not an integer.
+ * The GID is stored raw, Tiled flip bits included. Zero-alloc.
+ */
+export function setTileAt(layer: TileLayer, col: number, row: number, gid: number): boolean {
+  if (col < 0 || col >= layer.width || row < 0 || row >= layer.height) return false;
+  // A fractional col/row can still land on a whole index (row 0.5 on an even
+  // width), which would write a different cell than the one named.
+  if (!Number.isInteger(col) || !Number.isInteger(row)) return false;
+  layer.tiles[row * layer.width + col] = gid;
+  return true;
+}
+
 /** Get the tileset that owns a given GID. Handles Tiled flip bits in the high bits. */
 export function getTilesetForGid(tilesets: TilesetRef[], gid: number): TilesetRef | undefined {
   const id = gid & GID_FLIP_MASK;

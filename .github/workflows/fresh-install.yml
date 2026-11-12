@@ -1,0 +1,97 @@
+name: fresh-install
+
+# Scaffold every template from the PUBLIC registry with npm on clean Linux and Windows runners,
+# the install path most strangers use (#71, #72, #73). `check:scaffold` covers the unpublished
+# workspace with bun; this covers what is published. Owner decision 2026-11-12:
+# - fail only on peer problems that name the engine or its critical native peers;
+#   other peer noise is reported as annotations, not failures;
+# - run weekly, on demand, after every publish, and on PRs that change this file.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version or dist-tag of @flare-engine/create to scaffold with'
+        default: latest
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/fresh-install.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fresh-install-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scaffold:
+    # `Release` runs on every push to main; only the version-packages merge publishes.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_commit.message, 'chore(release): version packages'))
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        template: [blank, topdown, shmup]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      CREATE_VERSION: ${{ github.event.inputs.version || 'latest' }}
+      TEMPLATE: ${{ matrix.template }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Wait for the registry after a publish
+        if: github.event_name == 'workflow_run'
+        run: sleep 180
+
+      - name: Scaffold from the registry
+        working-directory: ${{ runner.temp }}
+        run: npm create "@flare-engine@${CREATE_VERSION}" app -- --template "$TEMPLATE" --package-manager npm --skip-install
+
+      - name: Install with npm
+        working-directory: ${{ runner.temp }}/app
+        run: npm install --no-audit --no-fund 2>&1 | tee install.log
+
+      - name: Engine-critical peers resolve
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          grep -iE '^npm warn.*(peer|ERESOLVE)' install.log | while IFS= read -r line; do
+            echo "::warning title=peer warning (${TEMPLATE}, ${RUNNER_OS})::${line}"
+          done || true
+          npm ls --all --json > ls.json 2> ls.err || true
+          node -e '
+            const ls = JSON.parse(require("fs").readFileSync("ls.json", "utf8"));
+            const critical = /@flare-engine\/|react-native-reanimated|react-native-worklets|@shopify\/react-native-skia/;
+            const problems = (ls.problems || []).filter((p) => critical.test(p));
+            for (const p of ls.problems || []) if (!critical.test(p)) console.log(`::warning title=npm ls::${p}`);
+            if (problems.length > 0) {
+              for (const p of problems) console.log(`::error title=engine-critical peer::${p}`);
+              process.exit(1);
+            }
+            console.log("engine-critical peers resolve cleanly");
+          '
+
+      - name: Typecheck the generated app
+        working-directory: ${{ runner.temp }}/app
+        run: npx tsc --noEmit
+
+      - name: Web export
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          node scripts/copy-canvaskit.mjs
+          npx expo export --platform web --output-dir dist-web
+          test -f dist-web/index.html

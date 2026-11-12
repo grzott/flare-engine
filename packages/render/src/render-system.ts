@@ -67,6 +67,9 @@ export interface SpriteData {
   flipY?: boolean;
 }
 
+/** Below this many slots an add never compacts: nothing worth reclaiming. */
+const MIN_COMPACT_COUNT = 16;
+
 /** One query member's slot in the draw order. Pooled: a dead slot is reused by a later add. */
 interface RenderEntry {
   entityId: number;
@@ -80,7 +83,8 @@ export interface RenderSystem {
   (): void;
   /**
    * Unsubscribe from the query's `onEntityAdded` / `onEntityRemoved` signals.
-   * Without it the system stays subscribed for as long as the query lives.
+   * Without it the system stays subscribed for as long as the query lives;
+   * its storage stays bounded by the live entities either way.
    * A disposed system queues nothing.
    */
   dispose(): void;
@@ -102,7 +106,9 @@ export interface RenderSystem {
  * through `onEntityAdded` / `onEntityRemoved`, so a frame costs one pass
  * plus the inversions that appeared since the last one. Sprites with equal
  * `z` draw in the order they joined the query. Call `dispose()` on the
- * returned function to drop the subscriptions.
+ * returned function to drop the subscriptions. Removed entries are reclaimed
+ * on add as well as on each frame, so a system that is subscribed but not
+ * called does not grow with the number of adds.
  *
  * @param world The ECS world.
  * @param query Query that matches entities with Position + Sprite.
@@ -117,14 +123,59 @@ export function createRenderSystem(
   spriteDef: ComponentDef<SpriteData>,
   batch: SpriteBatch,
 ): RenderSystem {
+  return createProbedRenderSystem(world, query, positionDef, spriteDef, batch).system;
+}
+
+/**
+ * `createRenderSystem` plus a read of how many entry slots it holds, live and
+ * spare. Module-internal: the package barrel does not export it, the tests
+ * import it from this file to check that the storage stays bounded.
+ *
+ * @internal
+ */
+export function createProbedRenderSystem(
+  world: World,
+  query: Query,
+  positionDef: ComponentDef<PositionData>,
+  spriteDef: ComponentDef<SpriteData>,
+  batch: SpriteBatch,
+): { system: RenderSystem; slotCount: () => number } {
   // entries[0..count) is the draw order, kept from frame to frame; anything
   // past count is a spare slot waiting for the next add.
   const entries: RenderEntry[] = [];
   const byEntity = new Map<number, RenderEntry>();
   let count = 0;
+  // Dead slots inside entries[0..count).
+  let dead = 0;
+
+  // Closes the gaps dead slots left, keeping the live ones in order. A dead
+  // slot is swapped behind the live ones, not dropped, so it is reused.
+  const compact = (): void => {
+    let live = 0;
+    for (let i = 0; i < count; i++) {
+      const entry = entries[i]!;
+      if (!entry.alive) continue;
+      if (live !== i) {
+        entries[i] = entries[live]!;
+        entries[live] = entry;
+      }
+      live++;
+    }
+    count = live;
+    dead = 0;
+    // Shrink policy — avoid thrashing on variable entity counts.
+    if (entries.length > count * 2 && entries.length > 64) {
+      entries.length = count;
+    }
+  };
 
   const onAdded = (entityId: number): void => {
     if (byEntity.has(entityId)) return;
+    // The frame may never run (paused, or dropped without dispose()), so adds
+    // reclaim too: once the dead outnumber the live, which keeps the cost
+    // amortized O(1) per add. Appending after it keeps join order; filling a
+    // dead slot in place would not.
+    if (dead > count - dead && count > MIN_COMPACT_COUNT) compact();
     let entry = entries[count];
     if (entry) {
       entry.entityId = entityId;
@@ -139,11 +190,12 @@ export function createRenderSystem(
   };
 
   // Only marks the slot: a removal followed by a re-add in the same frame
-  // leaves one dead slot and one live one, and the next frame drops the dead.
+  // leaves one dead slot and one live one, and the next compaction drops the dead.
   const onRemoved = (entityId: number): void => {
     const entry = byEntity.get(entityId);
     if (!entry) return;
     entry.alive = false;
+    dead++;
     byEntity.delete(entityId);
   };
 
@@ -153,25 +205,11 @@ export function createRenderSystem(
   const unsubscribeRemoved = query.onEntityRemoved.add(onRemoved);
 
   const renderSystem = (): void => {
-    // One pass: refresh z in place and close the gaps dead slots left. A dead
-    // slot is swapped behind the live ones, not dropped, so it is reused.
-    let live = 0;
+    if (dead > 0) compact();
     for (let i = 0; i < count; i++) {
       const entry = entries[i]!;
-      if (!entry.alive) continue;
       const sprite = world.get(entry.entityId, spriteDef);
       if (sprite) entry.z = sprite.z;
-      if (live !== i) {
-        entries[i] = entries[live]!;
-        entries[live] = entry;
-      }
-      live++;
-    }
-    count = live;
-
-    // Shrink policy — avoid thrashing on variable entity counts.
-    if (entries.length > count * 2 && entries.length > 64) {
-      entries.length = count;
     }
     // Already in last frame's order, so this costs n plus the new inversions.
     sortByDrawOrder(entries, count);
@@ -208,10 +246,15 @@ export function createRenderSystem(
     unsubscribeAdded();
     unsubscribeRemoved();
     byEntity.clear();
+    entries.length = 0;
     count = 0;
+    dead = 0;
   };
 
-  return Object.assign(renderSystem, { dispose });
+  return {
+    system: Object.assign(renderSystem, { dispose }),
+    slotCount: () => entries.length,
+  };
 }
 
 /** Canonical Sprite component — queried by the render system alongside `Position`. */

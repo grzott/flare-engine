@@ -11,8 +11,9 @@ holds: a frame in which no `z` changed and nothing joined costs `n - 1` comparis
 
 The returned function now also has a `dispose()` method that drops those two subscriptions (new
 exported type `RenderSystem`); without it the system stays subscribed for as long as the query
-lives. The type is still assignable to `() => void`. A disposed system queues nothing. `GameView`
-calls `dispose()` when it unmounts.
+lives. Its storage stays bounded whether or not the system runs: removed entries are reclaimed on
+add as well as on each frame. The type is still assignable to `() => void`. A disposed system queues
+nothing. `GameView` calls `dispose()` when it unmounts.
 
 One visible difference: sprites with equal `z` now draw in the order they joined the query, and an
 entity that leaves and rejoins moves behind the others at its `z`. Before, equal `z` followed

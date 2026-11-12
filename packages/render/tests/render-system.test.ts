@@ -16,7 +16,11 @@ const { World: EcsWorld } = await import('@flare-engine/ecs');
 
 // Dynamically import render-system AFTER the ecs mock is restored so the
 // static `import { defineComponent }` inside render-system.ts resolves correctly.
-const { Sprite: RenderSprite, createRenderSystem } = await import('../src/render-system.js');
+const {
+  Sprite: RenderSprite,
+  createRenderSystem,
+  createProbedRenderSystem,
+} = await import('../src/render-system.js');
 
 // Define the test's Position via the real defineComponent *after* RenderSprite
 // is loaded so its id increments off the live counter and cannot collide with
@@ -477,5 +481,94 @@ describe('RenderSystem draw order across frames', () => {
     // The test's own subscription still fires; the system's are gone.
     expect(removed).toEqual([kept]);
     expect(drawnXs(batch, callable)).toEqual([]);
+  });
+});
+
+// A system that is subscribed but not called (paused, or dropped without
+// dispose() while its query lives on) only ever sees the add / remove signals.
+describe('RenderSystem storage while the system is not called', () => {
+  it('stays bounded through add / remove cycles that leave nothing alive', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const { slotCount } = createProbedRenderSystem(world, query, Position, Sprite, batch);
+
+    for (let i = 0; i < 10_000; i++) world.destroy(spawnSprite(world, i, 0));
+
+    expect(query.entities.length).toBe(0);
+    expect(slotCount()).toBeLessThanOrEqual(64);
+  });
+
+  it('stays within a constant factor of the live count as the world churns', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const { slotCount } = createProbedRenderSystem(world, query, Position, Sprite, batch);
+
+    let peakLive = 0;
+    let peakSlots = 0;
+    for (let cycle = 0; cycle < 20; cycle++) {
+      const ids: number[] = [];
+      for (let i = 0; i < 1000; i++) ids.push(spawnSprite(world, i, 0));
+      peakLive = Math.max(peakLive, query.entities.length);
+      peakSlots = Math.max(peakSlots, slotCount());
+      for (let i = 0; i < 990; i++) world.destroy(ids[i] as number);
+    }
+
+    // 20,000 adds in total; 200 are still alive, and at most 1,190 ever were at once.
+    expect(query.entities.length).toBe(200);
+    expect(peakLive).toBe(1190);
+    expect(peakSlots).toBeLessThanOrEqual(2 * peakLive + 1);
+    expect(slotCount()).toBeLessThanOrEqual(2 * peakLive + 1);
+  });
+
+  it('draws z-sorted with equal z in join order after an add compacted the storage', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const { system, slotCount } = createProbedRenderSystem(world, query, Position, Sprite, batch);
+
+    // 40 joiners over 2 layers; all but four leave, none of it seen by a frame.
+    const early: number[] = [];
+    for (let i = 0; i < 40; i++) early.push(spawnSprite(world, i, i % 2));
+    const kept = new Set([3, 10, 21, 36]);
+    for (let i = 0; i < 40; i++) if (!kept.has(i)) world.destroy(early[i] as number);
+    expect(slotCount()).toBe(40);
+
+    // One of the survivors leaves and rejoins: it now follows its z peers.
+    world.remove(early[10] as number, Sprite);
+    world.add(early[10] as number, Sprite, { image: IMAGE, frame: FRAME, z: 0 });
+
+    // These joins reclaim the dead slots without a frame having run.
+    for (let i = 100; i < 140; i++) spawnSprite(world, i, i % 2);
+    expect(query.entities.length).toBe(44);
+    expect(slotCount()).toBeLessThan(40 + 1 + 40);
+
+    const evens: number[] = [];
+    const odds: number[] = [];
+    for (let i = 100; i < 140; i++) (i % 2 === 0 ? evens : odds).push(i);
+    const expected = [36, 10, ...evens, 3, 21, ...odds];
+    expect(drawnXs(batch, system)).toEqual(expected);
+    expect(drawnXs(batch, system)).toEqual(expected);
+
+    // A later joiner still lands behind everything at its z.
+    spawnSprite(world, 200, 0);
+    expect(drawnXs(batch, system)).toEqual([36, 10, ...evens, 200, 3, 21, ...odds]);
+  });
+
+  it('draws nothing twice when entities leave and rejoin around a compaction', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const { system } = createProbedRenderSystem(world, query, Position, Sprite, batch);
+
+    const ids: number[] = [];
+    for (let i = 0; i < 30; i++) ids.push(spawnSprite(world, i, 0));
+    for (let round = 0; round < 50; round++) {
+      for (let i = 0; i < 30; i++) {
+        world.remove(ids[i] as number, Sprite);
+        world.add(ids[i] as number, Sprite, { image: IMAGE, frame: FRAME, z: 0 });
+      }
+    }
+
+    const expected: number[] = [];
+    for (let i = 0; i < 30; i++) expected.push(i);
+    expect(drawnXs(batch, system)).toEqual(expected);
   });
 });

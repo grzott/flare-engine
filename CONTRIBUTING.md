@@ -155,7 +155,7 @@ Signed-off-by: Your Name <you@example.com>
 
 The email must match the commit's author email. The `dco` check on your pull request lists any commit without a matching sign-off. To fix commits already pushed, run `git rebase --signoff main` and force-push the branch.
 
-The maintainer's and the project bot's own commits are exempt; they follow the repo's commit rules in [AGENTS.md](AGENTS.md).
+Commits by the maintainer and the project bot are exempt; they follow the repo's commit rules in [AGENTS.md](AGENTS.md). So are the automated commits from Dependabot and from the release workflow (`github-actions[bot]`).
 
 ---
 

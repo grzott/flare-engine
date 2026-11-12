@@ -128,3 +128,32 @@ describe('createCollectibleRegistry — PT shard pattern', () => {
     expect(reg.isComplete).toBe(true);
   });
 });
+
+describe('createCollectibleRegistry — the capstone rule (#134)', () => {
+  it('a distinct capstone can be unlocked directly, before the set is complete', () => {
+    let reg = createCollectibleRegistry<ShardId | 'mirror-complete'>([...IDS], CAPSTONE);
+    reg = reg.unlock(CAPSTONE);
+    expect(reg.isCapstone).toBe(true);
+    expect(reg.isComplete).toBe(false);
+    expect(reg.partition().have).toEqual([]);
+  });
+
+  it('a capstone listed in ids is an ordinary member: unlocking it sets isCapstone at once', () => {
+    let reg = createCollectibleRegistry<ShardId>([...IDS], 'shard-2');
+    reg = reg.unlock('shard-2');
+    expect(reg.isCapstone).toBe(true);
+    expect(reg.isComplete).toBe(false);
+    expect(reg.partition().have).toEqual(['shard-2']);
+  });
+
+  it('a capstone listed in ids is required for completion, so completion never adds it', () => {
+    let reg = createCollectibleRegistry<ShardId>([...IDS], 'shard-3');
+    reg = reg.unlock('shard-1').unlock('shard-2');
+    expect(reg.isCapstone).toBe(false);
+    expect(reg.isComplete).toBe(false);
+    reg = reg.unlock('shard-3');
+    expect(reg.isCapstone).toBe(true);
+    expect(reg.isComplete).toBe(true);
+    expect(reg.unlocked.size).toBe(3);
+  });
+});

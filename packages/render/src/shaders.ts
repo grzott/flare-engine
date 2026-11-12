@@ -1,3 +1,11 @@
+// Helper functions repeated across the shaders below, each written once. The exported strings
+// are pinned byte for byte by tests/sksl-identity.test.ts.
+
+const HASH2_FN_SKSL =
+  'float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }';
+
+const HASH1_FN_SKSL = 'float hash(float x) { return fract(sin(x * 127.1) * 43758.5453); }';
+
 export const FIRE_SKSL = /* sksl */ `
 uniform float2 resolution;
 uniform float3 color;
@@ -6,7 +14,7 @@ uniform float speed;
 uniform float intensity;
 uniform float time;
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+${HASH2_FN_SKSL}
 
 float vnoise(float2 p) {
   float2 i = floor(p);
@@ -108,7 +116,7 @@ uniform float3 roofColor;
 uniform float scrollOffsetY;
 uniform float density;
 
-float hash(float x) { return fract(sin(x * 127.1) * 43758.5453); }
+${HASH1_FN_SKSL}
 
 float buildingTop(float2 uv, float density) {
   float col = floor(uv.x * density);
@@ -137,7 +145,7 @@ uniform float3 leafColor;
 uniform float scrollOffsetY;
 uniform float density;
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+${HASH2_FN_SKSL}
 
 float valueNoise(float2 p) {
   float2 i = floor(p);
@@ -192,7 +200,7 @@ uniform float3 craterColor;
 uniform float scrollOffsetY;
 uniform float craterCount;
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+${HASH2_FN_SKSL}
 
 float crater(float2 uv, float2 center, float r) {
   float d = length(uv - center);
@@ -226,7 +234,7 @@ uniform float3 glowColor;
 uniform float scrollOffsetY;
 uniform float stalactiteCount;
 
-float hash(float x) { return fract(sin(x * 127.1) * 43758.5453); }
+${HASH1_FN_SKSL}
 
 float stalactite(float2 uv, float count) {
   float col = floor(uv.x * count);
@@ -258,7 +266,7 @@ uniform float3 hillColor;
 uniform float scrollOffsetY;
 uniform float ridgeScale;
 
-float hash(float x) { return fract(sin(x * 127.1) * 43758.5453); }
+${HASH1_FN_SKSL}
 
 float heightField(float x, float scale) {
   float h = 0.0;

@@ -1,5 +1,5 @@
 export { Circle } from './circle.js';
-export { Color, type Oklab, type Oklch } from './color.js';
+export { argbToFloat4Into, Color, type Oklab, type Oklch } from './color.js';
 export {
   bezier2,
   bezier2Into,

@@ -194,3 +194,15 @@ export const Color = {
     return (lMax + 0.05) / (lMin + 0.05);
   },
 } as const;
+
+/**
+ * Unpacks a 32-bit `0xAARRGGBB` int (the `Color.toSkColor` format) into `out`
+ * as `[r, g, b, a]`, each 0-1: the layout Skia paints and `clear` take.
+ * Zero-alloc.
+ */
+export function argbToFloat4Into(out: Float32Array, argb: number): void {
+  out[0] = ((argb >>> 16) & 0xff) / 255;
+  out[1] = ((argb >>> 8) & 0xff) / 255;
+  out[2] = (argb & 0xff) / 255;
+  out[3] = ((argb >>> 24) & 0xff) / 255;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { approxEquals, Color, type Oklab } from '../src/index.js';
+import { approxEquals, argbToFloat4Into, Color, type Oklab } from '../src/index.js';
 
 describe('Color constants', () => {
   it('WHITE', () => expect(Color.WHITE).toEqual({ r: 1, g: 1, b: 1, a: 1 }));
@@ -322,5 +322,34 @@ describe('Color.deltaEOkLab', () => {
     const a: Oklab = { L: 0, a: 0, b: 0 };
     const b: Oklab = { L: 1, a: 0, b: 0 };
     expect(Color.deltaEOkLab(a, b)).toBeCloseTo(1, 10);
+  });
+});
+
+describe('argbToFloat4Into', () => {
+  const out = new Float32Array(4);
+  const f = (byte: number) => Math.fround(byte / 255);
+
+  it('unpacks transparent black and opaque white', () => {
+    argbToFloat4Into(out, 0x00000000);
+    expect([...out]).toEqual([0, 0, 0, 0]);
+    argbToFloat4Into(out, 0xffffffff);
+    expect([...out]).toEqual([1, 1, 1, 1]);
+  });
+
+  it('puts the high byte in alpha and the low three in r, g, b', () => {
+    argbToFloat4Into(out, 0x80ff0000);
+    expect([...out]).toEqual([1, 0, 0, f(0x80)]);
+  });
+
+  it('reads alpha unsigned when the top bit is set, as a uint or a signed int', () => {
+    argbToFloat4Into(out, 0xc0336699);
+    expect([...out]).toEqual([f(0x33), f(0x66), f(0x99), f(0xc0)]);
+    argbToFloat4Into(out, 0xc0336699 | 0);
+    expect([...out]).toEqual([f(0x33), f(0x66), f(0x99), f(0xc0)]);
+  });
+
+  it('round-trips Color.toSkColor at 8-bit precision', () => {
+    argbToFloat4Into(out, Color.toSkColor({ r: 0.2, g: 0.4, b: 0.6, a: 0.8 }));
+    expect([...out]).toEqual([f(51), f(102), f(153), f(204)]);
   });
 });

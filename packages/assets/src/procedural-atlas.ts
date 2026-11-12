@@ -1,3 +1,4 @@
+import { argbToFloat4Into } from '@flare-engine/math';
 import { createSpriteSheet, type SpriteFrame, type SpriteSheet } from './sprite-sheet.js';
 import type { SkImageLike } from './texture.js';
 
@@ -120,7 +121,7 @@ export function createProceduralAtlas(
     const pos = positions.rects[i];
     if (spec === undefined || pos === undefined) continue;
 
-    writeArgb(color, spec.color);
+    argbToFloat4Into(color, spec.color);
     paint.setColor(color);
     canvas.drawRect(Skia.XYWHRect(pos.x, pos.y, spec.w, spec.h), paint);
 
@@ -183,11 +184,4 @@ function layoutRows(
     width: atlasWidth > 0 ? atlasWidth : 1,
     height: atlasHeight > 0 ? atlasHeight : 1,
   };
-}
-
-function writeArgb(out: SkColorLike, argb: number): void {
-  out[0] = ((argb >>> 16) & 0xff) / 255;
-  out[1] = ((argb >>> 8) & 0xff) / 255;
-  out[2] = (argb & 0xff) / 255;
-  out[3] = ((argb >>> 24) & 0xff) / 255;
 }

@@ -25,6 +25,7 @@
  */
 
 import type { SkImageLike } from '@flare-engine/assets';
+import { argbToFloat4Into } from '@flare-engine/math';
 import type { CanvasLike } from './renderer.js';
 import {
   CAVE_INTERIOR_SKSL,
@@ -640,10 +641,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     },
     clear: (argb) => {
       if (current === null) return;
-      clearColor[0] = ((argb >>> 16) & 0xff) / 255;
-      clearColor[1] = ((argb >>> 8) & 0xff) / 255;
-      clearColor[2] = (argb & 0xff) / 255;
-      clearColor[3] = ((argb >>> 24) & 0xff) / 255;
+      argbToFloat4Into(clearColor, argb);
       current.clear(clearColor);
     },
   };

@@ -92,13 +92,14 @@ function makeRegistry<K extends string>(
  * Creates a `CollectibleRegistry` from `ids` (the collectible set) and an
  * optional `capstoneId`.
  *
- * Duplicate ids in `ids` throw. `capstoneId` may equal one of the ids in `ids`
- * (it is tracked as a separate gate — the capstone fires only on full completion,
- * not by direct unlock through `ids` membership alone).
+ * Duplicate ids in `ids` throw. The capstone is unlocked automatically once every
+ * id in `ids` is unlocked, and `unlock(capstoneId)` also unlocks it directly;
+ * either way `isCapstone` becomes true.
  *
- * The capstone MUST be distinct from all ids in `ids` — if not, the capstone
- * unlock auto-fires on full completion regardless of whether the capstone id
- * was directly unlocked via the `ids` set, which would be semantically ambiguous.
+ * Keep `capstoneId` out of `ids` for a capstone that marks completion. If it is
+ * listed in `ids`, it is an ordinary member of the set: `isComplete` needs it,
+ * `isCapstone` turns true as soon as it is unlocked, and the automatic unlock never
+ * has anything to add.
  */
 export function createCollectibleRegistry<K extends string>(
   ids: readonly K[],

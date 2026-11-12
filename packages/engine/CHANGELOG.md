@@ -1,5 +1,35 @@
 # @flare-engine/engine
 
+## 0.4.11
+
+### Patch Changes
+
+- 1c8e561: The main entry now re-exports `@flare-engine/engine/headless` instead of repeating its export list,
+  so the two entries cannot drift. The exported names are unchanged.
+- Updated dependencies [8138538]
+- Updated dependencies [2689999]
+- Updated dependencies [90e0e7c]
+- Updated dependencies [49210ba]
+- Updated dependencies [5d358de]
+- Updated dependencies [4328873]
+  - @flare-engine/animation@0.4.11
+  - @flare-engine/audio@0.4.11
+  - @flare-engine/debug@0.4.11
+  - @flare-engine/scene@0.4.11
+  - @flare-engine/assets@0.4.11
+  - @flare-engine/core@0.4.11
+  - @flare-engine/dynamics@0.4.11
+  - @flare-engine/ecs@0.4.11
+  - @flare-engine/events@0.4.11
+  - @flare-engine/input@0.4.11
+  - @flare-engine/math@0.4.11
+  - @flare-engine/particles@0.4.11
+  - @flare-engine/physics@0.4.11
+  - @flare-engine/postfx@0.4.11
+  - @flare-engine/react@0.4.11
+  - @flare-engine/render@0.4.11
+  - @flare-engine/tilemap@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

@@ -1,5 +1,21 @@
 # @flare-engine/storage
 
+## 0.4.11
+
+### Patch Changes
+
+- bcf8bb1: `createStorageAchievements` no longer caches a failed hydration: when `store.get` rejects, that
+  call rejects and the next call reads again, so a transient read error no longer strands every later
+  `unlock` / `getState` / `getAll` on the stale rejection. A failed read writes nothing, so it cannot
+  lead to the stored array being overwritten. `createIndexedDbAdapter` likewise retries
+  a failed `indexedDB.open` on the next call instead of returning the same rejection forever.
+- 1f1faf7: `createStorage` no longer writes a `__flare_version` key on `saveSlot`, and `createDocumentStore` no longer writes a `__flare_doc_version` key when it persists the document. Nothing in the package read either key: the version that drives migrations lives in each stored envelope, and those envelopes are unchanged, so existing data loads as before. Keys already present in a store are left in place, not deleted.
+
+  <!-- symbols-ok: __flare_version, __flare_doc_version -->
+
+- d2e8c85: The slot store and the document store now share one internal envelope type and guard. No behaviour
+  or API change.
+
 ## 0.4.10
 
 ### Patch Changes

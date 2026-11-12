@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/iap-revenuecat",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "RevenueCat IAPProvider adapter for @flare-engine/iap",
   "keywords": [
     "flare-engine",
@@ -45,7 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/iap": "^0.4.10"
+    "@flare-engine/iap": "^0.4.11"
   },
   "peerDependencies": {
     "react-native": ">=0.79.0",

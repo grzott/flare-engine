@@ -1,5 +1,17 @@
 # @flare-engine/progression
 
+## 0.4.11
+
+### Patch Changes
+
+- b2b1402: Adds `createGameClock(config, state?)`: a 1440-minute game-day clock whose ordered segments each
+  run at their own real-seconds-per-game-hour rate, with `update(dt)` landing exactly on every
+  boundary it crosses, `advanceMinutes` / `skipTo` in game minutes, `pause` / `resume`,
+  `hold` / `release` (stop at the next phase boundary), `onSegmentChange` / `onPhaseChange`
+  callbacks, and a plain `serialize()` state that restores through the second argument.
+- 8019b94: Internal refactor: `resolveTier` now delegates to `resolveTierIndex`, so the threshold scan and its last-wins tie rule live in one place. No behaviour or API change.
+  - @flare-engine/math@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

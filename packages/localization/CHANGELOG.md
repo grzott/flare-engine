@@ -1,5 +1,11 @@
 # @flare-engine/localization
 
+## 0.4.11
+
+### Patch Changes
+
+- @flare-engine/events@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

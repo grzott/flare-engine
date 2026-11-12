@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/analytics",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "Analytics provider interface (consumer-supplied adapter)",
   "keywords": ["flare-engine", "analytics", "provider", "interface", "react-native", "typescript"],
   "license": "Apache-2.0",

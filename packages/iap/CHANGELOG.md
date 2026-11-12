@@ -1,5 +1,12 @@
 # @flare-engine/iap
 
+## 0.4.11
+
+### Patch Changes
+
+- 607392b: Internal refactor: `getGrantsForProduct` now delegates to `getCatalogEntry`, so the catalog scan lives in one place, and `CatalogEntry.type` now derives its union from `Product.type` instead of repeating it. No behaviour or API change.
+  - @flare-engine/events@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

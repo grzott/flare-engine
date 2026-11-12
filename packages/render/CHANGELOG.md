@@ -1,5 +1,13 @@
 # @flare-engine/render
 
+## 0.4.11
+
+### Patch Changes
+
+- @flare-engine/assets@0.4.11
+- @flare-engine/ecs@0.4.11
+- @flare-engine/math@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

@@ -173,10 +173,11 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
    * **Provisional, owner-accepted 2026-11-12 to unblock the 0.4.12 recapture; investigation is
    * #363.** Two of the three `animation` rows from #311, which first ran that day.
    *
-   * Evidence, all of `a851faa9`, pinned, at 1.2-2.6% foreign load. Fifteen captures are recorded
-   * in `benchmarks/results/history.ndjson` (three windows, 17:37-18:14 UTC). Ten more are
-   * unrecorded, from an interleaved A/B that swapped only `packages/ecs/src/world.ts`, which
-   * animation does not import; their values are in PR #362. The third animation row,
+   * Evidence, all of `a851faa9`, pinned, at 1.2-2.6% foreign load. Fifteen captures were recorded
+   * in three windows (17:37-18:14 UTC); they enter `benchmarks/results/history.ndjson` with the
+   * 0.4.12 recapture PR that follows this one. Ten more are unrecorded, from an interleaved A/B
+   * that swapped only `packages/ecs/src/world.ts`, which animation does not import. PR #362
+   * lists all 25 per-run values for both rows. The third animation row,
    * `updateSpring`, passed the strict 10% in all three recorded windows; `updateTweens` refused
    * the first two and `updateAnimator` the third. The spans below cover all 25 captures.
    *

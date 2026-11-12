@@ -76,21 +76,18 @@ export const EXPECTED_SUITE_TITLES = [
 ] as const;
 
 /**
- * The suites added by #159 and #96, absent from the committed baseline until the
- * 0.4.12 recapture, whose PR empties this list. `tests/baseline.test.ts` tolerates a
- * `missing suite` violation only for a title listed here, and fails once a
- * listed title IS in the committed baseline, so an entry cannot outlive the
- * capture that made it unnecessary. A fresh capture is never exempt:
+ * Suites added since the committed baseline was captured. `tests/baseline.test.ts`
+ * tolerates a `missing suite` violation only for a title listed here, and fails
+ * once a listed title IS in the committed baseline, so an entry cannot outlive
+ * the capture that made it unnecessary. A fresh capture is never exempt:
  * `promote.ts` still demands every suite.
+ *
+ * Emptied by the 0.4.12 recapture (#159, #96). This file is under
+ * `benchmarks/src`, which `check:perf-freshness` treats as the instrument for
+ * every node suite. So the PR that empties the list stales the node capture it
+ * lands with, and a second node window has to be captured after it merges.
  */
-export const PENDING_FIRST_CAPTURE: readonly string[] = [
-  'Animation',
-  'PostFx',
-  'Tilemap',
-  'Pathfinding',
-  'Math',
-  'RenderSystem',
-];
+export const PENDING_FIRST_CAPTURE: readonly string[] = [];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [

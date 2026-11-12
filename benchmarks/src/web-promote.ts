@@ -134,6 +134,54 @@ export function windowTempDriftC(captures: readonly WebPromoteRow[][]): number |
 export const TEMP_DRIFT_WARN_C = 1;
 
 /**
+ * An android window is refused when at least `ceil(n / TREND_SCENARIO_DIVISOR)` of its n scenarios
+ * have a p50 that rises strictly across every run (PERF-17).
+ *
+ * One third, not "any one scenario": on a clean five-run window a single scenario rises strictly by
+ * chance with probability 1/5! = 1/120, so across about 18 scenarios the any-one rule would refuse
+ * about 14% of clean windows (1 - (119/120)^18). Six of 18 rising by chance is about 6e-9. The drift
+ * this exists for (2026-08-21, Pixel 7, `thermalStatus` 0 throughout) rose on 18 of 18 rows, and the
+ * clean PERF-22 window on 0 of 18, so one third sits far from both.
+ */
+export const TREND_SCENARIO_DIVISOR = 3;
+
+/**
+ * Shortest window the trend rule judges. A strict rise over k runs has chance 1/k!, so with the
+ * one-third threshold over 18 scenarios a clean window is refused about 95% of the time at two runs
+ * and 6.5% at three — the false-refusal class the threshold exists to avoid. At four runs (1/24) it
+ * is about 6e-5. `bench:web:promote` folds five by default.
+ */
+export const MIN_TREND_RUNS = 4;
+
+/** Refusal text when enough scenarios rise strictly across the window, or `null`. */
+function judgeMonotonicTrend(
+  captures: readonly WebPromoteRow[][],
+  names: readonly string[],
+): string | null {
+  if (captures.length < MIN_TREND_RUNS) return null;
+
+  const rising: { readonly name: string; readonly values: number[] }[] = [];
+  for (const [i, name] of names.entries()) {
+    const values = captures.map((c) => (c[i] as WebPromoteRow).p50Ms);
+    if (values.every((v, j) => j === 0 || v > (values[j - 1] as number))) {
+      rising.push({ name, values });
+    }
+  }
+
+  const threshold = Math.ceil(names.length / TREND_SCENARIO_DIVISOR);
+  if (rising.length === 0 || rising.length < threshold) return null;
+
+  return (
+    `${rising.length} of ${names.length} scenarios rose strictly across all ${captures.length} runs ` +
+    `(refuse at ${threshold}: one third of the scenarios, rounded up) — the phone was still drifting, ` +
+    'so the median describes a moving state. Re-capture from a cool phone with the 100 s gap. ' +
+    `Rising: ${rising
+      .map((r) => `"${r.name}" (${r.values.map((v) => v.toFixed(3)).join(' -> ')})`)
+      .join('; ')}`
+  );
+}
+
+/**
  * Refusal text when a window brings nothing newer than what is already published, or `null` when
  * the window is genuinely ahead of the baseline.
  *
@@ -305,6 +353,12 @@ export function aggregateWebRuns(
   }
 
   if (problems.length > 0) return { ok: false, problems };
+
+  // Only the android lane carries `thermal`. Desktop lanes have no warm-up to drift through.
+  if (captures.some((c) => (c[0] as WebPromoteRow).thermal !== undefined)) {
+    const trend = judgeMonotonicTrend(captures, names);
+    if (trend !== null) problems.push(trend);
+  }
 
   const rows: WebFoldedRow[] = [];
   for (const [i, name] of names.entries()) {

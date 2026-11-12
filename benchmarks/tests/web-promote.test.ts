@@ -4,6 +4,7 @@ import {
   groupCaptures,
   judgeWindowRecency,
   MAX_RUN_DEVIATION_PERCENT,
+  MIN_TREND_RUNS,
   median,
   type WebPromoteRow,
 } from '../src/web-promote.js';
@@ -221,6 +222,94 @@ describe('judgeWindowRecency', () => {
     const problem = judgeWindowRecency('not-a-stamp', published);
     expect(problem).not.toBeNull();
     expect(problem).toContain('history log is damaged');
+  });
+});
+
+describe('aggregateWebRuns — monotonic trend on the android lane', () => {
+  // PERF-17. The 2026-08-21 drift rose on every one of 18 rows with thermalStatus 0 throughout;
+  // the clean PERF-22 window rose on none. The rule refuses from one third of the scenarios.
+  const RISING = [1.0, 1.01, 1.02, 1.03, 1.04];
+  const FLAT = [1.0, 1.0, 1.0, 1.0, 1.0];
+  const NOISY = [1.0, 1.03, 1.01, 1.04, 1.02];
+
+  /** One capture per run, one row per series; values stay inside the deviation ceiling. */
+  function windowOfSeries(
+    series: readonly (readonly number[])[],
+    over: Partial<WebPromoteRow> = {},
+  ): WebPromoteRow[][] {
+    const runs = series[0]?.length ?? 0;
+    return Array.from({ length: runs }, (_, i) =>
+      series.map((values, s) =>
+        row({
+          name: `render.flush ${s}`,
+          p50Ms: values[i] as number,
+          capturedAt: `2026-08-18T10:0${i}:00.000Z`,
+          ...over,
+        }),
+      ),
+    );
+  }
+
+  function mix(n: number, rising: number): (readonly number[])[] {
+    return Array.from({ length: n }, (_, s) => (s < rising ? RISING : FLAT));
+  }
+
+  it('refuses the 2026-08-21 shape — every scenario rising — and names each with its values', () => {
+    const out = aggregateWebRuns(windowOfSeries(mix(18, 18)));
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    const text = out.problems.join('\n');
+    expect(text).toContain('18 of 18');
+    expect(text).toContain('one third');
+    for (let s = 0; s < 18; s++) expect(text).toContain(`"render.flush ${s}"`);
+    expect(text).toContain('1.000 -> 1.010 -> 1.020 -> 1.030 -> 1.040');
+  });
+
+  for (const [n, threshold] of [
+    [18, 6],
+    [7, 3],
+  ] as const) {
+    it(`refuses exactly ceil(${n}/3) = ${threshold} rising scenarios of ${n}`, () => {
+      const out = aggregateWebRuns(windowOfSeries(mix(n, threshold)));
+      expect(out.ok).toBe(false);
+      if (out.ok) return;
+      const text = out.problems.join('\n');
+      expect(text).toContain(`${threshold} of ${n}`);
+      expect(text).toContain(`refuse at ${threshold}`);
+      expect(text).toContain(`"render.flush ${threshold - 1}"`);
+      expect(text).not.toContain(`"render.flush ${threshold}"`);
+    });
+
+    it(`accepts ${threshold - 1} rising scenarios of ${n} — one under the threshold`, () => {
+      expect(aggregateWebRuns(windowOfSeries(mix(n, threshold - 1))).ok).toBe(true);
+    });
+  }
+
+  it('accepts a flat window', () => {
+    expect(aggregateWebRuns(windowOfSeries(mix(18, 0))).ok).toBe(true);
+  });
+
+  it('accepts a noisy, non-monotonic window', () => {
+    const out = aggregateWebRuns(windowOfSeries(Array.from({ length: 18 }, () => NOISY)));
+    expect(out.ok).toBe(true);
+  });
+
+  it('does not judge trend on desktop lanes, which carry no thermal state', () => {
+    const caps = windowOfSeries(mix(18, 18)).map((c) =>
+      c.map((r) => {
+        const { thermal: _thermal, device: _device, ...rest } = r;
+        return { ...rest, runtime: 'web-gpu' } as WebPromoteRow;
+      }),
+    );
+    expect(aggregateWebRuns(caps).ok).toBe(true);
+  });
+
+  it('does not judge trend below four runs, where a strict rise is too likely by chance', () => {
+    expect(MIN_TREND_RUNS).toBe(4);
+    const short = windowOfSeries(mix(18, 18).map((v) => v.slice(0, MIN_TREND_RUNS - 1)));
+    expect(aggregateWebRuns(short).ok).toBe(true);
+    const long = windowOfSeries(mix(18, 18).map((v) => v.slice(0, MIN_TREND_RUNS)));
+    expect(aggregateWebRuns(long).ok).toBe(false);
   });
 });
 

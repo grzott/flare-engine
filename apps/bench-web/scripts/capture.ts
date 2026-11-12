@@ -28,7 +28,7 @@ import {
   webBaselineFilePath,
 } from './history.js';
 
-type CaptureMode = 'cpu-raster' | 'gpu' | 'android';
+export type CaptureMode = 'cpu-raster' | 'gpu' | 'android';
 
 /** Verdict of comparing a lane's history file before and after a capture. */
 export interface AppendVerdict {
@@ -250,6 +250,57 @@ function readLines(path: string): string[] {
     .filter((l) => l.trim() !== '');
 }
 
+/**
+ * Least time between the newest android capture and the start of the next one (PERF-17).
+ *
+ * Five back-to-back Pixel 7 captures drifted about 18% with `thermalStatus` reading 0 throughout,
+ * so the OS never reported the warm-up that moved the numbers; a 100 s gap from a cool phone gave a
+ * clean window. `capturedAt` is stamped after a capture's driver finishes, so this is the idle time
+ * between captures. There is deliberately no override.
+ */
+export const ANDROID_MIN_GAP_S = 100;
+
+export interface AndroidGapDeps {
+  readonly historyPath: string;
+  readonly now: () => number;
+  /** Defaults to reading the file; a missing file reads as an empty history. */
+  readonly readLines?: (path: string) => readonly string[];
+}
+
+function newestCapturedAtMs(lines: readonly string[]): number | null {
+  let newest: number | null = null;
+  for (const line of lines) {
+    let stamp: unknown;
+    try {
+      stamp = (JSON.parse(line) as { capturedAt?: unknown }).capturedAt;
+    } catch {
+      continue;
+    }
+    if (typeof stamp !== 'string') continue;
+    const ms = Date.parse(stamp);
+    if (!Number.isNaN(ms) && (newest === null || ms > newest)) newest = ms;
+  }
+  return newest;
+}
+
+/**
+ * Refusal text when an android capture would start inside `ANDROID_MIN_GAP_S` of the newest
+ * `capturedAt` in the lane history, or `null` when it may start. Other lanes are never checked.
+ */
+export function androidGapRefusal(mode: CaptureMode, deps: AndroidGapDeps): string | null {
+  if (mode !== 'android') return null;
+  const newest = newestCapturedAtMs((deps.readLines ?? readLines)(deps.historyPath));
+  if (newest === null) return null;
+  const elapsedS = (deps.now() - newest) / 1000;
+  if (elapsedS >= ANDROID_MIN_GAP_S) return null;
+  return (
+    `the newest android capture (${new Date(newest).toISOString()}) landed ` +
+    `${Math.floor(elapsedS)} s ago, and the lane needs ${ANDROID_MIN_GAP_S} s between captures ` +
+    `so the phone is not still warm from the last one — wait ${Math.ceil(ANDROID_MIN_GAP_S - elapsedS)} s ` +
+    'and re-run'
+  );
+}
+
 /** Refuse an Android capture that cannot possibly reach Chrome, before the server or tunnel start. */
 function preflightAndroid(): void {
   let procNetUnix: string;
@@ -320,6 +371,11 @@ const BASELINE_TOLERANCE_PCT = 25;
 
 async function main(): Promise<void> {
   const mode = parseMode();
+  const gap = androidGapRefusal(mode, { historyPath: LANE_HISTORY[mode](), now: Date.now });
+  if (gap !== null) {
+    console.error(`\nbench-web: REFUSING to capture — ${gap}.`);
+    process.exit(1);
+  }
   if (mode === 'android') preflightAndroid();
 
   const load = classifyHostLoad(await sampleHostLoad(2000));

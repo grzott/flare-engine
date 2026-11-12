@@ -1081,6 +1081,8 @@ published window).
   (worst 5.3% from median on any row, fold limit 10%), with **no monotonic degradation** — the two
   warmer runs were not slower, and the warmest was the fastest. Against the row's failure case of
   0.432 -> 0.541 and its own reference clean window of 0.426-0.457, this is tighter than either.
+  The gap and the no-trend check are now enforced, not hand steps (#161): see the runbook comment at
+  the top of `apps/bench-web/scripts/run.ts`.
 
 ### F5 — the host can be quiet and still wrong (PERF-20, same day)
 

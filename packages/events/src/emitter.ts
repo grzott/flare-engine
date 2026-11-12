@@ -12,6 +12,8 @@ export type EventMap = Record<string, (...args: never[]) => void>;
  *   set is iterated live (no per-emit snapshot allocation).
  * - A handler **removed** during an emit still runs for that emit (and any nested
  *   emit); the removal takes effect once the outermost emit completes.
+ *   Exception: a `once` handler is guarded independently of deferred removal and
+ *   fires at most once, even under a nested emit.
  * - `emit` is re-entrant (a handler may emit again) and throw-safe: a throwing
  *   handler propagates to the caller but never wedges deferred removal.
  */
@@ -35,7 +37,11 @@ export class EventEmitter<E extends EventMap> {
 
   /** Subscribe to an event once. Returns unsubscribe function. */
   once<K extends keyof E>(event: K, handler: E[K]): Unsubscribe {
+    let fired = false;
     const wrapper = ((...args: never[]) => {
+      // Deferred removal keeps the wrapper in the live set until the outermost emit ends.
+      if (fired) return;
+      fired = true;
       unsub();
       // biome-ignore lint/complexity/noBannedTypes: generic handler call
       (handler as Function)(...args);

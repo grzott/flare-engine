@@ -8,6 +8,8 @@ import type { Unsubscribe } from './emitter.js';
  *   set is iterated live (no per-emit snapshot allocation).
  * - A handler **removed** during an emit still runs for that emit (and any nested
  *   emit); the removal takes effect once the outermost emit completes.
+ *   Exception: a `once` handler is guarded independently of deferred removal and
+ *   fires at most once, even under a nested emit.
  * - `emit` is re-entrant (a handler may emit again) and throw-safe: a throwing
  *   handler propagates to the caller but never wedges deferred removal.
  */
@@ -26,7 +28,11 @@ export class Signal<T = void> {
 
   /** Subscribe once. Returns unsubscribe function. */
   once(handler: (value: T) => void): Unsubscribe {
+    let fired = false;
     const wrapper = (value: T) => {
+      // Deferred removal keeps the wrapper in the live set until the outermost emit ends.
+      if (fired) return;
+      fired = true;
       unsub();
       handler(value);
     };

@@ -312,9 +312,9 @@
       "measuredAt": "2026-11-06"
     },
     "@flare-engine/share": {
-      "ceiling": 15256,
-      "measured": 13869,
-      "measuredAt": "2026-09-08"
+      "ceiling": 17973,
+      "measured": 16339,
+      "measuredAt": "2026-11-12"
     },
     "@flare-engine/simulation": {
       "ceiling": 45593,
@@ -504,6 +504,10 @@
     {
       "date": "2026-11-12",
       "reason": "Issue #96: freshness.suites gains \"RenderSystem\" -> @flare-engine/ecs + @flare-engine/render, the direct engine imports of the new benchmarks/src/render-system.bench.ts suite (one row, render.system 1000 sprites / 3 z layers interleaved, driving createRenderSystem). No counter and no byte ceiling changed. The same change edits packages/render/src/render-system.ts (the system keeps its draw order between frames and follows the query's add / remove signals) and adds one line to packages/react/src/game-view.tsx. The new suite has no captured number: microbench.json predates it, it is listed in PENDING_FIRST_CAPTURE, and check:perf-freshness reports it as mapped but absent from the capture until the next recapture, alongside the five suites of #159."
+    },
+    {
+      "date": "2026-11-12",
+      "reason": "share ceiling raised 15256 -> 17973 B (measured 16339 x1.1), authorized by the owner's approval of the PR for issue #278. Adds createExpoShareTransport(sharing, files) and the ShareFileWriterLike writer callback, so an Android screenshot share goes through expo-sharing as a cached image file; the README gains an Android screenshots section with both expo-file-system adapters. Measured against the published 0.4.11 tarball, which equals main for this package (14495 B). So this change adds 1844 B gzipped (each file gzipped alone +3643 B): dist/index.mjs and index.js +1355 / +1390 B raw (+393 / +398 B gzipped), each source map +2335 B raw (+620 B gzipped), each .d.ts +1068 B raw (+374 B gzipped, the new interface and JSDoc), README +2421 B raw (+807 B gzipped). A feature, not a regression."
     }
   ]
 }

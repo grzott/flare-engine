@@ -145,6 +145,47 @@ export function createNativeShareTransport(rnShare: NativeShareLike): ShareTrans
   };
 }
 
+/**
+ * Writes base64 image data to a file the OS share sheet can read and resolves to its URI. The app
+ * supplies it (typically over `expo-file-system`'s cache directory); see the package README.
+ */
+export interface ShareFileWriterLike {
+  writeBase64File(name: string, base64: string): Promise<string>;
+}
+
+/**
+ * Shares a `screenshot` as an image file through an `expo-sharing`-shaped module, which is how
+ * an image reaches the Android share sheet. `canShare` is true only for a payload with a
+ * screenshot, so register it before `createNativeShareTransport` and text-only payloads fall
+ * through. The file is shared alone: `message` and `url` are dropped, and `title` becomes the
+ * `dialogTitle`. `shareAsync` does not report whether the user completed the share, so
+ * `dispatched: true` means the sheet was opened; it is `false` when `isAvailableAsync()` resolves
+ * false. Writer and `shareAsync` rejections propagate.
+ */
+export function createExpoShareTransport(
+  sharing: ExpoSharingLike,
+  files: ShareFileWriterLike,
+): ShareTransport {
+  return {
+    name: 'native',
+    canShare(payload) {
+      return payload.screenshot !== undefined;
+    },
+    async share(payload) {
+      const shot = payload.screenshot;
+      if (shot === undefined) return { dispatched: false, via: 'native' };
+      if (!(await sharing.isAvailableAsync())) return { dispatched: false, via: 'native' };
+      const uri = await files.writeBase64File(`screenshot.${shot.format}`, shot.base64);
+      const options: { dialogTitle?: string; mimeType?: string } = {
+        mimeType: `image/${shot.format}`,
+      };
+      if (payload.title !== undefined) options.dialogTitle = payload.title;
+      await sharing.shareAsync(uri, options);
+      return { dispatched: true, via: 'native' };
+    },
+  };
+}
+
 // ---------- Manager -------------------------------------------------------
 
 export class ShareManager {

@@ -42,6 +42,7 @@ export class SceneManager {
   private _pendingData: unknown = undefined;
   private _preloadResolved = true;
   private _preloadGen = 0;
+  private _warnedPendingGo = false;
 
   /** The currently active scene (top of stack). */
   get current(): Scene | undefined {
@@ -141,8 +142,11 @@ export class SceneManager {
    * Push a scene onto the stack. The current scene gets onExit, unless
    * `options.overlay` is true — then it stays live and is updated and drawn
    * before the pushed scene. The new scene gets onPreload → onInit → onEnter.
+   * Ignored while an animated `go()` is still fading out — that `go()` clears
+   * the stack when the fade-out ends; nothing is called and nothing changes.
    */
   async push(name: string, data?: unknown, options?: ScenePushOptions): Promise<void> {
+    if (this._refusedByPendingGo()) return;
     const scene = this._getOrCreate(name);
     if (!scene) return;
 
@@ -160,8 +164,11 @@ export class SceneManager {
    * `options.keep` is true — a kept scene stays initialized so the next `push`
    * of its name goes straight to onEnter. The scene below gets
    * onEnter(options.data) unless the popped scene was pushed as an overlay.
+   * Ignored while an animated `go()` is still fading out — that `go()` clears
+   * the stack when the fade-out ends; nothing is called and nothing changes.
    */
   pop(options?: ScenePopOptions): void {
+    if (this._refusedByPendingGo()) return;
     if (this._stack.length <= 1) return;
 
     const top = this._stack.pop()!;
@@ -206,6 +213,19 @@ export class SceneManager {
   /** Get the current transition phase. */
   get transitionPhase(): 'out' | 'in' | null {
     return this._transitionState?.phase ?? null;
+  }
+
+  /** True while an animated `go()` target is pending; warns once per manager in dev. */
+  private _refusedByPendingGo(): boolean {
+    const pending = this._pendingScene;
+    if (!pending) return false;
+    if (!this._warnedPendingGo && typeof __DEV__ !== 'undefined' && __DEV__) {
+      this._warnedPendingGo = true;
+      console.warn(
+        `[SceneManager] push()/pop() ignored while go('${pending.name}') is fading out; call them after the fade-out ends`,
+      );
+    }
+    return true;
   }
 
   private _getOrCreate(name: string): Scene | null {

@@ -1457,3 +1457,272 @@ describe('SceneManager — stack teardown sequence', () => {
     expect(log).toEqual(['c:update:1', 'c:draw']);
   });
 });
+
+describe('SceneManager — push/pop during a pending go()', () => {
+  const g = globalThis as unknown as Record<string, unknown>;
+  let originalDev: unknown;
+
+  beforeEach(() => {
+    originalDev = g.__DEV__;
+    g.__DEV__ = false;
+  });
+
+  afterEach(() => {
+    g.__DEV__ = originalDev;
+  });
+
+  /** Registers `name` so each instance logs as `<name><n>:<hook>`, n counting instances from 0. */
+  function registerCounted(mgr: SceneManager, name: string, log: string[]): Scene[] {
+    const instances: Scene[] = [];
+    mgr.register(name, (world, camera) => {
+      const id = `${name}${instances.length}`;
+      const s: Scene = {
+        name,
+        world,
+        camera,
+        onPreload() {
+          log.push(`${id}:preload`);
+        },
+        onInit() {
+          log.push(`${id}:init`);
+        },
+        onEnter() {
+          log.push(`${id}:enter`);
+        },
+        onExit() {
+          log.push(`${id}:exit`);
+        },
+        onDestroy() {
+          log.push(`${id}:destroy`);
+        },
+      };
+      instances.push(s);
+      return s;
+    });
+    return instances;
+  }
+
+  function count(log: string[], entry: string): number {
+    return log.filter((e) => e === entry).length;
+  }
+
+  /** Per instance id: no enter before init, no init after destroy, at most one init and one destroy. */
+  function expectOrderedLifecycles(log: string[]): void {
+    const ids = new Set(log.map((e) => e.slice(0, e.indexOf(':'))));
+    for (const id of ids) {
+      const init = log.indexOf(`${id}:init`);
+      const enter = log.indexOf(`${id}:enter`);
+      const destroy = log.indexOf(`${id}:destroy`);
+      expect(count(log, `${id}:init`)).toBeLessThanOrEqual(1);
+      expect(count(log, `${id}:destroy`)).toBeLessThanOrEqual(1);
+      if (enter !== -1) {
+        expect(init).toBeGreaterThanOrEqual(0);
+        expect(init).toBeLessThan(enter);
+      }
+      if (destroy !== -1) expect(log.lastIndexOf(`${id}:init`)).toBeLessThan(destroy);
+    }
+  }
+
+  it('push of the pending name during the fade-out is refused; the target inits then enters once', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    registerCounted(mgr, 'first', log);
+    const aInstances = registerCounted(mgr, 'a', log);
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    await mgr.push('a');
+    mgr.update(1.0); // 'out' done → switch to a
+
+    expectOrderedLifecycles(log);
+    expect(count(log, 'first0:exit')).toBe(1);
+    expect(log).toEqual(['a0:preload', 'first0:exit', 'first0:destroy', 'a0:init', 'a0:enter']);
+    expect(aInstances.length).toBe(1);
+    expect(mgr.current).toBe(aInstances[0]);
+    expect(mgr.stackSize).toBe(1);
+  });
+
+  it('pop during the fade-out is refused: no lifecycle calls, stack unchanged', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    registerCounted(mgr, 'first', log);
+    registerCounted(mgr, 'second', log);
+    const aInstances = registerCounted(mgr, 'a', log);
+    await mgr.go('first');
+    await mgr.push('second');
+    log.length = 0;
+
+    void mgr.go('a');
+    mgr.pop();
+    expect(log).toEqual(['a0:preload']);
+    expect(mgr.stackSize).toBe(2);
+    expect(mgr.current?.name).toBe('second');
+
+    mgr.update(1.0); // 'out' done → switch to a
+    expect(log).toEqual([
+      'a0:preload',
+      'second0:exit',
+      'second0:destroy',
+      'first0:exit',
+      'first0:destroy',
+      'a0:init',
+      'a0:enter',
+    ]);
+    expect(mgr.current).toBe(aInstances[0]);
+    expect(mgr.stackSize).toBe(1);
+  });
+
+  it('a pop after a refused push of the pending name leaves the pending instance untouched', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    registerCounted(mgr, 'first', log);
+    const aInstances = registerCounted(mgr, 'a', log);
+    await mgr.go('first');
+    log.length = 0;
+
+    void mgr.go('a');
+    await mgr.push('a');
+    mgr.pop();
+    expect(log).toEqual(['a0:preload']);
+    expect(mgr.stackSize).toBe(1);
+
+    mgr.update(1.0); // 'out' done → switch to a
+    expectOrderedLifecycles(log);
+    expect(count(log, 'a0:init')).toBe(1);
+    expect(count(log, 'a0:enter')).toBe(1);
+    expect(count(log, 'a0:destroy')).toBe(0);
+    expect(mgr.current).toBe(aInstances[0]);
+  });
+
+  it('a refused pop of an older same-name scene leaves the pending instance destroyable by a superseding go()', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    registerCounted(mgr, 'first', log);
+    const aInstances = registerCounted(mgr, 'a', log);
+    const bInstances = registerCounted(mgr, 'b', log);
+    await mgr.go('first');
+    await mgr.push('a');
+    const start = log.length;
+
+    void mgr.go('a'); // pending a1; a0 is on the stack
+    mgr.pop();
+    void mgr.go('b'); // supersedes a1
+    mgr.update(1.0); // 'out' done → switch to b
+    mgr.update(1.0); // 'in' done
+
+    expect(aInstances.length).toBe(2);
+    expect(mgr.current).toBe(bInstances[0]);
+    expect(mgr.stackSize).toBe(1);
+    expectOrderedLifecycles(log);
+    for (const id of ['first0', 'a0', 'a1']) expect(count(log, `${id}:destroy`)).toBe(1);
+    expect(count(log, 'b0:destroy')).toBe(0);
+    expect(log.slice(start)).toEqual([
+      'a1:preload',
+      'a1:destroy',
+      'b0:preload',
+      'a0:exit',
+      'a0:destroy',
+      'first0:exit',
+      'first0:destroy',
+      'b0:init',
+      'b0:enter',
+    ]);
+  });
+
+  it('warns once per manager for repeated refused push/pop calls', async () => {
+    g.__DEV__ = true;
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const mgr = new SceneManager();
+      mgr.setTransition(fadeTransition(1));
+      mgr.register('first', createTestScene('first', []));
+      mgr.register('second', createTestScene('second', []));
+      mgr.register('a', createTestScene('a', []));
+      await mgr.go('first');
+      await mgr.push('second');
+
+      void mgr.go('a');
+      await mgr.push('a');
+      mgr.pop();
+      await mgr.push('second');
+      mgr.pop();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const msg = warnSpy.mock.calls[0]![0] as string;
+      expect(msg).toContain('[SceneManager]');
+      expect(msg).toContain('push');
+      expect(msg).toContain('pop');
+      expect(mgr.stackSize).toBe(2);
+
+      const other = new SceneManager();
+      other.setTransition(fadeTransition(1));
+      other.register('first', createTestScene('first', []));
+      other.register('a', createTestScene('a', []));
+      await other.go('first');
+      void other.go('a');
+      other.pop();
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('refuses silently when __DEV__ is false', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const mgr = new SceneManager();
+      mgr.setTransition(fadeTransition(1));
+      mgr.register('first', createTestScene('first', []));
+      mgr.register('a', createTestScene('a', []));
+      await mgr.go('first');
+      void mgr.go('a');
+      await mgr.push('a');
+      expect(mgr.stackSize).toBe(1);
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('push and pop work again once the fade-out has finished, during the fade-in and after', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    registerCounted(mgr, 'first', log);
+    registerCounted(mgr, 'a', log);
+    registerCounted(mgr, 'b', log);
+    await mgr.go('first');
+    void mgr.go('a');
+    mgr.update(1.0); // 'out' done → a is current, 'in' running
+    expect(mgr.transitionPhase).toBe('in');
+    log.length = 0;
+
+    await mgr.push('b');
+    expect(log).toEqual(['a0:exit', 'b0:preload', 'b0:init', 'b0:enter']);
+    expect(mgr.stackSize).toBe(2);
+    log.length = 0;
+    mgr.pop();
+    expect(log).toEqual(['b0:exit', 'b0:destroy', 'a0:enter']);
+    expect(mgr.stackSize).toBe(1);
+
+    mgr.update(1.0); // 'in' done
+    expect(mgr.isTransitioning).toBe(false);
+    log.length = 0;
+    await mgr.push('b');
+    mgr.pop();
+    expect(log).toEqual([
+      'a0:exit',
+      'b1:preload',
+      'b1:init',
+      'b1:enter',
+      'b1:exit',
+      'b1:destroy',
+      'a0:enter',
+    ]);
+    expect(mgr.current?.name).toBe('a');
+  });
+});

@@ -135,49 +135,86 @@ export const TEMP_DRIFT_WARN_C = 1;
 
 /**
  * An android window is refused when at least `ceil(n / TREND_SCENARIO_DIVISOR)` of its n scenarios
- * have a p50 that rises strictly across every run (PERF-17).
+ * are rising (PERF-17): Kendall tau of the p50s against run order at least `TREND_MIN_TAU`, and the
+ * last run at least `TREND_MIN_RISE` above the first.
  *
- * One third, not "any one scenario": on a clean five-run window a single scenario rises strictly by
- * chance with probability 1/5! = 1/120, so across about 18 scenarios the any-one rule would refuse
- * about 14% of clean windows (1 - (119/120)^18). Six of 18 rising by chance is about 6e-9. The drift
- * this exists for (2026-08-21, Pixel 7, `thermalStatus` 0 throughout) rose on 18 of 18 rows, and the
- * clean PERF-22 window on 0 of 18, so one third sits far from both.
+ * Calibrated on every five-capture window in `web-android-history.ndjson`. The rule counts 15 of 18
+ * on the 2026-08-21 back-to-back drift and 11-14 on the 2026-09-05 back-to-back windows, against at
+ * most 1 of 18 on every gapped window recorded from 2026-08-21 to 2026-11-08. One third sits far
+ * from both; "any one scenario" would refuse two of those gapped windows.
+ *
+ * Both halves are needed. Android p50s are quantized, so a drift climbs in steps with ties and small
+ * dips: a strict every-run rise finds only 4 of 18 on 2026-08-21. Tau alone counts order without
+ * size and refuses the clean, gapped 2026-11-04 window (6 of 18 at recorded precision, on sub-5%
+ * wobble).
+ *
+ * The 10% spread gate below already refuses the 2026-08-21 window; this rule is what refuses a drift
+ * the spread gate passes, as on 2026-09-05 from 07:27 (11 of 18).
  */
 export const TREND_SCENARIO_DIVISOR = 3;
 
+/** Over five runs, tau 0.6 still allows two of the ten pairs to fall, or four to tie. */
+export const TREND_MIN_TAU = 0.6;
+
+/** Net rise, last run over first, as a fraction of the first. */
+export const TREND_MIN_RISE = 0.05;
+
 /**
- * Shortest window the trend rule judges. A strict rise over k runs has chance 1/k!, so with the
- * one-third threshold over 18 scenarios a clean window is refused about 95% of the time at two runs
- * and 6.5% at three — the false-refusal class the threshold exists to avoid. At four runs (1/24) it
- * is about 6e-5. `bench:web:promote` folds five by default.
+ * Shortest window the trend rule judges. Below four runs tau cannot tell a trend from one step: over
+ * three runs a flat series with one slow last run, `[a, a, 1.06a]`, already scores tau 0.67, and over
+ * two tau is the sign of a single difference. From four runs that shape scores 0.5. On the recorded
+ * history one gapped three-run window already reaches 6 of 18 (2026-09-06 from 14:19), while every
+ * gapped four-run window stays at or under 4. `bench:web:promote` folds five by default.
  */
 export const MIN_TREND_RUNS = 4;
 
-/** Refusal text when enough scenarios rise strictly across the window, or `null`. */
-function judgeMonotonicTrend(
+/** Kendall tau of `values` against their order: S / (k(k-1)/2), S = sum of sign(v[j] - v[i]) over i < j. */
+export function kendallTau(values: readonly number[]): number {
+  const k = values.length;
+  if (k < 2) return 0;
+  let s = 0;
+  for (let i = 0; i < k; i++) {
+    for (let j = i + 1; j < k; j++) s += Math.sign((values[j] as number) - (values[i] as number));
+  }
+  return s / ((k * (k - 1)) / 2);
+}
+
+/** Whether one scenario's p50s across a window count as rising under the trend rule. */
+export function isRising(values: readonly number[]): boolean {
+  const first = values[0];
+  const last = values[values.length - 1];
+  if (first === undefined || last === undefined || first <= 0) return false;
+  return kendallTau(values) >= TREND_MIN_TAU && (last - first) / first >= TREND_MIN_RISE;
+}
+
+/** Refusal text when enough scenarios are rising across the window, or `null`. */
+function judgeRisingTrend(
   captures: readonly WebPromoteRow[][],
   names: readonly string[],
 ): string | null {
   if (captures.length < MIN_TREND_RUNS) return null;
 
-  const rising: { readonly name: string; readonly values: number[] }[] = [];
+  const rising: string[] = [];
   for (const [i, name] of names.entries()) {
     const values = captures.map((c) => (c[i] as WebPromoteRow).p50Ms);
-    if (values.every((v, j) => j === 0 || v > (values[j - 1] as number))) {
-      rising.push({ name, values });
-    }
+    if (!isRising(values)) continue;
+    const first = values[0] as number;
+    const risePct = (((values[values.length - 1] as number) - first) / first) * 100;
+    rising.push(
+      `"${name}" (${values.map((v) => v.toPrecision(4)).join(' -> ')}; ` +
+        `tau ${kendallTau(values).toFixed(2)}, +${risePct.toFixed(1)}%)`,
+    );
   }
 
   const threshold = Math.ceil(names.length / TREND_SCENARIO_DIVISOR);
   if (rising.length === 0 || rising.length < threshold) return null;
 
   return (
-    `${rising.length} of ${names.length} scenarios rose strictly across all ${captures.length} runs ` +
-    `(refuse at ${threshold}: one third of the scenarios, rounded up) — the phone was still drifting, ` +
-    'so the median describes a moving state. Re-capture from a cool phone with the 100 s gap. ' +
-    `Rising: ${rising
-      .map((r) => `"${r.name}" (${r.values.map((v) => v.toFixed(3)).join(' -> ')})`)
-      .join('; ')}`
+    `${rising.length} of ${names.length} scenarios are rising across all ${captures.length} runs ` +
+    `(Kendall tau >= ${TREND_MIN_TAU} and last run >= ${TREND_MIN_RISE * 100}% above the first; ` +
+    `refuse at ${threshold}: one third of the scenarios, rounded up) — the phone was still ` +
+    'drifting, so the median describes a moving state. Re-capture from a cool phone with the ' +
+    `100 s gap. Rising: ${rising.join('; ')}`
   );
 }
 
@@ -356,7 +393,7 @@ export function aggregateWebRuns(
 
   // Only the android lane carries `thermal`. Desktop lanes have no warm-up to drift through.
   if (captures.some((c) => (c[0] as WebPromoteRow).thermal !== undefined)) {
-    const trend = judgeMonotonicTrend(captures, names);
+    const trend = judgeRisingTrend(captures, names);
     if (trend !== null) problems.push(trend);
   }
 

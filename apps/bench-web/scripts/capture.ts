@@ -253,10 +253,14 @@ function readLines(path: string): string[] {
 /**
  * Least time between the newest android capture and the start of the next one (PERF-17).
  *
- * Five back-to-back Pixel 7 captures drifted about 18% with `thermalStatus` reading 0 throughout,
- * so the OS never reported the warm-up that moved the numbers; a 100 s gap from a cool phone gave a
- * clean window. `capturedAt` is stamped after a capture's driver finishes, so this is the idle time
- * between captures. There is deliberately no override.
+ * The 2026-08-21 back-to-back window (five Pixel 7 captures 47 s apart) rose 5-30% first-to-last
+ * across its 18 scenarios, `render.flush 1000 sprites / 1 atlas` reaching 0.432 -> 0.541 ms at its
+ * peak, with `thermalStatus` reading 0 throughout, so the OS never reported the warm-up that moved
+ * the numbers; a 100 s gap from a cool phone gave a clean window. `capturedAt` is stamped after a
+ * capture's driver finishes, so this is the idle time between captures.
+ *
+ * There is deliberately no override on this guarded path. `bench:web:unguarded` runs
+ * `scripts/run.ts` directly, skipping `capture.ts` and so this check with it.
  */
 export const ANDROID_MIN_GAP_S = 100;
 

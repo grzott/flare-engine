@@ -346,3 +346,51 @@ describe('GameLoop input validation', () => {
     expect(() => loop.step(0.016)).toThrow('GameLoop: fixedDt must be > 0');
   });
 });
+
+describe('GameLoop frame callback reuse (#120)', () => {
+  it('hands the same callback to tick on every frame', () => {
+    const loop = new GameLoop();
+    const seen: ((time: number) => void)[] = [];
+    let queued: ((time: number) => void) | null = null;
+    loop.tick = (cb) => {
+      seen.push(cb);
+      queued = cb;
+      return seen.length;
+    };
+    loop.start();
+    for (let i = 0; i < 9; i++) {
+      const cb = queued as unknown as (time: number) => void;
+      queued = null;
+      cb(1000 + i * 16);
+    }
+    expect(seen.length).toBe(10);
+    expect(new Set(seen).size).toBe(1);
+  });
+
+  it('reuses the callback across stop and start, and still runs one chain', () => {
+    const loop = new GameLoop();
+    const seen: ((time: number) => void)[] = [];
+    const queue: ((time: number) => void)[] = [];
+    loop.tick = (cb) => {
+      seen.push(cb);
+      queue.push(cb);
+      return seen.length;
+    };
+    loop.cancelTick = () => {
+      queue.length = 0;
+    };
+    let updates = 0;
+    loop.onUpdate.add(() => {
+      updates++;
+    });
+    loop.start();
+    (queue.shift() as (time: number) => void)(1000);
+    loop.stop();
+    loop.start();
+    (queue.shift() as (time: number) => void)(2000);
+    (queue.shift() as (time: number) => void)(2016);
+    expect(updates).toBe(1);
+    expect(queue.length).toBe(1);
+    expect(new Set(seen).size).toBe(1);
+  });
+});

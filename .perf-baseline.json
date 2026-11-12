@@ -292,9 +292,9 @@
       "measuredAt": "2026-11-04"
     },
     "@flare-engine/render": {
-      "ceiling": 143405,
-      "measured": 130368,
-      "measuredAt": "2026-09-08"
+      "ceiling": 158779,
+      "measured": 144344,
+      "measuredAt": "2026-11-12"
     },
     "@flare-engine/render-web": {
       "ceiling": 47268,
@@ -512,6 +512,10 @@
     {
       "date": "2026-11-12",
       "reason": "animation ceiling raised 16083 -> 18354 B (measured 16685 x1.1), authorized by the owner's approval of the PR for issue #275. spring() now validates its config (RangeError naming the field for mass <= 0, negative stiffness or damping, or a non-finite field) with JSDoc stating the rule. Measured against the published 0.4.11 tarball, which equals main for this package (16070 B, already 13 B under the old ceiling). So this change adds 615 B gzipped (each file gzipped alone +1744 B): dist/index.mjs and index.js +824 B raw (+306 / +310 B gzipped) each, each source map +1119 B raw (+377 B gzipped), each .d.ts +382 B raw (+187 / +186 B gzipped, the JSDoc). A bug fix, not a regression."
+    },
+    {
+      "date": "2026-11-12",
+      "reason": "render ceiling raised 143405 -> 158779 B (measured 144344 x1.1), pending the owner's approval of the PR for issue #98. The frame renderer reflects a custom shader's uniform layout (names, slots, sizes, float count) once per compiled shader into a module-level WeakMap instead of on every sprite run drawn with a custom effect; internal, no exported symbol or .d.ts change. This change is the last ~1 KB, not the whole growth: with packages/render/src/frame-renderer.ts at origin/main 14ea8167 the same machine's check:perf-bytes passes, so main packs at or under 143405 B and this change adds at least 939 B to the tarball. Each file gzipped alone grows about 1.05 KB in total: dist/index.js 65.20 -> 65.82 kB raw (18.26 -> 18.43 kB gzipped), dist/index.mjs 64.20 -> 64.82 kB raw (18.04 -> 18.20 kB gzipped), each source map about +1.4 kB raw (+0.36 kB gzipped). The rest of the distance from the 2026-10-09 measurement (130368 B) is the render work merged since under the old ceiling, not measured here. A performance fix, not a regression."
     }
   ]
 }

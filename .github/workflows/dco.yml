@@ -27,7 +27,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
-          EXEMPT: ${{ github.repository_owner }},${{ vars.BOT_LOGIN }},dependabot[bot]
+          # github-actions[bot] authors the Changesets "version packages" commit in release.yml.
+          EXEMPT: ${{ github.repository_owner }},${{ vars.BOT_LOGIN }},dependabot[bot],github-actions[bot]
         run: |
           gh api "repos/$REPO/pulls/$PR/commits" --paginate --jq '
             ($ENV.EXEMPT | split(",") | map(select(length > 0))) as $exempt

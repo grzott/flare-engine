@@ -11,3 +11,5 @@ single `console.warn` is emitted per renderer.
 This only arises with a shader compile failure or a custom Skia module that omits `RuntimeEffect`;
 `@flare-engine/render-web` always supplies it. Drawing with a compiled shader is unchanged, as is
 the plain-sprite fallback of the water, fog, fire and drop-shadow effects.
+
+<!-- symbols-ok: RuntimeEffect.Make -->

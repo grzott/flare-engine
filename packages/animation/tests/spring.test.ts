@@ -223,3 +223,44 @@ describe('updateSpring — any dt (#135)', () => {
     expect(Math.abs(s.velocity - 4 * e)).toBeLessThanOrEqual(1e-12);
   });
 });
+
+describe('spring() config validation (#275)', () => {
+  const invalid: [string, Partial<SpringConfig>, string][] = [
+    ['mass 0', { mass: 0 }, 'mass'],
+    ['negative mass', { mass: -1 }, 'mass'],
+    ['negative stiffness', { stiffness: -5 }, 'stiffness'],
+    ['negative damping', { damping: -0.5 }, 'damping'],
+    ['NaN stiffness', { stiffness: Number.NaN }, 'stiffness'],
+    ['Infinity damping', { damping: Number.POSITIVE_INFINITY }, 'damping'],
+    ['-Infinity mass', { mass: Number.NEGATIVE_INFINITY }, 'mass'],
+    ['NaN mass', { mass: Number.NaN }, 'mass'],
+  ];
+
+  for (const [label, config, field] of invalid) {
+    it(`throws a RangeError naming the field for ${label}`, () => {
+      let caught: unknown;
+      try {
+        spring(0, 1, config);
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(RangeError);
+      expect((caught as RangeError).message).toContain(field);
+    });
+  }
+
+  it('still constructs at the valid edges: stiffness 0 and damping 0', () => {
+    const free = spring(0, 1, { stiffness: 0 });
+    expect(free.config.stiffness).toBe(0);
+    const undamped = spring(0, 1, { damping: 0 });
+    expect(undamped.config.damping).toBe(0);
+    updateSpring(undamped, 1 / 60);
+    expect(Number.isFinite(undamped.value)).toBe(true);
+  });
+
+  it('still constructs with the defaults and with partial configs', () => {
+    expect(() => spring(0, 1)).not.toThrow();
+    expect(() => spring(0, 1, { stiffness: 300 })).not.toThrow();
+    expect(() => spring(0, 1, { mass: 0.25, damping: 2 })).not.toThrow();
+  });
+});

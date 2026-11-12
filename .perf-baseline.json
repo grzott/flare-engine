@@ -157,9 +157,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/animation": {
-      "ceiling": 16083,
-      "measured": 14620,
-      "measuredAt": "2026-09-08"
+      "ceiling": 18354,
+      "measured": 16685,
+      "measuredAt": "2026-11-12"
     },
     "@flare-engine/assets": {
       "ceiling": 24232,
@@ -508,6 +508,10 @@
     {
       "date": "2026-11-12",
       "reason": "share ceiling raised 15256 -> 17973 B (measured 16339 x1.1), authorized by the owner's approval of the PR for issue #278. Adds createExpoShareTransport(sharing, files) and the ShareFileWriterLike writer callback, so an Android screenshot share goes through expo-sharing as a cached image file; the README gains an Android screenshots section with both expo-file-system adapters. Measured against the published 0.4.11 tarball, which equals main for this package (14495 B). So this change adds 1844 B gzipped (each file gzipped alone +3643 B): dist/index.mjs and index.js +1355 / +1390 B raw (+393 / +398 B gzipped), each source map +2335 B raw (+620 B gzipped), each .d.ts +1068 B raw (+374 B gzipped, the new interface and JSDoc), README +2421 B raw (+807 B gzipped). A feature, not a regression."
+    },
+    {
+      "date": "2026-11-12",
+      "reason": "animation ceiling raised 16083 -> 18354 B (measured 16685 x1.1), authorized by the owner's approval of the PR for issue #275. spring() now validates its config (RangeError naming the field for mass <= 0, negative stiffness or damping, or a non-finite field) with JSDoc stating the rule. Measured against the published 0.4.11 tarball, which equals main for this package (16070 B, already 13 B under the old ceiling). So this change adds 615 B gzipped (each file gzipped alone +1744 B): dist/index.mjs and index.js +824 B raw (+306 / +310 B gzipped) each, each source map +1119 B raw (+377 B gzipped), each .d.ts +382 B raw (+187 / +186 B gzipped, the JSDoc). A bug fix, not a regression."
     }
   ]
 }

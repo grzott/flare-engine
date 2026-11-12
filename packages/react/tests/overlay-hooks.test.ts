@@ -152,6 +152,16 @@ describe('useOverlayFade (rAF env)', () => {
     expect(stateStore[0]).toBe(1);
   });
 
+  it('eases linearly: halfway through the duration it is halfway to the target', () => {
+    stateStore[0] = 0;
+    useOverlayFade(true, 200);
+    flushEffects();
+    stepRaf(16);
+    // t = (116 - 16) / 200 = 0.5 exactly; easeOutCubic would give 0.875.
+    stepRaf(100);
+    expect(stateStore[0]).toBe(0.5);
+  });
+
   it('interruption — does NOT jump to previous target mid-animation (regression for useOverlayFade)', () => {
     // Phase 1: animate from 0 → 1 with 400ms duration.
     stateStore[0] = 0;
@@ -252,6 +262,16 @@ describe('useCountUp (rAF env)', () => {
     // Step past duration — t clamps to 1, value == target.
     stepRaf(600);
     expect(stateStore[0]).toBe(100);
+  });
+
+  it('eases out cubically: halfway through the duration it is 87.5% of the way', () => {
+    stateStore[0] = 0;
+    useCountUp(100, 600);
+    flushEffects();
+    stepRaf(16);
+    // t = (316 - 16) / 600 = 0.5 exactly; easeOutCubic(0.5) = 0.875, linear would give 50.
+    stepRaf(300);
+    expect(stateStore[0]).toBe(87.5);
   });
 
   it('INTERRUPTION — continues from current display value, not previous target (Fix 1)', () => {

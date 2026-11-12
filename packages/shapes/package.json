@@ -46,6 +46,9 @@
     "lint": "biome check src/",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@flare-engine/math": "^0.4.11"
+  },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=2.0.0"
   },

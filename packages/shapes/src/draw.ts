@@ -8,6 +8,7 @@
  * renders behind the geometry.
  */
 
+import { argbToFloat4Into } from '@flare-engine/math';
 import type { SkCanvas, Skia as SkiaModule, SkPaint, SkPath } from '@shopify/react-native-skia';
 import { singleShapeRadius } from './bounds.js';
 import type {
@@ -88,21 +89,19 @@ export function applyGlow(
 
 const COLOR = new Float32Array(4);
 
+/** Same as `argbToFloat4Into` from `@flare-engine/math`, kept as the shapes entry point. */
 export function argbTo(out: Float32Array, argb: number): void {
-  out[0] = ((argb >>> 16) & 0xff) / 255;
-  out[1] = ((argb >>> 8) & 0xff) / 255;
-  out[2] = (argb & 0xff) / 255;
-  out[3] = ((argb >>> 24) & 0xff) / 255;
+  argbToFloat4Into(out, argb);
 }
 
 function applyFill(paint: SkPaint, argb: number): void {
-  argbTo(COLOR, argb);
+  argbToFloat4Into(COLOR, argb);
   paint.setColor(COLOR);
   paint.setStyle(0); // Fill
 }
 
 function applyStroke(paint: SkPaint, argb: number, width: number): void {
-  argbTo(COLOR, argb);
+  argbToFloat4Into(COLOR, argb);
   paint.setColor(COLOR);
   paint.setStyle(1); // Stroke
   paint.setStrokeWidth(width);

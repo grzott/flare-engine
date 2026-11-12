@@ -1,4 +1,5 @@
 import type { SkImageLike } from '@flare-engine/assets';
+import { argbToFloat4Into } from '@flare-engine/math';
 import {
   createFrameRenderer,
   type FrameRenderer,
@@ -179,26 +180,18 @@ export function renderShapesToImage(
   const scratch = new Float32Array(4);
   const canvas = surface.getCanvas();
 
-  unpackArgb(scratch, opts.clearColor);
+  argbToFloat4Into(scratch, opts.clearColor);
   canvas.clear(scratch);
 
   const paint = skia.Paint();
   for (const shape of opts.shapes) {
-    unpackArgb(scratch, shape.color);
+    argbToFloat4Into(scratch, shape.color);
     if (paint.setColor) paint.setColor(scratch);
     const rect = skia.XYWHRect(shape.x, shape.y, shape.w, shape.h);
     canvas.drawRect(rect, paint);
   }
 
   return detachSnapshot(surface);
-}
-
-/** Unpack a 0xAARRGGBB integer into a Float32Array [r, g, b, a] in 0..1 range. */
-function unpackArgb(out: Float32Array, argb: number): void {
-  out[0] = ((argb >>> 16) & 0xff) / 255;
-  out[1] = ((argb >>> 8) & 0xff) / 255;
-  out[2] = (argb & 0xff) / 255;
-  out[3] = ((argb >>> 24) & 0xff) / 255;
 }
 
 // Re-export the PostFxPassDescriptor shape for GameView consumers.

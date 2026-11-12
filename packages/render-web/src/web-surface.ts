@@ -1,3 +1,4 @@
+import { argbToFloat4Into } from '@flare-engine/math';
 import type { CanvasLike } from '@flare-engine/render';
 import type { CanvasKit, Canvas as CKCanvas, Surface } from 'canvaskit-wasm';
 
@@ -22,14 +23,6 @@ export interface WebSurface {
 // Pre-allocated scratch buffer for unpacking packed-ARGB → Float32Array [r,g,b,a].
 const clearScratch = new Float32Array(4);
 
-/** Unpack a 0xAARRGGBB integer into a Float32Array [r, g, b, a] in [0, 1]. */
-function unpackArgb(out: Float32Array, argb: number): void {
-  out[0] = ((argb >>> 16) & 0xff) / 255;
-  out[1] = ((argb >>> 8) & 0xff) / 255;
-  out[2] = (argb & 0xff) / 255;
-  out[3] = ((argb >>> 24) & 0xff) / 255;
-}
-
 /**
  * Create a `WebSurface` for the given `<canvas>` element.
  *
@@ -49,7 +42,7 @@ export function createWebSurface(kit: CanvasKit, canvas: HTMLCanvasElement): Web
       // CanvasLike.rotate is degrees (contract); CanvasKit Canvas.rotate takes degrees — pass-through.
       rotate: (degrees, cx, cy) => ck.rotate(degrees, cx, cy),
       clear: (color) => {
-        unpackArgb(clearScratch, color);
+        argbToFloat4Into(clearScratch, color);
         ck.clear(clearScratch);
       },
     },

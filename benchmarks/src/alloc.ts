@@ -18,9 +18,12 @@ import { cachedFactoryCalls, perFrameFactoryCalls, type SkiaStub } from './skia-
  * being "low".
  *
  * What these counters provably cannot see: allocations inside the engine that
- * pass through neither pool nor injected factory — the cached slices at
- * frame-renderer.ts:386-398 are the known example. The isolated heap probe
- * stays as the whole-heap backstop for exactly that gap.
+ * pass through neither pool nor injected factory — the per-run-length slice
+ * cache in frame-renderer.ts (`getCachedSrcSlice` / `getCachedXformSlice`) is
+ * the known example: it copies the pooled arrays once per distinct run length
+ * (and again each time a run above its per-length cap changes length), and
+ * none of these counters move when it does. The isolated heap probe stays
+ * as the whole-heap backstop for exactly that gap.
  *
  * One honest caveat about `particleFactoryCalls`: `ParticlePool` prewarms to
  * capacity and the emitter only ever uses the capped `tryAcquire()`, so in

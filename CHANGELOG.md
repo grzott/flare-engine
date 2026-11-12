@@ -15,7 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
-| [0.4.11](#0411) | 2026-11-11 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
+| [0.4.11](#0411) | 2026-11-12 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
 | [0.4.10](#0410) | 2026-11-08 | 42 | Procedural SFX, dynamics sleeping, per-image sampling, web postfx, slot headers; includes 0.4.9 |
 | [0.4.8](#048) | 2026-11-05 | 42 | Tilemap flips and layer opacity, the native LUT pass, one wasm download |
 | [0.4.7](#047) | 2026-11-04 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |

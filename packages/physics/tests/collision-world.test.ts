@@ -393,3 +393,115 @@ describe('CollisionWorld trigger-vs-collision dispatch (#105)', () => {
     expect(log).toEqual([]);
   });
 });
+
+describe('CollisionWorld re-add with a flipped isTrigger (#304)', () => {
+  type Family = 'trigger' | 'collision';
+
+  function familyLog(world: CollisionWorld): string[] {
+    const log: string[] = [];
+    const rec = (event: string) => (p: CollisionPair) =>
+      log.push(`${event} ${p.entityA}-${p.entityB}`);
+    world.onTriggerEnter.add(rec('trigger:start'));
+    world.onTriggerExit.add(rec('trigger:end'));
+    world.onCollisionStart.add(rec('collision:start'));
+    world.onCollisionEnd.add(rec('collision:end'));
+    return log;
+  }
+
+  // Every end must close a pair that is open, in the family it opened in.
+  function mismatches(log: readonly string[]): string[] {
+    const open = new Map<string, Family>();
+    const bad: string[] = [];
+    for (const line of log) {
+      const [tag, pair] = line.split(' ') as [string, string];
+      const [family, phase] = tag.split(':') as [Family, 'start' | 'end'];
+      if (phase === 'start') {
+        open.set(pair, family);
+      } else {
+        if (open.get(pair) !== family) bad.push(line);
+        open.delete(pair);
+      }
+    }
+    return bad;
+  }
+
+  it('a trigger pair flipped to solid never ends in the other family when it separates', () => {
+    const world = new CollisionWorld();
+    const log = familyLog(world);
+    world.add(1, AABB(20, 20), 0, 0, true);
+    world.add(2, AABB(20, 20), 5, 0);
+    world.step();
+    world.add(1, AABB(20, 20), 0, 0, false);
+    world.step();
+    world.setPosition(2, 500, 0);
+    world.step();
+    expect(log.length).toBeGreaterThan(1);
+    expect(mismatches(log)).toEqual([]);
+  });
+
+  it('a solid pair flipped to a trigger never ends in the other family when the other side is removed', () => {
+    const world = new CollisionWorld();
+    const log = familyLog(world);
+    world.add(3, AABB(20, 20), 0, 0);
+    world.add(4, AABB(20, 20), 5, 0);
+    world.step();
+    world.add(3, AABB(20, 20), 0, 0, true);
+    world.remove(4);
+    expect(log.length).toBeGreaterThan(1);
+    expect(mismatches(log)).toEqual([]);
+  });
+
+  it('ends the pair in its old family during add, then restarts it in the new family on the next step', () => {
+    const world = new CollisionWorld();
+    const log = familyLog(world);
+    world.add(1, AABB(20, 20), 0, 0, true);
+    world.add(2, AABB(20, 20), 5, 0);
+    world.step();
+    expect(log.splice(0)).toEqual(['trigger:start 1-2']);
+
+    world.add(1, AABB(20, 20), 0, 0, false);
+    expect(log.splice(0)).toEqual(['trigger:end 1-2']);
+    world.step();
+    expect(log.splice(0)).toEqual(['collision:start 1-2']);
+    world.step();
+    expect(log.splice(0)).toEqual([]);
+    world.setPosition(2, 500, 0);
+    world.step();
+    expect(log.splice(0)).toEqual(['collision:end 1-2']);
+  });
+
+  it('a flip that also moves the entity away ends the pair once and does not restart it', () => {
+    const world = new CollisionWorld();
+    const log = familyLog(world);
+    world.add(3, AABB(20, 20), 0, 0);
+    world.add(4, AABB(20, 20), 5, 0);
+    world.step();
+    log.length = 0;
+
+    world.add(3, AABB(20, 20), 500, 0, true);
+    expect(log.splice(0)).toEqual(['collision:end 3-4']);
+    world.step();
+    world.remove(4);
+    expect(log).toEqual([]);
+  });
+
+  it('leaves alone a pair whose other side is a trigger, and a re-add that keeps isTrigger', () => {
+    const world = new CollisionWorld();
+    const log = familyLog(world);
+    world.add(5, AABB(20, 20), 0, 0, true);
+    world.add(6, AABB(20, 20), 5, 0, true);
+    world.add(7, AABB(20, 20), 1000, 0);
+    world.add(8, AABB(20, 20), 1005, 0);
+    world.step();
+    log.length = 0;
+
+    world.add(5, AABB(20, 20), 0, 0, false);
+    world.add(7, AABB(20, 20), 1000, 0, false);
+    world.step();
+    expect(log).toEqual([]);
+
+    world.remove(6);
+    world.remove(8);
+    expect(log).toEqual(['trigger:end 5-6', 'collision:end 7-8']);
+  });
+});

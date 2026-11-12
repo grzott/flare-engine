@@ -70,6 +70,51 @@ describe('Signal.once', () => {
     signal.emit('hello');
     expect(received).toBe('hello');
   });
+
+  it('fires once when a sibling registered after it nests an emit', () => {
+    const signal = new Signal<void>();
+    let count = 0;
+    let nested = false;
+    signal.once(() => {
+      count++;
+    });
+    signal.add(() => {
+      if (!nested) {
+        nested = true;
+        signal.emit();
+      }
+    });
+    signal.emit();
+    expect(count).toBe(1);
+  });
+
+  it('fires once when a sibling registered before it nests an emit', () => {
+    const signal = new Signal<void>();
+    let count = 0;
+    let nested = false;
+    signal.add(() => {
+      if (!nested) {
+        nested = true;
+        signal.emit();
+      }
+    });
+    signal.once(() => {
+      count++;
+    });
+    signal.emit();
+    expect(count).toBe(1);
+  });
+
+  it('fires once and does not overflow when the handler re-emits', () => {
+    const signal = new Signal<void>();
+    let count = 0;
+    signal.once(() => {
+      count++;
+      signal.emit();
+    });
+    expect(() => signal.emit()).not.toThrow();
+    expect(count).toBe(1);
+  });
 });
 
 describe('Signal.remove', () => {

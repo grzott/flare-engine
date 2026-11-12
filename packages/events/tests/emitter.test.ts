@@ -99,6 +99,51 @@ describe('EventEmitter.once', () => {
     em.emit('update', 0.016);
     expect(received).toBe(0.016);
   });
+
+  it('fires once when a sibling registered after it nests an emit', () => {
+    const em = new EventEmitter<TestEvents>();
+    let count = 0;
+    let nested = false;
+    em.once('ping', () => {
+      count++;
+    });
+    em.on('ping', () => {
+      if (!nested) {
+        nested = true;
+        em.emit('ping');
+      }
+    });
+    em.emit('ping');
+    expect(count).toBe(1);
+  });
+
+  it('fires once when a sibling registered before it nests an emit', () => {
+    const em = new EventEmitter<TestEvents>();
+    let count = 0;
+    let nested = false;
+    em.on('ping', () => {
+      if (!nested) {
+        nested = true;
+        em.emit('ping');
+      }
+    });
+    em.once('ping', () => {
+      count++;
+    });
+    em.emit('ping');
+    expect(count).toBe(1);
+  });
+
+  it('fires once and does not overflow when the handler re-emits', () => {
+    const em = new EventEmitter<TestEvents>();
+    let count = 0;
+    em.once('ping', () => {
+      count++;
+      em.emit('ping');
+    });
+    expect(() => em.emit('ping')).not.toThrow();
+    expect(count).toBe(1);
+  });
 });
 
 describe('EventEmitter.off', () => {

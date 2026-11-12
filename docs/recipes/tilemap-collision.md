@@ -150,10 +150,12 @@ ctx.loop.onUpdate.add((dt) => {
 
 ## Flip a cell at runtime
 
-A door, a crumbling wall, a bridge: both the collision cell and the drawn tile are plain cells in arrays the engine already owns. `SolidGrid.solid` and `TileLayer.tiles` hold a fixed reference, but their cells are writable, so a flip is two index writes — no grid rebuild, no allocation, idempotent.
+A door, a crumbling wall, a bridge: both the collision cell and the drawn tile are plain cells in arrays the engine already owns. `SolidGrid.solid` and `TileLayer.tiles` hold a fixed reference, but their cells are writable, so a flip is two cell writes through `setSolidAt` and `setTileAt` — no grid rebuild, no allocation, idempotent. Both check bounds and return `false` instead of writing when the position is outside the map; `isSolidAt` reads a cell back.
 
 ```ts
+import { setSolidAt } from '@flare-engine/physics';
 import type { SolidGrid } from '@flare-engine/physics';
+import { setTileAt } from '@flare-engine/tilemap';
 import type { TileLayer, TilemapData } from '@flare-engine/tilemap';
 
 // The 4x3 room and its grid from the sections above.
@@ -167,9 +169,8 @@ const DOOR_COL = 3;
 const TILE_DOOR_OPEN = 1;
 
 export function openDoor(layer: TileLayer, solid: SolidGrid): void {
-  const idx = DOOR_ROW * solid.width + DOOR_COL;
-  solid.solid[idx] = 0;
-  layer.tiles[idx] = TILE_DOOR_OPEN;
+  setSolidAt(solid, DOOR_COL, DOOR_ROW, false);
+  setTileAt(layer, DOOR_COL, DOOR_ROW, TILE_DOOR_OPEN);
 }
 
 // Narrow to the tile layer once, up front; openDoor wants its `tiles` array.
@@ -179,7 +180,7 @@ if (ground === undefined || ground.type !== 'tile') throw new Error('expected a 
 openDoor(ground, grid);
 ```
 
-This is the `topdown` template's `openDoor` in `src/map.ts`. Its `App.tsx` triggers it from `onUpdate`: when the door cell is still solid and the player's box at the intended (pre-collision) position overlaps the door tile, the door opens, and the same frame's `moveAndSlideInto` already passes through. The renderer reads `layer.tiles` every frame, so the open frame shows at once.
+This is the `topdown` template's `openDoor` in `src/map.ts`. Its `App.tsx` triggers it from `onUpdate`: when `isSolidAt` says the door cell is still solid and the player's box at the intended (pre-collision) position overlaps the door tile, the door opens, and the same frame's `moveAndSlideInto` already passes through. The renderer reads `layer.tiles` every frame, so the open frame shows at once.
 
 ---
 

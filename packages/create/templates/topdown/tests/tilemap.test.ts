@@ -2,10 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildSolidGrid,
   isBlockedAABB,
+  isSolidAt,
   moveAndSlideInto,
 } from '@flare-engine/physics';
 import {
   extractColliders,
+  getTileAt,
 } from '@flare-engine/tilemap';
 import {
   DOOR_COL,
@@ -132,15 +134,13 @@ describe('isTouchingDoor', () => {
 describe('openDoor', () => {
   test('flips the solid-grid cell and swaps the tile GID', () => {
     const { groundLayer, grid } = setup();
-    const idx = DOOR_ROW * grid.width + DOOR_COL;
-
-    expect(grid.solid[idx]).toBe(1);
-    expect(groundLayer.tiles[idx]).toBe(TILE_DOOR_CLOSED);
+    expect(isSolidAt(grid, DOOR_COL, DOOR_ROW)).toBe(true);
+    expect(getTileAt(groundLayer, DOOR_COL, DOOR_ROW)).toBe(TILE_DOOR_CLOSED);
 
     openDoor(groundLayer, grid);
 
-    expect(grid.solid[idx]).toBe(0);
-    expect(groundLayer.tiles[idx]).toBe(TILE_DOOR_OPEN);
+    expect(isSolidAt(grid, DOOR_COL, DOOR_ROW)).toBe(false);
+    expect(getTileAt(groundLayer, DOOR_COL, DOOR_ROW)).toBe(TILE_DOOR_OPEN);
   });
 });
 

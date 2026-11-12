@@ -99,6 +99,39 @@ export function isBlockedAABB(
 }
 
 /**
+ * Whether the cell at (`col`, `row`) is solid. Coordinates that name no cell
+ * (out of range, or not an integer) follow the grid's own `outside` rule, like
+ * `isBlockedAABB` at the map edge: solid on an `outside: 'solid'` grid, empty
+ * on an `'open'` one. Zero-alloc.
+ */
+export function isSolidAt(grid: SolidGrid, col: number, row: number): boolean {
+  if (!isCell(grid, col, row)) return grid.outside === 'solid';
+  return grid.solid[row * grid.width + col] !== 0;
+}
+
+/**
+ * Mark the cell at (`col`, `row`) solid or empty, for a door or a breakable
+ * wall. Returns `true` when the cell was written, `false` (and writes nothing)
+ * when the coordinates are out of range or not integers. Zero-alloc.
+ */
+export function setSolidAt(grid: SolidGrid, col: number, row: number, solid: boolean): boolean {
+  if (!isCell(grid, col, row)) return false;
+  grid.solid[row * grid.width + col] = solid ? 1 : 0;
+  return true;
+}
+
+function isCell(grid: SolidGrid, col: number, row: number): boolean {
+  return (
+    Number.isInteger(col) &&
+    Number.isInteger(row) &&
+    col >= 0 &&
+    col < grid.width &&
+    row >= 0 &&
+    row < grid.height
+  );
+}
+
+/**
  * Axis-separated slide movement. Attempts to move by (`dx`, `dy`); each axis
  * is applied independently so a blocked diagonal input slides along the wall.
  * The y-check uses the already-updated x position.

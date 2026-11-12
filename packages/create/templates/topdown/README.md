@@ -49,7 +49,7 @@ with rocks and an openable door.
 
 - `src/map.ts` — edit `MAP_ART` (ASCII art: `#` wall, `.` grass, `R` rock, `D` door) to reshape the map.
 - Collision: `@flare-engine/physics` `buildSolidGrid` + `moveAndSlideInto` over wall, rock, and closed-door tiles; axis-separated slide so diagonal inputs slide along walls instead of stopping.
-- **The door**: walking into it while closed opens it — `map.ts`'s `openDoor` flips its cell in the `SolidGrid.solid` array and swaps its tile GID so the render picks up the open frame, both plain zero-alloc index writes into arrays the engine already owns. That is a tile whose solidity changes at runtime, not just its colour; `isBlockedAABB`/`moveAndSlideInto` treat the door exactly like a wall until it's opened.
+- **The door**: walking into it while closed opens it — `map.ts`'s `openDoor` flips its cell in the `SolidGrid.solid` array with `setSolidAt` and swaps its tile GID with `setTileAt` so the render picks up the open frame, both zero-alloc single-cell writes into arrays the engine already owns. That is a tile whose solidity changes at runtime, not just its colour; `isBlockedAABB`/`moveAndSlideInto` treat the door exactly like a wall until it's opened.
 - Camera: `camera.follow` tracks the player; zoom is set to 2×.
 - A `VirtualJoystick` drives analog movement — all 8 directions and diagonals work.
 

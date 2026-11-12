@@ -8,6 +8,7 @@ import {
   getTileSourceRect,
   getTileSourceRectInto,
   getTilesetForGid,
+  setTileAt,
   stripGidFlags,
 } from '../src/tilemap-data.js';
 
@@ -58,6 +59,44 @@ describe('tilemap-data', () => {
     expect(getTileAt(layer, 0, -1)).toBe(0);
     expect(getTileAt(layer, 2, 0)).toBe(0);
     expect(getTileAt(layer, 0, 2)).toBe(0);
+  });
+
+  test('setTileAt writes a GID that getTileAt reads back, and returns true', () => {
+    const layer = makeLayer(3, 2, [1, 2, 3, 4, 5, 6]);
+    expect(setTileAt(layer, 2, 1, 42)).toBe(true);
+    expect(getTileAt(layer, 2, 1)).toBe(42);
+    expect(Array.from(layer.tiles)).toEqual([1, 2, 3, 4, 5, 42]);
+
+    expect(setTileAt(layer, 0, 0, 0)).toBe(true);
+    expect(getTileAt(layer, 0, 0)).toBe(0);
+    expect(Array.from(layer.tiles)).toEqual([0, 2, 3, 4, 5, 42]);
+  });
+
+  test('setTileAt keeps the Tiled flip bits of a raw GID', () => {
+    const layer = makeLayer(2, 1, [0, 0]);
+    const flipped = 0x80000005;
+    expect(setTileAt(layer, 1, 0, flipped)).toBe(true);
+    expect(getTileAt(layer, 1, 0)).toBe(flipped);
+    expect(stripGidFlags(getTileAt(layer, 1, 0))).toBe(5);
+  });
+
+  test('setTileAt out of bounds or non-integer returns false and writes nothing', () => {
+    const layer = makeLayer(3, 2, [1, 2, 3, 4, 5, 6]);
+    const rejected: ReadonlyArray<readonly [number, number]> = [
+      [-1, 0],
+      [0, -1],
+      // col = width on row 0 would alias to (row 1, col 0) through a raw index.
+      [3, 0],
+      [0, 2],
+      [0.5, 0],
+      [0, 0.5],
+      [Number.NaN, 0],
+      [0, Number.NaN],
+    ];
+    for (const [col, row] of rejected) {
+      expect(setTileAt(layer, col, row, 99)).toBe(false);
+    }
+    expect(Array.from(layer.tiles)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   test('getTilesetForGid finds correct tileset', () => {
@@ -195,5 +234,20 @@ function makeTileset(
     imageHeight: Math.ceil(tileCount / columns) * tileHeight,
     tileProperties: new Map(),
     solidTiles: new Set(),
+  };
+}
+
+function makeLayer(width: number, height: number, tiles: number[]): TileLayer {
+  return {
+    type: 'tile',
+    name: 'ground',
+    width,
+    height,
+    tiles: new Uint32Array(tiles),
+    visible: true,
+    opacity: 1,
+    offsetX: 0,
+    offsetY: 0,
+    properties: {},
   };
 }

@@ -23,6 +23,7 @@ export {
   type MapLayer,
   type MapObject,
   type ObjectLayer,
+  setTileAt,
   stripGidFlags,
   type TileAnimation,
   type TileFlipFlags,

@@ -159,6 +159,44 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
     'particles.update  5000 integrate-only',
     { percent: 35, reason: BIMODAL_INTEGRATE('16.80-21.40 us', '1.27x', '9 low / 6 high') },
   ],
+  /**
+   * Two of the three `animation` rows from #311, which first ran on 2026-11-12. Twenty-five pinned
+   * captures of `a851faa9` that day: 15 recorded, plus 10 unrecorded from an interleaved A/B
+   * that swapped only `packages/ecs/src/world.ts`, which animation does not import. Foreign load
+   * was 1.2-2.6% throughout. The third animation row, `updateSpring`, passed the strict 10% in
+   * all three recorded windows; `updateTweens` refused the first two and `updateAnimator` the
+   * third. In the third window every row that existed before #311 read between 0.6% slower and
+   * 7.1% faster than the 2026-11-08 fold.
+   *
+   * Not yet investigated past that A/B, unlike the `integrate-only` rows above. The tolerance
+   * covers the measured ratio so a window folds whichever state it catches. One suspect for
+   * `updateTweens` is its single call site for four different easing functions.
+   *
+   * **What is given up:** neither row can catch a regression smaller than its tolerance on its
+   * own. `updateSpring` still guards the spring path of the same package at 10%, but nothing
+   * strict guards tweens or animators until these rows are stabilised and the overrides removed.
+   */
+  [
+    'animation.updateTweens    1000 tweens, 4 easings',
+    {
+      percent: 35,
+      reason:
+        'Continuous spread across 2.35-3.18 us (1.35x) over 25 pinned captures on 2026-11-12, ' +
+        'not two states: the folded median depends on which runs the window caught. Read the ' +
+        'spread column, not the median, for this row.',
+    },
+  ],
+  [
+    'animation.updateAnimator  1000 animators, looping',
+    {
+      percent: 25,
+      reason:
+        'Bimodal across 6.19-7.60 us (1.23x) over 25 pinned captures on 2026-11-12: 17 runs at ' +
+        '6.19-6.63 us, 7 at 7.19-7.60 us and one between, each state internally tight. The ' +
+        'folded median lands in whichever state that window caught. Read the spread column, ' +
+        'not the median, for this row.',
+    },
+  ],
 ]);
 
 /** The tolerance that applies to a scenario, global unless it carries an override. */

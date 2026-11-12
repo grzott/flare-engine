@@ -69,7 +69,10 @@ export class CollisionWorld {
   /** Reusable bounds rect — avoids per-entity Rect allocation in step(). */
   private boundsBuf: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
-  /** Add an entity with a shape. Positional twin of `addCollider`. */
+  /**
+   * Add an entity with a shape. Positional twin of `addCollider`, and re-adding
+   * follows the same rules.
+   */
   add(
     entity: number,
     shape: Shape,
@@ -80,13 +83,27 @@ export class CollisionWorld {
     mask = 0xffffffff,
   ): void {
     const entry: CollisionEntry = { entity, shape, x, y, isTrigger, layer, mask };
-    const exists = this.entries.has(entity);
+    const previous = this.entries.get(entity);
     this.entries.set(entity, entry);
     shapeBoundsInto(shape, x, y, this.boundsBuf);
-    if (exists) {
-      this.spatial.update(entity, this.boundsBuf);
-    } else {
+    if (previous === undefined) {
       this.spatial.insert(entity, this.boundsBuf);
+      return;
+    }
+    this.spatial.update(entity, this.boundsBuf);
+    if (previous.isTrigger === isTrigger) return;
+
+    // A pair is a trigger pair when either side is a trigger, so flipping this
+    // side changes the kind only of pairs whose other side is solid. End those
+    // now in their old family; the next step starts them in the new one.
+    for (const key of this.activePairs) {
+      const lo = decodeLo(key);
+      const hi = decodeHi(key);
+      if (lo !== entity && hi !== entity) continue;
+      const other = this.entries.get(lo === entity ? hi : lo);
+      if (other?.isTrigger) continue;
+      this.activePairs.delete(key);
+      this.emitPair(lo, hi, previous, other, false);
     }
   }
 
@@ -94,6 +111,12 @@ export class CollisionWorld {
    * Add an entity from a `Collider`. Its `shape`, `isTrigger`, `layer` and `mask`
    * are copied at add time — later edits to the collider do not reach the world;
    * re-add to change them. Re-adding an existing entity replaces its data.
+   *
+   * A re-add that flips `isTrigger` ends, during this call, every active pair
+   * whose kind that changes, with the exit signal of its old kind
+   * (`onTriggerExit` or `onCollisionEnd`). If the shapes still overlap, the next
+   * `step` starts the pair again with the enter signal of its new kind. A pair
+   * whose other side is a trigger stays a trigger pair and is left alone.
    */
   addCollider(entity: number, collider: Collider, x: number, y: number): void {
     this.add(entity, collider.shape, x, y, collider.isTrigger, collider.layer, collider.mask);

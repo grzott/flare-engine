@@ -124,26 +124,35 @@ half4 main(float2 coord) {
 }
 `;
 
-export const WEATHER_RAIN_SKSL = /* sksl */ `
-uniform shader src;
-uniform float2 resolution;
-uniform float intensity;
-uniform float direction;
-uniform float scrollOffsetY;
-uniform float3 color;
-uniform float density;
-uniform float streakLen;
+// Weather effects, each written once. The standalone WEATHER_*_SKSL shaders and the
+// COMPOSITE_SKSL weather branches are both built from these fragments; the standalones'
+// text is pinned byte for byte by tests/sksl-identity.test.ts. A `…Body` fragment is the
+// statements that read `uv` (0..1 screen UV) and the named uniforms; the matching `…Blend`
+// is the expression that applies the result to an rgb value.
 
-// scrollOffsetY is a normalized fall phase in [0,1). Increase it each tick
-// by (speed * dt / screenHeight) and wrap with fract() on the game side.
+const HASH_FN_SKSL =
+  'float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }';
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+const CLOUD_NOISE_FNS_SKSL = `float vnoise(float2 p) {
+  float2 i = floor(p); float2 f = fract(p);
+  float2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + float2(1.0, 0.0)), u.x),
+             mix(hash(i + float2(0.0, 1.0)), hash(i + float2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(float2 p) { return vnoise(p) * 0.6 + vnoise(p * 2.3) * 0.4; }`;
 
-half4 main(float2 coord) {
-  half4 scene = src.eval(coord);
-  float2 uv = coord / resolution;
-  float aspect = resolution.x / resolution.y;
-  float rad = direction * 3.14159 / 180.0;
+/** Indents a 2-space fragment to the depth of a composite weather branch. */
+const nest = (fragment: string): string => fragment.replace(/^(?=.)/gm, '    ');
+
+interface RainNames {
+  readonly direction: string;
+  readonly scrollY: string;
+  readonly density: string;
+  readonly streakLen: string;
+}
+
+const rainBody = (n: RainNames): string => `  float aspect = resolution.x / resolution.y;
+  float rad = ${n.direction} * 3.14159 / 180.0;
   float sinA = sin(rad);
   float cosA = cos(rad);
   // aspect-corrected rotated axes: fallAxis along drop travel, perpAxis across
@@ -159,12 +168,12 @@ half4 main(float2 coord) {
     float brightness = 1.0;
     float cid = floor(perpAxis * COLS);
     float colHash = hash(float2(cid, 0.0));
-    if (colHash < density) {
+    if (colHash < ${n.density}) {
       float phase = hash(float2(cid, 1.0));
       float colBright = brightness * (0.6 + hash(float2(cid, 2.0)) * 0.4);
       float center = 0.5 + (hash(float2(cid, 3.0)) - 0.5) * 0.4;
-      float seg = fract(fallAxis * tiling - scrollOffsetY + phase);
-      float coverageY = smoothstep(streakLen, 0.0, seg);
+      float seg = fract(fallAxis * tiling - ${n.scrollY} + phase);
+      float coverageY = smoothstep(${n.streakLen}, 0.0, seg);
       float width = 0.04;
       float xMask = smoothstep(width, 0.0, abs(fract(perpAxis * COLS) - center));
       coverage = max(coverage, coverageY * xMask * colBright);
@@ -178,19 +187,115 @@ half4 main(float2 coord) {
     float brightness = 0.5;
     float cid = floor(perpAxis * COLS);
     float colHash = hash(float2(cid, 10.0));
-    if (colHash < density) {
+    if (colHash < ${n.density}) {
       float phase = hash(float2(cid, 11.0));
       float colBright = brightness * (0.6 + hash(float2(cid, 12.0)) * 0.4);
       float center = 0.5 + (hash(float2(cid, 13.0)) - 0.5) * 0.4;
-      float seg = fract(fallAxis * tiling - scrollOffsetY + phase);
-      float coverageY = smoothstep(streakLen, 0.0, seg);
+      float seg = fract(fallAxis * tiling - ${n.scrollY} + phase);
+      float coverageY = smoothstep(${n.streakLen}, 0.0, seg);
       float width = 0.03;
       float xMask = smoothstep(width, 0.0, abs(fract(perpAxis * COLS) - center));
       coverage = max(coverage, coverageY * xMask * colBright);
     }
-  }
+  }`;
 
-  half3 mixed = mix(scene.rgb, half3(color), half(coverage * intensity));
+const rainBlend = (rgb: string, color: string, intensity: string): string =>
+  `mix(${rgb}, half3(${color}), half(coverage * ${intensity}))`;
+
+const sunShaftBody = (
+  direction: string,
+  intensity: string,
+): string => `  float rad = ${direction} * 3.14159 / 180.0;
+  float2 src_point = float2(0.5 + sin(rad) * 0.3, -0.05);
+  float2 toFrag = uv - src_point;
+  float angle = atan(toFrag.x, toFrag.y);
+  float shafts = 0.5 + 0.5 * sin(angle * 8.0);
+  float dist = length(toFrag);
+  float falloff = 1.0 - smoothstep(0.0, 1.2, dist);
+  half shaft = half(shafts * falloff * ${intensity} * 0.35);`;
+
+const sunShaftBlend = (rgb: string): string =>
+  `${rgb} + half3(shaft * 0.95, shaft * 0.9, shaft * 0.6)`;
+
+// `centered` names the local holding the centred UV: the standalone calls it `uv`, which the
+// composite already uses for the uncentred 0..1 UV.
+const darkVignetteBody = (centered: string, uvExpr: string, intensity: string): string =>
+  `  float2 ${centered} = ${uvExpr} - 0.5;
+  float d = length(${centered});
+  float v = smoothstep(0.3, 0.85, d);
+  half dark = half(v * ${intensity});`;
+
+const darkVignetteBlend = (rgb: string): string => `${rgb} * (1.0 - dark)`;
+
+interface CloudsNames {
+  readonly direction: string;
+  readonly scrollX: string;
+  readonly intensity: string;
+}
+
+const cloudsBody = (
+  n: CloudsNames,
+): string => `  // ${n.direction}=0 → pure horizontal scroll (cos=1, sin=0), matching the pre-${n.direction} default.
+  float rad = ${n.direction} * 3.14159 / 180.0;
+  float2 scrollDir = float2(cos(rad), sin(rad));
+  float2 cloudUv = float2(
+    uv.x + ${n.scrollX} * scrollDir.x / resolution.x,
+    uv.y * 0.5 + ${n.scrollX} * scrollDir.y / resolution.y
+  );
+  float cloud = fbm(cloudUv * 3.0);
+  float heightFade = smoothstep(0.6, 0.2, uv.y);
+  float alpha = cloud * heightFade * ${n.intensity} * 0.5;
+  half3 cloudColor = half3(0.9, 0.9, 0.95);`;
+
+const cloudsBlend = (rgb: string): string => `mix(${rgb}, cloudColor, half(alpha))`;
+
+const RAIN_STANDALONE: RainNames = {
+  direction: 'direction',
+  scrollY: 'scrollOffsetY',
+  density: 'density',
+  streakLen: 'streakLen',
+};
+
+const RAIN_COMPOSITE: RainNames = {
+  direction: 'weatherDirection',
+  scrollY: 'weatherScrollY',
+  density: 'weatherDensity',
+  streakLen: 'weatherStreakLen',
+};
+
+const CLOUDS_STANDALONE: CloudsNames = {
+  direction: 'direction',
+  scrollX: 'scrollOffsetX',
+  intensity: 'intensity',
+};
+
+const CLOUDS_COMPOSITE: CloudsNames = {
+  direction: 'weatherDirection',
+  scrollX: 'weatherScrollX',
+  intensity: 'weatherIntensity',
+};
+
+export const WEATHER_RAIN_SKSL = /* sksl */ `
+uniform shader src;
+uniform float2 resolution;
+uniform float intensity;
+uniform float direction;
+uniform float scrollOffsetY;
+uniform float3 color;
+uniform float density;
+uniform float streakLen;
+
+// scrollOffsetY is a normalized fall phase in [0,1). Increase it each tick
+// by (speed * dt / screenHeight) and wrap with fract() on the game side.
+
+${HASH_FN_SKSL}
+
+half4 main(float2 coord) {
+  half4 scene = src.eval(coord);
+  float2 uv = coord / resolution;
+${rainBody(RAIN_STANDALONE)}
+
+  half3 mixed = ${rainBlend('scene.rgb', 'color', 'intensity')};
   return half4(mixed, scene.a);
 }
 `;
@@ -204,15 +309,8 @@ uniform float direction;
 half4 main(float2 coord) {
   half4 scene = src.eval(coord);
   float2 uv = coord / resolution;
-  float rad = direction * 3.14159 / 180.0;
-  float2 src_point = float2(0.5 + sin(rad) * 0.3, -0.05);
-  float2 toFrag = uv - src_point;
-  float angle = atan(toFrag.x, toFrag.y);
-  float shafts = 0.5 + 0.5 * sin(angle * 8.0);
-  float dist = length(toFrag);
-  float falloff = 1.0 - smoothstep(0.0, 1.2, dist);
-  half shaft = half(shafts * falloff * intensity * 0.35);
-  return half4(scene.rgb + half3(shaft * 0.95, shaft * 0.9, shaft * 0.6), scene.a);
+${sunShaftBody('direction', 'intensity')}
+  return half4(${sunShaftBlend('scene.rgb')}, scene.a);
 }
 `;
 
@@ -223,11 +321,8 @@ uniform float intensity;
 
 half4 main(float2 coord) {
   half4 scene = src.eval(coord);
-  float2 uv = coord / resolution - 0.5;
-  float d = length(uv);
-  float v = smoothstep(0.3, 0.85, d);
-  half dark = half(v * intensity);
-  return half4(scene.rgb * (1.0 - dark), scene.a);
+${darkVignetteBody('uv', 'coord / resolution', 'intensity')}
+  return half4(${darkVignetteBlend('scene.rgb')}, scene.a);
 }
 `;
 
@@ -238,30 +333,14 @@ uniform float intensity;
 uniform float scrollOffsetX;
 uniform float direction;
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
-float vnoise(float2 p) {
-  float2 i = floor(p); float2 f = fract(p);
-  float2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + float2(1.0, 0.0)), u.x),
-             mix(hash(i + float2(0.0, 1.0)), hash(i + float2(1.0, 1.0)), u.x), u.y);
-}
-float fbm(float2 p) { return vnoise(p) * 0.6 + vnoise(p * 2.3) * 0.4; }
+${HASH_FN_SKSL}
+${CLOUD_NOISE_FNS_SKSL}
 
 half4 main(float2 coord) {
   half4 scene = src.eval(coord);
   float2 uv = coord / resolution;
-  // direction=0 → pure horizontal scroll (cos=1, sin=0), matching the pre-direction default.
-  float rad = direction * 3.14159 / 180.0;
-  float2 scrollDir = float2(cos(rad), sin(rad));
-  float2 cloudUv = float2(
-    uv.x + scrollOffsetX * scrollDir.x / resolution.x,
-    uv.y * 0.5 + scrollOffsetX * scrollDir.y / resolution.y
-  );
-  float cloud = fbm(cloudUv * 3.0);
-  float heightFade = smoothstep(0.6, 0.2, uv.y);
-  float alpha = cloud * heightFade * intensity * 0.5;
-  half3 cloudColor = half3(0.9, 0.9, 0.95);
-  return half4(mix(scene.rgb, cloudColor, half(alpha)), scene.a);
+${cloudsBody(CLOUDS_STANDALONE)}
+  return half4(${cloudsBlend('scene.rgb')}, scene.a);
 }
 `;
 
@@ -316,14 +395,8 @@ uniform float3 weatherColor;
 uniform float weatherDensity;
 uniform float weatherStreakLen;
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
-float vnoise(float2 p) {
-  float2 i = floor(p); float2 f = fract(p);
-  float2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + float2(1.0, 0.0)), u.x),
-             mix(hash(i + float2(0.0, 1.0)), hash(i + float2(1.0, 1.0)), u.x), u.y);
-}
-float fbm(float2 p) { return vnoise(p) * 0.6 + vnoise(p * 2.3) * 0.4; }
+${HASH_FN_SKSL}
+${CLOUD_NOISE_FNS_SKSL}
 
 half4 main(float2 coord) {
   // --- chromatic aberration ---
@@ -362,85 +435,21 @@ half4 main(float2 coord) {
     if (wk >= 0.5 && wk < 1.5) {
       // rain — falling sawtooth streaks, 2 parallax layers, alpha-over blend
       // weatherScrollY is normalized [0,1) fall phase (increment speed*dt/screenH each tick)
-      float rad = weatherDirection * 3.14159 / 180.0;
-      float sinA = sin(rad);
-      float cosA = cos(rad);
-      float aspect = resolution.x / resolution.y;
-      float perpAxis = (cosA * uv.x - sinA * uv.y) * aspect;
-      float fallAxis = sinA * uv.x + cosA * uv.y;
+${nest(rainBody(RAIN_COMPOSITE))}
 
-      float coverage = 0.0;
-
-      // near layer — COLS=45, tiling=6, brightness=1.0
-      {
-        float COLS = 45.0;
-        float tiling = 6.0;
-        float brightness = 1.0;
-        float cid = floor(perpAxis * COLS);
-        float colHash = hash(float2(cid, 0.0));
-        if (colHash < weatherDensity) {
-          float phase = hash(float2(cid, 1.0));
-          float colBright = brightness * (0.6 + hash(float2(cid, 2.0)) * 0.4);
-          float center = 0.5 + (hash(float2(cid, 3.0)) - 0.5) * 0.4;
-          float seg = fract(fallAxis * tiling - weatherScrollY + phase);
-          float coverageY = smoothstep(weatherStreakLen, 0.0, seg);
-          float width = 0.04;
-          float xMask = smoothstep(width, 0.0, abs(fract(perpAxis * COLS) - center));
-          coverage = max(coverage, coverageY * xMask * colBright);
-        }
-      }
-
-      // far layer — COLS=85, tiling=11, brightness=0.5
-      {
-        float COLS = 85.0;
-        float tiling = 11.0;
-        float brightness = 0.5;
-        float cid = floor(perpAxis * COLS);
-        float colHash = hash(float2(cid, 10.0));
-        if (colHash < weatherDensity) {
-          float phase = hash(float2(cid, 11.0));
-          float colBright = brightness * (0.6 + hash(float2(cid, 12.0)) * 0.4);
-          float center = 0.5 + (hash(float2(cid, 13.0)) - 0.5) * 0.4;
-          float seg = fract(fallAxis * tiling - weatherScrollY + phase);
-          float coverageY = smoothstep(weatherStreakLen, 0.0, seg);
-          float width = 0.03;
-          float xMask = smoothstep(width, 0.0, abs(fract(perpAxis * COLS) - center));
-          coverage = max(coverage, coverageY * xMask * colBright);
-        }
-      }
-
-      c = mix(c, half3(weatherColor), half(coverage * weatherIntensity));
+      c = ${rainBlend('c', 'weatherColor', 'weatherIntensity')};
     } else if (wk >= 1.5 && wk < 2.5) {
       // sun-shaft
-      float rad = weatherDirection * 3.14159 / 180.0;
-      float2 srcPoint = float2(0.5 + sin(rad) * 0.3, -0.05);
-      float2 toFrag = uv - srcPoint;
-      float angle = atan(toFrag.x, toFrag.y);
-      float shafts = 0.5 + 0.5 * sin(angle * 8.0);
-      float dist = length(toFrag);
-      float falloff = 1.0 - smoothstep(0.0, 1.2, dist);
-      half shaft = half(shafts * falloff * weatherIntensity * 0.35);
-      c = c + half3(shaft * 0.95, shaft * 0.9, shaft * 0.6);
+${nest(sunShaftBody('weatherDirection', 'weatherIntensity'))}
+      c = ${sunShaftBlend('c')};
     } else if (wk >= 2.5 && wk < 3.5) {
       // dark-vignette
-      float2 uvShift = uv - 0.5;
-      float d2 = length(uvShift);
-      float vd = smoothstep(0.3, 0.85, d2);
-      half dark = half(vd * weatherIntensity);
-      c = c * (1.0 - dark);
+${nest(darkVignetteBody('uvShift', 'uv', 'weatherIntensity'))}
+      c = ${darkVignetteBlend('c')};
     } else if (wk >= 3.5) {
-      // clouds — rotated scroll, mirrored from WEATHER_CLOUDS_SKSL (direction=0 → horizontal)
-      float rad = weatherDirection * 3.14159 / 180.0;
-      float2 scrollDir = float2(cos(rad), sin(rad));
-      float2 cloudUv = float2(
-        uv.x + weatherScrollX * scrollDir.x / resolution.x,
-        uv.y * 0.5 + weatherScrollX * scrollDir.y / resolution.y
-      );
-      float cloud = fbm(cloudUv * 3.0);
-      float heightFade = smoothstep(0.6, 0.2, uv.y);
-      float alpha = cloud * heightFade * weatherIntensity * 0.5;
-      half3 cloudColor = half3(0.9, 0.9, 0.95);
-      c = mix(c, cloudColor, half(alpha));
+      // clouds
+${nest(cloudsBody(CLOUDS_COMPOSITE))}
+      c = ${cloudsBlend('c')};
     }
   }
 

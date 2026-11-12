@@ -380,7 +380,7 @@ function compositeCloudsBranch(): string {
   return COMPOSITE_SKSL.slice(start, end);
 }
 
-/** Collapse whitespace so the two hand-maintained sources compare structurally. */
+/** Collapse whitespace so the comparison ignores indentation depth. */
 const squash = (s: string): string => s.replace(/\s+/g, '');
 
 describe('COMPOSITE_SKSL clouds branch', () => {

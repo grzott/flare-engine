@@ -141,4 +141,97 @@ describe('rayVsRect', () => {
     const t = rayVsRect(-5, -5, 1, 1, rect);
     expect(t).not.toBeNull();
   });
+
+  describe('vertical ray (dirX === 0)', () => {
+    it('origin inside the x slab hits at the near face', () => {
+      expect(rayVsRect(5, -5, 0, 1, rect)).toBe(5);
+    });
+    it('origin outside the x slab misses', () => {
+      expect(rayVsRect(15, -5, 0, 1, rect)).toBeNull();
+      expect(rayVsRect(-1, -5, 0, 1, rect)).toBeNull();
+    });
+    it('origin on the x = 0 edge hits', () => {
+      expect(rayVsRect(0, -5, 0, 1, rect)).toBe(5);
+    });
+    it('origin on the x = 10 edge hits', () => {
+      expect(rayVsRect(10, -5, 0, 1, rect)).toBe(5);
+    });
+    it('negative direction along an edge hits', () => {
+      expect(rayVsRect(0, 15, 0, -1, rect)).toBe(5);
+      expect(rayVsRect(10, 15, 0, -1, rect)).toBe(5);
+    });
+    it('on an edge line pointing away from the rect misses', () => {
+      expect(rayVsRect(0, -5, 0, -1, rect)).toBeNull();
+      expect(rayVsRect(10, 15, 0, 1, rect)).toBeNull();
+    });
+    it('starting on an edge, inside the rect span, returns the exit distance', () => {
+      expect(rayVsRect(0, 5, 0, 1, rect)).toBe(5);
+      expect(rayVsRect(10, 5, 0, -1, rect)).toBe(5);
+    });
+  });
+
+  describe('horizontal ray (dirY === 0)', () => {
+    it('origin inside the y slab hits at the near face', () => {
+      expect(rayVsRect(-5, 5, 1, 0, rect)).toBe(5);
+    });
+    it('origin outside the y slab misses', () => {
+      expect(rayVsRect(-5, 15, 1, 0, rect)).toBeNull();
+      expect(rayVsRect(-5, -1, 1, 0, rect)).toBeNull();
+    });
+    it('origin on the y = 0 edge hits', () => {
+      expect(rayVsRect(-5, 0, 1, 0, rect)).toBe(5);
+    });
+    it('origin on the y = 10 edge hits', () => {
+      expect(rayVsRect(-5, 10, 1, 0, rect)).toBe(5);
+    });
+    it('negative direction along an edge hits', () => {
+      expect(rayVsRect(15, 0, -1, 0, rect)).toBe(5);
+      expect(rayVsRect(15, 10, -1, 0, rect)).toBe(5);
+    });
+    it('on an edge line pointing away from the rect misses', () => {
+      expect(rayVsRect(-5, 0, -1, 0, rect)).toBeNull();
+      expect(rayVsRect(15, 10, 1, 0, rect)).toBeNull();
+    });
+    it('starting on an edge, inside the rect span, returns the exit distance', () => {
+      expect(rayVsRect(5, 0, 1, 0, rect)).toBe(5);
+      expect(rayVsRect(5, 10, -1, 0, rect)).toBe(5);
+    });
+  });
+
+  it('never returns NaN for a zero direction component on a slab edge', () => {
+    const edges = [0, 10];
+    for (const e of edges) {
+      for (const d of [1, -1]) {
+        expect(rayVsRect(e, -5, 0, d, rect)).not.toBeNaN();
+        expect(rayVsRect(e, 15, 0, d, rect)).not.toBeNaN();
+        expect(rayVsRect(-5, e, d, 0, rect)).not.toBeNaN();
+        expect(rayVsRect(15, e, d, 0, rect)).not.toBeNaN();
+      }
+    }
+  });
+
+  it('axis-parallel ray from the min corner along an edge hits at 0', () => {
+    expect(rayVsRect(0, 0, 0, 1, rect)).toBe(0);
+    expect(rayVsRect(0, 0, 1, 0, rect)).toBe(0);
+  });
+
+  describe('zero direction', () => {
+    it('from inside returns null', () => {
+      expect(rayVsRect(5, 5, 0, 0, rect)).toBeNull();
+    });
+    it('from outside returns null', () => {
+      expect(rayVsRect(20, 20, 0, 0, rect)).toBeNull();
+    });
+    it('from an edge or corner returns null', () => {
+      expect(rayVsRect(0, 5, 0, 0, rect)).toBeNull();
+      expect(rayVsRect(10, 10, 0, 0, rect)).toBeNull();
+    });
+  });
+
+  it('non-zero-direction behaviour is unchanged', () => {
+    expect(rayVsRect(5, 5, 1, 0, rect)).toBe(5);
+    expect(rayVsRect(5, 5, 0, -1, rect)).toBe(5);
+    expect(rayVsRect(-5, -5, 1, 1, rect)).toBe(5);
+    expect(rayVsRect(15, 5, -2, 0, rect)).toBe(2.5);
+  });
 });

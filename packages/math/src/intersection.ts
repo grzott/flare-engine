@@ -103,7 +103,14 @@ export function lineVsCircle(x1: number, y1: number, x2: number, y2: number, c: 
   return false;
 }
 
-/** Ray intersection with AABB. Returns t (distance) or null if no hit. */
+/**
+ * Ray intersection with AABB. Returns t (distance in units of the direction's
+ * length) or null if no hit. A ray starting inside returns the exit distance.
+ *
+ * Edges are inclusive: a ray that only touches an edge or corner hits, and an
+ * axis-parallel ray running exactly along an edge hits. A zero direction
+ * (`dirX === 0 && dirY === 0`) returns null.
+ */
 export function rayVsRect(
   originX: number,
   originY: number,
@@ -111,16 +118,32 @@ export function rayVsRect(
   dirY: number,
   r: Rect,
 ): number | null {
-  const invDx = dirX !== 0 ? 1 / dirX : Number.POSITIVE_INFINITY;
-  const invDy = dirY !== 0 ? 1 / dirY : Number.POSITIVE_INFINITY;
+  if (dirX === 0 && dirY === 0) return null;
 
-  const tx1 = (r.x - originX) * invDx;
-  const tx2 = (r.x + r.width - originX) * invDx;
-  const ty1 = (r.y - originY) * invDy;
-  const ty2 = (r.y + r.height - originY) * invDy;
+  let tMin = Number.NEGATIVE_INFINITY;
+  let tMax = Number.POSITIVE_INFINITY;
 
-  const tMin = Math.max(Math.min(tx1, tx2), Math.min(ty1, ty2));
-  const tMax = Math.min(Math.max(tx1, tx2), Math.max(ty1, ty2));
+  // A zero component never leaves its slab: the origin decides, and dividing
+  // would give 0 * Infinity = NaN for an origin exactly on the slab edge.
+  if (dirX === 0) {
+    if (originX < r.x || originX > r.x + r.width) return null;
+  } else {
+    const invDx = 1 / dirX;
+    const tx1 = (r.x - originX) * invDx;
+    const tx2 = (r.x + r.width - originX) * invDx;
+    tMin = Math.min(tx1, tx2);
+    tMax = Math.max(tx1, tx2);
+  }
+
+  if (dirY === 0) {
+    if (originY < r.y || originY > r.y + r.height) return null;
+  } else {
+    const invDy = 1 / dirY;
+    const ty1 = (r.y - originY) * invDy;
+    const ty2 = (r.y + r.height - originY) * invDy;
+    tMin = Math.max(tMin, Math.min(ty1, ty2));
+    tMax = Math.min(tMax, Math.max(ty1, ty2));
+  }
 
   if (tMax < 0 || tMin > tMax) return null;
 

@@ -57,6 +57,23 @@ describe('SpatialIndex', () => {
     expect(idx.query({ x: 100, y: 100, width: 5, height: 5 })).toContain('a');
   });
 
+  it('inserting an item already in the index replaces its bounds', () => {
+    const idx = new SpatialIndex<string>();
+    const first = { x: 0, y: 0, width: 10, height: 10 };
+    const second = { x: 500, y: 500, width: 10, height: 10 };
+    idx.insert('a', first);
+    idx.insert('a', second);
+
+    expect(idx.size).toBe(1);
+    expect(idx.query(first)).toEqual([]);
+    expect(idx.query(second)).toEqual(['a']);
+
+    expect(idx.remove('a')).toBe(true);
+    expect(idx.size).toBe(0);
+    expect(idx.query(first)).toEqual([]);
+    expect(idx.query(second)).toEqual([]);
+  });
+
   it('clears all items', () => {
     const idx = new SpatialIndex<number>();
     idx.insert(1, { x: 0, y: 0, width: 10, height: 10 });

@@ -72,8 +72,15 @@ export class SpatialIndex<T> {
     return this._data.length;
   }
 
-  /** Insert an item with a bounding rect. */
+  /**
+   * Insert an item with a bounding rect. Inserting an item already in the index
+   * replaces its bounds (upsert) — same as `update`.
+   */
   insert(item: T, bounds: Rect): void {
+    if (this._slots.has(item)) {
+      this.update(item, bounds);
+      return;
+    }
     const entry: _Entry<T> = {
       item,
       minX: bounds.x,

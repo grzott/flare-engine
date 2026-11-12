@@ -51,6 +51,7 @@ export {
 export {
   type AxisMap,
   applyRemap,
+  applyRemapInto,
   createIdentityRemap,
   loadRemap,
   type RemapStore,

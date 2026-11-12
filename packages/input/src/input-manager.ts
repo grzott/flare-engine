@@ -1,5 +1,6 @@
 import {
   createGamepadState,
+  type GamepadSnapshot,
   type GamepadState,
   resetGamepadFrame,
   updateGamepadFromSnapshot,
@@ -16,7 +17,25 @@ import {
   type TouchPoint,
 } from './pointer.js';
 import type { RemapTable } from './remap.js';
-import { applyRemap } from './remap.js';
+import { applyRemapInto } from './remap.js';
+
+/** A pad's remap table plus the manager-owned snapshot it is applied into. */
+interface RemapSlot {
+  table: RemapTable;
+  scratch: GamepadSnapshot;
+}
+
+/** Size `scratch` to `table` so the per-poll remap finds every record in place. */
+function sizeRemapScratch(scratch: GamepadSnapshot, table: RemapTable): void {
+  const buttons = scratch.buttons;
+  buttons.length = Math.min(buttons.length, table.buttons.length);
+  for (let i = buttons.length; i < table.buttons.length; i++) {
+    buttons[i] = { pressed: false, value: 0 };
+  }
+  const axes = scratch.axes;
+  axes.length = Math.min(axes.length, table.axes.length);
+  for (let i = axes.length; i < table.axes.length; i++) axes[i] = 0;
+}
 
 /**
  * InputManager provides a polling-based input model.
@@ -50,7 +69,7 @@ export class InputManager {
   private _primaryTouchId: number | null = null;
   private _gamepads: GamepadState[] = [];
   private _gamepadDeadZone = 0.15;
-  private _gamepadRemaps = new Map<number, RemapTable>();
+  private _gamepadRemaps = new Map<number, RemapSlot>();
 
   /** Call once per frame to reset per-frame flags. */
   update(): void {
@@ -118,8 +137,18 @@ export class InputManager {
 
   /** Install a remap table for a specific gamepad index. Pass `null` to clear. */
   setGamepadRemap(index: number, table: RemapTable | null): void {
-    if (table === null) this._gamepadRemaps.delete(index);
-    else this._gamepadRemaps.set(index, table);
+    if (table === null) {
+      this._gamepadRemaps.delete(index);
+      return;
+    }
+    let slot = this._gamepadRemaps.get(index);
+    if (slot) {
+      slot.table = table;
+    } else {
+      slot = { table, scratch: { id: '', index, timestamp: 0, buttons: [], axes: [] } };
+      this._gamepadRemaps.set(index, slot);
+    }
+    sizeRemapScratch(slot.scratch, table);
   }
 
   /** Poll all gamepads from the given source, applying remap + dead zones. */
@@ -128,12 +157,9 @@ export class InputManager {
     for (let i = 0; i < snapshots.length; i++) {
       const pad = this.gamepad(i);
       const snap = snapshots[i] ?? null;
+      const slot = snap !== null ? this._gamepadRemaps.get(i) : undefined;
       const remapped =
-        snap !== null
-          ? this._gamepadRemaps.get(i)
-            ? applyRemap(snap, this._gamepadRemaps.get(i) as RemapTable)
-            : snap
-          : null;
+        snap !== null && slot ? applyRemapInto(snap, slot.table, slot.scratch) : snap;
       updateGamepadFromSnapshot(pad, remapped, this._gamepadDeadZone);
     }
   }

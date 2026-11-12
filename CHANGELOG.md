@@ -46,9 +46,10 @@ Fixes, additions and allocation work in 22 packages. The other 20 change only th
   pairs is touching now ends each pair whose kind changes during the `add` call, with the exit
   signal of its old kind. If the shapes still overlap, the next `step()` starts the pair again in
   the new kind. Before, such a pair could begin with `onTriggerEnter` and end with
-  `onCollisionEnd`. An axis-parallel ray whose origin lies exactly on a box edge made `raycast()`,
-  `rayVsShapeInto` and `CollisionWorld.raycast` return a `NaN` hit; it now hits the box, and a
-  zero-length direction misses. `SpatialIndex.insert` of an item already in the index now replaces
+  `onCollisionEnd`. An axis-parallel ray whose origin lies exactly on the line of a box edge made
+  `raycast()`, `rayVsShapeInto` and `CollisionWorld.raycast` return a `NaN` hit whichever way it
+  pointed; it now returns a finite hit when it reaches the box and no hit when it points away, and
+  a zero-length direction misses. `SpatialIndex.insert` of an item already in the index now replaces
   its bounds instead of leaving a stale entry; `CollisionWorld` users were not affected. New
   `setSolidAt(grid, col, row, solid)` and `isSolidAt(grid, col, row)` read and write one
   `SolidGrid` cell. The standalone `raycast()` now allocates only the hit it returns.
@@ -72,8 +73,9 @@ Fixes, additions and allocation work in 22 packages. The other 20 change only th
 - **`scene`** — `push()` and `pop()` while an animated `go()` is still fading out are ignored, with a
   one-time dev warning. They used to enter or destroy the pending scene out of order.
 - **`haptics`** — `createExpoHapticsProvider(Haptics, { platform: Platform.OS })` plays Android
-  system haptic effects through expo's optional `performAndroidHapticsAsync` and falls back to the
-  vibrator call per cue. Other platforms, and calls without the option, behave as before. New type
+  system haptic effects through expo's optional `performAndroidHapticsAsync`. If the module rejects
+  an effect, that cue falls back to the original vibrator call and the effect is not tried again.
+  Other platforms, and calls without the option, behave as before. New type
   `ExpoHapticsOptions`.
 - **`share`** — new `createExpoShareTransport(sharing, files)` and `ShareFileWriterLike` make
   Android screenshot shares work through `expo-sharing`, with the app supplying the file writer.

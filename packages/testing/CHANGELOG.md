@@ -1,5 +1,37 @@
 # @flare-engine/testing
 
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [750248a]
+- Updated dependencies [e30c4fa]
+- Updated dependencies [78d7f8e]
+- Updated dependencies [d61c2a8]
+- Updated dependencies [c4fdd87]
+- Updated dependencies [9a25896]
+- Updated dependencies [612f23c]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+- Updated dependencies [14ea816]
+- Updated dependencies [240fa90]
+- Updated dependencies [e49f0fc]
+- Updated dependencies [115ad3a]
+- Updated dependencies [47dd32f]
+- Updated dependencies [8f3b7c0]
+- Updated dependencies [43f814f]
+- Updated dependencies [2e9cc63]
+  - @flare-engine/assets@0.4.12
+  - @flare-engine/core@0.4.12
+  - @flare-engine/ecs@0.4.12
+  - @flare-engine/input@0.4.12
+  - @flare-engine/math@0.4.12
+  - @flare-engine/render@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

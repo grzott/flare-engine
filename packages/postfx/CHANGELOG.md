@@ -1,5 +1,21 @@
 # @flare-engine/postfx
 
+## 0.4.12
+
+### Patch Changes
+
+- d9a3bb5: `COMPOSITE_SKSL`'s weather branches (rain, sun-shaft, dark-vignette, clouds) are now built from the same source fragments as the standalone `WEATHER_RAIN_SKSL`, `WEATHER_SUN_SHAFT_SKSL`, `WEATHER_DARK_VIGNETTE_SKSL` and `WEATHER_CLOUDS_SKSL` shaders, so an edit to one effect reaches both. Before, the composite carried hand-kept copies.
+
+  The standalone `WEATHER_*_SKSL` strings are byte-identical to 0.4.11, as is every other standalone `*_SKSL` export; a test now pins them.
+
+  The text of `COMPOSITE_SKSL` changed; its uniforms, their order and its behaviour did not. The differences are three shader-local variable names in the sun-shaft and dark-vignette branches, now spelled as in the standalones; the rain branch declaring its aspect ratio before its rotation angle; and comments. It is meant to render identically. No test compiles SkSL, so that is still to be checked visually.
+
+- 98e0d23: `createPostFxController().triggerTimed` called again while the effect was still timed overwrote the pre-trigger snapshot with the mid-trigger uniforms, so expiry restored those instead. A re-trigger now only restarts the countdown; expiry restores the uniforms the effect had before the first trigger.
+
+  `controller.update(dt)` no longer allocates while a flash fades or a timed effect is pending. Once a flash has fired, the flash effect's `uniforms` is one controller-owned object rewritten in place each frame, instead of a new object per frame; the uniforms object the effect was created with is never written to. `EffectChain.get`, and `setEnabled` / `setUniforms` through it, no longer allocate a closure per call.
+
+  `runtime.buildPass` still allocates on every frame (#303), so the postfx frame as a whole is not zero-alloc yet.
+
 ## 0.4.11
 
 ## 0.4.10

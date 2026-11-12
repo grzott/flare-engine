@@ -1,5 +1,25 @@
 # @flare-engine/input
 
+## 0.4.12
+
+### Patch Changes
+
+- 612f23c: New `applyRemapInto(snapshot, table, out)`: the zero-alloc form of `applyRemap`. It writes the remapped snapshot into a caller-owned `out` (resizing its `buttons` / `axes` to the table and reusing their records) and returns it. `applyRemap` is unchanged and still returns a new snapshot each call.
+
+  `InputManager.pollGamepads` now remaps into one snapshot it keeps per remapped pad, sized when `setGamepadRemap` installs or replaces the table, instead of building a new snapshot, `buttons` array, button records and `axes` array for that pad on every poll. For a remapped pad it also looks the remap up once instead of twice. Pads without a remap are unaffected, and snapshots returned by a `GamepadSource` are still never mutated.
+
+  `GestureDetector` no longer copies the two touch points at the start of a pinch (the copies were never read), and `pointerDown` writes the press position into one vector it owns instead of allocating one per press. Emitted gesture events are unchanged.
+
+- Updated dependencies [ad28054]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/events@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

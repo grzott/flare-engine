@@ -1,5 +1,18 @@
 # @flare-engine/devtools
 
+## 0.4.12
+
+### Patch Changes
+
+- f01bec6: `DevtoolsConfig.enabledOnNative` was defaulted but never read, so `false` changed nothing. On a native platform, `enabledOnNative: false` now makes `DevtoolsHUD` render nothing and stops `DevtoolsProvider` from capturing snapshots; flipping it back re-subscribes capture. Web ignores the flag. `DevtoolsContextValue` gains an optional `enabled` field carrying the result (absent means enabled).
+- Updated dependencies [e30c4fa]
+- Updated dependencies [78d7f8e]
+- Updated dependencies [d61c2a8]
+- Updated dependencies [c4fdd87]
+- Updated dependencies [9a25896]
+  - @flare-engine/core@0.4.12
+  - @flare-engine/ecs@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

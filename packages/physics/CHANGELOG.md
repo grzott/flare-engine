@@ -1,5 +1,25 @@
 # @flare-engine/physics
 
+## 0.4.12
+
+### Patch Changes
+
+- 61b0297: Ray vs AABB: an axis-parallel ray (`dx === 0` or `dy === 0`) whose origin lies exactly on the box's min or max on that axis made `raycast()` and `rayVsShapeInto` return a hit with `NaN` `distance` and `point`, whichever way the ray pointed. They now return a finite hit when the ray reaches the box and no hit when it points away from it, so a ray running exactly along a box edge hits the box, and `CollisionWorld.raycast` reports that hit. A zero-length direction (`dx === 0 && dy === 0`) now returns no hit for an AABB.
+- a652a40: Internal refactor: `CollisionWorld` now decides trigger vs collision, and emits the matching enter or exit signal, in one private helper instead of three copies in `remove` and `step`. No behaviour or API change: a pair where either entity is a trigger still emits `onTriggerEnter` / `onTriggerExit`, any other pair still emits `onCollisionStart` / `onCollisionEnd`, in the same order, and a pair object is still allocated only when a pair starts or ends.
+- 80b087b: The standalone `raycast(ox, oy, dx, dy, maxDist, targets)` now runs every target through `rayVsShapeInto`, the same ray math `CollisionWorld.raycast` uses, and the second, allocating copy of that math is removed. It no longer builds a hit record for each target it tests: a call that hits allocates the one hit it returns, and a call that misses allocates none. Results are unchanged — the closest hit wins, the first of equal-distance targets wins, and the returned hit is still a fresh object the caller may keep.
+- efe54ad: `SpatialIndex.insert` of an item already in the index now replaces its bounds, the same as `update`. Before, a second `insert` of the same item added a second entry and left the first one behind: `size` counted it, `query` over the old bounds kept returning the item, and `remove` dropped only the newer entry, so the stale one stayed until `clear()`. This affected code calling `SpatialIndex.insert` directly; `CollisionWorld.add` already checked for an existing entity and called `update` instead, so `CollisionWorld` users were not affected.
+- a851faa: `CollisionWorld`: re-adding an entity with a different `isTrigger` while one of its pairs was touching gave that pair a mismatched pair of signals. For example, a pair that began with `onTriggerEnter` ended with `onCollisionEnd`, or one that began with `onCollisionStart` ended with `onTriggerExit`, because the end signal was chosen from the flags at the moment the pair ended. A re-add that flips `isTrigger` now ends each active pair whose kind changes during the `add` / `addCollider` call, with the exit signal of its old kind. If the shapes still overlap, the next `step()` starts the pair again with the enter signal of its new kind. A pair whose other side is a trigger stays a trigger pair and gets no signal. Re-adds that keep `isTrigger` are unchanged, and frames without a re-add do no extra work.
+- 5139cef: Three new exports for reading and writing one map cell, also re-exported by `@flare-engine/engine`. `setSolidAt(grid, col, row, solid)` in `@flare-engine/physics` marks a `SolidGrid` cell solid or empty and returns `true`; when `col` or `row` is out of range or not an integer it writes nothing and returns `false`. `isSolidAt(grid, col, row)` reads a cell; coordinates that name no cell follow the grid's `outside` rule, so they are solid on an `outside: 'solid'` grid and empty on an `'open'` one. `setTileAt(layer, col, row, gid)` in `@flare-engine/tilemap` writes a raw GID into a `TileLayer` cell that `getTileAt` and the renderer read back, with the same `true` / `false` return. None of them allocates. The `topdown` template's door code and its tests now call these instead of computing the row-major index by hand.
+- Updated dependencies [ad28054]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/events@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

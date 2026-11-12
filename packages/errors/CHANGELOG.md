@@ -1,5 +1,7 @@
 # @flare-engine/errors
 
+## 0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

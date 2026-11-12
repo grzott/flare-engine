@@ -1,5 +1,26 @@
 # @flare-engine/core
 
+## 0.4.12
+
+### Patch Changes
+
+- e30c4fa: The `AppLifecycle` class JSDoc claimed it bridges React Native `AppState` and auto-pauses / auto-resumes the loop. It subscribes to nothing: the host calls `background()`, `foreground()` and `memoryWarning()` itself. The JSDoc now says so, and attributes the post-resume timestamp reset to `GameLoop.resume()`, where it lives. Documentation only; behaviour is unchanged.
+
+  <!-- symbols-ok: AppState -->
+
+- 78d7f8e: `GameLoop` now hands the same frame callback to `requestAnimationFrame` (or a custom `tick`) on every frame, instead of creating a new closure per frame, so a running loop allocates nothing per frame for scheduling. Frame timing, the one-frame-chain guarantee and stop/start behaviour are unchanged.
+- d61c2a8: `GameLoop` keeps a single frame chain when it is stopped or restarted from inside a frame handler. Before, calling `stop()` then `start()` inside a handler (for example in `onUpdate`) left two frame callbacks scheduled instead of one; and calling `stop()` inside a handler still scheduled one more frame, so a `start()` issued before that frame fired also left two scheduled. The frame callback now schedules the next frame only if the loop is still running and no frame is already pending.
+- c4fdd87: Internal refactor: `Pool.acquire` and `Pool.tryAcquire` now share one private pop-or-create helper instead of two copies of the same body. No behaviour or API change.
+- Updated dependencies [ad28054]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/events@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

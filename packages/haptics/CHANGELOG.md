@@ -1,5 +1,11 @@
 # @flare-engine/haptics
 
+## 0.4.12
+
+### Patch Changes
+
+- 628d860: `createExpoHapticsProvider` takes a second, optional argument `ExpoHapticsOptions` (`{ platform?: string }`, a new exported type), and `ExpoHapticsModule` gains the optional member `performAndroidHapticsAsync`. With `{ platform: 'android' }` (the value of react-native's Platform.OS) and a module that has that function, cues play Android system haptic effects through it instead of expo's vibrator calls: `selection` plays `clock-tick`, `impact` plays `keyboard-tap` (`light`, `soft`), `virtual-key` (`medium`, omitted) or `long-press` (`heavy`, `rigid`), and `notification` plays `confirm` (`success`, omitted), `long-press` (`warning`) or `reject` (`error`). If the module rejects an effect, the cue falls back to the original expo call with the original argument and resolves, and that provider does not try the effect again. Without the option, with any other platform, or with a module that lacks the function, the provider makes the same calls as before.
+
 ## 0.4.11
 
 ## 0.4.10

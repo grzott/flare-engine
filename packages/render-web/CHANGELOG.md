@@ -1,5 +1,38 @@
 # @flare-engine/render-web
 
+## 0.4.12
+
+### Patch Changes
+
+- c0c5f1a: `@flare-engine/math` now exports `argbToFloat4Into(out, argb)`, which unpacks a packed `0xAARRGGBB` colour int into a `Float32Array` as `[r, g, b, a]`, each 0-1, without allocating. Five packages each carried their own copy of the same four lines. They now call this one instead: shapes' `argbTo`, which stays exported and delegates, the frame renderer's `clear`, the web surface's `clear`, `renderShapesToImage`, and `createProceduralAtlas`. Colours come out the same as before. `@flare-engine/shapes`, `@flare-engine/assets` and `@flare-engine/render-web` now depend on `@flare-engine/math`.
+- 05bdc71: Internal refactor: the frame renderer module and the postfx surface now share one CanvasKit `RuntimeEffect` wrapper, so each wrapped effect carries both `makeShader` with uniform reflection and `makeShaderWithChildren`; no change to the exported types or to the calls made to CanvasKit.
+- 1469cb1: `createWebSkiaModule`'s `PictureRecorder().beginRecording()` now returns the same `DrawSurfaceLike`
+  object on every call for a given recorder, re-pointed at the new recording's canvas, instead of
+  building a new wrapper per recording. The object is valid only between `beginRecording` and the
+  matching `finishRecordingAsPicture`: a reference kept across recordings draws into whichever
+  recording that recorder began last. `createFrameRenderer` drops its reference at `endFrame`, so
+  frame-renderer consumers are unaffected. `drawAtlas` now passes CanvasKit views cached per run
+  length instead of cutting two new views per run; the cache is dropped when the scratch buffers grow.
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+- Updated dependencies [d9a3bb5]
+- Updated dependencies [98e0d23]
+- Updated dependencies [14ea816]
+- Updated dependencies [240fa90]
+- Updated dependencies [e49f0fc]
+- Updated dependencies [115ad3a]
+- Updated dependencies [47dd32f]
+- Updated dependencies [8f3b7c0]
+- Updated dependencies [43f814f]
+- Updated dependencies [2e9cc63]
+  - @flare-engine/math@0.4.12
+  - @flare-engine/render@0.4.12
+  - @flare-engine/postfx@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

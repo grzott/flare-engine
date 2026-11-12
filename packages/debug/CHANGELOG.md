@@ -1,5 +1,15 @@
 # @flare-engine/debug
 
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [e30c4fa]
+- Updated dependencies [78d7f8e]
+- Updated dependencies [d61c2a8]
+- Updated dependencies [c4fdd87]
+  - @flare-engine/core@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

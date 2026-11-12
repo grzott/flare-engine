@@ -1,5 +1,11 @@
 # @flare-engine/iap-revenuecat
 
+## 0.4.12
+
+### Patch Changes
+
+- @flare-engine/iap@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

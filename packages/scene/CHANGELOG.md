@@ -1,5 +1,29 @@
 # @flare-engine/scene
 
+## 0.4.12
+
+### Patch Changes
+
+- 8cd3c55: `SceneManager.push()` and `pop()` called while an animated `go()` is still fading out are now ignored, with a one-time dev warning per manager. Before, a `push` of the pending scene entered it without `onInit`, and the scene was then destroyed and initialized again when the fade-out ended; a `pop` after that push destroyed the pending scene, which was still initialized and entered afterwards; and a `pop` of an older scene with the same name could leave the pending scene without `onDestroy` once a later `go()` superseded it. Both calls work again as soon as the target scene has entered.
+- Updated dependencies [9a25896]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+- Updated dependencies [14ea816]
+- Updated dependencies [240fa90]
+- Updated dependencies [e49f0fc]
+- Updated dependencies [115ad3a]
+- Updated dependencies [47dd32f]
+- Updated dependencies [8f3b7c0]
+- Updated dependencies [43f814f]
+- Updated dependencies [2e9cc63]
+  - @flare-engine/ecs@0.4.12
+  - @flare-engine/math@0.4.12
+  - @flare-engine/render@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

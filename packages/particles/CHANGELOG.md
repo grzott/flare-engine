@@ -1,5 +1,22 @@
 # @flare-engine/particles
 
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [e30c4fa]
+- Updated dependencies [78d7f8e]
+- Updated dependencies [d61c2a8]
+- Updated dependencies [c4fdd87]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/core@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

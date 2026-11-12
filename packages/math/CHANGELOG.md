@@ -1,5 +1,16 @@
 # @flare-engine/math
 
+## 0.4.12
+
+### Patch Changes
+
+- c0c5f1a: `@flare-engine/math` now exports `argbToFloat4Into(out, argb)`, which unpacks a packed `0xAARRGGBB` colour int into a `Float32Array` as `[r, g, b, a]`, each 0-1, without allocating. Five packages each carried their own copy of the same four lines. They now call this one instead: shapes' `argbTo`, which stays exported and delegates, the frame renderer's `clear`, the web surface's `clear`, `renderShapesToImage`, and `createProceduralAtlas`. Colours come out the same as before. `@flare-engine/shapes`, `@flare-engine/assets` and `@flare-engine/render-web` now depend on `@flare-engine/math`.
+- ee7781a: `pointInRect`, `pointInCircle`, `rectVsRect`, `rectVsCircle` and `circleVsCircle` now call `Rect.contains`, `Circle.contains`, `Rect.intersects`, `Circle.intersectsRect` and `Circle.intersects` instead of repeating the same expressions, so each predicate has one body. Internal only: no exported name, signature or result changes.
+- 2b3c047: `lineVsRect` no longer allocates four edge objects and an iterator on every call. It clips against the same four edges in the same order with the same parallel-edge tolerance, so its result is unchanged for every input, including non-finite coordinates.
+- e0be221: `rayVsRect`: an axis-parallel ray (`dirX === 0` or `dirY === 0`) whose origin lies exactly on the rect's min or max on that axis returned `NaN` instead of `number | null`. It now returns a finite `t` or `null`: rect edges are inclusive, so a ray running exactly along an edge hits (`rayVsRect(0, -5, 0, 1, { x: 0, y: 0, width: 10, height: 10 })` is `5`), and one pointing away from the rect returns `null`. A zero direction (`dirX === 0 && dirY === 0`) now returns `null`; before, it returned `Infinity` from strictly inside the rect and `NaN` from an edge. Results for every other input are unchanged.
+- e3474bc: `springIn`, `springOut` and `springInOut` are now documented as what they are: the Back curves under a second name — one overshoot, no oscillation, not damped springs. `springIn` and `springOut` call `easeInBack` and `easeOutBack` instead of repeating their expressions; `springInOut` keeps its own body. All three names stay exported and no result changes.
+- 636a8eb: `Vec2.slerp`: antiparallel unit inputs no longer collapse. `Vec2.slerp({ x: 1, y: 0 }, { x: -1, y: 0 }, 0.5)` returned `{ x: 0, y: 0 }`, and `t = 0.25` on the same pair returned a vector along `a` instead of 45° from it; an input `1e-7` rad short of antiparallel returned length `1.0002` at `t = 0.25`. When the angle between `a` and `b` is within `1e-6` rad of π, `slerp` now rotates `a` by `t·π`, turning toward `Vec2.perp(a)` (`(-y, x)`, clockwise in y-down screen space), so the result is a unit vector and `t = 0.5` is `Vec2.perp(a)`. In that band `t = 0` returns `a` and `t = 1` returns `b` exactly, and the `out` form writes the same values. Results for every other input are unchanged.
+
 ## 0.4.11
 
 ## 0.4.10

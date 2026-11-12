@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/errors",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "React error boundary, structured crash payload, pluggable crash transport",
   "keywords": [
     "flare-engine",

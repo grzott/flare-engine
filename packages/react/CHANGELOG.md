@@ -1,5 +1,68 @@
 # @flare-engine/react
 
+## 0.4.12
+
+### Patch Changes
+
+- c0c5f1a: `@flare-engine/math` now exports `argbToFloat4Into(out, argb)`, which unpacks a packed `0xAARRGGBB` colour int into a `Float32Array` as `[r, g, b, a]`, each 0-1, without allocating. Five packages each carried their own copy of the same four lines. They now call this one instead: shapes' `argbTo`, which stays exported and delegates, the frame renderer's `clear`, the web surface's `clear`, `renderShapesToImage`, and `createProceduralAtlas`. Colours come out the same as before. `@flare-engine/shapes`, `@flare-engine/assets` and `@flare-engine/render-web` now depend on `@flare-engine/math`.
+- 2a3fe72: `GameView` on native no longer calls `buildPostFxPasses` each frame while no postfx chain is bound;
+  it checks `hasPostFxBinding` first, as the web path already did. With a chain bound, the per-frame
+  uniform comparison no longer builds a key array for each pass. The pass descriptor list itself is
+  still built once per frame while a chain is bound. One visible difference: a runtime bound on native
+  with `supported` set but no `buildPass` no longer logs the one-time "buildPass absent" warning,
+  matching web.
+- 18a00d3: Internal refactor: `useOverlayFade` and `useCountUp` now run through one shared private `requestAnimationFrame` tween instead of two copies of the same code. No behaviour or API change: the fade still eases linearly over 300 ms by default, the count-up still eases out cubically over 600 ms, both still snap to the target when `requestAnimationFrame` is absent, and an interrupted tween still continues from the value on screen.
+- 8f3b7c0: `createRenderSystem` keeps its draw order from one frame to the next. It used to rebuild the list
+  from `query.entities` and insertion-sort it from that order every frame, so entities whose spawn
+  order disagreed with their `z` were re-sorted on every frame. It now follows the query through
+  `onEntityAdded` / `onEntityRemoved`, refreshes each `z` in place and sorts the order it already
+  holds: a frame in which no `z` changed and nothing joined costs `n - 1` comparisons for `n` sprites.
+
+  The returned function now also has a `dispose()` method that drops those two subscriptions (new
+  exported type `RenderSystem`); without it the system stays subscribed for as long as the query
+  lives. Its storage stays bounded whether or not the system runs: removed entries are reclaimed on
+  add as well as on each frame. The type is still assignable to `() => void`. A disposed system queues
+  nothing. `GameView` calls `dispose()` when it unmounts.
+
+  One visible difference: sprites with equal `z` now draw in the order they joined the query, and an
+  entity that leaves and rejoins moves behind the others at its `z`. Before, equal `z` followed
+  `query.entities` order as read each frame, which changes when another entity is removed. That order
+  was never a documented guarantee.
+
+- Updated dependencies [750248a]
+- Updated dependencies [7ae22a5]
+- Updated dependencies [e30c4fa]
+- Updated dependencies [78d7f8e]
+- Updated dependencies [d61c2a8]
+- Updated dependencies [c4fdd87]
+- Updated dependencies [9a25896]
+- Updated dependencies [ad28054]
+- Updated dependencies [612f23c]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+- Updated dependencies [14ea816]
+- Updated dependencies [240fa90]
+- Updated dependencies [e49f0fc]
+- Updated dependencies [115ad3a]
+- Updated dependencies [47dd32f]
+- Updated dependencies [8f3b7c0]
+- Updated dependencies [43f814f]
+- Updated dependencies [2e9cc63]
+- Updated dependencies [8cd3c55]
+  - @flare-engine/assets@0.4.12
+  - @flare-engine/audio@0.4.12
+  - @flare-engine/core@0.4.12
+  - @flare-engine/ecs@0.4.12
+  - @flare-engine/events@0.4.12
+  - @flare-engine/input@0.4.12
+  - @flare-engine/math@0.4.12
+  - @flare-engine/render@0.4.12
+  - @flare-engine/scene@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

@@ -1,5 +1,72 @@
 # @flare-engine/render
 
+## 0.4.12
+
+### Patch Changes
+
+- c0c5f1a: `@flare-engine/math` now exports `argbToFloat4Into(out, argb)`, which unpacks a packed `0xAARRGGBB` colour int into a `Float32Array` as `[r, g, b, a]`, each 0-1, without allocating. Five packages each carried their own copy of the same four lines. They now call this one instead: shapes' `argbTo`, which stays exported and delegates, the frame renderer's `clear`, the web surface's `clear`, `renderShapesToImage`, and `createProceduralAtlas`. Colours come out the same as before. `@flare-engine/shapes`, `@flare-engine/assets` and `@flare-engine/render-web` now depend on `@flare-engine/math`.
+- 14ea816: The frame renderer's internal cache of atlas source-rect and transform slices is now keyed by run length instead of remembering only the most recent length, so a sprite run reuses the arrays built for an earlier run of the same length. Runs longer than 256 sprites keep a single most-recent-length slice, so the cache stays bounded. Cached entries are always copies of the pool, never the pool array itself. No API change.
+- 240fa90: The frame renderer now reads a custom shader's uniform layout (uniform names, slots, sizes and float count) once per compiled shader and keeps it in an internal `WeakMap`, instead of asking the shader for it on every sprite run drawn with a `custom` effect. The uniform array handed to `makeShader` is unchanged, and `makeShader` itself still runs once per run. No behaviour or API change.
+- e49f0fc: `Camera2D.shakePerlin` no longer reads past the end of its noise permutation table. The table held
+  256 entries while the nested lookups reach index 511; an out-of-range read fell back to the first
+  gradient direction, which biased the noise in the affected cells. The table now stores the same
+  256-entry shuffle twice, so every lookup is in range.
+
+  One visible difference: the Y offset of a Perlin shake (`effectiveY`) takes different values at some
+  points in time. The X offset is unchanged, as are the offset range, the decay and the duration.
+
+- 115ad3a: The `FrameRenderer` JSDoc now says who owns the picture `endFrame()` returns: the caller draws it and then releases it (with CanvasKit, `delete()`); the renderer never frees it. The `@flare-engine/render-web` README's frame loop now deletes the picture after drawing it, so code copied from it no longer leaks one WASM-side object per frame. Documentation only.
+- 47dd32f: Internal refactor: the shader strings in this package now share one copy of each repeated helper
+  snippet (the two-component and the one-component hash one-liners) instead of pasting it into every
+  shader that uses it. Every exported `*_SKSL` string is byte-identical to its previous value, so the
+  compiled shaders and everything drawn with them are unchanged.
+- 8f3b7c0: `createRenderSystem` keeps its draw order from one frame to the next. It used to rebuild the list
+  from `query.entities` and insertion-sort it from that order every frame, so entities whose spawn
+  order disagreed with their `z` were re-sorted on every frame. It now follows the query through
+  `onEntityAdded` / `onEntityRemoved`, refreshes each `z` in place and sorts the order it already
+  holds: a frame in which no `z` changed and nothing joined costs `n - 1` comparisons for `n` sprites.
+
+  The returned function now also has a `dispose()` method that drops those two subscriptions (new
+  exported type `RenderSystem`); without it the system stays subscribed for as long as the query
+  lives. Its storage stays bounded whether or not the system runs: removed entries are reclaimed on
+  add as well as on each frame. The type is still assignable to `() => void`. A disposed system queues
+  nothing. `GameView` calls `dispose()` when it unmounts.
+
+  One visible difference: sprites with equal `z` now draw in the order they joined the query, and an
+  entity that leaves and rejoins moves behind the others at its `z`. Before, equal `z` followed
+  `query.entities` order as read each frame, which changes when another entity is removed. That order
+  was never a documented guarantee.
+
+- 43f814f: Internal refactor: the frame renderer's six zone-background effects (`roofsCity`, `forestCanopy`,
+  `riverWave`, `moonCrater`, `caveInterior`, `mountainHills`) are now driven by one internal table and
+  one code path instead of six copies of the same code. No exported symbol changes. Each effect
+  compiles the same shader string and receives the same ten uniform values in the same order as
+  before, and a run whose shader is unavailable is still skipped with a single `console.warn` per
+  renderer.
+- 2e9cc63: The frame renderer no longer fills opaque black rectangles for the six zone-background effects
+  (`roofsCity`, `forestCanopy`, `riverWave`, `moonCrater`, `caveInterior`, `mountainHills`) when their
+  shader is not available. If the Skia module has no `RuntimeEffect`, or `RuntimeEffect.Make` returns
+  `null` for the effect's shader, that run of sprites is now skipped — nothing is drawn for it — and a
+  single `console.warn` is emitted per renderer.
+
+  This only arises with a shader compile failure or a custom Skia module that omits `RuntimeEffect`;
+  `@flare-engine/render-web` always supplies it. Drawing with a compiled shader is unchanged, as is
+  the plain-sprite fallback of the water, fog, fire and drop-shadow effects.
+
+  <!-- symbols-ok: RuntimeEffect.Make -->
+
+- Updated dependencies [750248a]
+- Updated dependencies [9a25896]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/assets@0.4.12
+  - @flare-engine/ecs@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

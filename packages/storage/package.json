@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/storage",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "Persistent key/value storage with typed schema, migrations, save slots, and JSON import/export",
   "keywords": [
     "flare-engine",

@@ -1,5 +1,20 @@
 # @flare-engine/ecs
 
+## 0.4.12
+
+### Patch Changes
+
+- 9a25896: Internal refactor: `World` now runs query notification for `add`, `remove` and `destroy` through one shared private helper. No behaviour or API change.
+- Updated dependencies [ad28054]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/events@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

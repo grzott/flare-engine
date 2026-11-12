@@ -1,5 +1,18 @@
 # @flare-engine/progression
 
+## 0.4.12
+
+### Patch Changes
+
+- 76bde4a: The `createCollectibleRegistry` JSDoc stated two contradicting capstone rules. It now states what the code does: the capstone unlocks automatically once every id in `ids` is unlocked, `unlock(capstoneId)` also unlocks it directly, and a capstone that is also listed in `ids` behaves as an ordinary member of the set. Documentation only; behaviour is unchanged.
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

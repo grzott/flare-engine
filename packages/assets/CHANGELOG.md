@@ -1,5 +1,21 @@
 # @flare-engine/assets
 
+## 0.4.12
+
+### Patch Changes
+
+- 750248a: `parseAseprite` now names the frames of an Aseprite hash export (`--format json-hash`, where `frames` is an object keyed by frame name) after their keys, so `getFrame(sheet, name)` and `sheet.frameMap` resolve them. Before, the parser read the name from a `filename` field that hash-export values do not carry: every `SpriteFrame.name` was `undefined`, `frameMap` held a single `undefined` key, and `getFrame` returned `undefined` for every frame name. Frame rectangles, frame order and tag animations were unaffected, since they are index-based. A hash value that does carry `filename` keeps that as its name, and array exports (`--format json-array`) are unchanged.
+- c0c5f1a: `@flare-engine/math` now exports `argbToFloat4Into(out, argb)`, which unpacks a packed `0xAARRGGBB` colour int into a `Float32Array` as `[r, g, b, a]`, each 0-1, without allocating. Five packages each carried their own copy of the same four lines. They now call this one instead: shapes' `argbTo`, which stays exported and delegates, the frame renderer's `clear`, the web surface's `clear`, `renderShapesToImage`, and `createProceduralAtlas`. Colours come out the same as before. `@flare-engine/shapes`, `@flare-engine/assets` and `@flare-engine/render-web` now depend on `@flare-engine/math`.
+- Updated dependencies [ad28054]
+- Updated dependencies [c0c5f1a]
+- Updated dependencies [ee7781a]
+- Updated dependencies [2b3c047]
+- Updated dependencies [e0be221]
+- Updated dependencies [e3474bc]
+- Updated dependencies [636a8eb]
+  - @flare-engine/events@0.4.12
+  - @flare-engine/math@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

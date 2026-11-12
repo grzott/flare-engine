@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'bun:test';
+import type { SkImageLike } from '@flare-engine/assets';
+import type { FrameRendererModule, PaintLike, RuntimeEffectLike } from '../src/frame-renderer.js';
+import { createFrameRenderer } from '../src/frame-renderer.js';
 import {
   type AnySpriteEffect,
   CAVE_INTERIOR_SKSL,
@@ -22,6 +25,7 @@ import {
   type SpriteColor,
   updateEffect,
 } from '../src/index.js';
+import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 
 const dark: SpriteColor = { r: 0.05, g: 0.05, b: 0.1, a: 1 };
 const light: SpriteColor = { r: 0.8, g: 0.8, b: 0.9, a: 1 };
@@ -333,4 +337,242 @@ describe('AnySpriteEffect — zone bg arms in exhaustive switch', () => {
       'mountain-hills:1.5',
     ]);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Frame-renderer zone-bg pass — recording FrameRendererModule stub (pattern
+// from frame-renderer-counters.test.ts). `mode` selects the shape of
+// `Skia.RuntimeEffect`: absent, present but failing to compile, or compiling.
+// ---------------------------------------------------------------------------
+
+type RuntimeEffectMode = 'absent' | 'make-null' | 'compiled';
+
+interface DrawLog {
+  /** Paint handed to each `drawRect`, in call order. */
+  rectPaints: unknown[];
+  atlasCalls: number;
+  imageRectCalls: number;
+  /** Every paint the renderer created, in creation order — [0] is its default paint. */
+  paints: PaintLike[];
+  warnings: string[];
+}
+
+function makeLog(): DrawLog {
+  return { rectPaints: [], atlasCalls: 0, imageRectCalls: 0, paints: [], warnings: [] };
+}
+
+function makeRecordingModule(mode: RuntimeEffectMode, log: DrawLog): FrameRendererModule {
+  const fakeCanvas = {
+    save() {
+      return 0;
+    },
+    restore() {},
+    translate() {},
+    scale() {},
+    rotate() {},
+    clear() {},
+    drawAtlas() {
+      log.atlasCalls++;
+    },
+    drawImageRect() {
+      log.imageRectCalls++;
+    },
+    drawRect(_rect: unknown, paint: unknown) {
+      log.rectPaints.push(paint);
+    },
+  };
+  const compiledEffect: RuntimeEffectLike = {
+    makeShader() {
+      return {};
+    },
+    getUniformCount() {
+      return 0;
+    },
+    getUniformFloatCount() {
+      return 0;
+    },
+    getUniformName() {
+      return '';
+    },
+    getUniform() {
+      return { columns: 1, rows: 1, slot: 0 };
+    },
+  };
+  const module: FrameRendererModule = {
+    XYWHRect(x, y, w, h) {
+      const r = {
+        x,
+        y,
+        width: w,
+        height: h,
+        setXYWH(nx: number, ny: number, nw: number, nh: number) {
+          r.x = nx;
+          r.y = ny;
+          r.width = nw;
+          r.height = nh;
+        },
+      };
+      return r;
+    },
+    RSXform(_scos, _ssin, _tx, _ty) {
+      return { scos: 0, ssin: 0, tx: 0, ty: 0, set() {} };
+    },
+    Paint() {
+      const paint: PaintLike = {
+        setAlphaf() {},
+        setColorFilter() {},
+        setShader() {},
+        setImageFilter() {},
+      };
+      log.paints.push(paint);
+      return paint;
+    },
+    PictureRecorder() {
+      return {
+        beginRecording(_bounds: unknown) {
+          return fakeCanvas;
+        },
+        finishRecordingAsPicture() {
+          return {};
+        },
+      };
+    },
+    ColorFilter: {
+      MakeBlend(_color: Float32Array, _mode: number) {
+        return {};
+      },
+      MakeMatrix(_m: number[]) {
+        return {};
+      },
+    },
+  };
+  if (mode !== 'absent') {
+    module.RuntimeEffect = {
+      Make() {
+        return mode === 'compiled' ? compiledEffect : null;
+      },
+    };
+  }
+  return module;
+}
+
+function makeCmd(effect: AnySpriteEffect | undefined, stretch = false): SpriteDrawCommand {
+  return {
+    image: {} as SkImageLike,
+    srcX: 0,
+    srcY: 0,
+    srcW: 32,
+    srcH: 32,
+    dstX: 0,
+    dstY: 0,
+    dstW: 320,
+    dstH: 240,
+    effect,
+    alpha: 1,
+    rotation: 0,
+    anchorX: 0,
+    anchorY: 0,
+    stretch,
+    blend: 'normal',
+    flipX: false,
+    flipY: false,
+  };
+}
+
+const ZONE_BG_EFFECTS: ReadonlyArray<readonly [string, AnySpriteEffect]> = [
+  ['roofs-city', roofsCity({ skyColor: dark, roofColor: light })],
+  ['forest-canopy', forestCanopy({ skyColor: sky, leafColor: green })],
+  ['river-wave', riverWave({ waterColor: blue, foamColor: foam })],
+  ['moon-crater', moonCrater({ moonColor: gray, craterColor: rust })],
+  ['cave-interior', caveInterior({ caveColor: cave, glowColor: amber })],
+  ['mountain-hills', mountainHills({ skyColor: sky, hillColor: hill })],
+];
+
+const FRAMES = 3;
+
+/** Runs `draw` against a fresh renderer, capturing `console.warn` into the returned log. */
+function record(
+  mode: RuntimeEffectMode,
+  draw: (renderer: ReturnType<typeof createFrameRenderer>) => void,
+): DrawLog {
+  const log = makeLog();
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    log.warnings.push(args.map(String).join(' '));
+  };
+  try {
+    draw(createFrameRenderer(makeRecordingModule(mode, log)));
+  } finally {
+    console.warn = originalWarn;
+  }
+  return log;
+}
+
+/**
+ * FRAMES frames, each a plain two-sprite run, then a two-rect zone-bg run,
+ * then a single zone-bg command flagged `stretch`.
+ */
+function renderZoneBgFrames(mode: RuntimeEffectMode, effect: AnySpriteEffect): DrawLog {
+  return record(mode, (renderer) => {
+    const image = {} as SkImageLike;
+    for (let frame = 0; frame < FRAMES; frame++) {
+      renderer.beginFrame(320, 240, frame / 60);
+      renderer.drawAtlas(image, [makeCmd(undefined), makeCmd(undefined)]);
+      renderer.drawAtlas(image, [makeCmd(effect), makeCmd(effect)]);
+      renderer.drawAtlas(image, [makeCmd(effect, true)]);
+      renderer.endFrame();
+    }
+  });
+}
+
+describe('frame-renderer zone-bg pass — compiled effect absent', () => {
+  for (const mode of ['absent', 'make-null'] as const) {
+    const label =
+      mode === 'absent' ? 'Skia.RuntimeEffect undefined' : 'RuntimeEffect.Make returns null';
+    for (const [type, effect] of ZONE_BG_EFFECTS) {
+      it(`${label}: ${type} run is skipped — no drawRect, no atlas draw`, () => {
+        const log = renderZoneBgFrames(mode, effect);
+        expect(log.rectPaints.length).toBe(0);
+        expect(log.imageRectCalls).toBe(0);
+        // Only the plain run reaches the canvas: one drawAtlas per frame.
+        expect(log.atlasCalls).toBe(FRAMES);
+      });
+
+      it(`${label}: ${type} skip is logged once, not per frame`, () => {
+        const log = renderZoneBgFrames(mode, effect);
+        expect(log.warnings.length).toBe(1);
+        expect(log.warnings[0]).toContain('zone-bg');
+      });
+    }
+  }
+
+  it('one renderer skipping all six effect types still logs once', () => {
+    const log = record('absent', (renderer) => {
+      renderer.beginFrame(320, 240);
+      for (const [, effect] of ZONE_BG_EFFECTS) {
+        renderer.drawAtlas({} as SkImageLike, [makeCmd(effect)]);
+      }
+      renderer.endFrame();
+    });
+    expect(log.warnings.length).toBe(1);
+    expect(log.rectPaints.length).toBe(0);
+    expect(log.atlasCalls).toBe(0);
+  });
+});
+
+describe('frame-renderer zone-bg pass — compiled effect present', () => {
+  for (const [type, effect] of ZONE_BG_EFFECTS) {
+    it(`${type} run draws one shader rect per command and nothing else`, () => {
+      const log = renderZoneBgFrames('compiled', effect);
+      // 2 rects + 1 stretch-flagged rect per frame; zone-bg ignores the stretch flag.
+      expect(log.rectPaints.length).toBe(3 * FRAMES);
+      expect(log.imageRectCalls).toBe(0);
+      expect(log.atlasCalls).toBe(FRAMES);
+      expect(log.warnings.length).toBe(0);
+      // One dedicated paint, reused every frame, never the renderer's default paint.
+      const paint = log.rectPaints[0];
+      expect(paint).not.toBe(log.paints[0]);
+      for (const p of log.rectPaints) expect(p).toBe(paint);
+    });
+  }
 });

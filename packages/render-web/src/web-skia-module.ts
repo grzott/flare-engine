@@ -38,13 +38,19 @@ const BLEND_PLUS = 12;
 
 // Grow-only flat Float32Array scratch buffers for flattening drawAtlas args.
 // Each instance of createWebSkiaModule gets its own pair.
+// srcView(n) / xformView(n) cache the view over the first n sprites per n; a view
+// is tied to the buffer it was cut from, so growing the buffers drops them all.
 function makeAtlasBuffers(): {
   srcs: Float32Array;
   xforms: Float32Array;
   ensureCapacity(n: number): void;
+  srcView(n: number): Float32Array;
+  xformView(n: number): Float32Array;
 } {
   let srcs = new Float32Array(32 * 4);
   let xforms = new Float32Array(32 * 4);
+  const srcViews = new Map<number, Float32Array>();
+  const xformViews = new Map<number, Float32Array>();
 
   return {
     get srcs() {
@@ -59,7 +65,25 @@ function makeAtlasBuffers(): {
         while (cap < n * 4) cap *= 2;
         srcs = new Float32Array(cap);
         xforms = new Float32Array(cap);
+        srcViews.clear();
+        xformViews.clear();
       }
+    },
+    srcView(n: number): Float32Array {
+      let view = srcViews.get(n);
+      if (view === undefined) {
+        view = srcs.subarray(0, n * 4);
+        srcViews.set(n, view);
+      }
+      return view;
+    },
+    xformView(n: number): Float32Array {
+      let view = xformViews.get(n);
+      if (view === undefined) {
+        view = xforms.subarray(0, n * 4);
+        xformViews.set(n, view);
+      }
+      return view;
     },
   };
 }
@@ -79,12 +103,20 @@ interface CKSampling {
   readonly linear: FilterOptions;
 }
 
+interface CKCanvasWrapper {
+  readonly surface: DrawSurfaceLike;
+  bind(next: CKCanvas): void;
+}
+
+// Built once per PictureRecorder; bind() re-points the surface at the canvas of
+// each new recording, so it always draws into the most recently bound one.
 function wrapCKCanvas(
-  ck: CKCanvas,
+  initial: CKCanvas,
   atlasBuffers: ReturnType<typeof makeAtlasBuffers>,
   kit: CanvasKit,
   ckSampling: CKSampling,
-): DrawSurfaceLike {
+): CKCanvasWrapper {
+  let ck = initial;
   // Pre-allocated LTRB scratch buffers for zero-alloc drawImageRect / drawRect.
   // CK accepts a Float32Array as InputRect (LTRB layout).
   const imgSrcScratch = new Float32Array(4);
@@ -101,7 +133,7 @@ function wrapCKCanvas(
     imgDstScratch[3] = dst.y + dst.height;
   }
 
-  return {
+  const surface: DrawSurfaceLike = {
     save: () => ck.save(),
     restore: () => ck.restore(),
     translate: (x, y) => ck.translate(x, y),
@@ -129,8 +161,8 @@ function wrapCKCanvas(
         atlasBuffers.xforms[o + 3] = xf.ty;
       }
       const img = image as CKImage;
-      const srcs = atlasBuffers.srcs.subarray(0, n * 4);
-      const xforms = atlasBuffers.xforms.subarray(0, n * 4);
+      const srcs = atlasBuffers.srcView(n);
+      const xforms = atlasBuffers.xformView(n);
       if (sampling === undefined) {
         ck.drawAtlas(img, srcs, xforms, rawPaint(paint), null, null);
       } else {
@@ -177,6 +209,13 @@ function wrapCKCanvas(
       ck.drawRect(imgSrcScratch, rawPaint(paint));
     },
   };
+
+  return {
+    surface,
+    bind(next) {
+      ck = next;
+    },
+  };
 }
 
 function wrapRuntimeEffect(eff: RuntimeEffect): RuntimeEffectLike {
@@ -200,6 +239,9 @@ function wrapRuntimeEffect(eff: RuntimeEffect): RuntimeEffectLike {
  *
  * CK differences handled here:
  * - `drawAtlas` takes flat Float32Arrays — the wrapper flattens object pools.
+ * - `PictureRecorder().beginRecording()` returns one surface object per recorder,
+ *   re-pointed at each new recording. Use it only between `beginRecording` and the
+ *   matching `finishRecordingAsPicture`; do not keep it across recordings.
  * - `rotate` is forwarded verbatim (no radians→degrees conversion) to match
  *   the native bridge; the dormant radians/degrees mismatch is tracked separately.
  * - `ColorFilter.MakeBlend(color, mode)` takes an EmbindEnumEntity — the
@@ -305,11 +347,14 @@ export function createWebSkiaModule(kit: CanvasKit): FrameRendererModule {
 
     PictureRecorder() {
       const rec = new kit.PictureRecorder();
+      let wrapper: CKCanvasWrapper | null = null;
       const recorder: PictureRecorderLike = {
         beginRecording(bounds) {
           const r = bounds as RectLike;
           const ck = rec.beginRecording(kit.XYWHRect(r.x, r.y, r.width, r.height));
-          return wrapCKCanvas(ck, atlasBuffers, kit, ckSampling);
+          if (wrapper === null) wrapper = wrapCKCanvas(ck, atlasBuffers, kit, ckSampling);
+          else wrapper.bind(ck);
+          return wrapper.surface;
         },
         finishRecordingAsPicture(): PictureLike {
           return rec.finishRecordingAsPicture();

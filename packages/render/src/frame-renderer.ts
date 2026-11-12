@@ -273,7 +273,8 @@ export interface FrameRendererPostFxDescriptor {
  * Each frame:
  *   1. Call `beginFrame(viewportWidth, viewportHeight)`.
  *   2. Call `drawAtlas(image, commands)` one or more times.
- *   3. Call `endFrame()` — returns the recorded picture.
+ *   3. Call `endFrame()` — returns the recorded picture. The caller owns it: draw it,
+ *      then release it (CanvasKit: `delete()`). The renderer never frees it.
  */
 export interface FrameRenderer {
   readonly canvas: CanvasLike;

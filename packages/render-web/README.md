@@ -75,7 +75,12 @@ renderer.beginFrame(width, height, 0, 1);
 renderer.drawAtlas(atlasImage, commands);
 const picture = renderer.endFrame();
 // endFrame() returns the backend-neutral PictureLike; cast to CanvasKit's Picture to present.
-if (picture) canvas.drawPicture(picture as Parameters<typeof canvas.drawPicture>[0]);
+// The caller owns the picture: delete it once drawn, or each frame leaks a WASM-side object.
+if (picture) {
+  const ckPicture = picture as Parameters<typeof canvas.drawPicture>[0];
+  canvas.drawPicture(ckPicture);
+  ckPicture.delete();
+}
 web.flush();
 ```
 

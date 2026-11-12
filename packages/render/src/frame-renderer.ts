@@ -349,6 +349,147 @@ type ZoneBgEffect =
   | CaveInteriorEffect
   | MountainHillsEffect;
 
+type ZoneBgType = ZoneBgEffect['type'];
+type ZoneBgEffectByType = { [E in ZoneBgEffect as E['type']]: E };
+
+interface ZoneBgDescriptor<E extends ZoneBgEffect> {
+  readonly sksl: string;
+  readonly uniformCount: number;
+  /** Writes `effect` into `out`, slot for slot in the order `sksl` declares its uniforms. */
+  readonly fill: (effect: E, out: number[]) => void;
+}
+
+/** The uniform layout all six zone-bg shaders share: resolution, two rgb colours, scroll, one scalar. */
+function writeZoneBgUniforms(
+  out: number[],
+  resolutionW: number,
+  resolutionH: number,
+  colorA: SpriteColor,
+  colorB: SpriteColor,
+  scrollOffsetY: number,
+  param: number,
+): void {
+  out[0] = resolutionW;
+  out[1] = resolutionH;
+  out[2] = colorA.r;
+  out[3] = colorA.g;
+  out[4] = colorA.b;
+  out[5] = colorB.r;
+  out[6] = colorB.g;
+  out[7] = colorB.b;
+  out[8] = scrollOffsetY;
+  out[9] = param;
+}
+
+function fillRoofsCity(e: RoofsCityEffect, out: number[]): void {
+  writeZoneBgUniforms(
+    out,
+    e.resolutionW,
+    e.resolutionH,
+    e.skyColor,
+    e.roofColor,
+    e.scrollOffsetY,
+    e.density,
+  );
+}
+
+function fillForestCanopy(e: ForestCanopyEffect, out: number[]): void {
+  writeZoneBgUniforms(
+    out,
+    e.resolutionW,
+    e.resolutionH,
+    e.skyColor,
+    e.leafColor,
+    e.scrollOffsetY,
+    e.density,
+  );
+}
+
+function fillRiverWave(e: RiverWaveEffect, out: number[]): void {
+  writeZoneBgUniforms(
+    out,
+    e.resolutionW,
+    e.resolutionH,
+    e.waterColor,
+    e.foamColor,
+    e.scrollOffsetY,
+    e.waveScale,
+  );
+}
+
+function fillMoonCrater(e: MoonCraterEffect, out: number[]): void {
+  writeZoneBgUniforms(
+    out,
+    e.resolutionW,
+    e.resolutionH,
+    e.moonColor,
+    e.craterColor,
+    e.scrollOffsetY,
+    e.craterCount,
+  );
+}
+
+function fillCaveInterior(e: CaveInteriorEffect, out: number[]): void {
+  writeZoneBgUniforms(
+    out,
+    e.resolutionW,
+    e.resolutionH,
+    e.caveColor,
+    e.glowColor,
+    e.scrollOffsetY,
+    e.stalactiteCount,
+  );
+}
+
+function fillMountainHills(e: MountainHillsEffect, out: number[]): void {
+  writeZoneBgUniforms(
+    out,
+    e.resolutionW,
+    e.resolutionH,
+    e.skyColor,
+    e.hillColor,
+    e.scrollOffsetY,
+    e.ridgeScale,
+  );
+}
+
+const ZONE_BG: { readonly [T in ZoneBgType]: ZoneBgDescriptor<ZoneBgEffectByType[T]> } = {
+  'roofs-city': { sksl: ROOFS_CITY_SKSL, uniformCount: 10, fill: fillRoofsCity },
+  'forest-canopy': { sksl: FOREST_CANOPY_SKSL, uniformCount: 10, fill: fillForestCanopy },
+  'river-wave': { sksl: RIVER_WAVE_SKSL, uniformCount: 10, fill: fillRiverWave },
+  'moon-crater': { sksl: MOON_CRATER_SKSL, uniformCount: 10, fill: fillMoonCrater },
+  'cave-interior': { sksl: CAVE_INTERIOR_SKSL, uniformCount: 10, fill: fillCaveInterior },
+  'mountain-hills': { sksl: MOUNTAIN_HILLS_SKSL, uniformCount: 10, fill: fillMountainHills },
+};
+
+function isZoneBgEffect(effect: AnySpriteEffect | undefined): effect is ZoneBgEffect {
+  return effect !== undefined && effect.type in ZONE_BG;
+}
+
+/** Generic over the type so the descriptor and the effect are the same variant — no cast. */
+function fillZoneBgUniforms<T extends ZoneBgType>(
+  type: T,
+  effect: ZoneBgEffectByType[T],
+  out: number[],
+): void {
+  ZONE_BG[type].fill(effect, out);
+}
+
+/** What one renderer holds per zone-bg effect type: compiled lazily, then reused every frame. */
+interface ZoneBgSlot {
+  effect: RuntimeEffectLike | null;
+  paint: PaintLike | null;
+  readonly uniforms: number[];
+}
+
+function createZoneBgSlot(type: ZoneBgType): ZoneBgSlot {
+  return {
+    effect: null,
+    paint: null,
+    uniforms: new Array<number>(ZONE_BG[type].uniformCount).fill(0),
+  };
+}
+
 /** One constant, so the per-frame `logOnce` lookup builds no string. */
 const ZONE_BG_SKIPPED_MSG =
   'zone-bg run skipped: Skia.RuntimeEffect is absent or the shader failed to compile';
@@ -402,25 +543,14 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   let fireRuntimeEffect: RuntimeEffectLike | null = null;
   let dropShadowPaint: PaintLike | null = null;
 
-  let roofsCityPaint: PaintLike | null = null;
-  let roofsCityEffect: RuntimeEffectLike | null = null;
-  let forestCanopyPaint: PaintLike | null = null;
-  let forestCanopyEffect: RuntimeEffectLike | null = null;
-  let riverWavePaint: PaintLike | null = null;
-  let riverWaveEffect: RuntimeEffectLike | null = null;
-  let moonCraterPaint: PaintLike | null = null;
-  let moonCraterEffect: RuntimeEffectLike | null = null;
-  let caveInteriorPaint: PaintLike | null = null;
-  let caveInteriorEffect: RuntimeEffectLike | null = null;
-  let mountainHillsPaint: PaintLike | null = null;
-  let mountainHillsEffect: RuntimeEffectLike | null = null;
-
-  const roofsCityUniforms: number[] = new Array(10).fill(0);
-  const forestCanopyUniforms: number[] = new Array(10).fill(0);
-  const riverWaveUniforms: number[] = new Array(10).fill(0);
-  const moonCraterUniforms: number[] = new Array(10).fill(0);
-  const caveInteriorUniforms: number[] = new Array(10).fill(0);
-  const mountainHillsUniforms: number[] = new Array(10).fill(0);
+  const zoneBgSlots: { readonly [T in ZoneBgType]: ZoneBgSlot } = {
+    'roofs-city': createZoneBgSlot('roofs-city'),
+    'forest-canopy': createZoneBgSlot('forest-canopy'),
+    'river-wave': createZoneBgSlot('river-wave'),
+    'moon-crater': createZoneBgSlot('moon-crater'),
+    'cave-interior': createZoneBgSlot('cave-interior'),
+    'mountain-hills': createZoneBgSlot('mountain-hills'),
+  };
 
   const recorder: PictureRecorderLike = Skia.PictureRecorder();
   const recordingBounds: RectLike = Skia.XYWHRect(0, 0, 0, 0);
@@ -701,136 +831,24 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return dropShadowPaint;
   }
 
-  function applyRoofsCity(effect: RoofsCityEffect): PaintLike | null {
-    if (Skia.RuntimeEffect === undefined) return null;
-    if (roofsCityEffect === null) {
-      const compiled = Skia.RuntimeEffect.Make(ROOFS_CITY_SKSL);
-      if (compiled === null) return null;
-      roofsCityEffect = compiled;
+  /**
+   * `null` when the effect's shader is not compiled — the caller skips the run,
+   * which is never drawn black. A failed compile is retried on the next run.
+   */
+  function applyZoneBg(effect: ZoneBgEffect): PaintLike | null {
+    const slot = zoneBgSlots[effect.type];
+    if (slot.effect === null) {
+      const compiled = Skia.RuntimeEffect?.Make(ZONE_BG[effect.type].sksl) ?? null;
+      if (compiled === null) {
+        logOnce(ZONE_BG_SKIPPED_MSG);
+        return null;
+      }
+      slot.effect = compiled;
     }
-    if (roofsCityPaint === null) roofsCityPaint = Skia.Paint();
-    roofsCityUniforms[0] = effect.resolutionW;
-    roofsCityUniforms[1] = effect.resolutionH;
-    roofsCityUniforms[2] = effect.skyColor.r;
-    roofsCityUniforms[3] = effect.skyColor.g;
-    roofsCityUniforms[4] = effect.skyColor.b;
-    roofsCityUniforms[5] = effect.roofColor.r;
-    roofsCityUniforms[6] = effect.roofColor.g;
-    roofsCityUniforms[7] = effect.roofColor.b;
-    roofsCityUniforms[8] = effect.scrollOffsetY;
-    roofsCityUniforms[9] = effect.density;
-    roofsCityPaint.setShader(roofsCityEffect.makeShader(roofsCityUniforms));
-    return roofsCityPaint;
-  }
-
-  function applyForestCanopy(effect: ForestCanopyEffect): PaintLike | null {
-    if (Skia.RuntimeEffect === undefined) return null;
-    if (forestCanopyEffect === null) {
-      const compiled = Skia.RuntimeEffect.Make(FOREST_CANOPY_SKSL);
-      if (compiled === null) return null;
-      forestCanopyEffect = compiled;
-    }
-    if (forestCanopyPaint === null) forestCanopyPaint = Skia.Paint();
-    forestCanopyUniforms[0] = effect.resolutionW;
-    forestCanopyUniforms[1] = effect.resolutionH;
-    forestCanopyUniforms[2] = effect.skyColor.r;
-    forestCanopyUniforms[3] = effect.skyColor.g;
-    forestCanopyUniforms[4] = effect.skyColor.b;
-    forestCanopyUniforms[5] = effect.leafColor.r;
-    forestCanopyUniforms[6] = effect.leafColor.g;
-    forestCanopyUniforms[7] = effect.leafColor.b;
-    forestCanopyUniforms[8] = effect.scrollOffsetY;
-    forestCanopyUniforms[9] = effect.density;
-    forestCanopyPaint.setShader(forestCanopyEffect.makeShader(forestCanopyUniforms));
-    return forestCanopyPaint;
-  }
-
-  function applyRiverWave(effect: RiverWaveEffect): PaintLike | null {
-    if (Skia.RuntimeEffect === undefined) return null;
-    if (riverWaveEffect === null) {
-      const compiled = Skia.RuntimeEffect.Make(RIVER_WAVE_SKSL);
-      if (compiled === null) return null;
-      riverWaveEffect = compiled;
-    }
-    if (riverWavePaint === null) riverWavePaint = Skia.Paint();
-    riverWaveUniforms[0] = effect.resolutionW;
-    riverWaveUniforms[1] = effect.resolutionH;
-    riverWaveUniforms[2] = effect.waterColor.r;
-    riverWaveUniforms[3] = effect.waterColor.g;
-    riverWaveUniforms[4] = effect.waterColor.b;
-    riverWaveUniforms[5] = effect.foamColor.r;
-    riverWaveUniforms[6] = effect.foamColor.g;
-    riverWaveUniforms[7] = effect.foamColor.b;
-    riverWaveUniforms[8] = effect.scrollOffsetY;
-    riverWaveUniforms[9] = effect.waveScale;
-    riverWavePaint.setShader(riverWaveEffect.makeShader(riverWaveUniforms));
-    return riverWavePaint;
-  }
-
-  function applyMoonCrater(effect: MoonCraterEffect): PaintLike | null {
-    if (Skia.RuntimeEffect === undefined) return null;
-    if (moonCraterEffect === null) {
-      const compiled = Skia.RuntimeEffect.Make(MOON_CRATER_SKSL);
-      if (compiled === null) return null;
-      moonCraterEffect = compiled;
-    }
-    if (moonCraterPaint === null) moonCraterPaint = Skia.Paint();
-    moonCraterUniforms[0] = effect.resolutionW;
-    moonCraterUniforms[1] = effect.resolutionH;
-    moonCraterUniforms[2] = effect.moonColor.r;
-    moonCraterUniforms[3] = effect.moonColor.g;
-    moonCraterUniforms[4] = effect.moonColor.b;
-    moonCraterUniforms[5] = effect.craterColor.r;
-    moonCraterUniforms[6] = effect.craterColor.g;
-    moonCraterUniforms[7] = effect.craterColor.b;
-    moonCraterUniforms[8] = effect.scrollOffsetY;
-    moonCraterUniforms[9] = effect.craterCount;
-    moonCraterPaint.setShader(moonCraterEffect.makeShader(moonCraterUniforms));
-    return moonCraterPaint;
-  }
-
-  function applyCaveInterior(effect: CaveInteriorEffect): PaintLike | null {
-    if (Skia.RuntimeEffect === undefined) return null;
-    if (caveInteriorEffect === null) {
-      const compiled = Skia.RuntimeEffect.Make(CAVE_INTERIOR_SKSL);
-      if (compiled === null) return null;
-      caveInteriorEffect = compiled;
-    }
-    if (caveInteriorPaint === null) caveInteriorPaint = Skia.Paint();
-    caveInteriorUniforms[0] = effect.resolutionW;
-    caveInteriorUniforms[1] = effect.resolutionH;
-    caveInteriorUniforms[2] = effect.caveColor.r;
-    caveInteriorUniforms[3] = effect.caveColor.g;
-    caveInteriorUniforms[4] = effect.caveColor.b;
-    caveInteriorUniforms[5] = effect.glowColor.r;
-    caveInteriorUniforms[6] = effect.glowColor.g;
-    caveInteriorUniforms[7] = effect.glowColor.b;
-    caveInteriorUniforms[8] = effect.scrollOffsetY;
-    caveInteriorUniforms[9] = effect.stalactiteCount;
-    caveInteriorPaint.setShader(caveInteriorEffect.makeShader(caveInteriorUniforms));
-    return caveInteriorPaint;
-  }
-
-  function applyMountainHills(effect: MountainHillsEffect): PaintLike | null {
-    if (Skia.RuntimeEffect === undefined) return null;
-    if (mountainHillsEffect === null) {
-      const compiled = Skia.RuntimeEffect.Make(MOUNTAIN_HILLS_SKSL);
-      if (compiled === null) return null;
-      mountainHillsEffect = compiled;
-    }
-    if (mountainHillsPaint === null) mountainHillsPaint = Skia.Paint();
-    mountainHillsUniforms[0] = effect.resolutionW;
-    mountainHillsUniforms[1] = effect.resolutionH;
-    mountainHillsUniforms[2] = effect.skyColor.r;
-    mountainHillsUniforms[3] = effect.skyColor.g;
-    mountainHillsUniforms[4] = effect.skyColor.b;
-    mountainHillsUniforms[5] = effect.hillColor.r;
-    mountainHillsUniforms[6] = effect.hillColor.g;
-    mountainHillsUniforms[7] = effect.hillColor.b;
-    mountainHillsUniforms[8] = effect.scrollOffsetY;
-    mountainHillsUniforms[9] = effect.ridgeScale;
-    mountainHillsPaint.setShader(mountainHillsEffect.makeShader(mountainHillsUniforms));
-    return mountainHillsPaint;
+    if (slot.paint === null) slot.paint = Skia.Paint();
+    fillZoneBgUniforms(effect.type, effect, slot.uniforms);
+    slot.paint.setShader(slot.effect.makeShader(slot.uniforms));
+    return slot.paint;
   }
 
   function drawOutlined(
@@ -857,24 +875,6 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     const mainDsts = getCachedXformSlice(n);
     drawAtlasSampled(cvs, image, srcs, mainDsts, defaultPaint, sampling);
     defaultPaint.setAlphaf(1);
-  }
-
-  /** `null` when the effect's shader is not compiled — the run is skipped, never drawn black. */
-  function resolveZoneBgPaint(effect: ZoneBgEffect): PaintLike | null {
-    switch (effect.type) {
-      case 'roofs-city':
-        return applyRoofsCity(effect);
-      case 'forest-canopy':
-        return applyForestCanopy(effect);
-      case 'river-wave':
-        return applyRiverWave(effect);
-      case 'moon-crater':
-        return applyMoonCrater(effect);
-      case 'cave-interior':
-        return applyCaveInterior(effect);
-      case 'mountain-hills':
-        return applyMountainHills(effect);
-    }
   }
 
   function resolveEffectPaint(effect: Exclude<AnySpriteEffect, ZoneBgEffect>): PaintLike {
@@ -929,19 +929,9 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       currentSpriteW = cmd0.dstW;
       currentSpriteH = cmd0.dstH;
 
-      if (
-        effect?.type === 'roofs-city' ||
-        effect?.type === 'forest-canopy' ||
-        effect?.type === 'river-wave' ||
-        effect?.type === 'moon-crater' ||
-        effect?.type === 'cave-interior' ||
-        effect?.type === 'mountain-hills'
-      ) {
-        const paint = resolveZoneBgPaint(effect);
-        if (paint === null) {
-          logOnce(ZONE_BG_SKIPPED_MSG);
-          return;
-        }
+      if (isZoneBgEffect(effect)) {
+        const paint = applyZoneBg(effect);
+        if (paint === null) return;
         if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
         paint.setAlphaf(alpha);
         ensureZoneBgPoolCapacity(n);

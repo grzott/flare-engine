@@ -56,7 +56,7 @@ export class GestureDetector {
   private swipeMaxDuration: number;
 
   // Single-touch tracking
-  private _startPos: Vec2 = { x: 0, y: 0 };
+  private readonly _startPos: Vec2 = { x: 0, y: 0 };
   /** Elapsed time (seconds) since `pointerDown` for the in-progress press. */
   private _elapsed = 0;
   private _isTracking = false;
@@ -64,7 +64,7 @@ export class GestureDetector {
 
   // Pinch tracking
   private _pinchStartDistance = 0;
-  private _pinchTouches: [Vec2, Vec2] | null = null;
+  private _pinchActive = false;
 
   constructor(config?: GestureConfig) {
     this.tapMaxDuration = config?.tapMaxDuration ?? DEFAULT_TAP_MAX_DURATION;
@@ -76,7 +76,8 @@ export class GestureDetector {
 
   /** Feed a pointer-down event. */
   pointerDown(x: number, y: number): void {
-    this._startPos = { x, y };
+    this._startPos.x = x;
+    this._startPos.y = y;
     this._elapsed = 0;
     this._isTracking = true;
     this._longPressFired = false;
@@ -157,10 +158,10 @@ export class GestureDetector {
     const dy = t2.y - t1.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (this._pinchTouches === null) {
+    if (!this._pinchActive) {
       // Start pinch
       this._pinchStartDistance = dist;
-      this._pinchTouches = [{ ...t1 }, { ...t2 }];
+      this._pinchActive = true;
       return;
     }
 
@@ -176,7 +177,7 @@ export class GestureDetector {
 
   /** Call when pinch ends (fewer than 2 touches). */
   pinchEnd(): void {
-    this._pinchTouches = null;
+    this._pinchActive = false;
     this._pinchStartDistance = 0;
   }
 }

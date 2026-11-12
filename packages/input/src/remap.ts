@@ -30,19 +30,47 @@ export function createIdentityRemap(buttonCount = 17, axisCount = 4): RemapTable
 
 /** Apply a remap table to a raw snapshot, returning a new snapshot with logical ordering. */
 export function applyRemap(snapshot: GamepadSnapshot, table: RemapTable): GamepadSnapshot {
-  const buttons = new Array<{ pressed: boolean; value: number }>(table.buttons.length);
-  for (let logical = 0; logical < table.buttons.length; logical++) {
-    const physical = table.buttons[logical] ?? logical;
-    const src = snapshot.buttons[physical];
-    buttons[logical] = { pressed: src?.pressed ?? false, value: src?.value ?? 0 };
+  return applyRemapInto(snapshot, table, { id: '', index: 0, timestamp: 0, buttons: [], axes: [] });
+}
+
+/**
+ * Zero-alloc form of `applyRemap`: writes the logical-ordered snapshot into
+ * `out` and returns it. `out.buttons` / `out.axes` are resized to the table, so
+ * a scratch already at the table's size allocates nothing; growing allocates
+ * the missing button records once. `out` must not be `snapshot`.
+ */
+export function applyRemapInto(
+  snapshot: GamepadSnapshot,
+  table: RemapTable,
+  out: GamepadSnapshot,
+): GamepadSnapshot {
+  const buttonCount = table.buttons.length;
+  const buttons = out.buttons;
+  if (buttons.length > buttonCount) buttons.length = buttonCount;
+  for (let logical = 0; logical < buttonCount; logical++) {
+    const src = snapshot.buttons[table.buttons[logical] ?? logical];
+    const pressed = src?.pressed ?? false;
+    const value = src?.value ?? 0;
+    const dst = buttons[logical];
+    if (dst) {
+      dst.pressed = pressed;
+      dst.value = value;
+    } else {
+      buttons[logical] = { pressed, value };
+    }
   }
-  const axes = new Array<number>(table.axes.length);
-  for (let logical = 0; logical < table.axes.length; logical++) {
-    const map = table.axes[logical] ?? { index: logical, invert: false, scale: 1 };
-    const raw = snapshot.axes[map.index] ?? 0;
-    axes[logical] = raw * map.scale * (map.invert ? -1 : 1);
+  const axisCount = table.axes.length;
+  const axes = out.axes;
+  if (axes.length > axisCount) axes.length = axisCount;
+  for (let logical = 0; logical < axisCount; logical++) {
+    const map = table.axes[logical];
+    const raw = snapshot.axes[map ? map.index : logical] ?? 0;
+    axes[logical] = map ? raw * map.scale * (map.invert ? -1 : 1) : raw;
   }
-  return { id: snapshot.id, index: snapshot.index, timestamp: snapshot.timestamp, buttons, axes };
+  out.id = snapshot.id;
+  out.index = snapshot.index;
+  out.timestamp = snapshot.timestamp;
+  return out;
 }
 
 /**

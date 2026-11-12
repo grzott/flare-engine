@@ -163,17 +163,28 @@ export function easeInOutBounce(t: number): number {
   return t < 0.5 ? 0.5 * easeInBounce(t * 2) : 0.5 * easeOutBounce(t * 2 - 1) + 0.5;
 }
 
-// ─── Spring ─────────────────────────────────────────────────
+// ─── Back aliases (spring names) ────────────────────────────
+// The `spring*` names are the Back curves above, kept for compatibility: one
+// overshoot, no oscillation. They are not damped springs.
+
+/** Alias of {@link easeInBack}, kept for compatibility. A Back curve, not a damped spring. */
 export function springIn(t: number): number {
-  return t * t * ((1.70158 + 1) * t - 1.70158);
+  return easeInBack(t);
 }
+/** Alias of {@link easeOutBack}, kept for compatibility. A Back curve, not a damped spring. */
 export function springOut(t: number): number {
-  const t1 = t - 1;
-  return t1 * t1 * ((1.70158 + 1) * t1 + 1.70158) + 1;
+  return easeOutBack(t);
 }
+/**
+ * The Back in-out curve under a second name, kept for compatibility. A Back
+ * curve, not a damped spring.
+ */
 export function springInOut(t: number): number {
   if (t < 0.5) {
     const t2 = 2 * t;
+    // Not delegated to `easeInOutBack`: this multiplies `0.5 * t2 * t2` left to
+    // right where that one halves the finished product, and the two orders
+    // round differently once the result is subnormal.
     return 0.5 * t2 * t2 * ((S2 + 1) * t2 - S2);
   }
   const t2 = 2 * t - 2;

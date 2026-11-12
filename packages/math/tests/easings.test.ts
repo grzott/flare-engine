@@ -133,6 +133,30 @@ describe('easings — midpoint tests', () => {
   it('easeInOutSine(0.5) = 0.5', () => expect(easeInOutSine(0.5)).toBeCloseTo(0.5));
 });
 
+describe('easings — spring names are Back-curve aliases', () => {
+  const outsideUnit = [-2, -0.5, -1e-9, 1 + 1e-9, 1.5, 3];
+
+  it('springIn(t) is exactly easeInBack(t)', () => {
+    for (let i = 0; i <= 1000; i++) {
+      expect(springIn(i / 1000)).toBe(easeInBack(i / 1000));
+    }
+    for (const t of outsideUnit) expect(springIn(t)).toBe(easeInBack(t));
+  });
+
+  it('springOut(t) is exactly easeOutBack(t)', () => {
+    for (let i = 0; i <= 1000; i++) {
+      expect(springOut(i / 1000)).toBe(easeOutBack(i / 1000));
+    }
+    for (const t of outsideUnit) expect(springOut(t)).toBe(easeOutBack(t));
+  });
+
+  it('springInOut(t) is exactly easeInOutBack(t) over [0, 1]', () => {
+    for (let i = 0; i <= 1000; i++) {
+      expect(springInOut(i / 1000)).toBe(easeInOutBack(i / 1000));
+    }
+  });
+});
+
 describe('easings count', () => {
   it('has 35 named easing functions', () => {
     expect(allEasings.length).toBe(35);

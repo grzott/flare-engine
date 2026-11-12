@@ -374,3 +374,149 @@ describe('rayVsRect', () => {
     expect(rayVsRect(15, 5, -2, 0, rect)).toBe(2.5);
   });
 });
+
+describe('lineVsRect matches its previous allocating body (#118)', () => {
+  // The body lineVsRect had before #118, kept verbatim as the reference.
+  function lineVsRectReference(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    r: { x: number; y: number; width: number; height: number },
+  ): boolean {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    let tMin = 0;
+    let tMax = 1;
+    const edges = [
+      { p: -dx, q: x1 - r.x },
+      { p: dx, q: r.x + r.width - x1 },
+      { p: -dy, q: y1 - r.y },
+      { p: dy, q: r.y + r.height - y1 },
+    ];
+    for (const { p, q } of edges) {
+      if (Math.abs(p) < 1e-12) {
+        if (q < 0) return false;
+      } else {
+        const t = q / p;
+        if (p < 0) {
+          if (t > tMax) return false;
+          if (t > tMin) tMin = t;
+        } else {
+          if (t < tMin) return false;
+          if (t < tMax) tMax = t;
+        }
+      }
+    }
+    return tMin <= tMax;
+  }
+
+  it('agrees on a seeded random sweep, including grid-aligned and degenerate segments', () => {
+    let seed = 0x5eed118;
+    const rand = (): number => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+    const pick = (): number => {
+      const u = rand();
+      // A third of the coordinates snap to the rect's edges and corners so parallel and touching cases are common.
+      if (u < 0.33) return [0, 10, 5, -0.0, 10.000000000001][Math.floor(rand() * 5)] as number;
+      return rand() * 30 - 10;
+    };
+    const r = { x: 0, y: 0, width: 10, height: 10 };
+    let mismatches = 0;
+    for (let i = 0; i < 200_000; i++) {
+      const x1 = pick();
+      const y1 = pick();
+      const x2 = rand() < 0.05 ? x1 : pick();
+      const y2 = rand() < 0.05 ? y1 : pick();
+      if (lineVsRect(x1, y1, x2, y2, r) !== lineVsRectReference(x1, y1, x2, y2, r)) mismatches++;
+    }
+    expect(mismatches).toBe(0);
+  });
+
+  it('agrees on hand-picked edge cases', () => {
+    const r = { x: 0, y: 0, width: 10, height: 10 };
+    const cases: [number, number, number, number][] = [
+      [0, -5, 0, 15],
+      [10, -5, 10, 15],
+      [-5, 0, 15, 0],
+      [-5, 10, 15, 10],
+      [5, 5, 5, 5],
+      [-1, -1, -1, -1],
+      [-5, -5, 0, 0],
+      [10, 10, 20, 20],
+      [-5, 5, -1, 5],
+      [3, 3, 7, 7],
+      [-5, -5, 15, 15],
+      [0, 0, 1e-13, 1e-13],
+    ];
+    for (const [x1, y1, x2, y2] of cases) {
+      expect(lineVsRect(x1, y1, x2, y2, r)).toBe(lineVsRectReference(x1, y1, x2, y2, r));
+    }
+  });
+});
+
+describe('lineVsRect non-finite inputs match the previous body (#118)', () => {
+  it('treats NaN and infinite coordinates exactly as before', () => {
+    const r = { x: 0, y: 0, width: 10, height: 10 };
+    const values = [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 0, 5, 10, -3];
+    let checked = 0;
+    for (const x1 of values) {
+      for (const y1 of values) {
+        for (const x2 of values) {
+          for (const y2 of [5, Number.NaN]) {
+            // Reference inlined from the previous body.
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            let tMin = 0;
+            let tMax = 1;
+            let ref = true;
+            for (const [p, q] of [
+              [-dx, x1 - r.x],
+              [dx, r.x + r.width - x1],
+              [-dy, y1 - r.y],
+              [dy, r.y + r.height - y1],
+            ] as const) {
+              if (Math.abs(p) < 1e-12) {
+                if (q < 0) {
+                  ref = false;
+                  break;
+                }
+              } else {
+                const t = q / p;
+                if (p < 0) {
+                  if (t > tMax) {
+                    ref = false;
+                    break;
+                  }
+                  if (t > tMin) tMin = t;
+                } else {
+                  if (t < tMin) {
+                    ref = false;
+                    break;
+                  }
+                  if (t < tMax) tMax = t;
+                }
+              }
+            }
+            if (ref) ref = tMin <= tMax;
+            expect(lineVsRect(x1, y1, x2, y2, r)).toBe(ref);
+            checked++;
+          }
+        }
+      }
+    }
+    expect(checked).toBe(686);
+  });
+});
+
+describe('lineVsRect with a NaN rect field matches the previous body (#118)', () => {
+  it('a vertical segment against a rect with NaN x still clips the other edges, as before', () => {
+    // dx = 0, so the x edges are parallel with q = x1 - NaN = NaN; the previous body skipped them
+    // (NaN < 0 is false) and went on to the y edges.
+    const r = { x: Number.NaN, y: 0, width: 10, height: 10 };
+    expect(lineVsRect(5, -5, 5, 15, r)).toBe(true);
+    expect(lineVsRect(5, 20, 5, 30, r)).toBe(false);
+  });
+});

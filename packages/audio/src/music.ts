@@ -17,6 +17,8 @@ export class Music {
   private currentSource: AudioBufferSourceNodeLike | null = null;
   private currentGain: GainNodeLike | null = null;
   private currentName: string | null = null;
+  private fadingSource: AudioBufferSourceNodeLike | null = null;
+  private fadingGain: GainNodeLike | null = null;
 
   /** Name of the currently playing track, or null. */
   get playing(): string | null {
@@ -47,7 +49,7 @@ export class Music {
     });
   }
 
-  /** Stop the current track. */
+  /** Stop the current track and any track still fading out from a crossfade. */
   stop(): void {
     this.stopInternal();
   }
@@ -55,6 +57,7 @@ export class Music {
   /**
    * Crossfade to another track over duration seconds.
    * Fades out current and fades in the new track simultaneously.
+   * A track still fading out from an earlier crossfade is stopped at once.
    */
   crossfadeTo(name: string, duration: number, loop = true): void {
     if (!this.ctx || !this.output) return;
@@ -75,6 +78,9 @@ export class Music {
       } catch {
         // Already stopped
       }
+      this.stopFading();
+      this.fadingSource = oldSource;
+      this.fadingGain = oldGain;
     }
 
     // Start new track fading in
@@ -112,6 +118,10 @@ export class Music {
         this.currentGain = null;
         this.currentName = null;
       }
+      if (this.fadingSource === source) {
+        this.fadingSource = null;
+        this.fadingGain = null;
+      }
       gain.disconnect();
     });
   }
@@ -130,5 +140,21 @@ export class Music {
     this.currentSource = null;
     this.currentGain = null;
     this.currentName = null;
+    this.stopFading();
+  }
+
+  private stopFading(): void {
+    if (this.fadingSource) {
+      try {
+        this.fadingSource.stop();
+      } catch {
+        // Already stopped
+      }
+    }
+    if (this.fadingGain) {
+      this.fadingGain.disconnect();
+    }
+    this.fadingSource = null;
+    this.fadingGain = null;
   }
 }

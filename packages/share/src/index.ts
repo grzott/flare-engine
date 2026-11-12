@@ -16,12 +16,14 @@ export {
   type ScreenshotTarget,
 } from './screenshot-scene.js';
 export {
+  createExpoShareTransport,
   createNativeShareTransport,
   createWebClipboardTransport,
   createWebShareTransport,
   type ExpoSharingLike,
   type FileCtorLike,
   type NativeShareLike,
+  type ShareFileWriterLike,
   ShareManager,
   type SharePayload,
   type ShareResult,

@@ -14,7 +14,13 @@ import type {
   MicrobenchSuite,
 } from './results.js';
 import { SCHEMA_VERSION } from './results.js';
-import { findAllocViolations, findContractViolations } from './scenario-contract.js';
+import {
+  FAST_MODE_ANCHOR_NS,
+  FAST_MODE_ANCHOR_SCENARIO,
+  FAST_MODE_ANCHOR_TOLERANCE,
+  findAllocViolations,
+  findContractViolations,
+} from './scenario-contract.js';
 
 export type AggregateOutcome =
   | { ok: true; report: MicrobenchReport }
@@ -275,6 +281,12 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
   }
   if (unstable.length > 0) return { ok: false, problems: unstable };
 
+  // After the deviation guard, so a straddling window keeps that guard's message. What reaches
+  // here is a window it accepted: five runs agreeing inside the slow mode, or one slow run the
+  // median absorbed. Both are refused, because the fold must come from the fast mode only.
+  const slowMode = findSlowModeRuns(runs);
+  if (slowMode !== null) return { ok: false, problems: [slowMode] };
+
   const captures = runs.map((r) => r.generated).sort();
   const newest = captures[captures.length - 1] as string;
 
@@ -299,6 +311,30 @@ export function aggregateRuns(runs: readonly MicrobenchReport[]): AggregateOutco
       alloc: allocOutcome.alloc,
     },
   };
+}
+
+const us = (ns: number): string => `${(ns / 1000).toFixed(2)} µs`;
+
+function findSlowModeRuns(runs: readonly MicrobenchReport[]): string | null {
+  const ceilingNs = FAST_MODE_ANCHOR_NS * FAST_MODE_ANCHOR_TOLERANCE;
+  const medians: number[] = [];
+  const offending: string[] = [];
+  for (const [i, run] of runs.entries()) {
+    const row = run.suites
+      .flatMap((s) => s.results)
+      .find((r) => r.scenario === FAST_MODE_ANCHOR_SCENARIO);
+    if (row === undefined) continue;
+    medians.push(row.medianNs);
+    if (row.medianNs > ceilingNs) {
+      offending.push(`run ${i + 1} of ${runs.length} (${run.generated}) at ${us(row.medianNs)}`);
+    }
+  }
+  if (offending.length === 0) return null;
+  return (
+    `"${FAST_MODE_ANCHOR_SCENARIO}" sits above the fast-mode anchor (FAST_MODE_ANCHOR_NS, anchor ${us(FAST_MODE_ANCHOR_NS)} ×${FAST_MODE_ANCHOR_TOLERANCE}, ceiling ${us(ceilingNs)}): ${offending.join(', ')}; this window folds it at ${us(median(medians))}. ` +
+    'The machine is in its slow mode; let it cool / re-run the five `bench:pinned` captures. ' +
+    'If a genuine ECS change moved this row, re-anchor deliberately: update FAST_MODE_ANCHOR_NS in benchmarks/src/scenario-contract.ts in the same PR as the change that moved it, with the new fold value and a dated reason.'
+  );
 }
 
 type AllocOutcome = { ok: true; alloc: AllocRow[] } | { ok: false; problems: string[] };

@@ -190,6 +190,99 @@ describe('GameLoop with custom tick', () => {
   });
 });
 
+describe('GameLoop frame chain', () => {
+  // Models rAF: a display frame runs every callback that was pending when it began,
+  // and a cancelled callback never runs.
+  const createDriver = (loop: GameLoop) => {
+    const pending = new Map<number, (time: number) => void>();
+    let nextId = 1;
+    let time = 1000;
+    loop.tick = (cb) => {
+      const id = nextId++;
+      pending.set(id, cb);
+      return id;
+    };
+    loop.cancelTick = (id) => {
+      pending.delete(id);
+    };
+    return {
+      pendingCount: () => pending.size,
+      frame: () => {
+        time += 16;
+        for (const [id, cb] of [...pending]) {
+          if (!pending.delete(id)) continue;
+          cb(time);
+        }
+      },
+    };
+  };
+
+  it('keeps one frame chain after stop() + start() inside a handler', () => {
+    const loop = new GameLoop();
+    const driver = createDriver(loop);
+    let updates = 0;
+    let restarted = false;
+    loop.onUpdate.add(() => {
+      updates++;
+      if (restarted) return;
+      restarted = true;
+      loop.stop();
+      loop.start();
+    });
+
+    loop.start();
+    driver.frame(); // seeds lastTime
+    driver.frame(); // first update restarts the loop
+    expect(updates).toBe(1);
+    expect(driver.pendingCount()).toBe(1);
+
+    driver.frame(); // seeds lastTime again after the restart
+    expect(updates).toBe(1);
+
+    for (let i = 0; i < 5; i++) {
+      expect(driver.pendingCount()).toBe(1);
+      const before = updates;
+      driver.frame();
+      expect(updates - before).toBe(1);
+    }
+    loop.stop();
+    expect(driver.pendingCount()).toBe(0);
+  });
+
+  it('keeps one frame chain after stop() in a handler and start() before the next frame', () => {
+    const loop = new GameLoop();
+    const driver = createDriver(loop);
+    let updates = 0;
+    let stopOnUpdate = true;
+    loop.onUpdate.add(() => {
+      updates++;
+      if (stopOnUpdate) loop.stop();
+    });
+
+    loop.start();
+    driver.frame(); // seeds lastTime
+    driver.frame(); // first update stops the loop
+    expect(updates).toBe(1);
+    expect(driver.pendingCount()).toBe(0);
+
+    stopOnUpdate = false;
+    loop.start();
+    expect(driver.pendingCount()).toBe(1);
+
+    driver.frame(); // seeds lastTime again after the restart
+    expect(updates).toBe(1);
+
+    for (let i = 0; i < 5; i++) {
+      expect(driver.pendingCount()).toBe(1);
+      const before = updates;
+      driver.frame();
+      expect(updates - before).toBe(1);
+    }
+    loop.stop();
+    expect(driver.pendingCount()).toBe(0);
+  });
+});
+
 describe('GameLoop.alpha', () => {
   it('returns 0 when no fixedDt configured (guard tested with nonzero residual)', () => {
     const loop = new GameLoop();

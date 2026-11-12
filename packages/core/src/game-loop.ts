@@ -34,6 +34,7 @@ export class GameLoop {
   private accumulator = 0;
   private maxDt: number;
   private rafId = 0;
+  private framePending = false;
   private lastTime = 0;
   private _hasFixedDt = false;
 
@@ -70,6 +71,7 @@ export class GameLoop {
       cancel(this.rafId);
       this.rafId = 0;
     }
+    this.framePending = false;
   }
 
   /** Pause — signals stop firing but loop stays alive. */
@@ -140,7 +142,9 @@ export class GameLoop {
 
   private scheduleFrame(): void {
     const request = this.tick ?? requestAnimationFrame;
+    this.framePending = true;
     this.rafId = request((time: number) => {
+      this.framePending = false;
       if (!this.running) return;
 
       if (this.lastTime === 0) {
@@ -153,7 +157,9 @@ export class GameLoop {
       this.lastTime = time;
 
       this.step(rawDt);
-      this.scheduleFrame();
+      // A handler may have stopped the loop, or restarted it and already scheduled
+      // the next frame; scheduling again here would start a second frame chain.
+      if (this.running && !this.framePending) this.scheduleFrame();
     });
   }
 }

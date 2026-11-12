@@ -304,8 +304,158 @@ describe('Camera2D', () => {
       expect(cam.effectiveX).toBe(cam.x);
       expect(cam.effectiveY).toBe(cam.y);
     });
+
+    describe('noise lattice', () => {
+      // 1200 steps of 0.05s advance the noise coordinate by 282 units, so the
+      // sweep visits every one of the 256 lattice cells on both sample lines.
+      const SWEEP_STEPS = 1200;
+      const SWEEP_DT = 0.05;
+      const SWEEP_DURATION = 1000;
+
+      function sweep(
+        intensity: number,
+        visit: (cam: Camera2D, noiseT: number, decay: number) => void,
+      ): void {
+        const cam = new Camera2D();
+        cam.shakePerlin(intensity, SWEEP_DURATION);
+        let elapsed = 0;
+        for (let i = 0; i < SWEEP_STEPS; i++) {
+          cam.update(SWEEP_DT);
+          elapsed += SWEEP_DT;
+          // First shakePerlin on a camera runs with seed 1.
+          visit(cam, elapsed * 4.7 + 17.3, 1 - elapsed / SWEEP_DURATION);
+        }
+      }
+
+      it('Y offset matches a reference Perlin over every lattice cell', () => {
+        let worst = 0;
+        sweep(1, (cam, noiseT, decay) => {
+          const expected = referenceFbm(0, noiseT + 5.4) * decay;
+          worst = Math.max(worst, Math.abs(cam.effectiveY - expected));
+        });
+        expect(worst).toBeLessThan(1e-9);
+      });
+
+      it('X offset matches a reference Perlin over every lattice cell', () => {
+        let worst = 0;
+        sweep(1, (cam, noiseT, decay) => {
+          const expected = referenceFbm(noiseT, 0) * decay;
+          worst = Math.max(worst, Math.abs(cam.effectiveX - expected));
+        });
+        expect(worst).toBeLessThan(1e-9);
+      });
+
+      it('offsets stay within [-intensity, intensity]', () => {
+        const intensity = 10;
+        let peak = 0;
+        sweep(intensity, (cam) => {
+          peak = Math.max(peak, Math.abs(cam.effectiveX), Math.abs(cam.effectiveY));
+        });
+        expect(peak).toBeGreaterThan(0);
+        expect(peak).toBeLessThanOrEqual(intensity);
+      });
+
+      it('pins offsets at fixed times', () => {
+        // [dt, effectiveX, effectiveY] for shakePerlin(10, 100) after one update(dt).
+        // The Y samples at dt 20 and 40 fall in cells whose gradient lookup lands
+        // in the mirrored half of the permutation table.
+        const goldens: ReadonlyArray<readonly [number, number, number]> = [
+          [0.05, -0.879371650476937, 0.08366521533396541],
+          [2.5, 0.21517405117758104, -0.029590350127460082],
+          [10, -0.8285866399985081, 0.4021767947449208],
+          [20, 1.390257431770632, -1.3060206833971333],
+          [30, 0.8555287884889938, 0.9532100903111405],
+          [40, -0.8269314722436022, 1.1498295431923404],
+        ];
+        for (const [dt, x, y] of goldens) {
+          const cam = new Camera2D();
+          cam.shakePerlin(10, 100);
+          cam.update(dt);
+          expect(cam.effectiveX).toBeCloseTo(x, 12);
+          expect(cam.effectiveY).toBeCloseTo(y, 12);
+        }
+      });
+    });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Reference Perlin for the shakePerlin lattice tests — textbook form: the
+// shuffled permutation is repeated into a 512-entry table so `perm[perm[x] + y]`
+// never leaves it. Same seed and shuffle as camera2d.ts.
+// ---------------------------------------------------------------------------
+
+const REFERENCE_PERM = new Uint8Array(512);
+{
+  for (let i = 0; i < 256; i++) REFERENCE_PERM[i] = i;
+  let s = 0x9e3779b9;
+  for (let i = 255; i > 0; i--) {
+    s = (s ^ (s >>> 15)) >>> 0;
+    s = Math.imul(s, 0x85ebca6b) >>> 0;
+    s = (s ^ (s >>> 13)) >>> 0;
+    const j = s % (i + 1);
+    const t = REFERENCE_PERM[i] ?? 0;
+    REFERENCE_PERM[i] = REFERENCE_PERM[j] ?? 0;
+    REFERENCE_PERM[j] = t;
+  }
+  for (let i = 0; i < 256; i++) REFERENCE_PERM[i + 256] = REFERENCE_PERM[i] ?? 0;
+}
+
+function referencePerm(index: number): number {
+  const value = REFERENCE_PERM[index];
+  if (value === undefined) throw new Error(`reference permutation index ${index} out of range`);
+  return value;
+}
+
+function referenceGrad(hash: number, x: number, y: number): number {
+  const d = Math.SQRT1_2;
+  switch (hash & 7) {
+    case 0:
+      return x;
+    case 1:
+      return d * x + d * y;
+    case 2:
+      return y;
+    case 3:
+      return -d * x + d * y;
+    case 4:
+      return -x;
+    case 5:
+      return -d * x - d * y;
+    case 6:
+      return -y;
+    default:
+      return d * x - d * y;
+  }
+}
+
+function referenceFade(t: number): number {
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+function referenceNoise(x: number, y: number): number {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const xi = x0 & 255;
+  const yi = y0 & 255;
+  const xf = x - x0;
+  const yf = y - y0;
+  const u = referenceFade(xf);
+  const v = referenceFade(yf);
+  const a = referencePerm(xi);
+  const b = referencePerm(xi + 1);
+  const n00 = referenceGrad(referencePerm(a + yi), xf, yf);
+  const n10 = referenceGrad(referencePerm(b + yi), xf - 1, yf);
+  const n01 = referenceGrad(referencePerm(a + yi + 1), xf, yf - 1);
+  const n11 = referenceGrad(referencePerm(b + yi + 1), xf - 1, yf - 1);
+  const low = n00 + u * (n10 - n00);
+  const high = n01 + u * (n11 - n01);
+  return low + v * (high - low);
+}
+
+function referenceFbm(x: number, y: number): number {
+  return 0.6667 * referenceNoise(x, y) + 0.3333 * referenceNoise(x * 2, y * 2);
+}
 
 // ---------------------------------------------------------------------------
 // Dead-zone follow math

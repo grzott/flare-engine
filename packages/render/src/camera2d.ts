@@ -26,8 +26,10 @@ function pseudoRandom(seed: number): number {
 }
 
 // ─── Simplex-like 2D noise for shakePerlin ───────────────────────────────────
-// 256-entry permutation table — written once at module load, never mutated.
-const PERM = new Uint8Array(256);
+// Permutation table — a 256-entry shuffle stored twice (512 entries) so the
+// nested `PERM[PERM[x] + y + 1]` lookups, which reach index 511, stay in range.
+// Written once at module load, never mutated.
+const PERM = new Uint8Array(512);
 {
   for (let i = 0; i < 256; i++) PERM[i] = i;
   // Deterministic Fisher-Yates with a fixed seed (no Math.random()).
@@ -41,6 +43,7 @@ const PERM = new Uint8Array(256);
     PERM[i] = PERM[j]!;
     PERM[j] = t;
   }
+  PERM.copyWithin(256, 0, 256);
 }
 
 // 8 evenly-spaced 2D gradient directions (unit vectors × 1 for integer math).

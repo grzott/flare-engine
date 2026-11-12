@@ -62,16 +62,7 @@ export class Pool<T> {
 
   /** Get an object from the pool (or create a new one). Never throws; may exceed capacity. */
   acquire(): T {
-    this._live++;
-    let item: T;
-    if (this.items.length > 0) {
-      item = this.items.pop()!;
-    } else {
-      this._created++;
-      item = this.factory();
-    }
-    this._liveSet?.delete(item);
-    return item;
+    return this.take();
   }
 
   /**
@@ -81,6 +72,10 @@ export class Pool<T> {
    */
   tryAcquire(): T | null {
     if (this._capacity !== undefined && this._live >= this._capacity) return null;
+    return this.take();
+  }
+
+  private take(): T {
     this._live++;
     let item: T;
     if (this.items.length > 0) {

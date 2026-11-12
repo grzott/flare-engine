@@ -189,7 +189,7 @@ AABB pass.
 | -------------- | ------------------------------------------------------------------------------------------ |
 | `AudioManager` | `init()`, `suspend()`, `resume()`. Manages AudioContext.                                   |
 | `SFXPool`      | Pre-decoded buffers. `play(name, { volume?, rate?, loop?, delay? })`. `rate` applies only when the injected node exposes a `playbackRate` param. `delay` (seconds) schedules the start on the context clock. Polyphony management (max N, oldest killed). |
-| `Music`        | `play`, `stop`, `crossfadeTo`. One track at a time, loops by default.                      |
+| `Music`        | `play`, `stop`, `crossfadeTo`. One track at a time, loops by default. `stop` stops the current track and any track still fading out from a crossfade; `play` does the same before starting its track. `crossfadeTo` during a running fade stops the older fading-out track at once and fades out the current one. |
 | `createChannels(ctx)` | Factory returning a `Channel` map keyed by `ChannelName` (`master`, `sfx`, `music`). Gains 0.0–1.0. In-memory only — MMKV persistence is deferred. |
 | `renderSynth(sound, sampleRate, out)` | Renders a `SynthSound` (`wave`: sine / square / saw / noise, `frequency` → optional `endFrequency` linear sweep, `duration`, ADSR `envelope?`, `volume?`, noise `seed?`) as mono PCM into the caller's `Float32Array`; returns samples written, allocates nothing. `synthSampleCount(duration, sampleRate)` sizes the array; `fillPCMBuffer(buffer, pcm)` copies it into every channel of a `PCMBufferLike`. |
 

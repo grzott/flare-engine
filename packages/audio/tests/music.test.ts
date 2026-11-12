@@ -473,4 +473,139 @@ describe('Music node graph (characterization)', () => {
     expect(rig.log).toEqual(['gain1.disconnect()', 'gain2.disconnect()']);
     expect(music.playing).toBeNull();
   });
+
+  it('stop during a crossfade stops both the incoming and the fading-out track', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.play('a');
+    music.crossfadeTo('b', 2);
+    rig.log.length = 0;
+
+    music.stop();
+
+    expect(rig.log).toEqual([
+      'source2.stop()',
+      'gain2.disconnect()',
+      'source1.stop()',
+      'gain1.disconnect()',
+    ]);
+    expect(music.playing).toBeNull();
+  });
+
+  it('play during a crossfade stops the fading-out track before starting the new one', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.register('c', mockBuffer());
+    music.play('a');
+    music.crossfadeTo('b', 2);
+    rig.log.length = 0;
+
+    music.play('c');
+
+    expect(rig.log).toEqual([
+      'source2.stop()',
+      'gain2.disconnect()',
+      'source1.stop()',
+      'gain1.disconnect()',
+      'createBufferSource:source3',
+      'createGain:gain3',
+      'gain3.gain.value=1',
+      'source3.connect(gain3)',
+      'gain3.connect(output)',
+      'source3.start()',
+    ]);
+    expect(music.playing).toBe('c');
+  });
+
+  it('a second crossfade stops the older fading track and tracks the new outgoing one', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.register('c', mockBuffer());
+    music.play('a');
+    music.crossfadeTo('b', 2);
+    rig.log.length = 0;
+
+    music.crossfadeTo('c', 2);
+
+    expect(rig.log).toEqual([
+      'gain2.gain.setValueAtTime(1,10)',
+      'gain2.gain.linearRampToValueAtTime(0,12)',
+      'source2.stop(12)',
+      'source1.stop()',
+      'gain1.disconnect()',
+      'createBufferSource:source3',
+      'createGain:gain3',
+      'gain3.gain.setValueAtTime(0,10)',
+      'gain3.gain.linearRampToValueAtTime(1,12)',
+      'source3.connect(gain3)',
+      'gain3.connect(output)',
+      'source3.start()',
+    ]);
+    expect(music.playing).toBe('c');
+    rig.log.length = 0;
+
+    music.stop();
+
+    expect(rig.log).toEqual([
+      'source3.stop()',
+      'gain3.disconnect()',
+      'source2.stop()',
+      'gain2.disconnect()',
+    ]);
+    expect(music.playing).toBeNull();
+  });
+
+  it('a stale end of the first outgoing source keeps the newer fading track', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.register('c', mockBuffer());
+    music.play('a');
+    music.crossfadeTo('b', 2);
+    music.crossfadeTo('c', 2);
+    rig.log.length = 0;
+
+    fireEnd(rig.sources[0]);
+
+    expect(rig.log).toEqual(['gain1.disconnect()']);
+    expect(music.playing).toBe('c');
+    rig.log.length = 0;
+
+    music.stop();
+
+    expect(rig.log).toEqual([
+      'source3.stop()',
+      'gain3.disconnect()',
+      'source2.stop()',
+      'gain2.disconnect()',
+    ]);
+  });
+
+  it('a finished crossfade forgets the outgoing track, so stop leaves it alone', () => {
+    const rig = createRig();
+    const music = new Music();
+    music.connect(rig.ctx, rig.output);
+    music.register('a', mockBuffer());
+    music.register('b', mockBuffer());
+    music.play('a');
+    music.crossfadeTo('b', 2);
+    fireEnd(rig.sources[0]);
+    rig.log.length = 0;
+
+    music.stop();
+
+    expect(rig.log).toEqual(['source2.stop()', 'gain2.disconnect()']);
+    expect(music.playing).toBeNull();
+  });
 });

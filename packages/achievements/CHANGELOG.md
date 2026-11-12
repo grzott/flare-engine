@@ -1,5 +1,15 @@
 # @flare-engine/achievements
 
+## 0.4.11
+
+### Patch Changes
+
+- bcf8bb1: `createStorageAchievements` no longer caches a failed hydration: when `store.get` rejects, that
+  call rejects and the next call reads again, so a transient read error no longer strands every later
+  `unlock` / `getState` / `getAll` on the stale rejection. A failed read writes nothing, so it cannot
+  lead to the stored array being overwritten. `createIndexedDbAdapter` likewise retries
+  a failed `indexedDB.open` on the next call instead of returning the same rejection forever.
+
 ## 0.4.10
 
 ## 0.4.9

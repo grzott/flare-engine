@@ -1,5 +1,12 @@
 # @flare-engine/audio
 
+## 0.4.11
+
+### Patch Changes
+
+- 90e0e7c: `Music.play` and `Music.crossfadeTo` now share one internal track-start helper; no behaviour or API
+  change.
+
 ## 0.4.10
 
 ### Patch Changes

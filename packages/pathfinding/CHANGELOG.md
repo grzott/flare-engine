@@ -1,5 +1,24 @@
 # @flare-engine/pathfinding
 
+## 0.4.11
+
+### Patch Changes
+
+- 0a4a195: `findNavMeshPath` keeps a per-mesh id index (rebuilt when the polygon list changes) and computes
+  each polygon's centroid at most once per search into reused per-mesh scratch, instead of rebuilding
+  the index per call and re-summing a centroid per visited polygon; a mesh edited between searches is
+  seen by the next search, as before. `findPathJPS` collects each expanded node's jump points in an
+  8-slot buffer kept in the per-grid scratch instead of allocating an array per node, and its jump
+  scan is a loop instead of one recursive frame per cell, so a long open corridor no longer overflows
+  the stack on engines without proper tail calls (V8, Hermes). Results are unchanged.
+- 6fcebab: `findPath` and `findPathJPS` keep their search scratch (g scores, came-from links, generation
+  stamps and the open-set heap) per `Grid` object in a WeakMap and reuse it on every later search of
+  that grid, so a repeat search skips the per-call fill and allocates no typed arrays unless its open
+  set outgrows the kept heap; results are unchanged. A heuristic that re-enters a search on the same grid gets its own temporary scratch, and
+  a heuristic that throws leaves the stored one reusable. The open-set heap is now one shared module
+  instead of a copy in each search.
+  - @flare-engine/math@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

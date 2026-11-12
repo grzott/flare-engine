@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/input",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "InputManager, VirtualJoystick, gesture handling",
   "keywords": ["flare-engine", "input", "joystick", "gestures", "react-native", "typescript"],
   "license": "Apache-2.0",
@@ -37,8 +37,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.4.10",
-    "@flare-engine/math": "^0.4.10"
+    "@flare-engine/events": "^0.4.11",
+    "@flare-engine/math": "^0.4.11"
   },
   "engines": {
     "node": ">=20"

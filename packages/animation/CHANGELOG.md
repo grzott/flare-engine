@@ -1,5 +1,20 @@
 # @flare-engine/animation
 
+## 0.4.11
+
+### Patch Changes
+
+- 8138538: `updateSpring` advances with the exact damped-oscillator solution instead of one semi-implicit
+  Euler step of the whole `dt`, so a clamped 0.25 s hitch frame no longer blows a default spring up
+  (one such frame carried a displacement of 1 to −5.25 and the series diverged; now the spring's
+  energy never grows, so a spring released from rest stays within its starting displacement) and n
+  steps of `dt` equal one step of n·`dt`. Trajectories at
+  ordinary frame rates differ slightly from the old Euler steps; settle thresholds and `atRest`
+  behaviour are unchanged.
+- 2689999: `tween()` without an `easing` argument now defaults to `linear` from `@flare-engine/math` instead of a module-private copy of the same function, so `tween(0, 1, 1).easing === linear` holds. Values are unchanged. The `chainTween` JSDoc now states that only `TweenManager` / `updateTweens` follows the chain and `updateTween` does not, and the `updateTween` JSDoc no longer claims to advance to a chained tween; that behaviour is unchanged.
+  - @flare-engine/assets@0.4.11
+  - @flare-engine/math@0.4.11
+
 ## 0.4.10
 
 ### Patch Changes

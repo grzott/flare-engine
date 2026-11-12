@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/localization",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "String tables, locale resolution, ICU-style plurals + interpolation",
   "keywords": [
     "flare-engine",
@@ -45,7 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.4.10"
+    "@flare-engine/events": "^0.4.11"
   },
   "engines": {
     "node": ">=20"

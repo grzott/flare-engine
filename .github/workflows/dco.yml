@@ -1,11 +1,15 @@
 name: dco
 
-# Developer Certificate of Origin for outside contributions (#171). Every commit in a PR from
-# anyone but the owner, the agent bot or Dependabot must carry a `Signed-off-by:` trailer whose
-# email matches the commit's author email (`git commit -s`). In-house commits keep the repo's
-# no-trailer rule, so those authors are skipped. Informational: not a required check in the
-# `main` ruleset. It checks out nothing and runs no code from the PR; it reads the PR's commit
-# list through the API.
+# Developer Certificate of Origin for outside contributions (#171). Every commit in a PR must
+# carry a `Signed-off-by:` trailer whose email matches the commit's author email
+# (`git commit -s`), unless the commit's GitHub author is the repository owner, the agent bot
+# (`vars.BOT_LOGIN`, as in auto-merge.yml) or Dependabot. Those keep the repo's no-trailer rule.
+# The exemption is per commit, so an outside commit carried into an owner's PR is still checked.
+# A commit whose email is linked to no GitHub account is checked too.
+#
+# Informational: not a required check in the `main` ruleset. It checks out nothing and runs no
+# code from the PR; it reads the PR's commit list through the API, which returns at most 250
+# commits, so a larger PR is checked only up to that point.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -16,20 +20,19 @@ permissions:
 
 jobs:
   sign-off:
-    if: >-
-      github.event.pull_request.user.login != 'grzott' &&
-      github.event.pull_request.user.login != 'grzott-agent' &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Every commit is signed off by its author
+      - name: Every outside commit is signed off by its author
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          EXEMPT: ${{ github.repository_owner }},${{ vars.BOT_LOGIN }},dependabot[bot]
         run: |
           gh api "repos/$REPO/pulls/$PR/commits" --paginate --jq '
-            .[]
+            ($ENV.EXEMPT | split(",")) as $exempt
+            | .[]
+            | select((.author.login // "") as $l | ($exempt | index($l)) | not)
             | (.commit.author.email // "" | ascii_downcase) as $e
             | select(
                 [ (.commit.message | ascii_downcase | split("\n"))[]
@@ -43,4 +46,4 @@ jobs:
             cat unsigned.txt
             exit 1
           fi
-          echo "DCO: every commit is signed off by its author."
+          echo "DCO: every outside commit is signed off by its author."

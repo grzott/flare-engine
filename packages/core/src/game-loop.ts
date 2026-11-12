@@ -143,23 +143,26 @@ export class GameLoop {
   private scheduleFrame(): void {
     const request = this.tick ?? requestAnimationFrame;
     this.framePending = true;
-    this.rafId = request((time: number) => {
-      this.framePending = false;
-      if (!this.running) return;
-
-      if (this.lastTime === 0) {
-        this.lastTime = time;
-        this.scheduleFrame();
-        return;
-      }
-
-      const rawDt = (time - this.lastTime) / 1000;
-      this.lastTime = time;
-
-      this.step(rawDt);
-      // A handler may have stopped the loop, or restarted it and already scheduled
-      // the next frame; scheduling again here would start a second frame chain.
-      if (this.running && !this.framePending) this.scheduleFrame();
-    });
+    this.rafId = request(this.onFrame);
   }
+
+  // Created once per loop and handed to every request, so a running loop allocates no closure per frame.
+  private readonly onFrame = (time: number): void => {
+    this.framePending = false;
+    if (!this.running) return;
+
+    if (this.lastTime === 0) {
+      this.lastTime = time;
+      this.scheduleFrame();
+      return;
+    }
+
+    const rawDt = (time - this.lastTime) / 1000;
+    this.lastTime = time;
+
+    this.step(rawDt);
+    // A handler may have stopped the loop, or restarted it and already scheduled
+    // the next frame; scheduling again here would start a second frame chain.
+    if (this.running && !this.framePending) this.scheduleFrame();
+  };
 }

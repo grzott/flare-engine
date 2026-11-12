@@ -2,13 +2,18 @@ import { Signal } from '@flare-engine/events';
 import type { GameLoop } from './game-loop.js';
 
 /**
- * AppLifecycle bridges React Native AppState to the game loop.
+ * AppLifecycle is a manual adapter between the host's app-state events and the game loop.
  *
- * - Auto-pauses the loop when app goes to background
- * - Auto-resumes when app returns to foreground
- * - Caps dt on resume to prevent huge time jumps
+ * It subscribes to nothing. The host calls `background()`, `foreground()` and
+ * `memoryWarning()` itself, for example from a React Native `AppState` listener or a
+ * web `visibilitychange` handler it writes.
  *
- * In non-RN environments (tests, web), use the manual methods.
+ * - `background()` pauses the loop if it was running and unpaused, and remembers that it did
+ * - `foreground()` resumes the loop only if `background()` paused it
+ * - each method emits its matching signal: `onBackground`, `onForeground`, `onMemoryWarning`
+ *
+ * The first frame after a resume does not see the time spent in the background:
+ * `GameLoop.resume()` resets the loop's last timestamp.
  */
 export class AppLifecycle {
   /** Fires when app enters background. */

@@ -298,10 +298,20 @@ export function GameView({
       // Web never pushes passes: its chain was composited into the scene image
       // above, so `passes` stays EMPTY_PASSES and the tree is the plain <Image>.
       if (!isWeb) {
-        const built = bridge.buildPostFxPasses(null, null, w, h) as readonly PostFxPassDescriptor[];
-        if (!samePasses(prevBuilt, built)) {
-          prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
-          setPasses(prevBuilt);
+        if (bridge.hasPostFxBinding()) {
+          const built = bridge.buildPostFxPasses(
+            null,
+            null,
+            w,
+            h,
+          ) as readonly PostFxPassDescriptor[];
+          if (!samePasses(prevBuilt, built)) {
+            prevBuilt = built.length === 0 ? EMPTY_PASSES : built;
+            setPasses(prevBuilt);
+          }
+        } else if (prevBuilt !== EMPTY_PASSES) {
+          prevBuilt = EMPTY_PASSES;
+          setPasses(EMPTY_PASSES);
         }
       }
       canvasRef.current?.redraw();
@@ -530,13 +540,22 @@ function sameChildren(a: readonly unknown[], b: readonly unknown[]): boolean {
   return true;
 }
 
-function sameUniforms(
+/**
+ * Value equality of two uniform maps. Walks the keys with `for…in` rather than
+ * `Object.keys` so a per-frame comparison builds no key arrays.
+ *
+ * @internal Exported for tests only — not re-exported from the package index.
+ */
+export function sameUniforms(
   a: PostFxPassDescriptor['uniforms'],
   b: PostFxPassDescriptor['uniforms'],
 ): boolean {
-  const aKeys = Object.keys(a);
-  if (aKeys.length !== Object.keys(b).length) return false;
-  for (const key of aKeys) {
+  // Every key of `a` must hold an equal value in `b`; the count then rules out
+  // keys only `b` has.
+  let extra = 0;
+  for (const _ in b) extra++;
+  for (const key in a) {
+    extra--;
     const va = a[key];
     const vb = b[key];
     if (va === undefined || vb === undefined) return false;
@@ -549,7 +568,7 @@ function sameUniforms(
       }
     }
   }
-  return true;
+  return extra === 0;
 }
 
 const styles = StyleSheet.create({

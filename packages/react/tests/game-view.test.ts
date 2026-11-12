@@ -22,6 +22,8 @@ let _sharedValues: unknown[] = [];
 // Controllable postfx-pass source — the mocked bridge.buildPostFxPasses returns
 // _buildPasses() each frame, so a test can vary the chain between onPreRender ticks.
 let _buildPasses: () => readonly unknown[] = () => [];
+// #109: how many times the mocked bridge.buildPostFxPasses was invoked.
+let _buildPassesCalls = 0;
 // Counts invocations of the passes-state setter (the per-frame gate under test)
 // and captures the value handed to it, so tests assert WHAT propagates, not only WHEN.
 let _setPassesCount = 0;
@@ -496,7 +498,10 @@ mock.module('@flare-engine/render', () => ({
         if (pd !== 1) cur.scale(pd, pd);
       },
       drawAtlas: () => {},
-      buildPostFxPasses: () => _buildPasses(),
+      buildPostFxPasses: () => {
+        _buildPassesCalls++;
+        return _buildPasses();
+      },
       compilePostFxPasses: (...args: unknown[]) => {
         _compilePassesCalls.push(args);
         return _compilePasses();
@@ -619,6 +624,7 @@ beforeEach(() => {
   _beginRecordingBounds = [];
   _beginFramePdArgs = [];
   _buildPasses = () => [];
+  _buildPassesCalls = 0;
   _compilePasses = () => [];
   _compilePassesCalls = [];
   _paintCount = 0;
@@ -890,6 +896,11 @@ function tick(): void {
 }
 
 describe('GameView — postfx pass gate (per-frame churn)', () => {
+  // The native block only builds passes while a chain is bound (#109).
+  beforeEach(() => {
+    _hasPostFxBinding = true;
+  });
+
   it('unchanged non-empty chain: setPasses fires once across frames (fail-old: fired every frame)', () => {
     const shader = {};
     // Fresh array + fresh pass/uniform objects each frame — proves the gate is
@@ -1055,6 +1066,118 @@ describe('GameView — postfx pass gate (per-frame churn)', () => {
     expect(_setPassesCount).toBe(3);
     unmountAll();
   });
+});
+
+// ---------------------------------------------------------------------------
+// #109: the native block is gated on hasPostFxBinding(), the guard the web
+// branch already uses, so a postfx-free GameView does not ask the bridge for a
+// descriptor list every frame just to compare it against the empty chain.
+// ---------------------------------------------------------------------------
+
+describe('GameView — native postfx binding guard (#109)', () => {
+  it('native, no binding: buildPostFxPasses is never called from onPreRender (fail-old: once per frame)', () => {
+    _mockPlatformOS = 'ios';
+    _hasPostFxBinding = false;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 320;
+    camera.viewportHeight = 240;
+
+    tick();
+    tick();
+    tick();
+
+    expect(_buildPassesCalls).toBe(0);
+    expect(_setPassesCount).toBe(0);
+    unmountAll();
+  });
+
+  it('native, binding: buildPostFxPasses is called once per frame', () => {
+    _mockPlatformOS = 'ios';
+    _hasPostFxBinding = true;
+    _buildPasses = () => [makePass('flash', {}, { intensity: 1 })];
+    mount();
+
+    tick();
+    tick();
+    tick();
+
+    expect(_buildPassesCalls).toBe(3);
+    unmountAll();
+  });
+
+  it('native, binding removed after being bound: passes clear once, then stay silent', () => {
+    _mockPlatformOS = 'ios';
+    _hasPostFxBinding = true;
+    const shader = {};
+    _buildPasses = () => [makePass('flash', shader, { intensity: 1 })];
+    mount();
+    tick(); // empty -> [flash] : 1
+    expect(_setPassesCount).toBe(1);
+    expect(_lastPasses).toHaveLength(1);
+
+    _hasPostFxBinding = false;
+    tick(); // [flash] -> empty : 2
+    expect(_setPassesCount).toBe(2);
+    expect(_lastPasses).toHaveLength(0);
+    const firstEmpty = _lastPasses;
+    tick(); // empty -> empty : 2
+    tick();
+    expect(_setPassesCount).toBe(2);
+    expect(_buildPassesCalls).toBe(1);
+
+    _hasPostFxBinding = true;
+    tick(); // empty -> [flash] : 3
+    expect(_setPassesCount).toBe(3);
+    expect(_lastPasses).toHaveLength(1);
+    _hasPostFxBinding = false;
+    tick(); // [flash] -> the same stable empty reference : 4
+    expect(_setPassesCount).toBe(4);
+    expect(_lastPasses).toBe(firstEmpty);
+    unmountAll();
+  });
+});
+
+describe('sameUniforms (#109)', () => {
+  type Uniforms = Record<string, number | readonly number[]>;
+  const cases: ReadonlyArray<{ name: string; a: Uniforms; b: Uniforms; expected: boolean }> = [
+    { name: 'both empty', a: {}, b: {}, expected: true },
+    { name: 'equal scalars', a: { x: 1, y: 2 }, b: { x: 1, y: 2 }, expected: true },
+    {
+      name: 'equal scalars, other key order',
+      a: { x: 1, y: 2 },
+      b: { y: 2, x: 1 },
+      expected: true,
+    },
+    { name: 'unequal scalar', a: { x: 1, y: 2 }, b: { x: 1, y: 3 }, expected: false },
+    { name: 'key missing from b', a: { x: 1, y: 2 }, b: { x: 1 }, expected: false },
+    { name: 'key missing from a', a: { x: 1 }, b: { x: 1, y: 2 }, expected: false },
+    { name: 'same key count, other key', a: { x: 1, y: 2 }, b: { x: 1, z: 2 }, expected: false },
+    { name: 'empty vs non-empty', a: {}, b: { x: 1 }, expected: false },
+    {
+      name: 'equal vectors, distinct refs',
+      a: { c: [1, 0, 0] },
+      b: { c: [1, 0, 0] },
+      expected: true,
+    },
+    { name: 'vector element differs', a: { c: [1, 0, 0] }, b: { c: [1, 0, 1] }, expected: false },
+    { name: 'vector length differs', a: { c: [1, 0] }, b: { c: [1, 0, 0] }, expected: false },
+    { name: 'vector vs scalar', a: { c: [1] }, b: { c: 1 }, expected: false },
+    { name: 'scalar vs vector', a: { c: 1 }, b: { c: [1] }, expected: false },
+    { name: 'mixed, equal', a: { t: 0.5, c: [1, 2] }, b: { t: 0.5, c: [1, 2] }, expected: true },
+    {
+      name: 'mixed, vector differs',
+      a: { t: 0.5, c: [1, 2] },
+      b: { t: 0.5, c: [1, 3] },
+      expected: false,
+    },
+  ];
+
+  for (const { name, a, b, expected } of cases) {
+    it(`${name} -> ${expected}`, () => {
+      expect(reactModule.sameUniforms(a, b)).toBe(expected);
+    });
+  }
 });
 
 describe('GameView — frame time forwarded to beginFrame', () => {

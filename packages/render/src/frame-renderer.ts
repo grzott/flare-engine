@@ -760,10 +760,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   function applyCustom(effect: CustomShaderEffect): PaintLike {
     if (customPaint === null) customPaint = Skia.Paint();
     const shader = effect.shader as RuntimeEffectLike;
-    const floatCount = shader.getUniformFloatCount();
+    const layout = customUniformLayout(shader);
+    const floatCount = layout.floatCount;
     while (customUniforms.length < floatCount) customUniforms.push(0);
     customUniforms.length = floatCount;
-    fillCustomUniforms(effect, shader, customUniforms);
+    fillCustomUniforms(effect, layout, customUniforms);
     customPaint.setShader(shader.makeShader(customUniforms));
     return customPaint;
   }
@@ -1206,25 +1207,52 @@ function writeGrayscaleMatrix(out: number[], amount: number): void {
   out[19] = 0;
 }
 
-function fillCustomUniforms(
-  effect: CustomShaderEffect,
-  shader: RuntimeEffectLike,
-  out: number[],
-): void {
+interface CustomUniformLayout {
+  names: string[];
+  slots: Int32Array;
+  sizes: Int32Array;
+  floatCount: number;
+}
+
+// A compiled shader's uniform layout is fixed, so it is reflected once per shader.
+const customUniformLayouts = new WeakMap<RuntimeEffectLike, CustomUniformLayout>();
+
+function customUniformLayout(shader: RuntimeEffectLike): CustomUniformLayout {
+  let layout = customUniformLayouts.get(shader);
+  if (layout !== undefined) return layout;
   const count = shader.getUniformCount();
-  for (let i = 0; i < out.length; i++) out[i] = 0;
+  const names: string[] = [];
+  const slots = new Int32Array(count);
+  const sizes = new Int32Array(count);
   for (let i = 0; i < count; i++) {
     const info = shader.getUniform(i);
-    const name = shader.getUniformName(i);
-    const value = effect.uniforms[name];
-    const size = info.columns * info.rows;
+    names.push(shader.getUniformName(i));
+    slots[i] = info.slot;
+    sizes[i] = info.columns * info.rows;
+  }
+  layout = { names, slots, sizes, floatCount: shader.getUniformFloatCount() };
+  customUniformLayouts.set(shader, layout);
+  return layout;
+}
+
+function fillCustomUniforms(
+  effect: CustomShaderEffect,
+  layout: CustomUniformLayout,
+  out: number[],
+): void {
+  const { names, slots, sizes } = layout;
+  for (let i = 0; i < out.length; i++) out[i] = 0;
+  for (let i = 0; i < names.length; i++) {
+    const value = effect.uniforms[names[i] as string];
     if (value === undefined) continue;
+    const slot = slots[i] as number;
     if (typeof value === 'number') {
-      out[info.slot] = value;
+      out[slot] = value;
       continue;
     }
+    const size = sizes[i] as number;
     for (let k = 0; k < size; k++) {
-      out[info.slot + k] = value[k] ?? 0;
+      out[slot + k] = value[k] ?? 0;
     }
   }
 }

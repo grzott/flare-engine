@@ -6,6 +6,10 @@ import {
   EXPECTED_ALLOC_SCENARIOS,
   EXPECTED_HEAP_SCENARIOS,
   EXPECTED_SCENARIOS,
+  FAST_MODE_ANCHOR_NS,
+  FAST_MODE_ANCHOR_SCENARIO,
+  FAST_MODE_ANCHOR_TOLERANCE,
+  HEADLINE_PREFIXES,
 } from '../src/scenario-contract.js';
 
 // Not exported from power.ts (private there too — see power.test.ts). Mirrored
@@ -16,25 +20,37 @@ const POWER_SAVER = 'a1841308-3541-4fab-bc81-f71556f20b4a';
  * Builds a contract-satisfying report whose scenarios all report `medianNs`.
  * Every scenario in a run shares the value, so a run is identified by one
  * number and the aggregation math stays legible.
+ *
+ * The one exception is the fast-mode anchor row, which reports `anchorNs` and
+ * defaults to the anchor itself. Several fixtures replay real windows of other
+ * rows (16 µs, 12 ms); copied onto `ecs.step 1000` those would read as the
+ * machine's slow mode, which is not what those tests are about.
  */
 let captureSeq = 0;
 
-function runAt(medianNs: number, overrides: Partial<MicrobenchReport> = {}): MicrobenchReport {
+function runAt(
+  medianNs: number,
+  overrides: Partial<MicrobenchReport> = {},
+  anchorNs: number = FAST_MODE_ANCHOR_NS,
+): MicrobenchReport {
   // Monotonic and distinct per fixture: a shared timestamp would make the
   // "dated by its newest capture" assertion pass no matter what promote picked.
   captureSeq += 1;
   const stamp = `2026-07-28T${String(captureSeq % 24).padStart(2, '0')}:00:00.000Z`;
-  const result = (scenario: string): MicrobenchResult => ({
-    scenario,
-    medianNs,
-    meanNs: medianNs,
-    minNs: medianNs,
-    maxNs: medianNs * 2,
-    p99Ns: medianNs,
-    opsPerSec: 1e9 / medianNs,
-    samples: 100,
-    innerIters: 100,
-  });
+  const result = (scenario: string): MicrobenchResult => {
+    const ns = scenario === FAST_MODE_ANCHOR_SCENARIO ? anchorNs : medianNs;
+    return {
+      scenario,
+      medianNs: ns,
+      meanNs: ns,
+      minNs: ns,
+      maxNs: ns * 2,
+      p99Ns: ns,
+      opsPerSec: 1e9 / ns,
+      samples: 100,
+      innerIters: 100,
+    };
+  };
   return {
     schemaVersion: SCHEMA_VERSION,
     generated: stamp,
@@ -393,5 +409,98 @@ describe('per-scenario deviation overrides', () => {
     // a relaxation of the guard.
     const outcome = aggregateRuns(window(PLAIN, [6.8, 8.5, 6.8, 8.5, 6.8]));
     expect(outcome.ok).toBe(false);
+  });
+});
+
+describe('fast-mode anchor (PERF-14b)', () => {
+  /** A window where only the anchor row moves; every other row is held constant and stable. */
+  const anchorWindow = (perRunNs: readonly number[]): MicrobenchReport[] =>
+    perRunNs.map((ns) => runAt(1000, {}, ns));
+
+  const ceilingNs = FAST_MODE_ANCHOR_NS * FAST_MODE_ANCHOR_TOLERANCE;
+
+  test('anchors a row the scenario contract requires, so a rename cannot silently skip it', () => {
+    expect(EXPECTED_SCENARIOS.ECS).toContain(FAST_MODE_ANCHOR_SCENARIO);
+    expect(FAST_MODE_ANCHOR_SCENARIO.startsWith(HEADLINE_PREFIXES.ecs)).toBe(true);
+  });
+
+  test('accepts five runs inside the fast mode', () => {
+    // The published fold's own run-to-run band at 0b7ea242ae53: 9.30-9.79 µs.
+    const outcome = aggregateRuns(anchorWindow([9_298, 9_455, 9_512, 9_620, 9_787]));
+    expect(outcome.ok).toBe(true);
+  });
+
+  test('refuses five runs that agree with each other inside the slow mode, naming the anchor', () => {
+    // The slow mode PERF-14b recorded: 16.4-16.5 µs, tight enough to pass the deviation guard.
+    const window = anchorWindow([16_400, 16_450, 16_480, 16_500, 16_520]);
+    const outcome = aggregateRuns(window);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems).toHaveLength(1);
+    const message = outcome.problems[0] as string;
+    expect(message).toContain(`"${FAST_MODE_ANCHOR_SCENARIO}"`);
+    expect(message).toContain('FAST_MODE_ANCHOR_NS');
+    expect(message).toContain('anchor 9.46 µs');
+    expect(message).toContain('×1.3');
+    expect(message).toContain('ceiling 12.29 µs');
+    for (const [i, run] of window.entries()) {
+      expect(message).toContain(`run ${i + 1} of 5 (${run.generated})`);
+    }
+    expect(message).toContain('16.40 µs');
+    expect(message).toContain('16.52 µs');
+    expect(message).toContain('let it cool / re-run the five `bench:pinned` captures');
+    expect(message).toContain('in the same PR as the change that moved it');
+  });
+
+  test('refuses a 4-fast/1-slow window on the anchor, naming only the slow run', () => {
+    // The deviation guard accepts this window by design (MIN_DEVIANT_RUNS = 2: one outlier is
+    // absorbed by the median), so the anchor is the only guard that sees the slow run.
+    const window = anchorWindow([9_400, 9_450, 16_450, 9_500, 9_550]);
+    const outcome = aggregateRuns(window);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems).toHaveLength(1);
+    const message = outcome.problems[0] as string;
+    expect(message).toContain(
+      `run 3 of 5 (${(window[2] as MicrobenchReport).generated}) at 16.45 µs`,
+    );
+    for (const i of [0, 1, 3, 4]) {
+      expect(message).not.toContain((window[i] as MicrobenchReport).generated);
+    }
+    expect(message).not.toContain('straddling two states');
+  });
+
+  test('a 3-fast/2-slow straddle is still refused by the deviation guard, message unchanged', () => {
+    const outcome = aggregateRuns(anchorWindow([9_500, 16_500, 9_500, 16_500, 9_500]));
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.problems).toEqual([
+      '"ecs.step  1000 entities (Pos+Vel)": 2 of 5 runs sit more than 10% from the folded median of 9.5 µs (worst 74%) — the median is straddling two states of the machine, not describing one.',
+    ]);
+  });
+
+  test('treats a run exactly at the ceiling as fast mode, and one nanosecond above as slow', () => {
+    expect(
+      aggregateRuns(anchorWindow([ceilingNs, ceilingNs, ceilingNs, ceilingNs, ceilingNs])).ok,
+    ).toBe(true);
+    const above = ceilingNs + 1;
+    expect(aggregateRuns(anchorWindow([above, above, above, above, above])).ok).toBe(false);
+  });
+
+  test('a window missing the anchor row is refused as a contract mismatch before the anchor runs', () => {
+    const window = anchorWindow([9_455, 9_455, 9_455]);
+    for (const run of window) {
+      const ecs = run.suites.find((s) => s.title === 'ECS') as { results: MicrobenchResult[] };
+      ecs.results = ecs.results.filter((r) => r.scenario !== FAST_MODE_ANCHOR_SCENARIO);
+    }
+    const outcome = aggregateRuns(window);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    for (const run of window) {
+      expect(outcome.problems).toContain(
+        `run ${run.generated}: missing scenario: ${FAST_MODE_ANCHOR_SCENARIO}`,
+      );
+    }
+    expect(outcome.problems.join(' ')).not.toContain('fast-mode anchor');
   });
 });

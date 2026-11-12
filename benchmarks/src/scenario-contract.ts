@@ -17,6 +17,50 @@ export const HEADLINE_PREFIXES = {
   integration: 'integration.frame  1000',
 } as const;
 
+/** The row `bench:promote` checks against {@link FAST_MODE_ANCHOR_NS}: the `ecs` headline. */
+export const FAST_MODE_ANCHOR_SCENARIO = 'ecs.step  1000 entities (Pos+Vel)';
+
+/**
+ * The fast-mode anchor for {@link FAST_MODE_ANCHOR_SCENARIO}, in nanoseconds. `bench:promote`
+ * refuses a window in which any run's median for that row exceeds this times
+ * {@link FAST_MODE_ANCHOR_TOLERANCE}.
+ *
+ * Why (PERF-14b, #160): the reference machine (i9-13900KF, High performance, pinned) runs bimodal.
+ * After about eight back-to-back captures this row steps from 8.9-9.8 µs to 16.4-16.5 µs, with
+ * `render.flush` and `integration.frame` moving with it. The deviation guard only sees runs that
+ * disagree with each other, so five runs wholly inside the slow mode agree and would publish.
+ *
+ * The value is the published fold: `medianNs` 9455.42 at `0b7ea242ae53` (#258, band 9.30-9.79 µs),
+ * rounded. It describes that machine; a capture from a slower one trips it as well.
+ *
+ * **Re-anchoring is deliberate.** A genuine ECS change that moves this row past the ceiling trips
+ * the check too; that refusal is the prompt to re-anchor, never to raise the constant until a
+ * window passes. Re-anchor in the same PR as the change that moved the row:
+ *
+ * 1. Capture the five `bench:pinned` runs; the refusal lists each run's median for this row.
+ * 2. Confirm the five agree with each other (the deviation guard passed), then set this constant
+ *    to their fold value and add a dated line to the history below with the reason.
+ * 3. Commit, then capture the five again and promote. `benchmarks/src` is a freshness path, so
+ *    runs captured before the anchor commit are stale.
+ *
+ * A speedup is not refused, but it leaves the anchor stale and the slow mode possibly under the
+ * ceiling, so re-anchor for one too.
+ *
+ * History:
+ * - 2026-11-12: 9455, from the `0b7ea242ae53` fold (#258). First anchor.
+ */
+export const FAST_MODE_ANCHOR_NS = 9455;
+
+/**
+ * How far above {@link FAST_MODE_ANCHOR_NS} a run's median may sit before the window is refused.
+ *
+ * ×1.3 puts the ceiling at ~12.29 µs, about midway (by ratio) between the two modes: the fast mode
+ * tops out around 9.8 µs (~1.04× the anchor) and the slow mode sits at 16.4-16.5 µs (~1.7×). That
+ * leaves ~25% of headroom on each side, so ordinary noise inside the fast mode never trips it and
+ * the slow mode never fits under it. A run exactly at the ceiling is accepted.
+ */
+export const FAST_MODE_ANCHOR_TOLERANCE = 1.3;
+
 export const EXPECTED_SUITE_TITLES = [
   'ECS',
   'Physics',

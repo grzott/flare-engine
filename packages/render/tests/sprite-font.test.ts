@@ -47,7 +47,97 @@ function makeFontJSON() {
   };
 }
 
+const GRIN = 0x1f600; // U+1F600, two UTF-16 units
+const GRIN_LOW16 = 0xf600; // the BMP id sharing GRIN's low 16 bits
+
+function makeAstralFontJSON(kernings: Array<{ first: number; second: number; amount: number }>) {
+  const json = makeFontJSON();
+  json.chars.push(
+    { id: GRIN, x: 30, y: 0, width: 14, height: 16, xoffset: 2, yoffset: 0, xadvance: 15 },
+    { id: GRIN_LOW16, x: 44, y: 0, width: 8, height: 16, xoffset: 0, yoffset: 0, xadvance: 9 },
+  );
+  json.kernings = kernings;
+  return json;
+}
+
 describe('SpriteFont', () => {
+  describe('astral glyph ids', () => {
+    const grin = String.fromCodePoint(GRIN);
+
+    it('measureText counts the advance of an astral glyph', () => {
+      const font = parseBMFontJSON(makeAstralFontJSON([]));
+      expect(measureText(font, grin)).toBe(15);
+      // grin = 15, 'A' = 12
+      expect(measureText(font, `${grin}A`)).toBe(27);
+      expect(measureText(font, `A${grin}B`)).toBe(38);
+    });
+
+    it('drawText issues one draw for an astral glyph', () => {
+      const font = parseBMFontJSON(makeAstralFontJSON([]));
+      const batch = new SpriteBatch();
+
+      drawText(batch, font, mockImage(), `${grin}A`, 10, 20);
+      expect(batch.count).toBe(2);
+
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[0]?.srcX).toBe(30);
+      expect(commands[0]?.dstX).toBeCloseTo(12); // x + xoffset 2
+      expect(commands[0]?.dstW).toBe(14);
+      // 'A' follows the grin advance: 10 + 15
+      expect(commands[1]?.srcX).toBe(0);
+      expect(commands[1]?.dstX).toBeCloseTo(25);
+    });
+
+    it('applies kerning for an astral pair', () => {
+      const font = parseBMFontJSON(
+        makeAstralFontJSON([
+          { first: GRIN, second: 65, amount: -3 },
+          { first: 65, second: GRIN, amount: -2 },
+        ]),
+      );
+      expect(getKerning(font, GRIN, 65)).toBe(-3);
+      expect(getKerning(font, 65, GRIN)).toBe(-2);
+      // 15 - 3 + 12
+      expect(measureText(font, `${grin}A`)).toBe(24);
+      // 12 - 2 + 15
+      expect(measureText(font, `A${grin}`)).toBe(25);
+
+      const batch = new SpriteBatch();
+      drawText(batch, font, mockImage(), `${grin}A`, 0, 0);
+      const commands: SpriteDrawCommand[] = [];
+      batch.flush((_, cmds) => commands.push(...cmds));
+      expect(commands[1]?.dstX).toBeCloseTo(12);
+    });
+
+    it('does not alias an astral pair onto the pair sharing its low 16 bits', () => {
+      const font = parseBMFontJSON(
+        makeAstralFontJSON([
+          { first: GRIN_LOW16, second: 65, amount: -5 },
+          { first: 65, second: GRIN_LOW16, amount: -4 },
+        ]),
+      );
+      expect(getKerning(font, GRIN_LOW16, 65)).toBe(-5);
+      expect(getKerning(font, GRIN, 65)).toBe(0);
+      expect(getKerning(font, 65, GRIN)).toBe(0);
+      expect(measureText(font, `${grin}A`)).toBe(27);
+      // the BMP pair itself still kerns: 9 - 5 + 12
+      expect(measureText(font, `${String.fromCodePoint(GRIN_LOW16)}A`)).toBe(16);
+    });
+
+    it('keeps both pairs apart when a font kerns each', () => {
+      const font = parseBMFontJSON(
+        makeAstralFontJSON([
+          { first: GRIN_LOW16, second: 65, amount: -5 },
+          { first: GRIN, second: 65, amount: -3 },
+        ]),
+      );
+      expect(font.kernings.size).toBe(2);
+      expect(getKerning(font, GRIN_LOW16, 65)).toBe(-5);
+      expect(getKerning(font, GRIN, 65)).toBe(-3);
+    });
+  });
+
   describe('parseBMFontJSON', () => {
     it('parses font metadata', () => {
       const font = parseBMFontJSON(makeFontJSON());

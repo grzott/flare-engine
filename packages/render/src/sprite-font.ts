@@ -32,8 +32,13 @@ export interface BitmapFont {
   base: number;
   /** Glyph map by character code. */
   glyphs: Map<number, Glyph>;
-  /** Kerning map. Key = `first << 16 | second`. */
+  /** Kerning map. Key = `first * 0x200000 + second`; read it through `getKerning`. */
   kernings: Map<number, number>;
+}
+
+// A code point needs 21 bits, so a 32-bit `first << 16 | second` would alias ids above 0xFFFF.
+function kerningKey(first: number, second: number): number {
+  return first * 0x200000 + second;
 }
 
 /**
@@ -72,7 +77,7 @@ export function parseBMFontJSON(json: unknown): BitmapFont {
   const kernings = new Map<number, number>();
   if (data.kernings) {
     for (const k of data.kernings) {
-      kernings.set((k.first << 16) | k.second, k.amount);
+      kernings.set(kerningKey(k.first, k.second), k.amount);
     }
   }
 
@@ -86,7 +91,7 @@ export function parseBMFontJSON(json: unknown): BitmapFont {
 
 /** Get kerning between two characters. */
 export function getKerning(font: BitmapFont, first: number, second: number): number {
-  return font.kernings.get((first << 16) | second) ?? 0;
+  return font.kernings.get(kerningKey(first, second)) ?? 0;
 }
 
 /** Measure the width of a text string in pixels. */
@@ -94,7 +99,9 @@ export function measureText(font: BitmapFont, text: string): number {
   let width = 0;
   let prevCode = -1;
   for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
+    const code = text.codePointAt(i) ?? 0;
+    // A code point above 0xFFFF spans two UTF-16 units.
+    if (code > 0xffff) i++;
     const glyph = font.glyphs.get(code);
     if (!glyph) continue;
     if (prevCode >= 0) {
@@ -123,7 +130,9 @@ export function drawText(
   let prevCode = -1;
 
   for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
+    const code = text.codePointAt(i) ?? 0;
+    // A code point above 0xFFFF spans two UTF-16 units.
+    if (code > 0xffff) i++;
     const glyph = font.glyphs.get(code);
     if (!glyph) continue;
 

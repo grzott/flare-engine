@@ -9,7 +9,6 @@ import type {
   RectLike,
   RSXformLike,
   RuntimeEffectFactoryLike,
-  RuntimeEffectLike,
 } from '@flare-engine/render';
 import type {
   CanvasKit,
@@ -19,9 +18,9 @@ import type {
   ColorFilter,
   FilterOptions,
   ImageFilter,
-  RuntimeEffect,
   Shader,
 } from 'canvaskit-wasm';
+import { wrapRuntimeEffect } from './runtime-effect.js';
 
 // Internal interface: extends PaintLike with the raw CK Paint handle.
 // Only used within this module so CK-specific types do not leak into PaintLike.
@@ -214,19 +213,6 @@ function wrapCKCanvas(
     surface,
     bind(next) {
       ck = next;
-    },
-  };
-}
-
-function wrapRuntimeEffect(eff: RuntimeEffect): RuntimeEffectLike {
-  return {
-    makeShader: (uniforms) => eff.makeShader(uniforms) as Shader,
-    getUniformCount: () => eff.getUniformCount(),
-    getUniformFloatCount: () => eff.getUniformFloatCount(),
-    getUniformName: (i) => eff.getUniformName(i),
-    getUniform: (i) => {
-      const u = eff.getUniform(i);
-      return { columns: u.columns, rows: u.rows, slot: u.slot };
     },
   };
 }

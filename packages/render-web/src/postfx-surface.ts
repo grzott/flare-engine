@@ -12,6 +12,7 @@ import type {
   Surface,
   WebGLContextHandle,
 } from 'canvaskit-wasm';
+import { wrapRuntimeEffect } from './runtime-effect.js';
 
 /**
  * A CanvasKit-backed render surface with a parameterized postfx chain.
@@ -179,10 +180,7 @@ export function createPostFxSurface(
       Make(sksl) {
         const eff = kit.RuntimeEffect.Make(sksl);
         if (!eff) return null;
-        return {
-          makeShaderWithChildren: (uniforms, children) =>
-            eff.makeShaderWithChildren(uniforms as Float32Array, (children ?? []) as Shader[]),
-        };
+        return wrapRuntimeEffect(eff);
       },
     },
   };

@@ -517,6 +517,8 @@ const OUTLINE_OFFSETS: ReadonlyArray<readonly [number, number]> = [
 let _xformUnrotatedCount = 0;
 let _xformRotatedCount = 0;
 
+const MAX_CACHED_RUN_LENGTH = 256;
+
 // ---------------------------------------------------------------------------
 // Implementation
 // ---------------------------------------------------------------------------
@@ -527,8 +529,6 @@ let _xformRotatedCount = 0;
  * Both `@flare-engine/react` (passing the real RN-Skia module) and
  * `@flare-engine/render-web` (passing a CanvasKit shim) use this factory.
  */
-const MAX_CACHED_RUN_LENGTH = 256;
-
 export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   const defaultPaint: PaintLike = Skia.Paint();
 

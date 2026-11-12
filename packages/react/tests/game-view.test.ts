@@ -457,7 +457,7 @@ mock.module('@flare-engine/render', () => ({
     return Math.max(0, 1 - effect.elapsed / effect.duration);
   },
   Sprite: { id: 1, bit: 2, name: 'Sprite', create: () => ({}) },
-  createRenderSystem: () => () => {},
+  createRenderSystem: () => Object.assign(() => {}, { dispose: () => {} }),
   createFrameRenderer: (skia: {
     XYWHRect: (
       x: number,

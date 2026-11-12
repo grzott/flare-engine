@@ -31,6 +31,7 @@ export { drawNineSlice } from './nine-slice.js';
 export {
   createRenderSystem,
   type PositionData,
+  type RenderSystem,
   Sprite,
   type SpriteAnchor,
   type SpriteData,

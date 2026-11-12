@@ -322,6 +322,7 @@ export function GameView({
     return () => {
       unsubscribeLate();
       unsubscribePre();
+      renderSystem.dispose();
       captureRef.current?.dispose();
       captureRef.current = null;
       ctx.loop.stop();

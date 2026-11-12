@@ -1,7 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { SkImageLike } from '@flare-engine/assets';
-import type { ComponentDef, Query, World } from '@flare-engine/ecs';
-import type { PositionData, SpriteData } from '../src/render-system.js';
 import { Renderer } from '../src/renderer.js';
 import type { SpriteDrawCommand } from '../src/sprite-batch.js';
 import { SpriteBatch } from '../src/sprite-batch.js';
@@ -47,66 +45,58 @@ function mockCanvas() {
   };
 }
 
-/**
- * Create a minimal mock World+Query for testing the render system
- * without requiring the actual @flare-engine/ecs runtime.
- */
-function createMockECS() {
-  const entities = new Map<number, Map<unknown, unknown>>();
-  let nextId = 1;
+// The system subscribes to the query's add / remove signals, so every test
+// drives a real World: a hand-rolled query would have to re-implement them.
+const Position = EcsPosition;
+const Sprite = RenderSprite;
 
-  const queryEntities = new Set<number>();
-
-  const world = {
-    spawn(): number {
-      const id = nextId++;
-      entities.set(id, new Map());
-      return id;
-    },
-    add<T>(entityId: number, def: ComponentDef<T>, data: T): void {
-      const comps = entities.get(entityId)!;
-      comps.set(def, data);
-      queryEntities.add(entityId);
-    },
-    get<T>(entityId: number, def: ComponentDef<T>): T | undefined {
-      return entities.get(entityId)?.get(def) as T | undefined;
-    },
-  } as unknown as World;
-
-  const query = {
-    [Symbol.iterator](): IterableIterator<number> {
-      return queryEntities.values();
-    },
-    get entities(): readonly number[] {
-      return [...queryEntities];
-    },
-    get count() {
-      return queryEntities.size;
-    },
-  } as unknown as Query;
-
-  return { world, query };
+function createECS() {
+  const world = new EcsWorld();
+  return { world, query: world.query(Position, Sprite) };
 }
 
-const Position = {
-  id: 0,
-  bit: 1,
-  name: 'Position',
-  create: () => ({ x: 0, y: 0 }),
-} as unknown as ComponentDef<PositionData>;
-const Sprite = {
-  id: 1,
-  bit: 2,
-  name: 'Sprite',
-  create: () => ({
-    image: mockImage(),
-    frame: { name: 'default', x: 0, y: 0, w: 32, h: 32 },
-    z: 0,
-  }),
-} as unknown as ComponentDef<SpriteData>;
+type TestWorld = ReturnType<typeof createECS>['world'];
+
+const FRAME = { name: 'f', x: 0, y: 0, w: 32, h: 32 };
+const IMAGE = mockImage();
+
+/** Spawns a sprite whose `x` doubles as its identity in the captured draw order. */
+function spawnSprite(world: TestWorld, x: number, z: number): number {
+  const id = world.spawn();
+  world.add(id, Position, { x, y: 0 });
+  world.add(id, Sprite, { image: IMAGE, frame: FRAME, z });
+  return id;
+}
+
+/** Runs one frame and returns the `x` of each queued sprite, in draw order. */
+function drawnXs(batch: SpriteBatch, renderSystem: () => void): number[] {
+  const xs: number[] = [];
+  const original = batch.draw;
+  batch.draw = (_image, _frame, dstX) => {
+    xs.push(dstX);
+  };
+  renderSystem();
+  batch.draw = original;
+  return xs;
+}
+
+/**
+ * A `z` that counts its own numeric reads. `sortByDrawOrder` compares with `>`,
+ * which calls `valueOf` on both operands, so `reads / 2` is the number of
+ * comparisons a frame made; copying the value between objects reads nothing.
+ */
+function countedZ(value: number, counter: { reads: number }): number {
+  return {
+    valueOf(): number {
+      counter.reads++;
+      return value;
+    },
+  } as unknown as number;
+}
+
 describe('RenderSystem', () => {
   it('queues entities with Position + Sprite into the batch', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -131,7 +121,7 @@ describe('RenderSystem', () => {
   });
 
   it('sorts by z-order', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -172,7 +162,7 @@ describe('RenderSystem', () => {
   });
 
   it('handles no matching entities', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -219,7 +209,7 @@ describe('RenderSystem', () => {
   });
 
   it('passes Sprite.effect through to the batch command', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -252,7 +242,7 @@ describe('RenderSystem', () => {
   });
 
   it('passes Sprite.rotation through to the batch command', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -282,7 +272,7 @@ describe('RenderSystem', () => {
   });
 
   it('omitted Sprite.rotation defaults to 0 on the batch command', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -311,7 +301,7 @@ describe('RenderSystem', () => {
   });
 
   it('passes Sprite.anchor through to the batch command', () => {
-    const { world, query } = createMockECS();
+    const { world, query } = createECS();
     const batch = new SpriteBatch();
     const renderer = new Renderer();
     renderer.setCanvas(mockCanvas());
@@ -339,5 +329,153 @@ describe('RenderSystem', () => {
     expect(captured).toHaveLength(1);
     expect(captured[0]?.dstX).toBe(84);
     expect(captured[0]?.dstY).toBe(184);
+  });
+});
+
+describe('RenderSystem draw order across frames', () => {
+  it('pays for spawn-interleaved z layers once, then sorts in linear comparisons', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const n = 400;
+    const counter = { reads: 0 };
+    const spawned: { x: number; z: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const z = 1 - (i % 2);
+      spawnSprite(world, i, countedZ(z, counter));
+      spawned.push({ x: i, z });
+    }
+    // Array.prototype.sort is stable, so equal z keeps spawn (add) order.
+    const expected = [...spawned].sort((a, b) => a.z - b.z).map((s) => s.x);
+
+    expect(drawnXs(batch, renderSystem)).toEqual(expected);
+
+    for (let frame = 0; frame < 5; frame++) {
+      counter.reads = 0;
+      expect(drawnXs(batch, renderSystem)).toEqual(expected);
+      // A sorted list costs n - 1 comparisons; rebuilding it in query order
+      // would cost about n^2 / 8 of them on every one of these frames.
+      expect(counter.reads / 2).toBeLessThanOrEqual(n);
+    }
+  });
+
+  it('draws equal z in add order, whatever swap-remove does to the query', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const first = spawnSprite(world, 1, 0);
+    spawnSprite(world, 2, 0);
+    spawnSprite(world, 3, 0);
+    spawnSprite(world, 4, 0);
+    expect(drawnXs(batch, renderSystem)).toEqual([1, 2, 3, 4]);
+
+    // Swap-remove moves the last entity into the first slot of query.entities.
+    world.destroy(first);
+    spawnSprite(world, 5, 0);
+    expect(drawnXs(batch, renderSystem)).toEqual([2, 3, 4, 5]);
+  });
+
+  it('re-sorts when a sprite changes z between frames', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const back = spawnSprite(world, 1, 0);
+    spawnSprite(world, 2, 1);
+    spawnSprite(world, 3, 2);
+    expect(drawnXs(batch, renderSystem)).toEqual([1, 2, 3]);
+
+    const sprite = world.get(back, Sprite);
+    if (sprite) sprite.z = 5;
+    expect(drawnXs(batch, renderSystem)).toEqual([2, 3, 1]);
+  });
+
+  it('draws an entity removed and re-added in the same frame once', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const churned = spawnSprite(world, 1, 0);
+    spawnSprite(world, 2, 0);
+    spawnSprite(world, 3, 1);
+    expect(drawnXs(batch, renderSystem)).toEqual([1, 2, 3]);
+
+    world.remove(churned, Sprite);
+    world.add(churned, Sprite, { image: IMAGE, frame: FRAME, z: 0 });
+
+    // Re-added, so it now follows the other z = 0 sprite.
+    expect(drawnXs(batch, renderSystem)).toEqual([2, 1, 3]);
+    expect(drawnXs(batch, renderSystem)).toEqual([2, 1, 3]);
+  });
+
+  it('keeps the order through repeated removal and reuse of its slots', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const ids: number[] = [];
+    for (let i = 0; i < 10; i++) ids.push(spawnSprite(world, i, i % 3));
+    drawnXs(batch, renderSystem);
+
+    for (let i = 0; i < 10; i += 2) world.destroy(ids[i] as number);
+    expect(drawnXs(batch, renderSystem)).toEqual([3, 9, 1, 7, 5]);
+
+    spawnSprite(world, 10, 1);
+    spawnSprite(world, 11, 0);
+    expect(drawnXs(batch, renderSystem)).toEqual([3, 9, 11, 1, 7, 10, 5]);
+
+    for (const id of [...query.entities]) world.destroy(id);
+    expect(drawnXs(batch, renderSystem)).toEqual([]);
+  });
+
+  it('draws entities that matched the query before the system was created', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    spawnSprite(world, 1, 2);
+    spawnSprite(world, 2, 1);
+
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    expect(drawnXs(batch, renderSystem)).toEqual([2, 1]);
+  });
+
+  it('skips a query member that has no sprite', () => {
+    const world = new EcsWorld();
+    const batch = new SpriteBatch();
+    // Wider than the system expects: every positioned entity matches.
+    const query = world.query(Position);
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+
+    const bare = world.spawn();
+    world.add(bare, Position, { x: 1, y: 0 });
+    spawnSprite(world, 2, 0);
+
+    expect(drawnXs(batch, renderSystem)).toEqual([2]);
+
+    world.add(bare, Sprite, { image: IMAGE, frame: FRAME, z: -1 });
+    expect(drawnXs(batch, renderSystem)).toEqual([1, 2]);
+  });
+
+  it('dispose() drops the query subscriptions and the system stops drawing', () => {
+    const { world, query } = createECS();
+    const batch = new SpriteBatch();
+    const renderSystem = createRenderSystem(world, query, Position, Sprite, batch);
+    const callable: () => void = renderSystem;
+
+    const kept = spawnSprite(world, 1, 0);
+    expect(drawnXs(batch, callable)).toEqual([1]);
+
+    const removed: number[] = [];
+    query.onEntityRemoved.add((id) => removed.push(id));
+
+    renderSystem.dispose();
+    spawnSprite(world, 2, 0);
+    world.destroy(kept);
+
+    // The test's own subscription still fires; the system's are gone.
+    expect(removed).toEqual([kept]);
+    expect(drawnXs(batch, callable)).toEqual([]);
   });
 });

@@ -67,10 +67,23 @@ export interface SpriteData {
   flipY?: boolean;
 }
 
-/** Cached entry for sorting. Reused each frame to avoid allocs. */
+/** One query member's slot in the draw order. Pooled: a dead slot is reused by a later add. */
 interface RenderEntry {
   entityId: number;
   z: number;
+  alive: boolean;
+}
+
+/** The per-frame function `createRenderSystem` returns. */
+export interface RenderSystem {
+  /** Queue this frame's sprite draws into the batch, back to front. */
+  (): void;
+  /**
+   * Unsubscribe from the query's `onEntityAdded` / `onEntityRemoved` signals.
+   * Without it the system stays subscribed for as long as the query lives.
+   * A disposed system queues nothing.
+   */
+  dispose(): void;
 }
 
 /**
@@ -85,6 +98,12 @@ interface RenderEntry {
  * (e.g. `<GameView>`) so that all draw sources (ECS, particles, custom)
  * can contribute to a single flush at the render phase.
  *
+ * The system keeps its draw order between frames and follows the query
+ * through `onEntityAdded` / `onEntityRemoved`, so a frame costs one pass
+ * plus the inversions that appeared since the last one. Sprites with equal
+ * `z` draw in the order they joined the query. Call `dispose()` on the
+ * returned function to drop the subscriptions.
+ *
  * @param world The ECS world.
  * @param query Query that matches entities with Position + Sprite.
  * @param positionDef ComponentDef for Position.
@@ -97,34 +116,64 @@ export function createRenderSystem(
   positionDef: ComponentDef<PositionData>,
   spriteDef: ComponentDef<SpriteData>,
   batch: SpriteBatch,
-): () => void {
-  // Pre-allocated sorted array — grows as needed, never shrinks
+): RenderSystem {
+  // entries[0..count) is the draw order, kept from frame to frame; anything
+  // past count is a spare slot waiting for the next add.
   const entries: RenderEntry[] = [];
+  const byEntity = new Map<number, RenderEntry>();
+  let count = 0;
 
-  return () => {
-    // Collect entities — indexed walk over the live id array, no iterator.
-    let i = 0;
-    const ids = query.entities;
-    for (let n = 0; n < ids.length; n++) {
-      const entityId = ids[n]!;
-      const sprite = world.get(entityId, spriteDef);
-      if (!sprite) continue;
-
-      if (i >= entries.length) {
-        entries.push({ entityId, z: 0 });
-      }
-      const entry = entries[i]!;
+  const onAdded = (entityId: number): void => {
+    if (byEntity.has(entityId)) return;
+    let entry = entries[count];
+    if (entry) {
       entry.entityId = entityId;
-      entry.z = sprite.z;
-      i++;
+      entry.z = 0;
+      entry.alive = true;
+    } else {
+      entry = { entityId, z: 0, alive: true };
+      entries.push(entry);
     }
+    count++;
+    byEntity.set(entityId, entry);
+  };
+
+  // Only marks the slot: a removal followed by a re-add in the same frame
+  // leaves one dead slot and one live one, and the next frame drops the dead.
+  const onRemoved = (entityId: number): void => {
+    const entry = byEntity.get(entityId);
+    if (!entry) return;
+    entry.alive = false;
+    byEntity.delete(entityId);
+  };
+
+  const ids = query.entities;
+  for (let n = 0; n < ids.length; n++) onAdded(ids[n]!);
+  const unsubscribeAdded = query.onEntityAdded.add(onAdded);
+  const unsubscribeRemoved = query.onEntityRemoved.add(onRemoved);
+
+  const renderSystem = (): void => {
+    // One pass: refresh z in place and close the gaps dead slots left. A dead
+    // slot is swapped behind the live ones, not dropped, so it is reused.
+    let live = 0;
+    for (let i = 0; i < count; i++) {
+      const entry = entries[i]!;
+      if (!entry.alive) continue;
+      const sprite = world.get(entry.entityId, spriteDef);
+      if (sprite) entry.z = sprite.z;
+      if (live !== i) {
+        entries[i] = entries[live]!;
+        entries[live] = entry;
+      }
+      live++;
+    }
+    count = live;
 
     // Shrink policy — avoid thrashing on variable entity counts.
-    const count = i;
     if (entries.length > count * 2 && entries.length > 64) {
       entries.length = count;
     }
-    // Zero-alloc: sort the pooled array in place, bounded to live count.
+    // Already in last frame's order, so this costs n plus the new inversions.
     sortByDrawOrder(entries, count);
 
     // Queue draws in z-order
@@ -154,6 +203,15 @@ export function createRenderSystem(
       );
     }
   };
+
+  const dispose = (): void => {
+    unsubscribeAdded();
+    unsubscribeRemoved();
+    byEntity.clear();
+    count = 0;
+  };
+
+  return Object.assign(renderSystem, { dispose });
 }
 
 /** Canonical Sprite component — queried by the render system alongside `Position`. */

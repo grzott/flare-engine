@@ -427,6 +427,15 @@ describe('per-scenario deviation overrides', () => {
     expect(aggregateRuns(window(scenario, perRunUs)).ok).toBe(true);
     expect(aggregateRuns(window(PLAIN, perRunUs)).ok).toBe(false);
   });
+
+  // The tolerance must cover the whole recorded span with the median at either end of it.
+  test.each([
+    ['animation.updateTweens    1000 tweens, 4 easings', 2.35, 3.18],
+    ['animation.updateAnimator  1000 animators, looping', 6.19, 7.6],
+  ])('%s folds its full recorded span with the median at either end', (scenario, lo, hi) => {
+    expect(aggregateRuns(window(scenario, [lo, lo, lo, hi, hi])).ok).toBe(true);
+    expect(aggregateRuns(window(scenario, [lo, lo, hi, hi, hi])).ok).toBe(true);
+  });
 });
 
 describe('fast-mode anchor (PERF-14b)', () => {

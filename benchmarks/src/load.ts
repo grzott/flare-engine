@@ -116,13 +116,17 @@ export type ScenarioDeviation = {
  *
  * Adding a row here requires showing that its spread is a property of the measurement rather than
  * a state of the machine, because the global guard exists to catch the latter. The bar is the
- * investigation below, not a failing gate someone wanted to pass.
+ * investigation done for the `integrate-only` rows below, not a failing gate someone wanted to
+ * pass.
  *
- * **What is given up, stated plainly.** These rows can no longer catch a regression smaller than
- * 35% on their own. What still guards `@flare-engine/particles` is the `emit+integrate` sweep,
- * which drives the same `ParticleEmitter.update` at the strict 10% tolerance, plus the exact
- * allocation counters in `check:perf`, which are integers and fail in both directions. A real
- * regression in particle integration shows up there.
+ * **One exception: a provisional entry.** The owner may accept a row before that investigation, to
+ * unblock a release, when the scoping evidence already points at the row rather than the machine.
+ * Such an entry says it is provisional, names the open issue that will investigate it, and states
+ * its exit condition. That issue either removes the entry or replaces "provisional" with the
+ * investigation's evidence.
+ *
+ * Every entry also states what is given up: an overridden row cannot catch a regression smaller
+ * than its own tolerance, so each says what else still guards its package.
  */
 const BIMODAL_INTEGRATE = (band: string, ratio: string, split: string): string =>
   `Bimodal across ${band} (${ratio}), split ${split} over the 15 pinned captures recorded on ` +
@@ -141,6 +145,12 @@ const BIMODAL_INTEGRATE = (band: string, ratio: string, split: string): string =
  * turbo disabled, after a forced full GC, and when one of them is the only scenario a
  * freshly-started process ever runs. Not core placement, warm-up, clock state, GC or JIT history.
  * The remaining hypothesis is per-process JIT code placement, which nothing here can control.
+ *
+ * **What is given up:** these four rows cannot catch a regression smaller than 35% on their own.
+ * What still guards `@flare-engine/particles` is the `emit+integrate` sweep, which drives the same
+ * `ParticleEmitter.update` at the strict 10% tolerance, plus the exact allocation counters in
+ * `check:perf`, which are integers and fail in both directions. A real regression in particle
+ * integration shows up there.
  */
 export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation> = new Map([
   [
@@ -160,30 +170,36 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
     { percent: 35, reason: BIMODAL_INTEGRATE('16.80-21.40 us', '1.27x', '9 low / 6 high') },
   ],
   /**
-   * Two of the three `animation` rows from #311, which first ran on 2026-11-12. Twenty-five pinned
-   * captures of `a851faa9` that day: 15 recorded, plus 10 unrecorded from an interleaved A/B
-   * that swapped only `packages/ecs/src/world.ts`, which animation does not import. Foreign load
-   * was 1.2-2.6% throughout. The third animation row, `updateSpring`, passed the strict 10% in
-   * all three recorded windows; `updateTweens` refused the first two and `updateAnimator` the
-   * third. In the third window every row that existed before #311 read between 0.6% slower and
-   * 7.1% faster than the 2026-11-08 fold.
+   * **Provisional, owner-accepted 2026-11-12 to unblock the 0.4.12 recapture; investigation is
+   * #363.** Two of the three `animation` rows from #311, which first ran that day.
    *
-   * Not yet investigated past that A/B, unlike the `integrate-only` rows above. The tolerance
-   * covers the measured ratio so a window folds whichever state it catches. One suspect for
-   * `updateTweens` is its single call site for four different easing functions.
+   * Evidence, all of `a851faa9`, pinned, at 1.2-2.6% foreign load. Fifteen captures are recorded
+   * in `benchmarks/results/history.ndjson` (three windows, 17:37-18:14 UTC). Ten more are
+   * unrecorded, from an interleaved A/B that swapped only `packages/ecs/src/world.ts`, which
+   * animation does not import; their values are in PR #362. The third animation row,
+   * `updateSpring`, passed the strict 10% in all three recorded windows; `updateTweens` refused
+   * the first two and `updateAnimator` the third. The spans below cover all 25 captures.
+   *
+   * Each tolerance exceeds its row's measured max/min ratio, so a window folds whichever state it
+   * catches. One suspect for `updateTweens` is its single call site for four different easing
+   * functions.
+   *
+   * **Exit condition (#363):** remove both entries once three consecutive node windows fold
+   * these rows at 10%. Or keep them, with this paragraph replaced by the five-cause evidence the
+   * `integrate-only` rows carry.
    *
    * **What is given up:** neither row can catch a regression smaller than its tolerance on its
    * own. `updateSpring` still guards the spring path of the same package at 10%, but nothing
-   * strict guards tweens or animators until these rows are stabilised and the overrides removed.
+   * strict guards tweens or animators until #363 closes.
    */
   [
     'animation.updateTweens    1000 tweens, 4 easings',
     {
-      percent: 35,
+      percent: 36,
       reason:
-        'Continuous spread across 2.35-3.18 us (1.35x) over 25 pinned captures on 2026-11-12, ' +
-        'not two states: the folded median depends on which runs the window caught. Read the ' +
-        'spread column, not the median, for this row.',
+        'Provisional (#363). Continuous spread across 2.35-3.18 us (1.35x) over 25 pinned ' +
+        'captures on 2026-11-12, not two states: the folded median depends on which runs the ' +
+        'window caught. Read the spread column, not the median, for this row.',
     },
   ],
   [
@@ -191,10 +207,10 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
     {
       percent: 25,
       reason:
-        'Bimodal across 6.19-7.60 us (1.23x) over 25 pinned captures on 2026-11-12: 17 runs at ' +
-        '6.19-6.63 us, 7 at 7.19-7.60 us and one between, each state internally tight. The ' +
-        'folded median lands in whichever state that window caught. Read the spread column, ' +
-        'not the median, for this row.',
+        'Provisional (#363). Bimodal across 6.19-7.60 us (1.23x) over 25 pinned captures on ' +
+        '2026-11-12: 17 runs at 6.19-6.63 us, 7 at 7.19-7.60 us and one between, each state ' +
+        'internally tight. The folded median lands in whichever state that window caught. Read ' +
+        'the spread column, not the median, for this row.',
     },
   ],
 ]);

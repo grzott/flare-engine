@@ -45,6 +45,71 @@ describe('raycast', () => {
     expect(hit!.entity).toBe(2);
   });
 
+  it('returns the closest hit whatever the target order', () => {
+    const near: RaycastTarget = { entity: 1, shape: CircleShape(5), x: 20, y: 0 };
+    const mid: RaycastTarget = { entity: 2, shape: AABB(10, 10), x: 40, y: 0 };
+    const far: RaycastTarget = { entity: 3, shape: AABB(10, 10), x: 70, y: 0 };
+    const orders: RaycastTarget[][] = [
+      [near, mid, far],
+      [near, far, mid],
+      [mid, near, far],
+      [mid, far, near],
+      [far, near, mid],
+      [far, mid, near],
+    ];
+    for (const targets of orders) {
+      const hit = raycast(0, 0, 1, 0, 100, targets);
+      expect(hit!.entity).toBe(1);
+      expect(hit!.distance).toBeCloseTo(15, 5);
+      expect(hit!.point.x).toBeCloseTo(15, 5);
+      expect(hit!.point.y).toBeCloseTo(0, 5);
+      expect(hit!.normal.x).toBeCloseTo(-1, 5);
+      expect(hit!.normal.y).toBeCloseTo(0, 5);
+    }
+  });
+
+  it('keeps the first of two equal-distance targets', () => {
+    const a: RaycastTarget = { entity: 1, shape: AABB(10, 10), x: 20, y: 0 };
+    const b: RaycastTarget = { entity: 2, shape: AABB(10, 10), x: 20, y: 0 };
+    expect(raycast(0, 0, 1, 0, 100, [a, b])!.entity).toBe(1);
+    expect(raycast(0, 0, 1, 0, 100, [b, a])!.entity).toBe(2);
+  });
+
+  it('returns a fresh hit that a later call does not overwrite', () => {
+    const box: RaycastTarget[] = [{ entity: 1, shape: AABB(10, 10), x: 20, y: 0 }];
+    const circle: RaycastTarget[] = [{ entity: 2, shape: CircleShape(5), x: 0, y: 40 }];
+
+    const first = raycast(0, 0, 1, 0, 100, box);
+    const second = raycast(0, 0, 0, 1, 100, circle);
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(second).not.toBe(first);
+    expect(second!.point).not.toBe(first!.point);
+    expect(second!.normal).not.toBe(first!.normal);
+
+    expect(first!.entity).toBe(1);
+    expect(first!.distance).toBe(15);
+    expect(first!.point).toEqual({ x: 15, y: 0 });
+    expect(first!.normal).toEqual({ x: -1, y: 0 });
+
+    expect(second!.entity).toBe(2);
+    expect(second!.distance).toBe(35);
+  });
+
+  it('a miss tested after the winner does not disturb the returned hit', () => {
+    const targets: RaycastTarget[] = [
+      { entity: 1, shape: AABB(10, 10), x: 20, y: 0 },
+      { entity: 2, shape: AABB(10, 10), x: 60, y: 0 },
+      { entity: 3, shape: CircleShape(5), x: 20, y: 50 },
+    ];
+    const hit = raycast(0, 0, 1, 0, 100, targets);
+    expect(hit!.entity).toBe(1);
+    expect(hit!.distance).toBe(15);
+    expect(hit!.point).toEqual({ x: 15, y: 0 });
+    expect(hit!.normal).toEqual({ x: -1, y: 0 });
+  });
+
   it('returns null for empty targets', () => {
     const hit = raycast(0, 0, 1, 0, 100, []);
     expect(hit).toBeNull();

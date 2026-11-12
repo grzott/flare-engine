@@ -257,8 +257,8 @@ export class CollisionWorld {
    *
    * The returned record is **reused between calls**: read it, or copy what you
    * need, before casting again. That is what keeps a per-frame ray allocation-
-   * free, and it is why the standalone helper's fresh-object-per-candidate cost
-   * was worth removing.
+   * free; the standalone helper by contrast returns a fresh hit from each call
+   * that hits, which the caller may keep.
    *
    * `maxDist` must be finite — this requires a bounded ray, not the
    * `Number.POSITIVE_INFINITY` "unbounded ray" idiom some engines accept. The

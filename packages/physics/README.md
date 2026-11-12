@@ -69,8 +69,8 @@ by the `layer` bits colliders already carry (`mask` defaults to every layer). Th
 is not in a world.
 
 **The returned hit record is reused between calls** — read it, or copy what you need, before casting
-again. That is what keeps a per-frame ray allocation-free; the standalone helper by contrast builds a
-fresh hit (plus two nested `Vec2`s) for *every candidate it tests* and discards all but the closest.
+again. That is what keeps a per-frame ray allocation-free; the standalone helper by contrast returns
+a fresh hit (plus two nested `Vec2`s) from each call that hits, which the caller may keep.
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginephysics--4kb-aabb).
 

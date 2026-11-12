@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { AllocRow } from '../src/alloc.js';
+import { SCENARIO_DEVIATION_OVERRIDES } from '../src/load.js';
 import { aggregateRuns } from '../src/promote.js';
 import { type MicrobenchReport, type MicrobenchResult, SCHEMA_VERSION } from '../src/results.js';
 import {
@@ -409,6 +410,31 @@ describe('per-scenario deviation overrides', () => {
     // a relaxation of the guard.
     const outcome = aggregateRuns(window(PLAIN, [6.8, 8.5, 6.8, 8.5, 6.8]));
     expect(outcome.ok).toBe(false);
+  });
+
+  test('every override names a scenario the contract expects, so a typo cannot silently apply to nothing', () => {
+    const known = new Set(Object.values(EXPECTED_SCENARIOS).flat());
+    for (const scenario of SCENARIO_DEVIATION_OVERRIDES.keys()) {
+      expect(known.has(scenario)).toBe(true);
+    }
+  });
+
+  // The recorded 2026-11-12 windows these two overrides were added for, per-run medians in µs.
+  test.each([
+    ['animation.updateTweens    1000 tweens, 4 easings', [2.35, 2.42, 3.18, 3.15, 2.91]],
+    ['animation.updateAnimator  1000 animators, looping', [6.43, 6.22, 7.36, 7.27, 6.31]],
+  ])('folds the refused 2026-11-12 window of %s under its override', (scenario, perRunUs) => {
+    expect(aggregateRuns(window(scenario, perRunUs)).ok).toBe(true);
+    expect(aggregateRuns(window(PLAIN, perRunUs)).ok).toBe(false);
+  });
+
+  // The tolerance must cover the whole recorded span with the median at either end of it.
+  test.each([
+    ['animation.updateTweens    1000 tweens, 4 easings', 2.35, 3.18],
+    ['animation.updateAnimator  1000 animators, looping', 6.19, 7.6],
+  ])('%s folds its full recorded span with the median at either end', (scenario, lo, hi) => {
+    expect(aggregateRuns(window(scenario, [lo, lo, lo, hi, hi])).ok).toBe(true);
+    expect(aggregateRuns(window(scenario, [lo, lo, hi, hi, hi])).ok).toBe(true);
   });
 });
 

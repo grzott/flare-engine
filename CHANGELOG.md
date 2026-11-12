@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.11](#0411) | 2026-11-11 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
 | [0.4.10](#0410) | 2026-11-08 | 42 | Procedural SFX, dynamics sleeping, per-image sampling, web postfx, slot headers; includes 0.4.9 |
 | [0.4.8](#048) | 2026-11-05 | 42 | Tilemap flips and layer opacity, the native LUT pass, one wasm download |
 | [0.4.7](#047) | 2026-11-04 | 42 | `@flare-engine/cli`: names a TMX map input; commander 14, maxrects-packer 3 |
@@ -30,6 +31,70 @@ changed in a given package, and it is not duplicated here.
 | [0.2.1](#021) | 2026-07-01 | 40 | Changelog backfill |
 | [0.2.0](#020) | 2026-07-01 | 40 | New packages and extraction work |
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
+
+---
+
+## 0.4.11
+
+Additions, fixes and internal refactors in 17 packages. The other 25 change only their version.
+
+- **`progression`** — `createGameClock(config, state?)` is a 1440-minute game-day clock whose
+  ordered segments each run at their own real-seconds-per-game-hour rate. `update(dt)` lands exactly
+  on every boundary it crosses. `advanceMinutes` and `skipTo` move it in game minutes, `pause` and
+  `resume` stop and restart it, and `hold` stops it at the next phase boundary until `release`. It
+  has `onSegmentChange` and `onPhaseChange` callbacks, and a plain `serialize()` state restores
+  through the second argument.
+- **`animation`** — `updateSpring` advances with the exact damped-oscillator solution instead of one
+  semi-implicit Euler step of the whole `dt`. A clamped 0.25 s hitch frame no longer blows a default
+  spring up, and n steps of `dt` equal one step of n·`dt`. Trajectories at ordinary frame rates
+  differ slightly from the old steps; settle thresholds and `atRest` are unchanged. `tween()` without
+  an `easing` now defaults to `linear` from `@flare-engine/math`, so
+  `tween(0, 1, 1).easing === linear` holds. Values are unchanged.
+- **`create`** — the `blank`, `topdown` and `shmup` templates move from Expo SDK 57 to Expo SDK 58:
+  React Native 0.88.1, React 19.3.0, `@shopify/react-native-skia` 2.14.0, and Reanimated 4.7.1 with
+  worklets 0.13.0. `canvaskit-wasm` stays at 0.41.0, the version RN-Skia 2.14.0 pins.
+- **`scene`** — a `go()` issued while an animated `go()` is still fading out now destroys the
+  superseded target (`onDestroy`, never `onInit` or `onEnter`) and drops it from the cache, so a
+  later `push()` or `go()` of that name builds a fresh instance. `destroy()` does the same to a
+  pending target. An instant `go()` ends any transition in progress, so a stale target can no longer
+  replace the new scene.
+- **`dialogue`** — `updateTextReveal` treats `punctuationDelay` as extra time, so the gap after a
+  `.!?:;` is `1 / speed + punctuationDelay`, as documented. Before, `punctuationDelay` replaced the
+  gap: the extra delay was about 0.117 s instead of 0.15 s at the default 30 cps, and text slower
+  than about 6.7 cps sped up after punctuation. `updateTextReveal` also no longer rebuilds
+  `visibleText` while the revealed count is unchanged, so a caller that overwrites `visibleText` with
+  a string of the same length keeps it until the count changes. The `ActionHandler` JSDoc now states
+  that the runner does not await a returned promise.
+- **`ui`** — `Button` no longer unregisters and re-registers its focus node when a parent re-render
+  passes a new `onPress` identity or changes `disabled` or `tabIndex`, so keyboard focus and tab
+  order survive re-renders. `FocusManager.register` of an already-registered id updates that node in
+  place, `activate()` skips a disabled focused node, and the disposer that `register` returns works
+  destructured.
+- **`share`** — `createNativeShareTransport` passes a `screenshot` to RN `Share` as a `data:` URL
+  when the payload sets no `url`, so iOS attaches the image; an explicit `url` still wins. On
+  Android, where RN's `Share` forwards only `title` and `message`, a screenshot-only payload now
+  opens an empty sheet that reports `dispatched: true` instead of rejecting.
+- **`achievements`, `storage`** — `createStorageAchievements` no longer caches a failed hydration:
+  when `store.get` rejects, that call rejects and the next call reads again. `createIndexedDbAdapter`
+  likewise retries a failed `indexedDB.open`. `createStorage` no longer writes a `__flare_version`
+  key on `saveSlot`, and `createDocumentStore` no longer writes `__flare_doc_version`. Nothing read
+  either key, and keys already in a store are left in place.
+- **`debug`** — with `new DebugOverlay({ reuseCommands: true })`, `drawRect`, `drawCircle` and
+  `drawLine` reuse pooled command objects, which change after `clear()`. Without the option every
+  call still creates a fresh object. `createFrameBudget` keeps a running fps sum instead of
+  re-summing its ring on every `recordFrame`. After a non-finite `dt`, `getAvgFps()` reads 0 for
+  under two ring lengths, where it was one before.
+- **`pathfinding`** — `findPath` and `findPathJPS` keep their search scratch per `Grid` and reuse it,
+  so a repeat search allocates no typed arrays unless its open set outgrows the kept heap.
+  `findPathJPS` scans jumps in a loop, so a long open corridor no longer overflows the stack on V8
+  and Hermes. `findNavMeshPath` keeps a per-mesh id index and computes each centroid at most once per
+  search. Results are unchanged.
+- **Internal refactors, no behaviour or API change** — `audio` (`Music` track start), `create`
+  (`--template` parsing), `engine` (the main entry re-exports `@flare-engine/engine/headless`; the
+  exported names are unchanged), `errors` (one payload-to-`Error` helper for both transports), `iap`
+  (`getGrantsForProduct`), `progression` (`resolveTier`), `scene` (stack teardown), `shapes` (one
+  fill-then-stroke helper), `simulation` (`NBodySystem.step` calls `verletStep`) and
+  `storage` (one envelope guard).
 
 ---
 

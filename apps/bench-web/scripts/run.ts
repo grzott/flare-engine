@@ -1,6 +1,6 @@
 /**
  * Headless driver: serves the bench-web page, drives it with Playwright/Chromium via a Node child
- * process, and writes render-suite result records with full provenance on every record. Two
+ * process, and writes render-suite result records with full provenance on every record. Three
  * modes, selected by `BENCH_WEB_MODE` (see `parseMode`):
  *
  *  - `cpu-raster` (default): the 18-scenario render suite, CanvasKit WASM payload bytes, and
@@ -10,6 +10,17 @@
  *    CPU-raster surface by construction (cold-start), so re-running them under a GPU label would
  *    duplicate the CPU-raster numbers, not add new ones. Results land in their own files
  *    (`web-gpu.json` / `web-gpu-history.ndjson`), never merged into the CPU-raster series.
+ *  - `android`: the render suite in a USB-attached phone's Chrome (`runAndroidMode`; setup in the
+ *    README). Two rules hold its window to the PERF-17 protocol, both enforced, neither a hand step:
+ *     - **100 s gap.** `capture.ts` refuses to start within `ANDROID_MIN_GAP_S` (100 s) of the
+ *       newest `capturedAt` in `web-android-history.ndjson`, printing the seconds left, before the
+ *       server or the adb tunnel starts. No override flag on that path; `bench:web:unguarded` runs
+ *       this file directly and so skips the check.
+ *     - **No trend.** `bench:web:promote --lane android` refuses a window of `MIN_TREND_RUNS` (4) or
+ *       more runs in which at least one third of the scenarios, rounded up, are rising: Kendall tau
+ *       >= 0.6 against run order and the last run >= 5% above the first. It names each with its
+ *       values, tau and rise. Calibration: `TREND_SCENARIO_DIVISOR` in
+ *       `benchmarks/src/web-promote.ts`.
  *
  * `chromium.launch()` itself does not happen in this (Bun) process — see
  * `scripts/browser-driver.mjs`'s header for the full why. In short: Playwright's Chromium pipe

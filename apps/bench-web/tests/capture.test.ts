@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  ANDROID_MIN_GAP_S,
+  androidGapRefusal,
   classifyHostLoad,
   compareToBaseline,
   devtoolsSocketPublished,
@@ -167,5 +169,80 @@ describe('compareToBaseline', () => {
   it('flags a large improvement too — direction is not the point, disagreement is', () => {
     const fresh = new Map([['render.flush 1000', 5.0]]);
     expect(compareToBaseline(fresh, baseline, 25).shifted).toBe(1);
+  });
+});
+
+describe('androidGapRefusal', () => {
+  // PERF-17: five back-to-back Pixel 7 captures drifted ~18% with thermalStatus 0 throughout; a
+  // 100 s gap from a cool phone produced a clean window. The gap is enforced, not remembered.
+  const nowMs = Date.parse('2026-11-12T12:00:00.000Z');
+  const historyPath = '/synthetic/web-android-history.ndjson';
+  const agedBy = (seconds: number): string => new Date(nowMs - seconds * 1000).toISOString();
+
+  function historyOf(...stamps: string[]): (path: string) => string[] {
+    return (path) => {
+      expect(path).toBe(historyPath);
+      return stamps.map((s) => rec(s, 'render.flush 1000'));
+    };
+  }
+
+  it('pins the gap at 100 s', () => {
+    expect(ANDROID_MIN_GAP_S).toBe(100);
+  });
+
+  it('refuses a capture 30 s after the newest record and names the seconds remaining', () => {
+    const refusal = androidGapRefusal('android', {
+      historyPath,
+      now: () => nowMs,
+      readLines: historyOf(agedBy(900), agedBy(30)),
+    });
+    expect(refusal).not.toBeNull();
+    expect(refusal).toContain('wait 70 s');
+    expect(refusal).toContain('100 s');
+  });
+
+  it('accepts a capture 120 s after the newest record', () => {
+    expect(
+      androidGapRefusal('android', {
+        historyPath,
+        now: () => nowMs,
+        readLines: historyOf(agedBy(900), agedBy(120)),
+      }),
+    ).toBeNull();
+  });
+
+  it('judges the newest capturedAt, not the last line', () => {
+    const refusal = androidGapRefusal('android', {
+      historyPath,
+      now: () => nowMs,
+      readLines: historyOf(agedBy(30), agedBy(900)),
+    });
+    expect(refusal).toContain('wait 70 s');
+  });
+
+  it('accepts an empty history — the first capture has nothing to wait for', () => {
+    expect(
+      androidGapRefusal('android', { historyPath, now: () => nowMs, readLines: historyOf() }),
+    ).toBeNull();
+  });
+
+  it('accepts a missing history file', () => {
+    expect(
+      androidGapRefusal('android', {
+        historyPath: `${import.meta.dir}/no-such-dir/web-android-history.ndjson`,
+        now: () => nowMs,
+      }),
+    ).toBeNull();
+  });
+
+  it('never checks a non-android lane', () => {
+    const unread = (): string[] => {
+      throw new Error('a non-android lane read the android history');
+    };
+    for (const mode of ['cpu-raster', 'gpu'] as const) {
+      expect(
+        androidGapRefusal(mode, { historyPath, now: () => nowMs, readLines: unread }),
+      ).toBeNull();
+    }
   });
 });

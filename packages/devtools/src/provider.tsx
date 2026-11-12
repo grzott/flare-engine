@@ -1,6 +1,7 @@
 import type { GameLoop } from '@flare-engine/core';
 import type { World } from '@flare-engine/ecs';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { type DevtoolsConfig, DevtoolsContext, type DevtoolsContextValue } from './context.js';
 import { createSnapshotRingBuffer, type SnapshotSource } from './ring-buffer.js';
 import { type RestoreCallback, TimeScrubber } from './time-scrubber.js';
@@ -37,6 +38,8 @@ export function DevtoolsProvider<T>({
 }: DevtoolsProviderProps<T>): ReactNode {
   const ringSize = config?.ringSize ?? DEFAULT_CONFIG.ringSize;
   const captureInterval = config?.captureInterval ?? DEFAULT_CONFIG.captureInterval;
+  const enabled =
+    Platform.OS === 'web' || (config?.enabledOnNative ?? DEFAULT_CONFIG.enabledOnNative);
   const [selectedEntity, select] = useState<number | null>(null);
 
   // Capture snapshot + restore in refs so the buffer/scrubber identity is
@@ -57,6 +60,7 @@ export function DevtoolsProvider<T>({
   }, [loop, ringSize]);
 
   useEffect(() => {
+    if (!enabled) return;
     let ticks = 0;
     const unsub = loop.onUpdate.add(() => {
       ticks++;
@@ -65,7 +69,7 @@ export function DevtoolsProvider<T>({
     return () => {
       unsub();
     };
-  }, [loop, buffer, captureInterval]);
+  }, [loop, buffer, captureInterval, enabled]);
 
   const value: DevtoolsContextValue = {
     world,
@@ -74,6 +78,7 @@ export function DevtoolsProvider<T>({
     scrubber: scrubber as TimeScrubberUnknown,
     selectedEntity,
     select,
+    enabled,
   };
 
   return <DevtoolsContext.Provider value={value}>{children}</DevtoolsContext.Provider>;

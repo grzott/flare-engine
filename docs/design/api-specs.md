@@ -831,7 +831,8 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 | `useEntityInspector()` | Hook returning `{ selected, select(entity), components }`. Reads from World; never mutates. |
 | `useTimeScrub()` / `TimeScrubber` | Hook + imperative controller. `.rewind(frames)` restores a snapshot from the ring buffer; `.resume()` clears the scrub state. |
 | `createSnapshotRingBuffer(size, source)` | Pre-allocated ring buffer of snapshots. `source` is `World.serialize` by default, or a user-supplied callback for consumers without ecs integration. |
-| `DevtoolsConfig` | `{ ringSize?: number = 120, captureInterval?: number = 1, enabledOnNative?: boolean = true }`. |
+| `DevtoolsConfig` | `{ ringSize?: number = 120, captureInterval?: number = 1, enabledOnNative?: boolean = true }`. With `enabledOnNative: false` on a native platform, `<DevtoolsHUD />` renders nothing and the provider captures no snapshots; ignored on web. |
+| `DevtoolsContextValue.enabled` | `enabled?: boolean`, set by `DevtoolsProvider`. False only when the platform is native and the config sets `enabledOnNative: false`; absent means enabled. |
 | `isDevMode()` | Returns `true` when the Metro/bundler `__DEV__` constant is defined and truthy. Safe to call anywhere — uses `typeof __DEV__` (no reference error on undeclared identifier). **Note:** `isDevMode()` is NOT constant-folded by Metro like a bare `__DEV__` reference; use bare `__DEV__` where dead-code elimination matters. Use `isDevMode()` where you need a callable function (e.g. passing to a config object, conditional import guard, test stub). |
 
 **Implementation notes:**

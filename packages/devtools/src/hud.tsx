@@ -4,7 +4,8 @@ import { useDevtools, useTimeScrub } from './hooks.js';
 
 /**
  * DevtoolsHUD — compact native overlay. Shows buffer depth + pause/step/resume
- * buttons. No-op on web (renders `null`).
+ * buttons. No-op on web (renders `null`), and when the provider's config sets
+ * `enabledOnNative: false`.
  */
 export function DevtoolsHUD(): ReactNode {
   if (Platform.OS === 'web') return null;
@@ -12,8 +13,9 @@ export function DevtoolsHUD(): ReactNode {
 }
 
 function HUDBody(): ReactNode {
-  const { buffer } = useDevtools();
+  const { buffer, enabled } = useDevtools();
   const scrub = useTimeScrub();
+  if (enabled === false) return null;
 
   return (
     <View

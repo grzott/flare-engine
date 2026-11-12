@@ -30,7 +30,7 @@ jobs:
           EXEMPT: ${{ github.repository_owner }},${{ vars.BOT_LOGIN }},dependabot[bot]
         run: |
           gh api "repos/$REPO/pulls/$PR/commits" --paginate --jq '
-            ($ENV.EXEMPT | split(",")) as $exempt
+            ($ENV.EXEMPT | split(",") | map(select(length > 0))) as $exempt
             | .[]
             | select((.author.login // "") as $l | ($exempt | index($l)) | not)
             | (.commit.author.email // "" | ascii_downcase) as $e

@@ -44,6 +44,19 @@ describe('CollisionWorld.raycast — hits and ordering', () => {
     expect(hit.normal.x).toBeCloseTo(-1, 6); // facing back down the ray
   });
 
+  test('a ray running exactly along a box edge hits it', () => {
+    const world = new CollisionWorld();
+    world.add(1, AABB(10, 10), 20, 20); // x 15..25, y 15..25
+    const hit = world.raycast(15, 0, 0, 1, 100);
+    expect(hit).not.toBeNull();
+    expect(hit!.entity).toBe(1);
+    expect(hit!.distance).toBe(15);
+    expect(hit!.point.x).toBe(15);
+    expect(hit!.point.y).toBe(15);
+    expect(hit!.normal.x).toBe(0);
+    expect(hit!.normal.y).toBe(-1);
+  });
+
   test('hits circles as well as boxes', () => {
     const world = new CollisionWorld();
     world.add(1, CircleShape(5), 30, 0);

@@ -98,19 +98,54 @@ describe('SpriteSheet', () => {
       expect(walk.loop).toBe(true);
     });
 
-    it('parses Aseprite object format (legacy)', () => {
+    it('names Aseprite hash-format frames by their key', () => {
+      // `--format json-hash` (Aseprite's default): the values carry no `filename`.
       const json = {
         frames: {
-          idle_0: {
-            filename: 'idle_0',
-            frame: { x: 0, y: 0, w: 16, h: 16 },
-            duration: 200,
-          },
+          'idle 0.aseprite': { frame: { x: 0, y: 0, w: 16, h: 16 }, duration: 200 },
+          'idle 1.aseprite': { frame: { x: 16, y: 0, w: 16, h: 16 }, duration: 200 },
+        },
+        meta: {
+          frameTags: [{ name: 'idle', from: 0, to: 1, direction: 'forward' }],
         },
       };
       const sheet = parseAseprite(json);
-      expect(sheet.frames).toHaveLength(1);
+      expect(sheet.frames).toHaveLength(2);
+      expect(sheet.frames[0]?.name).toBe('idle 0.aseprite');
+      expect(sheet.frames[1]?.name).toBe('idle 1.aseprite');
+      expect(sheet.frameMap.size).toBe(2);
+      expect(getFrame(sheet, 'idle 0.aseprite')).toEqual({
+        name: 'idle 0.aseprite',
+        x: 0,
+        y: 0,
+        w: 16,
+        h: 16,
+      });
+      expect(getFrame(sheet, 'idle 1.aseprite')).toEqual({
+        name: 'idle 1.aseprite',
+        x: 16,
+        y: 0,
+        w: 16,
+        h: 16,
+      });
+      const idle = sheet.animations.get('idle')!;
+      expect(idle.frameIndices).toEqual([0, 1]);
+      expect(idle.frameDuration).toBeCloseTo(0.2);
+    });
+
+    it('prefers a hash value filename over its key', () => {
+      const json = {
+        frames: {
+          a: { filename: 'idle_0', frame: { x: 0, y: 0, w: 16, h: 16 }, duration: 200 },
+          b: { frame: { x: 16, y: 0, w: 16, h: 16 }, duration: 200 },
+        },
+      };
+      const sheet = parseAseprite(json);
       expect(sheet.frames[0]?.name).toBe('idle_0');
+      expect(sheet.frames[1]?.name).toBe('b');
+      expect(sheet.frameMap.get('idle_0')).toBe(0);
+      expect(sheet.frameMap.has('a')).toBe(false);
+      expect(sheet.frameMap.get('b')).toBe(1);
     });
 
     it('handles reverse direction tag', () => {

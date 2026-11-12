@@ -227,9 +227,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/haptics": {
-      "ceiling": 12935,
-      "measured": 11759,
-      "measuredAt": "2026-09-08"
+      "ceiling": 15352,
+      "measured": 13956,
+      "measuredAt": "2026-11-12"
     },
     "@flare-engine/iap": {
       "ceiling": 12142,
@@ -490,6 +490,10 @@
     {
       "date": "2026-11-09",
       "reason": "pathfinding ceiling raised 44521 -> 49437 B (measured 44943 x1.1), authorized by the owner's approval of the PR closing issues #123, #124 and #125. findNavMeshPath keeps a per-mesh id index (a WeakMap per NavMesh object, validated against the live polygon list each search and rebuilt when it changed) and computes each polygon's centroid at most once per search into reused per-mesh Float64Array scratch with a generation stamp, instead of rebuilding a Map per call and re-summing a centroid per visited polygon; findPathJPS writes jump points into an 8-slot Int32Array in the per-grid scratch instead of an array per expanded node, and jump() scans in a loop instead of one recursive frame per cell (the recursive scan overflowed V8 at a 1x8192 corridor). main (with #271) packs at 40474 B, measured by building origin/main 11ed3cf0's packages/pathfinding outside the checkout. So this change adds 4469 B gzipped (each file gzipped alone +4725 B): +1991 B raw (+779 B gzipped) in each of dist/index.mjs and index.js, +4208 B raw (+1441 / +1440 B gzipped) in each source map, +267 B raw (+138 B gzipped) in each .d.ts (the findNavMeshPath JSDoc). A performance fix, not a regression."
+    },
+    {
+      "date": "2026-11-12",
+      "reason": "haptics ceiling raised 12935 -> 15352 B (measured 13956 x1.1), authorized by the owner's approval of the PR for issue #65. createExpoHapticsProvider takes an optional ExpoHapticsOptions { platform } and, on Android with expo-haptics' performAndroidHapticsAsync, plays system haptic effects (a module-level cue-to-effect mapping, a per-provider unsupported-type Set and a fallback to the original expo call); ExpoHapticsModule gains the optional member, and the README gains an Android section. Measured against the published 0.4.11 tarball, which equals main for this package (11725 B). So this change adds 2231 B gzipped (each file gzipped alone +5226 B): dist/index.mjs and index.js +1767 B raw (+575 / +574 B gzipped) each, each source map +4140 B raw (+1244 B gzipped), each .d.ts +1597 B raw (+562 B gzipped, the new option type and JSDoc), README +1041 B raw (+404 B gzipped). A feature, not a regression."
     }
   ]
 }

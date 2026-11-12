@@ -142,6 +142,115 @@ describe('Vec2.slerp', () => {
   });
 });
 
+describe('Vec2.slerp antiparallel', () => {
+  const axes = [
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: -1, y: 0 },
+    { x: Math.SQRT1_2, y: Math.SQRT1_2 },
+    { x: 0.6, y: -0.8 },
+  ];
+
+  it('midpoint of (1,0) → (-1,0) is the unit vector Vec2.perp(a)', () => {
+    const a = { x: 1, y: 0 };
+    const r = Vec2.slerp(a, { x: -1, y: 0 }, 0.5);
+    const p = Vec2.perp(a);
+    expect(Vec2.length(r)).toBeCloseTo(1, 12);
+    expect(Vec2.dot(r, a)).toBeCloseTo(0, 12);
+    expect(r.x).toBeCloseTo(p.x, 12);
+    expect(r.y).toBeCloseTo(p.y, 12);
+  });
+
+  it('midpoint is Vec2.perp(a) on every axis', () => {
+    for (const a of axes) {
+      const r = Vec2.slerp(a, { x: -a.x, y: -a.y }, 0.5);
+      const p = Vec2.perp(a);
+      expect(Vec2.length(r)).toBeCloseTo(1, 12);
+      expect(r.x).toBeCloseTo(p.x, 12);
+      expect(r.y).toBeCloseTo(p.y, 12);
+    }
+  });
+
+  it('t=0.25 is a unit vector 45° from a on the Vec2.perp side', () => {
+    for (const a of axes) {
+      const r = Vec2.slerp(a, { x: -a.x, y: -a.y }, 0.25);
+      expect(Vec2.length(r)).toBeCloseTo(1, 12);
+      expect(Vec2.dot(r, a)).toBeCloseTo(Math.SQRT1_2, 12);
+      expect(Vec2.dot(r, Vec2.perp(a))).toBeCloseTo(Math.SQRT1_2, 12);
+    }
+  });
+
+  it('t=0.75 stays on the Vec2.perp side', () => {
+    const a = { x: 1, y: 0 };
+    const r = Vec2.slerp(a, { x: -1, y: 0 }, 0.75);
+    expect(Vec2.length(r)).toBeCloseTo(1, 12);
+    expect(r.x).toBeCloseTo(-Math.SQRT1_2, 12);
+    expect(r.y).toBeCloseTo(Math.SQRT1_2, 12);
+  });
+
+  it('t=0 returns a exactly and t=1 returns b exactly', () => {
+    for (const a of axes) {
+      const b = { x: -a.x, y: -a.y };
+      const r0 = Vec2.slerp(a, b, 0);
+      const r1 = Vec2.slerp(a, b, 1);
+      expect(r0.x).toBe(a.x);
+      expect(r0.y).toBe(a.y);
+      expect(r1.x).toBe(b.x);
+      expect(r1.y).toBe(b.y);
+    }
+  });
+
+  it('out form matches the allocating form and returns out', () => {
+    for (const a of axes) {
+      const b = { x: -a.x, y: -a.y };
+      for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+        const r = Vec2.slerp(a, b, t);
+        const out = { x: 99, y: 99 };
+        expect(Vec2.slerp(a, b, t, out)).toBe(out);
+        expect(out.x).toBe(r.x);
+        expect(out.y).toBe(r.y);
+        expect(Vec2.length(out)).toBeCloseTo(1, 12);
+      }
+    }
+  });
+
+  it('out may alias a or b', () => {
+    const r = Vec2.slerp({ x: 0, y: 1 }, { x: 0, y: -1 }, 0.25);
+    expect(Vec2.length(r)).toBeCloseTo(1, 12);
+    const a = { x: 0, y: 1 };
+    Vec2.slerp(a, { x: 0, y: -1 }, 0.25, a);
+    expect(a.x).toBe(r.x);
+    expect(a.y).toBe(r.y);
+    const b = { x: 0, y: -1 };
+    Vec2.slerp({ x: 0, y: 1 }, b, 0.25, b);
+    expect(b.x).toBe(r.x);
+    expect(b.y).toBe(r.y);
+  });
+
+  it('near-antiparallel input inside the 1e-6 band has unit length', () => {
+    const a = { x: 1, y: 0 };
+    for (const off of [1e-7, -1e-7, 5e-7, -5e-7]) {
+      const angle = Math.PI - off;
+      const b = { x: Math.cos(angle), y: Math.sin(angle) };
+      for (const t of [0.25, 0.5, 0.75]) {
+        expect(Vec2.length(Vec2.slerp(a, b, t))).toBeCloseTo(1, 9);
+      }
+      const r1 = Vec2.slerp(a, b, 1);
+      expect(r1.x).toBe(b.x);
+      expect(r1.y).toBe(b.y);
+    }
+  });
+
+  it('just outside the band still takes the weighted path with unit length', () => {
+    const a = { x: 1, y: 0 };
+    const angle = Math.PI - 1e-3;
+    const b = { x: Math.cos(angle), y: Math.sin(angle) };
+    const r = Vec2.slerp(a, b, 0.5);
+    expect(Vec2.length(r)).toBeCloseTo(1, 6);
+    expect(r.y).toBeGreaterThan(0.99);
+  });
+});
+
 describe('Vec2.distance / distanceSq', () => {
   it('distance between (0,0) and (3,4)', () => {
     expect(Vec2.distance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5);

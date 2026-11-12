@@ -149,7 +149,10 @@ export const Vec2 = {
     return { x, y };
   },
 
-  /** Spherical linear interpolation for unit vectors. */
+  /** Spherical linear interpolation for unit vectors. Antiparallel inputs (angle within 1e-6 of
+   *  π) have no unique shortest arc, so `a` is rotated by `t·π` turning toward `Vec2.perp(a)` —
+   *  clockwise in y-down screen space — and `t = 0.5` yields `Vec2.perp(a)`. `t = 0` and `t = 1`
+   *  return `a` and `b` exactly. Writes into out if provided. */
   slerp(a: Vec2, b: Vec2, t: number, out?: Vec2): Vec2 {
     let d = a.x * b.x + a.y * b.y;
     // Clamp dot to [-1, 1] for numerical safety
@@ -157,6 +160,27 @@ export const Vec2 = {
     const theta = Math.acos(d);
     if (theta < 1e-6) {
       return Vec2.lerp(a, b, t, out);
+    }
+    if (theta > Math.PI - 1e-6) {
+      // sin(theta) ≈ 0 here, so the weights below would blow up and cancel.
+      let x = a.x;
+      let y = a.y;
+      if (t === 1) {
+        x = b.x;
+        y = b.y;
+      } else if (t !== 0) {
+        const phi = t * Math.PI;
+        const c = Math.cos(phi);
+        const s = Math.sin(phi);
+        x = a.x * c - a.y * s;
+        y = a.y * c + a.x * s;
+      }
+      if (out) {
+        out.x = x;
+        out.y = y;
+        return out;
+      }
+      return { x, y };
     }
     const sinTheta = Math.sin(theta);
     const wa = Math.sin((1 - t) * theta) / sinTheta;

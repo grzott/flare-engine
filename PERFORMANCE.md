@@ -35,6 +35,7 @@ on a phone for reasons none of these benchmarks can see.
 | Surface | How | Status |
 |---|---|---|
 | Off-device microbenchmarks (ecs, physics, particles, render, integration) | Bun, one desktop machine, 5 independent runs folded to a median with a spread band | **current** |
+| Off-device microbenchmarks (animation, postfx, tilemap, pathfinding, math) | the same harness and fold | **suites built; no published number until the next recapture** |
 | Draw-path allocation counters | exact integers against a counting Skia stub — allocations, draw calls, batch runs, transform writes | **current, gated in CI** |
 | Published package size | gzipped tarball bytes per package, ceilinged | **current, gated in CI** |
 | Integration heap footprint | isolated subprocess per scenario, warmed to the allocation plateau | **current** |
@@ -112,12 +113,19 @@ different phone (Pixel 7) through a different renderer (Chrome + WebGL), and it 
 
 ### Packages with no benchmark at all
 
-Benchmarks measure five packages directly — `ecs`, `physics`, `particles`, `render` and
-`render-web` (the three web lanes drive its real surface) — plus `core` indirectly through the
-pools, out of 41. These have per-frame hot paths and **no coverage at all**:
+Benchmarks measure ten packages directly — `ecs`, `physics`, `particles`, `render`, `render-web`
+(the three web lanes drive its real surface), `animation`, `postfx`, `tilemap`, `pathfinding` and
+`math` — plus `core` indirectly through the pools, out of 42. The last five have suites but **no
+published number yet**: the committed baseline was captured before those suites existed, so
+[`benchmarks.md`](docs/references/benchmarks.md) gains their rows with the next recapture.
 
-`animation` · `postfx` · `tilemap` · `pathfinding` · `math` · `scene` · `simulation` · `ui` ·
-`shapes` · `input` · `a11y`
+Tier-2 and tier-3 packages (the `LAYER_MAP` tiers in `scripts/check-deps-tiers.mjs`, drawn in the
+[layer diagram](docs/design/architecture.md#layer-diagram)) that still have **no bench row at all**:
+
+- **Tier 2:** `input` · `audio` · `assets` · `simulation` · `dynamics` · `shapes` · `progression`
+- **Tier 3:** `scene` · `debug` · `dialogue` · `devtools`
+
+Outside those two tiers, `ui` and `a11y` also have per-frame paths and no row.
 
 Their cost is not known to be small. It is not known.
 

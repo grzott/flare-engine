@@ -1,3 +1,4 @@
+import type { SkiaPostFxModuleLike, SkiaRuntimeEffectLike } from '@flare-engine/postfx';
 import type {
   ColorFilterFactoryLike,
   DrawSurfaceLike,
@@ -321,4 +322,39 @@ export function createCountingSkiaStub(options: SkiaStubOptions = {}): SkiaStub 
       for (const k of Object.keys(counters) as (keyof StubCounters)[]) out[k] = counters[k];
     },
   };
+}
+
+export type PostFxSkiaStub = {
+  module: SkiaPostFxModuleLike;
+  counters: StubCounters;
+};
+
+/**
+ * The same counting stub, shaped for `@flare-engine/postfx`. Its runtime needs
+ * only `RuntimeEffect.Make`, and `buildPass` hands the compiled effect to the
+ * bridge without calling it, so a warm pass list must leave `runtimeEffectMake`
+ * flat: a nonzero delta per frame would mean the shader cache stopped holding.
+ */
+export function createPostFxSkiaStub(): PostFxSkiaStub {
+  const counters = emptyCounters();
+  const shaderToken: unknown = { __stub: 'shader' };
+
+  const effect: SkiaRuntimeEffectLike = {
+    makeShaderWithChildren(): unknown {
+      counters.makeShader++;
+      return shaderToken;
+    },
+    getUniformFloatCount: () => 0,
+  };
+
+  const module: SkiaPostFxModuleLike = {
+    RuntimeEffect: {
+      Make(): SkiaRuntimeEffectLike {
+        counters.runtimeEffectMake++;
+        return effect;
+      },
+    },
+  };
+
+  return { module, counters };
 }

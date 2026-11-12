@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { judgeAffinity, readAffinity } from './affinity.js';
 import { type AllocRow, allocRows } from './alloc.js';
+import { animationBenches } from './animation.bench.js';
 import { applyBenchDevFlag, assertDevFlagDefined, devFlagState } from './dev-flag.js';
 import { ecsBenches } from './ecs.bench.js';
 import {
@@ -21,8 +22,11 @@ import {
   SCENARIO_DEVIATION_OVERRIDES,
   sampleCpu,
 } from './load.js';
+import { mathBenches } from './math.bench.js';
 import { particlesBenches } from './particles.bench.js';
+import { pathfindingBenches } from './pathfinding.bench.js';
 import { physicsBenches } from './physics.bench.js';
+import { postfxBenches } from './postfx.bench.js';
 import { judgePowerScheme, readPowerScheme } from './power.js';
 import { aggregateRuns } from './promote.js';
 import { renderBenches } from './render.bench.js';
@@ -51,6 +55,7 @@ import {
   findContractViolations,
   HEADLINE_PREFIXES,
 } from './scenario-contract.js';
+import { tilemapBenches } from './tilemap.bench.js';
 import { renderWebSections } from './web-sections.js';
 
 type Group = { title: string; results: BenchStats[] };
@@ -64,6 +69,14 @@ function runAll(): Group[] {
     { title: 'Particles', results: particlesBenches() },
     { title: 'Render', results: renderBenches() },
     { title: 'Integration', results: integrationBenches() },
+    // Appended after the original five, never interleaved: each suite runs in
+    // the JIT and heap state its predecessors left, so the five keep the
+    // in-process history their earlier captures were taken with.
+    { title: 'Animation', results: animationBenches() },
+    { title: 'PostFx', results: postfxBenches() },
+    { title: 'Tilemap', results: tilemapBenches() },
+    { title: 'Pathfinding', results: pathfindingBenches() },
+    { title: 'Math', results: mathBenches() },
   ];
 }
 
@@ -513,6 +526,21 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push(
     '- **Integration** — one frame = `world.step` + per-entity `coll.setPosition` + `coll.step` + `emitter.update` + sprite draw queue + `sortByDrawOrder` + `batch.flush` through the frame renderer + `endFrame`. Steady state: 300 particles + N entities (Pos+Vel + AABB collider + sprite), wrapping at the field edge so contact density does not decay while being measured. Closer shape match to a real demo frame than per-system microbenches.',
+  );
+  lines.push(
+    '- **Animation** — "op" is one frame over every instance: `updateTweens` on a manager whose tweens never complete (four easings mixed), `setSpringTarget` + `updateSpring` per spring (default underdamped config), `updateAnimator` per looping animator with staggered phases.',
+  );
+  lines.push(
+    '- **PostFx** — `update` is one controller tick with a hit-flash and four timed effects live; `enabled` is one walk of `chain.enabled()`; `buildPass` is one `runtime.buildPass` against a counting Skia stub with every shader already cached, so it measures uniform packing and pass assembly, not compilation.',
+  );
+  lines.push(
+    "- **Tilemap** — `drawInto` queues the tiles an 800×600 camera sees on a 256×256 map of 16 px tiles (two layers, a quarter of the decor flipped), then clears the batch; flushing is the Render suite's cost. `getTileAt` reads every cell of one layer; `decodeGid` runs `decodeGidFlags` + `stripGidFlags` over 4096 non-empty gids.",
+  );
+  lines.push(
+    '- **Pathfinding** — "op" is one corner-to-corner search on a 128×128 grid: `open` has no walls, `maze` is a seeded perfect maze with one-cell corridors. The path array each search returns is the engine\'s own allocation. JPS cuts wall corners and A* does not (see the pathfinding README), so on the maze the two rows find different routes: compare each row with itself across captures, not with the other.',
+  );
+  lines.push(
+    '- **Math** — "op" is one pass over 1000 items: six out-param `Vec2` ops per agent (sub, scaleToLengthInto, turnVelocityTowardInto, clampLength, add, perp); `Transform2D.localToWorld` then `worldToLocal` per point; `Mat3.fromTransform` + `Mat3.multiply` under a parent per transform.',
   );
   lines.push('');
   lines.push('## Gating native (C++) acceleration');

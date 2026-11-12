@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test';
 import { resolve } from 'node:path';
+import { updateTweens } from '@flare-engine/animation';
 import {
   _resetComponentIds,
   defineComponent,
@@ -12,6 +13,12 @@ import {
   Velocity,
 } from '@flare-engine/ecs';
 import { Sprite } from '@flare-engine/render';
+import {
+  animationBenches,
+  animatorsRun,
+  buildAnimators,
+  buildTweens,
+} from '../src/animation.bench.js';
 import { ecsBenches } from '../src/ecs.bench.js';
 import { type BenchStats, P99_MIN_SAMPLES, SMOKE_OVERRIDES } from '../src/harness.js';
 import { runHeapProbe } from '../src/heap-probe.js';
@@ -21,13 +28,23 @@ import {
   integrationBenches,
   outOfBoundsCount as integrationOutOfBounds,
 } from '../src/integration.bench.js';
+import { buildVec2State, mathBenches, vec2Run } from '../src/math.bench.js';
 import { particlesBenches } from '../src/particles.bench.js';
+import { buildSearchState, pathfindingBenches, searchRun } from '../src/pathfinding.bench.js';
 import {
   buildWorld,
   physicsBenches,
   outOfBoundsCount as physicsOutOfBounds,
   stepAndMove,
 } from '../src/physics.bench.js';
+import {
+  buildController,
+  buildEnabledState,
+  buildPassRun,
+  buildPassState,
+  enabledRun,
+  postfxBenches,
+} from '../src/postfx.bench.js';
 import { renderBenches } from '../src/render.bench.js';
 import { srcDir } from '../src/results.js';
 import {
@@ -36,6 +53,7 @@ import {
   EXPECTED_SUITE_TITLES,
   findContractViolations,
 } from '../src/scenario-contract.js';
+import { buildDrawState, drawRun, tilemapBenches } from '../src/tilemap.bench.js';
 
 /**
  * Executes every benchmark body at smoke sample counts. Nothing here asserts a
@@ -74,6 +92,11 @@ const SUITES: Record<string, () => BenchStats[]> = {
   Particles: () => particlesBenches(SMOKE_OVERRIDES),
   Render: () => renderBenches(SMOKE_OVERRIDES),
   Integration: () => integrationBenches(SMOKE_OVERRIDES),
+  Animation: () => animationBenches(SMOKE_OVERRIDES),
+  PostFx: () => postfxBenches(SMOKE_OVERRIDES),
+  Tilemap: () => tilemapBenches(SMOKE_OVERRIDES),
+  Pathfinding: () => pathfindingBenches(SMOKE_OVERRIDES),
+  Math: () => mathBenches(SMOKE_OVERRIDES),
 };
 
 describe('microbench smoke', () => {
@@ -133,6 +156,93 @@ describe('workload stationarity', () => {
     const sparse = buildWorld(100, 'sparse');
     for (let i = 0; i < 600; i++) stepAndMove(sparse);
     expect(physicsOutOfBounds(sparse)).toBe(0);
+  });
+
+  // The animation, postfx and tilemap rows each claim a population that stays
+  // live for the whole capture. If one drained — a tween completing, a timed
+  // effect expiring — later samples would time an emptier frame than earlier ones.
+  test('tweens never complete and animators keep playing across many frames', () => {
+    const mgr = buildTweens(200);
+    for (let i = 0; i < 600; i++) updateTweens(mgr, 1 / 60);
+    expect(mgr.tweens).toHaveLength(200);
+    expect(mgr.tweens.some((tw) => tw.done)).toBe(false);
+
+    const animators = buildAnimators(200);
+    for (let i = 0; i < 600; i++) animatorsRun(animators);
+    expect(animators.every((a) => a.currentAnimation !== null && !a.finished)).toBe(true);
+  });
+
+  test('the postfx controller keeps its flash and timed effects live', () => {
+    const controller = buildController();
+    for (let i = 0; i < 600; i++) controller.update(1 / 60);
+    const flash = controller.chain.get('grayscale-flash')?.uniforms;
+    expect(flash?.kind === 'grayscale-flash' && flash.intensity > 0.99).toBe(true);
+    for (const id of ['chromatic-aberration', 'god-rays', 'weather-clouds', 'crt']) {
+      expect(controller.chain.get(id)?.enabled).toBe(true);
+    }
+  });
+
+  test('chain iteration and buildPass see the five enabled effects, with every shader cached', () => {
+    const enabled = buildEnabledState();
+    enabledRun(enabled);
+    expect(enabled.visited).toBe(5);
+
+    const pass = buildPassState();
+    const compiled = pass.stub.counters.runtimeEffectMake;
+    for (let i = 0; i < 100; i++) buildPassRun(pass);
+    expect(pass.passes).toBe(5);
+    expect(compiled).toBe(5);
+    expect(pass.stub.counters.runtimeEffectMake).toBe(compiled);
+  });
+
+  test('tilemap drawInto queues the same culled set every frame from a warm pool', () => {
+    const state = buildDrawState();
+    drawRun(state);
+    const first = state.queued;
+    const allocs = state.batch.allocCount;
+    for (let i = 0; i < 100; i++) {
+      drawRun(state);
+      expect(state.queued).toBe(first);
+    }
+    // 51 x 38 visible ground cells, plus the decor drawn over a quarter of them.
+    expect(first).toBeGreaterThan(51 * 38);
+    expect(first).toBeLessThan(51 * 38 * 1.5);
+    expect(state.batch.allocCount).toBe(allocs);
+    expect(state.batch.count).toBe(0);
+  });
+
+  test('vec2 outputs are identical frame to frame', () => {
+    const state = buildVec2State(64);
+    vec2Run(state);
+    const snapshot = JSON.stringify([state.desired, state.steer, state.next, state.side]);
+    for (let i = 0; i < 10; i++) vec2Run(state);
+    expect(JSON.stringify([state.desired, state.steer, state.next, state.side])).toBe(snapshot);
+  });
+});
+
+describe('pathfinding fixtures', () => {
+  // With no walls the two searches agree on the optimal diagonal. On the maze
+  // they may not: JPS squeezes past a wall corner and A* refuses to (the
+  // documented corner-cutting split in packages/pathfinding/README.md), so JPS
+  // can only match or undercut A*. Either way the maze must force a far longer
+  // route than the open diagonal, or the two rows are not measuring two ends of
+  // the cost range.
+  test('both searches route corner to corner on both layouts', () => {
+    const cost = (algorithm: 'astar' | 'jps', layout: 'open' | 'maze'): number => {
+      const state = buildSearchState(algorithm, layout);
+      searchRun(state);
+      expect(state.last).not.toBeNull();
+      return state.last?.cost ?? Number.NaN;
+    };
+    const open = cost('astar', 'open');
+    expect(open).toBeCloseTo(127 * Math.SQRT2, 6);
+    expect(cost('jps', 'open')).toBeCloseTo(open, 6);
+
+    const astarMaze = cost('astar', 'maze');
+    const jpsMaze = cost('jps', 'maze');
+    expect(astarMaze).toBeGreaterThan(open * 4);
+    expect(jpsMaze).toBeGreaterThan(open * 4);
+    expect(jpsMaze).toBeLessThanOrEqual(astarMaze);
   });
 });
 

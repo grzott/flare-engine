@@ -36,6 +36,7 @@ import {
   type SortScenario,
   type TextureOrder,
 } from './render.js';
+import { RENDER_SYSTEM_SCENARIOS, type RenderSystemScenario } from './render-system.js';
 import { TILEMAP_SCENARIOS, type TilemapKind, type TilemapScenario } from './tilemap.js';
 
 export type {
@@ -57,6 +58,7 @@ export type {
   PostFxKind,
   PostFxScenario,
   RenderEffectKey,
+  RenderSystemScenario,
   SortScenario,
   TextureOrder,
   TilemapKind,
@@ -74,6 +76,7 @@ export {
   PATHFINDING_SCENARIOS,
   PHYSICS_SCENARIOS,
   POSTFX_SCENARIOS,
+  RENDER_SYSTEM_SCENARIOS,
   SORT_SCENARIOS,
   TILEMAP_SCENARIOS,
 };
@@ -88,7 +91,8 @@ type SuiteTitle =
   | 'PostFx'
   | 'Tilemap'
   | 'Pathfinding'
-  | 'Math';
+  | 'Math'
+  | 'RenderSystem';
 
 type NamedScenario = { readonly name: string };
 
@@ -104,4 +108,5 @@ export const SCENARIOS: Readonly<Record<SuiteTitle, readonly NamedScenario[]>> =
   Tilemap: TILEMAP_SCENARIOS,
   Pathfinding: PATHFINDING_SCENARIOS,
   Math: MATH_SCENARIOS,
+  RenderSystem: RENDER_SYSTEM_SCENARIOS,
 };

@@ -72,11 +72,12 @@ export const EXPECTED_SUITE_TITLES = [
   'Tilemap',
   'Pathfinding',
   'Math',
+  'RenderSystem',
 ] as const;
 
 /**
- * The suites added by #159, absent from the committed baseline until the 0.4.12
- * recapture, whose PR empties this list. `tests/baseline.test.ts` tolerates a
+ * The suites added by #159 and #96, absent from the committed baseline until the
+ * 0.4.12 recapture, whose PR empties this list. `tests/baseline.test.ts` tolerates a
  * `missing suite` violation only for a title listed here, and fails once a
  * listed title IS in the committed baseline, so an entry cannot outlive the
  * capture that made it unnecessary. A fresh capture is never exempt:
@@ -88,6 +89,7 @@ export const PENDING_FIRST_CAPTURE: readonly string[] = [
   'Tilemap',
   'Pathfinding',
   'Math',
+  'RenderSystem',
 ];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
@@ -169,6 +171,7 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
     'math.transform2d  1000 points, local->world->local',
     'math.mat3         1000 fromTransform x parent',
   ],
+  RenderSystem: ['render.system  1000 sprites / 3 z layers interleaved'],
 };
 
 export const EXPECTED_HEAP_SCENARIOS: readonly string[] = [

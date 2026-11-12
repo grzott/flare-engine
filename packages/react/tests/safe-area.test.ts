@@ -147,7 +147,7 @@ mock.module('@flare-engine/render', () => ({
     flush() {}
   },
   Sprite: { id: 1, bit: 2, name: 'Sprite', create: () => ({}) },
-  createRenderSystem: () => () => {},
+  createRenderSystem: () => Object.assign(() => {}, { dispose: () => {} }),
   WATER_SKSL: '',
   FOG_SKSL: '',
   FIRE_SKSL: '',

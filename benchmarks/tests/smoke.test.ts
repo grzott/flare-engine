@@ -46,6 +46,11 @@ import {
   postfxBenches,
 } from '../src/postfx.bench.js';
 import { renderBenches } from '../src/render.bench.js';
+import {
+  buildRenderSystemState,
+  renderSystemBenches,
+  renderSystemRun,
+} from '../src/render-system.bench.js';
 import { srcDir } from '../src/results.js';
 import {
   EXPECTED_HEAP_SCENARIOS,
@@ -97,6 +102,7 @@ const SUITES: Record<string, () => BenchStats[]> = {
   Tilemap: () => tilemapBenches(SMOKE_OVERRIDES),
   Pathfinding: () => pathfindingBenches(SMOKE_OVERRIDES),
   Math: () => mathBenches(SMOKE_OVERRIDES),
+  RenderSystem: () => renderSystemBenches(SMOKE_OVERRIDES),
 };
 
 describe('microbench smoke', () => {
@@ -207,6 +213,18 @@ describe('workload stationarity', () => {
     // 51 x 38 visible ground cells, plus the decor drawn over a quarter of them.
     expect(first).toBeGreaterThan(51 * 38);
     expect(first).toBeLessThan(51 * 38 * 1.5);
+    expect(state.batch.allocCount).toBe(allocs);
+    expect(state.batch.count).toBe(0);
+  });
+
+  test('the render system queues every sprite each frame from a warm pool', () => {
+    const state = buildRenderSystemState({ name: 'smoke', count: 300, zLayers: 3, innerIters: 1 });
+    renderSystemRun(state);
+    const allocs = state.batch.allocCount;
+    for (let i = 0; i < 100; i++) {
+      renderSystemRun(state);
+      expect(state.queued).toBe(300);
+    }
     expect(state.batch.allocCount).toBe(allocs);
     expect(state.batch.count).toBe(0);
   });

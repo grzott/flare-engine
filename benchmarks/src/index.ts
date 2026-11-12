@@ -30,6 +30,7 @@ import { postfxBenches } from './postfx.bench.js';
 import { judgePowerScheme, readPowerScheme } from './power.js';
 import { aggregateRuns } from './promote.js';
 import { renderBenches } from './render.bench.js';
+import { renderSystemBenches } from './render-system.bench.js';
 import {
   appendHistoryRow,
   benchmarksDir,
@@ -77,6 +78,7 @@ function runAll(): Group[] {
     { title: 'Tilemap', results: tilemapBenches() },
     { title: 'Pathfinding', results: pathfindingBenches() },
     { title: 'Math', results: mathBenches() },
+    { title: 'RenderSystem', results: renderSystemBenches() },
   ];
 }
 
@@ -541,6 +543,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push(
     '- **Math** — "op" is one pass over 1000 items: six out-param `Vec2` ops per agent (sub, scaleToLengthInto, turnVelocityTowardInto, clampLength, add, perp); `Transform2D.localToWorld` then `worldToLocal` per point; `Mat3.fromTransform` + `Mat3.multiply` under a parent per transform.',
+  );
+  lines.push(
+    '- **RenderSystem** — "op" is one `createRenderSystem` frame over N sprites, then `batch.clear()`: the z refresh, `sortByDrawOrder` over the order the system kept from the previous frame, and one `batch.draw` per sprite. Entity `i` is spawned on layer `i % 3`, so spawn order and draw order disagree throughout. Flushing is measured by the Render suite, not here.',
   );
   lines.push('');
   lines.push('## Gating native (C++) acceleration');

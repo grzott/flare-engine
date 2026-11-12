@@ -527,6 +527,8 @@ let _xformRotatedCount = 0;
  * Both `@flare-engine/react` (passing the real RN-Skia module) and
  * `@flare-engine/render-web` (passing a CanvasKit shim) use this factory.
  */
+const MAX_CACHED_RUN_LENGTH = 256;
+
 export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   const defaultPaint: PaintLike = Skia.Paint();
 
@@ -566,10 +568,16 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
 
   const imageSampling = new WeakMap<SkImageLike, SamplingOptionsLike>();
 
-  let _cachedSrcSlice: RectLike[] | null = null;
-  let _cachedSrcSliceLen = 0;
-  let _cachedXformSlice: RSXformLike[] | null = null;
-  let _cachedXformSliceLen = 0;
+  // Indexed by run length, for runs up to MAX_CACHED_RUN_LENGTH. Entries are
+  // always real copies, never the pool array itself: an aliased entry would
+  // lengthen when the pool grows. Growth only appends and the pooled elements
+  // are mutated in place, so a copy stays valid for the lifetime of the
+  // renderer. Longer runs share one last-length slot each, because a slice per
+  // length would retain memory quadratic in the longest run.
+  const srcSlices: (RectLike[] | undefined)[] = [];
+  const xformSlices: (RSXformLike[] | undefined)[] = [];
+  let longSrcSlice: RectLike[] | null = null;
+  let longXformSlice: RSXformLike[] | null = null;
 
   const clearColor: Float32Array = new Float32Array(4);
   const tintColor: Float32Array = new Float32Array(4);
@@ -661,17 +669,30 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   }
 
   function getCachedSrcSlice(n: number): RectLike[] {
-    if (_cachedSrcSlice !== null && _cachedSrcSliceLen === n) return _cachedSrcSlice;
-    _cachedSrcSlice = srcRects.length === n ? srcRects : srcRects.slice(0, n);
-    _cachedSrcSliceLen = n;
-    return _cachedSrcSlice;
+    if (n > MAX_CACHED_RUN_LENGTH) {
+      if (longSrcSlice === null || longSrcSlice.length !== n) longSrcSlice = srcRects.slice(0, n);
+      return longSrcSlice;
+    }
+    let slice = srcSlices[n];
+    if (slice === undefined) {
+      slice = srcRects.slice(0, n);
+      srcSlices[n] = slice;
+    }
+    return slice;
   }
 
   function getCachedXformSlice(n: number): RSXformLike[] {
-    if (_cachedXformSlice !== null && _cachedXformSliceLen === n) return _cachedXformSlice;
-    _cachedXformSlice = xforms.length === n ? xforms : xforms.slice(0, n);
-    _cachedXformSliceLen = n;
-    return _cachedXformSlice;
+    if (n > MAX_CACHED_RUN_LENGTH) {
+      if (longXformSlice === null || longXformSlice.length !== n)
+        longXformSlice = xforms.slice(0, n);
+      return longXformSlice;
+    }
+    let slice = xformSlices[n];
+    if (slice === undefined) {
+      slice = xforms.slice(0, n);
+      xformSlices[n] = slice;
+    }
+    return slice;
   }
 
   function fillSrcRects(commands: SpriteDrawCommand[], n: number): void {

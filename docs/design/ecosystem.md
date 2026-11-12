@@ -51,7 +51,7 @@ None of these run on React Native. All are web-only.
 | Sprite sheets/atlas | Nothing for RN                           | `@flare-engine/assets`    |
 | Tilemaps            | Nothing for RN                           | `@flare-engine/tilemap`   |
 | Game loop           | DIY via requestAnimationFrame            | `@flare-engine/core`      |
-| Physics             | planck.js works but no integration       | `@flare-engine/physics`   |
+| Physics             | planck.js works but no integration       | `@flare-engine/physics` + `@flare-engine/dynamics` ([why not planck](dependencies.md#physics-options-evaluated)) |
 | Particles           | Nothing for RN                           | `@flare-engine/particles` |
 | Audio sync          | Fragmented (expo-av, react-native-sound) | `@flare-engine/audio`     |
 | ECS for RN          | bitECS/miniplex exist but no integration | `@flare-engine/ecs`       |

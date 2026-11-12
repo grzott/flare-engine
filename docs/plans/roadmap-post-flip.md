@@ -192,6 +192,7 @@ most useful output of the exercise:
 
 This file is proposals for **after** the flip. It does not renumber, reschedule or supersede anything in
 [road-to-oss-2026-09.md](road-to-oss-2026-09.md), and it does not touch the freeze. The already-fixed
-post-flip decisions it must not contradict: planck.js rigid body is a separate opt-in package, C++/Nitro is
+post-flip decisions it must not contradict: rigid bodies are first-party `@flare-engine/dynamics` and
+planck.js is not planned ([decision](../design/dependencies.md#physics-options-evaluated)), C++/Nitro is
 adjudicated no, the devtools live-tweak inspector is the first post-flip arc, and the in-browser live editor
 is never.

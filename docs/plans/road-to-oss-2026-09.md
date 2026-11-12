@@ -59,7 +59,9 @@ disagree, this doc wins (it post-dates and re-verified them).
    boundary (§ license) — 0.3.0 is still the first Apache-2.0 version published, which the August
    cut makes true rather than false.
 6. **Module adjudications (from the deep audit, owner-ratified):** planck.js rigid-body = post-flip,
-   opt-in package (`planck` v1.5.x, never `planck-js`); C++/Nitro = no (perf gate untripped);
+   opt-in package (`planck` v1.5.x, never `planck-js`) — *superseded 2026-11-12 (#67): rigid bodies
+   are `@flare-engine/dynamics` and planck is not planned, see
+   [dependencies.md](../design/dependencies.md#physics-options-evaluated)*; C++/Nitro = no (perf gate untripped);
    devtools live-tweak inspector = first post-flip arc; in-browser live editor = never (playground +
    inspector instead); Tiled 1.12.x = primary authoring story, LDtk secondary.
 7. **PT stays the private commercial game.** Public-facing showcase links point at the docs site,

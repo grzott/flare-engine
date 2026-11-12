@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.12](#0412) | 2026-11-12 | 42 | Edge-case fixes across events, physics and math; Android haptics and screenshot shares; fewer hot-path allocations |
 | [0.4.11](#0411) | 2026-11-12 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
 | [0.4.10](#0410) | 2026-11-08 | 42 | Procedural SFX, dynamics sleeping, per-image sampling, web postfx, slot headers; includes 0.4.9 |
 | [0.4.8](#048) | 2026-11-05 | 42 | Tilemap flips and layer opacity, the native LUT pass, one wasm download |
@@ -33,6 +34,76 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.12
+
+Fixes, additions and allocation work in 22 packages. The other 20 change only their version.
+
+- **`events`** — a `Signal.once` or `EventEmitter.once` handler now runs at most once when the same
+  signal or event is emitted again from inside the emit that fires it. Before, it could run twice,
+  and a `once` handler that re-emitted its own signal recursed until it threw `RangeError`.
+- **`physics`** — re-adding a `CollisionWorld` entity with a flipped `isTrigger` while one of its
+  pairs is touching now ends each pair whose kind changes during the `add` call, with the exit
+  signal of its old kind. If the shapes still overlap, the next `step()` starts the pair again in
+  the new kind. Before, such a pair could begin with `onTriggerEnter` and end with
+  `onCollisionEnd`. An axis-parallel ray whose origin lies exactly on a box edge made `raycast()`,
+  `rayVsShapeInto` and `CollisionWorld.raycast` return a `NaN` hit; it now hits the box, and a
+  zero-length direction misses. `SpatialIndex.insert` of an item already in the index now replaces
+  its bounds instead of leaving a stale entry; `CollisionWorld` users were not affected. New
+  `setSolidAt(grid, col, row, solid)` and `isSolidAt(grid, col, row)` read and write one
+  `SolidGrid` cell. The standalone `raycast()` now allocates only the hit it returns.
+- **`math`** — `rayVsRect` gets the same edge fix: an axis-parallel ray from an edge returns a
+  finite `t` or `null` instead of `NaN`, and a zero direction returns `null`. `Vec2.slerp` of
+  antiparallel unit vectors no longer collapses to zero; it turns toward `Vec2.perp(a)`. New
+  `argbToFloat4Into(out, argb)` unpacks a packed `0xAARRGGBB` colour into a `Float32Array`. It
+  replaces five private copies, so `shapes`, `assets` and `render-web` now depend on `math`.
+  `lineVsRect` no longer allocates. `springIn`, `springOut` and `springInOut` are documented as the
+  Back curves under a second name.
+- **`core`** — `GameLoop` keeps a single frame chain when it is stopped and restarted from inside a
+  frame handler, where it used to leave two frames scheduled, and it reuses one frame callback
+  instead of creating a closure per frame.
+- **`animation`** — `spring()` throws a `RangeError` naming the field for a `mass` not above 0, a
+  negative `stiffness` or `damping`, or a non-finite field. These configs used to produce `NaN` or
+  a runaway value.
+- **`assets`** — `parseAseprite` names the frames of an Aseprite hash export after their keys, so
+  `getFrame` and `frameMap` resolve them. Every frame name used to be `undefined`.
+- **`audio`** — `Music.stop()` and `Music.play()` during a crossfade stop the fading-out track at
+  once, where it used to stay audible for up to the crossfade duration.
+- **`scene`** — `push()` and `pop()` while an animated `go()` is still fading out are ignored, with a
+  one-time dev warning. They used to enter or destroy the pending scene out of order.
+- **`haptics`** — `createExpoHapticsProvider(Haptics, { platform: Platform.OS })` plays Android
+  system haptic effects through expo's optional `performAndroidHapticsAsync` and falls back to the
+  vibrator call per cue. Other platforms, and calls without the option, behave as before. New type
+  `ExpoHapticsOptions`.
+- **`share`** — new `createExpoShareTransport(sharing, files)` and `ShareFileWriterLike` make
+  Android screenshot shares work through `expo-sharing`, with the app supplying the file writer.
+- **`devtools`** — `enabledOnNative: false` now takes effect: on native, `DevtoolsHUD` renders
+  nothing and capture stops. `DevtoolsContextValue` gains an optional `enabled`.
+- **`input`** — new `applyRemapInto(snapshot, table, out)`. `InputManager.pollGamepads` remaps a
+  pad into one snapshot it keeps, instead of building a new one on every poll.
+- **`postfx`** — calling `triggerTimed` again while the effect is still timed now only restarts the
+  countdown, so expiry restores the uniforms from before the first trigger. `controller.update`
+  no longer allocates while a flash fades or a timed effect is pending, though `buildPass` still
+  does (#303). `COMPOSITE_SKSL`'s weather branches are built from the same sources as the
+  standalone `WEATHER_*_SKSL` shaders, whose strings are byte-identical to 0.4.11.
+- **`render`** — `createRenderSystem` keeps its draw order between frames instead of re-sorting
+  from spawn order, and gains `dispose()` and the `RenderSystem` type. Sprites with equal `z` now
+  draw in the order they joined. `Camera2D.shakePerlin` no longer reads past its permutation table,
+  so the Y offset takes different values at some times. The six zone-background effects skip their
+  run instead of filling it black when their shader is unavailable. The frame renderer caches atlas
+  slices per run length and a custom shader's uniform layout per compiled shader. Its JSDoc and
+  the `render-web` README now say the caller owns and releases the picture `endFrame()` returns.
+- **`render-web`** — the recorder reuses one drawing surface per recorder, valid only between
+  `beginRecording` and `finishRecordingAsPicture`. `drawAtlas` reuses cached CanvasKit views.
+- **`react`** — `GameView` on native skips building postfx passes each frame while no chain is
+  bound.
+- **`tilemap`** — new `setTileAt(layer, col, row, gid)`. `TilemapRenderer` resolves the tileset and
+  its image once per run of tiles instead of once per tile. `engine` re-exports `setTileAt`,
+  `setSolidAt` and `isSolidAt`, and the `create` `topdown` template's door code uses them.
+- **Internal refactors, no behaviour change:** `core` `Pool`, `ecs` query notification, `physics`
+  trigger dispatch, `math` intersection predicates, `react` overlay tweens, `render` zone-background
+  effects and shared SkSL snippets, and the `render-web` runtime-effect wrapper.
+- **Documentation only:** `core` `AppLifecycle` and `progression` `createCollectibleRegistry`.
 
 ## 0.4.11
 

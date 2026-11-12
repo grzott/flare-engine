@@ -28,17 +28,32 @@ const VELOCITY_THRESHOLD = 0.001;
 // a vanishing ωd / root gap there, and the critical solution differs by under 1e-6·ω0·dt relative.
 const CRITICAL_BAND = 1e-6;
 
-/** Create a spring with initial value. */
+/**
+ * Create a spring with initial value.
+ *
+ * Throws a `RangeError` naming the field when `mass` is not above 0, `stiffness` or `damping`
+ * is negative, or any of the three is not finite: none of those ever produced a usable spring.
+ * `stiffness: 0` and `damping: 0` are valid. Only the config passed here is checked; later
+ * edits to `s.config` are the caller's responsibility, so `updateSpring` stays check-free.
+ */
 export function spring(value: number, target: number, config?: Partial<SpringConfig>): Spring {
+  const stiffness = config?.stiffness ?? 100;
+  const damping = config?.damping ?? 10;
+  const mass = config?.mass ?? 1;
+  if (!Number.isFinite(mass) || mass <= 0) {
+    throw new RangeError(`spring: mass must be a finite number above 0, got ${mass}`);
+  }
+  if (!Number.isFinite(stiffness) || stiffness < 0) {
+    throw new RangeError(`spring: stiffness must be a finite number >= 0, got ${stiffness}`);
+  }
+  if (!Number.isFinite(damping) || damping < 0) {
+    throw new RangeError(`spring: damping must be a finite number >= 0, got ${damping}`);
+  }
   return {
     value,
     velocity: 0,
     target,
-    config: {
-      stiffness: config?.stiffness ?? 100,
-      damping: config?.damping ?? 10,
-      mass: config?.mass ?? 1,
-    },
+    config: { stiffness, damping, mass },
     atRest: value === target,
   };
 }

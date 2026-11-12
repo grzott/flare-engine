@@ -104,7 +104,8 @@ function parseMode(): RunMode {
  *  this long past a real hang means a real failure, not slow-but-working. */
 const COLD_START_WAIT_TIMEOUT_MS = 45_000;
 
-type RenderDriverPayload = {
+// #210 A/B: exported, with these three driver helpers, for `scripts/ab-210.ts`.
+export type RenderDriverPayload = {
   readonly results: ScenarioResult[];
   readonly browserName: string;
   readonly browserVersion: string;
@@ -113,7 +114,7 @@ type RenderDriverPayload = {
   readonly rendererString: string | null;
 };
 
-type ColdStartDriverPayload = {
+export type ColdStartDriverPayload = {
   readonly coldStart: readonly ColdStartEntry[];
   readonly browserName: string;
   readonly browserVersion: string;
@@ -126,11 +127,13 @@ async function runNodeDriver<T>(
   url: string,
   configJson: string,
   rawPath: string,
+  env?: Record<string, string | undefined>,
 ): Promise<T> {
   const proc = Bun.spawn({
     cmd: ['node', driverPath, url, configJson, rawPath],
     stdout: 'inherit',
     stderr: 'inherit',
+    ...(env === undefined ? {} : { env }), // #210 A/B
   });
   const exitCode = await proc.exited;
   if (exitCode !== 0) {
@@ -139,10 +142,11 @@ async function runNodeDriver<T>(
   return JSON.parse(await Bun.file(rawPath).text()) as T;
 }
 
-async function runRenderSuiteDriver(
+export async function runRenderSuiteDriver(
   mode: BenchMode,
   serverUrl: string,
   rawPath: string,
+  env?: Record<string, string | undefined>,
 ): Promise<RenderDriverPayload> {
   const driverPath = `${import.meta.dir}/browser-driver.mjs`;
   const configJson = JSON.stringify({
@@ -152,12 +156,13 @@ async function runRenderSuiteDriver(
     viewport: config.viewport,
     mode,
   });
-  return runNodeDriver<RenderDriverPayload>(driverPath, serverUrl, configJson, rawPath);
+  return runNodeDriver<RenderDriverPayload>(driverPath, serverUrl, configJson, rawPath, env);
 }
 
-async function runColdStartDriver(
+export async function runColdStartDriver(
   serverUrl: string,
   rawPath: string,
+  env?: Record<string, string | undefined>,
 ): Promise<ColdStartDriverPayload> {
   const driverPath = `${import.meta.dir}/coldstart-driver.mjs`;
   const configJson = JSON.stringify({
@@ -172,10 +177,11 @@ async function runColdStartDriver(
     `${serverUrl}cold-start`,
     configJson,
     rawPath,
+    env,
   );
 }
 
-function validateScenarioNames(gotNames: readonly string[]): void {
+export function validateScenarioNames(gotNames: readonly string[]): void {
   const wantNames = [...RENDER_SCENARIO_NAMES];
   if (JSON.stringify(gotNames) !== JSON.stringify(wantNames)) {
     throw new Error(
@@ -435,7 +441,21 @@ async function runCpuRasterMode(
   );
 }
 
+/** #210 A/B: an arm's rows go to `results/ab-210.ndjson` through `bench:web:ab210`, never here. */
+export function abEnvRefusal(env: Record<string, string | undefined>): string | null {
+  const set = ['BENCH_WEB_WASM_ARM', 'BENCH_WEB_COLDSTART_PROFILE'].filter(
+    (k) => env[k] !== undefined,
+  );
+  if (set.length === 0) return null;
+  return (
+    `bench-web: REFUSING to capture with ${set.join(' and ')} set: #210 A/B rows must not land ` +
+    'in the lane history. Run `bun run bench:web:ab210` instead, or unset them.'
+  );
+}
+
 async function main(): Promise<void> {
+  const refusal = abEnvRefusal(process.env); // #210 A/B
+  if (refusal !== null) throw new Error(refusal);
   const mode = parseMode();
   const server = startServer();
   console.log(`bench-web: server up at ${server.url} (mode=${mode})`);

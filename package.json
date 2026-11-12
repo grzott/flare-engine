@@ -50,6 +50,7 @@
     "bench:web": "turbo bench:web",
     "bench:web:gpu": "turbo bench:web:gpu",
     "bench:web:android": "turbo bench:web:android",
+    "bench:web:ab210": "turbo bench:web:ab210 --",
     "bench:web:promote": "turbo bench:web:promote --",
     "propagate-license": "bun run scripts/propagate-license.ts",
     "prebuild": "bun run propagate-license",

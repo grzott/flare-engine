@@ -157,8 +157,9 @@ export function classifyHostLoad(percentBusy: number): LoadVerdict {
   return { level: 'quiet', reason: `host CPU is ${percentBusy.toFixed(1)}% busy` };
 }
 
-/** Fraction of CPU time spent outside idle, across all cores, over `ms`. Portable: no PowerShell. */
-async function sampleHostLoad(ms: number): Promise<number> {
+/** Fraction of CPU time spent outside idle, across all cores, over `ms`. Portable: no PowerShell.
+ *  Exported for `scripts/ab-210.ts` (#210 A/B). */
+export async function sampleHostLoad(ms: number): Promise<number> {
   const snapshot = (): { busy: number; total: number } => {
     let busy = 0;
     let total = 0;

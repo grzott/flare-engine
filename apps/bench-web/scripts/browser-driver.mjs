@@ -20,6 +20,8 @@
  * Usage: node browser-driver.mjs <pageUrl> <configJson> <outFile>
  *   pageUrl:    the bench-web dev server URL (`scripts/server.ts`, started by the Bun parent),
  *               WITHOUT a `?mode=` query — this script appends it from `config.mode`.
+ *               #210 A/B: with `BENCH_WEB_WASM_ARM` set it also appends `&wasmArm=` and adds
+ *               `wasmArmTaken` + `wasmRequests` to the payload (`ab-210-wasm-requests.mjs`).
  *   configJson: JSON-encoded { headless, launchArgs, waitTimeoutMs, viewport, mode } — sourced
  *               from `../playwright.config.ts` / `scripts/run.ts` by the Bun parent (single
  *               source of truth for those values) and passed through here as plain data, never
@@ -30,6 +32,7 @@
  */
 import { writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
+import { readWasmArmTaken, watchWasmRequests } from './ab-210-wasm-requests.mjs'; // #210 A/B
 
 /** @typedef {{ name: string, samples: number, p50Ms: number, p95Ms: number, p99Ms: number }} ScenarioResult */
 /** @typedef {{ headless: boolean, launchArgs: string[], waitTimeoutMs: number, viewport: { width: number, height: number }, mode: 'cpu-raster' | 'gpu' }} DriverConfig */
@@ -41,13 +44,17 @@ async function main() {
   }
   /** @type {DriverConfig} */
   const config = JSON.parse(configJson);
-  const pageUrl = `${url}?mode=${config.mode}`;
+  const wasmArm = process.env.BENCH_WEB_WASM_ARM ?? null; // #210 A/B
+  const pageUrl = `${url}?mode=${config.mode}${wasmArm === null ? '' : `&wasmArm=${encodeURIComponent(wasmArm)}`}`;
 
   const browser = await chromium.launch({ headless: config.headless, args: config.launchArgs });
   try {
     const page = await browser.newPage({ viewport: config.viewport });
     page.on('console', (msg) => console.error(`[page] ${msg.text()}`));
     page.on('pageerror', (err) => console.error(`[page error] ${err.message}`));
+    // #210 A/B
+    const wasmRequests =
+      wasmArm === null ? null : await watchWasmRequests(await page.context().newCDPSession(page));
 
     await page.goto(pageUrl);
     await page.waitForFunction(() => window.__BENCH_DONE__ === true, undefined, {
@@ -78,6 +85,10 @@ async function main() {
       browserName: chromium.name(),
       browserVersion: browser.version(),
       rendererString,
+      // #210 A/B
+      ...(wasmRequests === null
+        ? {}
+        : { wasmArmTaken: await readWasmArmTaken(page), wasmRequests: wasmRequests.take() }),
     };
     await writeFile(outFile, JSON.stringify(payload), 'utf8');
   } finally {

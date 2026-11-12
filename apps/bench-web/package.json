@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "bench:web": "bun run scripts/capture.ts",
+    "bench:web:ab210": "bun run scripts/ab-210.ts",
     "bench:web:android": "BENCH_WEB_MODE=android bun run scripts/capture.ts",
     "bench:web:gpu": "BENCH_WEB_MODE=gpu bun run scripts/capture.ts",
     "bench:web:unguarded": "bun run scripts/run.ts",

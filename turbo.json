@@ -74,6 +74,11 @@
       "cache": false,
       "env": ["BENCH_WEB_ALLOW_BUSY"]
     },
+    "@flare-engine-apps/bench-web#bench:web:ab210": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["BENCH_WEB_ALLOW_BUSY"]
+    },
     "@flare-engine/benchmarks#bench:web:promote": {
       "dependsOn": ["^build"],
       "cache": false

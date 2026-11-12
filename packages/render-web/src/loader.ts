@@ -62,6 +62,24 @@ function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+// #210 A/B: how the 0.41+ glue gets the wasm. A bench page sets `globalThis.__FLARE_WASM_ARM`;
+// unset or unknown is 'blob', today's path. 'url' skips our download and lets the glue fetch the
+// server URL itself; 'url-cached' keeps our download, then gives the glue the same server URL so
+// its fetch can come from the HTTP cache with an http(s) source. Only when the global is set, the
+// path actually taken is written back to `globalThis.__FLARE_WASM_ARM_TAKEN` for the driver.
+type WasmArm = 'blob' | 'url' | 'url-cached';
+
+function wasmArm(): WasmArm {
+  const arm: unknown = Reflect.get(globalThis, '__FLARE_WASM_ARM');
+  return arm === 'url' || arm === 'url-cached' ? arm : 'blob';
+}
+
+function markWasmArmTaken(path: WasmArm | 'fallback'): void {
+  if (Reflect.has(globalThis, '__FLARE_WASM_ARM')) {
+    Reflect.set(globalThis, '__FLARE_WASM_ARM_TAKEN', path);
+  }
+}
+
 async function init(
   wasmUrl: string,
   onProgress: ((fraction: number) => void) | undefined,
@@ -70,11 +88,18 @@ async function init(
   const mod = (await import('canvaskit-wasm/bin/full/canvaskit.js')) as {
     default: CanvasKitInitFn;
   };
+  // #210 A/B arm 'url'.
+  if (wasmArm() === 'url' && typeof fetch !== 'undefined') {
+    markWasmArmTaken('url');
+    onProgress?.(1);
+    return mod.default({ locateFile: () => wasmUrl });
+  }
   try {
     const wasmBinary = await fetchWithProgress(wasmUrl, onProgress, options);
     onProgress?.(1);
     return await initFromBytes(mod.default, wasmUrl, wasmBinary);
   } catch {
+    markWasmArmTaken('fallback'); // #210 A/B
     onProgress?.(1);
     return mod.default({ locateFile: () => wasmUrl });
   }
@@ -94,6 +119,13 @@ async function initFromBytes(
     typeof Blob !== 'undefined' &&
     typeof URL.createObjectURL === 'function';
   if (!canBlob) return initFn({ locateFile: () => wasmUrl, wasmBinary });
+
+  // #210 A/B arm 'url-cached': the pre-#196 call. `fetchWithProgress` uses the default cache mode.
+  if (wasmArm() === 'url-cached') {
+    markWasmArmTaken('url-cached');
+    return initFn({ locateFile: () => wasmUrl, wasmBinary });
+  }
+  markWasmArmTaken('blob'); // #210 A/B
 
   const blobUrl = URL.createObjectURL(new Blob([wasmBinary], { type: 'application/wasm' }));
   try {

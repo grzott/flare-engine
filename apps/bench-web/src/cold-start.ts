@@ -1,4 +1,5 @@
 import { loadCanvasKit } from '@flare-engine/render-web';
+import { applyWasmArm } from './wasm-arm.js'; // #210 A/B
 
 declare global {
   interface Window {
@@ -23,6 +24,7 @@ declare global {
  * CPU-raster-only architecture actually has.
  */
 async function main(): Promise<void> {
+  applyWasmArm(window.location.search); // #210 A/B
   const kit = await loadCanvasKit('/canvaskit.wasm');
   const surface = kit.MakeSurface(64, 64);
   if (surface === null) {

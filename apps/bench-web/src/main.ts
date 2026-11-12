@@ -7,6 +7,7 @@ import {
   runRenderSuite,
   type ScenarioResult,
 } from './runner.js';
+import { applyWasmArm } from './wasm-arm.js'; // #210 A/B
 
 declare global {
   interface Window {
@@ -73,6 +74,7 @@ function renderRow(result: ScenarioResult): void {
 
 async function main(): Promise<void> {
   const mode = parseMode();
+  applyWasmArm(window.location.search); // #210 A/B
 
   setStatus(`loading CanvasKit…`);
   const kit = await loadCanvasKit('/canvaskit.wasm', (fraction) => {

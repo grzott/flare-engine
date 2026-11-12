@@ -219,3 +219,156 @@ describe('loadCanvasKit single download', () => {
     expect(network.hits()).toBe(2);
   });
 });
+
+// #210 A/B: the switch a bench page flips through `globalThis.__FLARE_WASM_ARM`.
+describe('loadCanvasKit wasm arm switch (#210 A/B)', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, '__FLARE_WASM_ARM');
+    Reflect.deleteProperty(globalThis, '__FLARE_WASM_ARM_TAKEN');
+  });
+
+  /**
+   * Like `stubNetwork`, but serves the bytes in two halves (so a progress download reports 0.5
+   * on the way) and records the `RequestInit` of every non-`blob:` fetch.
+   */
+  function stubNetworkWithInits(bytes: Uint8Array<ArrayBuffer>): {
+    hits: () => number;
+    inits: (RequestInit | undefined)[];
+  } {
+    let hits = 0;
+    const inits: (RequestInit | undefined)[] = [];
+    const half = bytes.length / 2;
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith('blob:')) return realFetch(input, init);
+      hits++;
+      inits.push(init);
+      const body = new ReadableStream<Uint8Array>({
+        start(c) {
+          c.enqueue(bytes.slice(0, half));
+          c.enqueue(bytes.slice(half));
+          c.close();
+        },
+      });
+      return Promise.resolve(
+        new Response(body, { headers: { 'Content-Length': String(bytes.length) } }),
+      );
+    }) as typeof fetch;
+    return { hits: () => hits, inits };
+  }
+
+  function recordingGlue(located: string[], received: Uint8Array[]): Glue {
+    return async (opts) => {
+      const url = opts.locateFile('canvaskit.wasm');
+      located.push(url);
+      received.push(await readUrl(url));
+      return FAKE_KIT;
+    };
+  }
+
+  it("'url-cached' gives the glue the server URL and still reports download progress", async () => {
+    const { loadCanvasKit } = await freshLoader();
+    Reflect.set(globalThis, '__FLARE_WASM_ARM', 'url-cached');
+    const bytes = wasmPattern(4096);
+    const network = stubNetworkWithInits(bytes);
+    const mint = spyOn(URL, 'createObjectURL');
+    const located: string[] = [];
+    const received: Uint8Array[] = [];
+    let offered: Uint8Array | undefined;
+    glue = async (opts) => {
+      offered = opts.wasmBinary;
+      return recordingGlue(located, received)(opts);
+    };
+    const fractions: number[] = [];
+
+    try {
+      await loadCanvasKit(WASM_URL, (f) => fractions.push(f));
+      expect(mint).not.toHaveBeenCalled();
+    } finally {
+      mint.mockRestore();
+    }
+
+    expect(located).toEqual([WASM_URL]);
+    expect(received).toEqual([bytes]);
+    // ≤0.40 glue reads `wasmBinary`, so the progress download still serves it.
+    expect(offered).toEqual(bytes);
+    expect(fractions).toContain(0.5);
+    expect(fractions.at(-1)).toBe(1);
+    // The progress download must stay HTTP-cacheable for the glue's fetch to hit the cache.
+    expect(network.inits[0]?.cache ?? 'default').toBe('default');
+    // Without an HTTP cache in this stub the glue's fetch reaches the network a second time.
+    expect(network.hits()).toBe(2);
+    expect(Reflect.get(globalThis, '__FLARE_WASM_ARM_TAKEN')).toBe('url-cached');
+  });
+
+  it("'url' lets the glue download the wasm once, with no download of its own", async () => {
+    const { loadCanvasKit } = await freshLoader();
+    Reflect.set(globalThis, '__FLARE_WASM_ARM', 'url');
+    const bytes = wasmPattern(4096);
+    const network = stubNetworkWithInits(bytes);
+    const located: string[] = [];
+    const received: Uint8Array[] = [];
+    let offered: Uint8Array | undefined;
+    glue = async (opts) => {
+      offered = opts.wasmBinary;
+      return recordingGlue(located, received)(opts);
+    };
+    const fractions: number[] = [];
+
+    await loadCanvasKit(WASM_URL, (f) => fractions.push(f));
+
+    expect(network.hits()).toBe(1);
+    expect(located).toEqual([WASM_URL]);
+    expect(received).toEqual([bytes]);
+    expect(offered).toBeUndefined();
+    expect(fractions).toEqual([1]);
+    expect(Reflect.get(globalThis, '__FLARE_WASM_ARM_TAKEN')).toBe('url');
+  });
+
+  it('with the global unset, loads exactly as today: one download, a blob: URL, no marker', async () => {
+    const { loadCanvasKit } = await freshLoader();
+    expect(Reflect.has(globalThis, '__FLARE_WASM_ARM')).toBe(false);
+    const bytes = wasmPattern(4096);
+    const network = stubNetworkWithInits(bytes);
+    const located: string[] = [];
+    const received: Uint8Array[] = [];
+    glue = recordingGlue(located, received);
+
+    await loadCanvasKit(WASM_URL);
+
+    expect(network.hits()).toBe(1);
+    expect(located).toHaveLength(1);
+    expect(located[0]?.startsWith('blob:')).toBe(true);
+    expect(received).toEqual([bytes]);
+    expect(Reflect.has(globalThis, '__FLARE_WASM_ARM_TAKEN')).toBe(false);
+  });
+
+  it("treats an unknown arm as 'blob' and reports the path it took", async () => {
+    const { loadCanvasKit } = await freshLoader();
+    Reflect.set(globalThis, '__FLARE_WASM_ARM', 'nonsense');
+    const network = stubNetworkWithInits(wasmPattern(4096));
+    const located: string[] = [];
+    glue = recordingGlue(located, []);
+
+    await loadCanvasKit(WASM_URL);
+
+    expect(network.hits()).toBe(1);
+    expect(located[0]?.startsWith('blob:')).toBe(true);
+    expect(Reflect.get(globalThis, '__FLARE_WASM_ARM_TAKEN')).toBe('blob');
+  });
+
+  it("marks 'fallback' when the blob: URL is refused and the glue retries the server URL", async () => {
+    const { loadCanvasKit } = await freshLoader();
+    Reflect.set(globalThis, '__FLARE_WASM_ARM', 'blob');
+    stubNetworkWithInits(wasmPattern(4096));
+    glue = async (opts) => {
+      const url = opts.locateFile('canvaskit.wasm');
+      if (url.startsWith('blob:')) throw new Error("Refused to connect to 'blob:' (CSP)");
+      await readUrl(url);
+      return FAKE_KIT;
+    };
+
+    await loadCanvasKit(WASM_URL);
+
+    expect(Reflect.get(globalThis, '__FLARE_WASM_ARM_TAKEN')).toBe('fallback');
+  });
+});

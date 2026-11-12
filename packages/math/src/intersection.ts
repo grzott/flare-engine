@@ -31,35 +31,32 @@ export function circleVsCircle(a: Circle, b: Circle): boolean {
 export function lineVsRect(x1: number, y1: number, x2: number, y2: number, r: Rect): boolean {
   const dx = x2 - x1;
   const dy = y2 - y1;
+  clipT[0] = 0;
+  clipT[1] = 1;
+  // Same four edges, in the same order, as the Liang-Barsky form this replaced.
+  return (
+    clipEdge(-dx, x1 - r.x) &&
+    clipEdge(dx, r.x + r.width - x1) &&
+    clipEdge(-dy, y1 - r.y) &&
+    clipEdge(dy, r.y + r.height - y1) &&
+    (clipT[0] as number) <= (clipT[1] as number)
+  );
+}
 
-  let tMin = 0;
-  let tMax = 1;
+// [tMin, tMax] for lineVsRect; module scratch so the test allocates nothing (it never re-enters).
+const clipT = new Float64Array(2);
 
-  // Check each edge
-  const edges = [
-    { p: -dx, q: x1 - r.x },
-    { p: dx, q: r.x + r.width - x1 },
-    { p: -dy, q: y1 - r.y },
-    { p: dy, q: r.y + r.height - y1 },
-  ];
-
-  for (const { p, q } of edges) {
-    if (Math.abs(p) < 1e-12) {
-      // Parallel to edge
-      if (q < 0) return false;
-    } else {
-      const t = q / p;
-      if (p < 0) {
-        if (t > tMax) return false;
-        if (t > tMin) tMin = t;
-      } else {
-        if (t < tMin) return false;
-        if (t < tMax) tMax = t;
-      }
-    }
+function clipEdge(p: number, q: number): boolean {
+  if (Math.abs(p) < 1e-12) return !(q < 0); // parallel to this edge; written so a NaN q passes, as before
+  const t = q / p;
+  if (p < 0) {
+    if (t > (clipT[1] as number)) return false;
+    if (t > (clipT[0] as number)) clipT[0] = t;
+  } else {
+    if (t < (clipT[0] as number)) return false;
+    if (t < (clipT[1] as number)) clipT[1] = t;
   }
-
-  return tMin <= tMax;
+  return true;
 }
 
 /** Line segment intersection with circle. */

@@ -339,6 +339,19 @@ const BLEND_SRC_ATOP = 9;
 /** Skia BlendMode.Plus — additive: dst = clamp(src + dst). */
 const BLEND_PLUS = 12;
 
+/** Effects drawn as a shader-filled rect; the sprite's atlas frame is only a carrier. */
+type ZoneBgEffect =
+  | RoofsCityEffect
+  | ForestCanopyEffect
+  | RiverWaveEffect
+  | MoonCraterEffect
+  | CaveInteriorEffect
+  | MountainHillsEffect;
+
+/** One constant, so the per-frame `logOnce` lookup builds no string. */
+const ZONE_BG_SKIPPED_MSG =
+  'zone-bg run skipped: Skia.RuntimeEffect is absent or the shader failed to compile';
+
 /** Shared empty result for `compilePostFxPasses`, so a chain-free frame allocates nothing. */
 const EMPTY_COMPILED_PASSES: readonly FrameRendererCompiledPass[] = [];
 
@@ -687,11 +700,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return dropShadowPaint;
   }
 
-  function applyRoofsCity(effect: RoofsCityEffect): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyRoofsCity(effect: RoofsCityEffect): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (roofsCityEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(ROOFS_CITY_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       roofsCityEffect = compiled;
     }
     if (roofsCityPaint === null) roofsCityPaint = Skia.Paint();
@@ -709,11 +722,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return roofsCityPaint;
   }
 
-  function applyForestCanopy(effect: ForestCanopyEffect): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyForestCanopy(effect: ForestCanopyEffect): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (forestCanopyEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(FOREST_CANOPY_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       forestCanopyEffect = compiled;
     }
     if (forestCanopyPaint === null) forestCanopyPaint = Skia.Paint();
@@ -731,11 +744,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return forestCanopyPaint;
   }
 
-  function applyRiverWave(effect: RiverWaveEffect): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyRiverWave(effect: RiverWaveEffect): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (riverWaveEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(RIVER_WAVE_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       riverWaveEffect = compiled;
     }
     if (riverWavePaint === null) riverWavePaint = Skia.Paint();
@@ -753,11 +766,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return riverWavePaint;
   }
 
-  function applyMoonCrater(effect: MoonCraterEffect): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyMoonCrater(effect: MoonCraterEffect): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (moonCraterEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(MOON_CRATER_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       moonCraterEffect = compiled;
     }
     if (moonCraterPaint === null) moonCraterPaint = Skia.Paint();
@@ -775,11 +788,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return moonCraterPaint;
   }
 
-  function applyCaveInterior(effect: CaveInteriorEffect): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyCaveInterior(effect: CaveInteriorEffect): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (caveInteriorEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(CAVE_INTERIOR_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       caveInteriorEffect = compiled;
     }
     if (caveInteriorPaint === null) caveInteriorPaint = Skia.Paint();
@@ -797,11 +810,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return caveInteriorPaint;
   }
 
-  function applyMountainHills(effect: MountainHillsEffect): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyMountainHills(effect: MountainHillsEffect): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (mountainHillsEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(MOUNTAIN_HILLS_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       mountainHillsEffect = compiled;
     }
     if (mountainHillsPaint === null) mountainHillsPaint = Skia.Paint();
@@ -845,7 +858,25 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     defaultPaint.setAlphaf(1);
   }
 
-  function resolveEffectPaint(effect: AnySpriteEffect): PaintLike {
+  /** `null` when the effect's shader is not compiled — the run is skipped, never drawn black. */
+  function resolveZoneBgPaint(effect: ZoneBgEffect): PaintLike | null {
+    switch (effect.type) {
+      case 'roofs-city':
+        return applyRoofsCity(effect);
+      case 'forest-canopy':
+        return applyForestCanopy(effect);
+      case 'river-wave':
+        return applyRiverWave(effect);
+      case 'moon-crater':
+        return applyMoonCrater(effect);
+      case 'cave-interior':
+        return applyCaveInterior(effect);
+      case 'mountain-hills':
+        return applyMountainHills(effect);
+    }
+  }
+
+  function resolveEffectPaint(effect: Exclude<AnySpriteEffect, ZoneBgEffect>): PaintLike {
     switch (effect.type) {
       case 'tint':
         return applyTint(effect);
@@ -865,18 +896,6 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
         return applyDropShadow(effect);
       case 'outline':
         return applyOutlinePaint(effect);
-      case 'roofs-city':
-        return applyRoofsCity(effect);
-      case 'forest-canopy':
-        return applyForestCanopy(effect);
-      case 'river-wave':
-        return applyRiverWave(effect);
-      case 'moon-crater':
-        return applyMoonCrater(effect);
-      case 'cave-interior':
-        return applyCaveInterior(effect);
-      case 'mountain-hills':
-        return applyMountainHills(effect);
     }
   }
 
@@ -917,7 +936,11 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
         effect?.type === 'cave-interior' ||
         effect?.type === 'mountain-hills'
       ) {
-        const paint = resolveEffectPaint(effect);
+        const paint = resolveZoneBgPaint(effect);
+        if (paint === null) {
+          logOnce(ZONE_BG_SKIPPED_MSG);
+          return;
+        }
         if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
         paint.setAlphaf(alpha);
         ensureZoneBgPoolCapacity(n);

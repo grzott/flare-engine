@@ -1,39 +1,30 @@
-import type { Circle } from './circle.js';
-import type { Rect } from './rect.js';
+import { Circle } from './circle.js';
+import { Rect } from './rect.js';
 import type { Vec2 } from './vec2.js';
 
 /** Returns true if point is inside rect (inclusive). */
 export function pointInRect(p: Vec2, r: Rect): boolean {
-  return p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.height;
+  return Rect.contains(r, p);
 }
 
 /** Returns true if point is inside circle (inclusive). */
 export function pointInCircle(p: Vec2, c: Circle): boolean {
-  const dx = p.x - c.x;
-  const dy = p.y - c.y;
-  return dx * dx + dy * dy <= c.radius * c.radius;
+  return Circle.contains(c, p);
 }
 
 /** Returns true if two rects overlap. */
 export function rectVsRect(a: Rect, b: Rect): boolean {
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  return Rect.intersects(a, b);
 }
 
 /** Returns true if rect and circle overlap. */
 export function rectVsCircle(r: Rect, c: Circle): boolean {
-  const closestX = c.x < r.x ? r.x : c.x > r.x + r.width ? r.x + r.width : c.x;
-  const closestY = c.y < r.y ? r.y : c.y > r.y + r.height ? r.y + r.height : c.y;
-  const dx = c.x - closestX;
-  const dy = c.y - closestY;
-  return dx * dx + dy * dy <= c.radius * c.radius;
+  return Circle.intersectsRect(c, r);
 }
 
 /** Returns true if two circles overlap. */
 export function circleVsCircle(a: Circle, b: Circle): boolean {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const radSum = a.radius + b.radius;
-  return dx * dx + dy * dy < radSum * radSum;
+  return Circle.intersects(a, b);
 }
 
 /** Line segment intersection with AABB. Uses Liang-Barsky algorithm. */

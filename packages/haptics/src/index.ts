@@ -1,5 +1,9 @@
 export { HapticsContext, useHaptics } from './context.js';
-export { createExpoHapticsProvider, type ExpoHapticsModule } from './expo.js';
+export {
+  createExpoHapticsProvider,
+  type ExpoHapticsModule,
+  type ExpoHapticsOptions,
+} from './expo.js';
 export {
   createNoopHapticsProvider,
   type HapticImpactStyle,

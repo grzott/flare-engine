@@ -14,6 +14,7 @@ Pick a provider at the app boundary and put it on the context. The cue surface i
 
 ```tsx no-check
 import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
 import {
   createExpoHapticsProvider,
   createWebVibrationProvider,
@@ -25,7 +26,7 @@ import {
 const provider =
   typeof navigator !== 'undefined' && 'vibrate' in navigator
     ? createWebVibrationProvider(navigator.vibrate.bind(navigator))
-    : createExpoHapticsProvider(Haptics);
+    : createExpoHapticsProvider(Haptics, { platform: Platform.OS });
 
 export function App() {
   return (
@@ -52,10 +53,26 @@ function FireButton() {
 
 | Factory | Backend | Notes |
 | --- | --- | --- |
-| `createExpoHapticsProvider(expo)` | `expo-haptics` (injected) | `expo` is the structural `{ impactAsync, notificationAsync, selectionAsync }` shape; cue kinds map onto expo's string enums 1:1. Starts enabled. |
+| `createExpoHapticsProvider(expo, options?)` | `expo-haptics` (injected) | `expo` is the structural `{ impactAsync, notificationAsync, selectionAsync, performAndroidHapticsAsync? }` shape; cue kinds map onto expo's string enums 1:1. `options.platform` (pass `Platform.OS`) turns on the Android system effects, see below. Starts enabled. |
 | `createWebVibrationProvider(vibrate?)` | Web Vibration API | `vibrate` is `navigator.vibrate` bound to `navigator`. Impact scales the buzz with intensity; each notification category has its own pulse pattern; selection is a short tick. Absent `vibrate` → inert no-op. |
 | `NoopHapticsProvider` | none | Immutable, always disabled — the context default and the safe fallback. `setEnabled` is inert by design. |
 | `createNoopHapticsProvider(enabled?)` | none | No-op cues but a **real** enabled gate, so a consumer's haptics toggle is unit-testable without a native backend. Defaults to disabled. |
+
+### Android
+
+With `{ platform: 'android' }` and a module that has `performAndroidHapticsAsync`, cues use the system haptic effects, which follow the device's system touch-feedback setting:
+
+| Cue | System effect |
+| --- | --- |
+| `selection()` | `clock-tick` |
+| `impact('light')`, `impact('soft')` | `keyboard-tap` |
+| `impact('medium')`, `impact()` | `virtual-key` |
+| `impact('heavy')`, `impact('rigid')` | `long-press` |
+| `notification('success')`, `notification()` | `confirm` |
+| `notification('warning')` | `long-press` |
+| `notification('error')` | `reject` |
+
+`confirm` and `reject` need Android 11. On Android 10 and lower the module rejects them, and those cues fall back to expo's vibrator calls (`notificationAsync`); the provider then stops trying that effect. Without the hint, Android plays expo's vibrator waveforms as before.
 
 ## Other backends
 

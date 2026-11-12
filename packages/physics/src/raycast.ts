@@ -103,18 +103,34 @@ function rayVsAABB(
   const minY = cy - hh;
   const maxY = cy + hh;
 
-  const invDx = dx !== 0 ? 1 / dx : dx >= 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
-  const invDy = dy !== 0 ? 1 / dy : dy >= 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+  if (dx === 0 && dy === 0) return null;
 
-  const tx1 = (minX - ox) * invDx;
-  const tx2 = (maxX - ox) * invDx;
-  const ty1 = (minY - oy) * invDy;
-  const ty2 = (maxY - oy) * invDy;
+  // A ray parallel to an axis never crosses that slab's planes: it is inside
+  // the slab for all t or for none. Scaling by an infinite inverse instead
+  // gives 0 * Infinity = NaN when the origin sits exactly on a plane.
+  let tMinX = Number.NEGATIVE_INFINITY;
+  let tMaxX = Number.POSITIVE_INFINITY;
+  if (dx === 0) {
+    if (ox < minX || ox > maxX) return null;
+  } else {
+    const invDx = 1 / dx;
+    const tx1 = (minX - ox) * invDx;
+    const tx2 = (maxX - ox) * invDx;
+    tMinX = Math.min(tx1, tx2);
+    tMaxX = Math.max(tx1, tx2);
+  }
 
-  const tMinX = Math.min(tx1, tx2);
-  const tMaxX = Math.max(tx1, tx2);
-  const tMinY = Math.min(ty1, ty2);
-  const tMaxY = Math.max(ty1, ty2);
+  let tMinY = Number.NEGATIVE_INFINITY;
+  let tMaxY = Number.POSITIVE_INFINITY;
+  if (dy === 0) {
+    if (oy < minY || oy > maxY) return null;
+  } else {
+    const invDy = 1 / dy;
+    const ty1 = (minY - oy) * invDy;
+    const ty2 = (maxY - oy) * invDy;
+    tMinY = Math.min(ty1, ty2);
+    tMaxY = Math.max(ty1, ty2);
+  }
 
   const tMin = Math.max(tMinX, tMinY);
   const tMax = Math.min(tMaxX, tMaxY);
@@ -230,18 +246,32 @@ function rayVsAABBInto(
   hh: number,
   out: RaycastHit,
 ): RaycastHit | null {
-  const invDx = dx !== 0 ? 1 / dx : Number.POSITIVE_INFINITY;
-  const invDy = dy !== 0 ? 1 / dy : Number.POSITIVE_INFINITY;
+  if (dx === 0 && dy === 0) return null;
 
-  const tx1 = (bx - hw - ox) * invDx;
-  const tx2 = (bx + hw - ox) * invDx;
-  const ty1 = (by - hh - oy) * invDy;
-  const ty2 = (by + hh - oy) * invDy;
+  // Parallel axes skip the inverse — see rayVsAABB.
+  let tMinX = Number.NEGATIVE_INFINITY;
+  let tMaxX = Number.POSITIVE_INFINITY;
+  if (dx === 0) {
+    if (ox < bx - hw || ox > bx + hw) return null;
+  } else {
+    const invDx = 1 / dx;
+    const tx1 = (bx - hw - ox) * invDx;
+    const tx2 = (bx + hw - ox) * invDx;
+    tMinX = Math.min(tx1, tx2);
+    tMaxX = Math.max(tx1, tx2);
+  }
 
-  const tMinX = Math.min(tx1, tx2);
-  const tMaxX = Math.max(tx1, tx2);
-  const tMinY = Math.min(ty1, ty2);
-  const tMaxY = Math.max(ty1, ty2);
+  let tMinY = Number.NEGATIVE_INFINITY;
+  let tMaxY = Number.POSITIVE_INFINITY;
+  if (dy === 0) {
+    if (oy < by - hh || oy > by + hh) return null;
+  } else {
+    const invDy = 1 / dy;
+    const ty1 = (by - hh - oy) * invDy;
+    const ty2 = (by + hh - oy) * invDy;
+    tMinY = Math.min(ty1, ty2);
+    tMaxY = Math.max(ty1, ty2);
+  }
 
   const tMin = Math.max(tMinX, tMinY);
   const tMax = Math.min(tMaxX, tMaxY);

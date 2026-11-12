@@ -137,7 +137,7 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 | `isBlockedAABB(grid, x, y, halfW, halfH)`   | Returns `true` when the AABB centered at `(x, y)` with half-extents `(halfW, halfH)` overlaps a solid tile. Leaving the map blocks only when the grid was built with `outside: 'solid'` (the default); with `'open'` only the in-grid cells the box overlaps are tested, so a box fully outside the grid is never blocked. Half-open EDGE = 1e-4: a box whose max edge lands exactly on a tile boundary does NOT count as overlapping that tile. |
 | `moveAndSlideInto(grid, x, y, dx, dy, halfW, halfH, out)` | Axis-separated slide: attempts `dx` then `dy` independently; a blocked axis is dropped so diagonal input slides along walls. The dy-check uses the already-updated x. Zero-alloc — writes result into `out: Vec2` and returns it. |
 
-**Tier 2 — planck.js integration: deferred.** `PhysicsWorld`, `RigidBody`, `applyForce`, `applyImpulse` are not implemented. Revisit after Phase 8 benchmarks — only bring it in if AABB proves insufficient.
+**Rigid bodies** live in `@flare-engine/dynamics` (next section). There is no planck.js integration, and none is planned; see the decision in [dependencies.md](dependencies.md#physics-options-evaluated).
 
 ### `@flare-engine/dynamics` (< 8KB gzip)
 

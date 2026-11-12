@@ -59,7 +59,9 @@ disagree, this doc wins (it post-dates and re-verified them).
    boundary (§ license) — 0.3.0 is still the first Apache-2.0 version published, which the August
    cut makes true rather than false.
 6. **Module adjudications (from the deep audit, owner-ratified):** planck.js rigid-body = post-flip,
-   opt-in package (`planck` v1.5.x, never `planck-js`); C++/Nitro = no (perf gate untripped);
+   opt-in package (`planck` v1.5.x, never `planck-js`) — *superseded 2026-11-12 (#67): rigid bodies
+   are `@flare-engine/dynamics` and planck is not planned, see
+   [dependencies.md](../design/dependencies.md#physics-options-evaluated)*; C++/Nitro = no (perf gate untripped);
    devtools live-tweak inspector = first post-flip arc; in-browser live editor = never (playground +
    inspector instead); Tiled 1.12.x = primary authoring story, LDtk secondary.
 7. **PT stays the private commercial game.** Public-facing showcase links point at the docs site,
@@ -1302,10 +1304,12 @@ web overlay; Expo devtools-plugin transport — directly unblocks PT's deferred 
 pass) → **docs playground** (3–5 curated editable examples, static client-only, esbuild-wasm or
 import maps; skip WebContainers/Sandpack — licensing/stalled) → README GIF + 20-line snippet →
 page D2–D5 dogfood + Berek entry → real web benchmark numbers →
-Trusted Publishing OIDC (per-package config ×41, kills token rotation) → `physics-rigid` (planck
-v1.5.x, opt-in, thin facade, fixed-timestep + B7's alpha) → pathfinding consumer (Berek
-enemy-chase or template example) + B18 leftovers → `dynamics` lift decision (portfolio-credibility
-milestone vs planck overlap — pick ONE rigid-body story) → game-driven API generality (per the
+Trusted Publishing OIDC (per-package config ×41, kills token rotation) → ~~`physics-rigid` (planck
+v1.5.x, opt-in, thin facade, fixed-timestep + B7's alpha)~~ → pathfinding consumer (Berek
+enemy-chase or template example) + B18 leftovers → ~~`dynamics` lift decision (portfolio-credibility
+milestone vs planck overlap — pick ONE rigid-body story)~~ *(both decided 2026-11-12, #67:
+`dynamics` is the one rigid-body story and planck is not planned — see
+[dependencies.md](../design/dependencies.md#physics-options-evaluated))* → game-driven API generality (per the
 keep-local dedup ledger in the game repo's private docs — six recorded candidates — plus `shapes`
 de-gaming: rename the game-flavored public types, neutralize the hardcoded palette) → hot-path
 allocation arc (Signal emit rest-args, SpriteBatch buckets, postfx buildPassInto, localization t()

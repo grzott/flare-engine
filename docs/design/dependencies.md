@@ -72,7 +72,9 @@ _None._ No package bundles a third-party runtime dependency; the broadphase is f
 **Decision (superseded 2026-08-16):** Two-tier physics, both tiers first-party and zero-dep. Built-in
 AABB detection in `@flare-engine/physics`; rigid-body response in `@flare-engine/dynamics` (OBB
 contact manifolds + sequential-impulse solver), lifted from a real consumer rather than wrapping
-planck.js. **No planck.js dependency or peer dependency was ever added**, and none is planned.
+planck.js. **No planck.js dependency or peer dependency was ever added**, and none is planned:
+`dynamics` is the rigid-body answer, not a stopgap (owner decision, 2026-11-12, #67). This
+paragraph is the single source for that decision; other docs link here.
 
 ---
 

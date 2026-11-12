@@ -338,7 +338,7 @@ Capabilities that appear in older design sketches but are **not shipping** in th
 
 | Capability | Home package | Status |
 | ---------- | ------------ | ------ |
-| planck.js rigid-body physics (`PhysicsWorld`, `RigidBody`, `applyForce` / `applyImpulse`) | `physics` (Tier 2) | Not implemented. AABB `CollisionWorld` is the shipping collision model; planck integration is revisited only if AABB proves insufficient. There is no `planck.js` dependency or peer dependency today. |
+| planck.js rigid-body physics (`PhysicsWorld`, `RigidBody`, `applyForce` / `applyImpulse`) | — | Not planned. Rigid bodies ship in `dynamics`; see the decision in [dependencies.md](dependencies.md#physics-options-evaluated). |
 | ~~Spatial-hash broadphase~~ — **shipped** | `physics` | **Landed 2026-09-03 as CW7-8 (`b617e49`), so this is no longer future work.** `SpatialIndex` is a uniform spatial hash keyed on a packed cell id, and the exported surface was deliberately kept byte-identical, which is why nothing in this table changed at the time. Measured 4.82 ms → 0.18 ms at 1000 sparse bodies. An **rbush**-style tree for very large or heavily-clustered scenes remains unbuilt and unmeasured; treat that, not the grid, as the open item. |
 | Flow-field pathfinding | `pathfinding` | A\* + Jump-Point Search + a convex-polygon navmesh ship today; flow fields are not implemented. |
 

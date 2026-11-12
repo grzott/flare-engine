@@ -39,15 +39,7 @@ export class World {
 
     this.archetypes.delete(entityId);
 
-    // Notify queries (deferring any removeQuery until the loop unwinds)
-    this.queryIterDepth++;
-    try {
-      for (const query of this.queries) {
-        query._remove(entityId);
-      }
-    } finally {
-      this.endQueryIteration();
-    }
+    this.notifyQueries(entityId, 0, true);
   }
 
   /** Add a component to an entity. */
@@ -67,15 +59,7 @@ export class World {
     const newArch = arch | def.bit;
     this.archetypes.set(entityId, newArch);
 
-    // Notify queries (deferring any removeQuery until the loop unwinds)
-    this.queryIterDepth++;
-    try {
-      for (const query of this.queries) {
-        query._check(entityId, newArch);
-      }
-    } finally {
-      this.endQueryIteration();
-    }
+    this.notifyQueries(entityId, newArch, false);
   }
 
   /** Remove a component from an entity. */
@@ -89,15 +73,7 @@ export class World {
     const newArch = arch & ~def.bit;
     this.archetypes.set(entityId, newArch);
 
-    // Notify queries (deferring any removeQuery until the loop unwinds)
-    this.queryIterDepth++;
-    try {
-      for (const query of this.queries) {
-        query._check(entityId, newArch);
-      }
-    } finally {
-      this.endQueryIteration();
-    }
+    this.notifyQueries(entityId, newArch, false);
   }
 
   /** Get component data for an entity. */
@@ -182,6 +158,24 @@ export class World {
     }
     const idx = this.queries.indexOf(q);
     if (idx !== -1) this.queries.splice(idx, 1);
+  }
+
+  /** Notify queries in order, deferring any removeQuery until the loop unwinds. */
+  private notifyQueries(entityId: number, arch: number, destroyed: boolean): void {
+    this.queryIterDepth++;
+    try {
+      if (destroyed) {
+        for (const query of this.queries) {
+          query._remove(entityId);
+        }
+      } else {
+        for (const query of this.queries) {
+          query._check(entityId, arch);
+        }
+      }
+    } finally {
+      this.endQueryIteration();
+    }
   }
 
   /** @internal End a query-notify loop; flush any removeQuery deferred during it. */

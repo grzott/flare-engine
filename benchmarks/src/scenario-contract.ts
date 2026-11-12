@@ -67,7 +67,28 @@ export const EXPECTED_SUITE_TITLES = [
   'Particles',
   'Render',
   'Integration',
+  'Animation',
+  'PostFx',
+  'Tilemap',
+  'Pathfinding',
+  'Math',
 ] as const;
+
+/**
+ * The suites added by #159, absent from the committed baseline until the 0.4.12
+ * recapture, whose PR empties this list. `tests/baseline.test.ts` tolerates a
+ * `missing suite` violation only for a title listed here, and fails once a
+ * listed title IS in the committed baseline, so an entry cannot outlive the
+ * capture that made it unnecessary. A fresh capture is never exempt:
+ * `promote.ts` still demands every suite.
+ */
+export const PENDING_FIRST_CAPTURE: readonly string[] = [
+  'Animation',
+  'PostFx',
+  'Tilemap',
+  'Pathfinding',
+  'Math',
+];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [
@@ -121,6 +142,32 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
     'integration.frame   500 entities + 300p',
     'integration.frame  1000 entities + 300p',
     'integration.frame  2000 entities + 300p',
+  ],
+  Animation: [
+    'animation.updateTweens    1000 tweens, 4 easings',
+    'animation.updateSpring    1000 springs, underdamped',
+    'animation.updateAnimator  1000 animators, looping',
+  ],
+  PostFx: [
+    'postfx.update       5 live: flash + 4 timed',
+    'postfx.enabled      8 effects, 5 enabled',
+    'postfx.buildPass    8 effects, 5 enabled',
+  ],
+  Tilemap: [
+    'tilemap.drawInto   256x256 x2 layers, 800x600 view',
+    'tilemap.getTileAt  256x256 full-layer scan',
+    'tilemap.decodeGid     4096 gids, flags + strip',
+  ],
+  Pathfinding: [
+    'pathfinding.astar  128x128 open',
+    'pathfinding.astar  128x128 maze',
+    'pathfinding.jps    128x128 open',
+    'pathfinding.jps    128x128 maze',
+  ],
+  Math: [
+    'math.vec2         1000 x 6 out-param ops',
+    'math.transform2d  1000 points, local->world->local',
+    'math.mat3         1000 fromTransform x parent',
   ],
 };
 

@@ -1,6 +1,28 @@
 import { describe, expect, test } from 'bun:test';
 import { readMicrobenchJson, SCHEMA_VERSION } from '../src/results.js';
-import { findAllocViolations, findContractViolations } from '../src/scenario-contract.js';
+import {
+  EXPECTED_SCENARIOS,
+  findAllocViolations,
+  findContractViolations,
+  PENDING_FIRST_CAPTURE,
+} from '../src/scenario-contract.js';
+
+/**
+ * The violations a suite in `PENDING_FIRST_CAPTURE` produces against a baseline
+ * captured before it existed: the suite itself, and each of its rows restated
+ * as a missing scenario. Nothing else is excused: a missing row of any other
+ * suite, an unexpected suite or row, and a broken headline prefix all still fail.
+ */
+function pendingViolations(): Set<string> {
+  const excused = new Set<string>();
+  for (const title of PENDING_FIRST_CAPTURE) {
+    excused.add(`missing suite: ${title}`);
+    for (const scenario of EXPECTED_SCENARIOS[title] ?? []) {
+      excused.add(`missing scenario: ${scenario}`);
+    }
+  }
+  return excused;
+}
 
 /**
  * Validates the COMMITTED baseline — the file the published doc and the
@@ -33,8 +55,17 @@ describe('committed baseline', () => {
     expect(baseline?.devFlag).toBe('false');
   });
 
-  test('satisfies the frozen scenario contract', () => {
-    expect(findContractViolations(baseline?.suites ?? [])).toEqual([]);
+  test('satisfies the frozen scenario contract, less the suites pending their first capture', () => {
+    const excused = pendingViolations();
+    const violations = findContractViolations(baseline?.suites ?? []);
+    expect(violations.filter((v) => !excused.has(v))).toEqual([]);
+  });
+
+  test('carries none of the suites still listed as pending their first capture', () => {
+    // Fails the moment a recapture lands a pending suite, so the capture's PR
+    // has to empty PENDING_FIRST_CAPTURE rather than leave an exemption behind.
+    const captured = new Set((baseline?.suites ?? []).map((s) => s.title));
+    expect(PENDING_FIRST_CAPTURE.filter((title) => captured.has(title))).toEqual([]);
   });
 
   test('carries the full exact-counter section, all gates passing', () => {

@@ -29,12 +29,17 @@
     "./affinity": "./src/affinity.ts"
   },
   "dependencies": {
+    "@flare-engine/animation": "workspace:*",
     "@flare-engine/core": "workspace:*",
     "@flare-engine/ecs": "workspace:*",
+    "@flare-engine/math": "workspace:*",
     "@flare-engine/particles": "workspace:*",
+    "@flare-engine/pathfinding": "workspace:*",
     "@flare-engine/physics": "workspace:*",
+    "@flare-engine/postfx": "workspace:*",
     "@flare-engine/render": "workspace:*",
-    "@flare-engine/testing": "workspace:*"
+    "@flare-engine/testing": "workspace:*",
+    "@flare-engine/tilemap": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.6"

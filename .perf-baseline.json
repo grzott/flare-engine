@@ -365,7 +365,12 @@
         "@flare-engine/physics",
         "@flare-engine/render",
         "@flare-engine/testing"
-      ]
+      ],
+      "Animation": ["@flare-engine/animation", "@flare-engine/math"],
+      "PostFx": ["@flare-engine/postfx"],
+      "Tilemap": ["@flare-engine/render", "@flare-engine/testing", "@flare-engine/tilemap"],
+      "Pathfinding": ["@flare-engine/pathfinding", "@flare-engine/testing"],
+      "Math": ["@flare-engine/math", "@flare-engine/testing"]
     },
     "heapSuites": {
       "integration.heap": "Integration"

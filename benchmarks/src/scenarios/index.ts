@@ -10,6 +10,7 @@
  * registry stays a pure name list with no executable dependency on this
  * module.
  */
+import { ANIMATION_SCENARIOS, type AnimationKind, type AnimationScenario } from './animation.js';
 import {
   ECS_CHURN_SCENARIOS,
   ECS_SCENARIOS,
@@ -17,8 +18,16 @@ import {
   type EcsScenario,
 } from './ecs.js';
 import { INTEGRATION_SCENARIOS, type IntegrationScenario, PARTICLE_COUNT } from './integration.js';
+import { MATH_SCENARIOS, type MathKind, type MathScenario } from './math.js';
 import { PARTICLES_SCENARIOS, type ParticlesKind, type ParticlesScenario } from './particles.js';
+import {
+  PATHFINDING_SCENARIOS,
+  type PathfindingAlgorithm,
+  type PathfindingLayout,
+  type PathfindingScenario,
+} from './pathfinding.js';
 import { PHYSICS_SCENARIOS, type PhysicsDensity, type PhysicsScenario } from './physics.js';
+import { POSTFX_SCENARIOS, type PostFxKind, type PostFxScenario } from './postfx.js';
 import {
   FLUSH_SCENARIOS,
   type FlushScenario,
@@ -27,32 +36,59 @@ import {
   type SortScenario,
   type TextureOrder,
 } from './render.js';
+import { TILEMAP_SCENARIOS, type TilemapKind, type TilemapScenario } from './tilemap.js';
 
 export type {
+  AnimationKind,
+  AnimationScenario,
   EcsChurnScenario,
   EcsScenario,
   FlushScenario,
   IntegrationScenario,
+  MathKind,
+  MathScenario,
   ParticlesKind,
   ParticlesScenario,
+  PathfindingAlgorithm,
+  PathfindingLayout,
+  PathfindingScenario,
   PhysicsDensity,
   PhysicsScenario,
+  PostFxKind,
+  PostFxScenario,
   RenderEffectKey,
   SortScenario,
   TextureOrder,
+  TilemapKind,
+  TilemapScenario,
 };
 export {
+  ANIMATION_SCENARIOS,
   ECS_CHURN_SCENARIOS,
   ECS_SCENARIOS,
   FLUSH_SCENARIOS,
   INTEGRATION_SCENARIOS,
+  MATH_SCENARIOS,
   PARTICLE_COUNT,
   PARTICLES_SCENARIOS,
+  PATHFINDING_SCENARIOS,
   PHYSICS_SCENARIOS,
+  POSTFX_SCENARIOS,
   SORT_SCENARIOS,
+  TILEMAP_SCENARIOS,
 };
 
-type SuiteTitle = 'ECS' | 'Physics' | 'Particles' | 'Render' | 'Integration';
+type SuiteTitle =
+  | 'ECS'
+  | 'Physics'
+  | 'Particles'
+  | 'Render'
+  | 'Integration'
+  | 'Animation'
+  | 'PostFx'
+  | 'Tilemap'
+  | 'Pathfinding'
+  | 'Math';
 
 type NamedScenario = { readonly name: string };
 
@@ -63,4 +99,9 @@ export const SCENARIOS: Readonly<Record<SuiteTitle, readonly NamedScenario[]>> =
   Particles: PARTICLES_SCENARIOS,
   Render: [...FLUSH_SCENARIOS, ...SORT_SCENARIOS],
   Integration: INTEGRATION_SCENARIOS,
+  Animation: ANIMATION_SCENARIOS,
+  PostFx: POSTFX_SCENARIOS,
+  Tilemap: TILEMAP_SCENARIOS,
+  Pathfinding: PATHFINDING_SCENARIOS,
+  Math: MATH_SCENARIOS,
 };

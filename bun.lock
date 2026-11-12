@@ -63,12 +63,17 @@
       "name": "@flare-engine/benchmarks",
       "version": "0.0.0",
       "dependencies": {
+        "@flare-engine/animation": "workspace:*",
         "@flare-engine/core": "workspace:*",
         "@flare-engine/ecs": "workspace:*",
+        "@flare-engine/math": "workspace:*",
         "@flare-engine/particles": "workspace:*",
+        "@flare-engine/pathfinding": "workspace:*",
         "@flare-engine/physics": "workspace:*",
+        "@flare-engine/postfx": "workspace:*",
         "@flare-engine/render": "workspace:*",
         "@flare-engine/testing": "workspace:*",
+        "@flare-engine/tilemap": "workspace:*",
       },
       "devDependencies": {
         "@types/node": "^26.6.6",
@@ -76,7 +81,7 @@
     },
     "packages/a11y": {
       "name": "@flare-engine/a11y",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/events": "^0.4.6",
         "@flare-engine/math": "^0.4.6",
@@ -84,7 +89,7 @@
     },
     "packages/achievements": {
       "name": "@flare-engine/achievements",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "devDependencies": {
         "@types/react": "^19.3.0",
       },
@@ -94,7 +99,7 @@
     },
     "packages/analytics": {
       "name": "@flare-engine/analytics",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "devDependencies": {
         "@types/react": "^19.3.0",
       },
@@ -104,22 +109,22 @@
     },
     "packages/animation": {
       "name": "@flare-engine/animation",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/assets": "^0.4.6",
-        "@flare-engine/math": "^0.4.6",
+        "@flare-engine/assets": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/assets": {
       "name": "@flare-engine/assets",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/events": "^0.4.10",
+        "@flare-engine/events": "^0.4.11",
       },
     },
     "packages/audio": {
       "name": "@flare-engine/audio",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "peerDependencies": {
         "react-native-audio-api": ">=0.3.0",
       },
@@ -129,7 +134,7 @@
     },
     "packages/cli": {
       "name": "@flare-engine/cli",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "bin": {
         "flare": "dist/bin.js",
       },
@@ -144,15 +149,15 @@
     },
     "packages/core": {
       "name": "@flare-engine/core",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/events": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
+        "@flare-engine/events": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/create": {
       "name": "@flare-engine/create",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "bin": {
         "flare-create": "dist/bin.js",
       },
@@ -170,21 +175,21 @@
     },
     "packages/debug": {
       "name": "@flare-engine/debug",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/core": "^0.4.6",
       },
     },
     "packages/deep-links": {
       "name": "@flare-engine/deep-links",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/events": "workspace:*",
       },
     },
     "packages/devtools": {
       "name": "@flare-engine/devtools",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/core": "^0.4.10",
         "@flare-engine/ecs": "^0.4.10",
@@ -199,29 +204,29 @@
     },
     "packages/dialogue": {
       "name": "@flare-engine/dialogue",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/events": "workspace:*",
       },
     },
     "packages/dynamics": {
       "name": "@flare-engine/dynamics",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/math": "^0.4.6",
       },
     },
     "packages/ecs": {
       "name": "@flare-engine/ecs",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/events": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
+        "@flare-engine/events": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/engine": {
       "name": "@flare-engine/engine",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/animation": "^0.4.6",
         "@flare-engine/assets": "^0.4.6",
@@ -256,7 +261,7 @@
     },
     "packages/errors": {
       "name": "@flare-engine/errors",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "devDependencies": {
         "@types/react": "^19.3.0",
       },
@@ -270,11 +275,11 @@
     },
     "packages/events": {
       "name": "@flare-engine/events",
-      "version": "0.4.10",
+      "version": "0.4.11",
     },
     "packages/haptics": {
       "name": "@flare-engine/haptics",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "devDependencies": {
         "@types/react": "^19.3.0",
       },
@@ -284,7 +289,7 @@
     },
     "packages/iap": {
       "name": "@flare-engine/iap",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/events": "^0.4.10",
       },
@@ -297,7 +302,7 @@
     },
     "packages/iap-revenuecat": {
       "name": "@flare-engine/iap-revenuecat",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/iap": "^0.4.6",
       },
@@ -308,15 +313,15 @@
     },
     "packages/input": {
       "name": "@flare-engine/input",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/events": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
+        "@flare-engine/events": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/leaderboards": {
       "name": "@flare-engine/leaderboards",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "devDependencies": {
         "@types/react": "^19.3.0",
       },
@@ -326,41 +331,41 @@
     },
     "packages/localization": {
       "name": "@flare-engine/localization",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/events": "workspace:*",
       },
     },
     "packages/math": {
       "name": "@flare-engine/math",
-      "version": "0.4.10",
+      "version": "0.4.11",
     },
     "packages/particles": {
       "name": "@flare-engine/particles",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/core": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
+        "@flare-engine/core": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/pathfinding": {
       "name": "@flare-engine/pathfinding",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/math": "workspace:*",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/physics": {
       "name": "@flare-engine/physics",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/events": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
+        "@flare-engine/events": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/postfx": {
       "name": "@flare-engine/postfx",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "peerDependencies": {
         "@shopify/react-native-skia": ">=2.0.0",
       },
@@ -370,14 +375,14 @@
     },
     "packages/progression": {
       "name": "@flare-engine/progression",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/math": "workspace:*",
       },
     },
     "packages/react": {
       "name": "@flare-engine/react",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/assets": "^0.4.10",
         "@flare-engine/audio": "^0.4.10",
@@ -409,16 +414,16 @@
     },
     "packages/render": {
       "name": "@flare-engine/render",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/assets": "^0.4.10",
-        "@flare-engine/ecs": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
+        "@flare-engine/assets": "^0.4.11",
+        "@flare-engine/ecs": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
       },
     },
     "packages/render-web": {
       "name": "@flare-engine/render-web",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/postfx": "^0.4.10",
         "@flare-engine/render": "^0.4.10",
@@ -432,7 +437,7 @@
     },
     "packages/scene": {
       "name": "@flare-engine/scene",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/ecs": "^0.4.10",
         "@flare-engine/math": "^0.4.10",
@@ -441,7 +446,7 @@
     },
     "packages/shapes": {
       "name": "@flare-engine/shapes",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "peerDependencies": {
         "@shopify/react-native-skia": ">=2.0.0",
       },
@@ -451,44 +456,44 @@
     },
     "packages/share": {
       "name": "@flare-engine/share",
-      "version": "0.4.10",
+      "version": "0.4.11",
     },
     "packages/simulation": {
       "name": "@flare-engine/simulation",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/math": "workspace:*",
       },
     },
     "packages/storage": {
       "name": "@flare-engine/storage",
-      "version": "0.4.10",
+      "version": "0.4.11",
     },
     "packages/testing": {
       "name": "@flare-engine/testing",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/assets": "^0.4.10",
-        "@flare-engine/core": "^0.4.10",
-        "@flare-engine/ecs": "^0.4.10",
-        "@flare-engine/input": "^0.4.10",
-        "@flare-engine/math": "^0.4.10",
-        "@flare-engine/render": "^0.4.10",
+        "@flare-engine/assets": "^0.4.11",
+        "@flare-engine/core": "^0.4.11",
+        "@flare-engine/ecs": "^0.4.11",
+        "@flare-engine/input": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
+        "@flare-engine/render": "^0.4.11",
       },
     },
     "packages/tilemap": {
       "name": "@flare-engine/tilemap",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
-        "@flare-engine/assets": "^0.4.6",
-        "@flare-engine/math": "^0.4.6",
-        "@flare-engine/physics": "^0.4.6",
-        "@flare-engine/render": "^0.4.6",
+        "@flare-engine/assets": "^0.4.11",
+        "@flare-engine/math": "^0.4.11",
+        "@flare-engine/physics": "^0.4.11",
+        "@flare-engine/render": "^0.4.11",
       },
     },
     "packages/ui": {
       "name": "@flare-engine/ui",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "devDependencies": {
         "@types/react": "^19.3.0",
       },
@@ -499,7 +504,7 @@
     },
     "packages/ui-shop": {
       "name": "@flare-engine/ui-shop",
-      "version": "0.4.10",
+      "version": "0.4.11",
       "dependencies": {
         "@flare-engine/iap": "^0.4.10",
         "@flare-engine/ui": "^0.4.10",

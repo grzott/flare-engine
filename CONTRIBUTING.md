@@ -145,6 +145,20 @@ Longer versions live in [AGENTS.md](AGENTS.md).
 
 ---
 
+## Sign-off (DCO)
+
+Outside contributions are accepted under the [Developer Certificate of Origin 1.1](https://developercertificate.org/): by signing off a commit you certify that you wrote it, or otherwise have the right to submit it under the project's license. Sign off every commit with `git commit -s`. It adds a trailer like this:
+
+```text
+Signed-off-by: Your Name <you@example.com>
+```
+
+The email must match the commit's author email. The `dco` check on your pull request lists any commit without a matching sign-off. To fix commits already pushed, run `git rebase --signoff main` and force-push the branch.
+
+The maintainer's and the project bot's own commits are exempt; they follow the repo's commit rules in [AGENTS.md](AGENTS.md).
+
+---
+
 ## PR Checklist
 
 - [ ] Tests cover the new behavior and edge cases
@@ -156,6 +170,7 @@ Longer versions live in [AGENTS.md](AGENTS.md).
 - [ ] Changeset added for user-facing changes
 - [ ] Docs updated if the public API moved (`docs/design/api-specs.md`, package README, etc.)
 - [ ] Commit subjects follow `type(scope): description` and are ≤72 chars
+- [ ] Every commit is signed off (`git commit -s`, see [Sign-off (DCO)](#sign-off-dco))
 
 ---
 

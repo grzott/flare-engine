@@ -1,0 +1,46 @@
+name: dco
+
+# Developer Certificate of Origin for outside contributions (#171). Every commit in a PR from
+# anyone but the owner, the agent bot or Dependabot must carry a `Signed-off-by:` trailer whose
+# email matches the commit's author email (`git commit -s`). In-house commits keep the repo's
+# no-trailer rule, so those authors are skipped. Informational: not a required check in the
+# `main` ruleset. It checks out nothing and runs no code from the PR; it reads the PR's commit
+# list through the API.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sign-off:
+    if: >-
+      github.event.pull_request.user.login != 'grzott' &&
+      github.event.pull_request.user.login != 'grzott-agent' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every commit is signed off by its author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api "repos/$REPO/pulls/$PR/commits" --paginate --jq '
+            .[]
+            | (.commit.author.email // "" | ascii_downcase) as $e
+            | select(
+                [ (.commit.message | ascii_downcase | split("\n"))[]
+                  | select(startswith("signed-off-by:"))
+                  | contains("<" + $e + ">") ]
+                | any | not)
+            | "\(.sha[0:8]) <\(.commit.author.email)> \(.commit.message | split("\n")[0])"
+          ' > unsigned.txt
+          if [ -s unsigned.txt ]; then
+            echo "::error::These commits have no Signed-off-by trailer matching their author email. See CONTRIBUTING.md, section 'Sign-off (DCO)'."
+            cat unsigned.txt
+            exit 1
+          fi
+          echo "DCO: every commit is signed off by its author."

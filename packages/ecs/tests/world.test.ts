@@ -332,3 +332,133 @@ describe('component data mutation', () => {
     expect(world.get(e, Position)!.x).toBe(42);
   });
 });
+
+// One notify loop serves add, remove and destroy. Each contract is pinned once
+// per mutation so a path cannot drift from the other two.
+describe('World query notification (add / remove / destroy)', () => {
+  type Mutation = 'add' | 'remove' | 'destroy';
+  const mutations: Mutation[] = ['add', 'remove', 'destroy'];
+
+  /** Bring `e` to the state just before `mutation` changes query membership. */
+  function arrange(world: World, mutation: Mutation): number {
+    const e = world.spawn();
+    if (mutation !== 'add') world.add(e, Position);
+    return e;
+  }
+
+  function act(world: World, mutation: Mutation, e: number): void {
+    if (mutation === 'add') world.add(e, Position);
+    else if (mutation === 'remove') world.remove(e, Position);
+    else world.destroy(e);
+  }
+
+  function membershipSignal(q: ReturnType<World['query']>, mutation: Mutation) {
+    return mutation === 'add' ? q.onEntityAdded : q.onEntityRemoved;
+  }
+
+  for (const mutation of mutations) {
+    it(`${mutation}: notifies queries in registration order with the entity id`, () => {
+      const world = new World();
+      const e = arrange(world, mutation);
+      const log: string[] = [];
+      const names = ['first', 'second', 'third'];
+      for (const name of names) {
+        const q = world.query(Position);
+        membershipSignal(q, mutation).add((id) => log.push(`${name}:${id}`));
+      }
+
+      act(world, mutation, e);
+
+      expect(log).toEqual([`first:${e}`, `second:${e}`, `third:${e}`]);
+    });
+
+    it(`${mutation}: a removeQuery issued inside a notification is deferred to the end of the loop`, () => {
+      const world = new World();
+      const e = arrange(world, mutation);
+      const other = arrange(world, mutation);
+      const qA = world.query(Position);
+      const qB = world.query(Position);
+      const qC = world.query(Position);
+      const notified: string[] = [];
+      membershipSignal(qA, mutation).add(() => {
+        notified.push('A');
+        world.removeQuery(qA);
+        world.removeQuery(qB);
+      });
+      membershipSignal(qB, mutation).add(() => notified.push('B'));
+      membershipSignal(qC, mutation).add(() => notified.push('C'));
+
+      act(world, mutation, e);
+
+      // qB was removed by qA's handler, yet it is still notified in this loop,
+      // and qC is not skipped by a mid-loop splice.
+      expect(notified).toEqual(['A', 'B', 'C']);
+
+      // Once the loop has unwound both removals have taken effect.
+      act(world, mutation, other);
+      expect(notified).toEqual(['A', 'B', 'C', 'C']);
+    });
+
+    it(`${mutation}: a throwing listener propagates and still unwinds the loop`, () => {
+      const world = new World();
+      const e = arrange(world, mutation);
+      const second = arrange(world, mutation);
+      const third = arrange(world, mutation);
+      const qA = world.query(Position);
+      const qB = world.query(Position);
+      let throwing = true;
+      let notifiedA = 0;
+      let notifiedB = 0;
+      membershipSignal(qA, mutation).add(() => {
+        notifiedA++;
+        if (throwing) {
+          world.removeQuery(qA);
+          throw new Error('listener failed');
+        }
+      });
+      membershipSignal(qB, mutation).add(() => {
+        notifiedB++;
+      });
+
+      expect(() => act(world, mutation, e)).toThrow('listener failed');
+      throwing = false;
+      // The throw aborts the loop before qB is reached.
+      expect(notifiedB).toBe(0);
+
+      // The removal deferred before the throw was flushed on the way out.
+      act(world, mutation, second);
+      expect(notifiedA).toBe(1);
+      expect(notifiedB).toBe(1);
+
+      // The depth counter was restored, so a top-level removeQuery is immediate.
+      world.removeQuery(qB);
+      act(world, mutation, third);
+      expect(notifiedB).toBe(1);
+    });
+  }
+
+  it('a nested mutation defers removeQuery until the outermost loop unwinds', () => {
+    const world = new World();
+    const outer = world.spawn();
+    const inner = world.spawn();
+    const qA = world.query(Position);
+    const qB = world.query(Position);
+    const seenByB: number[] = [];
+    qA.onEntityAdded.add((id) => {
+      if (id !== outer) return;
+      world.removeQuery(qB);
+      world.add(inner, Position); // nested notify loop ends first
+    });
+    qB.onEntityAdded.add((id) => seenByB.push(id));
+
+    world.add(outer, Position);
+
+    // qB sees the nested add and then the outer one: the inner loop ending did
+    // not flush the removal while the outer loop was still walking.
+    expect(seenByB).toEqual([inner, outer]);
+
+    const later = world.spawn();
+    world.add(later, Position);
+    expect(seenByB).toEqual([inner, outer]);
+  });
+});

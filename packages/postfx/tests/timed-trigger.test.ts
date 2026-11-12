@@ -78,3 +78,75 @@ describe('PostFxController.triggerTimed', () => {
     expect(pfx.chain.get('chrom')?.enabled).toBe(false);
   });
 });
+
+function chromAmount(pfx: ReturnType<typeof makeController>): number {
+  const effect = pfx.chain.get('chrom');
+  if (effect?.uniforms.kind !== 'chromatic-aberration') throw new Error('unexpected kind');
+  return effect.uniforms.amount;
+}
+
+describe('PostFxController.triggerTimed re-trigger snapshot', () => {
+  test('a re-trigger keeps the pre-trigger uniforms, not the mid-trigger ones', () => {
+    const pfx = makeController();
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.001 });
+    pfx.chain.setEnabled('chrom', false);
+
+    pfx.triggerTimed('chrom', 200);
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.05 });
+    pfx.update(0.1);
+    pfx.triggerTimed('chrom', 200);
+    expect(chromAmount(pfx)).toBe(0.05);
+
+    pfx.update(0.25);
+
+    expect(pfx.chain.get('chrom')?.enabled).toBe(false);
+    expect(chromAmount(pfx)).toBe(0.001);
+  });
+
+  test('several re-triggers in a row still restore the first snapshot', () => {
+    const pfx = makeController();
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.001 });
+
+    pfx.triggerTimed('chrom', 100);
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.05 });
+    pfx.triggerTimed('chrom', 100);
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.09 });
+    pfx.triggerTimed('chrom', 100);
+
+    pfx.update(0.2);
+    expect(chromAmount(pfx)).toBe(0.001);
+  });
+
+  test('a re-trigger restarts the countdown at the new duration instead of adding to it', () => {
+    const pfx = makeController();
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.001 });
+    pfx.chain.setEnabled('chrom', false);
+
+    pfx.triggerTimed('chrom', 200);
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.05 });
+    pfx.update(0.15); // 50 ms left
+    pfx.triggerTimed('chrom', 100); // 100 ms from here, not 150
+
+    pfx.update(0.09);
+    expect(pfx.chain.get('chrom')?.enabled).toBe(true);
+    expect(chromAmount(pfx)).toBe(0.05);
+
+    pfx.update(0.02);
+    expect(pfx.chain.get('chrom')?.enabled).toBe(false);
+    expect(chromAmount(pfx)).toBe(0.001);
+  });
+
+  test('a trigger after expiry snapshots the then-current uniforms', () => {
+    const pfx = makeController();
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.001 });
+    pfx.triggerTimed('chrom', 100);
+    pfx.update(0.2);
+
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.03 });
+    pfx.triggerTimed('chrom', 100);
+    pfx.chain.setUniforms('chrom', { kind: 'chromatic-aberration', amount: 0.07 });
+    pfx.update(0.2);
+
+    expect(chromAmount(pfx)).toBe(0.03);
+  });
+});

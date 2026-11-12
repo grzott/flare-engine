@@ -10,7 +10,7 @@
  */
 
 import { EffectChain } from './chain.js';
-import type { Effect, EffectUniforms } from './effect.js';
+import type { Effect, EffectUniforms, GrayscaleFlashUniforms } from './effect.js';
 import type { SkiaPostFxModuleLike } from './runtime.js';
 import { type CompiledPass, createPostFxRuntime, type PostFxRuntime } from './runtime.js';
 
@@ -70,6 +70,22 @@ export function createPostFxController(options: PostFxControllerOptions): PostFx
   // Allocated once at construction — never reallocated on the hot path.
   const timedRemaining = new Map<string, number>();
   const timedRestore = new Map<string, EffectUniforms>();
+  const expired: string[] = [];
+  let stepMs = 0;
+  // Hoisted so update() creates no closure; Map.forEach tolerates set() on the visited key.
+  const stepTimed = (remaining: number, id: string): void => {
+    const next = remaining - stepMs;
+    if (next <= 0) {
+      expired.push(id);
+    } else {
+      timedRemaining.set(id, next);
+    }
+  };
+  // Controller-owned: the chain's flash effect points here once a flash has fired.
+  const flashUniforms: { kind: 'grayscale-flash' } & GrayscaleFlashUniforms = {
+    kind: 'grayscale-flash',
+    intensity: 0,
+  };
 
   return {
     chain,
@@ -77,44 +93,36 @@ export function createPostFxController(options: PostFxControllerOptions): PostFx
     triggerHitFlash(): void {
       if (!flashCfg) return;
       flashIntensity = 1;
-      chain.setUniforms(flashCfg.id, { kind: 'grayscale-flash', intensity: 1 });
+      flashUniforms.intensity = 1;
+      chain.setUniforms(flashCfg.id, flashUniforms);
     },
     triggerTimed(effectId: string, decayMs: number): void {
       const effect = chain.get(effectId);
       if (!effect) return;
-      timedRestore.set(effectId, { ...effect.uniforms });
+      if (!timedRemaining.has(effectId)) timedRestore.set(effectId, { ...effect.uniforms });
       chain.setEnabled(effectId, true);
       timedRemaining.set(effectId, decayMs);
     },
     update(dt: number): void {
       if (flashCfg && flashIntensity > 0) {
         flashIntensity = Math.max(0, flashIntensity - dt * flashDecay);
-        chain.setUniforms(flashCfg.id, {
-          kind: 'grayscale-flash',
-          intensity: flashIntensity,
-        });
+        flashUniforms.intensity = flashIntensity;
+        chain.setUniforms(flashCfg.id, flashUniforms);
       }
 
       if (timedRemaining.size > 0) {
-        const dtMs = dt * 1000;
+        stepMs = dt * 1000;
         // Collect expired ids first, then apply — safe under all JS engines.
-        const expired: string[] = [];
-        for (const [id, rem] of timedRemaining) {
-          const next = rem - dtMs;
-          if (next <= 0) {
-            expired.push(id);
-          } else {
-            timedRemaining.set(id, next);
-          }
-        }
-        if (expired.length > 0) {
-          for (const id of expired) {
-            const snapshot = timedRestore.get(id);
-            if (snapshot !== undefined) chain.setUniforms(id, snapshot);
-            chain.setEnabled(id, false);
-            timedRemaining.delete(id);
-            timedRestore.delete(id);
-          }
+        expired.length = 0;
+        timedRemaining.forEach(stepTimed);
+        for (let i = 0; i < expired.length; i++) {
+          const id = expired[i];
+          if (id === undefined) continue;
+          const snapshot = timedRestore.get(id);
+          if (snapshot !== undefined) chain.setUniforms(id, snapshot);
+          chain.setEnabled(id, false);
+          timedRemaining.delete(id);
+          timedRestore.delete(id);
         }
       }
     },

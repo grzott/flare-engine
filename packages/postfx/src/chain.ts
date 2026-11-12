@@ -72,7 +72,12 @@ export class EffectChain {
   }
 
   get(id: string): Effect | null {
-    return this._effects.find((e) => e.id === id) ?? null;
+    const effects = this._effects;
+    for (let i = 0; i < effects.length; i++) {
+      const e = effects[i];
+      if (e !== undefined && e.id === id) return e;
+    }
+    return null;
   }
 
   setEnabled(id: string, enabled: boolean): void {

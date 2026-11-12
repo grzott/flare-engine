@@ -114,13 +114,7 @@ export class CollisionWorld {
       if (lo !== entity && hi !== entity) continue;
       this.activePairs.delete(key);
       const otherEntity = lo === entity ? hi : lo;
-      const otherEntry = this.entries.get(otherEntity);
-      const pair: CollisionPair = { entityA: lo, entityB: hi };
-      if (entry.isTrigger || otherEntry?.isTrigger) {
-        this.onTriggerExit.emit(pair);
-      } else {
-        this.onCollisionEnd.emit(pair);
-      }
+      this.emitPair(lo, hi, entry, this.entries.get(otherEntity), false);
     }
   }
 
@@ -179,14 +173,7 @@ export class CollisionWorld {
       if (!this.activePairs.has(key)) {
         const lo = decodeLo(key);
         const hi = decodeHi(key);
-        const a = this.entries.get(lo);
-        const b = this.entries.get(hi);
-        const pair: CollisionPair = { entityA: lo, entityB: hi };
-        if (a?.isTrigger || b?.isTrigger) {
-          this.onTriggerEnter.emit(pair);
-        } else {
-          this.onCollisionStart.emit(pair);
-        }
+        this.emitPair(lo, hi, this.entries.get(lo), this.entries.get(hi), true);
       }
     }
 
@@ -195,18 +182,35 @@ export class CollisionWorld {
       if (!newPairs.has(key)) {
         const lo = decodeLo(key);
         const hi = decodeHi(key);
-        const a = this.entries.get(lo);
-        const b = this.entries.get(hi);
-        const pair: CollisionPair = { entityA: lo, entityB: hi };
-        if (a?.isTrigger || b?.isTrigger) {
-          this.onTriggerExit.emit(pair);
-        } else {
-          this.onCollisionEnd.emit(pair);
-        }
+        this.emitPair(lo, hi, this.entries.get(lo), this.entries.get(hi), false);
       }
     }
 
     this.activePairs = newPairs;
+  }
+
+  /**
+   * The one place that decides trigger vs collision for a pair and emits its
+   * enter or exit signal. `a` and `b` are the pair's two entries in either
+   * order. They are passed in rather than looked up because in `remove` the
+   * removed entity is already gone from `entries`.
+   */
+  private emitPair(
+    lo: number,
+    hi: number,
+    a: CollisionEntry | undefined,
+    b: CollisionEntry | undefined,
+    entering: boolean,
+  ): void {
+    const pair: CollisionPair = { entityA: lo, entityB: hi };
+    if (a?.isTrigger || b?.isTrigger) {
+      if (entering) this.onTriggerEnter.emit(pair);
+      else this.onTriggerExit.emit(pair);
+    } else if (entering) {
+      this.onCollisionStart.emit(pair);
+    } else {
+      this.onCollisionEnd.emit(pair);
+    }
   }
 
   /** Zero-alloc collider bounds — writes the AABB of entity's shape into `out`. Returns null when entity is absent. */

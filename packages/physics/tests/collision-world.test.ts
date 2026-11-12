@@ -330,3 +330,66 @@ describe('CollisionWorld.addCollider (F049)', () => {
     expect(b.height).toBe(40);
   });
 });
+
+describe('CollisionWorld trigger-vs-collision dispatch (#105)', () => {
+  function recordingWorld(): { world: CollisionWorld; log: string[] } {
+    const world = new CollisionWorld();
+    const log: string[] = [];
+    const rec = (name: string) => (p: CollisionPair) =>
+      log.push(`${name} ${p.entityA}-${p.entityB}`);
+    world.onTriggerEnter.add(rec('triggerEnter'));
+    world.onTriggerExit.add(rec('triggerExit'));
+    world.onCollisionStart.add(rec('collisionStart'));
+    world.onCollisionEnd.add(rec('collisionEnd'));
+    // 1 (trigger) + 2: trigger on the low id. 3 + 4: both solid. 5 + 6 (trigger): trigger on the high id.
+    world.add(1, AABB(20, 20), 0, 0, true);
+    world.add(2, AABB(20, 20), 5, 0);
+    world.add(3, AABB(20, 20), 1000, 0);
+    world.add(4, AABB(20, 20), 1005, 0);
+    world.add(5, AABB(20, 20), 2000, 0);
+    world.add(6, AABB(20, 20), 2005, 0, true);
+    return { world, log };
+  }
+
+  const ENTER = ['triggerEnter 1-2', 'collisionStart 3-4', 'triggerEnter 5-6'];
+
+  it('emits the exact enter and exit sequence across step, separation and re-entry', () => {
+    const { world, log } = recordingWorld();
+
+    world.step();
+    expect(log.splice(0)).toEqual(ENTER);
+
+    world.step();
+    expect(log.splice(0)).toEqual([]);
+
+    world.setPosition(2, 5, 500);
+    world.setPosition(4, 1005, 500);
+    world.setPosition(6, 2005, 500);
+    world.step();
+    expect(log.splice(0)).toEqual(['triggerExit 1-2', 'collisionEnd 3-4', 'triggerExit 5-6']);
+
+    world.setPosition(2, 5, 0);
+    world.setPosition(4, 1005, 0);
+    world.setPosition(6, 2005, 0);
+    world.step();
+    expect(log.splice(0)).toEqual(ENTER);
+  });
+
+  it('classifies remove() exits by the removed entry, which is already gone from the world', () => {
+    const { world, log } = recordingWorld();
+    world.step();
+    log.length = 0;
+
+    // The removed entity is the trigger: only its own entry knows that.
+    world.remove(1);
+    expect(log.splice(0)).toEqual(['triggerExit 1-2']);
+    world.remove(4);
+    expect(log.splice(0)).toEqual(['collisionEnd 3-4']);
+    // The removed entity is solid; the remaining one is the trigger.
+    world.remove(5);
+    expect(log.splice(0)).toEqual(['triggerExit 5-6']);
+
+    world.step();
+    expect(log).toEqual([]);
+  });
+});

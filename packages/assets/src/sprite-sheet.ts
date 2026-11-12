@@ -124,7 +124,8 @@ export function parseTexturePackerArray(json: unknown): SpriteSheet {
 // ----- Aseprite JSON -----
 
 interface AsepriteFrame {
-  filename: string;
+  /** Present in array exports; hash exports name the frame by its key instead. */
+  filename?: string;
   frame: { x: number; y: number; w: number; h: number };
   duration: number; // ms
 }
@@ -148,23 +149,20 @@ export function parseAseprite(json: unknown): SpriteSheet {
   const data = json as AsepriteJSON;
   const sheet = createSpriteSheet();
 
-  // Aseprite can export frames as array or object
-  const frameEntries: AsepriteFrame[] = Array.isArray(data.frames)
-    ? data.frames
-    : Object.values(data.frames);
+  // Aseprite can export frames as array or object. A hash export (`json-hash`)
+  // keys each frame by its name and omits `filename` from the value.
+  const frames = data.frames;
+  const hashKeys = Array.isArray(frames) ? undefined : Object.keys(frames);
+  const frameEntries: AsepriteFrame[] = Array.isArray(frames) ? frames : Object.values(frames);
 
   for (let i = 0; i < frameEntries.length; i++) {
     const entry = frameEntries[i];
     if (!entry) continue;
+    // Object.keys and Object.values share an order, so hashKeys[i] is this entry's key.
+    const name = (entry.filename ?? hashKeys?.[i]) as string;
     const f = entry.frame;
-    sheet.frames.push({
-      name: entry.filename,
-      x: f.x,
-      y: f.y,
-      w: f.w,
-      h: f.h,
-    });
-    sheet.frameMap.set(entry.filename, i);
+    sheet.frames.push({ name, x: f.x, y: f.y, w: f.w, h: f.h });
+    sheet.frameMap.set(name, i);
   }
 
   // Parse frame tags as animation sequences

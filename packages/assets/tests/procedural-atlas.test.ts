@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   createProceduralAtlas,
   type ProceduralFrameSpec,
+  packAtlasRows,
   type SkCanvasLike,
   type SkiaAtlasModuleLike,
   type SkPaintLike,
@@ -139,5 +140,62 @@ describe('createProceduralAtlas', () => {
       XYWHRect: (x, y, w, h) => ({ x, y, width: w, height: h }),
     };
     expect(() => createProceduralAtlas(skia, frames)).toThrow();
+  });
+});
+
+describe('packAtlasRows', () => {
+  it('packs left to right and wraps when the next frame would cross maxWidth', () => {
+    const layout = packAtlasRows(
+      [
+        { w: 40, h: 10 },
+        { w: 40, h: 30 },
+        { w: 40, h: 20 },
+      ],
+      100,
+      0,
+    );
+    expect(layout.rects).toEqual([
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      { x: 0, y: 30 },
+    ]);
+    expect(layout.width).toBe(80);
+    expect(layout.height).toBe(50);
+  });
+
+  it('puts padding between neighbours and rows, none at the edges', () => {
+    const layout = packAtlasRows(
+      [
+        { w: 10, h: 10 },
+        { w: 10, h: 10 },
+        { w: 10, h: 10 },
+      ],
+      24,
+      4,
+    );
+    expect(layout.rects).toEqual([
+      { x: 0, y: 0 },
+      { x: 14, y: 0 },
+      { x: 0, y: 14 },
+    ]);
+    expect(layout.width).toBe(24);
+    expect(layout.height).toBe(24);
+  });
+
+  it('gives a frame wider than maxWidth its own row and widens the atlas', () => {
+    const layout = packAtlasRows(
+      [
+        { w: 8, h: 8 },
+        { w: 50, h: 8 },
+      ],
+      32,
+      0,
+    );
+    expect(layout.rects[1]).toEqual({ x: 0, y: 8 });
+    expect(layout.width).toBe(50);
+  });
+
+  it('returns a 1x1 layout for no frames', () => {
+    expect(packAtlasRows([], 64, 2)).toEqual({ rects: [], width: 1, height: 1 });
   });
 });

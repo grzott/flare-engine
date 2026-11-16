@@ -72,6 +72,7 @@
         "@flare-engine/physics": "workspace:*",
         "@flare-engine/postfx": "workspace:*",
         "@flare-engine/render": "workspace:*",
+        "@flare-engine/shapes": "workspace:*",
         "@flare-engine/testing": "workspace:*",
         "@flare-engine/tilemap": "workspace:*",
       },
@@ -430,6 +431,9 @@
         "@flare-engine/postfx": "^0.4.12",
         "@flare-engine/render": "^0.4.12",
       },
+      "devDependencies": {
+        "@flare-engine/shapes": "^0.4.12",
+      },
       "peerDependencies": {
         "canvaskit-wasm": ">=0.40.0",
       },
@@ -450,7 +454,11 @@
       "name": "@flare-engine/shapes",
       "version": "0.4.12",
       "dependencies": {
-        "@flare-engine/math": "^0.4.11",
+        "@flare-engine/assets": "^0.4.12",
+        "@flare-engine/math": "^0.4.12",
+      },
+      "devDependencies": {
+        "@flare-engine/render": "^0.4.12",
       },
       "peerDependencies": {
         "@shopify/react-native-skia": ">=2.0.0",

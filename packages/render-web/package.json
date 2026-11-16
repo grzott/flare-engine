@@ -41,6 +41,9 @@
     "@flare-engine/postfx": "^0.4.12",
     "@flare-engine/math": "^0.4.12"
   },
+  "devDependencies": {
+    "@flare-engine/shapes": "^0.4.12"
+  },
   "peerDependencies": {
     "canvaskit-wasm": ">=0.40.0"
   },

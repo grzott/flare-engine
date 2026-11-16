@@ -38,6 +38,7 @@
     "@flare-engine/physics": "workspace:*",
     "@flare-engine/postfx": "workspace:*",
     "@flare-engine/render": "workspace:*",
+    "@flare-engine/shapes": "workspace:*",
     "@flare-engine/testing": "workspace:*",
     "@flare-engine/tilemap": "workspace:*"
   },

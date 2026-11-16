@@ -146,7 +146,7 @@ if (surface.isLost()) showStaticFallback();
 
 - `@flare-engine/postfx` is backend-neutral; `render-web` provides the CanvasKit shim (`SkiaPostFxModuleLike`) that routes `RuntimeEffect.Make` to CanvasKit.
 - The ping-pong loop is allocation-free in the hot path: the children array and rect scratch buffer are pre-allocated at surface creation.
-- `buildPass` is called every frame (no memoization) because `EffectChain` has no mutation signal; a future `buildPassInto` zero-alloc form in `@flare-engine/postfx` is the correct fix.
+- `buildPass` is called every frame (no memoization) because `EffectChain` has no mutation signal. The runtime returns the same pass array and rewrites its uniform buffers in place, so that call allocates nothing while the set of enabled effects is unchanged.
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md) and [architecture](https://github.com/grzott/flare-engine/blob/main/docs/design/architecture.md) for the full rendering pipeline.
 

@@ -38,6 +38,10 @@ describe("dist keeps the 'worklet' directive", () => {
     expect(distFiles('.js').length).toBeGreaterThan(0);
   });
 
+  test('src has worklet functions to keep', () => {
+    expect(countDirectives(sourceFiles(SRC))).toBeGreaterThan(0);
+  });
+
   test('the ESM build has as many worklet functions as src', () => {
     expect(countDirectives(distFiles('.mjs'))).toBe(countDirectives(sourceFiles(SRC)));
   });

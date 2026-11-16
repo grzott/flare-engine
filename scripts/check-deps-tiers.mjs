@@ -30,8 +30,7 @@ const SCOPE = '@flare-engine/';
 const ALLOWLIST = [
   // ui-fx is scaffolded with its final dependency set before the code that imports it
   // (docs/plans/ui-fx-2026-11-tasks.md, Task 1). Each entry goes when its first import lands:
-  // math with ./core, a11y with the reduced-motion source, render-web with the web fx host.
-  { pkg: 'ui-fx', dep: 'math', kind: 'phantom' },
+  // a11y with the reduced-motion source, render-web with the web fx host.
   { pkg: 'ui-fx', dep: 'a11y', kind: 'phantom' },
   { pkg: 'ui-fx', dep: 'render-web', kind: 'phantom' },
 ];

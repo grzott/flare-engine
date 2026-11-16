@@ -44,6 +44,7 @@ work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issu
 | [Consumer asks](https://github.com/grzott/flare-engine/milestone/6) | Additive features a named consumer asked for |
 | [Perf](https://github.com/grzott/flare-engine/milestone/7) | Benchmark suites, device lanes, perf-protocol automation |
 | [Adoption basics](https://github.com/grzott/flare-engine/milestone/8) | Quickstart, recipes, first issues, Discussions |
+| [UI FX](https://github.com/grzott/flare-engine/milestone/10) | `@flare-engine/ui-fx`, animated RN, react-native-web and React DOM component wrappers ([plan](ui-fx-2026-11-tasks.md)); it publishes in 0.5.0 |
 | [0.5.0](https://github.com/grzott/flare-engine/milestone/9) | The breaking changes held back during `0.4.x`, each behind an ADR |
 
 In due-date order. The dates live on the [milestones page](https://github.com/grzott/flare-engine/milestones);

@@ -182,9 +182,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/create": {
-      "ceiling": 36074,
-      "measured": 32794,
-      "measuredAt": "2026-09-08"
+      "ceiling": 41280,
+      "measured": 37527,
+      "measuredAt": "2026-11-16"
     },
     "@flare-engine/debug": {
       "ceiling": 21614,
@@ -516,6 +516,10 @@
     {
       "date": "2026-11-12",
       "reason": "render ceiling raised 143405 -> 158779 B (measured 144344 x1.1), pending the owner's approval of the PR for issue #98. The frame renderer reflects a custom shader's uniform layout (names, slots, sizes, float count) once per compiled shader into a module-level WeakMap instead of on every sprite run drawn with a custom effect; internal, no exported symbol or .d.ts change. This change is the last ~1 KB, not the whole growth: with packages/render/src/frame-renderer.ts at origin/main 14ea8167 the same machine's check:perf-bytes passes, so main packs at or under 143405 B and this change adds at least 939 B to the tarball. Each file gzipped alone grows about 1.05 KB in total: dist/index.js 65.20 -> 65.82 kB raw (18.26 -> 18.43 kB gzipped), dist/index.mjs 64.20 -> 64.82 kB raw (18.04 -> 18.20 kB gzipped), each source map about +1.4 kB raw (+0.36 kB gzipped). The rest of the distance from the 2026-10-09 measurement (130368 B) is the render work merged since under the old ceiling, not measured here. A performance fix, not a regression."
+    },
+    {
+      "date": "2026-11-16",
+      "reason": "create ceiling raised 36074 -> 41280 B (measured 37527 x1.1), pending the owner's approval of the PR for issue #369. Each template (blank, topdown, shmup) ships a byte-identical Expo config plugin, plugins/with-windows-cmake.js (5834 B raw, 2455 B gzipped alone), registered in its app.json (+49 B raw each) and documented in its README (+1030 B raw, about +485 B gzipped each). Measured against the published 0.4.12 tarball, which equals main for this package (33387 B): this change adds 4140 B to the tarball, while the files gzipped alone grow 8902 B; the three plugin copies share one gzip window. Template source only; dist is unchanged. A Windows build fix, not a regression."
     }
   ]
 }

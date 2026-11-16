@@ -5,6 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "platforms": ["android", "ios", "web"],
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "plugins": ["./plugins/with-windows-cmake"]
   }
 }

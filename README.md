@@ -47,6 +47,9 @@ red-screens with a missing-native-module error. Pick a template with `-- --templ
 bun, use `bunx @flare-engine/create my-game`. (`npm create flare-app` is a different, unrelated
 package.)
 
+On Windows, Android builds need the Android SDK's CMake 3.31.6 and Windows long paths enabled; the
+scaffolded app's README has the steps.
+
 Or add one package to an existing app:
 
 ```bash

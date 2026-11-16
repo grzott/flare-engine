@@ -16,16 +16,21 @@
  * the scaffold's scoped dependencies at those tarballs and override the same
  * names for the transitive ranges (`@flare-engine/engine` depends on
  * `@flare-engine/math@^x.y.z`, which must not resolve to a registry copy),
- * then `bun install`, `tsc --noEmit` and `bun run test` where the template has
- * one. The scratch dir is removed afterwards unless `--keep` is passed.
+ * then `bun install`, `expo config --type prebuild`, `tsc --noEmit` and
+ * `bun run test` where the template has one. The scratch dir is removed
+ * afterwards unless `--keep` is passed.
  *
- * The bar is install, typecheck and unit tests: no native build and no Expo
- * start. The install still fetches react-native-skia's native libraries: since
+ * The bar is install, Expo config resolution, typecheck and unit tests: no
+ * native build and no Expo start. `expo config` evaluates `app.json` under the
+ * installed Expo SDK, which proves the template's `with-windows-cmake` config
+ * plugin loads; its Android mod does not run there, and off Windows it is a
+ * no-op anyway. The install still fetches react-native-skia's native libraries: since
  * 2.6 they are ordinary `react-native-skia-*` dependencies that its postinstall
  * (`scripts/install-libs.js`) copies locally, with no download to skip.
  *
  * Needs `bun run build` first (reads `packages/create/dist/bin.js` and every
- * package's `dist/`) and the npm registry for the templates' third-party pins.
+ * package's `dist/`), the npm registry for the templates' third-party pins, and
+ * `node` on PATH for the Expo CLI.
  * Bun-runnable plain ESM. Exit 1 when any template fails, 0 when all pass.
  *
  * Usage: `bun scripts/scaffold-e2e.mjs [--only <template>] [--keep] [--work-dir <dir>]`
@@ -192,8 +197,43 @@ const step = (template, name, status) => {
   return false;
 };
 
+const WINDOWS_CMAKE_PLUGIN = './plugins/with-windows-cmake';
+
 /**
- * Scaffold, link, install, typecheck and test one template inside `workDir`.
+ * Runs `expo config --type prebuild --json` in a scaffolded app. Returns the
+ * failure text, or null when the config resolved and still lists the Windows
+ * CMake plugin; resolving it is what makes Expo load the plugin file.
+ *
+ * Runs under `node`, the runtime the Expo CLI's shebang names, not under
+ * `process.execPath`: under bun 1.3.11 on Windows the command prints the config
+ * and then never exits. The timeout turns any such hang into a failure.
+ */
+const expoConfigFailure = (appDir) => {
+  const cli = join(appDir, 'node_modules', 'expo', 'bin', 'cli');
+  const result = spawnSync('node', [cli, 'config', '--type', 'prebuild', '--json'], {
+    cwd: appDir,
+    stdio: ['ignore', 'pipe', 'inherit'],
+    encoding: 'utf8',
+    env: { ...process.env, EXPO_NO_TELEMETRY: '1' },
+    timeout: 120_000,
+  });
+  if (result.error) return `failed: ${result.error.message}`;
+  if (result.status !== 0) return `exited with ${result.status ?? 1}`;
+  let config;
+  try {
+    config = JSON.parse(result.stdout);
+  } catch {
+    return 'printed no JSON';
+  }
+  const plugins = config.plugins ?? config.expo?.plugins;
+  return Array.isArray(plugins) && plugins.includes(WINDOWS_CMAKE_PLUGIN)
+    ? null
+    : `does not list ${WINDOWS_CMAKE_PLUGIN} in plugins`;
+};
+
+/**
+ * Scaffold, link, install, resolve the Expo config, typecheck and test one
+ * template inside `workDir`.
  * Returns the first failing step's name, or null when every step passed.
  */
 const runTemplate = (template, workDir, tarballs) => {
@@ -232,6 +272,13 @@ const runTemplate = (template, workDir, tarballs) => {
     return 'resolution';
   }
   console.log(`scaffold-e2e: ${template}: every @flare-engine/* package resolved to a tarball`);
+
+  const configFailure = expoConfigFailure(appDir);
+  if (configFailure !== null) {
+    console.error(`\nscaffold-e2e: ${template}: expo config ${configFailure}`);
+    return 'expo config';
+  }
+  console.log(`scaffold-e2e: ${template}: expo config ok (with-windows-cmake loads)`);
 
   const tsc = join(appDir, 'node_modules', 'typescript', 'bin', 'tsc');
   if (!existsSync(tsc)) {

@@ -1,0 +1,5 @@
+---
+"@flare-engine/create": patch
+---
+
+The `blank`, `topdown` and `shmup` templates now ship an Expo config plugin, `plugins/with-windows-cmake.js`, for Android builds on Windows: at prebuild it writes a cmake.dir entry into `android/local.properties` pointing at the newest Android SDK CMake that is 3.31.6 or later and still 3.x (3.31.6 is the version verified to ship a ninja that handles long paths), and leaves an entry you wrote yourself alone. The SDK's default CMake 3.22.1 ships a ninja that ignores Windows long paths, which the build needs at any project location; CMake 4 is never selected because Skia's build declares a minimum version that CMake 4 no longer accepts. When no such CMake is installed the plugin points the entry at 3.31.6 and prints the install command, so the next build works once it is installed, and it warns when Windows long paths are disabled, with the command that enables them. The plugin does nothing on macOS and Linux, and the template README and the root README now list the two Windows steps.

@@ -166,17 +166,23 @@ export interface DrawSurfaceLike {
   rotate(degrees: number, cx: number, cy: number): void;
   clear(color: Float32Array): void;
   /**
-   * `blendMode` and `colors` are positional placeholders in RN Skia's argument
-   * order; the renderer never fills them. `sampling` is passed only for an
-   * image with a `setImageSampling` setting — otherwise the call stops at `paint`.
+   * `blendMode` and `colors` follow RN Skia's argument order and are filled
+   * together, for a coloured run only: `colors` holds one `[r, g, b, a]` (0-1,
+   * unpremultiplied) per sprite, its length equal to `srcRects.length`, and
+   * `blendMode` is the numeric Skia `BlendMode.Modulate` (13), which multiplies
+   * each sprite's texels by its colour. The arrays are pooled and rewritten by
+   * the next run, so read them during the call. An uncoloured run leaves both
+   * `undefined`. `sampling` is passed only for an image with a
+   * `setImageSampling` setting — otherwise an uncoloured call stops at `paint`
+   * and a coloured one at `colors`.
    */
   drawAtlas(
     image: unknown,
     srcRects: RectLike[],
     dstXforms: RSXformLike[],
     paint: PaintLike,
-    blendMode?: undefined,
-    colors?: undefined,
+    blendMode?: number,
+    colors?: Float32Array[],
     sampling?: SamplingOptionsLike,
   ): void;
   drawImageRect(image: unknown, src: RectLike, dst: RectLike, paint: PaintLike): void;
@@ -273,7 +279,7 @@ export interface FrameRendererPostFxDescriptor {
  *
  * Each frame:
  *   1. Call `beginFrame(viewportWidth, viewportHeight)`.
- *   2. Call `drawAtlas(image, commands)` one or more times.
+ *   2. Call `drawAtlas(image, commands, colors?)` one or more times.
  *   3. Call `endFrame()` — returns the recorded picture. The caller owns it: draw it,
  *      then release it (CanvasKit: `delete()`). The renderer never frees it.
  */
@@ -285,7 +291,22 @@ export interface FrameRenderer {
     time?: number,
     pixelDensity?: number,
   ): void;
-  drawAtlas(image: SkImageLike, commands: SpriteDrawCommand[]): void;
+  /**
+   * Draw one run. `commands` share a batch key, as `SpriteBatch.flush` hands
+   * them over.
+   *
+   * `colors`, when given, makes the run a coloured one: `colors[i]` is a
+   * packed-ARGB (`0xAARRGGBB`) multiplier for `commands[i]`, and only the first
+   * `commands.length` entries are read. Each sprite's texels are multiplied by
+   * its colour (Skia's Modulate blend), alpha included, so the colour's alpha
+   * byte is the sprite's opacity and the commands' own `alpha` is not read. The
+   * stretch, flip and zone-background paths are not atlas draws: there only the
+   * colour's alpha applies and its RGB is ignored.
+   *
+   * Without `colors` the run draws exactly as it did before the argument
+   * existed, at the `alpha` of its first command.
+   */
+  drawAtlas(image: SkImageLike, commands: SpriteDrawCommand[], colors?: Uint32Array): void;
   /**
    * Set the texture sampling for every draw of `image` (an atlas or a texture)
    * on both the atlas path and the stretch/flip path. The last call wins. An
@@ -340,6 +361,12 @@ const BLEND_SRC_IN = 5;
 const BLEND_SRC_ATOP = 9;
 /** Skia BlendMode.Plus — additive: dst = clamp(src + dst). */
 const BLEND_PLUS = 12;
+/**
+ * Skia BlendMode.Modulate — r = s·d. As `drawAtlas`'s blend mode it multiplies
+ * each sprite's texels by that sprite's colour. Always passed explicitly with
+ * colours: left out, RN Skia defaults to DstOver and CanvasKit to SrcOver.
+ */
+const BLEND_MODULATE = 13;
 
 /** Effects drawn as a shader-filled rect; the sprite's atlas frame is only a carrier. */
 type ZoneBgEffect =
@@ -580,6 +607,14 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   let longSrcSlice: RectLike[] | null = null;
   let longXformSlice: RSXformLike[] | null = null;
 
+  // Per-sprite colours for a coloured run, in the shape RN Skia reads natively:
+  // an array of `[r, g, b, a]` floats whose length equals the rect count. The
+  // `Float32Array(4)`s are pooled and the arrays are cached per run length under
+  // the same rules as `srcSlices`.
+  const colorPool: Float32Array[] = [];
+  const colorSlices: (Float32Array[] | undefined)[] = [];
+  let longColorSlice: Float32Array[] | null = null;
+
   const clearColor: Float32Array = new Float32Array(4);
   const tintColor: Float32Array = new Float32Array(4);
   const flashColor: Float32Array = new Float32Array(4);
@@ -689,6 +724,31 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     if (slice === undefined) {
       slice = xforms.slice(0, n);
       xformSlices[n] = slice;
+    }
+    return slice;
+  }
+
+  /** Unpack the first `n` packed-ARGB colours into the pool and return the length-`n` array of them. */
+  function fillColors(colors: Uint32Array, n: number): Float32Array[] {
+    while (colorPool.length < n) colorPool.push(new Float32Array(4));
+    for (let i = 0; i < n; i++) {
+      const argb = colors[i] as number;
+      const out = colorPool[i] as Float32Array;
+      out[0] = ((argb >>> 16) & 0xff) / 255;
+      out[1] = ((argb >>> 8) & 0xff) / 255;
+      out[2] = (argb & 0xff) / 255;
+      out[3] = (argb >>> 24) / 255;
+    }
+    if (n > MAX_CACHED_RUN_LENGTH) {
+      if (longColorSlice === null || longColorSlice.length !== n) {
+        longColorSlice = colorPool.slice(0, n);
+      }
+      return longColorSlice;
+    }
+    let slice = colorSlices[n];
+    if (slice === undefined) {
+      slice = colorPool.slice(0, n);
+      colorSlices[n] = slice;
     }
     return slice;
   }
@@ -879,6 +939,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     effect: OutlineEffect,
     alpha: number,
     sampling: SamplingOptionsLike | undefined,
+    colors: Float32Array[] | undefined,
   ): void {
     const paint = applyOutlinePaint(effect);
     paint.setAlphaf(alpha);
@@ -887,13 +948,13 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const offset = OUTLINE_OFFSETS[k] as readonly [number, number];
       fillXforms(commands, n, offset[0] * effect.width, offset[1] * effect.width);
       const dsts = getCachedXformSlice(n);
-      drawAtlasSampled(cvs, image, srcs, dsts, paint, sampling);
+      drawAtlasSampled(cvs, image, srcs, dsts, paint, sampling, colors);
     }
     paint.setAlphaf(1);
     defaultPaint.setAlphaf(alpha);
     fillXforms(commands, n, 0, 0);
     const mainDsts = getCachedXformSlice(n);
-    drawAtlasSampled(cvs, image, srcs, mainDsts, defaultPaint, sampling);
+    drawAtlasSampled(cvs, image, srcs, mainDsts, defaultPaint, sampling, colors);
     defaultPaint.setAlphaf(1);
   }
 
@@ -934,14 +995,17 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       if (pd !== 1) current.scale(pd, pd);
     },
 
-    drawAtlas(image, commands): void {
+    drawAtlas(image, commands, colors): void {
       if (current === null) return;
       const n = commands.length;
       if (n === 0) return;
 
       const cmd0 = commands[0] as SpriteDrawCommand;
       const effect = cmd0.effect;
-      const alpha = cmd0.alpha;
+      // A coloured run carries each sprite's opacity in its colour, so the
+      // paint stays opaque: on the atlas path for the whole run, and on the
+      // per-sprite paths (zone-bg, stretch/flip) set from the colour per sprite.
+      const alpha = colors === undefined ? cmd0.alpha : 1;
       const blendAdditive = cmd0.blend === 'additive';
       const flipX = cmd0.flipX;
       const flipY = cmd0.flipY;
@@ -958,6 +1022,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
         for (let i = 0; i < n; i++) {
           const cmd = commands[i] as SpriteDrawCommand;
           zoneBgRects[i]!.setXYWH(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
+          if (colors !== undefined) paint.setAlphaf(((colors[i] as number) >>> 24) / 255);
           current.drawRect(zoneBgRects[i]!, paint);
         }
         paint.setAlphaf(1);
@@ -982,6 +1047,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
           const dstR = stretchDstRects[i]!;
           srcR.setXYWH(cmd.srcX, cmd.srcY, cmd.srcW, cmd.srcH);
           dstR.setXYWH(cmd.dstX, cmd.dstY, cmd.dstW, cmd.dstH);
+          if (colors !== undefined) sPaint.setAlphaf(((colors[i] as number) >>> 24) / 255);
           if (cmd.flipX || cmd.flipY) {
             const cx = cmd.dstX + cmd.dstW * 0.5;
             const cy = cmd.dstY + cmd.dstH * 0.5;
@@ -1012,13 +1078,14 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
 
       ensurePoolCapacity(n);
       fillSrcRects(commands, n);
+      const atlasColors = colors === undefined ? undefined : fillColors(colors, n);
 
       if (effect?.type === 'outline') {
         if (blendAdditive) {
           outlinePaint?.setBlendMode?.(BLEND_PLUS);
           defaultPaint.setBlendMode?.(BLEND_PLUS);
         }
-        drawOutlined(current, image, commands, n, effect, alpha, sampling);
+        drawOutlined(current, image, commands, n, effect, alpha, sampling, atlasColors);
         if (blendAdditive) {
           outlinePaint?.setBlendMode?.(BLEND_SRC_OVER);
           defaultPaint.setBlendMode?.(BLEND_SRC_OVER);
@@ -1032,7 +1099,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const paint = effect === undefined ? defaultPaint : resolveEffectPaint(effect);
       if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
       paint.setAlphaf(alpha);
-      drawAtlasSampled(current, image, srcs, dsts, paint, sampling);
+      drawAtlasSampled(current, image, srcs, dsts, paint, sampling, atlasColors);
       paint.setAlphaf(1);
       if (blendAdditive) paint.setBlendMode?.(BLEND_SRC_OVER);
     },
@@ -1140,7 +1207,10 @@ export function getXformCounters(): { rotated: number; unrotated: number } {
 // Private helpers (module-private, not exported)
 // ---------------------------------------------------------------------------
 
-/** Without a sampling setting this is exactly the 4-argument call the surface always received. */
+/**
+ * Without colours or a sampling setting this is exactly the 4-argument call the
+ * surface always received. Colours always travel with an explicit Modulate.
+ */
 function drawAtlasSampled(
   cvs: DrawSurfaceLike,
   image: unknown,
@@ -1148,11 +1218,18 @@ function drawAtlasSampled(
   dsts: RSXformLike[],
   paint: PaintLike,
   sampling: SamplingOptionsLike | undefined,
+  colors: Float32Array[] | undefined,
 ): void {
-  if (sampling === undefined) {
-    cvs.drawAtlas(image, srcs, dsts, paint);
+  if (colors === undefined) {
+    if (sampling === undefined) {
+      cvs.drawAtlas(image, srcs, dsts, paint);
+    } else {
+      cvs.drawAtlas(image, srcs, dsts, paint, undefined, undefined, sampling);
+    }
+  } else if (sampling === undefined) {
+    cvs.drawAtlas(image, srcs, dsts, paint, BLEND_MODULATE, colors);
   } else {
-    cvs.drawAtlas(image, srcs, dsts, paint, undefined, undefined, sampling);
+    cvs.drawAtlas(image, srcs, dsts, paint, BLEND_MODULATE, colors, sampling);
   }
 }
 

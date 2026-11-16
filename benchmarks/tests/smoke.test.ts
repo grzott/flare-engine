@@ -30,6 +30,11 @@ import {
 } from '../src/integration.bench.js';
 import { buildVec2State, mathBenches, vec2Run } from '../src/math.bench.js';
 import { particlesBenches } from '../src/particles.bench.js';
+import {
+  buildParticlesDrawState,
+  particlesDrawBenches,
+  particlesDrawRun,
+} from '../src/particles-draw.bench.js';
 import { buildSearchState, pathfindingBenches, searchRun } from '../src/pathfinding.bench.js';
 import {
   buildWorld,
@@ -58,6 +63,7 @@ import {
   EXPECTED_SUITE_TITLES,
   findContractViolations,
 } from '../src/scenario-contract.js';
+import { cachedFactoryCalls, perFrameFactoryCalls } from '../src/skia-stub.js';
 import { buildDrawState, drawRun, tilemapBenches } from '../src/tilemap.bench.js';
 
 /**
@@ -103,6 +109,7 @@ const SUITES: Record<string, () => BenchStats[]> = {
   Pathfinding: () => pathfindingBenches(SMOKE_OVERRIDES),
   Math: () => mathBenches(SMOKE_OVERRIDES),
   RenderSystem: () => renderSystemBenches(SMOKE_OVERRIDES),
+  ParticlesDraw: () => particlesDrawBenches(SMOKE_OVERRIDES),
 };
 
 describe('microbench smoke', () => {
@@ -227,6 +234,44 @@ describe('workload stationarity', () => {
     }
     expect(state.batch.allocCount).toBe(allocs);
     expect(state.batch.count).toBe(0);
+  });
+
+  test('coloured, fading particles draw in one atlas call per frame and allocate nothing once warm', () => {
+    // Strict: a draw-surface member the stub does not account for throws.
+    const state = buildParticlesDrawState({ name: 'smoke', n: 300, innerIters: 1 }, true);
+    const { stub, batch, emitter } = state;
+
+    // Every particle has its own age, so the frame holds many alphas and colours.
+    const alphas = new Set(emitter.pool.particles.map((p) => emitter.pool.getAlpha(p)));
+    const colours = new Set(emitter.pool.particles.map((p) => emitter.pool.getColor(p).g));
+    expect(alphas.size).toBeGreaterThan(20);
+    expect(colours.size).toBeGreaterThan(20);
+
+    particlesDrawRun(state);
+    particlesDrawRun(state);
+    const first = state.queued;
+    expect(first).toBeGreaterThan(250);
+    const allocs = batch.allocCount;
+    const created = emitter.pool.created;
+    stub.reset();
+
+    const FRAMES = 100;
+    for (let i = 0; i < FRAMES; i++) {
+      particlesDrawRun(state);
+      expect(state.queued).toBe(first);
+    }
+
+    const c = stub.counters;
+    // One run for the whole stream, whatever its alphas and colours.
+    expect(c.drawAtlas).toBe(FRAMES);
+    expect(c.drawImageRect).toBe(0);
+    expect(c.drawRect).toBe(0);
+    // No sprite command, no particle and no Skia object was created.
+    expect(batch.allocCount).toBe(allocs);
+    expect(emitter.pool.created).toBe(created);
+    expect(cachedFactoryCalls(c)).toBe(0);
+    expect(perFrameFactoryCalls(c)).toBe(0);
+    expect(batch.count).toBe(0);
   });
 
   test('vec2 outputs are identical frame to frame', () => {

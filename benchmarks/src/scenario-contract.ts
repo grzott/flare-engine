@@ -73,6 +73,7 @@ export const EXPECTED_SUITE_TITLES = [
   'Pathfinding',
   'Math',
   'RenderSystem',
+  'ParticlesDraw',
 ] as const;
 
 /**
@@ -86,8 +87,11 @@ export const EXPECTED_SUITE_TITLES = [
  * `benchmarks/src`, which `check:perf-freshness` treats as the instrument for
  * every node suite. So the PR that empties the list stales the node capture it
  * lands with, and a second node window has to be captured after it merges.
+ *
+ * `ParticlesDraw` (#347) is the `drawParticles` suite, added after that
+ * recapture; the next one removes it from this list.
  */
-export const PENDING_FIRST_CAPTURE: readonly string[] = [];
+export const PENDING_FIRST_CAPTURE: readonly string[] = ['ParticlesDraw'];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [
@@ -169,6 +173,7 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
     'math.mat3         1000 fromTransform x parent',
   ],
   RenderSystem: ['render.system  1000 sprites / 3 z layers interleaved'],
+  ParticlesDraw: ['particles.draw  1000 coloured + fading / 1 atlas'],
 };
 
 export const EXPECTED_HEAP_SCENARIOS: readonly string[] = [

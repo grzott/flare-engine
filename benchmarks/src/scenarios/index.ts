@@ -20,6 +20,7 @@ import {
 import { INTEGRATION_SCENARIOS, type IntegrationScenario, PARTICLE_COUNT } from './integration.js';
 import { MATH_SCENARIOS, type MathKind, type MathScenario } from './math.js';
 import { PARTICLES_SCENARIOS, type ParticlesKind, type ParticlesScenario } from './particles.js';
+import { PARTICLES_DRAW_SCENARIOS, type ParticlesDrawScenario } from './particles-draw.js';
 import {
   PATHFINDING_SCENARIOS,
   type PathfindingAlgorithm,
@@ -48,6 +49,7 @@ export type {
   IntegrationScenario,
   MathKind,
   MathScenario,
+  ParticlesDrawScenario,
   ParticlesKind,
   ParticlesScenario,
   PathfindingAlgorithm,
@@ -72,6 +74,7 @@ export {
   INTEGRATION_SCENARIOS,
   MATH_SCENARIOS,
   PARTICLE_COUNT,
+  PARTICLES_DRAW_SCENARIOS,
   PARTICLES_SCENARIOS,
   PATHFINDING_SCENARIOS,
   PHYSICS_SCENARIOS,
@@ -92,7 +95,8 @@ type SuiteTitle =
   | 'Tilemap'
   | 'Pathfinding'
   | 'Math'
-  | 'RenderSystem';
+  | 'RenderSystem'
+  | 'ParticlesDraw';
 
 type NamedScenario = { readonly name: string };
 
@@ -109,4 +113,5 @@ export const SCENARIOS: Readonly<Record<SuiteTitle, readonly NamedScenario[]>> =
   Pathfinding: PATHFINDING_SCENARIOS,
   Math: MATH_SCENARIOS,
   RenderSystem: RENDER_SYSTEM_SCENARIOS,
+  ParticlesDraw: PARTICLES_DRAW_SCENARIOS,
 };

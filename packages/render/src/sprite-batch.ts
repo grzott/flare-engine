@@ -33,7 +33,8 @@ export interface SpriteDrawCommand {
   /** Per-instance alpha multiplier. Range [0, 1]. Default 1 (fully opaque).
    *  Participates in the batch key — sprites with different alphas are
    *  placed in separate batches so the renderer can apply each alpha once
-   *  per draw call without per-sprite overhead. */
+   *  per draw call without per-sprite overhead. A sprite drawn with a `color`
+   *  is the exception: its alpha is folded into that colour and leaves the key. */
   alpha: number;
   /** Rotation in radians, clockwise (Skia Y-down convention). Default 0.
    *  Rotation is applied about the anchor point. */
@@ -85,12 +86,16 @@ interface Batch {
   image: SkImageLike;
   effect: AnySpriteEffect | undefined;
   alpha: number;
+  colored: boolean;
   stretch: boolean;
   blend: 'normal' | 'additive';
   flipX: boolean;
   flipY: boolean;
   commands: SpriteDrawCommand[];
 }
+
+/** Sprites the colour buffers hold before their first growth. */
+const INITIAL_COLOR_CAPACITY = 64;
 
 /**
  * SpriteBatch — collects sprite draw commands and groups them by texture
@@ -103,6 +108,9 @@ interface Batch {
  *    identity, preserving global insertion (z-sorted) order. Sharing an effect
  *    reference and the same alpha across consecutive entities maximizes batch
  *    size while keeping sprites in correct draw order.
+ * 4. A sprite drawn with a `color` carries its alpha in that colour instead, so
+ *    consecutive coloured sprites that differ only in colour or alpha share one
+ *    run.
  *
  * The actual Skia Atlas draw call is delegated to a callback so this module
  * remains testable without Skia.
@@ -112,6 +120,13 @@ export class SpriteBatch {
   private _pool: SpriteDrawCommand[] = [];
   private _batches: Batch[] = [];
   private _allocCount = 0;
+  // Parallel to `_commands` by index, grown together. `_colored[i]` is 1 when
+  // command `i` was drawn with a colour; `_colors[i]` is then its packed ARGB
+  // with the command's alpha already folded into the alpha byte.
+  private _colors = new Uint32Array(INITIAL_COLOR_CAPACITY);
+  private _colored = new Uint8Array(INITIAL_COLOR_CAPACITY);
+  // The current run's colours, from index 0 — what the flush callback receives.
+  private _runColors = new Uint32Array(INITIAL_COLOR_CAPACITY);
   private _cull: { minX: number; minY: number; maxX: number; maxY: number } | null = null;
 
   /** Number of queued draw commands. */
@@ -159,7 +174,12 @@ export class SpriteBatch {
    *  `(0.5, 0.5)` = center, `(1, 1)` = bottom-right. `dstX` / `dstY`
    *  then refer to the anchor point instead of the top-left corner.
    *
-   *  `alpha` is a per-instance opacity multiplier in [0, 1]. Default 1. */
+   *  `alpha` is a per-instance opacity multiplier in [0, 1]. Default 1.
+   *
+   *  `color` is an optional packed-ARGB multiplier (`0xAARRGGBB`): each texel is
+   *  multiplied by it channel by channel, and `alpha` multiplies its alpha byte.
+   *  Sprites drawn with a `color` batch regardless of colour and alpha — see
+   *  `flush()`. Omit it and the sprite draws exactly as it did without one. */
   draw(
     image: SkImageLike,
     frame: SpriteFrame,
@@ -176,6 +196,7 @@ export class SpriteBatch {
     blend: 'normal' | 'additive' = 'normal',
     flipX = false,
     flipY = false,
+    color?: number,
   ): void {
     const cmd = this._acquire();
     const w = dstW ?? frame.w;
@@ -198,13 +219,16 @@ export class SpriteBatch {
     cmd.blend = blend;
     cmd.flipX = flipX;
     cmd.flipY = flipY;
+    this._setColor(this._commands.length, color, alpha);
     this._commands.push(cmd);
   }
 
   /** Queue a raw sprite draw with explicit src/dst rects. `dstX` / `dstY`
    *  refer to the anchor point — offset by `anchorX * dstW` / `anchorY * dstH`.
    *
-   *  `alpha` is a per-instance opacity multiplier in [0, 1]. Default 1. */
+   *  `alpha` is a per-instance opacity multiplier in [0, 1]. Default 1.
+   *
+   *  `color` is an optional packed-ARGB multiplier — see `draw()`. */
   drawRaw(
     image: SkImageLike,
     srcX: number,
@@ -224,6 +248,7 @@ export class SpriteBatch {
     blend: 'normal' | 'additive' = 'normal',
     flipX = false,
     flipY = false,
+    color?: number,
   ): void {
     const cmd = this._acquire();
     cmd.image = image;
@@ -244,6 +269,7 @@ export class SpriteBatch {
     cmd.blend = blend;
     cmd.flipX = flipX;
     cmd.flipY = flipY;
+    this._setColor(this._commands.length, color, alpha);
     this._commands.push(cmd);
   }
 
@@ -254,13 +280,22 @@ export class SpriteBatch {
    * responsible for queuing in z-sorted order) while still batching runs of
    * same-key sprites for efficiency.
    *
+   * Sprites drawn with a `color` form their own runs, keyed by
+   * `(image, effect, stretch, blend, flipX, flipY)`. `alpha` is not in that
+   * key, because it is folded into each sprite's colour. A coloured sprite and
+   * an uncoloured one never share a run.
+   *
    * @param drawAtlas Callback invoked once per run. Receives
    *   `(image, commands)` — all commands in a run share the same key and are
-   *   contiguous in the original insertion order.
+   *   contiguous in the original insertion order. A coloured run adds a third
+   *   argument, `colors`: packed ARGB, `colors[i]` belonging to `commands[i]`,
+   *   with that command's alpha already multiplied into the alpha byte. The
+   *   buffer is reused and may be longer than `commands`: read its first
+   *   `commands.length` entries, and only inside the callback.
    * @param renderer Optional renderer to record stats.
    */
   flush(
-    drawAtlas: (image: SkImageLike, commands: SpriteDrawCommand[]) => void,
+    drawAtlas: (image: SkImageLike, commands: SpriteDrawCommand[], colors?: Uint32Array) => void,
     renderer?: Renderer,
   ): void {
     if (this._commands.length === 0) return;
@@ -272,6 +307,7 @@ export class SpriteBatch {
         image: null!,
         effect: undefined,
         alpha: 1,
+        colored: false,
         stretch: false,
         blend: 'normal',
         flipX: false,
@@ -281,20 +317,30 @@ export class SpriteBatch {
       this._batches[0] = run;
     }
 
+    const commands = this._commands;
+    const colors = this._colors;
+    const colored = this._colored;
+    const runColors = this._runColors;
+
     // Walk commands in insertion order. Emit a drawAtlas call whenever the
     // run key changes, then reset the run bucket for the next run.
-    for (const cmd of this._commands) {
+    for (let i = 0; i < commands.length; i++) {
+      const cmd = commands[i] as SpriteDrawCommand;
+      const cmdColored = colored[i] === 1;
       if (
         run.commands.length > 0 &&
         (cmd.image !== run.image ||
           cmd.effect !== run.effect ||
-          cmd.alpha !== run.alpha ||
+          cmdColored !== run.colored ||
+          // A coloured sprite's alpha lives in its colour, so it cannot split a run.
+          (!cmdColored && cmd.alpha !== run.alpha) ||
           cmd.stretch !== run.stretch ||
           cmd.blend !== run.blend ||
           cmd.flipX !== run.flipX ||
           cmd.flipY !== run.flipY)
       ) {
-        drawAtlas(run.image, run.commands);
+        if (run.colored) drawAtlas(run.image, run.commands, runColors);
+        else drawAtlas(run.image, run.commands);
         if (renderer) {
           renderer.recordDrawCall();
           renderer.recordBatch();
@@ -304,16 +350,19 @@ export class SpriteBatch {
       run.image = cmd.image;
       run.effect = cmd.effect;
       run.alpha = cmd.alpha;
+      run.colored = cmdColored;
       run.stretch = cmd.stretch;
       run.blend = cmd.blend;
       run.flipX = cmd.flipX;
       run.flipY = cmd.flipY;
+      if (cmdColored) runColors[run.commands.length] = colors[i] as number;
       run.commands.push(cmd);
     }
 
     // Flush the final run.
     if (run.commands.length > 0) {
-      drawAtlas(run.image, run.commands);
+      if (run.colored) drawAtlas(run.image, run.commands, runColors);
+      else drawAtlas(run.image, run.commands);
       if (renderer) {
         renderer.recordDrawCall();
         renderer.recordBatch();
@@ -336,6 +385,32 @@ export class SpriteBatch {
       this._pool.push(cmd);
     }
     this._commands.length = 0;
+  }
+
+  /**
+   * Record whether the command about to be queued at `index` is coloured and,
+   * if so, its colour with `alpha` folded into the alpha byte.
+   */
+  private _setColor(index: number, color: number | undefined, alpha: number): void {
+    if (index === this._colors.length) {
+      const capacity = index * 2;
+      const colors = new Uint32Array(capacity);
+      colors.set(this._colors);
+      this._colors = colors;
+      const colored = new Uint8Array(capacity);
+      colored.set(this._colored);
+      this._colored = colored;
+      // Written from index 0 during each flush, so there is nothing to carry over.
+      this._runColors = new Uint32Array(capacity);
+    }
+    if (color === undefined) {
+      this._colored[index] = 0;
+      return;
+    }
+    this._colored[index] = 1;
+    const a = alpha <= 0 ? 0 : alpha >= 1 ? 1 : alpha;
+    // `>>> 0`: a set alpha bit would otherwise make the packed value negative.
+    this._colors[index] = ((Math.round((color >>> 24) * a) << 24) | (color & 0x00ffffff)) >>> 0;
   }
 
   private _acquire(): SpriteDrawCommand {

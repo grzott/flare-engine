@@ -11,6 +11,7 @@ import type {
   RuntimeEffectFactoryLike,
 } from '@flare-engine/render';
 import type {
+  BlendMode,
   CanvasKit,
   Canvas as CKCanvas,
   Image as CKImage,
@@ -35,21 +36,27 @@ const BLEND_SRC_IN = 5;
 const BLEND_SRC_ATOP = 9;
 const BLEND_PLUS = 12;
 
-// Grow-only flat Float32Array scratch buffers for flattening drawAtlas args.
-// Each instance of createWebSkiaModule gets its own pair.
-// srcView(n) / xformView(n) cache the view over the first n sprites per n; a view
-// is tied to the buffer it was cut from, so growing the buffers drops them all.
+// Grow-only flat scratch buffers for flattening drawAtlas args: Float32Array for
+// the rects and transforms, Uint32Array (one packed ARGB each) for the colours.
+// Each instance of createWebSkiaModule gets its own set.
+// srcView(n) / xformView(n) / colorView(n) cache the view over the first n sprites
+// per n; a view is tied to the buffer it was cut from, so growing the buffers drops
+// them all.
 function makeAtlasBuffers(): {
   srcs: Float32Array;
   xforms: Float32Array;
+  colors: Uint32Array;
   ensureCapacity(n: number): void;
   srcView(n: number): Float32Array;
   xformView(n: number): Float32Array;
+  colorView(n: number): Uint32Array;
 } {
   let srcs = new Float32Array(32 * 4);
   let xforms = new Float32Array(32 * 4);
+  let colors = new Uint32Array(32);
   const srcViews = new Map<number, Float32Array>();
   const xformViews = new Map<number, Float32Array>();
+  const colorViews = new Map<number, Uint32Array>();
 
   return {
     get srcs() {
@@ -58,15 +65,28 @@ function makeAtlasBuffers(): {
     get xforms() {
       return xforms;
     },
+    get colors() {
+      return colors;
+    },
     ensureCapacity(n: number): void {
       if (n * 4 > srcs.length) {
         let cap = srcs.length;
         while (cap < n * 4) cap *= 2;
         srcs = new Float32Array(cap);
         xforms = new Float32Array(cap);
+        colors = new Uint32Array(cap / 4);
         srcViews.clear();
         xformViews.clear();
+        colorViews.clear();
       }
+    },
+    colorView(n: number): Uint32Array {
+      let view = colorViews.get(n);
+      if (view === undefined) {
+        view = colors.subarray(0, n);
+        colorViews.set(n, view);
+      }
+      return view;
     },
     srcView(n: number): Float32Array {
       let view = srcViews.get(n);
@@ -140,7 +160,9 @@ function wrapCKCanvas(
     // DrawSurfaceLike.rotate is degrees (contract); CanvasKit Canvas.rotate takes degrees — pass-through.
     rotate: (degrees, cx, cy) => ck.rotate(degrees, cx, cy),
     clear: (color) => ck.clear(color),
-    drawAtlas(image, srcRects, dstXforms, paint, _blendMode, _colors, sampling) {
+    // `_blendMode` is not read: the renderer passes colours only ever with
+    // Modulate, so the presence of `colors` selects it.
+    drawAtlas(image, srcRects, dstXforms, paint, _blendMode, colors, sampling) {
       const n = srcRects.length;
       if (n === 0) return;
       atlasBuffers.ensureCapacity(n);
@@ -162,16 +184,33 @@ function wrapCKCanvas(
       const img = image as CKImage;
       const srcs = atlasBuffers.srcView(n);
       const xforms = atlasBuffers.xformView(n);
+      let blendMode: BlendMode | null = null;
+      let ckColors: Uint32Array | null = null;
+      if (colors !== undefined) {
+        // CanvasKit takes one packed ARGB per sprite. A reused Uint32Array is
+        // copied to the wasm heap as is; any other form allocates per call.
+        for (let i = 0; i < n; i++) {
+          const c = colors[i]!;
+          atlasBuffers.colors[i] =
+            ((Math.round(c[3]! * 255) << 24) |
+              (Math.round(c[0]! * 255) << 16) |
+              (Math.round(c[1]! * 255) << 8) |
+              Math.round(c[2]! * 255)) >>>
+            0;
+        }
+        blendMode = kit.BlendMode.Modulate;
+        ckColors = atlasBuffers.colorView(n);
+      }
       if (sampling === undefined) {
-        ck.drawAtlas(img, srcs, xforms, rawPaint(paint), null, null);
+        ck.drawAtlas(img, srcs, xforms, rawPaint(paint), blendMode, ckColors);
       } else {
         ck.drawAtlas(
           img,
           srcs,
           xforms,
           rawPaint(paint),
-          null,
-          null,
+          blendMode,
+          ckColors,
           sampling.filter === 0 ? ckSampling.nearest : ckSampling.linear,
         );
       }
@@ -225,6 +264,9 @@ function wrapCKCanvas(
  *
  * CK differences handled here:
  * - `drawAtlas` takes flat Float32Arrays — the wrapper flattens object pools.
+ *   Per-sprite colours arrive as `[r, g, b, a]` floats and leave as one packed
+ *   ARGB `Uint32Array`, with `BlendMode.Modulate`; an uncoloured run still
+ *   passes `null` for both.
  * - `PictureRecorder().beginRecording()` returns one surface object per recorder,
  *   re-pointed at each new recording. Use it only between `beginRecording` and the
  *   matching `finishRecordingAsPicture`; do not keep it across recordings.

@@ -24,6 +24,7 @@ import {
 } from './load.js';
 import { mathBenches } from './math.bench.js';
 import { particlesBenches } from './particles.bench.js';
+import { particlesDrawBenches } from './particles-draw.bench.js';
 import { pathfindingBenches } from './pathfinding.bench.js';
 import { physicsBenches } from './physics.bench.js';
 import { postfxBenches } from './postfx.bench.js';
@@ -79,6 +80,7 @@ function runAll(): Group[] {
     { title: 'Pathfinding', results: pathfindingBenches() },
     { title: 'Math', results: mathBenches() },
     { title: 'RenderSystem', results: renderSystemBenches() },
+    { title: 'ParticlesDraw', results: particlesDrawBenches() },
   ];
 }
 
@@ -546,6 +548,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push(
     '- **RenderSystem** — "op" is one `createRenderSystem` frame over N sprites, then `batch.clear()`: the z refresh, `sortByDrawOrder` over the order the system kept from the previous frame, and one `batch.draw` per sprite. Entity `i` is spawned on layer `i % 3`, so spawn order and draw order disagree throughout. Flushing is measured by the Render suite, not here.',
+  );
+  lines.push(
+    '- **ParticlesDraw** — "op" is one frame of particle drawing: `drawParticles` over N live particles into a `SpriteBatch`, `batch.flush` through the frame renderer against the counting Skia stub, and `endFrame`. The emitter is a saturated stream frozen before the measurement, so the N particles span every age and each has its own interpolated colour and alpha; they are queued as coloured sprites and flush as one run. `emitter.update` is the Particles suite\'s cost, not this one\'s.',
   );
   lines.push('');
   lines.push('## Gating native (C++) acceleration');

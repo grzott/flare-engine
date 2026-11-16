@@ -262,9 +262,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/particles": {
-      "ceiling": 25104,
-      "measured": 22821,
-      "measuredAt": "2026-09-08"
+      "ceiling": 36454,
+      "measured": 33140,
+      "measuredAt": "2026-11-16"
     },
     "@flare-engine/pathfinding": {
       "ceiling": 49437,
@@ -520,6 +520,10 @@
     {
       "date": "2026-11-16",
       "reason": "create ceiling raised 36074 -> 41280 B (measured 37527 x1.1), pending the owner's approval of the PR for issue #369. Each template (blank, topdown, shmup) ships a byte-identical Expo config plugin, plugins/with-windows-cmake.js (5834 B raw, 2455 B gzipped alone), registered in its app.json (+49 B raw each) and documented in its README (+1030 B raw, about +485 B gzipped each). Measured against the published 0.4.12 tarball, which equals main for this package (33387 B): this change adds 4140 B to the tarball, while the files gzipped alone grow 8902 B; the three plugin copies share one gzip window. Template source only; dist is unchanged. A Windows build fix, not a regression."
+    },
+    {
+      "date": "2026-11-16",
+      "reason": "particles ceiling raised 25104 -> 36454 B (measured 33140 x1.1), pending the owner's approval of the PR for issue #347 (#425). drawParticles gains an opt-in `color` option that passes each particle's interpolated colour through SpriteBatch's new per-sprite colour argument, plus the widened ParticleBatchLike.drawRaw signature and their docs. Measured against the published 0.4.12 tarball (22773 B): the tarball grows 10367 B, but the files gzipped alone grow only 3908 B. That gap is the gzip-window artifact: dist/index.js.map and index.mjs.map cross 32 KB (29390 -> 32420 B raw), which loses cross-file back-references in the single gzip stream. What an app bundles grows little: dist/index.mjs 11984 -> 13035 B raw (4219 -> 4619 B gzipped, +400 B); .d.mts +502 B gzipped; README +184 B gzipped. The 0.4.12 measurement of 2026-09-08 (22821 B) is the last one. A batching fix, not a regression."
     }
   ]
 }

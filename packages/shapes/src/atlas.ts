@@ -269,8 +269,10 @@ export function shapeAtlasNeedsRebake(atlas: ShapeAtlas, scale: number): boolean
 /**
  * Return `atlas` itself while `scale` is inside its re-raster band (see
  * `shapeAtlasNeedsRebake`), allocating nothing; otherwise bake the same specs
- * with the same options at `scale` and return the new atlas. Cell indices,
- * sizes and anchors carry over, so instance draws need no change. The old
+ * with the same options at `scale` and return the new atlas. Cell indices
+ * carry over exactly, and cell sizes and anchors to within one pixel of the
+ * old raster scale (each cell is rounded up to whole pixels), so instance
+ * draws need no change. The old
  * image is not released: that is the caller's to drop.
  */
 export function rebakeShapeAtlas(

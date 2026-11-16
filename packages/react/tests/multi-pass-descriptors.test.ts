@@ -185,3 +185,28 @@ describe('buildPostFxPasses — multi-pass descriptor ordering', () => {
     expect(result).toHaveLength(3);
   });
 });
+
+// `PostFxRuntime.buildPass` hands back one array and rewrites its passes'
+// uniform buffers in place. GameView keeps the previous frame's descriptors to
+// detect a change, so they must not alias anything the runtime rewrites.
+describe('buildPostFxPasses — a runtime that reuses its passes', () => {
+  it('descriptors from one frame keep their values after the next build', () => {
+    const bridge = createSkiaFrameRenderer(makeMockSkia());
+    bridge.beginFrame(800, 600);
+    const passes = [makePass('flash', ['intensity'], [1]), makePass('vignette', ['radius'], [0.5])];
+    const runtime: PostFxRuntimeLike = { supported: true, buildPass: () => passes };
+
+    const first = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+    (passes[0] as CompiledPassLike).uniforms[0] = 0.25;
+    passes.length = 1;
+    const second = bridge.buildPostFxPasses(runtime, makeMockChain(), 800, 600);
+
+    expect(second).not.toBe(first);
+    expect(first).toHaveLength(2);
+    expect(first[0]?.uniforms.intensity).toBe(1);
+    expect(first[1]?.uniforms.radius).toBe(0.5);
+    expect(second).toHaveLength(1);
+    expect(second[0]?.uniforms).not.toBe(first[0]?.uniforms);
+    expect(second[0]?.uniforms.intensity).toBe(0.25);
+  });
+});

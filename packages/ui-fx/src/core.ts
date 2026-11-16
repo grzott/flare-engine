@@ -9,6 +9,12 @@ export {
   type Vec2Out,
 } from './core/conventions';
 export {
+  type Placement,
+  type PlacementOptions,
+  placeFloatingInto,
+  type RectLike,
+} from './core/placement';
+export {
   compileTiming,
   type EasingName,
   type EasingSpec,
@@ -22,3 +28,4 @@ export {
   timingAt,
   timingToCssLinear,
 } from './core/timing';
+export { layoutToastStackInto, type ToastStackOptions } from './core/toast-layout';

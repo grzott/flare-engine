@@ -860,6 +860,11 @@ type FxEvent = { phase: 'start' | 'end'; cause: 'enter' | 'exit' | 'play'; finis
   - Without a snapshot entry, the whole timeline is live.
 - **`onFallback` from a run** plays `liveFallbackOf(preset)` through the driver, and the exit then
   completes as a live exit.
+- **`exitOn: 'press'` with a snapshot exit** calls `prepare()` (measure plus capture) at
+  `onPressIn` (C35).
+  - The run on release reuses that capture.
+  - A release before the capture lands waits for it, with the live view still shown.
+  - A press-out without a release (a cancelled press) discards the capture.
 
 - [ ] **Step 1: write the failing tests.** They render with `tests/support/dom.ts`, against a
   `FakeDriver` and `FakeFxRuntime` that record calls and expose `end(finished)` and `handoff()`.
@@ -880,6 +885,8 @@ test('external progress is passed to driver and fx', ...)
 test('exitOn press plays exit then onExited', ...)
 test('timeline: live entries then fx.run at the snapshot start', ...) // sequence(fade(0.7, 0.06), disintegrate()) → driver.play then fx.run after driver end
 test('onFallback mid-capture plays the live fallback', ...)
+test('exitOn press captures at press-in and reuses it on release', ...) // C35: target.capture called once, at onPressIn
+test('cancelled press discards the prepared capture', ...)
 ```
 
 - [ ] **Step 2:** run `bun test packages/ui-fx/tests/runtime/element.test.tsx`. **Expected:** FAIL.
@@ -1118,9 +1125,12 @@ test('onFallback mid-capture plays the live fallback', ...)
   - `FlareFxHost({ children, android?: { surfaceType?: 'TextureView' | 'SurfaceView'; zOrderOnTop?: boolean } })`.
     It renders children plus one absolute-fill `<Canvas pointerEvents="none">`, and provides
     `FxRuntime` and `hostFactory` through `FlareContext`.
-  - `captureView(ref: RefObject<View>, maxPx: number): Promise<FxImage | null>`. It wraps
-    `makeImageFromView`, downscales captures over `maxPx` (Review Focus 5), and returns `null` on a
-    rejection.
+  - `captureView(ref: RefObject<View>, maxPx: number, padding: number): Promise<FxImage | null>`.
+    - It wraps `makeImageFromView`, downscales captures over `maxPx` (Review Focus 5), and returns
+      `null` on a rejection.
+    - Padding (C36): if G1 shows the elevation shadow is missing, capture an outer padded host
+      instead.
+    - `FxImage` gains `padding` (px), and layers offset the drawing by it.
   - `interface EffectLayerProps { run: NativeRunState; onFirstFrame(): void; onDone(finished: boolean): void }`.
     Layers are keyed children of the canvas, mounted per run (or pooled per G2).
   - **Handoff:** the layer's first-frame worklet sets `target.hidden.value = 1` on the same UI frame
@@ -1154,7 +1164,13 @@ test('onFallback mid-capture plays the live fallback', ...)
 - **Produces, capture:**
   - `type WebRasterizer = (el: HTMLElement, pixelRatio: number) => Promise<HTMLCanvasElement | ImageBitmap | null>`
   - `setWebRasterizer(r: WebRasterizer | null): void`
-  - `modernScreenshotRasterizer(): Promise<WebRasterizer>` (a dynamic `import('modern-screenshot')`)
+  - `modernScreenshotRasterizer(): Promise<WebRasterizer>` (a dynamic `import('modern-screenshot')`).
+    It captures with padding p (C36):
+    `domToCanvas(el, { scale, width: w + 2p, height: h + 2p, style: { margin: p + 'px' } })`.
+  - **Full binary required (C37).** The host's default `wasmUrl` documentation names
+    `canvaskit-wasm/bin/full/canvaskit.wasm`. A non-`Error` rejection from `loadCanvasKit` (the
+    bare `Infinity` of a mismatched binary, #422) calls `onFallback` with a development-only warning
+    naming that file.
 - **Produces, CanvasKit source:**
   - `resolveCanvasKit(o: { canvasKit?: CanvasKit; wasmUrl?: string }): Promise<CanvasKit>`. The order is
     the prop, then `globalThis.CanvasKit`, then `loadCanvasKit(wasmUrl)`.
@@ -1184,6 +1200,10 @@ test('onFallback mid-capture plays the live fallback', ...)
   - An idle host schedules no rAF.
   - A capture over 2048 px is downscaled (Review Focus 5).
   - Capture resolving after unmount draws nothing (Review Focus 1).
+  - The padded capture is drawn offset by −p, so the element's box lands exactly on its measured
+    rect.
+  - `loadCanvasKit` rejecting with the number `Infinity` calls `onFallback`, and the warning names
+    `bin/full/canvaskit.wasm`.
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement.
 - [ ] **Step 4:** run the tests. **Expected:** PASS.

@@ -1,4 +1,19 @@
 export {
+  bakeShapeAtlas,
+  drawBakedShape,
+  rebakeShapeAtlas,
+  SHAPE_ATLAS_MAX_CELL,
+  type ShapeAtlas,
+  type ShapeAtlasCanvas,
+  type ShapeAtlasCell,
+  type ShapeAtlasOptions,
+  type ShapeAtlasPaint,
+  type ShapeAtlasSkia,
+  type ShapeAtlasSurface,
+  type ShapeBatchLike,
+  shapeAtlasNeedsRebake,
+} from './atlas.js';
+export {
   type ShapeBoundsBox,
   shapeBoundsBox,
   shapeBoundsBoxInto,

@@ -47,7 +47,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@flare-engine/assets": "^0.4.12",
     "@flare-engine/math": "^0.4.12"
+  },
+  "devDependencies": {
+    "@flare-engine/render": "^0.4.12"
   },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=2.0.0"

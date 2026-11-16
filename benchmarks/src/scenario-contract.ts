@@ -74,6 +74,7 @@ export const EXPECTED_SUITE_TITLES = [
   'Math',
   'RenderSystem',
   'ParticlesDraw',
+  'ShapesDraw',
 ] as const;
 
 /**
@@ -89,9 +90,10 @@ export const EXPECTED_SUITE_TITLES = [
  * lands with, and a second node window has to be captured after it merges.
  *
  * `ParticlesDraw` (#347) is the `drawParticles` suite, added after that
- * recapture; the next one removes it from this list.
+ * recapture; the next one removes it from this list. `ShapesDraw` (#348), the
+ * baked-shape `drawBakedShape` suite, joined it the same way.
  */
-export const PENDING_FIRST_CAPTURE: readonly string[] = ['ParticlesDraw'];
+export const PENDING_FIRST_CAPTURE: readonly string[] = ['ParticlesDraw', 'ShapesDraw'];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [
@@ -174,6 +176,7 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ],
   RenderSystem: ['render.system  1000 sprites / 3 z layers interleaved'],
   ParticlesDraw: ['particles.draw  1000 coloured + fading / 1 atlas'],
+  ShapesDraw: ['shapes.draw  1000 baked instances / 8 specs / 1 atlas'],
 };
 
 export const EXPECTED_HEAP_SCENARIOS: readonly string[] = [

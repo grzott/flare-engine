@@ -297,9 +297,9 @@
       "measuredAt": "2026-11-12"
     },
     "@flare-engine/render-web": {
-      "ceiling": 47268,
-      "measured": 42971,
-      "measuredAt": "2026-11-06"
+      "ceiling": 60186,
+      "measured": 54714,
+      "measuredAt": "2026-11-16"
     },
     "@flare-engine/scene": {
       "ceiling": 17618,
@@ -307,9 +307,9 @@
       "measuredAt": "2026-11-06"
     },
     "@flare-engine/shapes": {
-      "ceiling": 34034,
-      "measured": 30940,
-      "measuredAt": "2026-11-06"
+      "ceiling": 56550,
+      "measured": 51409,
+      "measuredAt": "2026-11-16"
     },
     "@flare-engine/share": {
       "ceiling": 17973,
@@ -524,6 +524,10 @@
     {
       "date": "2026-11-16",
       "reason": "particles ceiling raised 25104 -> 36454 B (measured 33140 x1.1), pending the owner's approval of the PR for issue #347 (#425). drawParticles gains an opt-in `color` option that passes each particle's interpolated colour through SpriteBatch's new per-sprite colour argument, plus the widened ParticleBatchLike.drawRaw signature and their docs. Measured against the published 0.4.12 tarball (22773 B): the tarball grows 10367 B, but the files gzipped alone grow only 3908 B. That gap is the gzip-window artifact: dist/index.js.map and index.mjs.map cross 32 KB (29390 -> 32420 B raw), which loses cross-file back-references in the single gzip stream. What an app bundles grows little: dist/index.mjs 11984 -> 13035 B raw (4219 -> 4619 B gzipped, +400 B); .d.mts +502 B gzipped; README +184 B gzipped. The 0.4.12 measurement of 2026-09-08 (22821 B) is the last one. A batching fix, not a regression."
+    },
+    {
+      "date": "2026-11-16",
+      "reason": "shapes ceiling raised 34034 -> 56550 B (measured 51409 x1.1) and render-web ceiling raised 47268 -> 60186 B (measured 54714 x1.1), pending the owner's approval of the PR for issue #348. shapes gains a new module, src/atlas.ts (11186 B raw): bakeShapeAtlas, shapeAtlasNeedsRebake, rebakeShapeAtlas, drawBakedShape and their types, plus README docs. render-web gains src/web-shape-skia.ts (6805 B raw): createWebShapeSkia, the CanvasKit-backed Skia handle the bake needs on web, plus README docs. Tarball growth against the last measurements of 2026-11-06: shapes 30940 -> 51409 B (+20469), render-web 42971 -> 54714 B (+11743). The tarball ships each new module in index.mjs, index.js and in both source maps' sourcesContent, and its declarations twice, so the tarball grows by more than the source added; what an app bundles is one copy (shapes dist/index.mjs is 24049 B raw, render-web's 23116 B raw, after the change). Measured 2026-11-16 against the published 0.4.12 tarballs: shapes 33239 -> 51409 B (+18170), each file gzipped alone 43077 -> 63030 B (+19953), dist/index.mjs 4912 -> 7050 B gzipped (+2138); render-web 44881 -> 54714 B (+9833, which includes #425's colour path merged after 0.4.12), each file gzipped alone 53687 -> 64944 B (+11257), dist/index.mjs 6165 -> 7380 B gzipped (+1215). The per-file growth matches the tarball growth, so this is new content, not the gzip-window artifact of #425. New opt-in API, not a regression."
     }
   ]
 }

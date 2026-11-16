@@ -21,10 +21,13 @@ export {
   type FileAssetLoaderOptions,
 } from './loaders.js';
 export {
+  type AtlasRowLayout,
+  type AtlasRowPosition,
   createProceduralAtlas,
   type ProceduralAtlas,
   type ProceduralAtlasOptions,
   type ProceduralFrameSpec,
+  packAtlasRows,
   type SkCanvasLike,
   type SkiaAtlasModuleLike,
   type SkPaintLike,

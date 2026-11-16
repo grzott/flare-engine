@@ -63,6 +63,11 @@ import {
   EXPECTED_SUITE_TITLES,
   findContractViolations,
 } from '../src/scenario-contract.js';
+import {
+  buildShapesDrawState,
+  shapesDrawBenches,
+  shapesDrawRun,
+} from '../src/shapes-draw.bench.js';
 import { cachedFactoryCalls, perFrameFactoryCalls } from '../src/skia-stub.js';
 import { buildDrawState, drawRun, tilemapBenches } from '../src/tilemap.bench.js';
 
@@ -110,6 +115,7 @@ const SUITES: Record<string, () => BenchStats[]> = {
   Math: () => mathBenches(SMOKE_OVERRIDES),
   RenderSystem: () => renderSystemBenches(SMOKE_OVERRIDES),
   ParticlesDraw: () => particlesDrawBenches(SMOKE_OVERRIDES),
+  ShapesDraw: () => shapesDrawBenches(SMOKE_OVERRIDES),
 };
 
 describe('microbench smoke', () => {
@@ -269,6 +275,36 @@ describe('workload stationarity', () => {
     // No sprite command, no particle and no Skia object was created.
     expect(batch.allocCount).toBe(allocs);
     expect(emitter.pool.created).toBe(created);
+    expect(cachedFactoryCalls(c)).toBe(0);
+    expect(perFrameFactoryCalls(c)).toBe(0);
+    expect(batch.count).toBe(0);
+  });
+
+  test('baked shapes draw in one atlas call per frame and allocate nothing once warm', () => {
+    // Strict: a draw-surface member the stub does not account for throws.
+    const state = buildShapesDrawState({ name: 'smoke', n: 300, specs: 8, innerIters: 1 }, true);
+    const { stub, batch, atlas } = state;
+    expect(new Set(atlas.cells).size).toBe(8);
+
+    shapesDrawRun(state);
+    shapesDrawRun(state);
+    expect(state.queued).toBe(300);
+    const allocs = batch.allocCount;
+    stub.reset();
+
+    const FRAMES = 100;
+    for (let i = 0; i < FRAMES; i++) {
+      shapesDrawRun(state);
+      expect(state.queued).toBe(300);
+    }
+
+    const c = stub.counters;
+    // One run for all 300 instances, whatever their spec, rotation and scale.
+    expect(c.drawAtlas).toBe(FRAMES);
+    expect(c.drawImageRect).toBe(0);
+    expect(c.drawRect).toBe(0);
+    // No sprite command and no Skia object was created.
+    expect(batch.allocCount).toBe(allocs);
     expect(cachedFactoryCalls(c)).toBe(0);
     expect(perFrameFactoryCalls(c)).toBe(0);
     expect(batch.count).toBe(0);

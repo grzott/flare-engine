@@ -57,6 +57,7 @@ import {
   findContractViolations,
   HEADLINE_PREFIXES,
 } from './scenario-contract.js';
+import { shapesDrawBenches } from './shapes-draw.bench.js';
 import { tilemapBenches } from './tilemap.bench.js';
 import { renderWebSections } from './web-sections.js';
 
@@ -81,6 +82,7 @@ function runAll(): Group[] {
     { title: 'Math', results: mathBenches() },
     { title: 'RenderSystem', results: renderSystemBenches() },
     { title: 'ParticlesDraw', results: particlesDrawBenches() },
+    { title: 'ShapesDraw', results: shapesDrawBenches() },
   ];
 }
 
@@ -551,6 +553,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push(
     '- **ParticlesDraw** — "op" is one frame of particle drawing: `drawParticles` over N live particles into a `SpriteBatch`, `batch.flush` through the frame renderer against the counting Skia stub, and `endFrame`. The emitter is a saturated stream frozen before the measurement, so the N particles span every age and each has its own interpolated colour and alpha; they are queued as coloured sprites and flush as one run. `emitter.update` is the Particles suite\'s cost, not this one\'s.',
+  );
+  lines.push(
+    '- **ShapesDraw** — "op" is one frame of baked-shape drawing: `drawBakedShape` for N instances into a `SpriteBatch`, `batch.flush` through the frame renderer against the counting Skia stub, and `endFrame`. The atlas is baked once in setup, against a Skia that draws nothing, so `bakeShapeAtlas` itself is not timed. Every instance has its own position, rotation and one of four uniform scales and no colour; they share the one atlas image and flush as one run.',
   );
   lines.push('');
   lines.push('## Gating native (C++) acceleration');

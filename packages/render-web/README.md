@@ -84,6 +84,24 @@ if (picture) {
 web.flush();
 ```
 
+### `createWebShapeSkia` — `web-shape-skia.ts`
+
+Adapts a `CanvasKit` instance into the `Skia` handle `@flare-engine/shapes` draws through, so `bakeShapeAtlas` can rasterize a shape atlas on web. Its `Surface.Make(width, height)` is CanvasKit's offscreen CPU surface (`kit.MakeSurface`), so the bake needs no WebGL context.
+
+```ts
+import type { CanvasKit } from 'canvaskit-wasm';
+import { createWebShapeSkia } from '@flare-engine/render-web';
+import { bakeShapeAtlas, type ShapeSpec } from '@flare-engine/shapes';
+
+declare const kit: CanvasKit;
+declare const specs: ShapeSpec[];
+
+const atlas = bakeShapeAtlas(createWebShapeSkia(kit), specs, window.devicePixelRatio);
+// atlas.image / atlas.sheet draw through SpriteBatch like any other atlas.
+```
+
+CanvasKit objects are not garbage-collected. The handle keeps track of the paints and paths it creates and frees them when a surface is disposed, which `bakeShapeAtlas` does after taking its snapshot; the atlas image is yours to `delete()` when you drop the atlas. The handle is meant for baking: calling `drawShape` with it every frame, with no surface to dispose, accumulates those objects.
+
 ### `createPostFxSurface` — `postfx-surface.ts`
 
 Creates a `PostFxSurface` that owns an offscreen scene canvas, a ping-pong intermediate, and an onscreen WebGL surface. At `composite()` time it runs the caller-supplied `EffectChain` through compiled SkSL shaders and blits the result to screen.

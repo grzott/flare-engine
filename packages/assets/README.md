@@ -95,6 +95,8 @@ const { image, sheet: atlas } = createProceduralAtlas(skia, [
 ]);
 ```
 
+`packAtlasRows(sizes, maxWidth, padding)` is the row layout behind `createProceduralAtlas`, exported for other atlas builders: it takes `{ w, h }[]` and returns one `{ x, y }` per entry plus the atlas `width` and `height`.
+
 **Rotated frames are not supported.** TexturePacker's "Allow rotation" packs some
 frames sideways; the parser cannot yet remap them, so they render rotated. Frames
 with `rotated: true` emit a dev-mode `console.warn` naming the frame — re-export

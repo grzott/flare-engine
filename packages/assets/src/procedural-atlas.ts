@@ -104,7 +104,7 @@ export function createProceduralAtlas(
   const maxWidth = options.maxWidth ?? 1024;
   const padding = options.padding ?? 0;
 
-  const positions = layoutRows(frames, maxWidth, padding);
+  const positions = packAtlasRows(frames, maxWidth, padding);
   const surface = Skia.Surface.Make(positions.width, positions.height);
   if (surface === null) {
     throw new Error(`Skia.Surface.Make returned null for ${positions.width}x${positions.height}`);
@@ -144,29 +144,41 @@ export function createProceduralAtlas(
   };
 }
 
-interface PackedPosition {
+/** Top-left corner of one packed frame, in atlas pixels. */
+export interface AtlasRowPosition {
   x: number;
   y: number;
 }
 
-interface PackedLayout {
-  rects: PackedPosition[];
+/** Result of {@link packAtlasRows}. */
+export interface AtlasRowLayout {
+  /** One position per input size, in input order. */
+  rects: AtlasRowPosition[];
+  /** Total atlas width in pixels (at least 1). */
   width: number;
+  /** Total atlas height in pixels (at least 1). */
   height: number;
 }
 
-function layoutRows(
-  frames: readonly ProceduralFrameSpec[],
+/**
+ * Row-pack `sizes` left to right, wrapping to a new row when the next frame
+ * would cross `maxWidth`. `padding` is the gap between neighbours and between
+ * rows; none is added at the atlas edges. A frame wider than `maxWidth` gets
+ * a row to itself and widens the atlas. `createProceduralAtlas` uses this
+ * layout.
+ */
+export function packAtlasRows(
+  sizes: readonly { readonly w: number; readonly h: number }[],
   maxWidth: number,
   padding: number,
-): PackedLayout {
-  const rects: PackedPosition[] = [];
+): AtlasRowLayout {
+  const rects: AtlasRowPosition[] = [];
   let x = 0;
   let y = 0;
   let rowHeight = 0;
   let atlasWidth = 0;
 
-  for (const spec of frames) {
+  for (const spec of sizes) {
     if (x > 0 && x + spec.w > maxWidth) {
       y += rowHeight + padding;
       x = 0;

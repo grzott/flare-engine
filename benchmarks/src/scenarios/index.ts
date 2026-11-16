@@ -38,6 +38,7 @@ import {
   type TextureOrder,
 } from './render.js';
 import { RENDER_SYSTEM_SCENARIOS, type RenderSystemScenario } from './render-system.js';
+import { SHAPES_DRAW_SCENARIOS, type ShapesDrawScenario } from './shapes-draw.js';
 import { TILEMAP_SCENARIOS, type TilemapKind, type TilemapScenario } from './tilemap.js';
 
 export type {
@@ -61,6 +62,7 @@ export type {
   PostFxScenario,
   RenderEffectKey,
   RenderSystemScenario,
+  ShapesDrawScenario,
   SortScenario,
   TextureOrder,
   TilemapKind,
@@ -80,6 +82,7 @@ export {
   PHYSICS_SCENARIOS,
   POSTFX_SCENARIOS,
   RENDER_SYSTEM_SCENARIOS,
+  SHAPES_DRAW_SCENARIOS,
   SORT_SCENARIOS,
   TILEMAP_SCENARIOS,
 };
@@ -96,7 +99,8 @@ type SuiteTitle =
   | 'Pathfinding'
   | 'Math'
   | 'RenderSystem'
-  | 'ParticlesDraw';
+  | 'ParticlesDraw'
+  | 'ShapesDraw';
 
 type NamedScenario = { readonly name: string };
 
@@ -114,4 +118,5 @@ export const SCENARIOS: Readonly<Record<SuiteTitle, readonly NamedScenario[]>> =
   Math: MATH_SCENARIOS,
   RenderSystem: RENDER_SYSTEM_SCENARIOS,
   ParticlesDraw: PARTICLES_DRAW_SCENARIOS,
+  ShapesDraw: SHAPES_DRAW_SCENARIOS,
 };

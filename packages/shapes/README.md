@@ -12,7 +12,7 @@ Mobile and indie game prototypes don't need sprite sheets to start. Compose ship
 bun add @flare-engine/shapes @shopify/react-native-skia
 ```
 
-`@shopify/react-native-skia` is an **optional, type-only peer** — `src/draw.ts` imports it via `import type` only (for the injected `Skia` / `canvas` / `paint` handles), so it never enters the runtime bundle. Skip it entirely on web/CanvasKit; add it only where you actually render on native Skia.
+`@shopify/react-native-skia` is an **optional, type-only peer** — `src/draw.ts` imports it via `import type` only (for the injected `Skia` / `canvas` / `paint` handles), so it never enters the runtime bundle. Skip it entirely on web/CanvasKit; add it only where you actually render on native Skia. On web, the `Skia` handle is `createWebShapeSkia(kit)` from `@flare-engine/render-web` (see [Baking an atlas](#baking-an-atlas)).
 
 ## Usage
 
@@ -112,6 +112,63 @@ const hitHeight = hit.maxY - hit.minY;
 // For glow halo sizing — radius of one primitive.
 const glowR = singleShapeRadius({ kind: 'circle', r: 14 });
 ```
+
+## Baking an atlas
+
+`drawShape` costs one Skia draw per fill, one per stroke and one or two per glow ring, so a scene of shape-built entities pays several draw calls per entity. `bakeShapeAtlas` rasterizes each spec once into one image; the instances then draw as sprites through `SpriteBatch`, and N of them are one draw call.
+
+```ts
+import { SpriteBatch } from '@flare-engine/render';
+import {
+  bakeShapeAtlas,
+  drawBakedShape,
+  rebakeShapeAtlas,
+  type ShapeAtlasSkia,
+  type ShapeSpec,
+} from '@flare-engine/shapes';
+
+// Native: `Skia` from @shopify/react-native-skia.
+// Web: `createWebShapeSkia(kit)` from @flare-engine/render-web.
+declare const skia: ShapeAtlasSkia;
+declare const batch: SpriteBatch;
+declare const pixelDensity: number;
+declare const zoom: number;
+
+const specs: ShapeSpec[] = [
+  { kind: 'circle', r: 10, fill: 0xffc9a24a, glow: 'friendly' },
+  { kind: 'star', points: 5, rOuter: 12, rInner: 5, fill: 0xffff2b2b, stroke: 0xff000000 },
+];
+
+// Once, outside the frame loop. The third argument is the raster scale:
+// atlas pixels per spec unit.
+let atlas = bakeShapeAtlas(skia, specs, pixelDensity * zoom);
+
+function frame(): void {
+  // Returns the same atlas, allocation-free, until the scale leaves the band.
+  atlas = rebakeShapeAtlas(skia, atlas, pixelDensity * zoom);
+
+  // index, x, y, then optional rotation (radians), uniform scale, colour, alpha.
+  drawBakedShape(batch, atlas, 0, 120, 80);
+  drawBakedShape(batch, atlas, 1, 200, 80, Math.PI / 4, 1.5);
+  drawBakedShape(batch, atlas, 1, 260, 80, 0, 1, 0x80ffffff);
+}
+```
+
+`atlas.image` and `atlas.sheet` are the pair `SpriteBatch` draws, and `atlas.cells[i]` describes the cell baked from `specs[i]`. A spec object listed twice is baked once.
+
+**The raster scale is explicit.** The bake cannot see the device scale, so you pass it: the number of screen pixels one spec unit covers, which is pixel density times camera zoom times the instance scale you mostly draw at. Baking at 1 on a 3× display draws blurry shapes.
+
+**The re-raster rule.** A baked atlas is kept while the scale you want stays between 0.75× and 1.5× of the scale it was baked at; inside that band the baked pixels are drawn as they are. `shapeAtlasNeedsRebake(atlas, scale)` is the test, and `rebakeShapeAtlas` applies it: inside the band it returns the atlas it was given, outside it bakes the same specs at the new scale. Cell indices do not change across a re-bake, and neither do a spec's origin and drawn size, so instance draws need no change. A cell's `width`/`height` and its fractional anchors can differ by the rounding margin of either bake, because each cell is rounded up to whole pixels. The previous image is yours to release.
+
+**The 2048 px cell cap.** No cell is rasterized larger than `SHAPE_ATLAS_MAX_CELL` (2048 px) on its longer side. A spec that would need more is baked at a lower scale of its own, so its longer side is exactly 2048 px; `cell.scale` reports the scale it got. It still draws at the right size, only softer. Nothing throws. The cap is per cell: the atlas wraps rows at `maxWidth` (default 2048) but grows as tall as its rows need, so bake very large or very many specs into more than one atlas.
+
+**Limits.**
+
+- **Animated specs stay on `drawShape`.** The bake is a snapshot. A spec whose parameters change every frame, such as an `arc` used as a cooldown sweep, would re-bake every frame.
+- **Stroke and glow scale with the instance.** A baked instance is a sprite: scaling it scales its stroke width and glow ring too, including across the re-raster band.
+- **Rotation is rigid.** `drawBakedShape` turns the whole cell about the spec's origin. `drawShape`'s `rot` turns each part about its own centre and leaves `ox`/`oy` unrotated, so a rotated `ship` or offset spec looks different on the two paths.
+- **Colours are baked in.** The optional `color` argument multiplies the baked pixels (it is `SpriteBatch`'s per-sprite colour); it cannot recolour one part. Instances drawn with a `color` and instances drawn without one form separate runs.
+- **Uniform scale only** on the batched path.
 
 ## Adding a new primitive
 

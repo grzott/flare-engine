@@ -315,6 +315,24 @@ describe('re-raster band', () => {
     expect(shapeAtlasNeedsRebake(next, 3)).toBe(false);
     expect(shapeAtlasNeedsRebake(atlas, 3)).toBe(true);
   });
+
+  test('a downward re-bake keeps each spec origin even when the cell size rounds differently', () => {
+    const { Skia } = createStubSkia();
+    // Non-whole bounds: each bake rounds its cell up to whole pixels at its own scale.
+    const ODD: ShapeSpec = { kind: 'rect', w: 2.01, h: 1.37, fill: 0xffffffff, ox: 0.3 };
+    const atlas = bakeShapeAtlas(Skia, [ODD], 4);
+    const next = rebakeShapeAtlas(Skia, atlas, 1);
+    const before = atlas.cells[0]!;
+    const after = next.cells[0]!;
+
+    expect(next).not.toBe(atlas);
+    // The origin offset inside the cell, in spec units, is exactly the spec's -minX / -minY.
+    expect(after.anchorX * after.width).toBeCloseTo(before.anchorX * before.width, 9);
+    expect(after.anchorY * after.height).toBeCloseTo(before.anchorY * before.height, 9);
+    // The cell itself may grow by the coarser bake's rounding margin, never shrink below the spec.
+    expect(after.width).toBeGreaterThanOrEqual(before.width - 1e-9);
+    expect(after.height).toBeGreaterThanOrEqual(before.height - 1e-9);
+  });
 });
 
 describe('drawBakedShape', () => {

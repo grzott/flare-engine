@@ -10,7 +10,7 @@
 
 `drawBakedShape(batch, atlas, index, x, y, rot?, scale?, color?, alpha?)` queues one instance with the spec's origin at `(x, y)`, rotated about it and scaled uniformly. `color` is the per-sprite colour multiplier `SpriteBatch.draw` takes. It allocates nothing.
 
-`shapeAtlasNeedsRebake(atlas, scale)` is `true` once `scale` is below 0.75x or above 1.5x of the scale the atlas was baked at. `rebakeShapeAtlas(Skia, atlas, scale)` returns the atlas it was given while `scale` is inside that band, and otherwise bakes the same specs at the new scale; cell indices are unchanged by a re-bake, and cell sizes and anchors stay within one pixel of the old raster scale (each cell is rounded up to whole pixels).
+`shapeAtlasNeedsRebake(atlas, scale)` is `true` once `scale` is below 0.75x or above 1.5x of the scale the atlas was baked at. `rebakeShapeAtlas(Skia, atlas, scale)` returns the atlas it was given while `scale` is inside that band, and otherwise bakes the same specs at the new scale; cell indices are unchanged by a re-bake, and so are each spec's origin and drawn size; a cell's `width`/`height` and fractional anchors can differ by the rounding margin of either bake, because each cell is rounded up to whole pixels.
 
 A cell is never rasterized larger than `SHAPE_ATLAS_MAX_CELL` (2048 px) on its longer side. A spec that would need more is baked at a lower scale of its own, reported as `cell.scale`, and still draws at the same size. It does not throw.
 

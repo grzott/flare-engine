@@ -16,8 +16,24 @@ android` builds and installs a dev client instead; after that first build,
 `bun run start` attaches to it normally.
 
 The first Android build takes a few minutes and needs the Android SDK plus a
-JDK. Two things that will otherwise cost you an afternoon:
+JDK. Three things that will otherwise cost you an afternoon:
 
+- **On Windows, install CMake 3.31.6 and enable long paths.** The Android SDK's
+  default CMake 3.22.1 ships a ninja that ignores Windows long-path support,
+  and React Native's codegen nests build paths past 260 characters even from a
+  short project path.
+  Install the SDK's CMake 3.31.6 with `sdkmanager "cmake;3.31.6"` or in Android
+  Studio (SDK Manager > SDK Tools > Show Package Details > CMake 3.31.6), and
+  enable `LongPathsEnabled` from an administrator PowerShell:
+
+  ```powershell
+  New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force
+  ```
+
+  `plugins/with-windows-cmake.js` writes `cmake.dir` into
+  `android/local.properties` at prebuild, picking the newest installed 3.x
+  CMake from 3.31.6. Stay on 3.x: Skia declares a minimum CMake version that
+  CMake 4 no longer accepts.
 - **Build from a short path.** Skia's CMake step generates paths ~120
   characters longer than your project directory, and Windows still fails at 260
   (`CreateProcess error=2`). `C:\src\my-app` is fine; a deep temp path is not.
@@ -52,6 +68,8 @@ the loader.
   when it is first imported, so importing `App` any earlier leaves Skia hollow.
 - `scripts/copy-canvaskit.mjs` — copies the CanvasKit wasm into `public/` for the
   web build.
+- `plugins/with-windows-cmake.js` — Expo config plugin; on Windows, points the
+  Android build at the SDK's CMake 3.31.6 or a newer 3.x (see Develop).
 - `app.json` — Expo configuration.
 
 ## Tests

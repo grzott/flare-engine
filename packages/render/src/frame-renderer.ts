@@ -175,6 +175,12 @@ export interface DrawSurfaceLike {
    * `undefined`. `sampling` is passed only for an image with a
    * `setImageSampling` setting — otherwise an uncoloured call stops at `paint`
    * and a coloured one at `colors`.
+   *
+   * A coloured run exists only when a caller passes a `color` to
+   * `SpriteBatch.draw` / `drawRaw` (or `drawParticles` with `color: true`).
+   * Without one, every call this surface receives is the same as before these
+   * parameters were ever filled, so a surface that ignores them keeps working
+   * for every caller that does not opt in.
    */
   drawAtlas(
     image: unknown,

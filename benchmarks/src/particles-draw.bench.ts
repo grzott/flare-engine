@@ -11,6 +11,7 @@ const DT = 1 / 60;
 const VIEW_W = 800;
 const VIEW_H = 600;
 const FRAME = { x: 0, y: 0, w: 16, h: 16 };
+const COLORED = { color: true } as const;
 
 type BatchImage = Parameters<SpriteBatch['drawRaw']>[0];
 
@@ -71,7 +72,7 @@ export function buildParticlesDrawState(
 export function particlesDrawRun(state: ParticlesDrawState): void {
   const { emitter, batch, renderer, image } = state;
   renderer.beginFrame(VIEW_W, VIEW_H);
-  drawParticles(emitter.pool, batch, image, FRAME);
+  drawParticles(emitter.pool, batch, image, FRAME, COLORED);
   state.queued = batch.count;
   batch.flush(renderer.drawAtlas);
   renderer.endFrame();

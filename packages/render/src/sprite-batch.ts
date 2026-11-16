@@ -283,7 +283,9 @@ export class SpriteBatch {
    * Sprites drawn with a `color` form their own runs, keyed by
    * `(image, effect, stretch, blend, flipX, flipY)`. `alpha` is not in that
    * key, because it is folded into each sprite's colour. A coloured sprite and
-   * an uncoloured one never share a run.
+   * an uncoloured one never share a run. Coloured runs exist only for sprites
+   * a caller queued with a `color`; for every other sprite, every run still
+   * shares one `alpha`, as before.
    *
    * @param drawAtlas Callback invoked once per run. Receives
    *   `(image, commands)` — all commands in a run share the same key and are

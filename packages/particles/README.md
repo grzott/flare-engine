@@ -93,14 +93,16 @@ not merely assumed.
 The loop allocates nothing per particle, and skips any particle whose interpolated size or alpha has
 reached zero rather than paying for an invisible draw call.
 
-**Colour is applied per particle.** Each particle's interpolated `startR/G/B → endR/G/B` goes to
-`drawRaw` as its trailing `color` argument, an opaque packed ARGB (`0xAARRGGBB`) that multiplies the
-frame's texels: a white frame takes the colour exactly, and a particle left at the default white
-draws unchanged. Alpha stays the separate `alpha` argument. With a `@flare-engine/render`
-`SpriteBatch`, sprites drawn with a colour share one run per image whatever their colours and alphas,
-so a fading, colour-shifting emitter is one draw call rather than one per distinct alpha. The
-constant `effect` option is still there for what a multiplier cannot express (flash, outline,
-grayscale).
+**Per-particle colour is opt-in:** `drawParticles(pool, batch, image, frame, { color: true })`.
+Each particle's interpolated `startR/G/B → endR/G/B` then goes to `drawRaw` as its trailing `color`
+argument, an opaque packed ARGB (`0xAARRGGBB`) that multiplies the frame's texels: a white frame
+takes the colour exactly, and a particle left at the default white draws unchanged. Alpha stays the
+separate `alpha` argument. With a `@flare-engine/render` `SpriteBatch`, sprites drawn with a colour
+share one run per image whatever their colours and alphas, so a fading, colour-shifting emitter is
+one draw call rather than one per distinct alpha — the reason to turn it on even for white
+particles. Without the option, `drawParticles` draws exactly as before: colour is not applied and
+each distinct alpha is its own run. The constant `effect` option is still there for what a
+multiplier cannot express (flash, outline, grayscale).
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineparticles--4kb-gzip).
 

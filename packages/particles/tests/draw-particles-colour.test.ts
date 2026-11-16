@@ -38,6 +38,7 @@ function fakeBatch(): ParticleBatchLike & { readonly calls: RecordedDraw[] } {
 
 const FRAME: ParticleFrameLike = { x: 0, y: 0, w: 8, h: 8 };
 const IMAGE = { id: 'atlas' };
+const COLORED = { color: true } as const;
 
 /** One live particle halfway through its life, visible and opaque unless overridden. */
 function midLifeParticle(pool: ParticlePool, overrides: Partial<Particle> = {}): Particle {
@@ -58,7 +59,7 @@ describe('drawParticles per-particle colour', () => {
     midLifeParticle(pool, { startR: 1, startG: 0.5, startB: 0, endR: 0, endG: 0.5, endB: 1 });
 
     const batch = fakeBatch();
-    drawParticles(pool, batch, IMAGE, FRAME);
+    drawParticles(pool, batch, IMAGE, FRAME, COLORED);
 
     // Halfway from (1, 0.5, 0) to (0, 0.5, 1) is (0.5, 0.5, 0.5); 127.5 rounds to 0x80.
     expect(batch.calls[0]?.color).toBe(0xff808080);
@@ -69,7 +70,7 @@ describe('drawParticles per-particle colour', () => {
     midLifeParticle(pool);
 
     const batch = fakeBatch();
-    drawParticles(pool, batch, IMAGE, FRAME);
+    drawParticles(pool, batch, IMAGE, FRAME, COLORED);
 
     expect(batch.calls[0]?.color).toBe(0xffffffff);
   });
@@ -80,7 +81,7 @@ describe('drawParticles per-particle colour', () => {
     // endG / endB default to 1, so the colour is mid-fade too.
 
     const batch = fakeBatch();
-    drawParticles(pool, batch, IMAGE, FRAME);
+    drawParticles(pool, batch, IMAGE, FRAME, COLORED);
 
     expect(batch.calls[0]?.alpha).toBeCloseTo(0.5, 6);
     expect(batch.calls[0]?.color).toBe(0xffff8080);
@@ -91,7 +92,7 @@ describe('drawParticles per-particle colour', () => {
     midLifeParticle(pool);
 
     const batch = fakeBatch();
-    drawParticles(pool, batch, IMAGE, FRAME);
+    drawParticles(pool, batch, IMAGE, FRAME, COLORED);
 
     const call = batch.calls[0];
     expect(call?.argCount).toBe(19);
@@ -106,7 +107,7 @@ describe('drawParticles per-particle colour', () => {
     midLifeParticle(pool, { startR: 3, endR: 3, startG: -2, endG: -2, startB: 0.2, endB: 0.2 });
 
     const batch = fakeBatch();
-    drawParticles(pool, batch, IMAGE, FRAME);
+    drawParticles(pool, batch, IMAGE, FRAME, COLORED);
 
     expect(batch.calls[0]?.color).toBe(0xffff0033);
   });
@@ -119,7 +120,7 @@ describe('drawParticles per-particle colour', () => {
     const effect = { type: 'grayscale' };
 
     const batch = fakeBatch();
-    drawParticles(pool, batch, IMAGE, FRAME, { effect });
+    drawParticles(pool, batch, IMAGE, FRAME, { effect, color: true });
 
     expect(batch.calls.map((c) => c.color)).toEqual([0xffff0000, 0xff00ff00, 0xff0000ff]);
     for (const call of batch.calls) expect(call.effect).toBe(effect);
@@ -147,11 +148,49 @@ describe('drawParticles per-particle colour', () => {
     for (let i = 0; i < 120; i++) {
       emitter.update(1 / 60);
       batch.calls.length = 0;
-      drawParticles(emitter.pool, batch, IMAGE, FRAME);
+      drawParticles(emitter.pool, batch, IMAGE, FRAME, COLORED);
     }
     expect(emitter.pool.created).toBe(created);
     // One live frame holds particles of many ages: many colours, many alphas.
     expect(new Set(batch.calls.map((c) => c.color)).size).toBeGreaterThan(10);
     expect(new Set(batch.calls.map((c) => c.alpha)).size).toBeGreaterThan(10);
+  });
+});
+
+describe('drawParticles without the color option', () => {
+  test('makes the same 14-argument call as before the option existed, colour or not', () => {
+    const pool = new ParticlePool(8);
+    midLifeParticle(pool, { startR: 1, endR: 1, startG: 0, endG: 0, startB: 0, endB: 0 });
+
+    const batch = fakeBatch();
+    drawParticles(pool, batch, IMAGE, FRAME);
+
+    const call = batch.calls[0];
+    expect(call?.argCount).toBe(14);
+    expect(call?.color).toBeUndefined();
+    expect(call?.alpha).toBe(1);
+  });
+
+  test('`color: false` behaves like the default', () => {
+    const pool = new ParticlePool(8);
+    midLifeParticle(pool, { startR: 0, endR: 0 });
+
+    const batch = fakeBatch();
+    drawParticles(pool, batch, IMAGE, FRAME, { color: false });
+
+    expect(batch.calls[0]?.argCount).toBe(14);
+    expect(batch.calls[0]?.color).toBeUndefined();
+  });
+
+  test('still skips shrunk and faded particles', () => {
+    const pool = new ParticlePool(8);
+    midLifeParticle(pool, { startSize: 0, endSize: 0 });
+    midLifeParticle(pool, { startAlpha: 0, endAlpha: 0 });
+    midLifeParticle(pool);
+
+    const batch = fakeBatch();
+    drawParticles(pool, batch, IMAGE, FRAME);
+
+    expect(batch.calls.length).toBe(1);
   });
 });

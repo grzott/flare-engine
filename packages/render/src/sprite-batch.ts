@@ -125,6 +125,8 @@ export class SpriteBatch {
   // with the command's alpha already folded into the alpha byte.
   private _colors = new Uint32Array(INITIAL_COLOR_CAPACITY);
   private _colored = new Uint8Array(INITIAL_COLOR_CAPACITY);
+  // True while the queue holds at least one coloured command.
+  private _anyColored = false;
   // The current run's colours, from index 0 — what the flush callback receives.
   private _runColors = new Uint32Array(INITIAL_COLOR_CAPACITY);
   private _cull: { minX: number; minY: number; maxX: number; maxY: number } | null = null;
@@ -302,7 +304,32 @@ export class SpriteBatch {
   ): void {
     if (this._commands.length === 0) return;
 
-    // Ensure one reusable run-bucket exists (allocated once, never in steady state).
+    // Two loops on purpose (issue #428). When one loop served both, the first
+    // coloured sprite sent it back to unoptimised code, and in a process that
+    // had already recompiled it many times for uncoloured runs JSC was slow to
+    // optimise it again. The coloured loop is its own function, compiled from
+    // coloured queues from its first call; the uncoloured loop does no colour work.
+    if (this._anyColored) {
+      this._flushColored(drawAtlas, renderer);
+      this._anyColored = false;
+    } else {
+      this._flushUncolored(drawAtlas, renderer);
+    }
+
+    // Return commands to pool. Field values remain on the command until
+    // the next draw() overwrites them — consumers must read inside the
+    // drawAtlas callback, not after flush returns.
+    this._recycle();
+  }
+
+  /** Clear all queued commands without drawing. */
+  clear(): void {
+    this._anyColored = false;
+    this._recycle();
+  }
+
+  /** The one reusable run-bucket (allocated once, never in steady state). */
+  private _runBucket(): Batch {
     let run = this._batches[0];
     if (run === undefined) {
       run = {
@@ -318,7 +345,65 @@ export class SpriteBatch {
       };
       this._batches[0] = run;
     }
+    return run;
+  }
 
+  /** `flush` for a queue that holds no coloured sprite. */
+  private _flushUncolored(
+    drawAtlas: (image: SkImageLike, commands: SpriteDrawCommand[]) => void,
+    renderer: Renderer | undefined,
+  ): void {
+    const run = this._runBucket();
+    const commands = this._commands;
+
+    // Walk commands in insertion order. Emit a drawAtlas call whenever the
+    // run key changes, then reset the run bucket for the next run.
+    for (let i = 0; i < commands.length; i++) {
+      const cmd = commands[i] as SpriteDrawCommand;
+      if (
+        run.commands.length > 0 &&
+        (cmd.image !== run.image ||
+          cmd.effect !== run.effect ||
+          cmd.alpha !== run.alpha ||
+          cmd.stretch !== run.stretch ||
+          cmd.blend !== run.blend ||
+          cmd.flipX !== run.flipX ||
+          cmd.flipY !== run.flipY)
+      ) {
+        drawAtlas(run.image, run.commands);
+        if (renderer) {
+          renderer.recordDrawCall();
+          renderer.recordBatch();
+        }
+        run.commands.length = 0;
+      }
+      run.image = cmd.image;
+      run.effect = cmd.effect;
+      run.alpha = cmd.alpha;
+      run.stretch = cmd.stretch;
+      run.blend = cmd.blend;
+      run.flipX = cmd.flipX;
+      run.flipY = cmd.flipY;
+      run.commands.push(cmd);
+    }
+
+    // Flush the final run.
+    if (run.commands.length > 0) {
+      drawAtlas(run.image, run.commands);
+      if (renderer) {
+        renderer.recordDrawCall();
+        renderer.recordBatch();
+      }
+      run.commands.length = 0;
+    }
+  }
+
+  /** `flush` for a queue that holds at least one coloured sprite. */
+  private _flushColored(
+    drawAtlas: (image: SkImageLike, commands: SpriteDrawCommand[], colors?: Uint32Array) => void,
+    renderer: Renderer | undefined,
+  ): void {
+    const run = this._runBucket();
     const commands = this._commands;
     const colors = this._colors;
     const colored = this._colored;
@@ -371,22 +456,21 @@ export class SpriteBatch {
       }
       run.commands.length = 0;
     }
-
-    // Return commands to pool. Field values remain on the command until
-    // the next draw() overwrites them — consumers must read inside the
-    // drawAtlas callback, not after flush returns.
-    for (const cmd of this._commands) {
-      this._pool.push(cmd);
-    }
-    this._commands.length = 0;
   }
 
-  /** Clear all queued commands without drawing. */
-  clear(): void {
-    for (const cmd of this._commands) {
-      this._pool.push(cmd);
+  /**
+   * Return every queued command to the pool. An indexed loop in its own
+   * function, so it does not depend on how the caller was compiled: written as
+   * a `for...of` at the end of `flush`, it cost about as much as the rest of
+   * `flush` put together in some JIT states (issue #428).
+   */
+  private _recycle(): void {
+    const commands = this._commands;
+    const pool = this._pool;
+    for (let i = 0; i < commands.length; i++) {
+      pool.push(commands[i] as SpriteDrawCommand);
     }
-    this._commands.length = 0;
+    commands.length = 0;
   }
 
   /**
@@ -410,6 +494,7 @@ export class SpriteBatch {
       return;
     }
     this._colored[index] = 1;
+    this._anyColored = true;
     const a = alpha <= 0 ? 0 : alpha >= 1 ? 1 : alpha;
     // `>>> 0`: a set alpha bit would otherwise make the packed value negative.
     this._colors[index] = ((Math.round((color >>> 24) * a) << 24) | (color & 0x00ffffff)) >>> 0;

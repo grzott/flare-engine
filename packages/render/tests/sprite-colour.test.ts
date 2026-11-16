@@ -226,6 +226,39 @@ describe('SpriteBatch per-sprite colour', () => {
     expect(flushInto(batch)).toHaveLength(7);
   });
 
+  it('uncoloured sprites form the same runs whether or not the queue also holds a coloured one', () => {
+    // A queue with a coloured sprite flushes through a different loop from one
+    // without. Each key field changes once, so a loop that dropped one would
+    // merge two of these runs.
+    const a = mockImage();
+    const b = mockImage();
+    const fx = tint({ r: 1, g: 0, b: 0, a: 1 }, 0.5);
+    const queueUncoloured = (batch: SpriteBatch): void => {
+      batch.drawRaw(a, 0, 0, 8, 8, 0, 0, 8, 8);
+      batch.drawRaw(a, 0, 0, 8, 8, 8, 0, 8, 8);
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8);
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8, fx);
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8, fx, 0, 0, 0.5);
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8, fx, 0, 0, 0.5, 0, true);
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8, fx, 0, 0, 0.5, 0, true, 'additive');
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8, fx, 0, 0, 0.5, 0, true, 'additive', true);
+      batch.drawRaw(b, 0, 0, 8, 8, 0, 0, 8, 8, fx, 0, 0, 0.5, 0, true, 'additive', true, true);
+    };
+
+    const plain = new SpriteBatch();
+    queueUncoloured(plain);
+    const plainCalls = flushInto(plain);
+
+    const mixed = new SpriteBatch();
+    queueUncoloured(mixed);
+    drawColoured(mixed, a, 0, 1, 0xffff0000);
+    const mixedCalls = flushInto(mixed);
+
+    expect(plainCalls.map((c) => c.count)).toEqual([2, 1, 1, 1, 1, 1, 1, 1]);
+    expect(mixedCalls.slice(0, -1)).toEqual(plainCalls);
+    expect(mixedCalls.at(-1)?.colorData).toEqual([0xffff0000]);
+  });
+
   it('draw() takes the same trailing colour as drawRaw()', () => {
     const batch = new SpriteBatch();
     const image = mockImage();

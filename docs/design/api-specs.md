@@ -460,6 +460,10 @@ const pic = renderer.endFrame();
 // replay `pic` onto a CanvasKit surface via drawPicture
 ```
 
+### `@flare-engine/ui-fx` (private, unpublished)
+
+Animated wrappers for React Native, react-native-web and React DOM components. The package is a scaffold with no public API yet; the design, and the contract this section will carry, is [ui-fx-2026-11.md](../plans/ui-fx-2026-11.md). Four entries: `.` (RN and react-native-web), `./dom` (React DOM), `./core` (headless maths) and `./fx` (snapshot-effect host; conditional exports resolve `react-native` to the RN-Skia file and `browser` / `default` to the CanvasKit file). Each exports only the marker `UI_FX_ENTRY` for now.
+
 ### `@flare-engine/engine` (< 2KB gzip)
 
 `createGame(config) → GameInstance` — pure factory. Constructs `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`, `AudioManager`, `AssetManager`, `SceneManager`, `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare-engine/react`.

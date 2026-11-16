@@ -167,6 +167,7 @@ Note: the diagram groups packages by their `LAYER_MAP` tier (`scripts/check-deps
 | -------------------------- | -------------------------------------------------------------------------------- | ----------- |
 | `@flare-engine/react`      | `<GameView>`, `useGame()`, `useEntity()`, `<VirtualJoystick>`, `<VirtualButton>` | < 10KB      |
 | `@flare-engine/render-web` | Web analog of `react`; composes `render` + `postfx` via CanvasKit (`loadCanvasKit`, `createWebSurface`, `createWebSkiaModule`, `createPostFxSurface`) | < 12KB |
+| `@flare-engine/ui-fx`      | Animated RN/RNW/DOM component wrappers (private, unpublished; see [ui-fx-2026-11.md](../plans/ui-fx-2026-11.md)) | —           |
 | `@flare-engine/engine`     | `createGame()` convenience, curated re-exports (see api-specs § engine)          | < 2KB       |
 
 ---

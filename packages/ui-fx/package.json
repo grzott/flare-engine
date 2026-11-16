@@ -1,0 +1,152 @@
+{
+  "name": "@flare-engine/ui-fx",
+  "version": "0.4.12",
+  "private": true,
+  "description": "Animated wrappers for React Native, react-native-web and React DOM components",
+  "keywords": [
+    "flare-engine",
+    "animation",
+    "react",
+    "react-native",
+    "react-native-web",
+    "transitions",
+    "typescript"
+  ],
+  "license": "Apache-2.0",
+  "author": "Grzegorz Otto",
+  "homepage": "https://github.com/grzott/flare-engine#readme",
+  "bugs": {
+    "url": "https://github.com/grzott/flare-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzott/flare-engine.git",
+    "directory": "packages/ui-fx"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./core": {
+      "import": {
+        "types": "./dist/core.d.mts",
+        "default": "./dist/core.mjs"
+      },
+      "require": {
+        "types": "./dist/core.d.ts",
+        "default": "./dist/core.js"
+      }
+    },
+    "./dom": {
+      "import": {
+        "types": "./dist/dom.d.mts",
+        "default": "./dist/dom.mjs"
+      },
+      "require": {
+        "types": "./dist/dom.d.ts",
+        "default": "./dist/dom.js"
+      }
+    },
+    "./fx": {
+      "react-native": {
+        "import": {
+          "types": "./dist/fx.native.d.mts",
+          "default": "./dist/fx.native.mjs"
+        },
+        "require": {
+          "types": "./dist/fx.native.d.ts",
+          "default": "./dist/fx.native.js"
+        }
+      },
+      "browser": {
+        "import": {
+          "types": "./dist/fx.web.d.mts",
+          "default": "./dist/fx.web.mjs"
+        },
+        "require": {
+          "types": "./dist/fx.web.d.ts",
+          "default": "./dist/fx.web.js"
+        }
+      },
+      "default": {
+        "import": {
+          "types": "./dist/fx.web.d.mts",
+          "default": "./dist/fx.web.mjs"
+        },
+        "require": {
+          "types": "./dist/fx.web.d.ts",
+          "default": "./dist/fx.web.js"
+        }
+      }
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE", "NOTICE"],
+  "scripts": {
+    "build": "tsdown",
+    "test": "bun ../../scripts/test-isolated.mjs",
+    "lint": "biome check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.14.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "@flare-engine/a11y": "^0.4.12",
+    "@flare-engine/math": "^0.4.12",
+    "@flare-engine/render-web": "^0.4.12"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0",
+    "react-native": ">=0.86.0",
+    "react-native-reanimated": ">=4.7.0",
+    "react-native-worklets": ">=0.13.0",
+    "@shopify/react-native-skia": ">=2.14.0",
+    "canvaskit-wasm": ">=0.40.0",
+    "modern-screenshot": "*",
+    "react-native-safe-area-context": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react-dom": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    },
+    "react-native-reanimated": {
+      "optional": true
+    },
+    "react-native-worklets": {
+      "optional": true
+    },
+    "@shopify/react-native-skia": {
+      "optional": true
+    },
+    "canvaskit-wasm": {
+      "optional": true
+    },
+    "modern-screenshot": {
+      "optional": true
+    },
+    "react-native-safe-area-context": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false
+}

@@ -27,7 +27,14 @@ const SCOPE = '@flare-engine/';
  * explaining why the exception is legitimate.
  * @type {Array<{ pkg: string, dep: string, kind: 'phantom' | 'missing' | 'tier' }>}
  */
-const ALLOWLIST = [];
+const ALLOWLIST = [
+  // ui-fx is scaffolded with its final dependency set before the code that imports it
+  // (docs/plans/ui-fx-2026-11-tasks.md, Task 1). Each entry goes when its first import lands:
+  // math with ./core, a11y with the reduced-motion source, render-web with the web fx host.
+  { pkg: 'ui-fx', dep: 'math', kind: 'phantom' },
+  { pkg: 'ui-fx', dep: 'a11y', kind: 'phantom' },
+  { pkg: 'ui-fx', dep: 'render-web', kind: 'phantom' },
+];
 
 /**
  * Lower number = lower tier. A package may depend only on EQUAL-or-lower tier.
@@ -75,6 +82,7 @@ const LAYER_MAP = {
   react: 4,
   engine: 4,
   'render-web': 4,
+  'ui-fx': 4,
   cli: 4,
   create: 4,
   benchmarks: 4,

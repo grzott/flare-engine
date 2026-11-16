@@ -12,6 +12,7 @@
     "bench:baseline": "bun run src/index.ts --write-baseline",
     "bench:promote": "bun run src/index.ts --promote",
     "bench:md": "bun run src/index.ts --markdown",
+    "bench:order": "bun run src/order-probe.ts",
     "test": "bun test",
     "lint": "biome check src/ tests/",
     "typecheck": "tsc --noEmit"

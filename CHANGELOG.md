@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.13](#0413) | 2026-11-17 | 42 | Per-sprite colour in batched draws, baked shape atlases, allocation-free postfx passes, Windows CMake for templates |
 | [0.4.12](#0412) | 2026-11-12 | 42 | Edge-case fixes across events, physics and math; Android haptics and screenshot shares; fewer hot-path allocations |
 | [0.4.11](#0411) | 2026-11-12 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
 | [0.4.10](#0410) | 2026-11-08 | 42 | Procedural SFX, dynamics sleeping, per-image sampling, web postfx, slot headers; includes 0.4.9 |
@@ -34,6 +35,59 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.13
+
+Additions and performance work in 7 packages. The other 35 change only their version. One behaviour
+change, in `postfx`.
+
+- **`render`** — `SpriteBatch.draw` and `SpriteBatch.drawRaw` take an optional trailing `color`, a
+  packed `0xAARRGGBB` multiplier for that sprite. Consecutive coloured sprites that share image,
+  effect, stretch, blend and flip form one run whatever their colours and alphas. The flush callback
+  receives a coloured run's colours as a third argument, `colors: Uint32Array`, and
+  `FrameRenderer.drawAtlas(image, commands, colors?)` accepts it, so `batch.flush(renderer.drawAtlas)`
+  needs no change. A coloured run draws with Skia's Modulate blend; on the stretch, flip and
+  zone-background paths only the colour's alpha applies. Sprites drawn without a `color` batch and
+  draw exactly as before. A custom flush callback or `DrawSurfaceLike` that opts in must read each
+  sprite's opacity from `colors`. `DrawSurfaceLike.drawAtlas`'s `blendMode` and `colors` parameters,
+  typed `undefined` before, are now `number` and `Float32Array[]`. `SpriteBatch.flush` flushes
+  coloured and uncoloured queues with separate loops, so coloured sprites no longer slow down under
+  JavaScriptCore in a process that has already flushed many kinds of uncoloured run.
+  **Known:** the node benchmark (Bun, no rasterization) measures the uncoloured `render.flush` rows
+  6-12% slower than at 0.4.12. The browser and Android lanes show no slowdown. Tracked in #434.
+- **`particles`** — `drawParticles` takes a new option, `color` (default `false`). With
+  `{ color: true }` each particle's interpolated colour is passed to `drawRaw` as that trailing
+  `color`, so an emitter's `startColor` / `endColor` tint the particles and one call forms a single
+  run per image instead of one run per distinct alpha. Without the option it makes exactly the call
+  it made before. `ParticleBatchLike.drawRaw` declares the optional trailing parameters `blend?`,
+  `flipX?`, `flipY?` and `color?`. The default is planned to flip to `true` in 0.5.0, behind an ADR.
+- **`shapes`** — `bakeShapeAtlas(Skia, specs, scale, options?)` draws each distinct `ShapeSpec` once
+  into one image and returns a `ShapeAtlas` that a `SpriteBatch` draws, so N shape-built entities are
+  one run instead of several Skia draws each. `drawBakedShape(batch, atlas, index, x, y, rot?,
+  scale?, color?, alpha?)` queues one instance and allocates nothing. `shapeAtlasNeedsRebake` and
+  `rebakeShapeAtlas` re-bake once the scale leaves 0.75x-1.5x of the baked one; cell indices, each
+  spec's origin and its drawn size carry over. No cell is rasterized above `SHAPE_ATLAS_MAX_CELL`
+  (2048 px): a larger spec bakes at a lower scale of its own and draws at the same size. A spec
+  whose parameters animate should stay on `drawShape`, and baked colours can be multiplied but not
+  recoloured per part. The package now depends on `assets`.
+- **`assets`** — `packAtlasRows(sizes, maxWidth, padding)` exports the row layout
+  `createProceduralAtlas` already used, with the types `AtlasRowLayout` and `AtlasRowPosition`.
+- **`render-web`** — `createWebShapeSkia(kit)` returns a CanvasKit-backed `WebShapeSkia` for
+  `bakeShapeAtlas` and `drawShape`. It bakes on CanvasKit's offscreen CPU surface, so it needs no
+  WebGL context. `createWebSkiaModule`'s `drawAtlas` forwards a coloured run's colours with
+  `BlendMode.Modulate`; an uncoloured run still passes `null` for both.
+- **`postfx`** — `runtime.buildPass` (and `PostFxController.buildPass`) no longer allocates on a frame
+  where the chain's enabled set is unchanged, which closes the allocation noted under 0.4.12 (#303).
+  Each runtime returns the same array and rewrites its pass objects and `uniforms` buffers in place.
+  **Behaviour change:** a `buildPass` result is overwritten by the next call on the same runtime,
+  including a call with a different chain, so code that keeps a result to compare later must copy
+  it first. `runtime.packUniforms` still returns a new array per call.
+- **`create`** — the `blank`, `topdown` and `shmup` templates ship an Expo config plugin,
+  `plugins/with-windows-cmake.js`, that points Android builds on Windows at the newest SDK CMake 3.x
+  from 3.31.6 on. That version's ninja handles Windows long paths; the SDK default 3.22.1 does not,
+  and Skia's build rejects CMake 4. The plugin keeps a `cmake.dir` you set yourself, prints the
+  install command when no such CMake is installed, warns when Windows long paths are disabled, and
+  does nothing on macOS and Linux.
 
 ## 0.4.12
 

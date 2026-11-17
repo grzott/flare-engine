@@ -84,16 +84,14 @@ export const EXPECTED_SUITE_TITLES = [
  * the capture that made it unnecessary. A fresh capture is never exempt:
  * `promote.ts` still demands every suite.
  *
- * Emptied by the 0.4.12 recapture (#159, #96). This file is under
- * `benchmarks/src`, which `check:perf-freshness` treats as the instrument for
- * every node suite. So the PR that empties the list stales the node capture it
- * lands with, and a second node window has to be captured after it merges.
- *
- * `ParticlesDraw` (#347) is the `drawParticles` suite, added after that
- * recapture; the next one removes it from this list. `ShapesDraw` (#348), the
- * baked-shape `drawBakedShape` suite, joined it the same way.
+ * Emptied by the 0.4.12 recapture (#159, #96), and again by the 2026-11-17
+ * recapture after #430, which first captured `ParticlesDraw` (#347) and
+ * `ShapesDraw` (#348). This file is under `benchmarks/src`, which
+ * `check:perf-freshness` treats as the instrument for every node suite, so
+ * commit the emptied list first and capture the node window on top of that
+ * commit: then one window covers it and no second one is needed.
  */
-export const PENDING_FIRST_CAPTURE: readonly string[] = ['ParticlesDraw', 'ShapesDraw'];
+export const PENDING_FIRST_CAPTURE: readonly string[] = [];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [

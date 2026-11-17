@@ -6,6 +6,7 @@ import {
   type ForceSpec,
   fade,
   isSnapshotPreset,
+  type LivePreset,
   liveFallbackOf,
   presetDuration,
   press,
@@ -260,6 +261,16 @@ describe('frozen results', () => {
     expect(shatter().physics).not.toBe(shatter().physics);
     expect(shatter().forces[0]).not.toBe(disintegrate().forces[0]);
   });
+
+  test('a caller object that is already frozen is still copied deeply', () => {
+    const cubic = [0, 0, 10, 0, 20, 0, 30, 0];
+    const path = Object.freeze({ cubic });
+    const p = slide({ path });
+    expect(p.path).not.toBe(path);
+    cubic[0] = 99;
+    expect(p.path).toEqual({ cubic: [0, 0, 10, 0, 20, 0, 30, 0] });
+    expect(isDeepFrozen(p)).toBe(true);
+  });
 });
 
 describe('validation', () => {
@@ -275,6 +286,12 @@ describe('validation', () => {
 
   test('fade opacity', () => {
     expect(messageOf(() => fade({ opacity: 2 }))).toBe('fade: opacity must be in 0..1, got 2');
+  });
+
+  test('disintegrate fragment.count is capped at the cell cap, not the shard cap', () => {
+    expect(messageOf(() => disintegrate({ fragment: { count: 3001 } }))).toBe(
+      'disintegrate: fragment.count must be an integer in 2..3000, got 3001',
+    );
   });
 
   test('shatter fragment.count', () => {
@@ -387,6 +404,7 @@ describe('validation', () => {
     expect(shatter({ fragment: { count: 2 } }).fragment.count).toBe(2);
     expect(shatter({ fragment: { count: 300 } }).fragment.count).toBe(300);
     expect(disintegrate({ fragment: { cell: 1 } }).fragment.cell).toBe(1);
+    expect(disintegrate({ fragment: { pattern: 'grid', count: 3000 } }).fragment.count).toBe(3000);
     expect(shatter({ forces: [{ strength: -400 }] }).forces[0]?.strength).toBe(-400);
     expect(slide({ start: -0.2, end: 1.3 }).end).toBe(1.3);
   });
@@ -414,6 +432,34 @@ describe('liveFallbackOf', () => {
   test('returns the given fallback itself', () => {
     const fallback = slide();
     expect(liveFallbackOf(shatter({ fallback }))).toBe(fallback);
+    const pressFallback = fade({ opacity: 0.5 });
+    expect(liveFallbackOf(press({ fallback: pressFallback }))).toBe(pressFallback);
+  });
+
+  test('a press holds its pose at once instead of fading the element out', () => {
+    const p = press({ scale: 0.9, opacity: 0.8 });
+    const f = liveFallbackOf(p);
+    expect(f).toEqual(press({ scale: 0.9, opacity: 0.8, duration: 0 }));
+    expect(isDeepFrozen(f)).toBe(true);
+    expect(liveFallbackOf(p)).toBe(f);
+    expect(liveFallbackOf(press({ spring: { duration: 0.3, bounce: 0.2 } }))).toEqual(
+      press({ duration: 0 }),
+    );
+  });
+
+  test('a fade is already calm, so it stands in for itself', () => {
+    const f = fade({ opacity: 0.4, duration: 0.6 });
+    expect(liveFallbackOf(f)).toBe(f);
+  });
+
+  test('a default or live emerge is a LivePreset; a shader emerge is not', () => {
+    const live: LivePreset = emerge();
+    const explicit: LivePreset = emerge({ variant: 'live' });
+    // @ts-expect-error a shader emerge is a snapshot preset
+    const shader: LivePreset = emerge({ variant: 'shader' });
+    expect(liveFallbackOf(slide({ fallback: emerge() }))).toEqual(live);
+    expect(isSnapshotPreset(explicit)).toBe(false);
+    expect(isSnapshotPreset(shader)).toBe(true);
   });
 });
 

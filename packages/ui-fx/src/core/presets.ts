@@ -241,18 +241,28 @@ function merge<T extends object>(base: T, over: Partial<T> | undefined): T {
   return out;
 }
 
+/** Every object and array `frozenCopy` produced. Each is deeply frozen and owned by this module. */
+const ours = new WeakSet<object>();
+
 /**
- * A deeply frozen copy without `undefined` keys. Already-frozen objects are kept as they are, so
- * a preset passed as `fallback` keeps its identity, and nothing the caller owns gets frozen.
+ * A deeply frozen copy without `undefined` keys. Objects this module produced are kept as they
+ * are, so a preset passed as `fallback` keeps its identity. Anything else is copied, even when the
+ * caller froze it, so nothing the caller owns gets frozen or stays shared.
  */
 function frozenCopy<T>(value: T): T {
-  if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value;
-  if (Array.isArray(value)) return Object.freeze(value.map(frozenCopy)) as T;
-  const out: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry !== undefined) out[key] = frozenCopy(entry);
+  if (typeof value !== 'object' || value === null || ours.has(value)) return value;
+  let out: object;
+  if (Array.isArray(value)) {
+    out = Object.freeze(value.map(frozenCopy));
+  } else {
+    const copy: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value)) {
+      if (entry !== undefined) copy[key] = frozenCopy(entry);
+    }
+    out = Object.freeze(copy);
   }
-  return Object.freeze(out) as T;
+  ours.add(out);
+  return out as T;
 }
 
 /**
@@ -371,6 +381,13 @@ const EMERGE_SHADOW: EmergePreset['shadow'] = {
  * style; `'shader'` is a snapshot effect. Defaults: `variant 'live'`, `angle 135`, `softness 0.4`,
  * `falloff 'smoothstep'`, `distance 12`, `duration 0.45`, no sheen.
  */
+export function emerge(
+  opts?: PresetOptions<EmergePreset> & { variant?: 'live' },
+): EmergePreset & { variant: 'live' } & PresetCommon;
+export function emerge(
+  opts: PresetOptions<EmergePreset> & { variant: 'shader' },
+): EmergePreset & { variant: 'shader' } & PresetCommon;
+export function emerge(opts?: PresetOptions<EmergePreset>): EmergePreset & PresetCommon;
 export function emerge(opts: PresetOptions<EmergePreset> = {}): EmergePreset & PresetCommon {
   const angle = opts.angle ?? 135;
   const softness = opts.softness ?? 0.4;
@@ -480,7 +497,7 @@ function fragmentBodyOf(
   const life = merge(base.life, opts.life);
   const maxFragments = opts.maxFragments ?? base.maxFragments;
 
-  check(name, 'fragment.count', fragment.count, 2, SHARD_CAP, true);
+  check(name, 'fragment.count', fragment.count, 2, cap, true);
   check(name, 'fragment.cell', fragment.cell, 1, 8);
   checkOrigin(name, 'fragment.focus', fragment.focus);
   check(name, 'fragment.deviation', fragment.deviation, 0.01, 0.7);
@@ -619,12 +636,31 @@ export function isSnapshotPreset(p: LivePreset | SnapshotPreset): p is SnapshotP
 
 const DEFAULT_FALLBACK = /* @__PURE__ */ fade({ opacity: 0, duration: 0.15 });
 
+const instantPresses = new WeakMap<object, LivePreset>();
+
 /**
  * The live preset that stands in for `p` under reduced motion or without a snapshot runtime: its
- * own `fallback`, or `fade({ opacity: 0, duration: 0.15 })`.
+ * own `fallback` when it has one. Otherwise a fade stands in for itself, a press holds the same
+ * pose with `duration 0` (a press is a pose, not an exit, so fading it would hide a held control),
+ * and every other preset becomes `fade({ opacity: 0, duration: 0.15 })`.
  */
 export function liveFallbackOf(p: FlarePreset): LivePreset {
-  return p.fallback ?? DEFAULT_FALLBACK;
+  if (p.fallback !== undefined) return p.fallback;
+  if (p.kind === 'fade') return p;
+  if (p.kind === 'press') {
+    let instant = instantPresses.get(p);
+    if (instant === undefined) {
+      instant = press({
+        scale: p.scale,
+        opacity: p.opacity,
+        brightness: p.brightness,
+        duration: 0,
+      });
+      instantPresses.set(p, instant);
+    }
+    return instant;
+  }
+  return DEFAULT_FALLBACK;
 }
 
 /**

@@ -1,5 +1,5 @@
 import type { ComponentDef } from './component.js';
-import { Query, QueryBuilder } from './query.js';
+import { bindMaskResolver, Query, QueryBuilder } from './query.js';
 
 interface ComponentSlot {
   readonly bit: number;
@@ -175,10 +175,7 @@ export class World {
 
   /** Create a QueryBuilder for complex queries (with/without). */
   queryBuilder(): QueryBuilder {
-    return new QueryBuilder(
-      (q) => this.register(q),
-      (defs) => this.maskOf(defs),
-    );
+    return bindMaskResolver(new QueryBuilder((q) => this.register(q)), (defs) => this.maskOf(defs));
   }
 
   /** Track a query and populate it with the entities that already match. */

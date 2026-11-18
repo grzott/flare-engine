@@ -207,8 +207,8 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/ecs": {
-      "ceiling": 49091,
-      "measured": 44628,
+      "ceiling": 49830,
+      "measured": 45300,
       "measuredAt": "2026-11-18"
     },
     "@flare-engine/engine": {
@@ -533,7 +533,7 @@
     },
     {
       "date": "2026-11-18",
-      "reason": "ecs ceiling raised 42784 -> 49091 B (measured 44628 x1.1), pending the owner's approval of the PR for issue #66 (with #132 folded in). World keys component storage by the ComponentDef object through a per-World registry (slotFor, an atomic maskOf for multi-definition calls, a bit-indexed store list so destroy touches only the entity's stores), and QueryBuilder takes an optional mask resolver. Measured 2026-11-18 against the published 0.4.13 tarball (39848 B): the tarball grows 4780 B, and each file gzipped alone grows 3880 B (54533 -> 58413). What an app bundles: dist/index.mjs 21208 -> 22862 B raw (6990 -> 7632 B gzipped, +642 B); index.d.mts +251 B gzipped; each source map +1025 B gzipped. The 2026-09-08 measurement (38894 B) is the last one. A defect fix, not a regression."
+      "reason": "ecs ceiling raised 42784 -> 49830 B (measured 45300 x1.1), pending the owner's approval of the PR for issue #66 (with #132 folded in). World keys component storage by the ComponentDef object through a per-World registry (slotFor, an atomic maskOf for multi-definition calls, a bit-indexed store list so destroy touches only the entity's stores), and the World attaches its mask resolver to its QueryBuilders internally (no public signature change). Measured 2026-11-18 against the published 0.4.13 tarball (39848 B): the tarball grows 5452 B, and each file gzipped alone grows 4518 B (54533 -> 59051). What an app bundles: dist/index.mjs 21208 -> 23137 B raw (6990 -> 7726 B gzipped, +736 B); index.d.mts +228 B gzipped; each source map +1281 B gzipped. The 2026-09-08 measurement (38894 B) is the last one. A defect fix, not a regression."
     }
   ]
 }

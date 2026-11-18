@@ -142,7 +142,7 @@ Note: the diagram groups packages by their `LAYER_MAP` tier (`scripts/check-deps
 | Package                 | Purpose                                                                                 | Size target  | Peer deps              |
 | ----------------------- | --------------------------------------------------------------------------------------- | ------------ | ---------------------- |
 | `@flare-engine/render`  | Skia Atlas SpriteBatch, Camera2D, DrawOrder, SpriteEffects, SpriteFont                  | < 10KB       | react-native-skia      |
-| `@flare-engine/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | gesture-handler        |
+| `@flare-engine/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | —                      |
 | `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (uniform grid), raycast                                | < 4KB        | —                      |
 | `@flare-engine/dynamics` | OBB rigid bodies, SAT + face-clip contact manifolds, sequential-impulse solver          | < 8KB        | math                   |
 | `@flare-engine/audio`   | AudioManager, SFXPool, Music, Channels, lifecycle integration                           | < 4KB        | react-native-audio-api |

@@ -39,7 +39,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { git, gitLines } from './lib/git.mjs';
+import { git } from './lib/git.mjs';
 import {
   declaredEntryPoints,
   discoverPublishTargets,
@@ -55,6 +55,7 @@ import {
   reconcileReviews,
   STALE_CEILING_RATIO,
 } from './lib/perf-gate.mjs';
+import { reviewRange } from './lib/perf-review-range.mjs';
 
 const BASELINE_PATH = join(REPO_ROOT, '.perf-baseline.json');
 
@@ -143,46 +144,10 @@ if (withBytes) {
 
 // --- Rubber-stamp guard ------------------------------------------------------
 
-const resolveBaseRef = () => {
-  const env = process.env.FLARE_PERF_BASE_REF?.trim();
-  if (env && !/^0+$/.test(env) && git('rev-parse', '--verify', '--quiet', `${env}^{commit}`)) {
-    return env;
-  }
-  return git('rev-parse', '--verify', '--quiet', 'HEAD~1^{commit}') ? 'HEAD~1' : null;
-};
-
-const changedPaths = (baseRef) => {
-  const set = new Set();
-  const add = (p) => {
-    const clean = p.trim().replace(/\\/g, '/');
-    if (clean) set.add(clean);
-  };
-  if (baseRef) for (const f of gitLines('diff', '--name-only', baseRef, 'HEAD')) add(f);
-  // `-uall` expands untracked directories: without it git collapses a brand-new
-  // `packages/foo/src/` to the directory alone and the src test misses it.
-  for (const line of gitLines('status', '--porcelain', '-uall')) {
-    const path = line.slice(3);
-    // Renames arrive as "old -> new"; the destination is what changed.
-    add(path.includes(' -> ') ? path.slice(path.indexOf(' -> ') + 4) : path);
-  }
-  return [...set];
-};
-
-const baseRef = resolveBaseRef();
-const changed = changedPaths(baseRef);
-const baselineTouched = changed.includes('.perf-baseline.json');
-const srcTouched = changed.some((p) => /^packages\/[^/]+\/src\//.test(p));
-
-let oldReviews = [];
-if (baseRef && baselineTouched) {
-  try {
-    oldReviews = JSON.parse(git('show', `${baseRef}:.perf-baseline.json`)).reviews ?? [];
-  } catch {
-    // The file did not exist at the base ref — first population. Every current
-    // review entry is therefore new, which reconcileReviews handles.
-    oldReviews = [];
-  }
-}
+const { baseRef, baselineTouched, srcTouched, oldReviews } = reviewRange(
+  process.env.FLARE_PERF_BASE_REF,
+  REPO_ROOT,
+);
 
 const reviewProblems = [];
 if (!write) {

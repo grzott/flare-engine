@@ -55,7 +55,7 @@ In-app bench harnesses — a scenario runner that ships in app code, its done-la
 
 An app that does want the seeded session at runtime may list `@flare-engine/testing` as a regular `dependency` instead of a `devDependency`. Its own dependencies are the `@flare-engine/*` runtime packages `assets`, `core`, `ecs`, `input`, `math` and `render` only, with no peer dependencies, so nothing outside the engine enters the bundle.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginetesting--4kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginetesting).
 
 ## License
 

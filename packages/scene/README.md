@@ -29,7 +29,7 @@ manager.setTransition(fadeTransition(0.3));
 await manager.go('menu');
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginescene--4kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginescene).
 
 ## License
 

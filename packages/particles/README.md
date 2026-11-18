@@ -104,7 +104,7 @@ particles. Without the option, `drawParticles` draws exactly as before: colour i
 each distinct alpha is its own run. The constant `effect` option is still there for what a
 multiplier cannot express (flash, outline, grayscale).
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineparticles--4kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineparticles).
 
 ## License
 

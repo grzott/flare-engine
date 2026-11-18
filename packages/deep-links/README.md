@@ -29,7 +29,7 @@ parseUrl('flare://zone/4?from=shop');
 // { scheme: 'flare', host: '', segments: ['zone', '4'], query: { from: 'shop' } }
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedeep-links--6kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedeep-links).
 
 ## License
 

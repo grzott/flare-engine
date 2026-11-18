@@ -45,7 +45,7 @@ formatTimestamp(0, 'en'); // ""
 formatTimestamp(0, 'en', { fallback: 'N/A' }); // "N/A"
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginelocalization--7kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginelocalization).
 
 ## License
 

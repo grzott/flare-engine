@@ -47,7 +47,7 @@ const driver = createFocusKeyboardDriver(manager, keys);
 driver.update(); // ArrowDown/ArrowRight/Tab → next, ArrowUp/ArrowLeft → prev, Enter/Space → activate
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineui--6kb-gzip-target).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineui).
 
 ## Testing
 

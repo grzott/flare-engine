@@ -121,7 +121,7 @@ for (const slot of await storage.listSlotHeaders()) {
 - **Overwrite drops the header.** `saveSlot(name, data)` without a header removes the slot's previous header; pass it on every save.
 - A header-less `saveSlot` writes the same `{ version, data }` envelope as before, and `loadSlot` ignores the header, so existing saves need no migration.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginestorage--4kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginestorage).
 
 ## License
 

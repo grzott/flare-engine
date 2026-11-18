@@ -102,7 +102,7 @@ frames sideways; the parser cannot yet remap them, so they render rotated. Frame
 with `rotated: true` emit a dev-mode `console.warn` naming the frame — re-export
 the atlas with rotation disabled. Full rotation support is post-launch.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineassets--6kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineassets).
 
 ## License
 

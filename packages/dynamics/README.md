@@ -162,7 +162,7 @@ What sleeping does not do:
 - **Broadphase is brute-force** (all-pairs AABB reject) — fine at small body counts, not a spatial
   partition. There is no broadphase beyond that pass.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedynamics--8kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedynamics).
 
 ## License
 

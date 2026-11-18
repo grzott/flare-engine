@@ -51,7 +51,7 @@ function update(input: InputManager, player: { jump(): void; fire(): void }) {
 }
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineinput--6kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineinput).
 
 ## License
 

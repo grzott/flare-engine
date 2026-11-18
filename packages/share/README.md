@@ -96,7 +96,7 @@ Limits:
   nothing is written and the result is `{ dispatched: false, via: 'native' }`. A failed write or a
   rejected `shareAsync` rejects the `share()` promise.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineshare--5kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineshare).
 
 ## License
 

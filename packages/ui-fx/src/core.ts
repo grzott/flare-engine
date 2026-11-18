@@ -9,6 +9,13 @@ export {
   type Vec2Out,
 } from './core/conventions';
 export {
+  type ArcTable,
+  buildArcTable,
+  type PathPose,
+  pathPoseAtInto,
+} from './core/path/arc-table';
+export { parseSvgPath } from './core/path/svg';
+export {
   type Placement,
   type PlacementOptions,
   placeFloatingInto,

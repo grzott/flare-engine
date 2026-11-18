@@ -1,5 +1,48 @@
 # @flare-engine/render
 
+## 0.4.13
+
+### Patch Changes
+
+- 28b1b40: `SpriteBatch.flush` no longer slows down for coloured sprites in a process that has already flushed many kinds of uncoloured run. No exported signature changes, and the flush callback is called exactly as before: `(image, commands)` for an uncoloured run, `(image, commands, colors)` for a coloured one.
+
+  What changed, all inside `SpriteBatch`:
+
+  - A queue that holds at least one sprite drawn with a `color` is flushed by its own loop; a queue with none is flushed by a loop that does no colour work. Both group runs by the same keys as before.
+  - Returning the queued commands to the pool, in `flush` and in `clear`, is one shared indexed loop instead of a `for...of` at the end of each.
+
+  Why: with one loop for both, the first coloured sprite sent that loop back to unoptimised code under JavaScriptCore. In a process that had already recompiled it several times for different uncoloured workloads, it stayed there for longer than a benchmark warm-up.
+
+  Measured under Bun 1.3.11 on Linux x64, against the benchmark's counting Skia stub (no rasterization), on the `particles.draw 1000 coloured + fading / 1 atlas` row, median per frame, each reading in a fresh process:
+
+  |        | alone                         | after the particles, render, integration and render-system suites |
+  | ------ | ----------------------------- | ----------------------------------------------------------------- |
+  | before | 75.1 - 76.3 µs (8 processes)  | 128.3 - 143.6 µs in 7 of 8, 63.6 µs in 1                          |
+  | after  | 60.3 - 61.9 µs (32 processes) | 61.1 - 62.9 µs in 30 of 32, 71.8 and 72.9 µs in 2                 |
+
+  The two slower readings that remain were not traced to a cause. The uncoloured `render.flush`, `integration.frame` and `render.system` rows, measured in three processes before and three after, moved by 2.4% at most and in both directions, which is about their run-to-run spread on that machine. Hermes, V8 and SpiderMonkey were not measured.
+
+  `bun run bench:order` in `benchmarks/` repeats the comparison: it measures the row alone and after those suites, in fresh processes, and fails when an after-suites reading is more than 15% from the alone median.
+
+- b12959f: A sprite can now carry its own colour through the batched `drawAtlas` path, and `drawParticles` can opt into it.
+
+  **`@flare-engine/render`.** `SpriteBatch.draw` and `SpriteBatch.drawRaw` take an optional trailing `color`: a packed-ARGB multiplier (`0xAARRGGBB`) applied to every texel of that sprite, so `0xFFFFFFFF` changes nothing. A sprite drawn with a `color` has its `alpha` multiplied into the colour's alpha byte, and `alpha` then no longer splits batch runs: consecutive coloured sprites that share image, effect, stretch, blend and flip are one run whatever their colours and alphas. A coloured sprite and an uncoloured one never share a run. `SpriteBatch.flush`'s callback receives a third argument for a coloured run, `colors: Uint32Array` (`colors[i]` belongs to `commands[i]`; the buffer is reused and may be longer than `commands`), and `FrameRenderer.drawAtlas(image, commands, colors?)` accepts it, so `batch.flush(renderer.drawAtlas)` needs no change. The renderer draws a coloured run with Skia's Modulate blend, passed explicitly because the two backends default differently. `DrawSurfaceLike.drawAtlas`'s `blendMode` and `colors` parameters, previously typed `undefined`, are now `number` and `Float32Array[]`. `SpriteDrawCommand` is unchanged.
+
+  Sprites drawn without a `color` are batched and drawn exactly as before, with the same surface call.
+
+  Limits: on the stretch, flip and zone-background paths, which are not atlas draws, only the colour's alpha applies and its RGB is ignored.
+
+  **`@flare-engine/render-web`.** `createWebSkiaModule`'s `drawAtlas` forwards a coloured run's colours to CanvasKit as a reused `Uint32Array` with `BlendMode.Modulate`. An uncoloured run still passes `null` for both.
+
+  **`@flare-engine/particles`.** `drawParticles` takes a new option, `color` (default `false`). With `{ color: true }` it passes each particle's interpolated colour to `drawRaw` as that trailing `color` argument, with alpha still the separate `alpha` argument, so with a `SpriteBatch` the particles of one call form a single run per image instead of one run per distinct alpha, and an emitter's `startColor` / `endColor` tint the particles. Without the option, `drawParticles` makes exactly the call it made before. `ParticleBatchLike.drawRaw` declares the extra optional trailing parameters (`blend?`, `flipX?`, `flipY?`, `color?`).
+
+  Nothing changes for existing code: coloured runs, the `colors` flush argument and the filled `blendMode` / `colors` surface parameters appear only when a caller passes a `color` to `SpriteBatch` or `color: true` to `drawParticles`. A custom `flush` callback or `DrawSurfaceLike` that opts in must read each sprite's opacity from `colors` for those runs. The `drawParticles` default is planned to flip to `true` in 0.5.0, behind an ADR.
+
+- Updated dependencies [968f114]
+  - @flare-engine/assets@0.4.13
+  - @flare-engine/ecs@0.4.13
+  - @flare-engine/math@0.4.13
+
 ## 0.4.12
 
 ### Patch Changes

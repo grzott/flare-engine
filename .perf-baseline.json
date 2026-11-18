@@ -358,6 +358,8 @@
       "ECS": ["@flare-engine/ecs", "@flare-engine/testing"],
       "Physics": ["@flare-engine/physics", "@flare-engine/testing"],
       "Particles": ["@flare-engine/particles"],
+      "ParticlesDraw": ["@flare-engine/particles", "@flare-engine/render"],
+      "ShapesDraw": ["@flare-engine/shapes", "@flare-engine/render"],
       "Render": ["@flare-engine/render", "@flare-engine/testing"],
       "Integration": [
         "@flare-engine/ecs",

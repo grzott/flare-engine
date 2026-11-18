@@ -1,5 +1,12 @@
 # @flare-engine/devtools
 
+## 0.4.13
+
+### Patch Changes
+
+- @flare-engine/core@0.4.13
+- @flare-engine/ecs@0.4.13
+
 ## 0.4.12
 
 ### Patch Changes

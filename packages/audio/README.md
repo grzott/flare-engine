@@ -90,7 +90,7 @@ document.addEventListener('visibilitychange', () => {
 });
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineaudio--4kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineaudio).
 
 ## License
 

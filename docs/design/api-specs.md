@@ -3,12 +3,15 @@
 > Living document. Update alongside code changes — divergence is a spec bug.
 >
 > Last refreshed against `packages/*/src/index.ts`: **2026-08-14**.
+>
+> Package sizes are not specified here. The enforced ceilings are the `bundleBytes` entries in
+> [`.perf-baseline.json`](../../.perf-baseline.json), gated by `bun run check:perf-bytes`.
 
 ---
 
 ## Layer 0: Foundation
 
-### `@flare-engine/math` (< 5KB gzip)
+### `@flare-engine/math`
 
 | API                                                           | Description                                                                                                                                          |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,7 +36,7 @@
 - `Rect` and `Circle` are type + static namespace objects, not classes.
 - Float32Array for Mat3 (compatible with Skia matrix format).
 
-### `@flare-engine/events` (< 1KB gzip)
+### `@flare-engine/events`
 
 | API                      | Description                                                                             |
 | ------------------------ | --------------------------------------------------------------------------------------- |
@@ -44,7 +47,7 @@
 
 ## Layer 1: Core Runtime
 
-### `@flare-engine/core` (< 3KB gzip)
+### `@flare-engine/core`
 
 | API                | Description                                                                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,7 +60,7 @@
 
 **Physics interpolation.** Read `loop.alpha` in an `onPreRender` callback to lerp between the previous and current physics positions for smooth visuals at any display refresh rate. `alpha` is 0 when the loop was not constructed with a `fixedDt` option.
 
-### `@flare-engine/ecs` (< 8KB gzip)
+### `@flare-engine/ecs`
 
 | API                                   | Description                                                                                                                              |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,7 +88,7 @@
 
 ## Layer 2: System Modules
 
-### `@flare-engine/render` (< 10KB gzip)
+### `@flare-engine/render`
 
 | API             | Description                                                                                                                                                 |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -105,7 +108,7 @@
 
 **Rendering modes:** Retained (Atlas) for game entities, Immediate (Picture) for particles/effects. Compose in the same Canvas.
 
-### `@flare-engine/input` (< 6KB gzip)
+### `@flare-engine/input`
 
 | API               | Description                                                                       |
 | ----------------- | --------------------------------------------------------------------------------- |
@@ -117,7 +120,7 @@
 
 Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` for world coords. Virtual controls render as RN Views overlaid on the Skia canvas. Per-frame edge flags use two deliberate shapes: per-thing boolean fields (`Pointer`/`VirtualButtonState`/`GamepadButtonState` all `justPressed`/`justReleased`) for state already held by reference, and keyed query functions (`KeyboardState.wasPressed`/`wasReleased(code)`, `wasButtonPressed`/`wasButtonReleased(state, button)`) for state addressed by an id.
 
-### `@flare-engine/physics` (< 4KB AABB)
+### `@flare-engine/physics`
 
 **Tier 1 — Built-in AABB (implemented):**
 
@@ -143,7 +146,7 @@ Polling model + signals. Screen-space coords; use `camera.screenToWorldInto()` f
 
 **Rigid bodies** live in `@flare-engine/dynamics` (next section). There is no planck.js integration, and none is planned; see the decision in [dependencies.md](dependencies.md#physics-options-evaluated).
 
-### `@flare-engine/dynamics` (< 8KB gzip)
+### `@flare-engine/dynamics`
 
 2D rigid bodies over oriented boxes (OBBs). `@flare-engine/physics` answers *did these overlap*;
 `@flare-engine/dynamics` answers *where do they end up* — the two packages do not depend on each
@@ -185,7 +188,7 @@ step(world, 1 / 60);
 detection), circle/polygon shapes, ECS coupling, and any broadphase beyond the brute-force all-pairs
 AABB pass.
 
-### `@flare-engine/audio` (< 4KB gzip)
+### `@flare-engine/audio`
 
 | API            | Description                                                                                |
 | -------------- | ------------------------------------------------------------------------------------------ |
@@ -199,7 +202,7 @@ AABB pass.
 
 Lifecycle is manual — the package wires no automatic listener. Call `AudioManager.suspend()`/`resume()` from your own `AppState` (native) or `visibilitychange` (web) handler.
 
-### `@flare-engine/assets` (< 6KB gzip)
+### `@flare-engine/assets`
 
 | API            | Description                                                                                  |
 | -------------- | -------------------------------------------------------------------------------------------- |
@@ -221,7 +224,7 @@ Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not
 
 ## Layer 3: Feature Modules
 
-### `@flare-engine/scene` (< 4KB gzip)
+### `@flare-engine/scene`
 
 | API             | Description                                                                                                                                   |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -230,7 +233,7 @@ Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not
 | `Scene`         | Interface, not a class. `world: World` and `camera: Camera2D` are required — return the ones the factory received (or your own). Optional hooks: `onPreload`, `onInit`, `onEnter`, `onUpdate`, `onDraw`, `onExit`, `onDestroy`. `onDestroy` can follow `onPreload` without `onInit` (a `go()` target superseded during a fade-out, or pending at `destroy()`). |
 | Transitions     | Factory functions: `noneTransition()`, `fadeTransition(duration?, easing?)`, `slideTransition(duration?, direction?, easing?)`. Each returns a `Transition` with a `kind: 'none' \| 'fade' \| 'slide'` discriminator so renderers apply the right visual effect (alpha vs. translate). The optional `easing?: EasingFn` parameter (imported from `@flare-engine/math`) maps raw linear progress to an eased value; defaults to identity (linear). `state.progress` always holds the eased value. |
 
-### `@flare-engine/animation` (< 5KB gzip)
+### `@flare-engine/animation`
 
 | API                                    | Description                                                                                     |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -249,7 +252,7 @@ Audio buffer types are defined in `@flare-engine/audio` (`AudioBufferLike`), not
 
 Animation APIs are functional (state object + free functions), not class-based — consistent with ECS/render style and tree-shakeable.
 
-### `@flare-engine/particles` (< 4KB gzip)
+### `@flare-engine/particles`
 
 | API               | Description                                                                                                                                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -269,7 +272,7 @@ Uses immediate mode (PictureRecorder) at the draw layer — this package owns pa
 - Degenerate and negative extents are clamped to 0, so a mis-sized shape collapses to the origin rather than emitting `NaN` positions.
 - `drawParticles` applies **alpha** per particle and, with `color: true`, **colour** too — both as plain numbers, so neither costs an object. The colour is a multiplier on the frame's texels (a white frame takes it exactly; a particle left at the default white draws unchanged). With `color: true` and a `@flare-engine/render` `SpriteBatch` every particle is a coloured sprite, so one `drawParticles` call is one run per image whatever the particles' colours and alphas; without it, each distinct alpha is its own run, as before the option existed. The default flips to `true` in 0.5.0 under an ADR. `options.effect` is still a single reference for the whole call — a batch retains the effect *reference* until flush, so it cannot vary per particle — and is for what a multiplier cannot express (flash, outline, grayscale).
 
-### `@flare-engine/tilemap` (< 8KB gzip)
+### `@flare-engine/tilemap`
 
 | API               | Description                                                                                                 |
 | ----------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -305,7 +308,7 @@ for (const e of parseLDtkEntities(map)) {
 }
 ```
 
-### `@flare-engine/pathfinding` (< 8KB gzip)
+### `@flare-engine/pathfinding`
 
 Grid pathfinding (A\*), Jump-Point Search optimization for uniform-cost grids, and a navmesh fallback for non-grid maps. No external deps beyond `@flare-engine/math`.
 
@@ -328,7 +331,7 @@ Grid pathfinding (A\*), Jump-Point Search optimization for uniform-cost grids, a
 
 ---
 
-### `@flare-engine/dialogue` (< 5KB gzip)
+### `@flare-engine/dialogue`
 
 Branching dialogue graphs with conditions, actions, variable interpolation, and a typewriter text-reveal helper. No rendering — pair with `@flare-engine/ui` (`DialoguePanel`) on the view side.
 
@@ -349,7 +352,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 ---
 
-### `@flare-engine/debug` (< 3KB gzip, tree-shaken in prod)
+### `@flare-engine/debug` (tree-shaken in prod)
 
 - Collision bounds, entity origins, velocity vectors overlay
 - `DebugOverlay` collects `drawRect` / `drawCircle` / `drawLine` commands for the frame, as a fresh object per call by default. `new DebugOverlay({ reuseCommands: true })` (`DebugOverlayOptions`) reuses pooled command objects instead, so none is created per call once warm; those objects change after `clear()`, so copy a command to keep it past the frame.
@@ -366,7 +369,7 @@ Branching dialogue graphs with conditions, actions, variable interpolation, and 
 
 ## Layer 4: Integration
 
-### `@flare-engine/react` (< 10KB gzip)
+### `@flare-engine/react`
 
 **Web target.** The package runs on web unchanged — same import, same `<GameView>`, no `/web`
 subpath and no platform-specific build output (the package ships a single bundled entry, so
@@ -430,7 +433,7 @@ there, so the tree stays the plain `<Image>`. Native postfx is unchanged.
 | `useCountUp(target, durationMs?)` | `target: number`, `durationMs = 600`. Animates from the previous `target` to the new `target` using `easeOutCubic` from `@flare-engine/math`. Same rAF + no-rAF-snap pattern as `useOverlayFade`. |
 | `useSignalState<T>(signal, initial)` | `signal: Signal<T>` (from `@flare-engine/events`), `initial: T`. Subscribes via `signal.add(setter)` on mount and unsubscribes on cleanup using the returned disposer. Returns latest emitted value. |
 
-### `@flare-engine/render-web` (< 12KB gzip)
+### `@flare-engine/render-web`
 
 Web-integration bridge — the web analog of `@flare-engine/react`: it composes `render`'s neutral frame-renderer backend with the `postfx` runtime via CanvasKit-WASM. Peer-dep `canvaskit-wasm >=0.40.0` (optional — tree-shaken when unused). No `@shopify/react-native-skia` import. `loadCanvasKit` / `createWebSurface` / `createWebSkiaModule` are the **pure CanvasKit backend** for `@flare-engine/render`; `createPostFxSurface` is the **bridge piece** that additionally composes the `@flare-engine/postfx` runtime (its `render → postfx` edge is a legal downward Layer-4 dependency).
 
@@ -467,7 +470,7 @@ const pic = renderer.endFrame();
 
 Animated wrappers for React Native, react-native-web and React DOM components. The package is a scaffold with no public API yet; the design, and the contract this section will carry, is [ui-fx-2026-11.md](../plans/ui-fx-2026-11.md). Four entries: `.` (RN and react-native-web), `./dom` (React DOM), `./core` (headless maths) and `./fx` (snapshot-effect host; conditional exports resolve `react-native` to the RN-Skia file and `browser` / `default` to the CanvasKit file). Each exports only the marker `UI_FX_ENTRY` for now.
 
-### `@flare-engine/engine` (< 2KB gzip)
+### `@flare-engine/engine`
 
 `createGame(config) → GameInstance` — pure factory. Constructs `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`, `AudioManager`, `AssetManager`, `SceneManager`, `GameLoop` and returns them with `start()` / `stop()`. Does **not** own the render loop or Skia canvas lifecycle — those belong to `@flare-engine/react`.
 
@@ -482,7 +485,7 @@ Tier-2 wiring API: `createTier2Wiring(options)` glues optional `AchievementsProv
 
 ## Layer 2.5: Persistence (OSS-launch addition)
 
-### `@flare-engine/storage` (< 4KB gzip)
+### `@flare-engine/storage`
 
 Typed, versioned key/value persistence for save games and app settings. Pluggable adapters (MMKV on native, IndexedDB on web, in-memory for tests).
 
@@ -513,7 +516,7 @@ Typed, versioned key/value persistence for save games and app settings. Pluggabl
 
 ---
 
-### `@flare-engine/errors` (< 2KB raw)
+### `@flare-engine/errors`
 
 React error boundary + structured crash payloads for the OSS launch reliability substrate.
 
@@ -540,7 +543,7 @@ React error boundary + structured crash payloads for the OSS launch reliability 
 
 ---
 
-### `@flare-engine/testing` (< 4KB raw)
+### `@flare-engine/testing`
 
 Deterministic test helpers for ECS games. A dev-time package by default — not bundled into apps unless an app opts in for the runtime use of `createBenchSession` noted below.
 
@@ -567,7 +570,7 @@ Deterministic test helpers for ECS games. A dev-time package by default — not 
 
 ## Layer 3.5: UI Kit (OSS-launch addition)
 
-### `@flare-engine/ui` (< 6KB gzip target)
+### `@flare-engine/ui`
 
 Themed UI primitives + focus navigation + flex-like layout resolver for HUDs, menus, and modals. React Native peer dep only — no Skia dep, so menus render through the platform view tree.
 
@@ -645,7 +648,7 @@ Adds buffered keyboard state with per-frame edge flags, a platform-neutral injec
 
 ## Layer 3.5: Post-processing (OSS-launch addition)
 
-### `@flare-engine/postfx` (< 8KB raw)
+### `@flare-engine/postfx`
 
 Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberration, grayscale flash. The runtime compiles SkSL on first use and short-circuits to a passthrough on devices without `RuntimeEffect` support.
 
@@ -682,7 +685,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ---
 
-### `@flare-engine/localization` (< 7KB raw)
+### `@flare-engine/localization`
 
 **Responsibility.** Localized string tables, locale negotiation, ICU-style plural + interpolation, hot-reload of tables in dev.
 
@@ -707,7 +710,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ---
 
-### `@flare-engine/deep-links` (< 6KB raw)
+### `@flare-engine/deep-links`
 
 **Responsibility.** URL → scene+params routing with pluggable platform sources (web history, native `Linking`, in-memory for tests).
 
@@ -728,7 +731,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ---
 
-### `@flare-engine/share` (< 5KB raw)
+### `@flare-engine/share`
 
 **Responsibility.** Cross-platform screenshot capture (Skia `makeImageSnapshot`) + share-sheet orchestration with pluggable transports.
 
@@ -751,7 +754,7 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 ---
 
-### `@flare-engine/a11y` (< 2KB raw, light)
+### `@flare-engine/a11y`
 
 **Responsibility.** Central accessibility state. Consumed by `animation`, `postfx`, and `ui` to dampen or neutralize motion/contrast/scale per user preference. Full screen-reader pass deferred post-launch.
 
@@ -783,11 +786,11 @@ Composable Skia RuntimeEffect pipeline: vignette, bloom, CRT, chromatic aberrati
 
 No single `LAYER_MAP` tier — `cli` and `create` are 4, `devtools` is 3. See [architecture.md](architecture.md#layer-diagram).
 
-Node-only developer tools. Not shipped to device; excluded from device bundle size budgets. Sizes below are raw install footprint (unpacked `npm pack`).
+Node-only developer tools. Not shipped to device; excluded from device bundle size budgets.
 
 ---
 
-### `@flare-engine/cli` (< 15KB raw, Node-only)
+### `@flare-engine/cli` (Node-only)
 
 **Responsibility.** Pure Node dev tool exposing three commands that preprocess art/map assets and scaffold new apps. Also exports its command bodies as async functions so CI, tests, and integrations can call them programmatically without shelling out.
 
@@ -810,7 +813,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 ---
 
-### `@flare-engine/create` (< 35KB raw, Node-only)
+### `@flare-engine/create` (Node-only)
 
 **Responsibility.** One-shot scaffolder invoked via `npm create @flare-engine <name>` (npm, pnpm and yarn map a bare `@scope` to `@scope/create`; bun users run `bunx @flare-engine/create <name>`). Produces a runnable Expo + Flare app with a minimal scene + HUD in under 5 minutes on a clean machine (build-plan §11.8 "Done when"). Scoped, and published with the rest of the lockstep set, since [ADR-0007](adr-0007-scaffolder-is-flare-engine-create.md): the unscoped `create-flare-app` it was developed under belongs to an unrelated npm package.
 
@@ -833,7 +836,7 @@ Node-only developer tools. Not shipped to device; excluded from device bundle si
 
 ---
 
-### `@flare-engine/devtools` (< 8KB gzip, tree-shaken in prod)
+### `@flare-engine/devtools` (tree-shaken in prod)
 
 **Responsibility.** 0.1.0 partial slice per build-plan §11.10: entity inspector, time scrub, pause/step. Web surface is a floating panel; native surface is a minimal HUD overlay. Zero overhead when the provider is not mounted — mirrors the tree-shake pattern from `@flare-engine/debug`. Full devtools parity (network inspector, profiler flamegraph, asset inspector) deferred post-launch.
 
@@ -868,7 +871,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/leaderboards` (< 1KB raw)
+### `@flare-engine/leaderboards`
 
 **Responsibility.** Leaderboard submission + query interface, plus an in-memory provider for tests and dev. Consumer-supplied adapter at 0.1.0; platform adapters (Game Center, Google Play Games, Steam) are post-launch.
 
@@ -889,7 +892,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/achievements` (< 1KB raw)
+### `@flare-engine/achievements`
 
 **Responsibility.** Achievement unlock + query interface, plus in-memory and storage-backed providers. Consumer-supplied adapter at 0.1.0; platform adapters (Game Center, Google Play Games, Steam) are post-launch.
 
@@ -912,7 +915,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/iap` (< 1KB raw)
+### `@flare-engine/iap`
 
 **Responsibility.** In-app purchase interface. A concrete RevenueCat adapter ships today (`@flare-engine/iap-revenuecat`, below); App Store StoreKit and Google Play Billing adapters are post-launch.
 
@@ -937,7 +940,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/iap-revenuecat` (< 4 KB raw, RevenueCat adapter)
+### `@flare-engine/iap-revenuecat` (RevenueCat adapter)
 
 **Responsibility.** Concrete `IAPProvider` implementation wrapping `react-native-purchases`. The app passes API keys (iOS + Android) and an optional `appUserId`; the package handles SDK configuration, `getProducts`, `purchase`, `restore`, and customer-info listener subscription. The SDK is loaded via lazy `await import()` so the package is safe to include in builds that run on platforms without the native module installed (e.g., web bundles).
 
@@ -957,7 +960,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/ui-shop` (< 6 KB raw, smart shop primitives)
+### `@flare-engine/ui-shop` (smart shop primitives)
 
 **Responsibility.** Reusable React Native shop UI primitives. Three components: `ShopScreen` (smart, fetches products + tracks entitlements), `PaywallModal` (single-product soft-dismissible modal), and `RestorePurchasesButton` (one-tap restore + entitlement re-grant). Apps pass catalog data and localized copy via props; the engine handles the purchase loop, loading states, error banners, and entitlement reactivity. No i18n framework dependency — all text goes through a host-supplied `LocalizeFn`.
 
@@ -985,7 +988,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/analytics` (< 1KB raw)
+### `@flare-engine/analytics`
 
 **Responsibility.** Event tracking interface, plus in-memory and console providers. Consumer-supplied adapter at 0.1.0; platform adapters (PostHog, Amplitude, Segment, Firebase Analytics) are post-launch.
 
@@ -1007,7 +1010,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ---
 
-### `@flare-engine/haptics` (< 2KB raw, interface + injected providers)
+### `@flare-engine/haptics` (interface + injected providers)
 
 **Responsibility.** Tactile-feedback interface for weapon / impact / bomb feel, with concrete providers wired at the app boundary via **injection** — no `expo-haptics` or `react-native` dependency (the same adapter pattern as `@flare-engine/iap-revenuecat`). Ships an Expo Haptics adapter, a Web Vibration adapter, and no-op fallbacks.
 
@@ -1032,7 +1035,7 @@ Each package ships the provider interface + a default `Noop*Provider` + a React 
 
 ## Layer 2: Shapes (procedural primitives)
 
-### `@flare-engine/shapes` (< 4KB gzip)
+### `@flare-engine/shapes`
 
 Procedural 2D shape primitives for Skia — a `ShapeSpec` vocabulary of 12 named atomic shapes plus an SVG `path` escape hatch, composable for shape-first game prototyping (compose ships / enemies / pickups from primitives, swap in sprite art once mechanics lock). Runtime deps are `@flare-engine/math` and `@flare-engine/assets` (the sheet and image types and the row packer the atlas bake uses). `@shopify/react-native-skia` is an **optional, type-only peer** (`import type` only — never in the runtime bundle). On web the injected `Skia` handle is `createWebShapeSkia(kit)` from `@flare-engine/render-web`; a raw CanvasKit instance does not have the `Skia.Path.Make()` / numeric `paint.setStyle` surface `drawShape` calls.
 

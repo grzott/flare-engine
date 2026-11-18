@@ -36,7 +36,7 @@ await scaffoldApp({ name: 'my-game', template: 'shmup', packageManager: 'bun' })
 
 For full-scope showcases built on Flare, see [flareengine.dev](https://flareengine.dev).
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginecreate--35kb-raw-node-only).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginecreate-node-only).
 
 ## License
 

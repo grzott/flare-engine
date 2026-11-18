@@ -10,36 +10,39 @@
 import { execFileSync } from 'node:child_process';
 import { REPO_ROOT } from './pack.mjs';
 
-/** Trimmed single-value git output; empty string on any failure. */
-export const git = (...args) => {
-  try {
-    return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
-  } catch {
-    return '';
-  }
-};
+/** The helpers below, bound to another repository (tests build throwaway ones). */
+export const gitAt = (cwd) => ({
+  /** Trimmed single-value git output; empty string on any failure. */
+  git: (...args) => {
+    try {
+      return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+    } catch {
+      return '';
+    }
+  },
+  /** Untrimmed line split — the only safe way to read `--porcelain`. */
+  gitLines: (...args) => {
+    try {
+      return execFileSync('git', args, { cwd, encoding: 'utf8' })
+        .split('\n')
+        .map((l) => l.replace(/\r$/, ''))
+        .filter((l) => l !== '');
+    } catch {
+      return [];
+    }
+  },
+  /** True when the command exits 0. For predicates like `merge-base --is-ancestor`. */
+  gitOk: (...args) => {
+    try {
+      execFileSync('git', args, { cwd, stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+});
 
-/** Untrimmed line split — the only safe way to read `--porcelain`. */
-export const gitLines = (...args) => {
-  try {
-    return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' })
-      .split('\n')
-      .map((l) => l.replace(/\r$/, ''))
-      .filter((l) => l !== '');
-  } catch {
-    return [];
-  }
-};
-
-/** True when the command exits 0. For predicates like `merge-base --is-ancestor`. */
-export const gitOk = (...args) => {
-  try {
-    execFileSync('git', args, { cwd: REPO_ROOT, stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-};
+export const { git, gitLines, gitOk } = gitAt(REPO_ROOT);
 
 /**
  * Paths with uncommitted changes under `paths`, tracked or not.

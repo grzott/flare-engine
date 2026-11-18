@@ -16,11 +16,25 @@ bun add @flare-engine/render-web canvaskit-wasm
 
 Loads the CanvasKit WASM binary and returns a ready `CanvasKit` instance. Takes the URL/path to the `canvaskit.wasm` binary (required), an optional `onProgress(fraction)` download callback, and an optional `LoadCanvasKitOptions` (`stallMs`, default 15000; `deadlineMs`, default 45000) bounding the load.
 
+The URL must serve the **full** binary, `canvaskit-wasm/bin/full/canvaskit.wasm`. The loader imports the full glue (`canvaskit-wasm/bin/full/canvaskit.js`), and the package's other binary, `canvaskit-wasm/bin/canvaskit.wasm`, does not load with it.
+
 ```ts
 import { loadCanvasKit } from '@flare-engine/render-web';
 
+// '/canvaskit.wasm' serves a copy of canvaskit-wasm/bin/full/canvaskit.wasm.
 const kit = await loadCanvasKit('/canvaskit.wasm', undefined, { stallMs: 10_000, deadlineMs: 30_000 });
 ```
+
+With Vite, import the binary's URL instead of copying the file:
+
+```ts no-check
+import wasmUrl from 'canvaskit-wasm/bin/full/canvaskit.wasm?url';
+import { loadCanvasKit } from '@flare-engine/render-web';
+
+const kit = await loadCanvasKit(wasmUrl);
+```
+
+If the load rejects with a value that is not an `Error` — the full glue rejected with the number `Infinity` when given the non-full binary — `loadCanvasKit` rejects with an `Error` instead. Its message names the likely cause (the served `canvaskit.wasm` does not match the full glue) and the file to serve, and its `cause` is the original value. A rejection that is already an `Error` is passed through unchanged.
 
 A successful load is cached — later calls return the same instance. A **failed** load is not cached: a later call retries from scratch instead of being stranded on the earlier rejection.
 

@@ -124,6 +124,42 @@ describe('loadCanvasKit resilience', () => {
   });
 });
 
+describe('loadCanvasKit init rejection', () => {
+  it('wraps a non-Error rejection in an Error naming the full binary', async () => {
+    const { loadCanvasKit } = await freshLoader();
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response(new Uint8Array(8)))) as unknown as typeof fetch;
+    // What the full glue rejects with when handed the non-full canvaskit.wasm.
+    glue = () => Promise.reject(Number.POSITIVE_INFINITY);
+
+    const err: unknown = await loadCanvasKit('/mismatch/canvaskit.wasm').then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+
+    expect(err).toBeInstanceOf(Error);
+    const error = err as Error;
+    expect(error.message).toContain('does not match the full glue');
+    expect(error.message).toContain('canvaskit-wasm/bin/full/canvaskit.wasm');
+    expect(error.cause).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it('passes an Error rejection through unwrapped', async () => {
+    const { loadCanvasKit } = await freshLoader();
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response(new Uint8Array(8)))) as unknown as typeof fetch;
+    const original = new Error('glue exploded');
+    glue = () => Promise.reject(original);
+
+    const err: unknown = await loadCanvasKit('/broken/canvaskit.wasm').then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+
+    expect(err).toBe(original);
+  });
+});
+
 const WASM_URL = 'http://localhost/canvaskit.wasm';
 
 function wasmPattern(length: number): Uint8Array<ArrayBuffer> {

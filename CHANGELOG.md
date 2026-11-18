@@ -15,7 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
-| [0.4.13](#0413) | 2026-11-17 | 42 | Per-sprite colour in batched draws, baked shape atlases, allocation-free postfx passes, Windows CMake for templates |
+| [0.4.13](#0413) | 2026-11-18 | 42 | Per-sprite colour in batched draws, baked shape atlases, allocation-free postfx passes, Windows CMake for templates |
 | [0.4.12](#0412) | 2026-11-12 | 42 | Edge-case fixes across events, physics and math; Android haptics and screenshot shares; fewer hot-path allocations |
 | [0.4.11](#0411) | 2026-11-12 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
 | [0.4.10](#0410) | 2026-11-08 | 42 | Procedural SFX, dynamics sleeping, per-image sampling, web postfx, slot headers; includes 0.4.9 |
@@ -54,7 +54,7 @@ change, in `postfx`.
   coloured and uncoloured queues with separate loops, so coloured sprites no longer slow down under
   JavaScriptCore in a process that has already flushed many kinds of uncoloured run.
   **Known:** the node benchmark (Bun, no rasterization) measures the uncoloured `render.flush` rows
-  6-12% slower than at 0.4.12. The browser and Android lanes show no slowdown. Tracked in #434.
+  7-13% slower than at 0.4.12. The browser and Android lanes show no slowdown. Tracked in #434.
 - **`particles`** — `drawParticles` takes a new option, `color` (default `false`). With
   `{ color: true }` each particle's interpolated colour is passed to `drawRaw` as that trailing
   `color`, so an emitter's `startColor` / `endColor` tint the particles and one call forms a single

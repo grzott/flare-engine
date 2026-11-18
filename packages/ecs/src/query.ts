@@ -149,22 +149,23 @@ export class QueryBuilder {
   private required = 0;
   private excluded = 0;
   private readonly register: (q: Query) => void;
+  private readonly maskOf: (defs: readonly ComponentDef<unknown>[]) => number;
 
-  constructor(register: (q: Query) => void) {
+  constructor(
+    register: (q: Query) => void,
+    maskOf: (defs: readonly ComponentDef<unknown>[]) => number = orBits,
+  ) {
     this.register = register;
+    this.maskOf = maskOf;
   }
 
   with(...components: ComponentDef<unknown>[]): this {
-    for (const c of components) {
-      this.required |= c.bit;
-    }
+    this.required |= this.maskOf(components);
     return this;
   }
 
   without(...components: ComponentDef<unknown>[]): this {
-    for (const c of components) {
-      this.excluded |= c.bit;
-    }
+    this.excluded |= this.maskOf(components);
     return this;
   }
 
@@ -174,4 +175,12 @@ export class QueryBuilder {
     this.register(q);
     return q;
   }
+}
+
+function orBits(defs: readonly ComponentDef<unknown>[]): number {
+  let mask = 0;
+  for (const c of defs) {
+    mask |= c.bit;
+  }
+  return mask;
 }

@@ -207,9 +207,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/ecs": {
-      "ceiling": 42784,
-      "measured": 38894,
-      "measuredAt": "2026-09-08"
+      "ceiling": 49091,
+      "measured": 44628,
+      "measuredAt": "2026-11-18"
     },
     "@flare-engine/engine": {
       "ceiling": 14832,
@@ -530,6 +530,10 @@
     {
       "date": "2026-11-16",
       "reason": "shapes ceiling raised 34034 -> 56550 B (measured 51409 x1.1) and render-web ceiling raised 47268 -> 60186 B (measured 54714 x1.1), pending the owner's approval of the PR for issue #348. shapes gains a new module, src/atlas.ts (11186 B raw): bakeShapeAtlas, shapeAtlasNeedsRebake, rebakeShapeAtlas, drawBakedShape and their types, plus README docs. render-web gains src/web-shape-skia.ts (6805 B raw): createWebShapeSkia, the CanvasKit-backed Skia handle the bake needs on web, plus README docs. Tarball growth against the last measurements of 2026-11-06: shapes 30940 -> 51409 B (+20469), render-web 42971 -> 54714 B (+11743). The tarball ships each new module in index.mjs, index.js and in both source maps' sourcesContent, and its declarations twice, so the tarball grows by more than the source added; what an app bundles is one copy (shapes dist/index.mjs is 24049 B raw, render-web's 23116 B raw, after the change). Measured 2026-11-16 against the published 0.4.12 tarballs: shapes 33239 -> 51409 B (+18170), each file gzipped alone 43077 -> 63030 B (+19953), dist/index.mjs 4912 -> 7050 B gzipped (+2138); render-web 44881 -> 54714 B (+9833, which includes #425's colour path merged after 0.4.12), each file gzipped alone 53687 -> 64944 B (+11257), dist/index.mjs 6165 -> 7380 B gzipped (+1215). The per-file growth matches the tarball growth, so this is new content, not the gzip-window artifact of #425. New opt-in API, not a regression."
+    },
+    {
+      "date": "2026-11-18",
+      "reason": "ecs ceiling raised 42784 -> 49091 B (measured 44628 x1.1), pending the owner's approval of the PR for issue #66 (with #132 folded in). World keys component storage by the ComponentDef object through a per-World registry (slotFor, an atomic maskOf for multi-definition calls, a bit-indexed store list so destroy touches only the entity's stores), and QueryBuilder takes an optional mask resolver. Measured 2026-11-18 against the published 0.4.13 tarball (39848 B): the tarball grows 4780 B, and each file gzipped alone grows 3880 B (54533 -> 58413). What an app bundles: dist/index.mjs 21208 -> 22862 B raw (6990 -> 7632 B gzipped, +642 B); index.d.mts +251 B gzipped; each source map +1025 B gzipped. The 2026-09-08 measurement (38894 B) is the last one. A defect fix, not a regression."
     }
   ]
 }

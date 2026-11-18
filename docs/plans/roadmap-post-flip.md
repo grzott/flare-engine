@@ -65,6 +65,12 @@ whose ids are already sanely owned.
 **Risk.** `_resetComponentIds` is currently exported (XR-8 owns that); anything in `tests/` depending on the
 global counter has to move to a registry.
 
+**Shipped differently (2026-11-18, #66).** There is no `createComponentRegistry` and no `registry` parameter.
+Each `World` keys component storage by the `ComponentDef` object and assigns a definition its own `bit`
+when that bit is free there, so masks from one copy of the package are unchanged (owner decisions recorded on
+#173, 2026-11-17). #456 deprecates `ComponentDef.id`, `.bit` and `_resetComponentIds`; 0.5.0 removes them
+(#172, #173).
+
 ### T2 · ECS-128 — lift the 32-component ceiling
 
 `MAX_COMPONENTS = 128`. The archetype mask stops being a JS number and becomes 4 words.

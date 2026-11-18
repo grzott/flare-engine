@@ -1,11 +1,11 @@
 import type { ComponentDef, Query, World } from '@flare-engine/ecs';
 
-// One singleton Query per (world, component), memoized so repeat serializeScene
+// One singleton Query per (world, component definition), memoized so repeat serializeScene
 // calls reuse them instead of registering a fresh (leaked) query each call.
 // Queries auto-update, so reuse always reflects current world state. Bounded: at
 // most one query per distinct component per world, all released when the world is
 // garbage-collected (the WeakMap holds no strong ref beyond the world's lifetime).
-const singletonQueries = new WeakMap<World, Map<number, Query>>();
+const singletonQueries = new WeakMap<World, Map<ComponentDef<unknown>, Query>>();
 
 function singletonQuery(world: World, def: ComponentDef<unknown>): Query {
   let byComponent = singletonQueries.get(world);
@@ -13,10 +13,10 @@ function singletonQuery(world: World, def: ComponentDef<unknown>): Query {
     byComponent = new Map();
     singletonQueries.set(world, byComponent);
   }
-  let q = byComponent.get(def.id);
+  let q = byComponent.get(def);
   if (q === undefined) {
     q = world.query(def);
-    byComponent.set(def.id, q);
+    byComponent.set(def, q);
   }
   return q;
 }

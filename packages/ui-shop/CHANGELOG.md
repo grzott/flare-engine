@@ -1,5 +1,12 @@
 # @flare-engine/ui-shop
 
+## 0.4.13
+
+### Patch Changes
+
+- @flare-engine/iap@0.4.13
+- @flare-engine/ui@0.4.13
+
 ## 0.4.12
 
 ### Patch Changes

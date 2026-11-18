@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/pathfinding",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "description": "A* grid pathfinding, Jump Point Search, and navmesh for 2D scenes and apps",
   "keywords": [
     "flare-engine",
@@ -46,7 +46,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/math": "^0.4.12"
+    "@flare-engine/math": "^0.4.13"
   },
   "engines": {
     "node": ">=20"

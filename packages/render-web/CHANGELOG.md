@@ -1,5 +1,50 @@
 # @flare-engine/render-web
 
+## 0.4.13
+
+### Patch Changes
+
+- 968f114: `ShapeSpec`s can now be baked once into an atlas and drawn as sprites, so N shape-built entities are one `SpriteBatch` run instead of several Skia draws each.
+
+  **`@flare-engine/shapes`.** `bakeShapeAtlas(Skia, specs, scale, options?)` draws each distinct spec object once, through `drawShape` and with its own fill, stroke and glow colours, into one image, and returns a `ShapeAtlas`: the `image` and `sheet` a `SpriteBatch` draws, plus `cells`, one `ShapeAtlasCell` per spec. `scale` is the raster scale in atlas pixels per spec unit and must be passed, because the bake cannot see the device scale. Cells are sized from `shapeBoundsBoxInto` and separated by `padding` (default 2 px); `maxWidth` (default 2048) is where rows wrap.
+
+  `drawBakedShape(batch, atlas, index, x, y, rot?, scale?, color?, alpha?)` queues one instance with the spec's origin at `(x, y)`, rotated about it and scaled uniformly. `color` is the per-sprite colour multiplier `SpriteBatch.draw` takes. It allocates nothing.
+
+  `shapeAtlasNeedsRebake(atlas, scale)` is `true` once `scale` is below 0.75x or above 1.5x of the scale the atlas was baked at. `rebakeShapeAtlas(Skia, atlas, scale)` returns the atlas it was given while `scale` is inside that band, and otherwise bakes the same specs at the new scale; cell indices are unchanged by a re-bake, and so are each spec's origin and drawn size; a cell's `width`/`height` and fractional anchors can differ by the rounding margin of either bake, because each cell is rounded up to whole pixels.
+
+  A cell is never rasterized larger than `SHAPE_ATLAS_MAX_CELL` (2048 px) on its longer side. A spec that would need more is baked at a lower scale of its own, reported as `cell.scale`, and still draws at the same size. It does not throw.
+
+  Limits: a spec whose parameters animate should stay on `drawShape`, since the bake is a snapshot. A baked instance's stroke and glow widths scale with the instance. `drawBakedShape` rotates the whole cell rigidly, where `drawShape`'s `rot` leaves each part's `ox`/`oy` unrotated. Colours are baked in, so `color` multiplies them and cannot recolour one part.
+
+  The bake takes a `ShapeAtlasSkia`, a narrow interface that react-native-skia's `Skia` satisfies. The package now depends on `@flare-engine/assets`.
+
+  **`@flare-engine/assets`.** `packAtlasRows(sizes, maxWidth, padding)` exports the row layout `createProceduralAtlas` already used, with its result types `AtlasRowLayout` and `AtlasRowPosition`. `createProceduralAtlas` is unchanged.
+
+  **`@flare-engine/render-web`.** `createWebShapeSkia(kit)` returns a `WebShapeSkia`, a CanvasKit-backed `Skia` handle for `bakeShapeAtlas` and `drawShape`. Its surface factory makes CanvasKit's offscreen CPU surface, so the bake needs no WebGL context. It builds paths on CanvasKit's PathBuilder where there is one (0.41 and later) and on the mutable Path of 0.40 otherwise, and frees the paints and paths it created when a surface is disposed.
+
+  Nothing changes for existing code.
+
+- b12959f: A sprite can now carry its own colour through the batched `drawAtlas` path, and `drawParticles` can opt into it.
+
+  **`@flare-engine/render`.** `SpriteBatch.draw` and `SpriteBatch.drawRaw` take an optional trailing `color`: a packed-ARGB multiplier (`0xAARRGGBB`) applied to every texel of that sprite, so `0xFFFFFFFF` changes nothing. A sprite drawn with a `color` has its `alpha` multiplied into the colour's alpha byte, and `alpha` then no longer splits batch runs: consecutive coloured sprites that share image, effect, stretch, blend and flip are one run whatever their colours and alphas. A coloured sprite and an uncoloured one never share a run. `SpriteBatch.flush`'s callback receives a third argument for a coloured run, `colors: Uint32Array` (`colors[i]` belongs to `commands[i]`; the buffer is reused and may be longer than `commands`), and `FrameRenderer.drawAtlas(image, commands, colors?)` accepts it, so `batch.flush(renderer.drawAtlas)` needs no change. The renderer draws a coloured run with Skia's Modulate blend, passed explicitly because the two backends default differently. `DrawSurfaceLike.drawAtlas`'s `blendMode` and `colors` parameters, previously typed `undefined`, are now `number` and `Float32Array[]`. `SpriteDrawCommand` is unchanged.
+
+  Sprites drawn without a `color` are batched and drawn exactly as before, with the same surface call.
+
+  Limits: on the stretch, flip and zone-background paths, which are not atlas draws, only the colour's alpha applies and its RGB is ignored.
+
+  **`@flare-engine/render-web`.** `createWebSkiaModule`'s `drawAtlas` forwards a coloured run's colours to CanvasKit as a reused `Uint32Array` with `BlendMode.Modulate`. An uncoloured run still passes `null` for both.
+
+  **`@flare-engine/particles`.** `drawParticles` takes a new option, `color` (default `false`). With `{ color: true }` it passes each particle's interpolated colour to `drawRaw` as that trailing `color` argument, with alpha still the separate `alpha` argument, so with a `SpriteBatch` the particles of one call form a single run per image instead of one run per distinct alpha, and an emitter's `startColor` / `endColor` tint the particles. Without the option, `drawParticles` makes exactly the call it made before. `ParticleBatchLike.drawRaw` declares the extra optional trailing parameters (`blend?`, `flipX?`, `flipY?`, `color?`).
+
+  Nothing changes for existing code: coloured runs, the `colors` flush argument and the filled `blendMode` / `colors` surface parameters appear only when a caller passes a `color` to `SpriteBatch` or `color: true` to `drawParticles`. A custom `flush` callback or `DrawSurfaceLike` that opts in must read each sprite's opacity from `colors` for those runs. The `drawParticles` default is planned to flip to `true` in 0.5.0, behind an ADR.
+
+- Updated dependencies [5fd35c2]
+- Updated dependencies [28b1b40]
+- Updated dependencies [b12959f]
+  - @flare-engine/postfx@0.4.13
+  - @flare-engine/render@0.4.13
+  - @flare-engine/math@0.4.13
+
 ## 0.4.12
 
 ### Patch Changes

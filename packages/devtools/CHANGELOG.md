@@ -1,5 +1,14 @@
 # @flare-engine/devtools
 
+## 0.4.14
+
+### Patch Changes
+
+- Updated dependencies [ea64817]
+- Updated dependencies [dc99446]
+  - @flare-engine/ecs@0.4.14
+  - @flare-engine/core@0.4.14
+
 ## 0.4.13
 
 ### Patch Changes

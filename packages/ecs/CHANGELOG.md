@@ -1,5 +1,30 @@
 # @flare-engine/ecs
 
+## 0.4.14
+
+### Patch Changes
+
+- ea64817: Deprecations in `@flare-engine/ecs`. None of them changes behaviour in this release; 0.5.0 removes each one.
+
+  - `ComponentDef.id` and `ComponentDef.bit`. A `World` no longer keys storage by them. `id` comes from a module-global counter, so it depends on import order and must never be persisted, and `bit` is `1 << id`, which wraps once 0.5.0 lifts the cap of 32 component types. Use the definition object itself as the key, for example a `Map<ComponentDef<unknown>, …>`.
+  - `_resetComponentIds` (internal, test-only). Each `World` keys storage by the definition object, so isolating storage between tests needs no reset. It goes together with the global counter it resets.
+  - `Query.requiredMask`, `Query.excludedMask`, `Query.matches` and calling `new Query(requiredMask, excludedMask)` directly. 0.5.0 sizes masks per `World` and takes the mask representation out of the public API. Build queries with `World.query` or `World.queryBuilder`, and test membership with `Query.has`.
+
+  `@flare-engine/testing`: `serializeScene` cached its queries by `ComponentDef.id`, so two definitions sharing an `id` (two copies of `@flare-engine/ecs` in one process, or a hand-built definition) got the same query and entities holding only the second one were left out of the snapshot. It now caches by the definition object.
+
+- dc99446: `World` now keys component storage by the `ComponentDef` object instead of by its `id` and `bit`. A second copy of the package in one process (the CJS and ESM builds loaded together, or a duplicated install) numbers its definitions from 0 again, so its components used to share storage and query matches with the first copy's, with no error. They no longer do.
+
+  Query masks for definitions from one copy are unchanged: `Query.requiredMask` and `excludedMask` are still the OR of each definition's `bit`. Only a definition whose `bit` another definition already holds in that `World` gets a different, free bit.
+
+  Behaviour change, only where two definitions share an `id`: in practice two copies of the package, but also a hand-built `ComponentDef` or one defined after the internal `_resetComponentIds`. Built-in components from two copies (for example `Position` from each) are now separate components in one `World`. Code that relied on them sharing storage by accident will see two.
+
+  Each `World` holds at most 32 component types and throws `A World holds at most 32 component types (registering "<name>")` on the 33rd. A definition takes a slot the first time it is passed to `add`, `query`, or a builder's `with` / `without`; `has`, `get` and `remove` never take one. A `query(...)`, `with(...)` or `without(...)` call that does not fit throws without taking any slot. `defineComponent` still allows 32 definitions per copy of the package.
+
+  `World.destroy` now deletes only from the stores of the components the entity has, instead of from every store in the `World`.
+
+  - @flare-engine/events@0.4.14
+  - @flare-engine/math@0.4.14
+
 ## 0.4.13
 
 ### Patch Changes

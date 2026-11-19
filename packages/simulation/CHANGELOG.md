@@ -1,5 +1,11 @@
 # @flare-engine/simulation
 
+## 0.4.14
+
+### Patch Changes
+
+- @flare-engine/math@0.4.14
+
 ## 0.4.13
 
 ### Patch Changes

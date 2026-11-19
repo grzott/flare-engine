@@ -25,7 +25,7 @@ work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issu
 
 - **One issue, one PR.** Every piece of engine work is an issue with a type, a scope, a size and a
   priority label, in a milestone.
-- **The owner approves a phase** by labelling its issues `status:ready`, except `type:owner-action`
+- **The owner approves a phase** by labelling its issues `status:ready`, except `owner-action`
   issues, which are the owner's own. `/start next` takes the next approved issue in milestone
   due-date order and opens one PR on a `claude/*` branch.
 - **PRs merge through the gate:** `ci` and `risk-gate` must pass; held changes

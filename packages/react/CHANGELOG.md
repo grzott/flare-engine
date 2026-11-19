@@ -1,5 +1,21 @@
 # @flare-engine/react
 
+## 0.4.14
+
+### Patch Changes
+
+- Updated dependencies [ea64817]
+- Updated dependencies [dc99446]
+  - @flare-engine/ecs@0.4.14
+  - @flare-engine/assets@0.4.14
+  - @flare-engine/audio@0.4.14
+  - @flare-engine/core@0.4.14
+  - @flare-engine/events@0.4.14
+  - @flare-engine/input@0.4.14
+  - @flare-engine/math@0.4.14
+  - @flare-engine/render@0.4.14
+  - @flare-engine/scene@0.4.14
+
 ## 0.4.13
 
 ### Patch Changes

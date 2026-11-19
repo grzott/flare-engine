@@ -38,6 +38,7 @@ export {
   type FadePreset,
   type FlarePreset,
   type ForceSpec,
+  type FragmentPresetOptions,
   type FragmentReverse,
   type FragmentSpec,
   fade,

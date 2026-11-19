@@ -10,7 +10,10 @@ export type PathSpec =
   | { points: readonly number[]; curviness?: number }
   | { svg: string };
 
-/** Fields every preset accepts: its timing, and what plays instead under reduced motion. */
+/**
+ * Fields every preset accepts: its timing, and what plays instead under reduced motion. Of the
+ * timing, `shatter` and `disintegrate` take only `delay`.
+ */
 export interface PresetCommon extends TimingInput {
   reduceMotion?: 'system' | 'always' | 'never';
   fallback?: LivePreset;
@@ -119,6 +122,10 @@ export interface ShatterPreset {
   physics: PhysicsSpec;
   life: LifeSpec;
   reverse: FragmentReverse;
+  /**
+   * The piece budget: the runtime keeps at most this many pieces. It is not compared with
+   * `fragment.count`, so a count above it is not an error.
+   */
   maxFragments: number;
 }
 
@@ -130,6 +137,10 @@ export interface DisintegratePreset {
   physics: PhysicsSpec;
   life: LifeSpec;
   reverse: FragmentReverse;
+  /**
+   * The piece budget: the runtime keeps at most this many pieces. It is not compared with
+   * `fragment.count`, so a count above it is not an error.
+   */
   maxFragments: number;
 }
 
@@ -184,8 +195,25 @@ export type DeepPartial<T> =
 /** What a preset factory accepts: any part of the preset, plus the common fields. */
 export type PresetOptions<P> = DeepPartial<Omit<P, 'kind'>> & PresetCommon;
 
+/**
+ * What `shatter` and `disintegrate` accept: {@link PresetOptions} without `duration`, `easing` and
+ * `spring`, since a fragment preset's run length comes from `release` and `life`.
+ */
+export type FragmentPresetOptions<P> = DeepPartial<Omit<P, 'kind'>> &
+  Omit<PresetCommon, 'duration' | 'easing' | 'spring'> & {
+    duration?: never;
+    easing?: never;
+    spring?: never;
+  };
+
 const SHARD_CAP = 300;
 const CELL_CAP = 3000;
+
+/**
+ * Seconds a preset runs when it has neither a `duration` nor a spring. The factories and
+ * `presetDuration` both read it, so a hand-written preset measures the same as a built one.
+ */
+const DEFAULT_DURATION = { fade: 0.25, slide: 0.35, press: 0.12, emerge: 0.45, dust: 1.2 } as const;
 
 function check(
   name: string,
@@ -224,16 +252,51 @@ const checkMin0 = (name: string, field: string, value: number): void =>
 const checkUnit = (name: string, field: string, value: number): void =>
   check(name, field, value, 0, 1);
 
+/** How a value of the wrong shape reads in a message. */
+function shown(value: unknown): string {
+  if (Array.isArray(value)) return `an array of ${value.length}`;
+  return typeof value === 'object' && value !== null ? 'an object' : String(value);
+}
+
+const isPlainObject = (value: unknown): boolean =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// The option types rule these shapes out, but a preset loaded from JSON can still carry a null
+// or a scalar where an object belongs. These turn that into a RangeError naming the field.
+function checkObject(name: string, field: string, value: unknown): void {
+  if (isPlainObject(value)) return;
+  throw new RangeError(`${name}: ${field} must be an object, got ${shown(value)}`);
+}
+
+function checkPair(name: string, field: string, value: unknown): void {
+  if (Array.isArray(value) && value.length === 2) return;
+  throw new RangeError(`${name}: ${field} must be an array of 2 numbers, got ${shown(value)}`);
+}
+
 function checkOrigin(name: string, field: string, origin: OriginSpec): void {
   if (typeof origin === 'string') return;
+  if (!isPlainObject(origin)) {
+    throw new RangeError(
+      `${name}: ${field} must be 'center', 'press' or { x, y }, got ${shown(origin)}`,
+    );
+  }
   checkFinite(name, `${field}.x`, origin.x);
   checkFinite(name, `${field}.y`, origin.y);
 }
 
-/** `base` with every defined key of `over` on top. */
-function merge<T extends object>(base: T, over: Partial<T> | undefined): T {
+/**
+ * `base` with every defined key of `over` on top. Throws a `RangeError` naming `field` when
+ * `over` is given and is not an object.
+ */
+function merge<T extends object>(
+  name: string,
+  field: string,
+  base: T,
+  over: Partial<T> | undefined,
+): T {
   const out = { ...base };
   if (over === undefined) return out;
+  checkObject(name, field, over);
   for (const key of Object.keys(over) as (keyof T)[]) {
     const value = over[key];
     if (value !== undefined) out[key] = value as T[keyof T];
@@ -284,6 +347,7 @@ function commonOf(
         `${name}: a spring sets its own duration; do not combine it with duration or easing`,
       );
     }
+    checkObject(name, 'spring', spring);
     resolveSpring(spring);
   } else {
     duration ??= defaultDuration;
@@ -291,8 +355,13 @@ function commonOf(
   }
   if (duration !== undefined) checkMin0(name, 'duration', duration);
   if (delay !== undefined) checkMin0(name, 'delay', delay);
-  if (fallback !== undefined && isSnapshotPreset(fallback)) {
-    throw new RangeError(`${name}: fallback must be a live preset`);
+  if (fallback !== undefined) {
+    if (!isPlainObject(fallback)) {
+      throw new RangeError(`${name}: fallback must be a live preset, got ${shown(fallback)}`);
+    }
+    if (isSnapshotPreset(fallback)) {
+      throw new RangeError(`${name}: fallback must be a live preset`);
+    }
   }
   return { duration, easing, spring, delay, reduceMotion: opts.reduceMotion, fallback };
 }
@@ -301,7 +370,11 @@ function commonOf(
 export function fade(opts: PresetOptions<FadePreset> = {}): FadePreset & PresetCommon {
   const opacity = opts.opacity ?? 0;
   checkUnit('fade', 'opacity', opacity);
-  return frozenCopy({ kind: 'fade', opacity, ...commonOf('fade', opts, 0.25) });
+  return frozenCopy({
+    kind: 'fade',
+    opacity,
+    ...commonOf('fade', opts, DEFAULT_DURATION.fade),
+  });
 }
 
 const SLIDE_ALIGN_ORIGIN = { x: 0.5, y: 0.5 };
@@ -314,13 +387,18 @@ const SLIDE_ALIGN_ORIGIN = { x: 0.5, y: 0.5 };
 export function slide(opts: PresetOptions<SlidePreset> = {}): SlidePreset & PresetCommon {
   const from = opts.from ?? 'bottom';
   const distance = opts.distance ?? 48;
-  const alignOrigin = merge(SLIDE_ALIGN_ORIGIN, opts.alignOrigin);
+  const alignOrigin = merge('slide', 'alignOrigin', SLIDE_ALIGN_ORIGIN, opts.alignOrigin);
   const autoRotate = opts.autoRotate ?? false;
   const rotationLimit = opts.rotationLimit ?? 180;
   const start = opts.start ?? 0;
   const end = opts.end ?? 1;
 
   if (typeof from !== 'string') {
+    if (!isPlainObject(from)) {
+      throw new RangeError(
+        `slide: from must be an edge, { angle, distance } or { x, y }, got ${shown(from)}`,
+      );
+    }
     if ('angle' in from) {
       checkFinite('slide', 'from.angle', from.angle);
       checkMin0('slide', 'from.distance', from.distance);
@@ -347,7 +425,7 @@ export function slide(opts: PresetOptions<SlidePreset> = {}): SlidePreset & Pres
     rotationLimit,
     start,
     end,
-    ...commonOf('slide', opts, 0.35, 'easeOutCubic'),
+    ...commonOf('slide', opts, DEFAULT_DURATION.slide, 'easeOutCubic'),
   });
 }
 
@@ -364,7 +442,7 @@ export function press(opts: PresetOptions<PressPreset> = {}): PressPreset & Pres
     scale,
     opacity,
     brightness,
-    ...commonOf('press', opts, 0.12),
+    ...commonOf('press', opts, DEFAULT_DURATION.press),
   });
 }
 
@@ -392,7 +470,7 @@ export function emerge(opts: PresetOptions<EmergePreset> = {}): EmergePreset & P
   const angle = opts.angle ?? 135;
   const softness = opts.softness ?? 0.4;
   const distance = opts.distance ?? 12;
-  const shadow = merge(EMERGE_SHADOW, opts.shadow);
+  const shadow = merge('emerge', 'shadow', EMERGE_SHADOW, opts.shadow);
   const sheen = opts.sheen ?? null;
 
   checkFinite('emerge', 'angle', angle);
@@ -417,7 +495,7 @@ export function emerge(opts: PresetOptions<EmergePreset> = {}): EmergePreset & P
     distance,
     shadow,
     sheen,
-    ...commonOf('emerge', opts, 0.45),
+    ...commonOf('emerge', opts, DEFAULT_DURATION.emerge),
   });
 }
 
@@ -483,18 +561,32 @@ function fragmentBodyOf(
   name: string,
   base: FragmentBody,
   cap: number,
-  opts: PresetOptions<FragmentBody>,
+  opts: FragmentPresetOptions<FragmentBody>,
 ): FragmentBody & PresetCommon {
+  for (const field of ['duration', 'easing', 'spring'] as const) {
+    if (opts[field] !== undefined) {
+      throw new RangeError(
+        `${name}: ${field} is not used; the run length comes from release and life`,
+      );
+    }
+  }
+  if (opts.fragment !== undefined) checkObject(name, 'fragment', opts.fragment);
   const { anisotropy, ...fragmentFlat } = opts.fragment ?? {};
   const fragment: FragmentSpec = {
-    ...merge(base.fragment, fragmentFlat),
-    anisotropy: merge(base.fragment.anisotropy, anisotropy),
+    ...merge(name, 'fragment', base.fragment, fragmentFlat),
+    anisotropy: merge(name, 'fragment.anisotropy', base.fragment.anisotropy, anisotropy),
   };
-  const forces =
-    opts.forces === undefined ? base.forces : opts.forces.map((f) => merge(SHATTER_FORCE, f));
-  const release = merge(base.release, opts.release);
-  const physics = merge(base.physics, opts.physics);
-  const life = merge(base.life, opts.life);
+  let forces = base.forces;
+  if (opts.forces !== undefined) {
+    if (!Array.isArray(opts.forces)) {
+      throw new RangeError(`${name}: forces must be an array, got ${shown(opts.forces)}`);
+    }
+    const baseForce = base.forces[0] ?? SHATTER_FORCE;
+    forces = opts.forces.map((f, i) => merge(name, `forces[${i}]`, baseForce, f));
+  }
+  const release = merge(name, 'release', base.release, opts.release);
+  const physics = merge(name, 'physics', base.physics, opts.physics);
+  const life = merge(name, 'life', base.life, opts.life);
   const maxFragments = opts.maxFragments ?? base.maxFragments;
 
   check(name, 'fragment.count', fragment.count, 2, cap, true);
@@ -536,6 +628,8 @@ function fragmentBodyOf(
   checkUnit(name, 'physics.massVariance', physics.massVariance);
   checkFinite(name, 'physics.depth', physics.depth);
 
+  checkPair(name, 'life.opacity', life.opacity);
+  checkPair(name, 'life.scale', life.scale);
   for (let i = 0; i < 2; i++) {
     checkUnit(name, `life.opacity[${i}]`, life.opacity[i]!);
     checkMin0(name, `life.scale[${i}]`, life.scale[i]!);
@@ -563,9 +657,16 @@ function fragmentBodyOf(
  * `'radial-glass'` shards around the press point, one radial force of 900 px/s, gravity 1800
  * downward, lifetime 0.9, `reverse 'home'`, `maxFragments 300`.
  *
- * The run length comes from `release` and `life` (see {@link presetDuration}), not `duration`.
+ * The run length comes from `release` and `life` (see {@link presetDuration}), so `duration`,
+ * `easing` and `spring` are not accepted: each throws a `RangeError`. `delay`, `reduceMotion` and
+ * `fallback` are.
+ *
+ * `maxFragments` is a budget, not a bound on `fragment.count`: a count above it is valid, and
+ * both values are kept as given.
  */
-export function shatter(opts: PresetOptions<ShatterPreset> = {}): ShatterPreset & PresetCommon {
+export function shatter(
+  opts: FragmentPresetOptions<ShatterPreset> = {},
+): ShatterPreset & PresetCommon {
   return frozenCopy({
     kind: 'shatter',
     ...fragmentBodyOf('shatter', SHATTER_BODY, SHARD_CAP, opts),
@@ -577,7 +678,7 @@ export function shatter(opts: PresetOptions<ShatterPreset> = {}): ShatterPreset 
  * sweep travelling at 90°, `maxFragments 3000`.
  */
 export function disintegrate(
-  opts: PresetOptions<DisintegratePreset> = {},
+  opts: FragmentPresetOptions<DisintegratePreset> = {},
 ): DisintegratePreset & PresetCommon {
   return frozenCopy({
     kind: 'disintegrate',
@@ -620,7 +721,7 @@ export function dust(opts: PresetOptions<DustPreset> = {}): DustPreset & PresetC
     spread,
     grainsAtFront,
     seed,
-    ...commonOf('dust', opts, 1.2),
+    ...commonOf('dust', opts, DEFAULT_DURATION.dust),
   });
 }
 
@@ -664,9 +765,11 @@ export function liveFallbackOf(p: FlarePreset): LivePreset {
 }
 
 /**
- * Seconds from trigger to rest, delay included. A spring lasts its settle time. A fragment preset
- * lasts `release.duration + life.lifetime × (1 + life.lifetimeVariance)`, the latest release plus
- * the longest life, whatever its `duration` says.
+ * Seconds from trigger to rest, delay included. A spring lasts its settle time. Without a spring a
+ * preset lasts its `duration`, or the default of its kind when it has none: the one its factory
+ * fills in, so a hand-written preset measures the same as a built one. A fragment preset lasts
+ * `release.duration + life.lifetime × (1 + life.lifetimeVariance)`, the latest release plus the
+ * longest life; its timing fields other than `delay` are not read.
  */
 export function presetDuration(p: FlarePreset): number {
   const delay = p.delay ?? 0;
@@ -674,5 +777,5 @@ export function presetDuration(p: FlarePreset): number {
     return delay + p.release.duration + p.life.lifetime * (1 + p.life.lifetimeVariance);
   }
   if (p.spring !== undefined) return delay + springSettleTime(resolveSpring(p.spring));
-  return delay + (p.duration ?? 0);
+  return delay + (p.duration ?? DEFAULT_DURATION[p.kind]);
 }

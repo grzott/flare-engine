@@ -184,6 +184,16 @@ describe('overrides', () => {
     expect(shatter({ forces: [] }).forces).toEqual([]);
   });
 
+  // Both presets share one default force today, so this cannot tell a preset's own base force
+  // from shatter's; it pins that an empty force is the preset's default force either way.
+  test('an empty force is the default force of the preset it is given to', () => {
+    expect(shatter({ forces: [{}] }).forces).toEqual(shatter().forces);
+    expect(disintegrate({ forces: [{}] }).forces).toEqual(disintegrate().forces);
+    expect(disintegrate({ forces: [{ strength: 200 }] }).forces).toEqual([
+      { ...DEFAULT_FORCE, strength: 200 },
+    ]);
+  });
+
   test('unions and tuples are replaced whole', () => {
     expect(slide({ from: { angle: 90, distance: 40 } }).from).toEqual({ angle: 90, distance: 40 });
     expect(shatter({ fragment: { focus: { x: 0.2, y: 0.5 } } }).fragment.focus).toEqual({
@@ -399,6 +409,135 @@ describe('validation', () => {
     );
   });
 
+  describe('input that the types rule out, as a preset loaded from JSON can carry', () => {
+    type Shatter = Parameters<typeof shatter>[0];
+    type Slide = Parameters<typeof slide>[0];
+    type Emerge = Parameters<typeof emerge>[0];
+    type Fade = Parameters<typeof fade>[0];
+    const parsed = <T>(json: string): T => JSON.parse(json) as T;
+
+    test('a null where an object belongs names the field', () => {
+      const object = (field: string) => `shatter: ${field} must be an object, got null`;
+      const origin = (field: string) =>
+        `shatter: ${field} must be 'center', 'press' or { x, y }, got null`;
+      const shatterMessage = (json: string) => messageOf(() => shatter(parsed<Shatter>(json)));
+
+      expect(shatterMessage('{"fragment":null}')).toBe(object('fragment'));
+      expect(shatterMessage('{"fragment":{"anisotropy":null}}')).toBe(
+        object('fragment.anisotropy'),
+      );
+      expect(shatterMessage('{"fragment":{"focus":null}}')).toBe(origin('fragment.focus'));
+      expect(shatterMessage('{"forces":null}')).toBe('shatter: forces must be an array, got null');
+      expect(shatterMessage('{"forces":[{},null]}')).toBe(object('forces[1]'));
+      expect(shatterMessage('{"forces":[{"origin":null}]}')).toBe(origin('forces[0].origin'));
+      expect(shatterMessage('{"release":null}')).toBe(object('release'));
+      expect(shatterMessage('{"physics":null}')).toBe(object('physics'));
+      expect(shatterMessage('{"life":null}')).toBe(object('life'));
+      expect(shatterMessage('{"life":{"opacity":null}}')).toBe(
+        'shatter: life.opacity must be an array of 2 numbers, got null',
+      );
+      expect(shatterMessage('{"life":{"scale":null}}')).toBe(
+        'shatter: life.scale must be an array of 2 numbers, got null',
+      );
+      expect(shatterMessage('{"fallback":null}')).toBe(
+        'shatter: fallback must be a live preset, got null',
+      );
+      expect(messageOf(() => disintegrate(parsed<Shatter>('{"physics":null}')))).toBe(
+        'disintegrate: physics must be an object, got null',
+      );
+      expect(messageOf(() => slide(parsed<Slide>('{"alignOrigin":null}')))).toBe(
+        'slide: alignOrigin must be an object, got null',
+      );
+      expect(messageOf(() => slide(parsed<Slide>('{"from":{"angle":null,"distance":4}}')))).toBe(
+        'slide: from.angle must be a finite number, got null',
+      );
+      expect(messageOf(() => emerge(parsed<Emerge>('{"shadow":null}')))).toBe(
+        'emerge: shadow must be an object, got null',
+      );
+      expect(messageOf(() => fade(parsed<Fade>('{"spring":null}')))).toBe(
+        'fade: spring must be an object, got null',
+      );
+    });
+
+    test('any other non-object where an object belongs names the field too', () => {
+      const shatterMessage = (json: string) => messageOf(() => shatter(parsed<Shatter>(json)));
+
+      expect(shatterMessage('{"physics":7}')).toBe('shatter: physics must be an object, got 7');
+      expect(shatterMessage('{"release":[]}')).toBe(
+        'shatter: release must be an object, got an array of 0',
+      );
+      expect(shatterMessage('{"forces":{}}')).toBe(
+        'shatter: forces must be an array, got an object',
+      );
+      expect(shatterMessage('{"fragment":{"focus":3}}')).toBe(
+        "shatter: fragment.focus must be 'center', 'press' or { x, y }, got 3",
+      );
+      expect(shatterMessage('{"life":{"opacity":[1,0,0]}}')).toBe(
+        'shatter: life.opacity must be an array of 2 numbers, got an array of 3',
+      );
+      expect(shatterMessage('{"life":{"scale":1}}')).toBe(
+        'shatter: life.scale must be an array of 2 numbers, got 1',
+      );
+      expect(messageOf(() => slide(parsed<Slide>('{"from":5}')))).toBe(
+        'slide: from must be an edge, { angle, distance } or { x, y }, got 5',
+      );
+    });
+
+    test('a null that is a documented value still passes', () => {
+      expect(emerge({ sheen: null }).sheen).toBeNull();
+      expect(slide({ path: null }).path).toBeNull();
+      expect(shatter({ fragment: { subdivide: null } }).fragment.subdivide).toBeNull();
+      expect(shatter(parsed<Shatter>('{"fragment":{"subdivide":null},"forces":[]}'))).toEqual({
+        ...SHATTER_DEFAULTS,
+        forces: [],
+      });
+    });
+  });
+
+  test('fragment presets reject duration, easing and spring', () => {
+    const unused = (name: string, field: string) =>
+      `${name}: ${field} is not used; the run length comes from release and life`;
+    // @ts-expect-error a fragment preset takes no duration
+    expect(messageOf(() => shatter({ duration: 0.5 }))).toBe(unused('shatter', 'duration'));
+    // @ts-expect-error a fragment preset takes no easing
+    expect(messageOf(() => shatter({ easing: 'linear' }))).toBe(unused('shatter', 'easing'));
+    // @ts-expect-error a fragment preset takes no spring
+    expect(messageOf(() => shatter({ spring: { duration: 0.4 } }))).toBe(
+      unused('shatter', 'spring'),
+    );
+    // @ts-expect-error a fragment preset takes no duration
+    expect(messageOf(() => disintegrate({ duration: 0 }))).toBe(unused('disintegrate', 'duration'));
+    // @ts-expect-error a fragment preset takes no easing
+    expect(messageOf(() => disintegrate({ easing: 'linear' }))).toBe(
+      unused('disintegrate', 'easing'),
+    );
+    // @ts-expect-error a fragment preset takes no spring
+    expect(messageOf(() => disintegrate({ spring: { duration: 0.4 } }))).toBe(
+      unused('disintegrate', 'spring'),
+    );
+  });
+
+  test('fragment presets still take delay, reduceMotion and fallback', () => {
+    const fallback = fade();
+    const p = shatter({ delay: 0.2, reduceMotion: 'always', fallback });
+    expect(p.delay).toBe(0.2);
+    expect(p.reduceMotion).toBe('always');
+    expect(p.fallback).toBe(fallback);
+    expect(disintegrate({ delay: 0.2 }).delay).toBe(0.2);
+  });
+
+  test('a count above maxFragments is not an error; both values are kept', () => {
+    const p = shatter({ fragment: { count: 300 }, maxFragments: 10 });
+    expect(p.fragment.count).toBe(300);
+    expect(p.maxFragments).toBe(10);
+    const budgeted = shatter({ maxFragments: 20 });
+    expect(budgeted.fragment.count).toBe(40);
+    expect(budgeted.maxFragments).toBe(20);
+    const grains = disintegrate({ fragment: { pattern: 'grid', count: 3000 }, maxFragments: 100 });
+    expect(grains.fragment.count).toBe(3000);
+    expect(grains.maxFragments).toBe(100);
+  });
+
   test('boundary values pass', () => {
     expect(fade({ opacity: 1 }).opacity).toBe(1);
     expect(shatter({ fragment: { count: 2 } }).fragment.count).toBe(2);
@@ -468,6 +607,17 @@ describe('presetDuration', () => {
     expect(presetDuration(fade({ duration: 0.2, delay: 0.1 }))).toBeCloseTo(0.3, 12);
     expect(presetDuration(fade())).toBe(0.25);
     expect(presetDuration(dust())).toBe(1.2);
+  });
+
+  test('a literal without a duration lasts the default of its kind, like the factory', () => {
+    expect(presetDuration({ kind: 'fade', opacity: 0 })).toBe(presetDuration(fade()));
+    expect(presetDuration({ kind: 'fade', opacity: 0 })).toBe(0.25);
+    expect(presetDuration({ ...slide(), duration: undefined })).toBe(0.35);
+    expect(presetDuration({ kind: 'press', scale: 0.9, opacity: 1, brightness: 1 })).toBe(0.12);
+    expect(presetDuration({ ...emerge(), duration: undefined })).toBe(0.45);
+    expect(presetDuration({ ...dust(), duration: undefined })).toBe(1.2);
+    expect(presetDuration({ kind: 'fade', opacity: 0, delay: 0.5 })).toBe(0.75);
+    expect(presetDuration({ kind: 'fade', opacity: 0, duration: 0 })).toBe(0);
   });
 
   test('a spring lasts its settle time', () => {

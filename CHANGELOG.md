@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.14](#0414) | 2026-11-19 | 42 | ECS storage keyed by component definition, deprecations ahead of 0.5.0, a clearer CanvasKit load error |
 | [0.4.13](#0413) | 2026-11-18 | 42 | Per-sprite colour in batched draws, baked shape atlases, allocation-free postfx passes, Windows CMake for templates |
 | [0.4.12](#0412) | 2026-11-12 | 42 | Edge-case fixes across events, physics and math; Android haptics and screenshot shares; fewer hot-path allocations |
 | [0.4.11](#0411) | 2026-11-12 | 42 | Game-day clock, exact springs, Expo SDK 58 templates, scene and text-reveal fixes |
@@ -35,6 +36,36 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.14
+
+Fixes in 3 packages, and the deprecations that 0.5.0's removals need first. The other 39 change only
+their version. One behaviour change, in `ecs`, and only where two component definitions share an
+`id`.
+
+- **`ecs`** — `World` keys component storage by the `ComponentDef` object instead of its `id`. A
+  second copy of the package in one process (the CJS and ESM builds loaded together, or a duplicated
+  install) numbers its definitions from 0 again, so its components used to share storage and query
+  matches with the first copy's, with no error. They no longer do. Query masks for definitions from
+  one copy are unchanged. **Behaviour change**, only where two definitions share an `id` (two copies
+  of the package, a hand-built `ComponentDef`, or one defined after the internal
+  `_resetComponentIds`): they are now separate components, and a definition whose `bit` another
+  definition already holds in that `World` gets a free bit. A `World` holds at most 32 component
+  types and throws on the 33rd; `has`, `get` and `remove` never take a slot. `World.destroy` deletes
+  only from the stores of the components the entity has.
+  **Deprecated, removed in 0.5.0:** `ComponentDef.id` and `ComponentDef.bit` (key by the definition
+  object instead), the internal `_resetComponentIds`, and `Query.requiredMask`, `Query.excludedMask`,
+  `Query.matches` and calling `new Query(...)` directly (build queries with `World.query` or
+  `World.queryBuilder`, test membership with `Query.has`). None of them changes behaviour in this
+  release.
+- **`testing`** — `serializeScene` cached its queries by `ComponentDef.id`, so when two definitions
+  shared an `id`, entities holding only the second were left out of the snapshot. It now caches by
+  the definition object.
+- **`render-web`** — `loadCanvasKit` no longer rejects with a bare non-`Error` value. Such a
+  rejection (the full CanvasKit glue rejects with `Infinity` when served the non-full binary) becomes
+  an `Error` that names the likely cause and the file to serve,
+  `canvaskit-wasm/bin/full/canvaskit.wasm`, with the original value as its `cause`. The README and
+  the API spec now say that `wasmUrl` must serve the full binary.
 
 ## 0.4.13
 

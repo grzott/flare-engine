@@ -298,6 +298,38 @@ describe('SpriteBatch per-sprite colour', () => {
     expect(calls[0]?.colors).toBeUndefined();
   });
 
+  it("uncoloured sprites queued before the first coloured one ignore an earlier frame's colours", () => {
+    const batch = new SpriteBatch();
+    const image = mockImage();
+    drawColoured(batch, image, 0, 1, 0xffff0000);
+    drawColoured(batch, image, 8, 1, 0xffff0000);
+    flushInto(batch);
+
+    drawColoured(batch, image, 0, 1, undefined);
+    drawColoured(batch, image, 8, 1, undefined);
+    drawColoured(batch, image, 16, 1, 0xff00ff00);
+    const calls = flushInto(batch);
+    expect(calls.map((c) => [c.count, c.argCount, c.colorData])).toEqual([
+      [2, 2, undefined],
+      [1, 3, [0xff00ff00]],
+    ]);
+  });
+
+  it("a first coloured sprite past the colour buffer's length keeps its colour", () => {
+    const batch = new SpriteBatch();
+    const image = mockImage();
+    for (let i = 0; i < 100; i++) drawColoured(batch, image, i, 1, undefined);
+    drawColoured(batch, image, 100, 1, 0xff0000ff);
+    drawColoured(batch, image, 101, 1, undefined);
+
+    const calls = flushInto(batch);
+    expect(calls.map((c) => [c.count, c.colorData])).toEqual([
+      [100, undefined],
+      [1, [0xff0000ff]],
+      [1, undefined],
+    ]);
+  });
+
   it('clear() drops queued colours along with their commands', () => {
     const batch = new SpriteBatch();
     const image = mockImage();

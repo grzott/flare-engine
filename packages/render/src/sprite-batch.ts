@@ -120,9 +120,10 @@ export class SpriteBatch {
   private _pool: SpriteDrawCommand[] = [];
   private _batches: Batch[] = [];
   private _allocCount = 0;
-  // Parallel to `_commands` by index, grown together. `_colored[i]` is 1 when
-  // command `i` was drawn with a colour; `_colors[i]` is then its packed ARGB
-  // with the command's alpha already folded into the alpha byte.
+  // Parallel to `_commands` by index. `_colored[i]` is 1 when command `i` was
+  // drawn with a colour; `_colors[i]` is then its packed ARGB with the
+  // command's alpha already folded into the alpha byte. Both are kept only
+  // while `_anyColored` is true: only the coloured flush reads them.
   private _colors = new Uint32Array(INITIAL_COLOR_CAPACITY);
   private _colored = new Uint8Array(INITIAL_COLOR_CAPACITY);
   // True while the queue holds at least one coloured command.
@@ -221,7 +222,9 @@ export class SpriteBatch {
     cmd.blend = blend;
     cmd.flipX = flipX;
     cmd.flipY = flipY;
-    this._setColor(this._commands.length, color, alpha);
+    if (color !== undefined || this._anyColored) {
+      this._setColor(this._commands.length, color, alpha);
+    }
     this._commands.push(cmd);
   }
 
@@ -271,7 +274,9 @@ export class SpriteBatch {
     cmd.blend = blend;
     cmd.flipX = flipX;
     cmd.flipY = flipY;
-    this._setColor(this._commands.length, color, alpha);
+    if (color !== undefined || this._anyColored) {
+      this._setColor(this._commands.length, color, alpha);
+    }
     this._commands.push(cmd);
   }
 
@@ -478,8 +483,9 @@ export class SpriteBatch {
    * if so, its colour with `alpha` folded into the alpha byte.
    */
   private _setColor(index: number, color: number | undefined, alpha: number): void {
-    if (index === this._colors.length) {
-      const capacity = index * 2;
+    if (index >= this._colors.length) {
+      let capacity = this._colors.length * 2;
+      while (capacity <= index) capacity *= 2;
       const colors = new Uint32Array(capacity);
       colors.set(this._colors);
       this._colors = colors;
@@ -493,8 +499,12 @@ export class SpriteBatch {
       this._colored[index] = 0;
       return;
     }
+    if (!this._anyColored) {
+      // The uncoloured commands queued before this one skipped this method (#434).
+      this._colored.fill(0, 0, index);
+      this._anyColored = true;
+    }
     this._colored[index] = 1;
-    this._anyColored = true;
     const a = alpha <= 0 ? 0 : alpha >= 1 ? 1 : alpha;
     // `>>> 0`: a set alpha bit would otherwise make the packed value negative.
     this._colors[index] = ((Math.round((color >>> 24) * a) << 24) | (color & 0x00ffffff)) >>> 0;

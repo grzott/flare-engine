@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.15](#0415) | 2026-11-19 | 42 | Uncoloured sprite batching back to its 0.4.12 speed |
 | [0.4.14](#0414) | 2026-11-19 | 42 | ECS storage keyed by component definition, deprecations ahead of 0.5.0, a clearer CanvasKit load error |
 | [0.4.13](#0413) | 2026-11-18 | 42 | Per-sprite colour in batched draws, baked shape atlases, allocation-free postfx passes, Windows CMake for templates |
 | [0.4.12](#0412) | 2026-11-12 | 42 | Edge-case fixes across events, physics and math; Android haptics and screenshot shares; fewer hot-path allocations |
@@ -36,6 +37,18 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.15
+
+One performance fix, in `render`. The other 41 packages change only their version.
+
+- **`render`** — `SpriteBatch.draw` and `SpriteBatch.drawRaw` no longer do per-sprite colour
+  bookkeeping while no coloured sprite is queued. Since 0.4.13 every sprite paid for it, coloured or
+  not, which is the slowdown the 0.4.13 entry lists as **Known** (#434). The bookkeeping now starts
+  at the first coloured sprite of a frame. Runs, colours and the flush callback's arguments are
+  unchanged. In the node benchmark (Bun) the uncoloured `render.flush` rows are back at their 0.4.12
+  figures: `render.flush 1000 sprites / 1 atlas` 26.1 µs, against 30.0 µs at 0.4.14 and 26.0 µs at
+  0.4.12.
 
 ## 0.4.14
 

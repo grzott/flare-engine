@@ -15,9 +15,17 @@ import type { ComponentDef } from './component.js';
  *   it off the frame path.
  */
 export class Query {
-  /** Bitmask of required components. */
+  /**
+   * Bitmask of required components.
+   * @deprecated Leaves the public API in 0.5.0, which sizes masks per World. Build queries with
+   * `world.query()` / `world.queryBuilder()` and test membership with `query.has(entity)`.
+   */
   readonly requiredMask: number;
-  /** Bitmask of excluded components. */
+  /**
+   * Bitmask of excluded components.
+   * @deprecated Leaves the public API in 0.5.0, which sizes masks per World. Build queries with
+   * `world.query()` / `world.queryBuilder()` and test membership with `query.has(entity)`.
+   */
   readonly excludedMask: number;
 
   /** Fires when an entity is added to this query's results. */
@@ -34,12 +42,20 @@ export class Query {
    */
   private index = new Map<number, number>();
 
+  /**
+   * @deprecated Leaves the public API in 0.5.0, which sizes masks per World, so a raw mask stops
+   * being a valid argument. Build queries with `world.query()` / `world.queryBuilder()`.
+   */
   constructor(requiredMask: number, excludedMask: number) {
     this.requiredMask = requiredMask;
     this.excludedMask = excludedMask;
   }
 
-  /** Check if an archetype matches this query. */
+  /**
+   * Check if an archetype matches this query.
+   * @deprecated Leaves the public API in 0.5.0, which sizes masks per World, so a raw archetype
+   * mask stops being a valid argument. Test membership with `query.has(entity)`.
+   */
   matches(archetype: number): boolean {
     return (
       (archetype & this.requiredMask) === this.requiredMask && (archetype & this.excludedMask) === 0

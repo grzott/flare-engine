@@ -3,6 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 // Restore real @flare-engine/ecs before loading scene-snapshot.ts.
 // The react/game-view.test.ts mock strips World to a class with no spawn().
 type RealEcsModule = typeof import('@flare-engine/ecs');
+type ComponentDef<T> = import('@flare-engine/ecs').ComponentDef<T>;
 const _realEcs = (await import('../../ecs/src/index.js')) as unknown as RealEcsModule;
 mock.module('@flare-engine/ecs', () => ({ ..._realEcs }));
 
@@ -75,6 +76,33 @@ describe('serializeScene', () => {
     // per component), so queryCalls would climb to 9.
     expect(afterFirst).toBe(2);
     expect(queryCalls).toBe(afterFirst);
+  });
+
+  test('keeps two definitions that share an id apart', () => {
+    // Two copies of @flare-engine/ecs each number their definitions from 0.
+    const Health: ComponentDef<{ hp: number }> = {
+      id: 0,
+      bit: 1,
+      name: 'Health',
+      create: () => ({ hp: 0 }),
+    };
+    const Mana: ComponentDef<{ mp: number }> = {
+      id: 0,
+      bit: 1,
+      name: 'Mana',
+      create: () => ({ mp: 0 }),
+    };
+    const w = new World();
+    const a = w.spawn();
+    const b = w.spawn();
+    w.add(a, Health, { hp: 7 });
+    w.add(b, Mana, { mp: 9 });
+
+    const snap = serializeScene(w, [Health, Mana]);
+    expect(snap.entities).toEqual([
+      { id: a, components: { Health: { hp: 7 } } },
+      { id: b, components: { Mana: { mp: 9 } } },
+    ]);
   });
 });
 

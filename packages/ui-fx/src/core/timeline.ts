@@ -25,6 +25,9 @@ export interface FlareTimeline {
 
 type TimelineItem = FlarePreset | FlareTimeline;
 
+// Seconds. Starts are sums of floats, so two steps meant for the same moment can differ by rounding.
+const START_EPSILON = 1e-9;
+
 function checkSeconds(name: string, field: string, value: number): void {
   if (Number.isFinite(value) && value >= 0) return;
   throw new RangeError(`${name}: ${field} must be a finite number >= 0, got ${value}`);
@@ -59,7 +62,7 @@ function timelineOf(entries: TimelineEntry[], duration: number): FlareTimeline {
   if (snapshot !== null) {
     for (const entry of entries) {
       if (entry === snapshot) continue;
-      if (entry.start > snapshot.start) {
+      if (entry.start > snapshot.start + START_EPSILON) {
         throw new RangeError('ui-fx: nothing can follow a snapshot step');
       }
       if (isSnapshotPreset(entry.preset)) {
@@ -130,7 +133,7 @@ export function liveEntries(
   for (const entry of tl.entries) {
     const { preset } = entry;
     if (isSnapshotPreset(preset)) continue;
-    if (snapshot !== null && entry.start >= snapshot.start) continue;
+    if (snapshot !== null && entry.start >= snapshot.start - START_EPSILON) continue;
     live.push({ start: entry.start, preset });
   }
   return live;

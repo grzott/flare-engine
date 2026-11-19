@@ -177,6 +177,44 @@ describe('the snapshot rule', () => {
     const tl = parallel(sequence(delay(0.1), shatter()), fade({ duration: 0.05 }));
     expect(snapshotEntry(tl)!.start).toBe(0.1);
   });
+
+  test('a live step whose summed start rounds just past the snapshot step is accepted', () => {
+    expect(0.1 + 0.2).toBeGreaterThan(0.3);
+    const tl = parallel(
+      sequence(fade({ duration: 0.3 }), shatter()),
+      sequence(fade({ duration: 0.1 }), fade({ duration: 0.2 }), fade()),
+    );
+    expect(snapshotEntry(tl)!.start).toBe(0.3);
+    expect(tl.entries[4]!.start).toBe(0.1 + 0.2);
+  });
+
+  test('a snapshot step whose summed start rounds just past a live step is accepted', () => {
+    const tl = parallel(
+      sequence(fade({ duration: 0.1 }), fade({ duration: 0.2 }), shatter()),
+      sequence(delay(0.3), fade()),
+    );
+    expect(snapshotEntry(tl)!.start).toBe(0.1 + 0.2);
+    expect(tl.entries[3]!.start).toBe(0.3);
+  });
+
+  test('a step that starts 0.01 s after the snapshot step still throws', () => {
+    expect(
+      messageOf(() =>
+        parallel(sequence(fade({ duration: 0.3 }), shatter()), sequence(delay(0.31), fade())),
+      ),
+    ).toBe('ui-fx: nothing can follow a snapshot step');
+  });
+
+  test('a second snapshot step at a rounded-equal start is still a second snapshot step', () => {
+    expect(
+      messageOf(() =>
+        parallel(
+          sequence(delay(0.3), shatter()),
+          sequence(fade({ duration: 0.1 }), fade({ duration: 0.2 }), dust()),
+        ),
+      ),
+    ).toBe('ui-fx: a timeline takes one snapshot step at most');
+  });
 });
 
 describe('snapshotEntry', () => {
@@ -215,6 +253,27 @@ describe('liveEntries', () => {
     const early = fade({ duration: 0.1 });
     const tl = sequence(early, parallel(shatter(), slide()));
     expect(liveEntries(tl).map((entry) => entry.preset)).toEqual([early]);
+  });
+
+  test('leaves out a live entry whose summed start rounds just past the snapshot entry', () => {
+    const lead = fade({ duration: 0.3 });
+    const first = fade({ duration: 0.1 });
+    const second = fade({ duration: 0.2 });
+    const tl = parallel(sequence(lead, shatter()), sequence(first, second, fade()));
+    expect(liveEntries(tl).map((entry) => entry.preset)).toEqual([lead, first, second]);
+  });
+
+  test('leaves out a live entry that starts just before a rounded-up snapshot entry', () => {
+    const first = fade({ duration: 0.1 });
+    const second = fade({ duration: 0.2 });
+    const tl = parallel(sequence(first, second, shatter()), sequence(delay(0.3), fade()));
+    expect(liveEntries(tl).map((entry) => entry.preset)).toEqual([first, second]);
+  });
+
+  test('keeps a live entry that starts 0.01 s before the snapshot entry', () => {
+    const late = fade({ duration: 0.01 });
+    const tl = parallel(sequence(delay(0.3), shatter()), sequence(delay(0.29), late));
+    expect(liveEntries(tl).map((entry) => entry.preset)).toEqual([late]);
   });
 });
 

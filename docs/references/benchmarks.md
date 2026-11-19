@@ -6,6 +6,8 @@
 
 > Every number below comes from the committed baseline captured on the date above — not from the day this page was rendered. Re-capture with `bun run bench` ×N then `bun run bench:promote`, and re-render with `bun run bench:md`.
 
+> Machine-readable: [`benchmarks/results/public.json`](../../benchmarks/results/public.json) carries every lane on this page with stable row ids and per-lane provenance, written by the same `bun run bench:md`.
+
 ## Headline numbers
 
 _Captured: 2026-11-19_

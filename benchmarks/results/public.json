@@ -1,0 +1,2280 @@
+{
+  "schemaVersion": 1,
+  "release": {
+    "version": "0.4.15"
+  },
+  "lanes": [
+    {
+      "id": "node-jsc",
+      "title": "Engine CPU cost per system (Bun 1.3.11, JavaScriptCore)",
+      "status": "current",
+      "statusReason": null,
+      "platform": "desktop",
+      "runtime": "Bun 1.3.11",
+      "measures": "JS cost per operation of the engine hot paths (ECS, physics, particles, render flush and sort, an integration frame, animation, postfx, tilemap, pathfinding, math), off-device. The draw path runs the real frame renderer against a counting Skia stub, up to the point where a batch is handed to Skia.",
+      "doesNotMeasure": [
+        "Skia rasterization, GPU work, the React Native bridge, or any device.",
+        "On-device frame times.",
+        "Any JS engine other than JavaScriptCore under Bun: V8, Hermes and SpiderMonkey are not measured."
+      ],
+      "capturedAt": "2026-11-19T13:30:57.362Z",
+      "commit": "5422f99f872c",
+      "runs": 5,
+      "machine": {
+        "cpu": "13th Gen Intel(R) Core(TM) i9-13900KF",
+        "logicalCpus": 32,
+        "os": "win32 x64",
+        "gpuRenderer": null,
+        "device": null,
+        "browser": null,
+        "refreshRateHz": null,
+        "thermal": null
+      },
+      "note": null,
+      "rows": [
+        {
+          "id": "ecs.step.500",
+          "group": "ECS",
+          "label": "ecs.step 500 entities (Pos+Vel)",
+          "unit": "ns",
+          "median": 3327.0833333332916,
+          "bandMin": 3291.666666666752,
+          "bandMax": 3357.4999999999022,
+          "p95": null,
+          "p99": 3942.916666666463,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "ecs.step.1000",
+          "group": "ECS",
+          "label": "ecs.step 1000 entities (Pos+Vel)",
+          "unit": "ns",
+          "median": 9592.771084337337,
+          "bandMin": 9368.674698795263,
+          "bandMax": 10334.939759036113,
+          "p95": null,
+          "p99": 11379.518072288532,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "ecs.step.2000",
+          "group": "ECS",
+          "label": "ecs.step 2000 entities (Pos+Vel)",
+          "unit": "ns",
+          "median": 19202.5000000001,
+          "bandMin": 19152.500000001284,
+          "bandMax": 21257.500000001528,
+          "p95": null,
+          "p99": 23189.9999999996,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "ecs.step.5000",
+          "group": "ECS",
+          "label": "ecs.step 5000 entities (Pos+Vel)",
+          "unit": "ns",
+          "median": 50806.24999999373,
+          "bandMin": 49674.99999999347,
+          "bandMax": 53506.249999998094,
+          "p95": null,
+          "p99": 62856.24999999584,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "ecs.churn.500",
+          "group": "ECS",
+          "label": "ecs.churn 500 entities, 5%/step",
+          "unit": "ns",
+          "median": 25069.750000000113,
+          "bandMin": 24721.49999999942,
+          "bandMax": 25376.749999999218,
+          "p95": null,
+          "p99": 33493.750000000095,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "ecs.churn.1000",
+          "group": "ECS",
+          "label": "ecs.churn 1000 entities, 5%/step",
+          "unit": "ns",
+          "median": 53319.71428571446,
+          "bandMin": 50788.57142857097,
+          "bandMax": 64227.7142857152,
+          "p95": null,
+          "p99": 83483.71428571356,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (35%, not 10%), and is less reproducible than its neighbours. Two states set by the GC state the row starts from (#480): 50.6-67.6 us (1.34x) over 18 pinned full-suite captures on 2026-11-19, tight when the ECS suite runs alone in a process. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "ecs.churn.2000",
+          "group": "ECS",
+          "label": "ecs.churn 2000 entities, 5%/step",
+          "unit": "ns",
+          "median": 106090.58823529267,
+          "bandMin": 105342.35294117559,
+          "bandMax": 137418.23529411812,
+          "p95": null,
+          "p99": 123875.88235294113,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (35%, not 10%), and is less reproducible than its neighbours. Two states set by the GC state the row starts from (#480): 82.1-109.9 us (1.34x) over 18 pinned full-suite captures on 2026-11-19, tight when the ECS suite runs alone in a process. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "ecs.churn.5000",
+          "group": "ECS",
+          "label": "ecs.churn 5000 entities, 5%/step",
+          "unit": "ns",
+          "median": 255636.24999999776,
+          "bandMin": 253398.74999999665,
+          "bandMax": 279743.75000001147,
+          "p95": null,
+          "p99": 339787.5000000113,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (53%, not 10%), and is less reproducible than its neighbours. Two states set by the GC state the row starts from (#480): 213.2-323 us (1.52x) over 18 pinned full-suite captures on 2026-11-19, tight when the ECS suite runs alone in a process. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "physics.step.100.sparse",
+          "group": "Physics",
+          "label": "physics.step 100 AABB sparse",
+          "unit": "ns",
+          "median": 10510.714285698798,
+          "bandMin": 10228.571428602403,
+          "bandMax": 10835.714285739024,
+          "p95": null,
+          "p99": 13507.142857179133,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "physics.step.100.dense",
+          "group": "Physics",
+          "label": "physics.step 100 AABB dense",
+          "unit": "ns",
+          "median": 16933.333333327028,
+          "bandMin": 16627.777777810275,
+          "bandMax": 18016.666666678953,
+          "p95": null,
+          "p99": 23549.99999998755,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "physics.step.500.sparse",
+          "group": "Physics",
+          "label": "physics.step 500 AABB sparse",
+          "unit": "ns",
+          "median": 70700.00000021537,
+          "bandMin": 69600.00000071886,
+          "bandMax": 71500.00000001455,
+          "p95": null,
+          "p99": 102300.00000046857,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "physics.step.500.dense",
+          "group": "Physics",
+          "label": "physics.step 500 AABB dense",
+          "unit": "ns",
+          "median": 175799.9999990716,
+          "bandMin": 173300.00000038126,
+          "bandMax": 180099.99999958382,
+          "p95": null,
+          "p99": 395399.99999942665,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "physics.step.1000.sparse",
+          "group": "Physics",
+          "label": "physics.step 1000 AABB sparse",
+          "unit": "ns",
+          "median": 178200.00000028813,
+          "bandMin": 176599.99999887077,
+          "bandMax": 179500.00000018917,
+          "p95": null,
+          "p99": 216099.99999964202,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "physics.step.1000.dense",
+          "group": "Physics",
+          "label": "physics.step 1000 AABB dense",
+          "unit": "ns",
+          "median": 564300.0000000029,
+          "bandMin": 557099.9999999913,
+          "bandMax": 569999.999999709,
+          "p95": null,
+          "p99": 835600.0000003405,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "particles.update.500.integrate",
+          "group": "Particles",
+          "label": "particles.update 500 integrate-only",
+          "unit": "ns",
+          "median": 1800.5555555595897,
+          "bandMin": 1797.7777777761933,
+          "bandMax": 1812.5000000004043,
+          "p95": null,
+          "p99": 2389.7222222229984,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (35%, not 10%), and is less reproducible than its neighbours. Bimodal across 1.70-2.10 us (1.24x), split 12 low / 3 high over the 15 pinned captures recorded on 2026-08-20, with each state internally tight — so the folded median lands in whichever state that window caught, and moves between them. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "particles.update.1000.integrate",
+          "group": "Particles",
+          "label": "particles.update 1000 integrate-only",
+          "unit": "ns",
+          "median": 3704.39024391533,
+          "bandMin": 3571.219512200403,
+          "bandMax": 4431.707317079843,
+          "p95": null,
+          "p99": 5047.317073171498,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (35%, not 10%), and is less reproducible than its neighbours. Bimodal across 3.37-4.24 us (1.26x), split 14 low / 1 high over the 15 pinned captures recorded on 2026-08-20, with each state internally tight — so the folded median lands in whichever state that window caught, and moves between them. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "particles.update.2000.integrate",
+          "group": "Particles",
+          "label": "particles.update 2000 integrate-only",
+          "unit": "ns",
+          "median": 7126.956521729564,
+          "bandMin": 7125.217391307081,
+          "bandMax": 8835.652173919421,
+          "p95": null,
+          "p99": 9517.391304341247,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (35%, not 10%), and is less reproducible than its neighbours. Bimodal across 6.73-8.85 us (1.32x), split 7 low / 8 high over the 15 pinned captures recorded on 2026-08-20, with each state internally tight — so the folded median lands in whichever state that window caught, and moves between them. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "particles.update.5000.integrate",
+          "group": "Particles",
+          "label": "particles.update 5000 integrate-only",
+          "unit": "ns",
+          "median": 18090.697674440806,
+          "bandMin": 17637.209302297695,
+          "bandMax": 18353.488372075695,
+          "p95": null,
+          "p99": 25002.32558135352,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (35%, not 10%), and is less reproducible than its neighbours. Bimodal across 16.80-21.40 us (1.27x), split 9 low / 6 high over the 15 pinned captures recorded on 2026-08-20, with each state internally tight — so the folded median lands in whichever state that window caught, and moves between them. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "particles.update.500.emit",
+          "group": "Particles",
+          "label": "particles.update 500 emit+integrate",
+          "unit": "ns",
+          "median": 3344.516129037666,
+          "bandMin": 3336.774193538135,
+          "bandMax": 3603.2258064698262,
+          "p95": null,
+          "p99": 4126.451612917722,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "particles.update.1000.emit",
+          "group": "Particles",
+          "label": "particles.update 1000 emit+integrate",
+          "unit": "ns",
+          "median": 6582.105263154709,
+          "bandMin": 6551.5789473705045,
+          "bandMax": 7111.57894735439,
+          "p95": null,
+          "p99": 8120.000000015257,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "particles.update.2000.emit",
+          "group": "Particles",
+          "label": "particles.update 2000 emit+integrate",
+          "unit": "ns",
+          "median": 13125.641025675204,
+          "bandMin": 13061.53846151294,
+          "bandMax": 14261.53846151488,
+          "p95": null,
+          "p99": 18228.20512825274,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.100.1-atlas",
+          "group": "Render",
+          "label": "render.flush 100 sprites / 1 atlas",
+          "unit": "ns",
+          "median": 2763.599999991129,
+          "bandMin": 2724.7999999963213,
+          "bandMax": 2792.3999999911757,
+          "p95": null,
+          "p99": 5666.400000001886,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.1-atlas",
+          "group": "Render",
+          "label": "render.flush 500 sprites / 1 atlas",
+          "unit": "ns",
+          "median": 13480.00000004752,
+          "bandMin": 13256.363636372209,
+          "bandMax": 14036.363636378983,
+          "p95": null,
+          "p99": 29181.818181810246,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.1-atlas",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / 1 atlas",
+          "unit": "ns",
+          "median": 26084.615384556506,
+          "bandMin": 25907.69230776529,
+          "bandMax": 27050.00000003985,
+          "p95": null,
+          "p99": 57653.84615383832,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.5000.1-atlas",
+          "group": "Render",
+          "label": "render.flush 5000 sprites / 1 atlas",
+          "unit": "ns",
+          "median": 136280.00000026077,
+          "bandMin": 134180.00000019674,
+          "bandMax": 143059.99999996857,
+          "p95": null,
+          "p99": 335599.9999999767,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-interleaved",
+          "group": "Render",
+          "label": "render.flush 500 sprites / 4 atlas interleaved",
+          "unit": "ns",
+          "median": 25326.923076975687,
+          "bandMin": 25188.461538513926,
+          "bandMax": 26296.15384592818,
+          "p95": null,
+          "p99": 33611.538461487864,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-clustered",
+          "group": "Render",
+          "label": "render.flush 500 sprites / 4 atlas clustered",
+          "unit": "ns",
+          "median": 14067.307692340155,
+          "bandMin": 13980.769230819044,
+          "bandMax": 14201.923076913003,
+          "p95": null,
+          "p99": 33044.2307692395,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-interleaved",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / 8 atlas interleaved",
+          "unit": "ns",
+          "median": 51123.5294117582,
+          "bandMin": 50252.94117641512,
+          "bandMax": 51747.058823821135,
+          "p95": null,
+          "p99": 64852.94117652195,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-clustered",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / 8 atlas clustered",
+          "unit": "ns",
+          "median": 27768.00000006915,
+          "bandMin": 27603.999999992084,
+          "bandMax": 28036.0000001383,
+          "p95": null,
+          "p99": 59167.99999991781,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-50",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / 50% rotated",
+          "unit": "ns",
+          "median": 30276.000000012573,
+          "bandMin": 30132.00000001234,
+          "bandMax": 30695.99999987986,
+          "p95": null,
+          "p99": 64083.99999985704,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-100",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / 100% rotated",
+          "unit": "ns",
+          "median": 34289.99999996449,
+          "bandMin": 33574.99999983702,
+          "bandMax": 34915.00000018277,
+          "p95": null,
+          "p99": 75909.99999993073,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.alpha-runs-4",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / 4 alpha runs",
+          "unit": "ns",
+          "median": 27621.42857136496,
+          "bandMin": 27210.714285631962,
+          "bandMax": 28567.857143051308,
+          "p95": null,
+          "p99": 56749.99999999792,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.tint",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / tint effect",
+          "unit": "ns",
+          "median": 27061.53846156667,
+          "bandMin": 26738.461538535867,
+          "bandMax": 27119.23076920077,
+          "p95": null,
+          "p99": 59650.000000077016,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.outline",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / outline effect",
+          "unit": "ns",
+          "median": 52642.85714292782,
+          "bandMin": 52421.428571376186,
+          "bandMax": 53885.714286090144,
+          "p95": null,
+          "p99": 108478.57142860968,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.stretch",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / stretch path",
+          "unit": "ns",
+          "median": 29644.44444444746,
+          "bandMin": 29540.740740668734,
+          "bandMax": 29977.777777983443,
+          "p95": null,
+          "p99": 58762.96296305049,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.zone-bg",
+          "group": "Render",
+          "label": "render.flush 1000 sprites / zone-bg path",
+          "unit": "ns",
+          "median": 26696.66666673341,
+          "bandMin": 26533.33333316065,
+          "bandMax": 27310.000000094686,
+          "p95": null,
+          "p99": 55526.66666674971,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-0",
+          "group": "Render",
+          "label": "render.sort 500 items (0 swaps)",
+          "unit": "ns",
+          "median": 602.8000000005704,
+          "bandMin": 601.20000000461,
+          "bandMax": 604.1000000041095,
+          "p95": null,
+          "p99": 745.8999999944353,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-5",
+          "group": "Render",
+          "label": "render.sort 500 items (5 swaps)",
+          "unit": "ns",
+          "median": 2643.1718061609904,
+          "bandMin": 2627.3127753399867,
+          "bandMax": 2664.317180621048,
+          "p95": null,
+          "p99": 3227.312775343628,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.1000.swaps-10",
+          "group": "Render",
+          "label": "render.sort 1000 items (10 swaps)",
+          "unit": "ns",
+          "median": 10755.555555483119,
+          "bandMin": 10720.370370378347,
+          "bandMax": 10775.925925877851,
+          "p95": null,
+          "p99": 13312.96296296016,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "integration.frame.500",
+          "group": "Integration",
+          "label": "integration.frame 500 entities + 300p",
+          "unit": "ns",
+          "median": 146600.00000003492,
+          "bandMin": 146199.99999558786,
+          "bandMax": 150100.00000620494,
+          "p95": null,
+          "p99": 209699.99999942956,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "integration.frame.1000",
+          "group": "Integration",
+          "label": "integration.frame 1000 entities + 300p",
+          "unit": "ns",
+          "median": 397700.0000013504,
+          "bandMin": 395000.00000407454,
+          "bandMax": 430800.0000019092,
+          "p95": null,
+          "p99": 590400.0000009546,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "integration.frame.2000",
+          "group": "Integration",
+          "label": "integration.frame 2000 entities + 300p",
+          "unit": "ns",
+          "median": 1135200.0000042608,
+          "bandMin": 1132600.0000044587,
+          "bandMax": 1151499.9999999418,
+          "p95": null,
+          "p99": 2428800.0000015018,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "animation.tweens.1000",
+          "group": "Animation",
+          "label": "animation.updateTweens 1000 tweens, 4 easings",
+          "unit": "ns",
+          "median": 2540.3124999911597,
+          "bandMin": 2448.7499999850115,
+          "bandMax": 2774.374999989959,
+          "p95": null,
+          "p99": 3259.3749999932697,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (36%, not 10%), and is less reproducible than its neighbours. Two states set by in-process JIT history (#363): with four easings hot in one loop the row folds at about 2.4-2.5 or 2.9-3.1 us depending on what the process compiled before; with one easing it is tight. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "animation.springs.1000",
+          "group": "Animation",
+          "label": "animation.updateSpring 1000 springs, underdamped",
+          "unit": "ns",
+          "median": 21544.615384706187,
+          "bandMin": 20889.230769199246,
+          "bandMax": 22555.384615351122,
+          "p95": null,
+          "p99": 25720.000000057134,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "animation.animators.1000",
+          "group": "Animation",
+          "label": "animation.updateAnimator 1000 animators, looping",
+          "unit": "ns",
+          "median": 6601.904761919286,
+          "bandMin": 6484.761904756028,
+          "bandMax": 6675.2380952363765,
+          "p95": null,
+          "p99": 7818.095238083818,
+          "samples": 100,
+          "note": "Held to a wider tolerance than every other row (25%, not 10%), and is less reproducible than its neighbours. Provisional (#363). Bimodal across 6.19-7.60 us (1.23x) over 25 pinned captures on 2026-11-12: 17 runs at 6.19-6.63 us, 7 at 7.19-7.60 us and one between, each state internally tight. The folded median lands in whichever state that window caught. Read the spread column, not the median, for this row."
+        },
+        {
+          "id": "postfx.update",
+          "group": "PostFx",
+          "label": "postfx.update 5 live: flash + 4 timed",
+          "unit": "ns",
+          "median": 88.42857142874328,
+          "bandMin": 85.9857142859255,
+          "bandMax": 90.74285714277288,
+          "p95": null,
+          "p99": 100.0476190477327,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "postfx.enabled",
+          "group": "PostFx",
+          "label": "postfx.enabled 8 effects, 5 enabled",
+          "unit": "ns",
+          "median": 40.46666666677497,
+          "bandMin": 40.0484848485741,
+          "bandMax": 41.103030302937526,
+          "p95": null,
+          "p99": 76.35151515150386,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "postfx.build-pass",
+          "group": "PostFx",
+          "label": "postfx.buildPass 8 effects, 5 enabled",
+          "unit": "ns",
+          "median": 67.05000000026,
+          "bandMin": 63.65000000005239,
+          "bandMax": 67.3166666662534,
+          "p95": null,
+          "p99": 83.68333333419287,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "tilemap.draw-into",
+          "group": "Tilemap",
+          "label": "tilemap.drawInto 256x256 x2 layers, 800x600 view",
+          "unit": "ns",
+          "median": 53954.545454458144,
+          "bandMin": 52645.454545365115,
+          "bandMax": 54399.99999990422,
+          "p95": null,
+          "p99": 106545.45454533283,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "tilemap.get-tile-at",
+          "group": "Tilemap",
+          "label": "tilemap.getTileAt 256x256 full-layer scan",
+          "unit": "ns",
+          "median": 67484.99999994237,
+          "bandMin": 67329.99999985623,
+          "bandMax": 67599.99999994761,
+          "p95": null,
+          "p99": 77775.0000001106,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "tilemap.decode-gid",
+          "group": "Tilemap",
+          "label": "tilemap.decodeGid 4096 gids, flags + strip",
+          "unit": "ns",
+          "median": 5679.545454569796,
+          "bandMin": 5484.999999978093,
+          "bandMax": 5881.8181818258545,
+          "p95": null,
+          "p99": 6914.5454545254,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "pathfinding.astar.open",
+          "group": "Pathfinding",
+          "label": "pathfinding.astar 128x128 open",
+          "unit": "ns",
+          "median": 7736.571428540628,
+          "bandMin": 7664.571428571695,
+          "bandMax": 7843.999999999402,
+          "p95": null,
+          "p99": 13575.428571452254,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "pathfinding.astar.maze",
+          "group": "Pathfinding",
+          "label": "pathfinding.astar 128x128 maze",
+          "unit": "ns",
+          "median": 45993.103448287504,
+          "bandMin": 45320.68965510979,
+          "bandMax": 46172.41379310144,
+          "p95": null,
+          "p99": 94751.72413784031,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "pathfinding.jps.open",
+          "group": "Pathfinding",
+          "label": "pathfinding.jps 128x128 open",
+          "unit": "ns",
+          "median": 94719.99999999146,
+          "bandMin": 94419.99999980908,
+          "bandMax": 95293.3333333931,
+          "p95": null,
+          "p99": 109139.99999999457,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "pathfinding.jps.maze",
+          "group": "Pathfinding",
+          "label": "pathfinding.jps 128x128 maze",
+          "unit": "ns",
+          "median": 55408.33333331344,
+          "bandMin": 54899.9999997856,
+          "bandMax": 55708.3333336171,
+          "p95": null,
+          "p99": 104529.1666666041,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "math.vec2.1000",
+          "group": "Math",
+          "label": "math.vec2 1000 x 6 out-param ops",
+          "unit": "ns",
+          "median": 55431.99999985518,
+          "bandMin": 54844.00000015739,
+          "bandMax": 56923.99999999907,
+          "p95": null,
+          "p99": 70036.00000025472,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "math.transform2d.1000",
+          "group": "Math",
+          "label": "math.transform2d 1000 points, local->world->local",
+          "unit": "ns",
+          "median": 20635.294117656646,
+          "bandMin": 20560.294117625315,
+          "bandMax": 20945.58823527597,
+          "p95": null,
+          "p99": 24727.941176559612,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "math.mat3.1000",
+          "group": "Math",
+          "label": "math.mat3 1000 fromTransform x parent",
+          "unit": "ns",
+          "median": 16527.380952452186,
+          "bandMin": 16458.33333332987,
+          "bandMax": 16725.000000016214,
+          "p95": null,
+          "p99": 19511.904761938717,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render-system.1000",
+          "group": "RenderSystem",
+          "label": "render.system 1000 sprites / 3 z layers interleaved",
+          "unit": "ns",
+          "median": 42495.454545463544,
+          "bandMin": 41999.99999995767,
+          "bandMax": 43654.545454707906,
+          "p95": null,
+          "p99": 78799.99999998043,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "particles.draw.1000",
+          "group": "ParticlesDraw",
+          "label": "particles.draw 1000 coloured + fading / 1 atlas",
+          "unit": "ns",
+          "median": 44519.99999982945,
+          "bandMin": 44425.000000046566,
+          "bandMax": 45215.00000009837,
+          "p95": null,
+          "p99": 84315.00000006054,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "shapes.draw.1000",
+          "group": "ShapesDraw",
+          "label": "shapes.draw 1000 baked instances / 8 specs / 1 atlas",
+          "unit": "ns",
+          "median": 40315.0000001915,
+          "bandMin": 39634.99999990745,
+          "bandMax": 40454.99999992899,
+          "p95": null,
+          "p99": 81394.99999997497,
+          "samples": 100,
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "web-cpu-raster",
+      "title": "Render submission cost, CanvasKit CPU raster (chromium 158.0.8127.18, CanvasKit)",
+      "status": "current",
+      "statusReason": null,
+      "platform": "desktop-web",
+      "runtime": "web-cpu-raster",
+      "measures": "Main-thread cost per operation of the 18 render scenarios through real CanvasKit on an offscreen CPU-backed surface, software rasterization included.",
+      "doesNotMeasure": [
+        "GPU-backed rendering.",
+        "Browser paint or composite: there is no on-screen canvas in this lane.",
+        "Frame rate or frame capacity."
+      ],
+      "capturedAt": "2026-11-19T09:30:37.275Z",
+      "commit": "12d1b362b3ba",
+      "runs": 5,
+      "machine": {
+        "cpu": "13th Gen Intel(R) Core(TM) i9-13900KF",
+        "logicalCpus": null,
+        "os": "win32 x64",
+        "gpuRenderer": null,
+        "device": null,
+        "browser": "chromium 158.0.8127.18",
+        "refreshRateHz": null,
+        "thermal": null
+      },
+      "note": null,
+      "rows": [
+        {
+          "id": "render.flush.100.1-atlas",
+          "group": null,
+          "label": "render.flush 100 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 1.0299999999813736,
+          "bandMin": 1.025,
+          "bandMax": 1.0399999999906868,
+          "p95": 1.0550000000279396,
+          "p99": 1.0736842104969055,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.1-atlas",
+          "group": null,
+          "label": "render.flush 500 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 5.125,
+          "bandMin": 5,
+          "bandMax": 5.1749999998137355,
+          "p95": 5.199999999953434,
+          "p99": 5.275000000139698,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.1-atlas",
+          "group": null,
+          "label": "render.flush 1000 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 10.25,
+          "bandMin": 10.199999999720603,
+          "bandMax": 10.349999999627471,
+          "p95": 10.450000000186265,
+          "p99": 10.649999999906868,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.5000.1-atlas",
+          "group": null,
+          "label": "render.flush 5000 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 51,
+          "bandMin": 50.5,
+          "bandMax": 51.200000000186265,
+          "p95": 51.700000000186265,
+          "p99": 52.10000000055879,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-interleaved",
+          "group": null,
+          "label": "render.flush 500 sprites / 4 atlas interleaved",
+          "unit": "ms",
+          "median": 5.675000000046566,
+          "bandMin": 5.525000000139698,
+          "bandMax": 5.699999999953434,
+          "p95": 5.775000000139698,
+          "p99": 5.849999999860302,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-clustered",
+          "group": null,
+          "label": "render.flush 500 sprites / 4 atlas clustered",
+          "unit": "ms",
+          "median": 5.125,
+          "bandMin": 5,
+          "bandMax": 5.149999999906868,
+          "p95": 5.224999999860302,
+          "p99": 5.225000000093132,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-interleaved",
+          "group": null,
+          "label": "render.flush 1000 sprites / 8 atlas interleaved",
+          "unit": "ms",
+          "median": 11.300000000279397,
+          "bandMin": 11.100000000093132,
+          "bandMax": 11.350000000093132,
+          "p95": 11.5,
+          "p99": 11.600000000093132,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-clustered",
+          "group": null,
+          "label": "render.flush 1000 sprites / 8 atlas clustered",
+          "unit": "ms",
+          "median": 10.200000000186265,
+          "bandMin": 10.099999999627471,
+          "bandMax": 10.25,
+          "p95": 10.399999999906868,
+          "p99": 10.5,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-50",
+          "group": null,
+          "label": "render.flush 1000 sprites / 50% rotated",
+          "unit": "ms",
+          "median": 10.399999999906868,
+          "bandMin": 10.300000000279397,
+          "bandMax": 10.450000000186265,
+          "p95": 10.600000000093132,
+          "p99": 10.75,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-100",
+          "group": null,
+          "label": "render.flush 1000 sprites / 100% rotated",
+          "unit": "ms",
+          "median": 10.700000000186265,
+          "bandMin": 10.699999999720603,
+          "bandMax": 10.75,
+          "p95": 10.900000000372529,
+          "p99": 11,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.alpha-runs-4",
+          "group": null,
+          "label": "render.flush 1000 sprites / 4 alpha runs",
+          "unit": "ms",
+          "median": 11.100000000093132,
+          "bandMin": 10.799999999813735,
+          "bandMax": 11.200000000186265,
+          "p95": 11.349999999627471,
+          "p99": 11.450000000186265,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.tint",
+          "group": null,
+          "label": "render.flush 1000 sprites / tint effect",
+          "unit": "ms",
+          "median": 12.549999999813735,
+          "bandMin": 12.049999999813735,
+          "bandMax": 12.75,
+          "p95": 12.700000000186265,
+          "p99": 12.799999999813735,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.outline",
+          "group": null,
+          "label": "render.flush 1000 sprites / outline effect",
+          "unit": "ms",
+          "median": 115.59999999962747,
+          "bandMin": 103.6000000005588,
+          "bandMax": 115.90000000037253,
+          "p95": 116.5,
+          "p99": 116.70000000018626,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.stretch",
+          "group": null,
+          "label": "render.flush 1000 sprites / stretch path",
+          "unit": "ms",
+          "median": 8.966666666480402,
+          "bandMin": 8.833333333333334,
+          "bandMax": 8.966666666790843,
+          "p95": 9.099999999937912,
+          "p99": 9.199999999875823,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.zone-bg",
+          "group": null,
+          "label": "render.flush 1000 sprites / zone-bg path",
+          "unit": "ms",
+          "median": 91.59999999962747,
+          "bandMin": 90.5,
+          "bandMax": 94.8999999994412,
+          "p95": 96.20000000018626,
+          "p99": 96.5,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-0",
+          "group": null,
+          "label": "render.sort 500 items (0 swaps)",
+          "unit": "ms",
+          "median": 0.0006788635823631241,
+          "bandMin": 0.0006654909659601371,
+          "bandMax": 0.0006858475360927266,
+          "p95": 0.0006916107614634483,
+          "p99": 0.000698714365567356,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-5",
+          "group": null,
+          "label": "render.sort 500 items (5 swaps)",
+          "unit": "ms",
+          "median": 0.0023285597857724996,
+          "bandMin": 0.0022644927536231885,
+          "bandMax": 0.002365464222353637,
+          "p95": 0.002369106846718787,
+          "p99": 0.0023889154323936935,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.1000.swaps-10",
+          "group": null,
+          "label": "render.sort 1000 items (10 swaps)",
+          "unit": "ms",
+          "median": 0.008932559178204555,
+          "bandMin": 0.00865426222414539,
+          "bandMax": 0.008992805755395683,
+          "p95": 0.009078529278256923,
+          "p99": 0.009124087591240875,
+          "samples": 100,
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "web-gpu",
+      "title": "Render submission cost, desktop GPU (chromium 158.0.8127.18, CanvasKit)",
+      "status": "current",
+      "statusReason": null,
+      "platform": "desktop-web",
+      "runtime": "web-gpu",
+      "measures": "CPU-side submission cost per operation of the 18 render scenarios through real CanvasKit on an on-screen canvas with a WebGL surface.",
+      "doesNotMeasure": [
+        "GPU execution time: WebGL and CanvasKit calls queue work and return, so the clock sees only what the CPU does to build and hand off the frame.",
+        "Frame rate or frame capacity.",
+        "Other hardware: one desktop machine."
+      ],
+      "capturedAt": "2026-11-19T09:34:33.081Z",
+      "commit": "12d1b362b3ba",
+      "runs": 5,
+      "machine": {
+        "cpu": "13th Gen Intel(R) Core(TM) i9-13900KF",
+        "logicalCpus": null,
+        "os": "win32 x64",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002782) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "device": null,
+        "browser": "chromium 158.0.8127.18",
+        "refreshRateHz": null,
+        "thermal": null
+      },
+      "note": null,
+      "rows": [
+        {
+          "id": "render.flush.100.1-atlas",
+          "group": null,
+          "label": "render.flush 100 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.023446658851113716,
+          "bandMin": 0.02304147465437788,
+          "bandMax": 0.02493765586034913,
+          "p95": 0.031055900621118012,
+          "p99": 0.043668122270742356,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.1-atlas",
+          "group": null,
+          "label": "render.flush 500 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.06734006734006734,
+          "bandMin": 0.06688963210702341,
+          "bandMax": 0.06802721088435375,
+          "p95": 0.07017543859649122,
+          "p99": 0.07220216606498195,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.1-atlas",
+          "group": null,
+          "label": "render.flush 1000 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.13071895424836602,
+          "bandMin": 0.12987012987012986,
+          "bandMax": 0.1342281879194631,
+          "p95": 0.1358108108082937,
+          "p99": 0.13862068965260324,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.5000.1-atlas",
+          "group": null,
+          "label": "render.flush 5000 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.6151515151458707,
+          "bandMin": 0.6121212121268566,
+          "bandMax": 0.6181818181931069,
+          "p95": 0.6451612903225806,
+          "p99": 0.6866666666852931,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-interleaved",
+          "group": null,
+          "label": "render.flush 500 sprites / 4 atlas interleaved",
+          "unit": "ms",
+          "median": 0.8913043478260869,
+          "bandMin": 0.873913043462064,
+          "bandMax": 0.9043478260788581,
+          "p95": 0.9090909090909091,
+          "p99": 0.9181818181902848,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-clustered",
+          "group": null,
+          "label": "render.flush 500 sprites / 4 atlas clustered",
+          "unit": "ms",
+          "median": 0.08196721311475409,
+          "bandMin": 0.07976190476042647,
+          "bandMax": 0.08298755186721991,
+          "p95": 0.08438818565400844,
+          "p99": 0.08620689655172414,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-interleaved",
+          "group": null,
+          "label": "render.flush 1000 sprites / 8 atlas interleaved",
+          "unit": "ms",
+          "median": 1.9727272726595402,
+          "bandMin": 1.9454545454884118,
+          "bandMax": 2,
+          "p95": 2,
+          "p99": 2.0200000001117586,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-clustered",
+          "group": null,
+          "label": "render.flush 1000 sprites / 8 atlas clustered",
+          "unit": "ms",
+          "median": 0.15384615384615385,
+          "bandMin": 0.15151515151515152,
+          "bandMax": 0.15703124999708962,
+          "p95": 0.16080000000447034,
+          "p99": 0.16260162601626016,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-50",
+          "group": null,
+          "label": "render.flush 1000 sprites / 50% rotated",
+          "unit": "ms",
+          "median": 0.14285714285714285,
+          "bandMin": 0.14154929577858305,
+          "bandMax": 0.14492753623188406,
+          "p95": 0.1477941176511676,
+          "p99": 0.15037593984962405,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-100",
+          "group": null,
+          "label": "render.flush 1000 sprites / 100% rotated",
+          "unit": "ms",
+          "median": 0.15384615384615385,
+          "bandMin": 0.15384615384615385,
+          "bandMax": 0.15826771653249977,
+          "p95": 0.15873015873015872,
+          "p99": 0.1620967741905441,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.alpha-runs-4",
+          "group": null,
+          "label": "render.flush 1000 sprites / 4 alpha runs",
+          "unit": "ms",
+          "median": 0.14084507042253522,
+          "bandMin": 0.13958333333721384,
+          "bandMax": 0.14255319149332477,
+          "p95": 0.14492753623188406,
+          "p99": 0.14925373134328357,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.tint",
+          "group": null,
+          "label": "render.flush 1000 sprites / tint effect",
+          "unit": "ms",
+          "median": 0.1342281879194631,
+          "bandMin": 0.13399999999751647,
+          "bandMax": 0.136986301369863,
+          "p95": 0.13986013986013987,
+          "p99": 0.14255319149332477,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.outline",
+          "group": null,
+          "label": "render.flush 1000 sprites / outline effect",
+          "unit": "ms",
+          "median": 0.8708333333100503,
+          "bandMin": 0.8666666666589057,
+          "bandMax": 0.8782608695328236,
+          "p95": 0.9090909090909091,
+          "p99": 0.9272727272896604,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.stretch",
+          "group": null,
+          "label": "render.flush 1000 sprites / stretch path",
+          "unit": "ms",
+          "median": 0.8666666666589057,
+          "bandMin": 0.850000000015522,
+          "bandMax": 0.8695652173913043,
+          "p95": 0.8826086956845678,
+          "p99": 0.8956521739373389,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.zone-bg",
+          "group": null,
+          "label": "render.flush 1000 sprites / zone-bg path",
+          "unit": "ms",
+          "median": 0.7142857142857143,
+          "bandMin": 0.696551724144354,
+          "bandMax": 0.7481481481550468,
+          "p95": 0.7285714285847332,
+          "p99": 0.7357142857342426,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-0",
+          "group": null,
+          "label": "render.sort 500 items (0 swaps)",
+          "unit": "ms",
+          "median": 0.0006821049759557996,
+          "bandMin": 0.0006622735852180536,
+          "bandMax": 0.0006844861220438755,
+          "p95": 0.0006921373200442968,
+          "p99": 0.0007012376845131657,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-5",
+          "group": null,
+          "label": "render.sort 500 items (5 swaps)",
+          "unit": "ms",
+          "median": 0.0023280176929344663,
+          "bandMin": 0.0022650056625141564,
+          "bandMax": 0.0023518344308560675,
+          "p95": 0.0023688262465948124,
+          "p99": 0.0023937761819269898,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.1000.swaps-10",
+          "group": null,
+          "label": "render.sort 1000 items (10 swaps)",
+          "unit": "ms",
+          "median": 0.008972633467922835,
+          "bandMin": 0.008948545861297539,
+          "bandMax": 0.008992805755395683,
+          "p95": 0.00909090909090909,
+          "p99": 0.009153318077803204,
+          "samples": 100,
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "web-android-gpu",
+      "title": "Render submission cost, Android device GPU (chrome-android 157.0.8103.78, CanvasKit)",
+      "status": "current",
+      "statusReason": null,
+      "platform": "android-web",
+      "runtime": "web-android-gpu",
+      "measures": "CPU-side submission cost per operation of the 18 render scenarios in Chrome on a USB-attached phone, through the same on-screen canvas and WebGL path as the desktop GPU lane.",
+      "doesNotMeasure": [
+        "GPU execution time: WebGL and CanvasKit calls queue work and return, so the clock sees only what the CPU does to build and hand off the frame.",
+        "Frame rate or frame capacity.",
+        "Behaviour under thermal throttling: a window in which the device reported throttling is refused.",
+        "A pinned CPU or GPU governor."
+      ],
+      "capturedAt": "2026-11-19T09:45:42.487Z",
+      "commit": "12d1b362b3ba",
+      "runs": 5,
+      "machine": {
+        "cpu": "GS201",
+        "logicalCpus": null,
+        "os": "Android 17",
+        "gpuRenderer": "ANGLE (ARM, Mali-G710, OpenGL ES 3.2)",
+        "device": "Pixel 7 (panther)",
+        "browser": "chrome-android 157.0.8103.78",
+        "refreshRateHz": null,
+        "thermal": {
+          "statusMax": 0,
+          "batteryTempCMin": 23.6,
+          "batteryTempCMax": 23.6
+        }
+      },
+      "note": null,
+      "rows": [
+        {
+          "id": "render.flush.100.1-atlas",
+          "group": null,
+          "label": "render.flush 100 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.11299435028248588,
+          "bandMin": 0.1122905027599974,
+          "bandMax": 0.11834319526627218,
+          "p95": 0.22087912081362127,
+          "p99": 0.30923076913906977,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.1-atlas",
+          "group": null,
+          "label": "render.flush 500 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.21847826112871585,
+          "bandMin": 0.21263157882188496,
+          "bandMax": 0.2247191011235955,
+          "p95": 0.23255813953488372,
+          "p99": 0.42083333370586234,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.1-atlas",
+          "group": null,
+          "label": "render.flush 1000 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 0.3960784311388053,
+          "bandMin": 0.3865384619969588,
+          "bandMax": 0.39803921533565895,
+          "p95": 0.46136363595724106,
+          "p99": 0.9043478253095046,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.5000.1-atlas",
+          "group": null,
+          "label": "render.flush 5000 sprites / 1 atlas",
+          "unit": "ms",
+          "median": 1.7166666661699612,
+          "bandMin": 1.7083333333333333,
+          "bandMax": 1.7250000014901161,
+          "p95": 2,
+          "p99": 3.4333333323399224,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-interleaved",
+          "group": null,
+          "label": "render.flush 500 sprites / 4 atlas interleaved",
+          "unit": "ms",
+          "median": 2.388888888888889,
+          "bandMin": 2.3444444437821708,
+          "bandMax": 2.399999999337726,
+          "p95": 2.612500000745058,
+          "p99": 4.419999998807907,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.500.4-atlas-clustered",
+          "group": null,
+          "label": "render.flush 500 sprites / 4 atlas clustered",
+          "unit": "ms",
+          "median": 0.2564102564102564,
+          "bandMin": 0.2451219511468236,
+          "bandMax": 0.264473684524235,
+          "p95": 0.27162162154107483,
+          "p99": 0.5771428568022592,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-interleaved",
+          "group": null,
+          "label": "render.flush 1000 sprites / 8 atlas interleaved",
+          "unit": "ms",
+          "median": 5.25,
+          "bandMin": 5.1500000059604645,
+          "bandMax": 5.25,
+          "p95": 5.375,
+          "p99": 5.7249999940395355,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.8-atlas-clustered",
+          "group": null,
+          "label": "render.flush 1000 sprites / 8 atlas clustered",
+          "unit": "ms",
+          "median": 0.4444444444444444,
+          "bandMin": 0.43913043452345807,
+          "bandMax": 0.45111111137602067,
+          "p95": 0.4674418603265008,
+          "p99": 0.971428571712403,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-50",
+          "group": null,
+          "label": "render.flush 1000 sprites / 50% rotated",
+          "unit": "ms",
+          "median": 0.40816326530612246,
+          "bandMin": 0.4060000002384186,
+          "bandMax": 0.4166666666666667,
+          "p95": 0.4444444444444444,
+          "p99": 0.9272727275436575,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.rotated-100",
+          "group": null,
+          "label": "render.flush 1000 sprites / 100% rotated",
+          "unit": "ms",
+          "median": 0.42291666691501933,
+          "bandMin": 0.4163265301256764,
+          "bandMax": 0.4444444444444444,
+          "p95": 0.4674418603265008,
+          "p99": 1.0736842108400244,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.alpha-runs-4",
+          "group": null,
+          "label": "render.flush 1000 sprites / 4 alpha runs",
+          "unit": "ms",
+          "median": 0.42083333308498067,
+          "bandMin": 0.4122448977158994,
+          "bandMax": 0.43478260869565216,
+          "p95": 0.43913043452345807,
+          "p99": 0.9136363647200845,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.tint",
+          "group": null,
+          "label": "render.flush 1000 sprites / tint effect",
+          "unit": "ms",
+          "median": 0.4122448977158994,
+          "bandMin": 0.4019999998807907,
+          "bandMax": 0.4166666666666667,
+          "p95": 0.4568181816827167,
+          "p99": 1.0684210532589962,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.outline",
+          "group": null,
+          "label": "render.flush 1000 sprites / outline effect",
+          "unit": "ms",
+          "median": 2.4333333339956074,
+          "bandMin": 2.42222222354677,
+          "bandMax": 2.466666665342119,
+          "p95": 2.525000002235174,
+          "p99": 4.060000002384186,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.stretch",
+          "group": null,
+          "label": "render.flush 1000 sprites / stretch path",
+          "unit": "ms",
+          "median": 2.4333333339956074,
+          "bandMin": 2.4000000026490955,
+          "bandMax": 2.455555554893282,
+          "p95": 2.587499998509884,
+          "p99": 3.766666665673256,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.flush.1000.zone-bg",
+          "group": null,
+          "label": "render.flush 1000 sprites / zone-bg path",
+          "unit": "ms",
+          "median": 2.089999997615814,
+          "bandMin": 2.0599999994039537,
+          "bandMax": 2.1099999994039536,
+          "p95": 2.2222222222222223,
+          "p99": 3.516666665673256,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-0",
+          "group": null,
+          "label": "render.sort 500 items (0 swaps)",
+          "unit": "ms",
+          "median": 0.0016556291390728477,
+          "bandMin": 0.001623640201331385,
+          "bandMax": 0.0016644474034620505,
+          "p95": 0.00591016548463357,
+          "p99": 0.012812299807815503,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.500.swaps-5",
+          "group": null,
+          "label": "render.sort 500 items (5 swaps)",
+          "unit": "ms",
+          "median": 0.0047812574707147976,
+          "bandMin": 0.004772130756382725,
+          "bandMax": 0.004830917874396135,
+          "p95": 0.019801980198019802,
+          "p99": 0.035398230088495575,
+          "samples": 100,
+          "note": null
+        },
+        {
+          "id": "render.sort.1000.swaps-10",
+          "group": null,
+          "label": "render.sort 1000 items (10 swaps)",
+          "unit": "ms",
+          "median": 0.018231540565177756,
+          "bandMin": 0.017889087656529516,
+          "bandMax": 0.01858736059479554,
+          "p95": 0.06535947712418301,
+          "p99": 0.13157894736842105,
+          "samples": 100,
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "device-native",
+      "title": "On-device frame rate (React Native + Skia, Hermes)",
+      "status": "stale",
+      "statusReason": "Captured 2026-04-22 from a bench scene in a game app that now lives in a separate repository. The copy-CSV-from-logcat pipeline that produced these rows no longer exists, so this file cannot be refreshed. Engine-owned device measurement is rebuilt in docs/plans/perf-measurement-2026-07.md §11.7.",
+      "platform": "android-native",
+      "runtime": "React Native (Hermes)",
+      "measures": "Frames per second, one sample per second, of a bench scene in a React Native game app at three load levels.",
+      "doesNotMeasure": [
+        "The current engine: this is one historical capture that can no longer be refreshed.",
+        "Run-to-run spread: it is a single capture."
+      ],
+      "capturedAt": "2026-04-22",
+      "commit": null,
+      "runs": 1,
+      "machine": {
+        "cpu": null,
+        "logicalCpus": null,
+        "os": "Android 16 / One UI 8.0",
+        "gpuRenderer": null,
+        "device": "Samsung Galaxy A54 5G",
+        "browser": null,
+        "refreshRateHz": null,
+        "thermal": null
+      },
+      "note": "Release build via `npx expo run:android --variant release`. Hermes enabled. 120 Hz display, uncapped. Bench scene: bullets with random velocities + wall-bounce integration + `coll.step()` per frame; enemies static. Samples = 1/sec, 10s per load.",
+      "rows": [
+        {
+          "id": "device.fps.light",
+          "group": null,
+          "label": "light (10 enemies + 50 bullets)",
+          "unit": "fps",
+          "median": 120.295,
+          "bandMin": 119.79,
+          "bandMax": 120.41,
+          "p95": null,
+          "p99": null,
+          "samples": 10,
+          "note": "The band is the lowest and highest one-second sample of a single capture, not a run-to-run spread."
+        },
+        {
+          "id": "device.fps.medium",
+          "group": null,
+          "label": "medium (30 enemies + 150 bullets)",
+          "unit": "fps",
+          "median": 117.35,
+          "bandMin": 111.37,
+          "bandMax": 119.52,
+          "p95": null,
+          "p99": null,
+          "samples": 10,
+          "note": "The band is the lowest and highest one-second sample of a single capture, not a run-to-run spread."
+        },
+        {
+          "id": "device.fps.heavy",
+          "group": null,
+          "label": "heavy (50 enemies + 300 bullets)",
+          "unit": "fps",
+          "median": 47.95,
+          "bandMin": 46.88,
+          "bandMax": 48.82,
+          "p95": null,
+          "p99": null,
+          "samples": 10,
+          "note": "The band is the lowest and highest one-second sample of a single capture, not a run-to-run spread."
+        }
+      ]
+    }
+  ],
+  "counters": {
+    "title": "Draw-path allocation counters (exact)",
+    "measures": "Exact integers per scenario from the real frame renderer against a counting Skia stub: pool misses, factory calls, and the draw calls and transform writes repeated every frame.",
+    "doesNotMeasure": [
+      "Allocations that pass through neither a pool nor the injected Skia factory.",
+      "Time: these are counts, with no run-to-run variance."
+    ],
+    "capturedAt": "2026-11-19T13:30:57.362Z",
+    "commit": "5422f99f872c",
+    "runtime": "Bun 1.3.11",
+    "rows": [
+      {
+        "id": "alloc.render.1-atlas",
+        "label": "alloc.render 1000 sprites / 1 atlas",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 1,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 1000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.rotated-100",
+        "label": "alloc.render 1000 sprites / 100% rotated",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 1,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 0,
+        "xformRotatedPerFrame": 1000,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.8-atlas-interleaved",
+        "label": "alloc.render 1000 sprites / 8 atlas interleaved",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 1000,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 1000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.8-atlas-clustered",
+        "label": "alloc.render 1000 sprites / 8 atlas clustered",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 8,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 1000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.alpha-runs-4",
+        "label": "alloc.render 1000 sprites / 4 alpha runs",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 4,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 1000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.tint",
+        "label": "alloc.render 1000 sprites / tint effect",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 1,
+        "drawAtlasPerFrame": 1,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 1000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.outline",
+        "label": "alloc.render 1000 sprites / outline effect",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 1,
+        "drawAtlasPerFrame": 9,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 9000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.stretch",
+        "label": "alloc.render 1000 sprites / stretch path",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 0,
+        "drawImageRectPerFrame": 1000,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 0,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.render.zone-bg",
+        "label": "alloc.render 1000 sprites / zone-bg path",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 1,
+        "drawAtlasPerFrame": 0,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 1000,
+        "xformUnrotatedPerFrame": 0,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.frame.500",
+        "label": "alloc.frame 500 entities + 300p",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 1,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 500,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      },
+      {
+        "id": "alloc.frame.1000",
+        "label": "alloc.frame 1000 entities + 300p",
+        "poolMisses": 0,
+        "particleFactoryCalls": 0,
+        "cachedFactoryCalls": 0,
+        "perFrameFactoryCalls": 0,
+        "drawAtlasPerFrame": 1,
+        "drawImageRectPerFrame": 0,
+        "drawRectPerFrame": 0,
+        "xformUnrotatedPerFrame": 1000,
+        "xformRotatedPerFrame": 0,
+        "pass": true
+      }
+    ]
+  },
+  "heap": {
+    "title": "Integration heap, isolated process per scenario",
+    "measures": "Median per-frame change of the JavaScriptCore heap footprint over measured blocks, after a warm-up to the allocation plateau. An allocation-pressure proxy.",
+    "doesNotMeasure": [
+      "Retention or live bytes: under JavaScriptCore the figure moves with GC scheduling.",
+      "GC pause times, the WASM heap, or device memory."
+    ],
+    "capturedAt": "2026-11-19T13:30:57.362Z",
+    "commit": "5422f99f872c",
+    "runtime": "Bun 1.3.11",
+    "runs": 5,
+    "rows": [
+      {
+        "id": "heap.integration.500",
+        "label": "integration.heap 500 entities",
+        "unit": "bytes/frame",
+        "median": 0,
+        "bandMin": 0,
+        "bandMax": 0,
+        "resolution": 512,
+        "warmupFrames": 400,
+        "measuredFrames": 600,
+        "plateauHeapMB": 0.21,
+        "converged": true
+      },
+      {
+        "id": "heap.integration.1000",
+        "label": "integration.heap 1000 entities",
+        "unit": "bytes/frame",
+        "median": 0,
+        "bandMin": 0,
+        "bandMax": 0,
+        "resolution": 655.36,
+        "warmupFrames": 200,
+        "measuredFrames": 300,
+        "plateauHeapMB": 0.21,
+        "converged": true
+      },
+      {
+        "id": "heap.integration.2000",
+        "label": "integration.heap 2000 entities",
+        "unit": "bytes/frame",
+        "median": 0,
+        "bandMin": 0,
+        "bandMax": 0,
+        "resolution": 1310.72,
+        "warmupFrames": 150,
+        "measuredFrames": 150,
+        "plateauHeapMB": 5.08,
+        "converged": true
+      }
+    ]
+  },
+  "payload": {
+    "title": "CanvasKit WASM payload",
+    "measures": "Size on disk of the installed canvaskit-wasm binaries, raw and gzipped.",
+    "doesNotMeasure": ["Brotli size, an application bundle, or the size of any Flare package."],
+    "capturedAt": "2026-11-19T09:30:37.275Z",
+    "commit": "12d1b362b3ba",
+    "runtime": "chromium 158.0.8127.18",
+    "rows": [
+      {
+        "id": "payload.canvaskit.default.raw",
+        "label": "CanvasKit default build, raw",
+        "unit": "bytes",
+        "value": 7317345
+      },
+      {
+        "id": "payload.canvaskit.default.gzip",
+        "label": "CanvasKit default build, gzipped",
+        "unit": "bytes",
+        "value": 2946763
+      },
+      {
+        "id": "payload.canvaskit.full.raw",
+        "label": "CanvasKit full build, raw",
+        "unit": "bytes",
+        "value": 8242911
+      },
+      {
+        "id": "payload.canvaskit.full.gzip",
+        "label": "CanvasKit full build, gzipped",
+        "unit": "bytes",
+        "value": 3298751
+      }
+    ]
+  },
+  "coldStart": {
+    "title": "Cold start to first rendered frame",
+    "measures": "Time from navigation to the first surface flush after CanvasKit loads, in headless Chromium on the offscreen CPU-raster surface.",
+    "doesNotMeasure": [
+      "Browser paint or composite timings: there is no on-screen canvas.",
+      "Run-to-run spread: each figure is a single capture.",
+      "HTTP cache benefit on the throttled pair: headless Chromium did not serve the WASM from its disk cache in this harness.",
+      "Any phone."
+    ],
+    "capturedAt": "2026-11-19T09:30:37.275Z",
+    "commit": "12d1b362b3ba",
+    "runtime": "chromium 158.0.8127.18",
+    "runs": 1,
+    "rows": [
+      {
+        "id": "cold-start.cold",
+        "label": "Cold cache, plain network",
+        "unit": "ms",
+        "value": 79.70000000018626,
+        "network": null
+      },
+      {
+        "id": "cold-start.warm",
+        "label": "Warm cache, plain network",
+        "unit": "ms",
+        "value": 51.799999999813735,
+        "network": null
+      },
+      {
+        "id": "cold-start.cold-4g",
+        "label": "Cold cache, throttled 4G",
+        "unit": "ms",
+        "value": 16859,
+        "network": {
+          "downloadBytesPerSec": 524288,
+          "uploadBytesPerSec": 393216,
+          "latencyMs": 20
+        }
+      },
+      {
+        "id": "cold-start.warm-4g",
+        "label": "Warm cache, throttled 4G",
+        "unit": "ms",
+        "value": 16846.89999999944,
+        "network": {
+          "downloadBytesPerSec": 524288,
+          "uploadBytesPerSec": 393216,
+          "latencyMs": 20
+        }
+      }
+    ]
+  },
+  "coverage": {
+    "platforms": [
+      {
+        "id": "desktopWeb",
+        "title": "Desktop web"
+      },
+      {
+        "id": "androidWeb",
+        "title": "Android web"
+      },
+      {
+        "id": "iosWeb",
+        "title": "iOS web"
+      },
+      {
+        "id": "androidNative",
+        "title": "Android native (React Native + Skia)"
+      },
+      {
+        "id": "iosNative",
+        "title": "iOS native (React Native + Skia)"
+      }
+    ],
+    "categories": [
+      {
+        "id": "engine-cpu",
+        "title": "Engine CPU cost (per system)",
+        "cells": {
+          "desktopWeb": {
+            "status": "measured",
+            "lanes": ["node-jsc"],
+            "sections": [],
+            "issue": null
+          },
+          "androidWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 440
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 452
+          },
+          "androidNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 440
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 440
+          }
+        }
+      },
+      {
+        "id": "render-submission",
+        "title": "Render submission cost",
+        "cells": {
+          "desktopWeb": {
+            "status": "measured",
+            "lanes": ["web-cpu-raster", "web-gpu"],
+            "sections": [],
+            "issue": null
+          },
+          "androidWeb": {
+            "status": "measured",
+            "lanes": ["web-android-gpu"],
+            "sections": [],
+            "issue": null
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 452
+          },
+          "androidNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 162
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 453
+          }
+        }
+      },
+      {
+        "id": "frame-capacity",
+        "title": "Frame capacity and frame-time distribution",
+        "cells": {
+          "desktopWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 438
+          },
+          "androidWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 438
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 452
+          },
+          "androidNative": {
+            "status": "stale",
+            "lanes": ["device-native"],
+            "sections": [],
+            "issue": 162
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 453
+          }
+        }
+      },
+      {
+        "id": "startup-size",
+        "title": "Startup and size",
+        "cells": {
+          "desktopWeb": {
+            "status": "measured",
+            "lanes": [],
+            "sections": ["payload", "coldStart"],
+            "issue": 443
+          },
+          "androidWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 443
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 452
+          },
+          "androidNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 443
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 453
+          }
+        }
+      },
+      {
+        "id": "memory-gc",
+        "title": "Memory and GC",
+        "cells": {
+          "desktopWeb": {
+            "status": "measured",
+            "lanes": [],
+            "sections": ["heap", "counters"],
+            "issue": 444
+          },
+          "androidWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 444
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 452
+          },
+          "androidNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 444
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 453
+          }
+        }
+      },
+      {
+        "id": "idle-background",
+        "title": "Idle and background cost",
+        "cells": {
+          "desktopWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 445
+          },
+          "androidWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 445
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 452
+          },
+          "androidNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 445
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 453
+          }
+        }
+      },
+      {
+        "id": "energy",
+        "title": "Energy",
+        "cells": {
+          "desktopWeb": {
+            "status": "not-applicable",
+            "lanes": [],
+            "sections": [],
+            "issue": null
+          },
+          "androidWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 448
+          },
+          "iosWeb": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": null
+          },
+          "androidNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": 448
+          },
+          "iosNative": {
+            "status": "not-measured",
+            "lanes": [],
+            "sections": [],
+            "issue": null
+          }
+        }
+      }
+    ]
+  }
+}

@@ -30,6 +30,14 @@ import { physicsBenches } from './physics.bench.js';
 import { postfxBenches } from './postfx.bench.js';
 import { judgePowerScheme, readPowerScheme } from './power.js';
 import { aggregateRuns } from './promote.js';
+import {
+  buildPublicExport,
+  deviationCaveat,
+  displayLabel,
+  loadPublicInputs,
+  readEngineVersion,
+  writePublicExport,
+} from './public-export.js';
 import { renderBenches } from './render.bench.js';
 import { renderSystemBenches } from './render-system.bench.js';
 import {
@@ -319,6 +327,10 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     '> Every number below comes from the committed baseline captured on the date above — not from the day this page was rendered. Re-capture with `bun run bench` ×N then `bun run bench:promote`, and re-render with `bun run bench:md`.',
   );
   lines.push('');
+  lines.push(
+    '> Machine-readable: [`benchmarks/results/public.json`](../../benchmarks/results/public.json) carries every lane on this page with stable row ids and per-lane provenance, written by the same `bun run bench:md`.',
+  );
+  lines.push('');
 
   // Headline numbers
   const ecsK = findScenario(capture, HEADLINE_PREFIXES.ecs);
@@ -410,10 +422,10 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   lines.push(
     `- **Every number here was captured on a machine that was ${capture.foreignLoadPercent === undefined ? 'not measured for' : `${capture.foreignLoadPercent.toFixed(1)}% busy with`} other work.** \`bench:promote\` refuses a window above ${MAX_FOREIGN_LOAD_PERCENT}% foreign load, or one where ${MIN_DEVIANT_RUNS} or more runs sit further than ${MAX_RUN_DEVIATION_PERCENT}% from the folded median. Both exist because two captures taken beside a fleet of agent processes once read a headline row 23% low, and nothing but a human noticed (B29).`,
   );
-  for (const [scenario, override] of SCENARIO_DEVIATION_OVERRIDES) {
-    lines.push(
-      `- **\`${scenario.replace(/\s+/g, ' ').trim()}\` is held to a wider tolerance than every other row (${override.percent}%, not ${MAX_RUN_DEVIATION_PERCENT}%), and is less reproducible than its neighbours.** ${override.reason}`,
-    );
+  for (const scenario of SCENARIO_DEVIATION_OVERRIDES.keys()) {
+    const caveat = deviationCaveat(scenario);
+    if (caveat === null) continue;
+    lines.push(`- **\`${displayLabel(scenario)}\` is ${caveat.claim}** ${caveat.reason}`);
   }
   lines.push(
     `- **The table cannot show the 2026-07-29 dev-flag fix, because the bench has always declared \`__DEV__\`.** Until that date the engine read the flag as a bare identifier behind a \`typeof\` guard, once per sprite per transform pass. Under **JSC** — Bun, and Safari/iOS WebKit — an unresolvable global costs ~270 ns per evaluation, so a consumer who never defines \`__DEV__\` was paying it: \`render.flush 1000 / 1 atlas\` measured 412-450 µs in that configuration against 56-88 µs after the fix, the same band the declared configuration occupies. React Native always defines the flag and was never affected. **V8 (Node, Chrome) and SpiderMonkey were never measured** — the ~270 ns figure is JSC-only and must not be read as a cross-engine claim.`,
@@ -729,6 +741,9 @@ if (args.has('--markdown')) {
   const target = benchmarksDocFile();
   writeFileAtomic(target, `${markdown}\n`);
   console.error(`Wrote ${target} from the ${baseline.generated.slice(0, 10)} capture.`);
+  // Written by the same command as the doc so the two cannot describe different captures.
+  const exported = writePublicExport(buildPublicExport(loadPublicInputs(), readEngineVersion()));
+  console.error(`Wrote ${exported}.`);
   process.exit(0);
 }
 

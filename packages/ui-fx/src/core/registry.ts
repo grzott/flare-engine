@@ -1,18 +1,22 @@
 import type { FlarePreset } from './presets';
+import type { FlareTimeline } from './timeline';
 
-/** A preset, or the name one was registered under. */
-export type PresetRef = FlarePreset | string;
+/** A preset or timeline, or the name one was registered under. */
+export type PresetRef = FlarePreset | FlareTimeline | string;
 
 export interface PresetRegistry {
-  /** Store `p` under `name`, replacing any preset already there. */
-  register(name: string, p: FlarePreset): void;
-  /** A preset resolves to itself, a name to its preset. Throws a `RangeError` for an unknown name. */
-  resolve(ref: PresetRef): FlarePreset;
+  /** Store `p` under `name`, replacing anything already there. */
+  register(name: string, p: FlarePreset | FlareTimeline): void;
+  /**
+   * A preset or timeline resolves to itself, a name to what was registered under it. Throws a
+   * `RangeError` for an unknown name.
+   */
+  resolve(ref: PresetRef): FlarePreset | FlareTimeline;
 }
 
-/** A name → preset table. Registries are independent of each other. */
+/** A name → preset or timeline table. Registries are independent of each other. */
 export function createPresetRegistry(): PresetRegistry {
-  const presets = new Map<string, FlarePreset>();
+  const presets = new Map<string, FlarePreset | FlareTimeline>();
   return {
     register(name, p) {
       presets.set(name, p);

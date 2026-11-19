@@ -56,6 +56,16 @@ export {
 } from './core/presets';
 export { createPresetRegistry, type PresetRef, type PresetRegistry } from './core/registry';
 export {
+  delay,
+  type FlareTimeline,
+  liveEntries,
+  parallel,
+  sequence,
+  snapshotEntry,
+  stagger,
+  type TimelineEntry,
+} from './core/timeline';
+export {
   compileTiming,
   type EasingName,
   type EasingSpec,

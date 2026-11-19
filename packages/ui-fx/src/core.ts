@@ -8,6 +8,12 @@ export {
   resolveOriginInto,
   type Vec2Out,
 } from './core/conventions';
+export { createFractureCache } from './core/fracture/cache';
+export { cellGridFor } from './core/fracture/cells';
+export { clipPolygonToUnitInto } from './core/fracture/clip';
+export { generateFracture } from './core/fracture/generate';
+export { packShardsInto } from './core/fracture/pack';
+export type { FractureCache, FractureMesh, ShardPacking } from './core/fracture/types';
 export {
   type ArcTable,
   buildArcTable,
@@ -54,6 +60,7 @@ export {
   shatter,
   slide,
 } from './core/presets';
+export { createStream, nextUnit, type PrngStream } from './core/prng';
 export { createPresetRegistry, type PresetRef, type PresetRegistry } from './core/registry';
 export {
   delay,

@@ -20,9 +20,18 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { resultsDir } from './results.js';
 
-type WebRenderRow = {
+export type WebThermal = {
+  readonly statusBefore: number | null;
+  readonly statusAfter: number | null;
+  readonly batteryTempCBefore: number | null;
+  readonly batteryTempCAfter: number | null;
+};
+
+export type WebRenderRow = {
   readonly kind: string;
   readonly name: string;
+  readonly capturedAt?: string;
+  readonly thermal?: WebThermal;
   readonly p50Ms: number;
   readonly p95Ms: number;
   readonly p99Ms: number;
@@ -46,16 +55,29 @@ type WebRenderRow = {
   };
 };
 
-type WebNamedValue = { readonly name: string; readonly bytes?: number; readonly ms?: number };
+export type WebNamedValue = {
+  readonly name: string;
+  readonly bytes?: number;
+  readonly ms?: number;
+  readonly commit?: string;
+  readonly capturedAt?: string;
+  readonly browserName?: string;
+  readonly browserVersion?: string;
+  readonly network?: {
+    readonly downloadThroughputBytesPerSec: number;
+    readonly uploadThroughputBytesPerSec: number;
+    readonly latencyMs: number;
+  } | null;
+};
 
-type WebCaptureFile = {
+export type WebCaptureFile = {
   readonly generated: string;
   readonly render: readonly WebRenderRow[];
   readonly payload?: readonly WebNamedValue[];
   readonly coldStart?: readonly WebNamedValue[];
 };
 
-function loadWebCapture(file: string): WebCaptureFile | null {
+export function loadWebCapture(file: string): WebCaptureFile | null {
   try {
     return JSON.parse(readFileSync(resolve(resultsDir(), file), 'utf8')) as WebCaptureFile;
   } catch {

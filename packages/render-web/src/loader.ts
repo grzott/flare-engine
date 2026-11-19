@@ -24,7 +24,11 @@ let pending: Promise<CanvasKit> | null = null;
  * A rejected load is NOT cached — a transient failure would otherwise strand every later caller
  * on the same rejection for the module's lifetime.
  *
- * @param wasmUrl  Absolute URL or filesystem path to canvaskit.wasm.
+ * A rejection that is not an `Error` is wrapped in one that names the likely cause, a wasm that
+ * does not match the full glue, with the original value as `cause`.
+ *
+ * @param wasmUrl  Absolute URL or filesystem path to the full binary,
+ *   `canvaskit-wasm/bin/full/canvaskit.wasm`. The non-full `bin/canvaskit.wasm` does not load.
  * @param onProgress  Optional callback receiving download fraction [0,1].
  * @param options  Stall and deadline bounds.
  */
@@ -40,7 +44,13 @@ export function loadCanvasKit(
   const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
   pending = withDeadline(init(wasmUrl, onProgress, options), deadlineMs).catch((err: unknown) => {
     pending = null;
-    throw err;
+    // The full glue rejects with a bare value (seen: `Infinity`) when the wasm it was handed is
+    // not the full build.
+    if (err instanceof Error) throw err;
+    throw new Error(
+      'CanvasKit init failed: the served canvaskit.wasm likely does not match the full glue; serve canvaskit-wasm/bin/full/canvaskit.wasm',
+      { cause: err },
+    );
   });
   return pending;
 }

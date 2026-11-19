@@ -126,7 +126,7 @@ Two things worth knowing:
   `createClientTransport` is the web counterpart: you initialise a browser client and inject it, so
   this package depends on no reporter of its own.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineerrors--2kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineerrors).
 
 ## License
 

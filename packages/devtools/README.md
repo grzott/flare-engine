@@ -44,7 +44,7 @@ function CustomInspector() {
 }
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedevtools--8kb-gzip-tree-shaken-in-prod).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedevtools-tree-shaken-in-prod).
 
 ## License
 

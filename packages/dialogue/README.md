@@ -28,7 +28,7 @@ runner.start(graph, { playerName: 'Twardowski' });
 const reveal = createTextReveal('Hello.');
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedialogue--5kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedialogue).
 
 ## License
 

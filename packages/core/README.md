@@ -69,7 +69,7 @@ Failures are never re-raised as unhandled rejections — the handle is the only 
 if you need to know. Test `handle.failed` rather than `handle.error`: a bare `reject()` rejects
 with `undefined`.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginecore--3kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginecore).
 
 ## License
 

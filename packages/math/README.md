@@ -77,7 +77,7 @@ const restored = new SeededRNG(0);
 restored.setState(savedState); // next() now continues the original sequence
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginemath--5kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginemath).
 
 ## License
 

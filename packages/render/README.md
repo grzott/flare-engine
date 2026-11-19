@@ -36,7 +36,7 @@ batch.flush((_img, _cmds) => { /* bridge calls Skia drawAtlas here */ }, rendere
 renderer.end();
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginerender--10kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginerender).
 
 ## License
 

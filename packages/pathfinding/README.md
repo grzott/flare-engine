@@ -54,7 +54,7 @@ const result = findPathJPS(grid, 0, 0, 30, 30, {
 if (result !== null) console.log(result.path);
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginepathfinding--8kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginepathfinding).
 
 ## License
 

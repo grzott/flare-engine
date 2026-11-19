@@ -34,7 +34,7 @@ const passes = runtime.buildPass(chain, width, height);
 // renderer composites passes into the scene
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginepostfx--8kb-raw).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginepostfx).
 
 ## License
 

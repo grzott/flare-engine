@@ -37,7 +37,7 @@ time.setTimescale(0.5);
 
 Tree-shaken in production via `__DEV__` guard at the call site.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedebug--3kb-gzip-tree-shaken-in-prod).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedebug-tree-shaken-in-prod).
 
 ## License
 

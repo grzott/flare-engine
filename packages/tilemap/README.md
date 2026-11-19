@@ -37,7 +37,7 @@ renderer.draw(camera, (batch) =>
 const colliders = extractColliders(data);
 ```
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginetilemap--8kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginetilemap).
 
 ## Animated tiles
 

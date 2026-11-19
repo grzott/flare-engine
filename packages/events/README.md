@@ -30,7 +30,7 @@ onHit.emit(10);
 - A handler **removed** during an emit still runs for that emit (and any nested emit); the removal takes effect once the outermost emit completes. Exception: a `once()` handler fires at most once, even under a nested emit.
 - `emit()` is **re-entrant** (a handler may call `emit()` again) and **throw-safe**: a throwing handler propagates to the caller but never wedges deferred removal.
 
-See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineevents--1kb-gzip).
+See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineevents).
 
 ## License
 

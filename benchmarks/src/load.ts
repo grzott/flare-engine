@@ -134,6 +134,11 @@ const BIMODAL_INTEGRATE = (band: string, ratio: string, split: string): string =
   'that window caught, and moves between them. Read the spread column, not the median, for this ' +
   'row.';
 
+const CHURN_GC_STATE = (band: string, ratio: string): string =>
+  `Two states set by the GC state the row starts from (#480): ${band} (${ratio}) over 18 pinned ` +
+  'full-suite captures on 2026-11-19, tight when the ECS suite runs alone in a process. Read the ' +
+  'spread column, not the median, for this row.';
+
 /**
  * All four `integrate-only` rows, and only those. The scoping is the evidence: across the same 15
  * captures the three `emit+integrate` rows of the *same package* hold inside 1.12x, `ecs.step`
@@ -170,37 +175,40 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
     { percent: 35, reason: BIMODAL_INTEGRATE('16.80-21.40 us', '1.27x', '9 low / 6 high') },
   ],
   /**
-   * **Provisional, owner-accepted 2026-11-12 to unblock the 0.4.12 recapture; investigation is
-   * #363.** Two of the three `animation` rows from #311, which first ran that day.
+   * Two of the three `animation` rows from #311. Both were accepted provisionally on 2026-11-12
+   * (#362: 25 pinned captures of `a851faa9`, tweens 2.35-3.18 us, animators 6.19-7.60 us).
+   * `updateSpring`, the third row, folds at the strict 10%. Each tolerance exceeds its row's
+   * measured max/min ratio, so a window folds whichever state it catches.
    *
-   * Evidence, all of `a851faa9`, pinned, at 1.2-2.6% foreign load. Fifteen captures were recorded
-   * in three windows (17:37-18:14 UTC); they enter `benchmarks/results/history.ndjson` with the
-   * 0.4.12 recapture PR that follows this one. Ten more are unrecorded, from an interleaved A/B
-   * that swapped only `packages/ecs/src/world.ts`, which animation does not import. PR #362
-   * lists all 25 per-run values for both rows. The third animation row,
-   * `updateSpring`, passed the strict 10% in all three recorded windows; `updateTweens` refused
-   * the first two and `updateAnimator` the third. The spans below cover all 25 captures.
+   * **`updateTweens`: investigated 2026-11-19 (#363), now evidence-backed.** Fresh pinned
+   * processes on a quiet machine:
+   * - Alone, the row is tight but slow: 4.22-4.48 us (1.06x).
+   * - After the five suites `runAll` runs before it, it splits into two states: 2.46-2.48 or
+   *   2.95-3.15 us (1.28x), matching the 2.4-3.1 us of 18 full-suite captures that day.
+   * - The warm-up budget is not the cause: 300 and 3000 ms read the same.
+   * - With one easing instead of four, the split disappears: 2.22-2.29 us, 1.03x.
+   * - Giving every easing its own monomorphic call site (a `switch` per easing) made both states
+   *   about 20% faster but did not remove the split (1.24x).
+   * So the two states come from how the JIT compiles a loop that calls four different easing
+   * bodies, given what the process compiled before. That is the same end point as the
+   * `integrate-only` rows above.
    *
-   * Each tolerance exceeds its row's measured max/min ratio, so a window folds whichever state it
-   * catches. One suspect for `updateTweens` is its single call site for four different easing
-   * functions.
-   *
-   * **Exit condition (#363):** remove both entries once three consecutive node windows fold
-   * these rows at 10%. Or keep them, with this paragraph replaced by the five-cause evidence the
-   * `integrate-only` rows carry.
+   * **`updateAnimator`: still provisional (#363).** Its 7.2-7.6 us state appeared in about 5 of
+   * 18 full-suite captures on 2026-11-19, but not in 12 fresh processes (alone or after those five
+   * suites: 6.48-6.70 us), so its cause is not established.
    *
    * **What is given up:** neither row can catch a regression smaller than its tolerance on its
-   * own. `updateSpring` still guards the spring path of the same package at 10%, but nothing
-   * strict guards tweens or animators until #363 closes.
+   * own. `updateSpring` still guards the spring path of the same package at 10%. Nothing strict
+   * guards tweens or animators.
    */
   [
     'animation.updateTweens    1000 tweens, 4 easings',
     {
       percent: 36,
       reason:
-        'Provisional (#363). Continuous spread across 2.35-3.18 us (1.35x) over 25 pinned ' +
-        'captures on 2026-11-12, not two states: the folded median depends on which runs the ' +
-        'window caught. Read the spread column, not the median, for this row.',
+        'Two states set by in-process JIT history (#363): with four easings hot in one loop the ' +
+        'row folds at about 2.4-2.5 or 2.9-3.1 us depending on what the process compiled before; ' +
+        'with one easing it is tight. Read the spread column, not the median, for this row.',
     },
   ],
   [
@@ -213,6 +221,42 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
         'internally tight. The folded median lands in whichever state that window caught. Read ' +
         'the spread column, not the median, for this row.',
     },
+  ],
+  /**
+   * Three of the four `ecs.churn` rows (#480): they create and destroy entities every step, which
+   * churns the `World`'s `Map` storage.
+   *
+   * **Evidence, 2026-11-19,** fresh pinned processes on a quiet machine (i9-13900KF):
+   * - Run as the only suite in a process, the rows are tight: `churn 1000` 51-52 us,
+   *   `churn 2000` 102-105 us, `churn 5000` 258-268 us, all within 1.04x.
+   * - The same process with one `Bun.gc(true)` before the suite splits each into two states:
+   *   51-54 or 69-70, 104-106 or 132-140, 258-278 or 306-311 us.
+   * - In the full bench, which loads every suite module before ECS runs, the rows spread over
+   *   18 captures: 50.6-67.6 us (1.34x), 82.1-109.9 us (1.34x) and 213.2-323 us (1.52x). The
+   *   5000 row needed 13 runs for one 5-run window to fold at 10%.
+   * ECS runs first in `runAll`, so this is not another suite's JIT history. It is the GC state the
+   * row starts from, a property of the measurement and not of the machine. `churn 500` stays
+   * tight (1.05x over the same 18 captures), so it keeps the strict 10%.
+   *
+   * Each tolerance exceeds its row's measured max/min ratio. #480 tracks the alternative, a
+   * harness that starts these rows from a known state (a plain full GC is not it: it causes the
+   * split), and removes these entries if that works.
+   *
+   * **What is given up:** these rows can't catch a regression smaller than their tolerance on
+   * their own. `@flare-engine/ecs` is still guarded at the strict 10% by `churn 500` and all
+   * four `ecs.step` rows, plus the exact allocation counters in `check:perf`.
+   */
+  [
+    'ecs.churn 1000 entities, 5%/step',
+    { percent: 35, reason: CHURN_GC_STATE('50.6-67.6 us', '1.34x') },
+  ],
+  [
+    'ecs.churn 2000 entities, 5%/step',
+    { percent: 35, reason: CHURN_GC_STATE('82.1-109.9 us', '1.34x') },
+  ],
+  [
+    'ecs.churn 5000 entities, 5%/step',
+    { percent: 53, reason: CHURN_GC_STATE('213.2-323 us', '1.52x') },
   ],
 ]);
 

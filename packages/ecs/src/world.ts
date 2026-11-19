@@ -19,6 +19,7 @@ export class World {
   private archetypes = new Map<number, number>(); // entityId → bitmask
   private slots = new Map<ComponentDef<unknown>, ComponentSlot>();
   private usedBits = 0;
+  private stores = new Map<ComponentDef<unknown>, Map<number, unknown>>();
   private storesByBit: (Map<number, unknown> | undefined)[] = new Array(MAX_COMPONENT_TYPES).fill(
     undefined,
   );
@@ -84,7 +85,7 @@ export class World {
 
   /** Get component data for an entity. */
   get<T>(entityId: number, def: ComponentDef<T>): T | undefined {
-    return this.slots.get(def)?.store.get(entityId) as T | undefined;
+    return this.stores.get(def)?.get(entityId) as T | undefined;
   }
 
   /** Check if entity has a component. */
@@ -114,6 +115,7 @@ export class World {
 
     const slot: ComponentSlot = { bit, store: new Map() };
     this.slots.set(def, slot);
+    this.stores.set(def, slot.store);
     this.usedBits |= bit;
     this.storesByBit[31 - Math.clz32(bit)] = slot.store;
     return slot;

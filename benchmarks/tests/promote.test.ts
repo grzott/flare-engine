@@ -428,10 +428,20 @@ describe('per-scenario deviation overrides', () => {
     expect(aggregateRuns(window(PLAIN, perRunUs)).ok).toBe(false);
   });
 
+  // The first window the 2026-11-19 node recapture (#472) refused on churn 5000, runs 1-5 at ea64817.
+  test('folds the refused 2026-11-19 churn 5000 window under its override', () => {
+    const perRunUs = [283.0, 252.9, 319.1, 248.8, 213.2];
+    expect(aggregateRuns(window('ecs.churn 5000 entities, 5%/step', perRunUs)).ok).toBe(true);
+    expect(aggregateRuns(window(PLAIN, perRunUs)).ok).toBe(false);
+  });
+
   // The tolerance must cover the whole recorded span with the median at either end of it.
   test.each([
     ['animation.updateTweens    1000 tweens, 4 easings', 2.35, 3.18],
     ['animation.updateAnimator  1000 animators, looping', 6.19, 7.6],
+    ['ecs.churn 1000 entities, 5%/step', 50.63, 67.59],
+    ['ecs.churn 2000 entities, 5%/step', 82.07, 109.9],
+    ['ecs.churn 5000 entities, 5%/step', 213.25, 323.02],
   ])('%s folds its full recorded span with the median at either end', (scenario, lo, hi) => {
     expect(aggregateRuns(window(scenario, [lo, lo, lo, hi, hi])).ok).toBe(true);
     expect(aggregateRuns(window(scenario, [lo, lo, hi, hi, hi])).ok).toBe(true);

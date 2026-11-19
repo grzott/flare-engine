@@ -14,6 +14,38 @@ export { clipPolygonToUnitInto } from './core/fracture/clip';
 export { generateFracture } from './core/fracture/generate';
 export { packShardsInto } from './core/fracture/pack';
 export type { FractureCache, FractureMesh, ShardPacking } from './core/fracture/types';
+export { initFragmentsInto, packPhysicsInto } from './core/motion/init';
+export {
+  A0,
+  ADRAG,
+  CX,
+  DELAY,
+  DEPTH,
+  DRAG,
+  FADE_START,
+  FRAG_STRIDE,
+  GX,
+  GY,
+  HX,
+  HY,
+  LIFE,
+  MASS,
+  OMEGA,
+  OMEGA0,
+  OP0,
+  OP1,
+  PHYS_LEN,
+  REVERSE_MODE,
+  SC0,
+  SC1,
+  SRC,
+  TOTAL,
+  VX,
+  VY,
+  VZ,
+  ZETA,
+} from './core/motion/layout';
+export { type FragmentPose, fragmentPoseInto } from './core/motion/pose';
 export {
   type ArcTable,
   buildArcTable,

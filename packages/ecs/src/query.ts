@@ -155,16 +155,12 @@ export class QueryBuilder {
   }
 
   with(...components: ComponentDef<unknown>[]): this {
-    for (const c of components) {
-      this.required |= c.bit;
-    }
+    this.required |= (maskResolvers.get(this) ?? orBits)(components);
     return this;
   }
 
   without(...components: ComponentDef<unknown>[]): this {
-    for (const c of components) {
-      this.excluded |= c.bit;
-    }
+    this.excluded |= (maskResolvers.get(this) ?? orBits)(components);
     return this;
   }
 
@@ -174,4 +170,25 @@ export class QueryBuilder {
     this.register(q);
     return q;
   }
+}
+
+type MaskOf = (defs: readonly ComponentDef<unknown>[]) => number;
+
+// Kept off QueryBuilder's public surface: the mask representation is not part of
+// the contract (#173), so the World attaches its resolver here, not through the
+// constructor. A builder without one ORs each `def.bit`.
+const maskResolvers = new WeakMap<QueryBuilder, MaskOf>();
+
+/** World-only (not exported from the package): route a builder's masks through the World's registry. */
+export function bindMaskResolver(builder: QueryBuilder, maskOf: MaskOf): QueryBuilder {
+  maskResolvers.set(builder, maskOf);
+  return builder;
+}
+
+function orBits(defs: readonly ComponentDef<unknown>[]): number {
+  let mask = 0;
+  for (const c of defs) {
+    mask |= c.bit;
+  }
+  return mask;
 }

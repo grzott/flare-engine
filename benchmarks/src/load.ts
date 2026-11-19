@@ -195,7 +195,9 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
    *
    * **`updateAnimator`: still provisional (#363).** Its 7.2-7.6 us state appeared in about 5 of
    * 18 full-suite captures on 2026-11-19, but not in 12 fresh processes (alone or after those five
-   * suites: 6.48-6.70 us), so its cause is not established.
+   * suites: 6.48-6.70 us), so its cause is not established. **Exit condition (#363):** remove this
+   * entry once three consecutive node windows fold the row at 10%, or replace "provisional" with
+   * the evidence that explains its two states.
    *
    * **What is given up:** neither row can catch a regression smaller than its tolerance on its
    * own. `updateSpring` still guards the spring path of the same package at 10%. Nothing strict

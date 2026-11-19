@@ -14,6 +14,14 @@ export { clipPolygonToUnitInto } from './core/fracture/clip';
 export { generateFracture } from './core/fracture/generate';
 export { packShardsInto } from './core/fracture/pack';
 export type { FractureCache, FractureMesh, ShardPacking } from './core/fracture/types';
+export {
+  type CompiledLive,
+  compileLive,
+  LIVE_POSE_STRIDE,
+  type LivePose,
+  livePoseAtInto,
+  sampleLivePosesInto,
+} from './core/live';
 export { initFragmentsInto, packPhysicsInto } from './core/motion/init';
 export {
   A0,

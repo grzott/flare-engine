@@ -1,5 +1,14 @@
 # @flare-engine/scene
 
+## 0.4.15
+
+### Patch Changes
+
+- Updated dependencies [12d1b36]
+  - @flare-engine/render@0.4.15
+  - @flare-engine/ecs@0.4.15
+  - @flare-engine/math@0.4.15
+
 ## 0.4.14
 
 ### Patch Changes

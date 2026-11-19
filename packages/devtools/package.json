@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/devtools",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "description": "Devtools partial — entity inspector, time scrub, pause/step",
   "keywords": ["flare-engine", "devtools", "inspector", "debug", "react-native", "typescript"],
   "license": "Apache-2.0",
@@ -40,8 +40,8 @@
     "@types/react": "^19.3.0"
   },
   "dependencies": {
-    "@flare-engine/core": "^0.4.14",
-    "@flare-engine/ecs": "^0.4.14"
+    "@flare-engine/core": "^0.4.15",
+    "@flare-engine/ecs": "^0.4.15"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

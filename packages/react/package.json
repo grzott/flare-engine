@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/react",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "description": "GameView, hooks, VirtualJoystick, VirtualButton",
   "keywords": [
     "flare-engine",
@@ -51,15 +51,15 @@
     "@types/react": "^19.3.0"
   },
   "dependencies": {
-    "@flare-engine/assets": "^0.4.14",
-    "@flare-engine/audio": "^0.4.14",
-    "@flare-engine/core": "^0.4.14",
-    "@flare-engine/ecs": "^0.4.14",
-    "@flare-engine/events": "^0.4.14",
-    "@flare-engine/input": "^0.4.14",
-    "@flare-engine/math": "^0.4.14",
-    "@flare-engine/render": "^0.4.14",
-    "@flare-engine/scene": "^0.4.14"
+    "@flare-engine/assets": "^0.4.15",
+    "@flare-engine/audio": "^0.4.15",
+    "@flare-engine/core": "^0.4.15",
+    "@flare-engine/ecs": "^0.4.15",
+    "@flare-engine/events": "^0.4.15",
+    "@flare-engine/input": "^0.4.15",
+    "@flare-engine/math": "^0.4.15",
+    "@flare-engine/render": "^0.4.15",
+    "@flare-engine/scene": "^0.4.15"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

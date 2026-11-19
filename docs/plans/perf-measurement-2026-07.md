@@ -996,6 +996,24 @@ Files: packages/physics/src/{collision-world.ts,spatial-index.ts}, tests.
 enter/exit signal behaviour, or the row is closed with the Hermes measurement that refutes
 the premise.
 
+**Hermes reading (2026-11-19, #164).**
+- **Setup:** Pixel 7 (Android 17), Hermes from RN 0.88.1, release build, in the UI FX spike app.
+- **Method:** live heap from `HermesInternal.getInstrumentedStats()`: churn until more GCs run, then take the lowest `js_allocatedBytes` seen right after a GC. Two runs, which agreed.
+
+| measurement | reuse (`clear()` + refill) | fresh `Set` |
+|---|---|---|
+| B27's shape: 2,500 frames × 564 keys, both sets held | no growth (-0.14 MB) | no growth (-1.73 MB) |
+| one `Set` filled with 1,000 keys then cleared, against an empty one | 4,069–4,377 B | 1,147 B |
+| 1,000 steps × 1,000 keys, time | 59–67 ms | 61–71 ms |
+
+The two negative values are the estimate's MB-scale noise. Under JSC, B27 measured about 49 MB for reuse against about 1 MB fresh.
+
+**Conclusion:**
+- Hermes reclaims the backing store on `clear()`: about 3 KB of residue per set, 3.5–3.8× an empty set, against JSC's ~38×.
+- Reuse is no slower.
+- Item 1 refutes item 4's premise for RN, so item 4 is not done. Items 2–3 were already shipped (`b617e49`; see the PF-6 note).
+- The row closes on this measurement.
+
 ---
 
 ## 12. Capture-integrity findings + guards (2026-08-25, PERF-19)

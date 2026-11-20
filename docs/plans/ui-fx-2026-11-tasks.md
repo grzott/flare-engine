@@ -1206,6 +1206,13 @@ test('cancelled press discards the prepared capture', ...)
       a module open. The module wins because it can clear the request when the last effect ends.
   - **Handoff:** the layer's first-frame worklet sets `target.hidden.value = 1` on the same UI frame
     it first draws.
+  - **`FxRun.cancel()` follows JS, not the UI thread.**
+    - It returns `false` only once `onHandoff` has been delivered on JS.
+    - The UI thread hides the target before that callback arrives. A `cancel()` in that gap still
+      returns `true`. It sets `hidden.value` back to 0, unmounts the layer and ends with
+      `onEnd(false)`, and `onHandoff` never fires.
+    - Why: `useFlareElement` reads `cancel() === false` as "the overlay has taken over" (#494). It
+      tolerates the other order, but this keeps the cancel path exact.
 
 - [ ] **Step 1: write the failing tests.** Mock Skia: `Canvas`, `Atlas`, `Image`, `Group`,
   `makeImageFromView` and `Skia.Surface.Make` record props and calls.
@@ -1214,6 +1221,12 @@ test('cancelled press discards the prepared capture', ...)
   - `capture` resolving after the target unmounts: no layer mounts, `onEnd(false)` (Review Focus 1).
   - A 1080×1920 capture at pixel ratio 3 is downscaled so its longest side is ≤ 2048 (Review Focus 5).
   - `makeImageFromView` rejecting calls `onFallback` once and never `onHandoff`.
+  - A `cancel()` after the first-frame worklet hid the target, but before `onHandoff` reached JS:
+    - returns `true`;
+    - sets `hidden.value` back to 0;
+    - unmounts the layer and ends with `onEnd(false)`;
+    - never calls `onHandoff`.
+  - A `cancel()` after `onHandoff` returns `false` and leaves the run playing.
   - The host sets `collapsable={false}` on the capture root.
   - The capture goes through the padded outer host, and `FxImage.padding` equals the padding.
   - **Pool:**
@@ -1272,6 +1285,9 @@ test('cancelled press discards the prepared capture', ...)
     `packages/render-web/src/postfx-surface.ts`.
   - **Handoff:** inside the rAF callback, draw frame 1, call `surface.flush()`, then
     `target.hideSync()`, then `onHandoff`.
+    - All of it runs in one JS callback, so the cancel gap from Task 16 can't occur on the web.
+    - `cancel()` returns `false` exactly once `onHandoff` has been called, the same contract as
+      Task 16.
 
 - [ ] **Step 1: write the failing tests.**
   - The kit-resolution order holds; `loadCanvasKit` is not called when `globalThis.CanvasKit` exists.

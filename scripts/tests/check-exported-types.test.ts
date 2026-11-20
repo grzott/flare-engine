@@ -406,11 +406,10 @@ describe('analyzePackage — allowlist', () => {
     expect(r.stale).toEqual([]);
   });
 
-  it('ships exactly the three known deliberate holes', () => {
+  it('ships exactly the two known deliberate holes', () => {
     expect(ALLOWLIST.map((e) => `${e.pkg} ${e.name}`)).toEqual([
       '@flare-engine/assets SkColorLike',
       '@flare-engine/errors ErrorBoundaryState',
-      '@flare-engine/shapes SkiaApi',
     ]);
     for (const e of ALLOWLIST) expect(e.reason.length).toBeGreaterThan(10);
   });

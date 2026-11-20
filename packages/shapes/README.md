@@ -12,7 +12,9 @@ Mobile and indie game prototypes don't need sprite sheets to start. Compose ship
 bun add @flare-engine/shapes @shopify/react-native-skia
 ```
 
-`@shopify/react-native-skia` is an **optional, type-only peer** — `src/draw.ts` imports it via `import type` only (for the injected `Skia` / `canvas` / `paint` handles), so it never enters the runtime bundle. Skip it entirely on web/CanvasKit; add it only where you actually render on native Skia. On web, the `Skia` handle is `createWebShapeSkia(kit)` from `@flare-engine/render-web` (see [Baking an atlas](#baking-an-atlas)).
+`@shopify/react-native-skia` is an **optional peer** that the package never imports, in its code or in its published types: the `Skia`, `canvas` and `paint` handles are injected and typed structurally (`ShapeDrawSkia`, `ShapeAtlasCanvas`, `ShapeAtlasPaint`), and react-native-skia's `Skia`, `SkCanvas` and `SkPaint` are assignable to them. Skip it entirely on web/CanvasKit; add it only where you actually render on native Skia.
+
+**The web is bake-only.** On web, the `Skia` handle is `createWebShapeSkia(kit)` from `@flare-engine/render-web`, and the only canvas it provides is the offscreen one behind its `Surface.Make`. Bake with `bakeShapeAtlas` and draw the instances every frame with `drawBakedShape` (see [Baking an atlas](#baking-an-atlas)). `drawShape` is not a per-frame path there: the handle's paints and paths are wrappers that only its own surface canvas can draw, not a raw CanvasKit canvas, and the handle frees them only when one of its surfaces is disposed.
 
 ## Usage
 
@@ -20,8 +22,9 @@ bun add @flare-engine/shapes @shopify/react-native-skia
 import type { Skia as SkiaModule, SkCanvas, SkPaint } from '@shopify/react-native-skia';
 import { drawShape, type ShapeSpec } from '@flare-engine/shapes';
 
-// `Skia` from react-native-skia is a value; the handle type is `typeof Skia`
-// (mirrors `type Skia = typeof SkiaModule` inside src/draw.ts).
+// `Skia` from react-native-skia is a value; the handle type is `typeof Skia`.
+// `drawShape` itself is typed structurally (`ShapeDrawSkia`, `ShapeAtlasCanvas`,
+// `ShapeAtlasPaint`), and these native types are assignable to that.
 type Skia = typeof SkiaModule;
 
 function demo(skia: Skia, canvas: SkCanvas, paint: SkPaint): void {

@@ -9,13 +9,7 @@
  */
 
 import { argbToFloat4Into } from '@flare-engine/math';
-import type {
-  SkCanvas,
-  Skia as SkiaModule,
-  SkPaint,
-  SkPath,
-  SkRect,
-} from '@shopify/react-native-skia';
+import type { ShapeAtlasCanvas, ShapeAtlasPaint, ShapeDrawSkia } from './atlas.js';
 import { singleShapeRadius } from './bounds.js';
 import type {
   AnnulusSpec,
@@ -33,8 +27,6 @@ import type {
   TriangleSpec,
 } from './types.js';
 
-type SkiaApi = typeof SkiaModule;
-
 // ---- Glow recipes -----------------------------------------------------------
 
 /** ARGB for safe #6FA66B at α ≈ 0.25 (0x40 / 255). */
@@ -48,8 +40,8 @@ export function hazardGlowArgb(): number {
 }
 
 export function applyFriendlyGlow(
-  canvas: SkCanvas,
-  paint: SkPaint,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   cx: number,
   cy: number,
   r: number,
@@ -59,8 +51,8 @@ export function applyFriendlyGlow(
 }
 
 export function applyHazardGlow(
-  canvas: SkCanvas,
-  paint: SkPaint,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   cx: number,
   cy: number,
   r: number,
@@ -78,8 +70,8 @@ export function applyHazardGlow(
  * negative `width` paints nothing.
  */
 export function applyGlow(
-  canvas: SkCanvas,
-  paint: SkPaint,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   cx: number,
   cy: number,
   r: number,
@@ -100,13 +92,13 @@ export function argbTo(out: Float32Array, argb: number): void {
   argbToFloat4Into(out, argb);
 }
 
-function applyFill(paint: SkPaint, argb: number): void {
+function applyFill(paint: ShapeAtlasPaint, argb: number): void {
   argbToFloat4Into(COLOR, argb);
   paint.setColor(COLOR);
   paint.setStyle(0); // Fill
 }
 
-function applyStroke(paint: SkPaint, argb: number, width: number): void {
+function applyStroke(paint: ShapeAtlasPaint, argb: number, width: number): void {
   argbToFloat4Into(COLOR, argb);
   paint.setColor(COLOR);
   paint.setStyle(1); // Stroke
@@ -115,9 +107,9 @@ function applyStroke(paint: SkPaint, argb: number, width: number): void {
 
 /** Fill, then stroke, the same path; `strokeWidth` defaults to 1. */
 function fillStrokePath(
-  canvas: SkCanvas,
-  paint: SkPaint,
-  path: SkPath,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
+  path: unknown,
   fill: number | undefined,
   stroke: number | undefined,
   strokeWidth: number | undefined,
@@ -139,38 +131,33 @@ interface PathSink {
   moveTo(x: number, y: number): unknown;
   lineTo(x: number, y: number): unknown;
   close(): unknown;
-  addArc(oval: SkRect, startDeg: number, sweepDeg: number): unknown;
+  addArc(oval: unknown, startDeg: number, sweepDeg: number): unknown;
 }
 
 interface PathBuilderSink extends PathSink {
-  detach(): SkPath;
+  detach(): unknown;
 }
 
 // react-native-skia 2.6 added `Skia.PathBuilder` and 2.14 removed the `SkPath`
 // mutators, so the builder is used wherever the handle has one. Read from the
 // handle on every call: native and web handles coexist in one process.
-interface PathBuilderHost {
-  PathBuilder?: { Make(): PathBuilderSink };
-}
-
-function beginPath(Skia: SkiaApi): PathSink {
-  const builders = (Skia as PathBuilderHost).PathBuilder;
-  return builders !== undefined ? builders.Make() : Skia.Path.Make();
+function beginPath(Skia: ShapeDrawSkia): PathSink {
+  const builders = Skia.PathBuilder;
+  // `Path.Make()` is declared `unknown`; without a builder it is the mutable path.
+  return builders !== undefined ? builders.Make() : (Skia.Path.Make() as PathSink);
 }
 
 /** The drawable path for a sink `beginPath` returned from the same handle. */
-function endPath(Skia: SkiaApi, sink: PathSink): SkPath {
-  return (Skia as PathBuilderHost).PathBuilder !== undefined
-    ? (sink as PathBuilderSink).detach()
-    : (sink as SkPath);
+function endPath(Skia: ShapeDrawSkia, sink: PathSink): unknown {
+  return Skia.PathBuilder !== undefined ? (sink as PathBuilderSink).detach() : sink;
 }
 
 // ---- Dispatcher -------------------------------------------------------------
 
 export function drawShape(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: ShapeSpec,
   x: number,
   y: number,
@@ -247,9 +234,9 @@ export function drawShape(
 // ---- Per-primitive renderers -----------------------------------------------
 
 function drawRect(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: RectSpec,
   cx: number,
   cy: number,
@@ -271,9 +258,9 @@ function drawRect(
 }
 
 function drawTriangle(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: TriangleSpec,
   cx: number,
   cy: number,
@@ -293,9 +280,9 @@ function drawTriangle(
 }
 
 function drawNgon(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: NgonSpec,
   cx: number,
   cy: number,
@@ -318,9 +305,9 @@ function drawNgon(
 }
 
 function drawStar(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: StarSpec,
   cx: number,
   cy: number,
@@ -345,9 +332,9 @@ function drawStar(
 }
 
 function drawPolyline(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: PolylineSpec,
   cx: number,
   cy: number,
@@ -369,9 +356,9 @@ function drawPolyline(
 }
 
 function drawGradientRect(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: GradientRectSpec,
   cx: number,
   cy: number,
@@ -404,9 +391,9 @@ function radToDeg(rad: number): number {
 }
 
 function drawArc(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: ArcSpec,
   cx: number,
   cy: number,
@@ -431,9 +418,9 @@ function drawArc(
 }
 
 function drawAnnulus(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: AnnulusSpec,
   cx: number,
   cy: number,
@@ -464,9 +451,9 @@ function drawAnnulus(
 }
 
 function drawTrapezoid(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: TrapezoidSpec,
   cx: number,
   cy: number,
@@ -490,9 +477,9 @@ function drawTrapezoid(
 }
 
 function drawPath(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: PathSpec,
   cx: number,
   cy: number,
@@ -509,9 +496,9 @@ function drawPath(
 }
 
 function drawSquare(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: SquareSpec,
   cx: number,
   cy: number,
@@ -540,9 +527,9 @@ function drawSquare(
  * loop: classic indexed for-loop over the readonly array.
  */
 function drawShip(
-  Skia: SkiaApi,
-  canvas: SkCanvas,
-  paint: SkPaint,
+  Skia: ShapeDrawSkia,
+  canvas: ShapeAtlasCanvas,
+  paint: ShapeAtlasPaint,
   spec: ShipSpec,
   cx: number,
   cy: number,

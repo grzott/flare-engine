@@ -967,7 +967,7 @@ test('cancelled press discards the prepared capture', ...)
   - Web: importing `src/web/reduced-motion.ts` with `globalThis.window` undefined does not throw (C19).
   - A `matchMedia` change event updates subscribers.
   - An exiting element in a Task 10 harness gets `aria-hidden`.
-  - A focused element that starts a snapshot exit moves focus first:
+  - A focused element that starts an exit moves focus first:
     - on the web, to the next focusable sibling or `document.body`
     - on native, `AccessibilityInfo.setAccessibilityFocus` on the parent
     - focus moves before `hidden` is set
@@ -1028,7 +1028,7 @@ test('cancelled press discards the prepared capture', ...)
 
 **Interfaces:**
 - **Consumes:** `useFlareElement` (Task 10), `compileLive` and `livePoseAtInto` (Task 8),
-  `nativeReducedMotionSource` (Task 11).
+  `nativeReducedMotionSource`, `exitA11yProps` and `moveAccessibilityFocus` (Task 11).
 - **Produces:**
   - The native style always emits the full transform list
     `[{ perspective }, { translateX }, { translateY }, { rotateX }, { rotateY }, { rotate }, { scale }]`,
@@ -1039,7 +1039,15 @@ test('cancelled press discards the prepared capture', ...)
     - `dir`, `pressT`, `hidden`
     - The style worklet calls `livePoseAtInto`. With `progress`, `t = progress.value·duration`.
   - `FlareProvider({ children, registry?, reducedMotion?, rtl? })`, which renders the overlay portal
-    layer (absolute fill, `pointerEvents="box-none"`).
+    layer (absolute fill, `pointerEvents="box-none"`). Its default source is one
+    `nativeReducedMotionSource()` made at module scope on first use: the source's OS listener is
+    never removed, so a remount or StrictMode must not add another.
+  - Exit accessibility, on every exit, not only snapshot exits:
+    - While `phase` is `'exiting'`, the host gets `exitA11yProps(true)`.
+    - When an exit is started by the element's own press, a layout effect calls
+      `moveAccessibilityFocus` with the parent view's native tag before `hidden` is set. React
+      Native cannot tell which view holds accessibility focus, so other exits, such as a list
+      removal or a toast timing out, leave it where it is.
   - `createFlareComponent<P>(C: ComponentType<P>): ComponentType<P & FlareElementOptions>`. `C` must
     pass `ref` to a host view; Reanimated's `createAnimatedComponent` is applied once, at module scope.
   - `FlareView`, `FlareText`, `FlareImage`, `FlarePressable`, and
@@ -1065,6 +1073,11 @@ test('cancelled press discards the prepared capture', ...)
   - `pressT` drives scale 0.96 while pressed.
   - While its `phase` is `'exiting'`, a `FlareView` renders `pointerEvents="none"`, and it drops
     that again if it re-presents (C40).
+  - An exiting `FlareView` has `importantForAccessibility="no-hide-descendants"` and
+    `accessibilityElementsHidden`, and drops both if it re-presents.
+  - `FlareButton exitOn="press"` calls `setAccessibilityFocus` once, before `hidden` is set. A list
+    removal never calls it.
+  - Two `FlareProvider` mounts, one under StrictMode, add one `reduceMotionChanged` listener.
   - `createFlareComponent(Custom)` forwards `ref` to the host and passes props through.
   - No `TouchableWithoutFeedback` is imported anywhere: grep `src/` in the test.
   - `FlareProvider` renders an overlay layer that children can portal into.
@@ -1129,9 +1142,13 @@ test('cancelled press discards the prepared capture', ...)
 - Test: `tests/dom/wrappers.test.tsx`
 
 **Interfaces:**
+- **Consumes:** `webReducedMotionSource`, `exitA11yProps` and `moveFocusOff` (Task 11).
 - **Produces:**
   - `FlareProvider` (DOM). The overlay portal is `document.body`, and the reduced-motion source is
     `webReducedMotionSource`.
+  - Exit accessibility, on every exit, not only snapshot exits: while `phase` is `'exiting'`, the
+    host gets `exitA11yProps(true)`, and a layout effect calls `moveFocusOff(el)` on the render that
+    starts the exit, before `hidden` is set.
   - `createFlareComponent<T extends keyof JSX.IntrinsicElements | ComponentType<any-free props with ref>>(tagOrC)`
   - `FlareDiv`, `FlareSpan`, `FlareButton`, `FlareImg`, `FlareLi`
   - `useFlareFx()` (DOM)
@@ -1143,6 +1160,9 @@ test('cancelled press discards the prepared capture', ...)
     keyframe of `translate(48px, 0px) rotate(0deg) scale(1)`.
   - A `FlareButton exitOn="press"` pointerdown at (10, 5) passes press (10, 5) to the runtime.
   - An exiting `FlareDiv` has `pointer-events: none` until it is released or re-presents (C40).
+  - An exiting `FlareDiv` has `aria-hidden="true"` until it is released or re-presents.
+  - A focused `FlareButton` whose exit starts hands focus to the next focusable sibling before
+    `hidden` is set. An exit does not take focus from another element.
   - `createFlareComponent('section')` renders a `<section>` and forwards `ref`.
   - Importing `src/dom.ts` loads no `react-native` module: a `mock.module('react-native')` that
     throws is never triggered.

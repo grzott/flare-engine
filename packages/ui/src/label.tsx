@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { type StyleProp, Text, type TextProps, type TextStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
@@ -15,6 +15,8 @@ export interface LabelProps {
   ellipsizeMode?: TextProps['ellipsizeMode'];
   adjustsFontSizeToFit?: boolean;
   minimumFontScale?: number;
+  /** Passed to the root `Text`. */
+  ref?: Ref<Text>;
 }
 
 export function Label({
@@ -27,6 +29,7 @@ export function Label({
   ellipsizeMode,
   adjustsFontSizeToFit,
   minimumFontScale,
+  ref,
 }: LabelProps): ReactNode {
   const theme = useTheme();
   const sizeMap = {
@@ -53,6 +56,7 @@ export function Label({
 
   return (
     <Text
+      ref={ref}
       numberOfLines={numberOfLines}
       ellipsizeMode={ellipsizeMode}
       adjustsFontSizeToFit={adjustsFontSizeToFit}

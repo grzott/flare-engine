@@ -15,6 +15,7 @@ import { liveEntries, snapshotEntry } from '../core/timeline';
 import type { FxEvent, FxImage, FxRun, FxTarget, LiveDriver, ProgressSource } from './contracts';
 import { usePresence } from './presence';
 import { type FlareContextValue, useFlareContext } from './provider-context';
+import { effectiveReduced } from './reduced-motion';
 
 export interface FlareElementOptions {
   enter?: PresetRef;
@@ -129,8 +130,7 @@ function emit(m: Machine, phase: FxEvent['phase'], cause: FxEvent['cause'], fini
 }
 
 function isReduced(m: Machine, mode: PresetCommon['reduceMotion']): boolean {
-  const resolved = mode ?? m.o.reduceMotion ?? 'system';
-  return resolved === 'always' || (resolved === 'system' && m.ctx.reducedMotion.get());
+  return effectiveReduced(mode ?? m.o.reduceMotion ?? 'system', m.ctx.reducedMotion);
 }
 
 function canSnapshot(m: Machine, preset: SnapshotStep): boolean {

@@ -44,7 +44,15 @@ export function exitA11yProps(exiting: boolean): ExitA11yProps {
 }
 
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+// A match can still refuse focus (`display: none`, `inert`, a disabled fieldset), so only a focus
+// that took counts.
+function focused(to: Element): boolean {
+  if (!(to instanceof HTMLElement)) return false;
+  to.focus();
+  return to.ownerDocument.activeElement === to;
+}
 
 /**
  * Move keyboard focus off `el` when it, or something inside it, is focused: to the next sibling
@@ -56,11 +64,8 @@ export function moveFocusOff(el: Element): void {
   for (let next = el.nextElementSibling; next !== null; next = next.nextElementSibling) {
     // A sibling that is exiting too is about to be hidden itself.
     if (next.getAttribute('aria-hidden') === 'true') continue;
-    const to = next.matches(FOCUSABLE) ? next : next.querySelector(FOCUSABLE);
-    if (to instanceof HTMLElement) {
-      to.focus();
-      return;
-    }
+    if (next.matches(FOCUSABLE) && focused(next)) return;
+    for (const to of next.querySelectorAll(FOCUSABLE)) if (focused(to)) return;
   }
   active.blur();
 }

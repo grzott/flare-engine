@@ -200,6 +200,26 @@ describe('moveFocusOff', () => {
     expect(document.activeElement).toBe(root.querySelector('#c'));
   });
 
+  test('a sibling whose focusable refuses focus is skipped', () => {
+    const root = mount(
+      '<button id="a">a</button><div inert><button>off</button></div><button id="c">c</button>',
+    );
+    const a = focus(root, '#a');
+
+    moveFocusOff(a);
+    expect(document.activeElement).toBe(root.querySelector('#c'));
+  });
+
+  test('a hidden input is not a focus target', () => {
+    const root = mount(
+      '<button id="a">a</button><input type="hidden" name="token" /><button id="c">c</button>',
+    );
+    const a = focus(root, '#a');
+
+    moveFocusOff(a);
+    expect(document.activeElement).toBe(root.querySelector('#c'));
+  });
+
   test('with no focusable sibling after it, focus goes to document.body', () => {
     const root = mount('<button id="before">before</button><button id="a">a</button><p>text</p>');
     const a = focus(root, '#a');

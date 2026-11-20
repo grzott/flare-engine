@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test';
-import { act, type ReactNode, useEffect } from 'react';
+import { act, type ReactNode, Suspense, startTransition, use, useEffect, useState } from 'react';
 import { FlarePresence, usePresence } from '../../src/runtime/presence';
 import { installDom, type Rendered, render } from '../support/dom';
 
@@ -184,4 +184,50 @@ test('children without keys and text render in place', () => {
   );
   expect(r.container.textContent).toBe('hello');
   expect(ids(r)).toEqual(['a']);
+});
+
+// A transition whose render suspends is thrown away by React, and a later urgent render starts
+// again from what was committed. Nothing the thrown-away render saw may survive it.
+const never = new Promise<void>(() => {});
+
+function Suspends({ when }: { when: boolean }): ReactNode {
+  if (when) use(never);
+  return null;
+}
+
+const driver = {
+  setIds: (_ids: readonly string[]): void => {},
+  tick: (): void => {},
+};
+
+function Transitions({ initial, suspendOn }: { initial: readonly string[]; suspendOn: string }) {
+  const [shownIds, setIds] = useState(initial);
+  const [, setTick] = useState(0);
+  driver.setIds = setIds;
+  driver.tick = () => setTick((n) => n + 1);
+  return (
+    <>
+      {list(...shownIds)}
+      <Suspense fallback={null}>
+        <Suspends when={shownIds.includes(suspendOn) !== initial.includes(suspendOn)} />
+      </Suspense>
+    </>
+  );
+}
+
+test('a child a discarded render saw arrive is not mounted', async () => {
+  const r = mount(<Transitions initial={['a']} suspendOn="d" />);
+  await act(async () => startTransition(() => driver.setIds(['a', 'd'])));
+  await act(async () => driver.tick());
+  expect(ids(r)).toEqual(['a']);
+  expect(mounts).toEqual(['a']);
+});
+
+test('a child a discarded render saw leave stays present', async () => {
+  const r = mount(<Transitions initial={['a', 'b']} suspendOn="b" />);
+  await act(async () => startTransition(() => driver.setIds(['a'])));
+  await act(async () => driver.tick());
+  expect(ids(r)).toEqual(['a', 'b']);
+  expect(presentOf(r, 'b')).toBe('true');
+  expect(unmounts).toEqual([]);
 });

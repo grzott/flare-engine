@@ -4,6 +4,7 @@ import {
   isValidElement,
   type ReactNode,
   useContext,
+  useInsertionEffect,
   useReducer,
   useRef,
 } from 'react';
@@ -20,6 +21,8 @@ interface Entry {
   id: string;
   node: ReactNode;
   value: PresenceValue;
+  /** The mounted instance the entry belongs to; `null` for a child that is not retained. */
+  instance: object | null;
 }
 
 const PresenceContext = createContext<PresenceValue | null>(null);
@@ -39,13 +42,23 @@ export function usePresence(): [isPresent: boolean, release: () => void] {
 /**
  * Keeps a removed keyed child mounted, with `usePresence()[0]` false, until its `release` runs.
  * A key that comes back before then keeps its instance; one that comes back after mounts anew.
+ *
+ * A render derives its entries from the last committed ones and changes nothing; they are recorded
+ * when the render commits, in an insertion effect. A render React discards (an interrupted or
+ * suspended transition) therefore leaves no trace: no child it saw arrive or leave outlives it.
  */
 export function FlarePresence({ children }: { children?: ReactNode }): ReactNode {
   const [, rerender] = useReducer((n: number) => n + 1, 0);
-  const entries = useRef<Entry[]>([]);
+  const committed = useRef<readonly Entry[]>([]);
+  const releasedRef = useRef<WeakSet<object> | null>(null);
+  releasedRef.current ??= new WeakSet();
+  const released = releasedRef.current;
+  // Only ever increases, so an id a discarded render took is simply never used.
   const serial = useRef(0);
 
-  const previous = entries.current;
+  const previous = committed.current.filter(
+    (entry) => entry.instance === null || !released.has(entry.instance),
+  );
   const merged: Entry[] = [];
   const present = new Set<string>();
 
@@ -56,6 +69,7 @@ export function FlarePresence({ children }: { children?: ReactNode }): ReactNode
         id: `text:${merged.length}`,
         node,
         value: { isPresent: true, release: noop },
+        instance: null,
       });
       continue;
     }
@@ -63,28 +77,29 @@ export function FlarePresence({ children }: { children?: ReactNode }): ReactNode
     present.add(key);
     const kept = previous.find((entry) => entry.key === key);
     if (kept !== undefined) {
-      kept.node = node;
-      if (!kept.value.isPresent) kept.value = { isPresent: true, release: kept.value.release };
-      merged.push(kept);
+      const value = kept.value.isPresent
+        ? kept.value
+        : { isPresent: true, release: kept.value.release };
+      merged.push({ ...kept, node, value });
       continue;
     }
-    const entry: Entry = {
+    const instance = {};
+    merged.push({
       key,
       id: `${key}:${serial.current++}`,
       node,
       value: {
         isPresent: true,
         release() {
-          // Only a removed child can be released; a present one stays whatever it asks.
-          if (entry.value.isPresent) return;
-          const at = entries.current.indexOf(entry);
-          if (at === -1) return;
-          entries.current.splice(at, 1);
+          // Only a committed removed child can be released; a present one stays whatever it asks.
+          const entry = committed.current.find((e) => e.instance === instance);
+          if (entry === undefined || entry.value.isPresent || released.has(instance)) return;
+          released.add(instance);
           rerender();
         },
       },
-    };
-    merged.push(entry);
+      instance,
+    });
   }
 
   // A removed child stays right after the nearest earlier child that is still rendered.
@@ -92,12 +107,20 @@ export function FlarePresence({ children }: { children?: ReactNode }): ReactNode
   for (const entry of previous) {
     if (entry.key === null) continue;
     if (!present.has(entry.key)) {
-      if (entry.value.isPresent) entry.value = { isPresent: false, release: entry.value.release };
-      merged.splice(after + 1, 0, entry);
+      const value = entry.value.isPresent
+        ? { isPresent: false, release: entry.value.release }
+        : entry.value;
+      merged.splice(after + 1, 0, { ...entry, value });
     }
-    after = merged.indexOf(entry);
+    after = merged.findIndex((e) => e.instance === entry.instance);
   }
-  entries.current = merged;
+
+  // An insertion effect runs before every layout effect of the commit, so a child that asks for
+  // its release from its own layout effect in this commit (a press exit whose key the caller just
+  // dropped) already sees this render's entries.
+  useInsertionEffect(() => {
+    committed.current = merged;
+  });
 
   return merged.map((entry) => (
     <PresenceContext.Provider key={entry.id} value={entry.value}>

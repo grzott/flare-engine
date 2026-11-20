@@ -17,12 +17,19 @@ const DEFAULT_STALL_MS = 15_000;
 const DEFAULT_DEADLINE_MS = 45_000;
 
 let pending: Promise<CanvasKit> | null = null;
+let pendingUrl: string | null = null;
 
 /**
- * Load CanvasKit exactly once. Subsequent calls return the same promise.
+ * Load CanvasKit exactly once. A later call with the same `wasmUrl` returns the same promise.
+ *
+ * A later call with a different `wasmUrl`, while a load is in flight or has succeeded, returns a
+ * promise that rejects with an `Error` naming both URLs: one page holds one CanvasKit, and the
+ * call would otherwise silently get the kit loaded from the first URL. The URLs are compared by
+ * exact string equality, so two spellings of one address count as different. The first load is
+ * unaffected.
  *
  * A rejected load is NOT cached — a transient failure would otherwise strand every later caller
- * on the same rejection for the module's lifetime.
+ * on the same rejection for the module's lifetime. After a failed load any `wasmUrl` is accepted.
  *
  * A rejection that is not an `Error` is wrapped in one that names the likely cause, a wasm that
  * does not match the full glue, with the original value as `cause`.
@@ -38,12 +45,21 @@ export function loadCanvasKit(
   options: LoadCanvasKitOptions = {},
 ): Promise<CanvasKit> {
   if (pending !== null) {
+    if (wasmUrl !== pendingUrl) {
+      return Promise.reject(
+        new Error(
+          `loadCanvasKit: CanvasKit is already loaded or loading from "${pendingUrl}"; cannot load it again from "${wasmUrl}"`,
+        ),
+      );
+    }
     onProgress?.(1);
     return pending;
   }
   const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
+  pendingUrl = wasmUrl;
   pending = withDeadline(init(wasmUrl, onProgress, options), deadlineMs).catch((err: unknown) => {
     pending = null;
+    pendingUrl = null;
     // The full glue rejects with a bare value (seen: `Infinity`) when the wasm it was handed is
     // not the full build.
     if (err instanceof Error) throw err;

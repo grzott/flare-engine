@@ -36,7 +36,7 @@ const kit = await loadCanvasKit(wasmUrl);
 
 If the load rejects with a value that is not an `Error` — the full glue rejected with the number `Infinity` when given the non-full binary — `loadCanvasKit` rejects with an `Error` instead. Its message names the likely cause (the served `canvaskit.wasm` does not match the full glue) and the file to serve, and its `cause` is the original value. A rejection that is already an `Error` is passed through unchanged.
 
-A successful load is cached — later calls return the same instance. A **failed** load is not cached: a later call retries from scratch instead of being stranded on the earlier rejection.
+A successful load is cached — later calls with the same URL return the same instance. A later call with a different URL, while a load is in flight or has succeeded, rejects with an `Error` naming both URLs; the URLs are compared as exact strings. A **failed** load is not cached: a later call, with any URL, retries from scratch instead of being stranded on the earlier rejection.
 
 ### `createWebSurface` — `web-surface.ts`
 

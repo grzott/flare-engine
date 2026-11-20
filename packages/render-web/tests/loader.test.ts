@@ -50,6 +50,63 @@ async function freshLoader(): Promise<typeof import('../src/loader.js')> {
   return import(`../src/loader.js?t=${Math.random()}`);
 }
 
+describe('loadCanvasKit with a second wasmUrl', () => {
+  const FIRST_URL = '/first/canvaskit.wasm';
+  const OTHER_URL = '/other/canvaskit.wasm';
+
+  it('returns the identical promise for the same wasmUrl, in flight and settled', async () => {
+    const { loadCanvasKit } = await freshLoader();
+
+    const p1 = loadCanvasKit(FIRST_URL);
+    expect(loadCanvasKit(FIRST_URL)).toBe(p1);
+    await p1;
+    expect(loadCanvasKit(FIRST_URL)).toBe(p1);
+  });
+
+  it('rejects a different wasmUrl while the first load is in flight, naming both URLs', async () => {
+    const { loadCanvasKit } = await freshLoader();
+    const first = loadCanvasKit(FIRST_URL);
+    const calls: number[] = [];
+
+    const second = loadCanvasKit(OTHER_URL, (f) => calls.push(f));
+    expect(second).not.toBe(first);
+    const err: unknown = await second.then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+
+    expect(err).toBeInstanceOf(Error);
+    const { message } = err as Error;
+    expect(message).toContain(FIRST_URL);
+    expect(message).toContain(OTHER_URL);
+    expect(calls).toEqual([]);
+    expect((await first) as unknown).toBe(FAKE_KIT);
+  });
+
+  it('rejects a different wasmUrl after the first load settled, and keeps serving the first', async () => {
+    const { loadCanvasKit } = await freshLoader();
+    const first = loadCanvasKit(FIRST_URL);
+    await first;
+
+    await expect(loadCanvasKit(OTHER_URL)).rejects.toThrow(
+      `loadCanvasKit: CanvasKit is already loaded or loading from "${FIRST_URL}"; cannot load it again from "${OTHER_URL}"`,
+    );
+    expect(loadCanvasKit(FIRST_URL)).toBe(first);
+  });
+
+  it('accepts a different wasmUrl after a failed load', async () => {
+    const { loadCanvasKit } = await freshLoader();
+    globalThis.fetch = (() => new Promise<Response>(() => {})) as unknown as typeof fetch;
+    await expect(
+      loadCanvasKit(FIRST_URL, undefined, { deadlineMs: 30, stallMs: 500 }),
+    ).rejects.toThrow(/exceeded/);
+
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response(new Uint8Array(8)))) as unknown as typeof fetch;
+    expect((await loadCanvasKit(OTHER_URL)) as unknown).toBe(FAKE_KIT);
+  });
+});
+
 describe('loadCanvasKit resilience', () => {
   it('clears the cached promise after a failure so a later call retries', async () => {
     const { loadCanvasKit } = await freshLoader();

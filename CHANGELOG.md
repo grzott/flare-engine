@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.16](#0416) | 2026-11-20 | 42 | Shape paths work on react-native-skia 2.14, the version the templates pin |
 | [0.4.15](#0415) | 2026-11-19 | 42 | Uncoloured sprite batching back to its 0.4.12 speed |
 | [0.4.14](#0414) | 2026-11-19 | 42 | ECS storage keyed by component definition, deprecations ahead of 0.5.0, a clearer CanvasKit load error |
 | [0.4.13](#0413) | 2026-11-18 | 42 | Per-sprite colour in batched draws, baked shape atlases, allocation-free postfx passes, Windows CMake for templates |
@@ -37,6 +38,23 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.16
+
+One fix, in `shapes`. The other 41 packages change only their version.
+
+- **`shapes`** — `drawShape` and `bakeShapeAtlas` work with react-native-skia 2.14, the version the
+  scaffolder's Expo SDK 58 templates pin. 2.14 removed the `SkPath` mutators that 2.6 deprecated, so
+  seven kinds threw a `TypeError`: `triangle`, `ngon`, `star`, `polyline`, `arc`, `trapezoid`, and
+  an `annulus` with `startAngle` and `endAngle`. `bakeShapeAtlas` threw with them, because it draws
+  through `drawShape`. Those kinds now build on `Skia.PathBuilder` whenever the handle has one. A
+  handle without it (react-native-skia before 2.6, and `createWebShapeSkia` from `render-web`) is
+  driven exactly as before. `ShapeAtlasSkia` declares `Path.Make()` as returning `unknown` and gains
+  an optional `PathBuilder`, so react-native-skia 2.14's `Skia` is assignable to it with no cast.
+  **Type change:** code that reads `Path.Make()` from a value typed `ShapeAtlasSkia` and calls the
+  mutators on the result no longer typechecks; build the path on your own `Skia` type instead.
+  Covered by unit tests against stub handles for each version range and a type-level check; not run
+  on a device.
 
 ## 0.4.15
 

@@ -37,6 +37,20 @@ with react-dom.
 **Spec:** [ui-fx-2026-11.md](ui-fx-2026-11.md). Read §6, §7, §10 and §11 before Task 1. Approved by
 the owner on 2026-11-16, with D7 publishing in 0.5.0 and Apple deferred.
 
+**Gate 0 outcomes (Pixel 7, 2026-11-19).** The results are in spec §11, and the constraints they set
+are C36 and C38–C43 in spec §10. The tasks below already include them:
+
+| Constraint | What changed | Tasks |
+|---|---|---|
+| C36 (G1) | Native captures always use padding, because `elevation` and `boxShadow` draw outside the bounds. | 16 |
+| C38 (G2) | Native sprite effects draw from one fixed 4,096-sprite `<Atlas>` pool instead of a layer mounted per effect. | 16, 19, 20 |
+| C39 (G2) | While an effect plays, the native host asks Android for the panel's fastest display mode. | 16, 31 |
+| C40 (G6) | An exiting element takes no touches. An ancestor unmount ends every exit under it at once, with `finished: true`. | 10, 13, 15 |
+| C41 (G2, G8) | The docs recommend worklets Bundle Mode and note that the first build can fail. | 31 |
+| C42 (spike) | Native paths are built with `Skia.PathBuilder`, and worklet helpers are declared before their callers. | Code rules |
+| C43 (G3) | Native shards draw with `<Vertices>` straight from the capture. There is no native shard bake. | 18 |
+| G5 (Android) | `experimental_backgroundImage` doesn't animate on Android, so native live emerge animates only opacity, translate and brightness. | 21 |
+
 ## Global Constraints
 
 **Package**
@@ -93,10 +107,19 @@ the owner on 2026-11-16, with D7 publishing in 0.5.0 and Apple deferred.
     helpers inside them.
   - Never run the worklets Babel plugin in the build. `dist` must keep the directive (see the Task 1
     test).
+  - Declare worklet helpers before the worklets that call them. The Babel plugin turns `function`
+    declarations marked `'worklet'` into assignments, so they are not hoisted (C42).
+- **Native paths** are built with `Skia.PathBuilder`, because RN-Skia 2.14's `SkPath` is immutable
+  (C42).
 - **Zero allocation per frame:**
   - Per-trigger work allocates only from pools sized by the caps.
   - Per-frame consumers get `…Into(out)` forms.
-  - Accepted exception: the style object a Reanimated `useAnimatedStyle` worklet returns.
+  - Accepted exceptions:
+    - the style object a Reanimated `useAnimatedStyle` worklet returns
+    - the array of plain `{ x, y }` vertex positions that a `useDerivedValue` returns for a native
+      `<Vertices>` shard layer (C43). RN-Skia 2.14's `Skia.Point` is getter-only, so
+      `usePointBuffer` can't reuse points. The cap is 300 shards, and G3 saw no GC hitch at that
+      size.
 - **House rules:**
   - no `any`, `as any` or `@ts-ignore`
   - named exports and `import type`
@@ -130,9 +153,10 @@ the owner on 2026-11-16, with D7 publishing in 0.5.0 and Apple deferred.
 These are the five inputs most likely to break a real app. Each one is pinned by a test in the
 owning task.
 
-1. **The element is removed while its capture is still in flight** (a parent unmounts it during the
-   ~1-3 frame capture). Expected: no throw, nothing drawn, no element stuck hidden, and
-   `onExited(false)`. Pinned in Tasks 10, 16 and 17.
+1. **The element is removed while its capture is still in flight** (an ancestor unmounts it during
+   the ~1-3 frame capture). Expected: no throw, nothing drawn, no element stuck hidden, and
+   `onExited(true)` at once (C40). The run itself still ends with `onEnd(false)`. Pinned in
+   Tasks 10, 16 and 17.
 2. **The same key returns during a snapshot exit** (an "undo delete" in a list). Expected:
    - The new instance plays its own `enter`.
    - The old overlay finishes untouched.
@@ -180,8 +204,9 @@ packages/ui-fx/
       provider.tsx create-flare-component.tsx wrappers.tsx flare-list.tsx
       toaster.tsx tooltip.tsx modal.tsx use-flare-fx.ts
     fx/
-      native/{host.tsx,capture.ts,bake.ts,layers/{shatter,grains,dust,emerge}.tsx}
+      native/{host.tsx,capture.ts,pool.ts,display-mode.ts,layers/{shatter,grains,dust,emerge}.tsx}
       web/{host.tsx,bake.ts,effects/{shatter,grains,dust,emerge}.ts}
+  android/ + expo-module.config.json                            Task 16: the C39 display-mode module
   tests/ (mirrors src/) + tests/support/{dom.ts,mock-rn.ts,mock-reanimated.ts,mock-skia.ts,mock-kit.ts}
   e2e/ (Task 30: Vite fixtures for RNW and DOM, Playwright under node)
 ```
@@ -865,6 +890,18 @@ type FxEvent = { phase: 'start' | 'end'; cause: 'enter' | 'exit' | 'play'; finis
   - The run on release reuses that capture.
   - A release before the capture lands waits for it, with the live view still shown.
   - A press-out without a release (a cancelled press) discards the capture.
+- **An exiting element takes no touches (C40).**
+  - `phase` is `'exiting'` from the render that starts the exit until `release()` runs.
+  - For that time the wrappers (Tasks 13 and 15) turn off hit-testing, so a touch goes to whatever
+    reflows into the element's place.
+- **An ancestor unmount ends the exit at once (C40).**
+  - This applies while the tree still owns the exit: a live exit, or a snapshot exit before
+    handoff.
+  - The driver is disposed and the run is cancelled. Nothing draws, and `onExited(true)` fires.
+  - A snapshot exit past handoff has already released its element. Its overlay plays on, and
+    `onExited(true)` fires at its end as usual.
+- **`onExited` fires exactly once per exit.** An `onEnd` that arrives after the unmount has already
+  reported is ignored.
 
 - [ ] **Step 1: write the failing tests.** They render with `tests/support/dom.ts`, against a
   `FakeDriver` and `FakeFxRuntime` that record calls and expose `end(finished)` and `handoff()`.
@@ -877,7 +914,10 @@ test('snapshot exit releases at handoff, onExited at end', ...)    // handoff() 
 test('holdSpace keeps placeholder until end', ...)
 test('cancel before handoff restores element', ...)                 // re-add before handoff → run.cancel()===true; child stays; onExited(false)
 test('same key returns after handoff enters fresh', ...)            // Review Focus 2: new instance driver.play(1); old run not cancelled; 1 child in DOM
-test('capture resolves after unmount: nothing drawn, no throw', ...)// Review Focus 1: parent unmounts mid-capture; fake run never mounts; hidden.value stays 0; onExited(false)
+test('capture resolves after unmount: nothing drawn, no throw', ...)// Review Focus 1: ancestor unmounts mid-capture → onExited(true) at once; the capture lands later: run never mounts; hidden.value stays 0; onExited not called again
+test('ancestor unmount ends a live exit at once', ...)             // C40: unmount mid-exit → driver.dispose; onExited(true) once; a later fake end(true) is ignored
+test('ancestor unmount after handoff leaves the overlay running', ...) // C40: run not cancelled; onExited(true) only at fake end(true)
+test('phase is exiting from the removing render until release', ...) // C40: the wrappers read it to turn off hit-testing
 test('zero-size or null measure exits immediately', ...)            // Review Focus 3: no fx.run; onExited(true)
 test('no fx runtime → live fallback + one warning', ...)
 test('reduced motion system=true → fallback; never → snapshot', ...)
@@ -1023,6 +1063,8 @@ test('cancelled press discards the prepared capture', ...)
     runtime equals `locationX/Y`.
   - `hidden.value = 1` yields `opacity: 0` in the same style evaluation.
   - `pressT` drives scale 0.96 while pressed.
+  - While its `phase` is `'exiting'`, a `FlareView` renders `pointerEvents="none"`, and it drops
+    that again if it re-presents (C40).
   - `createFlareComponent(Custom)` forwards `ref` to the host and passes props through.
   - No `TouchableWithoutFeedback` is imported anywhere: grep `src/` in the test.
   - `FlareProvider` renders an overlay layer that children can portal into.
@@ -1100,6 +1142,7 @@ test('cancelled press discards the prepared capture', ...)
   - A `FlareDiv enter={slide({ from: 'right' })}` mount calls `animate` with a first transform
     keyframe of `translate(48px, 0px) rotate(0deg) scale(1)`.
   - A `FlareButton exitOn="press"` pointerdown at (10, 5) passes press (10, 5) to the runtime.
+  - An exiting `FlareDiv` has `pointer-events: none` until it is released or re-presents (C40).
   - `createFlareComponent('section')` renders a `<section>` and forwards `ref`.
   - Importing `src/dom.ts` loads no `react-native` module: a `mock.module('react-native')` that
     throws is never triggered.
@@ -1117,22 +1160,51 @@ test('cancelled press discards the prepared capture', ...)
 - **Labels:** `type:feature`, `scope:engine`, `size:l`, `priority:p2`. **Depends on:** 13, 6, 0.2, 0.3.
 
 **Files:**
-- Create: `src/fx/native/{host.tsx,capture.ts}`; modify `src/fx.native.ts`
-- Test: `tests/fx/native/host.test.tsx`, `tests/support/mock-skia.ts`
+- Create: `src/fx/native/{host.tsx,capture.ts,pool.ts,display-mode.ts}`; modify `src/fx.native.ts`
+- Create the C39 module: `android/` (Kotlin) and `expo-module.config.json`. Add both to `files`.
+- Test: `tests/fx/native/{host,pool,display-mode}.test.tsx`, `tests/support/mock-skia.ts`
 
 **Interfaces:**
 - **Produces:**
   - `FlareFxHost({ children, android?: { surfaceType?: 'TextureView' | 'SurfaceView'; zOrderOnTop?: boolean } })`.
-    It renders children plus one absolute-fill `<Canvas pointerEvents="none">`, and provides
-    `FxRuntime` and `hostFactory` through `FlareContext`.
+    - It renders children plus one absolute-fill `<Canvas pointerEvents="none">`, and provides
+      `FxRuntime` and `hostFactory` through `FlareContext`.
+    - It mounts the sprite pool's `<Atlas>` once, for its whole life.
   - `captureView(ref: RefObject<View>, maxPx: number, padding: number): Promise<FxImage | null>`.
     - It wraps `makeImageFromView`, downscales captures over `maxPx` (Review Focus 5), and returns
       `null` on a rejection.
-    - Padding (C36): if G1 shows the elevation shadow is missing, capture an outer padded host
-      instead.
+    - **Padding is mandatory on native (C36).** G1 showed that `elevation` and `boxShadow` draw
+      outside the element's bounds, so every capture goes through an outer host padded by `padding`
+      px.
     - `FxImage` gains `padding` (px), and layers offset the drawing by it.
-  - `interface EffectLayerProps { run: NativeRunState; onFirstFrame(): void; onDone(finished: boolean): void }`.
-    Layers are keyed children of the canvas, mounted per run (or pooled per G2).
+  - **Sprite pool, `createSpritePool(capacity: number)` with capacity 4,096 (C38).**
+    - Why a pool: on the Pixel 7 in G2, a keyed `<Atlas>` mounted per effect dropped a frame every
+      few mounts, and the pool dropped none.
+    - Idle sprites sit at zero scale.
+    - `claim(count): number` returns the first index of a free contiguous range, or -1.
+      `free(start, count)` hands the range back when the run ends.
+    - A run starts by writing its start time to its range's shared value. The RSXform worklet
+      computes poses from that time, so starting an effect mounts nothing.
+    - If a claim fails because concurrent runs need more than 4,096 sprites, the run plays its live
+      fallback through `onFallback` and warns once in development.
+    - Grains (Task 19) and dust's front grains (Task 20) draw from the pool. Shards (Task 18) mount
+      a `<Vertices>` layer per run instead (C43).
+  - `interface EffectLayerProps { run: NativeRunState; onFirstFrame(): void; onDone(finished: boolean): void }`
+    for the layers that do mount per run: shards, and dust's shader rect.
+  - **Display mode, `acquireFastDisplayMode(): () => void` (C39).**
+    - Why: on Android 15 and later the OS picks the render rate. An overlay that moves only Skia
+      content ran at 30–60 Hz on the Pixel 7.
+    - It is reference-counted. The first acquire sets the window's `preferredDisplayModeId` to the
+      panel's fastest mode, and the last release clears it. The host acquires at a run's first
+      frame and releases at its end.
+    - The native side is an Expo module (Kotlin, about 5 lines of window code), and
+      `expo-modules-core` becomes an optional peer. A config plugin on its own could only request
+      the mode for the app's whole life.
+    - Without the module (no Expo modules, or Expo Go) it is a no-op and warns once in development
+      that effects may run at 30–60 Hz on Android 15+. On iOS and the web it is a no-op.
+    - **The owner confirms this before the task is marked ready.** C39 leaves the choice between a
+      config plugin and a module open. This plan takes the module because it can clear the request
+      when the last effect ends.
   - **Handoff:** the layer's first-frame worklet sets `target.hidden.value = 1` on the same UI frame
     it first draws.
 
@@ -1144,11 +1216,26 @@ test('cancelled press discards the prepared capture', ...)
   - A 1080×1920 capture at pixel ratio 3 is downscaled so its longest side is ≤ 2048 (Review Focus 5).
   - `makeImageFromView` rejecting calls `onFallback` once and never `onHandoff`.
   - The host sets `collapsable={false}` on the capture root.
+  - The capture goes through the padded outer host, and `FxImage.padding` equals the padding.
+  - **Pool:**
+    - The mock sees one `<Atlas>` mount for the host's life, with 4,096 sprites, across several
+      runs.
+    - Two concurrent runs claim disjoint ranges.
+    - Sprites outside every claimed range have scale 0.
+    - A range is free again after its run's `onEnd`.
+    - A claim beyond the free sprites calls `onFallback` once and warns once.
+  - **Display mode:**
+    - For two overlapping runs, the module's set is called once and its clear once, after both end.
+    - A missing module neither throws nor warns more than once.
   - The root entry `src/index.ts` still imports no Skia (re-run the entries test).
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement.
 - [ ] **Step 4:** run the tests. **Expected:** PASS.
-- [ ] **Step 5:** commit `feat(ui-fx): add native FX host and view capture`.
+- [ ] **Step 5:** do a manual Android run in the spike app with `min_refresh_rate` unpinned.
+  - **Expected:** the render rate reads 90 Hz while an effect plays, as in G2, and the request is
+    cleared after it.
+  - Ask the owner not to touch the phone during the run; a touch raises the rate on its own.
+- [ ] **Step 6:** commit `feat(ui-fx): add native FX host and view capture`.
 
 ### Task 17: web FX host, capture seam and CanvasKit runtime (UIFX-17)
 
@@ -1214,15 +1301,55 @@ test('cancelled press discards the prepared capture', ...)
 - **Labels:** `type:feature`, `scope:engine`, `size:l`, `priority:p2`. **Depends on:** 16, 17, 5.
 
 **Files:**
-- Create: `src/fx/native/{bake.ts,layers/shatter.tsx}`, `src/fx/web/{bake.ts,effects/shatter.ts}`
+- Create: `src/fx/native/layers/shatter.tsx`, `src/fx/web/{bake.ts,effects/shatter.ts}`. There is
+  no native `bake.ts` (C43).
 - Test: `tests/fx/native/shatter.test.tsx`, `tests/web/shatter.test.ts`
 
-**Interfaces:**
-- **Produces:**
-  - `bakeShardAtlas(image: FxImage, mesh: FractureMesh, packing: ShardPacking): unknown`. It is a
-    raster surface per G3, with each piece drawn clipped by its polygon path into its packed rect.
-  - `shardXformInto(pose: FragmentPose, rectW: number, rectH: number, cx: number, cy: number, scale: number, out: Float32Array, o: number): void`
-    (worklet). It rotates about the shard centroid `(cx, cy)` inside its source rect:
+**The mesh decides how a run draws (C43), whatever the preset is called:**
+- **Shards.** A mesh with `rectangular === false` comes from `triangles`, `jittered-grid` or
+  `radial-glass` (shatter's default). On native it draws with `<Vertices>`, in this task.
+- **Grains.** A mesh with `rectangular === true` comes from `grid` or `cells` (disintegrate's
+  default). On native it draws from the Task 16 pool, in Task 19.
+- **Why the mesh and not the preset name:** C43 lists `disintegrate` among the shard effects, but it
+  also keeps grains on the pool. `disintegrate`'s default `cells` pattern is rectangular, so it uses
+  the pool, and `disintegrate({ pattern: 'triangles' })` uses `<Vertices>`.
+
+**Native shards: `<Vertices>` straight from the capture, with no bake (C43):**
+- **Built once per run.** Each piece of n vertices is a triangle fan of n − 2 triangles.
+  - `textures` hold each vertex at its capture pixel position, padding included.
+  - `indices` hold the fans.
+- **Drawing.** `<Vertices mode="triangles" textures indices colors blendMode="multiply">` with an
+  `<ImageShader image={capture}>` child.
+- **Measured in G3:** 300 shards (1,200 vertices) took 1.24–1.36 ms per UI frame at 90 Hz, with no
+  slow frames.
+- **Positions:** a `useDerivedValue` returns a fresh array of plain `{ x, y }` points each frame
+  (the Code rules exception). Each point comes from
+  `shardVertexInto(pose: FragmentPose, cx: number, cy: number, vx: number, vy: number, out: { x: number; y: number }): void`
+  (worklet). It rotates and scales the vertex `(vx, vy)` about the piece centroid `(cx, cy)`, then
+  moves the centroid to the pose:
+
+```
+dx = vx − cx;  dy = vy − cy;  c = pose.scale·cos(rot);  s = pose.scale·sin(rot)
+out.x = pose.x + c·dx − s·dy
+out.y = pose.y + s·dx + c·dy
+```
+
+- **Per-shard fade:**
+  - Per-vertex `colors` from a reused pool of `Float32Array(4)`, which RN-Skia passes through
+    unconverted. G3 measured 0.41 ms p50 per frame at 300 shards.
+  - **`blendMode="multiply"` is required.** With an `<ImageShader>` child, `modulate`, `dstIn`,
+    `srcIn` and the default `dstOver` draw nothing.
+  - A whole-layer fade is `opacity` on `<Vertices>`.
+- **Not measured in G3:** what it costs to mount a `<Vertices>` layer per run. Step 5 checks for a
+  dropped frame at the start of a run.
+
+**Web shards keep the atlas route.** C43 covers native only, and the web path has not been
+measured:
+- `bakeShardAtlas(image: FxImage, mesh: FractureMesh, packing: ShardPacking): unknown` (web only) is
+  a CanvasKit surface, with each piece drawn clipped by its polygon path into its packed rect.
+- `shardXformInto(pose: FragmentPose, rectW: number, rectH: number, cx: number, cy: number, scale: number, out: Float32Array, o: number): void`
+  rotates about the shard centroid `(cx, cy)` inside its source rect. Task 19 reuses it on both
+  backends for grains.
 
 ```
 scos = pose.scale·scale·cos(rot);  ssin = pose.scale·scale·sin(rot)
@@ -1231,23 +1358,40 @@ out[o+2] = pose.x − (scos·cx − ssin·cy)
 out[o+3] = pose.y − (ssin·cx + scos·cy)
 ```
 
-- Per-piece alpha goes into `colors` as `(alpha·255)<<24 | 0xffffff`, with **`BlendMode.Modulate`
-  passed explicitly** on both backends (native defaults to `dstOver`, CanvasKit to `SrcOver`; see
-  spec §2.4).
+- **Web per-piece alpha** goes into `colors` as `(alpha·255)<<24 | 0xffffff`, with
+  **`BlendMode.Modulate` passed explicitly**, because CanvasKit defaults to `SrcOver` (spec §2.4).
 - `reverse` runs assemble-in from an off-window capture (spec §6.4).
 
 - [ ] **Step 1: write the failing tests.**
-  - The transform and sprite counts equal the shard count.
-  - With `rotation = π/2`, the transformed centroid equals `(pose.x, pose.y)` within 1e-6.
-  - An alpha of 0.5 gives a colour of `0x7fffffff`.
-  - The blend mode passed is Modulate on both mocks.
-  - Draw buffers on frames 2 and 3 are the same instances.
-  - Enter with `reverse 'home'` ends with every piece at home, and the live element is revealed on the
-    final frame (`hidden.value === 0`).
+  - **Routing:**
+    - `shatter()` mounts a `<Vertices>` layer on native.
+    - `shatter({ pattern: 'grid' })` claims pool sprites instead.
+    - `disintegrate({ pattern: 'triangles' })` mounts a `<Vertices>` layer.
+  - **Native:**
+    - The vertex count is the sum of the piece vertex counts, and the index count is
+      Σ 3·(n − 2).
+    - At t = 0 every vertex is at its home position in the element's measured rect, and its texture
+      coordinate is that same point in the capture (pixel ratio and padding applied), so the card is
+      seamless at rest.
+    - With `rotation = π/2`, the centroid maps to `(pose.x, pose.y)` and a vertex at `(cx + 1, cy)`
+      maps to `(pose.x, pose.y + pose.scale)`, within 1e-6.
+    - The blend mode passed is `multiply`.
+    - The colour arrays on frames 2 and 3 are the same `Float32Array` instances.
+    - `Skia.Surface.Make` is never called.
+  - **Web:**
+    - The transform and sprite counts equal the shard count.
+    - With `rotation = π/2`, the transformed centroid equals `(pose.x, pose.y)` within 1e-6.
+    - An alpha of 0.5 gives a colour of `0x7fffffff`.
+    - The blend mode passed is Modulate.
+    - Draw buffers on frames 2 and 3 are the same instances.
+  - **Both backends:** enter with `reverse 'home'` ends with every piece at home, and the live
+    element is revealed on the final frame (`hidden.value === 0`).
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement.
 - [ ] **Step 4:** run the tests. **Expected:** PASS.
-- [ ] **Step 5:** do a manual run on Android and Chrome. Attach captures to the PR.
+- [ ] **Step 5:** do a manual run on Android and Chrome. Attach captures to the PR. On Android,
+  record frame times around the start of a 300-shard run, to show whether the per-run `<Vertices>`
+  mount drops a frame.
 - [ ] **Step 6:** commit `feat(ui-fx): add shatter on native and web`.
 
 ### Task 19: disintegrate grains, native and web (UIFX-19)
@@ -1258,14 +1402,25 @@ out[o+3] = pose.y − (ssin·cx + scos·cy)
 - Create: `src/fx/native/layers/grains.tsx`, `src/fx/web/effects/grains.ts`
 - Test: `tests/fx/native/grains.test.tsx`, `tests/web/grains.test.ts`
 
+- This layer draws every rectangular mesh (Task 18's routing), not only `disintegrate`.
 - Cells come straight from the capture: each `src` rect is a grid cell, so no bake is needed.
 - The motion and transforms reuse Task 18's `shardXformInto`, with the centroid at the cell centre.
+- **Native draws from the Task 16 sprite pool (C38) and mounts no layer.**
+  - A run claims one sprite per cell and writes its start time to its range's shared value.
+  - It frees the range at its end.
+  - Colours go through `<Atlas colors>` with `BlendMode.Modulate` passed explicitly, because native
+    defaults to `dstOver`.
+  - G2 measured 3,000 coloured sprites holding 60 Hz on the Pixel 7. At 90 Hz, Bundle Mode holds
+    3,000 coloured sprites and Legacy Eval holds 3,000 uncoloured ones (spec §11).
+- **Web** draws through Task 17's `createAtlasPool`, as before.
 
 - [ ] **Step 1: write the failing tests.**
   - A 360×64 element at 3x with `cell 4` and `maxFragments 3000` gives at most 3,000 sprites, with the
     cell raised (Review Focus 5).
   - A `sweep` release at angle 90 gives the leftmost cells the smallest delays.
   - Alpha fades through `colors` with Modulate.
+  - On native, a 3,000-cell run claims 3,000 pool sprites, mounts no `<Atlas>` of its own, and
+    leaves the range free after `onEnd`.
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement.
 - [ ] **Step 4:** run the tests. **Expected:** PASS.
@@ -1315,7 +1470,8 @@ half4 main(float2 xy) {
   - The enlarged rect equals the element rect expanded by `spread`.
   - The native mock never sees a `RuntimeShader` node.
   - The web mock compiles `DUST_SKSL` without errors (the mock records `Make` returning non-null).
-  - `grainsAtFront > 0` mounts a grains layer with a `sweep` release.
+  - `grainsAtFront > 0` adds grains with a `sweep` release. On native they are claimed from the
+    Task 16 pool, not mounted as a layer (C38).
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement.
 - [ ] **Step 4:** run the tests. **Expected:** PASS. Do a manual compile on device and in Chrome.
@@ -1332,22 +1488,32 @@ half4 main(float2 xy) {
 
 - The wrappers render a **shadow overlay child** (absolute fill, `pointerEvents` none) only when the
   current preset is `emerge`.
-  - **Native:** `experimental_backgroundImage: linear-gradient(<angle>deg, color 0%, color E%, transparent E+S%)`,
-    animated through `useAnimatedStyle` if G5 passed. If G5 failed, an overlay opacity ramp plus
-    `brightness` only.
+  - **Native: no gradient (G5 failed on Android).**
+    - Through `useAnimatedStyle`, `experimental_backgroundImage` keeps its first value, while
+      `filter: brightness()` animates at 90 Hz, even with the JS thread blocked.
+    - So the native live emerge is an overlay opacity ramp, a translate along the angle, and a
+      `brightness` darkening.
+    - The angled sweep belongs to the shader variant (Task 22).
   - **Web:** register `@property --flare-edge { syntax: '<percentage>'; inherits: false; initial-value: 0% }`
     once (with a `CSS.registerProperty` guard). The overlay background uses `var(--flare-edge)`, and
     WAAPI animates `--flare-edge`.
+    - The web half of G5 has not been measured yet. Step 5 checks it.
 
 - [ ] **Step 1: write the failing tests.**
   - An overlay appears only for `emerge`.
-  - The gradient angle string equals the preset angle.
-  - `shadowEdge` moves from 0 to 100% across the run.
+  - Native never sets `experimental_backgroundImage`.
+  - On native, the overlay opacity follows the pose's `shadowOpacity` and the element's
+    `brightness` follows the pose's `brightness`. Both reach rest (0 and 1) at the end.
+  - On the web, the gradient angle string equals the preset angle.
+  - On the web, `--flare-edge` follows the pose's `shadowEdge`, from 0 to 100% across the run.
   - Without `CSS.registerProperty`, the web falls back to animating overlay opacity.
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement.
 - [ ] **Step 4:** run the tests. **Expected:** PASS.
-- [ ] **Step 5:** commit `feat(ui-fx): add live emerge-from-shadow`.
+- [ ] **Step 5:** do a manual run on Android and in Chrome. In Chrome, check that `--flare-edge`
+  animates the gradient and isn't stuck at its first value (the web half of G5). Record both in the
+  PR.
+- [ ] **Step 6:** commit `feat(ui-fx): add live emerge-from-shadow`.
 
 ### Task 22: shader emerge, native and web (UIFX-22)
 
@@ -1663,7 +1829,8 @@ interface LivePresetDefinition<P> {
   - `generateFracture` at 40 and 300 shards
   - `fragmentPoseInto` × 300 / 2k / 5k per frame
   - `sampleLivePosesInto` for a 0.35 s slide
-  - The Android capture-latency row joins the TestingBot lane (Pixel 8, Galaxy A55).
+  - The Android capture-latency row joins the device bench on owned hardware (#162). TestingBot
+    was dropped on 2026-11-19, so rows beyond the Pixel 7 wait for the Q1 2027 devices (#454).
 - [ ] Add a web lane row: a 2k-grain disintegrate in Chromium, pinned per the web-lane rules.
 - [ ] Promote the baselines. Replace spec §6.9's planning budgets with the measured numbers.
 - [ ] Commit `perf(ui-fx): add fracture, pose and capture bench rows`.
@@ -1690,6 +1857,14 @@ interface LivePresetDefinition<P> {
   - RN: `FlareProvider` + `FlareFxHost`
   - react-native-web: the same, plus `setWebRasterizer(await modernScreenshotRasterizer())`
   - React DOM: `./dom` imports
+- [ ] Add the native setup notes to the RN quickstart:
+  - **Bundle Mode is recommended (C41).** ui-fx's worklets ran 1.3–1.8× faster on the Pixel 7, and
+    G8 passed in both modes.
+  - **The first build can fail (C41).** A release build fails once after worklet code changes
+    ("Failed to get the SHA-1 for …/.worklets/<id>.js"); a second build passes.
+  - **The display-mode module (C39).** On Android 15+, effects may run at 30–60 Hz without it. Say
+    what it needs (Expo modules) and how to tell whether it's linked, from the one-time development
+    warning.
 - [ ] Add recipes in `docs/recipes/`:
   - shatter on delete-row
   - disintegrate a toast
@@ -1744,4 +1919,4 @@ Done when a ref reaches the host `View` and the existing `ui` tests pass unchang
   24 on an iPhone through an EAS or Mac build. The README's iOS rows flip from "unverified".
 - **A2:** an optional `react-native-screens` `FullWindowOverlay` for `FlareFxHost` on iOS, above
   native-stack modals.
-- **A3:** iOS rows in the TestingBot bench lane.
+- **A3:** iOS rows in the Apple bench lanes on owned hardware (#452).

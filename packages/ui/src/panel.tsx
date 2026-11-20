@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { useTheme } from './theme.js';
 
@@ -11,6 +11,8 @@ export interface PanelProps {
   /** Corner radius token. Defaults to 'md'. */
   radius?: 'none' | 'sm' | 'md' | 'lg' | 'pill';
   style?: StyleProp<ViewStyle>;
+  /** Passed to the root `View`. */
+  ref?: Ref<View>;
 }
 
 export function Panel({
@@ -19,6 +21,7 @@ export function Panel({
   padding = 'md',
   radius = 'md',
   style,
+  ref,
 }: PanelProps): ReactNode {
   const theme = useTheme();
   const bg = variant === 'elevated' ? theme.colors.surfaceAlt : theme.colors.surface;
@@ -33,5 +36,9 @@ export function Panel({
     borderColor: theme.colors.border,
   };
 
-  return <View style={[base, style]}>{children}</View>;
+  return (
+    <View ref={ref} style={[base, style]}>
+      {children}
+    </View>
+  );
 }

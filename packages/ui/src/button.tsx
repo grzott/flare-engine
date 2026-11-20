@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { type ReactNode, type Ref, useEffect, useId, useRef } from 'react';
 import { Pressable, type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { useFocusedId, useFocusManager } from './focus-context.js';
 import { useTheme } from './theme.js';
@@ -21,6 +21,8 @@ export interface ButtonProps {
    */
   focusOnPress?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Passed to the root `Pressable`, whose instance is a `View`. */
+  ref?: Ref<View>;
 }
 
 export function Button({
@@ -32,6 +34,7 @@ export function Button({
   focusId,
   focusOnPress = true,
   style,
+  ref,
 }: ButtonProps): ReactNode {
   const theme = useTheme();
   const manager = useFocusManager();
@@ -104,6 +107,7 @@ export function Button({
 
   return (
     <Pressable
+      ref={ref}
       onPress={() => {
         if (disabled) return;
         if (focusOnPress) manager?.focus(id);

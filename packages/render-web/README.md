@@ -59,9 +59,48 @@ web.flush();    // present
 web.dispose();
 ```
 
+### `createWebFrameRenderer` — `web-frame-renderer.ts`
+
+Returns a `FrameRenderer` backed by CanvasKit — the web counterpart of `createSkiaFrameRenderer` from `@flare-engine/react`. It is `createFrameRenderer(createWebSkiaModule(kit))` from `@flare-engine/render` in one call. It records a frame and stops there: replaying the `endFrame()` picture onto a surface, flushing, and deleting the picture are yours. Pair it with `createWebSurface` or `createPostFxSurface`.
+
+```ts
+import type { CanvasKit } from 'canvaskit-wasm';
+import type { SkImageLike } from '@flare-engine/assets';
+import type { SpriteDrawCommand } from '@flare-engine/render';
+import { createWebFrameRenderer, createWebSurface } from '@flare-engine/render-web';
+
+declare const kit: CanvasKit;
+declare const width: number;
+declare const height: number;
+declare const atlasImage: SkImageLike;
+declare const commands: SpriteDrawCommand[];
+declare const canvasEl: HTMLCanvasElement;
+
+// Once:
+const renderer = createWebFrameRenderer(kit);
+const web = createWebSurface(kit, canvasEl);
+if (!web) throw new Error('WebGL unavailable');
+const canvas = web.ckCanvas;
+
+// Each frame:
+renderer.beginFrame(width, height, 0, 1);
+renderer.drawAtlas(atlasImage, commands);
+const picture = renderer.endFrame();
+// endFrame() returns the backend-neutral PictureLike; cast to CanvasKit's Picture to present.
+// The caller owns the picture: delete it once drawn, or each frame leaks a WASM-side object.
+if (picture) {
+  const ckPicture = picture as Parameters<typeof canvas.drawPicture>[0];
+  canvas.drawPicture(ckPicture);
+  ckPicture.delete();
+}
+web.flush();
+```
+
 ### `createWebSkiaModule` — `web-skia-module.ts`
 
 Adapts a `CanvasKit` instance into the `FrameRendererModule` interface consumed by `@flare-engine/render`'s `createFrameRenderer`. Wraps `PictureRecorder`, `Paint`, `RSXform`, `XYWHRect`, and shader helpers.
+
+`createWebFrameRenderer(kit)` does the composition below for you. Compose by hand, as here, only when you need the `FrameRendererModule` itself — to wrap it before it reaches `createFrameRenderer`, say.
 
 ```ts
 import type { CanvasKit } from 'canvaskit-wasm';

@@ -179,35 +179,44 @@ describe('Camera2D', () => {
       expect(cam.effectiveY).toBe(cam.y);
     });
 
-    it('travels the same path per second at 60, 120 and 144 Hz', () => {
-      const pathX: number[] = [];
-      const pathY: number[] = [];
-      for (const hz of [60, 120, 144]) {
-        const cam = new Camera2D();
-        cam.shake(10, 1);
-        let x = cam.effectiveX;
-        let y = cam.effectiveY;
-        let sumX = 0;
-        let sumY = 0;
-        for (let i = 0; i < hz; i++) {
-          cam.update(1 / hz);
-          sumX += Math.abs(cam.effectiveX - x);
-          sumY += Math.abs(cam.effectiveY - y);
-          x = cam.effectiveX;
-          y = cam.effectiveY;
+    // Mean path of one `shake(10, 1)`, over 8 shakes at 4 frame offsets each, with
+    // frame times jittered by up to 3%: a display rarely lands its frames on the
+    // jitter samples, and the aligned case is the most flattering one.
+    function meanShakePath(hz: number): { x: number; y: number } {
+      const cam = new Camera2D();
+      let lcg = 12345;
+      let sumX = 0;
+      let sumY = 0;
+      let runs = 0;
+      for (let shake = 0; shake < 8; shake++) {
+        for (const offset of [0, 0.25, 0.5, 0.75]) {
+          cam.shake(10, 1);
+          if (offset > 0) cam.update(offset / hz);
+          let x = cam.effectiveX;
+          let y = cam.effectiveY;
+          for (let i = 0; i < hz * 1.1; i++) {
+            lcg = (lcg * 16807) % 2147483647;
+            cam.update((1 + 0.03 * ((lcg / 2147483647) * 2 - 1)) / hz);
+            sumX += Math.abs(cam.effectiveX - x);
+            sumY += Math.abs(cam.effectiveY - y);
+            x = cam.effectiveX;
+            y = cam.effectiveY;
+          }
+          runs++;
         }
-        pathX.push(sumX);
-        pathY.push(sumY);
       }
-      for (const path of [pathX, pathY]) {
+      return { x: sumX / runs, y: sumY / runs };
+    }
+
+    it('travels about the same path at 60, 90, 120, 144 and 165 Hz', () => {
+      const paths = [60, 90, 120, 144, 165].map(meanShakePath);
+      for (const path of [paths.map((p) => p.x), paths.map((p) => p.y)]) {
         const min = Math.min(...path);
         const max = Math.max(...path);
-        // A shake that never moves would agree with itself trivially.
         expect(min).toBeGreaterThan(50);
-        // 60 and 120 Hz land on every jitter sample and agree closely. 144 Hz
-        // steps fall between samples and cut the corners of the interpolated
-        // path, which costs it roughly 10-15%.
-        expect((max - min) / min).toBeLessThan(0.15);
+        // Measured 8% on X and 7% on Y, 60 Hz lowest. One fresh value per update
+        // (the old shake) spreads 2.7x here; 60 linear samples per second, 30%.
+        expect((max - min) / min).toBeLessThan(0.12);
       }
     });
   });

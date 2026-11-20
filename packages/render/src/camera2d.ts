@@ -25,11 +25,12 @@ function pseudoRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-/** Jitter in [-1, 1], linear between the samples at integer `t`. */
+/** Jitter in [-1, 1], eased (smoothstep) between the samples at integer `t`. */
 function shakeJitter(key: number, t: number): number {
   const i = Math.floor(t);
+  const f = t - i;
   const a = pseudoRandom(key + i);
-  return (a + (pseudoRandom(key + i + 1) - a) * (t - i)) * 2 - 1;
+  return (a + (pseudoRandom(key + i + 1) - a) * f * f * (3 - 2 * f)) * 2 - 1;
 }
 
 // ─── Simplex-like 2D noise for shakePerlin ───────────────────────────────────
@@ -267,9 +268,11 @@ export class Camera2D {
       } else {
         const progress = this._shake.elapsed / this._shake.duration;
         const decay = 1 - progress;
-        // 60 samples per second of shake time, whatever the update rate.
+        // 30 eased samples per second of shake time, whatever the update rate: at
+        // 60 Hz and above every sample gap spans two or more frames, so few peaks
+        // fall between frames.
         const key = this._shakeSeed * 1.6180339887;
-        const t = this._shake.elapsed * 60;
+        const t = this._shake.elapsed * 30;
         this._shake.offsetX = shakeJitter(key, t) * this._shake.intensity * decay;
         this._shake.offsetY = shakeJitter(key + 0.5, t) * this._shake.intensity * decay;
       }

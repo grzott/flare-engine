@@ -138,10 +138,31 @@ mock.module('react/jsx-dev-runtime', () => jsxMock);
 let _mockPixelRatio = 1;
 let _mockPlatformOS = 'ios';
 
+// #500: live `Dimensions` 'change' listeners. A listener is dropped from the
+// list by its subscription's remove(), so the list length is the leak check.
+const _dimensionsListeners: Array<() => void> = [];
+const _dimensionsEvents: string[] = [];
+
+function fireDimensionsChange(): void {
+  for (const listener of _dimensionsListeners.slice()) listener();
+}
+
 mock.module('react-native', () => ({
   View: 'View',
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
   PixelRatio: { get: () => _mockPixelRatio },
+  Dimensions: {
+    addEventListener: (type: string, listener: () => void) => {
+      _dimensionsEvents.push(type);
+      _dimensionsListeners.push(listener);
+      return {
+        remove: () => {
+          const i = _dimensionsListeners.indexOf(listener);
+          if (i !== -1) _dimensionsListeners.splice(i, 1);
+        },
+      };
+    },
+  },
   // GameView branches both scene-capture and postfx-pass paths on Platform.OS.
   // Tests that exercise the web path set _mockPlatformOS = 'web' before mount.
   Platform: {
@@ -618,6 +639,8 @@ beforeEach(() => {
   _capturedContainerProps = null;
   _mockPixelRatio = 1;
   _mockPlatformOS = 'ios';
+  _dimensionsListeners.length = 0;
+  _dimensionsEvents.length = 0;
   _viewportOverride = null;
   _passesOverride = null;
   _sharedValues = [];
@@ -856,6 +879,83 @@ describe('GameView — high-DPI scene texture', () => {
     // scale(2, 2) baked into the recording
     expect(_beginFramePdArgs[0]).toBe(2);
     unmountAll();
+  });
+
+  it('beginFrame picks up a pixel ratio that changes after mount (#500)', () => {
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    tick();
+    // The bridge bakes no scale into the recording at a ratio of 1.
+    expect(_beginFramePdArgs).toHaveLength(0);
+    expect(_beginRecordingBounds[0]).toEqual({ width: 400, height: 600 });
+
+    _mockPixelRatio = 2;
+    fireDimensionsChange();
+    _beginRecordingBounds.length = 0;
+    _beginFramePdArgs.length = 0;
+    tick();
+
+    expect(_beginFramePdArgs[0]).toBe(2);
+    expect(_beginRecordingBounds[0]).toEqual({ width: 800, height: 1200 });
+    unmountAll();
+  });
+
+  it('native: capture dims follow a pixel ratio that changes after mount (#500)', () => {
+    _mockPlatformOS = 'ios';
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    tick();
+    expect(_runOnUILastArgs[4]).toBe(400);
+    expect(_runOnUILastArgs[5]).toBe(600);
+
+    _mockPixelRatio = 3;
+    fireDimensionsChange();
+    tick();
+
+    expect(_runOnUILastArgs[4]).toBe(1200);
+    expect(_runOnUILastArgs[5]).toBe(1800);
+    unmountAll();
+  });
+
+  it('web: capture surface and compiled postfx size follow a pixel ratio that changes after mount (#500)', () => {
+    _mockPlatformOS = 'web';
+    _hasPostFxBinding = true;
+    mount();
+    const camera = _cameraInstance!;
+    camera.viewportWidth = 400;
+    camera.viewportHeight = 600;
+    tick();
+    expect(_makeOffscreenCalls).toEqual([{ width: 400, height: 600 }]);
+    expect(_compilePassesCalls).toEqual([[null, null, 400, 600]]);
+
+    _mockPixelRatio = 2;
+    fireDimensionsChange();
+    tick();
+    // An unchanged ratio keeps the reallocated surface.
+    tick();
+
+    expect(_makeOffscreenCalls).toEqual([
+      { width: 400, height: 600 },
+      { width: 800, height: 1200 },
+    ]);
+    expect(_surfaceDisposeCount).toBe(DISPOSE === undefined ? 0 : 1);
+    expect(_compilePassesCalls[1]).toEqual([null, null, 800, 1200]);
+    expect(_compilePassesCalls[2]).toEqual([null, null, 800, 1200]);
+    unmountAll();
+  });
+
+  it('subscribes to the Dimensions change event and removes the subscription on unmount (#500)', () => {
+    mount();
+    expect(_dimensionsEvents).toEqual(['change']);
+    expect(_dimensionsListeners).toHaveLength(1);
+
+    unmountAll();
+
+    expect(_dimensionsListeners).toHaveLength(0);
   });
 
   it('rendered tree contains no Picture node (Picture import removed)', () => {

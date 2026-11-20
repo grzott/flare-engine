@@ -29,7 +29,7 @@ import {
 import type React from 'react';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent, LayoutChangeEvent, ViewStyle } from 'react-native';
-import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
+import { Dimensions, PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { scheduleOnUI } from 'react-native-worklets';
@@ -181,7 +181,11 @@ export function GameView({
   const canvasRef = useCanvasRef();
   const [passes, setPasses] = useState<readonly PostFxPassDescriptor[]>(EMPTY_PASSES);
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
-  const pd = PixelRatio.get();
+  // The frame loop lives in a mount-only effect, so it reads the ratio through
+  // this ref: refreshed on every render and on a Dimensions change, which is
+  // how a scale change (another monitor, browser zoom) arrives without a layout.
+  const pdRef = useRef(1);
+  pdRef.current = PixelRatio.get();
   const isWeb = Platform.OS === 'web';
   // Both platforms write captured frames into a Reanimated shared value so
   // rn-skia's <Image> reads the latest frame on the UI thread without a React
@@ -238,9 +242,14 @@ export function GameView({
       ctx.input.update();
     });
 
+    const pdSubscription = Dimensions.addEventListener('change', () => {
+      pdRef.current = PixelRatio.get();
+    });
+
     const unsubscribePre = ctx.loop.onPreRender.add(() => {
       const w = ctx.camera.viewportWidth;
       const h = ctx.camera.viewportHeight;
+      const pd = pdRef.current;
       bridge.beginFrame(w, h, ctx.loop.clock.elapsed, pd);
       ctx.renderer.begin(clearColor);
       ctx.renderer.applyCamera(
@@ -322,6 +331,7 @@ export function GameView({
     return () => {
       unsubscribeLate();
       unsubscribePre();
+      pdSubscription.remove();
       renderSystem.dispose();
       captureRef.current?.dispose();
       captureRef.current = null;

@@ -59,7 +59,14 @@ export interface PostFxSurface {
  *
  * Returns `null` when WebGL is unavailable.
  *
- * @param kit    Loaded CanvasKit instance.
+ * Sizing is the caller's: the surface takes its size from `canvas.width` and
+ * `canvas.height` (the backing store, in device pixels) at creation, and
+ * nothing here watches `devicePixelRatio` or the element's size. Set the
+ * backing store to the element's CSS size times `devicePixelRatio` first, then
+ * watch the element with a `ResizeObserver` and the ratio with a `matchMedia`
+ * resolution query, and call `resize()` with the new device-pixel size.
+ *
+ * @param kit   Loaded CanvasKit instance.
  * @param canvas Target `<canvas>` element.
  * @param chain  Effect chain to apply at composite time.
  *               Pass a new empty `EffectChain()` for a passthrough surface.

@@ -1,4 +1,4 @@
-import { useReducer, useRef } from 'react';
+import { useLayoutEffect, useReducer, useRef } from 'react';
 
 /** One row of a presence list: an item of the data, or a removed one kept until its exit ends. */
 export interface PresenceEntry<T> {
@@ -17,17 +17,16 @@ export interface PresenceEntry<T> {
   release(): void;
 }
 
-interface Slot<T> {
-  entry: PresenceEntry<T>;
-  /** The render pass that last found this slot's key in the data. */
-  seen: number;
+/** A row and the instance it belongs to: a key that comes back after its release is a new one. */
+interface Row<T> {
+  readonly instance: object;
+  readonly entry: PresenceEntry<T>;
 }
 
-interface ListState<T> {
-  slots: Slot<T>[];
-  byKey: Map<string, Slot<T>>;
+interface Committed<T> {
+  rows: readonly Row<T>[];
   entries: readonly PresenceEntry<T>[];
-  pass: number;
+  mounted: boolean;
 }
 
 /**
@@ -37,6 +36,10 @@ interface ListState<T> {
  * that comes back after is a new entry.
  *
  * An entry object, and the array, keep their identity for as long as nothing in them changes.
+ *
+ * A render derives its rows from the last committed ones and changes nothing; they are recorded
+ * when the render commits. A render React discards (an interrupted or suspended transition)
+ * therefore leaves no trace: no row it saw arrive or leave outlives it.
  */
 export function useFlarePresenceList<T>(
   data: readonly T[],
@@ -44,85 +47,97 @@ export function useFlarePresenceList<T>(
   o?: { animateInitial?: boolean },
 ): readonly PresenceEntry<T>[] {
   const [, rerender] = useReducer((n: number) => n + 1, 0);
-  const ref = useRef<ListState<T> | null>(null);
+  const committed = useRef<Committed<T>>({ rows: [], entries: [], mounted: false });
+  const released = useRef<WeakSet<object> | null>(null);
+  released.current ??= new WeakSet();
+  const gone = released.current;
 
-  const initial = ref.current === null;
-  ref.current ??= { slots: [], byKey: new Map(), entries: [], pass: 0 };
-  const state = ref.current;
-  const pass = ++state.pass;
-  const arriving = initial && o?.animateInitial !== true ? 'idle' : 'enter';
+  const last = committed.current;
+  const arriving = !last.mounted && o?.animateInitial !== true ? 'idle' : 'enter';
+  const previous = last.rows.filter((row) => !gone.has(row.instance));
+  const byKey = new Map<string, Row<T>>();
+  for (const row of previous) byKey.set(row.entry.key, row);
 
-  const previous = state.slots;
-  const merged: Slot<T>[] = [];
-
-  for (const item of data) {
-    const key = keyOf(item);
-    const kept = state.byKey.get(key);
-    if (kept !== undefined) {
-      // A key the data holds twice keeps one entry, at its first position.
-      if (kept.seen === pass) continue;
-      kept.seen = pass;
-      const { entry } = kept;
-      if (entry.phase === 'exit') {
-        kept.entry = { key, item, phase: 'enter', release: entry.release };
-      } else if (entry.item !== item) {
-        kept.entry = { key, item, phase: entry.phase, release: entry.release };
-      }
-      merged.push(kept);
-      continue;
-    }
-    const slot: Slot<T> = {
-      seen: pass,
+  const newRow = (key: string, item: T): Row<T> => {
+    const instance = {};
+    return {
+      instance,
       entry: {
         key,
         item,
         phase: arriving,
         release() {
-          // Bound to the slot, not the key: a late release from an instance that is already
-          // gone must not drop a newer row under the same key.
-          const current = ref.current;
-          if (current === null || slot.entry.phase !== 'exit') return;
-          const at = current.slots.indexOf(slot);
-          if (at === -1) return;
-          current.slots.splice(at, 1);
-          current.byKey.delete(key);
+          // Bound to the instance, not the key: a late release from an instance that is already
+          // gone must not drop a newer row under the same key. Only a committed exit is released.
+          const row = committed.current.rows.find((r) => r.instance === instance);
+          if (row === undefined || row.entry.phase !== 'exit' || gone.has(instance)) return;
+          gone.add(instance);
           rerender();
         },
       },
     };
-    state.byKey.set(key, slot);
-    merged.push(slot);
+  };
+
+  const merged: Row<T>[] = [];
+  const present = new Set<Row<T>>();
+  const keys = new Set<string>();
+  for (const item of data) {
+    const key = keyOf(item);
+    // A key the data holds twice keeps one entry, at its first position.
+    if (keys.has(key)) continue;
+    keys.add(key);
+    const kept = byKey.get(key);
+    if (kept === undefined) {
+      merged.push(newRow(key, item));
+      continue;
+    }
+    present.add(kept);
+    const { entry } = kept;
+    if (entry.phase === 'exit') {
+      merged.push({ instance: kept.instance, entry: { ...entry, item, phase: 'enter' } });
+    } else if (entry.item !== item) {
+      merged.push({ instance: kept.instance, entry: { ...entry, item } });
+    } else {
+      merged.push(kept);
+    }
   }
 
-  let slots = merged;
-  if (previous.some((slot) => slot.seen !== pass)) {
+  let rows = merged;
+  if (previous.some((row) => !present.has(row))) {
     // A removed row stays right after the nearest earlier row that the data still holds, or at
     // the head when there is none.
-    const head: Slot<T>[] = [];
-    const followers = new Map<Slot<T>, Slot<T>[]>();
+    const head: Row<T>[] = [];
+    const followers = new Map<object, Row<T>[]>();
     let trail = head;
-    for (const slot of previous) {
-      if (slot.seen === pass) {
+    for (const row of previous) {
+      if (present.has(row)) {
         trail = [];
-        followers.set(slot, trail);
+        followers.set(row.instance, trail);
         continue;
       }
-      const { entry } = slot;
-      if (entry.phase !== 'exit') slot.entry = { ...entry, phase: 'exit' };
-      trail.push(slot);
+      const { entry } = row;
+      trail.push(
+        entry.phase === 'exit'
+          ? row
+          : { instance: row.instance, entry: { ...entry, phase: 'exit' } },
+      );
     }
-    slots = head;
-    for (const slot of merged) {
-      slots.push(slot);
-      const after = followers.get(slot);
-      if (after !== undefined) for (const exiting of after) slots.push(exiting);
+    rows = head;
+    for (const row of merged) {
+      rows.push(row);
+      const after = followers.get(row.instance);
+      if (after !== undefined) for (const exiting of after) rows.push(exiting);
     }
   }
-  state.slots = slots;
 
-  const last = state.entries;
-  let same = last.length === slots.length;
-  for (let i = 0; same && i < slots.length; i++) same = last[i] === slots[i]!.entry;
-  if (!same) state.entries = slots.map((slot) => slot.entry);
-  return state.entries;
+  let entries = last.entries;
+  let same = entries.length === rows.length;
+  for (let i = 0; same && i < rows.length; i++) same = entries[i] === rows[i]!.entry;
+  if (!same) entries = rows.map((row) => row.entry);
+
+  useLayoutEffect(() => {
+    committed.current = { rows, entries, mounted: true };
+  });
+
+  return entries;
 }

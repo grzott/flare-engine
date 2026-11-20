@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test';
-import { act, type ReactNode, StrictMode } from 'react';
+import { act, type ReactNode, StrictMode, Suspense, startTransition, use, useState } from 'react';
 import { type PresenceEntry, useFlarePresenceList } from '../../src/runtime/list-presence';
 import { installDom, type Rendered, render } from '../support/dom';
 
@@ -222,4 +222,52 @@ test('entries and the array keep their identity while nothing changes', () => {
   expect(latest()).not.toBe(before);
   expect(latest()[0]).toBe(before[0]);
   expect(latest()[1]).toBe(before[1]);
+});
+
+// A transition whose render suspends is thrown away by React, and a later urgent render starts
+// again from what was committed. Nothing the thrown-away render saw may survive it.
+const never = new Promise<void>(() => {});
+
+function Suspends({ when }: { when: boolean }) {
+  if (when) use(never);
+  return null;
+}
+
+function Transitions({ initial, suspendOn }: { initial: readonly string[]; suspendOn: string }) {
+  const [ids, setIds] = useState(initial);
+  const [, setTick] = useState(0);
+  driver.setIds = setIds;
+  driver.tick = () => setTick((n) => n + 1);
+  const suspend = ids.includes(suspendOn) !== initial.includes(suspendOn);
+  return (
+    <>
+      <Harness data={rows(...ids)} />
+      <Suspense fallback={null}>
+        <Suspends when={suspend} />
+      </Suspense>
+    </>
+  );
+}
+
+const driver = {
+  setIds: (_ids: readonly string[]): void => {},
+  tick: (): void => {},
+};
+
+test('a row a discarded render saw arrive is not left behind', async () => {
+  const r = mount(<Transitions initial={['a']} suspendOn="d" />);
+  await act(async () => startTransition(() => driver.setIds(['a', 'd'])));
+  expect(shown(r)).toEqual(['a:idle']);
+
+  await act(async () => driver.tick());
+  expect(shown(r)).toEqual(['a:idle']);
+});
+
+test('a row a discarded render saw leave stays idle', async () => {
+  const r = mount(<Transitions initial={['a', 'b']} suspendOn="b" />);
+  await act(async () => startTransition(() => driver.setIds(['a'])));
+  expect(shown(r)).toEqual(['a:idle', 'b:idle']);
+
+  await act(async () => driver.tick());
+  expect(shown(r)).toEqual(['a:idle', 'b:idle']);
 });

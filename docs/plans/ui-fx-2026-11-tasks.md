@@ -1945,8 +1945,9 @@ interface LivePresetDefinition<P> {
   step.
 
 **Optional, UIFX-S4: `ui` accepts `ref` on Button, Panel and Label.** `type:feature`, `scope:engine`,
-`size:s`, `priority:p3`. It is an additive `patch`, so `createFlareComponent` can wrap `ui` directly.
-Done when a ref reaches the host `View` and the existing `ui` tests pass unchanged.
+`size:s`, `priority:p3`. It is an additive `patch`. On its own it does not let `createFlareComponent`
+wrap `ui`: the components still drop the host props they do not declare, so `ui` stays inside a
+`FlareView` (C20). Done when a ref reaches the host `View` and the existing `ui` tests pass unchanged.
 
 ## Deferred: Apple (no milestone, D8)
 

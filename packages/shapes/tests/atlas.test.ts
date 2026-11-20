@@ -470,3 +470,107 @@ describe('drawBakedShape', () => {
     expect(batch.allocCount).toBe(warm);
   });
 });
+
+describe('bakeShapeAtlas — builder-only handle (react-native-skia 2.14+)', () => {
+  interface StubBuilder {
+    moveTo(x: number, y: number): StubBuilder;
+    lineTo(x: number, y: number): StubBuilder;
+    close(): StubBuilder;
+    addArc(oval: unknown, startDeg: number, sweepDeg: number): StubBuilder;
+    detach(): object;
+  }
+
+  test('bakes path kinds on PathBuilder and draws the detached paths', () => {
+    const base = createStubSkia();
+    const built: string[] = [];
+    const detached: object[] = [];
+    const drawn: unknown[] = [];
+    let pathMakes = 0;
+
+    const builder: StubBuilder = {
+      moveTo() {
+        built.push('moveTo');
+        return builder;
+      },
+      lineTo() {
+        built.push('lineTo');
+        return builder;
+      },
+      close() {
+        built.push('close');
+        return builder;
+      },
+      addArc() {
+        built.push('addArc');
+        return builder;
+      },
+      detach() {
+        built.push('detach');
+        const path = { detachedPath: detached.length };
+        detached.push(path);
+        return path;
+      },
+    };
+
+    const Skia: ShapeAtlasSkia = {
+      ...base.Skia,
+      Surface: {
+        Make(w, h) {
+          const surface = base.Skia.Surface.Make(w, h);
+          if (surface === null) return null;
+          const canvas = {
+            ...surface.getCanvas(),
+            drawPath(path: unknown) {
+              drawn.push(path);
+            },
+          };
+          return { ...surface, getCanvas: () => canvas };
+        },
+      },
+      // No mutators: what `Path.Make()` returns from react-native-skia 2.14.
+      Path: {
+        Make() {
+          pathMakes++;
+          return {};
+        },
+        MakeFromSVGString: () => ({}),
+      },
+      PathBuilder: { Make: () => builder },
+    };
+
+    const triangle: ShapeSpec = { kind: 'triangle', size: 10, fill: 0xffff0000 };
+    const sector: ShapeSpec = {
+      kind: 'arc',
+      r: 12,
+      startAngle: 0,
+      endAngle: Math.PI,
+      sector: true,
+      fill: 0xff00ff00,
+      stroke: 0xff0000ff,
+    };
+
+    let atlas: ReturnType<typeof bakeShapeAtlas> | undefined;
+    expect(() => {
+      atlas = bakeShapeAtlas(Skia, [triangle, sector], 2);
+    }).not.toThrow();
+    expect(atlas?.cells).toHaveLength(2);
+
+    expect(built).toEqual([
+      'moveTo',
+      'lineTo',
+      'lineTo',
+      'close',
+      'detach',
+      'moveTo',
+      'addArc',
+      'close',
+      'detach',
+    ]);
+    // The triangle fills once; the sector fills, then strokes, the same path.
+    expect(drawn).toHaveLength(3);
+    expect(drawn[0]).toBe(detached[0]);
+    expect(drawn[1]).toBe(detached[1]);
+    expect(drawn[2]).toBe(detached[1]);
+    expect(pathMakes).toBe(0);
+  });
+});

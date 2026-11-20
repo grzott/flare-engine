@@ -796,3 +796,214 @@ describe('drawShape — fill/stroke epilogue', () => {
     ]);
   });
 });
+
+describe('drawShape — path building across react-native-skia versions', () => {
+  const FILL = 0xff336699;
+  const STROKE = 0x80ffcc00;
+
+  /**
+   * A handle with `Skia.PathBuilder`. With `mutablePath` false it is shaped like
+   * react-native-skia 2.14+, whose `Path.Make()` result has no mutators; with it
+   * true, like 2.6 to 2.13, which still had them.
+   */
+  function createBuilderSkia(mutablePath: boolean): {
+    Skia: unknown;
+    canvas: unknown;
+    paint: unknown;
+    builderCalls: Call[];
+    mutableCalls: Call[];
+    detached: object[];
+    drawn: unknown[];
+    pathMakes: () => number;
+  } {
+    const builderCalls: Call[] = [];
+    const mutableCalls: Call[] = [];
+    const detached: object[] = [];
+    const drawn: unknown[] = [];
+    let pathMakeCount = 0;
+
+    const builder = {
+      moveTo: (x: number, y: number) => {
+        builderCalls.push({ method: 'path.moveTo', args: [x, y] });
+        return builder;
+      },
+      lineTo: (x: number, y: number) => {
+        builderCalls.push({ method: 'path.lineTo', args: [x, y] });
+        return builder;
+      },
+      close: () => {
+        builderCalls.push({ method: 'path.close', args: [] });
+        return builder;
+      },
+      addArc: (oval: unknown, startDeg: number, sweepDeg: number) => {
+        builderCalls.push({ method: 'path.addArc', args: [oval, startDeg, sweepDeg] });
+        return builder;
+      },
+      detach: () => {
+        builderCalls.push({ method: 'builder.detach', args: [] });
+        const path = { detachedPath: detached.length };
+        detached.push(path);
+        return path;
+      },
+    };
+
+    const mutable = {
+      moveTo: (x: number, y: number) => mutableCalls.push({ method: 'path.moveTo', args: [x, y] }),
+      lineTo: (x: number, y: number) => mutableCalls.push({ method: 'path.lineTo', args: [x, y] }),
+      close: () => mutableCalls.push({ method: 'path.close', args: [] }),
+      addArc: (oval: unknown, startDeg: number, sweepDeg: number) =>
+        mutableCalls.push({ method: 'path.addArc', args: [oval, startDeg, sweepDeg] }),
+    };
+
+    const canvas = {
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      rotate: () => {},
+      drawCircle: () => {},
+      drawRect: () => {},
+      drawPath: (path: unknown, _paint: unknown) => {
+        drawn.push(path);
+      },
+    };
+    const paint = { setColor: () => {}, setStyle: () => {}, setStrokeWidth: () => {} };
+
+    const Skia = {
+      PathBuilder: { Make: () => builder },
+      Path: {
+        Make: () => {
+          pathMakeCount++;
+          return mutablePath ? mutable : {};
+        },
+        MakeFromSVGString: () => ({}),
+      },
+      XYWHRect: (x: number, y: number, w: number, h: number) => ({ x, y, w, h }),
+    };
+
+    return {
+      Skia,
+      canvas,
+      paint,
+      builderCalls,
+      mutableCalls,
+      detached,
+      drawn,
+      pathMakes: () => pathMakeCount,
+    };
+  }
+
+  /** The path-building calls the mutable-path stub records for `spec`. */
+  function mutablePathCalls(spec: ShapeSpec): Call[] {
+    return record(spec).calls.filter((c) => c.method.startsWith('path.'));
+  }
+
+  const cases: readonly { name: string; spec: ShapeSpec; draws: number }[] = [
+    {
+      name: 'triangle',
+      spec: { kind: 'triangle', size: 10, fill: FILL, stroke: STROKE },
+      draws: 2,
+    },
+    { name: 'ngon', spec: { kind: 'ngon', n: 6, r: 10, fill: FILL, stroke: STROKE }, draws: 2 },
+    {
+      name: 'star',
+      spec: { kind: 'star', points: 5, rOuter: 10, rInner: 4, fill: FILL, stroke: STROKE },
+      draws: 2,
+    },
+    {
+      name: 'polyline (no close)',
+      spec: { kind: 'polyline', points: [0, 0, 5, 5, 10, 0, 5, -5], stroke: STROKE },
+      draws: 1,
+    },
+    {
+      name: 'open arc (no moveTo)',
+      spec: { kind: 'arc', r: 20, startAngle: 0.25, endAngle: Math.PI / 2, stroke: STROKE },
+      draws: 1,
+    },
+    {
+      name: 'sector arc',
+      spec: {
+        kind: 'arc',
+        r: 20,
+        startAngle: 0,
+        endAngle: Math.PI,
+        sector: true,
+        fill: FILL,
+        stroke: STROKE,
+      },
+      draws: 2,
+    },
+    {
+      name: 'annulus arc',
+      spec: {
+        kind: 'annulus',
+        rOuter: 30,
+        rInner: 20,
+        startAngle: 0,
+        endAngle: Math.PI,
+        fill: FILL,
+      },
+      draws: 1,
+    },
+    {
+      name: 'trapezoid',
+      spec: { kind: 'trapezoid', topW: 10, botW: 30, h: 20, fill: FILL, stroke: STROKE },
+      draws: 2,
+    },
+  ];
+
+  test.each(cases)(
+    '$name builds on PathBuilder when Path.Make() has no mutators (2.14+)',
+    ({ spec, draws }) => {
+      const stub = createBuilderSkia(false);
+      expect(() =>
+        drawShape(stub.Skia as never, stub.canvas as never, stub.paint as never, spec, 0, 0, 0),
+      ).not.toThrow();
+
+      const expected = mutablePathCalls(spec);
+      expect(expected.length).toBeGreaterThan(0);
+      expect(stub.builderCalls).toEqual([...expected, { method: 'builder.detach', args: [] }]);
+
+      expect(stub.detached).toHaveLength(1);
+      expect(stub.drawn).toHaveLength(draws);
+      for (const path of stub.drawn) expect(path).toBe(stub.detached[0]);
+      expect(stub.pathMakes()).toBe(0);
+    },
+  );
+
+  test.each(cases)(
+    '$name prefers PathBuilder over a mutable Path.Make() (2.6 to 2.13)',
+    ({ spec, draws }) => {
+      const stub = createBuilderSkia(true);
+      drawShape(stub.Skia as never, stub.canvas as never, stub.paint as never, spec, 0, 0, 0);
+
+      expect(stub.builderCalls).toEqual([
+        ...mutablePathCalls(spec),
+        { method: 'builder.detach', args: [] },
+      ]);
+      expect(stub.mutableCalls).toEqual([]);
+      expect(stub.pathMakes()).toBe(0);
+      expect(stub.drawn).toHaveLength(draws);
+      for (const path of stub.drawn) expect(path).toBe(stub.detached[0]);
+    },
+  );
+
+  test('kinds that build no path never touch PathBuilder or Path.Make', () => {
+    const stub = createBuilderSkia(false);
+    const specs: readonly ShapeSpec[] = [
+      { kind: 'circle', r: 10, fill: FILL, glow: 'hazard' },
+      { kind: 'ring', r: 10, stroke: STROKE },
+      { kind: 'rect', w: 20, h: 10, fill: FILL },
+      { kind: 'gradient-rect', w: 40, h: 10, colorA: FILL, colorB: STROKE, axis: 0 },
+      { kind: 'annulus', rOuter: 30, rInner: 20, fill: FILL },
+      { kind: 'path', d: 'M 0 0 L 10 10 Z', boundsR: 14, fill: FILL },
+    ];
+    for (const spec of specs) {
+      drawShape(stub.Skia as never, stub.canvas as never, stub.paint as never, spec, 0, 0, 0);
+    }
+    expect(stub.builderCalls).toEqual([]);
+    expect(stub.pathMakes()).toBe(0);
+    // Only the SVG path reaches drawPath, and it is not a detached builder path.
+    expect(stub.drawn).toHaveLength(1);
+    expect(stub.detached).toHaveLength(0);
+  });
+});

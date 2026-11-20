@@ -1,5 +1,13 @@
 # @flare-engine/ui-fx
 
+## 0.4.16
+
+### Patch Changes
+
+- @flare-engine/a11y@0.4.16
+- @flare-engine/math@0.4.16
+- @flare-engine/render-web@0.4.16
+
 ## 0.4.15
 
 ### Patch Changes

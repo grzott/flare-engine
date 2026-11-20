@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/a11y",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "description": "Accessibility primitives — reduced motion, contrast tokens",
   "keywords": [
     "flare-engine",
@@ -44,8 +44,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/events": "^0.4.15",
-    "@flare-engine/math": "^0.4.15"
+    "@flare-engine/events": "^0.4.16",
+    "@flare-engine/math": "^0.4.16"
   },
   "engines": {
     "node": ">=20"

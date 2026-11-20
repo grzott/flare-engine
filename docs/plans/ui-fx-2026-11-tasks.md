@@ -1202,9 +1202,8 @@ test('cancelled press discards the prepared capture', ...)
       the mode for the app's whole life.
     - Without the module (no Expo modules, or Expo Go) it is a no-op and warns once in development
       that effects may run at 30–60 Hz on Android 15+. On iOS and the web it is a no-op.
-    - **The owner confirms this before the task is marked ready.** C39 leaves the choice between a
-      config plugin and a module open. This plan takes the module because it can clear the request
-      when the last effect ends.
+    - **The owner chose the module on 2026-11-20.** C39 left the choice between a config plugin and
+      a module open. The module wins because it can clear the request when the last effect ends.
   - **Handoff:** the layer's first-frame worklet sets `target.hidden.value = 1` on the same UI frame
     it first draws.
 
@@ -1310,9 +1309,9 @@ test('cancelled press discards the prepared capture', ...)
   `radial-glass` (shatter's default). On native it draws with `<Vertices>`, in this task.
 - **Grains.** A mesh with `rectangular === true` comes from `grid` or `cells` (disintegrate's
   default). On native it draws from the Task 16 pool, in Task 19.
-- **Why the mesh and not the preset name:** C43 lists `disintegrate` among the shard effects, but it
-  also keeps grains on the pool. `disintegrate`'s default `cells` pattern is rectangular, so it uses
-  the pool, and `disintegrate({ pattern: 'triangles' })` uses `<Vertices>`.
+- **Why the mesh and not the preset name:** without a bake, the pool's `<Atlas>` can draw only
+  rectangular source cells. So `disintegrate`'s default `cells` uses the pool, and
+  `disintegrate({ pattern: 'triangles' })` uses `<Vertices>`.
 
 **Native shards: `<Vertices>` straight from the capture, with no bake (C43):**
 - **Built once per run.** Each piece of n vertices is a triangle fan of n − 2 triangles.

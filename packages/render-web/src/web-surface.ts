@@ -28,6 +28,14 @@ const clearScratch = new Float32Array(4);
  *
  * Returns `null` when WebGL is unavailable (e.g. headless test environments).
  * Callers should fall back to a CPU surface in that case.
+ *
+ * Sizing is the caller's: the surface takes its size from `canvas.width` and
+ * `canvas.height` (the backing store, in device pixels) at creation, and
+ * nothing here watches `devicePixelRatio` or the element's size. Set the
+ * backing store to the element's CSS size times `devicePixelRatio` first. A
+ * `WebSurface` has no `resize()`: when the element's size or the ratio changes
+ * (a `ResizeObserver`, a `matchMedia` resolution query), set the backing store
+ * again, `dispose()` this surface and create a new one.
  */
 export function createWebSurface(kit: CanvasKit, canvas: HTMLCanvasElement): WebSurface | null {
   let surface: Surface | null = kit.MakeWebGLCanvasSurface(canvas);

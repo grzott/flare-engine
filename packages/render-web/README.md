@@ -188,7 +188,7 @@ if (overlay) drawHud(overlay);
 
 surface.flush();            // present the frame
 
-// On resize:
+// On resize — newW / newH are device pixels you measure yourself; see "Sizing" below:
 surface.resize(newW, newH);
 surface.clear([0, 0, 0]);
 
@@ -212,6 +212,55 @@ declare function showStaticFallback(): void;
 
 if (surface.isLost()) showStaticFallback();
 ```
+
+## Sizing
+
+The caller owns the canvas size. Nothing in this package watches `devicePixelRatio` or the element's size.
+
+Both surfaces take their size from the canvas's backing store — `canvas.width` and `canvas.height`, in device pixels — at the moment they are created. Size the backing store to the element's CSS size times `window.devicePixelRatio` before creating a surface; a backing store left at the CSS size is stretched by the browser and looks blurry on a HiDPI screen. Draw coordinates are backing-store pixels too.
+
+Give the element its CSS size from your layout (`width: 100%`, say). A canvas with no CSS size takes its layout size from its backing store, so resizing the backing store would resize the element.
+
+After that, keep the backing store in step yourself: watch the element with a `ResizeObserver`, watch `devicePixelRatio` with a `matchMedia` resolution query (it changes on browser zoom and when the window moves to another screen), and call `resize()`:
+
+```ts
+import type { PostFxSurface } from '@flare-engine/render-web';
+
+declare const surface: PostFxSurface;
+declare const canvasEl: HTMLCanvasElement;
+
+function syncSize(): void {
+  const dpr = window.devicePixelRatio;
+  const w = Math.max(1, Math.round(canvasEl.clientWidth * dpr));
+  const h = Math.max(1, Math.round(canvasEl.clientHeight * dpr));
+  if (w === surface.width && h === surface.height) return;
+  surface.resize(w, h);       // sets canvasEl.width / height and rebuilds the surfaces
+  surface.clear([0, 0, 0]);   // resize() does not clear
+}
+
+const observer = new ResizeObserver(syncSize);
+observer.observe(canvasEl);
+
+// A resolution query matches one ratio, so build a new query after each change.
+let stopDprWatch = (): void => {};
+function watchDpr(): void {
+  const query = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  const onChange = (): void => {
+    syncSize();
+    watchDpr();
+  };
+  query.addEventListener('change', onChange, { once: true });
+  stopDprWatch = () => query.removeEventListener('change', onChange);
+}
+watchDpr();
+syncSize();
+
+// Teardown:
+observer.disconnect();
+stopDprWatch();
+```
+
+`PostFxSurface.resize(width, height)` takes device pixels, floors them, and treats anything below 1 as 1. `WebSurface` has no `resize()`: set `canvas.width` and `canvas.height`, `dispose()` the old surface, and call `createWebSurface` again.
 
 ## Architecture notes
 

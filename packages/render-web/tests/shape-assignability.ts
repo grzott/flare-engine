@@ -2,9 +2,11 @@
  * Type-level probe, not a bun test: `createWebShapeSkia(kit)` and the canvas
  * and paint it hands out must pass to the `@flare-engine/shapes` API with no
  * cast. Checked by the root `bun run typecheck:tests`, which runs after
- * `build`: the shapes import resolves to its `dist/*.d.mts`, so this also
- * holds the published types to needing nothing from react-native-skia. The
- * react-native-skia half is `packages/shapes/tests/draw-assignability.ts`.
+ * `build`, so the shapes import resolves to its `dist/*.d.mts`. It cannot show
+ * that those types need nothing from react-native-skia (`skipLibCheck` is on and
+ * the package is installed here); `packages/shapes/tests/no-native-skia-import.test.ts`
+ * holds that. The react-native-skia half is
+ * `packages/shapes/tests/draw-assignability.ts`.
  */
 import {
   applyFriendlyGlow,

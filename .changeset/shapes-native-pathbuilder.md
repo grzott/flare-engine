@@ -8,7 +8,7 @@ react-native-skia 2.6 added `Skia.PathBuilder` and deprecated the path mutators;
 
 Those seven kinds now start from `Skia.PathBuilder.Make()` and draw the path its `detach()` returns whenever the handle has a `PathBuilder`. That includes 2.6 to 2.13, where the mutators still exist, so they are no longer called there. A handle without `PathBuilder` (react-native-skia before 2.6, and `createWebShapeSkia` from `@flare-engine/render-web`) is driven through `Skia.Path.Make()` exactly as before. The calls made and their arguments are the same on both routes.
 
-`ShapeAtlasSkia` follows: `Path.Make()` is now declared to return `unknown`, and there is a new optional `PathBuilder` member. A handle typed like react-native-skia 2.14's `Skia`, whose paths have no mutators, is now assignable to it, so it can be passed to `bakeShapeAtlas` with no cast. Handles that were assignable before still are.
+`ShapeAtlasSkia` follows: `Path.Make()` is now declared to return `unknown`, and there is a new optional `PathBuilder` member. A handle typed like react-native-skia 2.14's `Skia`, whose paths have no mutators, is now assignable to it, so it can be passed to `bakeShapeAtlas` with no cast. Handles that were assignable before still are. Code that reads `Path.Make()` from a value typed `ShapeAtlasSkia` and calls the mutators on the result no longer typechecks; build the path on the handle's own `Skia` type instead.
 
 Covered by unit tests against stub handles shaped like each version range and by a type-level check; not run on a device.
 

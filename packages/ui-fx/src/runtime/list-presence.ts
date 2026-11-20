@@ -1,4 +1,4 @@
-import { useLayoutEffect, useReducer, useRef } from 'react';
+import { useInsertionEffect, useReducer, useRef } from 'react';
 
 /** One row of a presence list: an item of the data, or a removed one kept until its exit ends. */
 export interface PresenceEntry<T> {
@@ -38,8 +38,8 @@ interface Committed<T> {
  * An entry object, and the array, keep their identity for as long as nothing in them changes.
  *
  * A render derives its rows from the last committed ones and changes nothing; they are recorded
- * when the render commits. A render React discards (an interrupted or suspended transition)
- * therefore leaves no trace: no row it saw arrive or leave outlives it.
+ * when the render commits, in an insertion effect. A render React discards (an interrupted or
+ * suspended transition) therefore leaves no trace: no row it saw arrive or leave outlives it.
  */
 export function useFlarePresenceList<T>(
   data: readonly T[],
@@ -135,7 +135,9 @@ export function useFlarePresenceList<T>(
   for (let i = 0; same && i < rows.length; i++) same = entries[i] === rows[i]!.entry;
   if (!same) entries = rows.map((row) => row.entry);
 
-  useLayoutEffect(() => {
+  // An insertion effect runs before every layout effect of the commit, so a row that asks for its
+  // release from its own layout effect in this commit already sees this render's rows.
+  useInsertionEffect(() => {
     committed.current = { rows, entries, mounted: true };
   });
 

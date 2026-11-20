@@ -1,5 +1,14 @@
 import { afterEach, expect, test } from 'bun:test';
-import { act, type ReactNode, StrictMode, Suspense, startTransition, use, useState } from 'react';
+import {
+  act,
+  type ReactNode,
+  StrictMode,
+  Suspense,
+  startTransition,
+  use,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import { type PresenceEntry, useFlarePresenceList } from '../../src/runtime/list-presence';
 import { installDom, type Rendered, render } from '../support/dom';
 
@@ -270,4 +279,25 @@ test('a row a discarded render saw leave stays idle', async () => {
 
   await act(async () => driver.tick());
   expect(shown(r)).toEqual(['a:idle', 'b:idle']);
+});
+
+// A row's element asks for its release from its own layout effect in the commit that turns it to
+// exit when its exit already ran (a press exit whose item the caller then drops). Child layout
+// effects run before the parent's, so the hook must have recorded that render before they do.
+function ReleasesOnExit({ entry }: { entry: PresenceEntry<Row> }): ReactNode {
+  useLayoutEffect(() => {
+    if (entry.phase === 'exit') entry.release();
+  });
+  return <span data-key={entry.key} data-phase={entry.phase} />;
+}
+
+function SameCommit({ ids }: { ids: readonly string[] }): ReactNode {
+  const entries = useFlarePresenceList(rows(...ids), keyOf);
+  return entries.map((entry) => <ReleasesOnExit key={entry.key} entry={entry} />);
+}
+
+test('a release asked for in the commit that turns the row to exit is honoured', () => {
+  const r = mount(<SameCommit ids={['a', 'b']} />);
+  r.rerender(<SameCommit ids={['a']} />);
+  expect(shown(r)).toEqual(['a:idle']);
 });

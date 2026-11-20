@@ -178,6 +178,38 @@ describe('Camera2D', () => {
       expect(cam.effectiveX).toBe(cam.x);
       expect(cam.effectiveY).toBe(cam.y);
     });
+
+    it('travels the same path per second at 60, 120 and 144 Hz', () => {
+      const pathX: number[] = [];
+      const pathY: number[] = [];
+      for (const hz of [60, 120, 144]) {
+        const cam = new Camera2D();
+        cam.shake(10, 1);
+        let x = cam.effectiveX;
+        let y = cam.effectiveY;
+        let sumX = 0;
+        let sumY = 0;
+        for (let i = 0; i < hz; i++) {
+          cam.update(1 / hz);
+          sumX += Math.abs(cam.effectiveX - x);
+          sumY += Math.abs(cam.effectiveY - y);
+          x = cam.effectiveX;
+          y = cam.effectiveY;
+        }
+        pathX.push(sumX);
+        pathY.push(sumY);
+      }
+      for (const path of [pathX, pathY]) {
+        const min = Math.min(...path);
+        const max = Math.max(...path);
+        // A shake that never moves would agree with itself trivially.
+        expect(min).toBeGreaterThan(50);
+        // 60 and 120 Hz land on every jitter sample and agree closely. 144 Hz
+        // steps fall between samples and cut the corners of the interpolated
+        // path, which costs it roughly 10-15%.
+        expect((max - min) / min).toBeLessThan(0.15);
+      }
+    });
   });
 
   describe('motionScale', () => {

@@ -25,6 +25,13 @@ function pseudoRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
+/** Jitter in [-1, 1], linear between the samples at integer `t`. */
+function shakeJitter(key: number, t: number): number {
+  const i = Math.floor(t);
+  const a = pseudoRandom(key + i);
+  return (a + (pseudoRandom(key + i + 1) - a) * (t - i)) * 2 - 1;
+}
+
 // ─── Simplex-like 2D noise for shakePerlin ───────────────────────────────────
 // Permutation table — a 256-entry shuffle stored twice (512 entries) so the
 // nested `PERM[PERM[x] + y + 1]` lookups, which reach index 511, stay in range.
@@ -260,9 +267,11 @@ export class Camera2D {
       } else {
         const progress = this._shake.elapsed / this._shake.duration;
         const decay = 1 - progress;
-        const seed = this._shakeSeed + this._shake.elapsed * 100;
-        this._shake.offsetX = (pseudoRandom(seed) * 2 - 1) * this._shake.intensity * decay;
-        this._shake.offsetY = (pseudoRandom(seed + 1) * 2 - 1) * this._shake.intensity * decay;
+        // 60 samples per second of shake time, whatever the update rate.
+        const key = this._shakeSeed * 1.6180339887;
+        const t = this._shake.elapsed * 60;
+        this._shake.offsetX = shakeJitter(key, t) * this._shake.intensity * decay;
+        this._shake.offsetY = shakeJitter(key + 0.5, t) * this._shake.intensity * decay;
       }
     }
 

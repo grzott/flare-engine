@@ -1,8 +1,30 @@
+/**
+ * Structural shape of the image info a backend's `readPixels` takes. The enum
+ * and colour-space values are backend-specific, hence `unknown`.
+ */
+export interface SkImageInfoLike {
+  width: number;
+  height: number;
+  colorType: unknown;
+  alphaType: unknown;
+  colorSpace?: unknown;
+}
+
 /** Minimal interface for the Skia SkImage we wrap. */
 export interface SkImageLike {
   width(): number;
   height(): number;
-  readPixels(): Float32Array | Uint8Array | null;
+  /**
+   * Declared so that both backends' images are assignable; the arguments are
+   * not portable. react-native-skia accepts a call with no arguments, while
+   * CanvasKit requires all three, with its own `colorType` / `alphaType` enum
+   * values and a `colorSpace`. Call it on the backend's own image type.
+   */
+  readPixels(
+    srcX?: number,
+    srcY?: number,
+    imageInfo?: SkImageInfoLike,
+  ): Float32Array | Uint8Array | null;
   /**
    * Optional — present on GPU-backed SkImages returned by RN-Skia's
    * MakeOffscreen surfaces. Copies the texture into a CPU-raster image so it

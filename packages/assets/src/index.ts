@@ -45,4 +45,9 @@ export {
   type SpriteFrame,
   type SpriteSheet,
 } from './sprite-sheet.js';
-export { createTexture, type SkImageLike, type Texture } from './texture.js';
+export {
+  createTexture,
+  type SkImageInfoLike,
+  type SkImageLike,
+  type Texture,
+} from './texture.js';

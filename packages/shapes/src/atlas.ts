@@ -63,13 +63,27 @@ export interface ShapeAtlasSkia {
   Surface: { Make(width: number, height: number): ShapeAtlasSurface | null };
   Paint(): ShapeAtlasPaint;
   Path: {
+    /**
+     * Built on with `moveTo` / `lineTo` / `close` / `addArc` when the handle
+     * has no `PathBuilder`: react-native-skia before 2.6, and
+     * `createWebShapeSkia`. Not called otherwise.
+     */
+    Make(): unknown;
+    MakeFromSVGString(d: string): unknown;
+  };
+  /**
+   * Used instead of `Path.Make()` whenever present: react-native-skia 2.6 and
+   * later, and the only way to build a path from 2.14, whose paths are
+   * immutable. `detach()` returns the path that is drawn.
+   */
+  PathBuilder?: {
     Make(): {
       moveTo(x: number, y: number): unknown;
       lineTo(x: number, y: number): unknown;
       close(): unknown;
       addArc(oval: unknown, startDeg: number, sweepDeg: number): unknown;
+      detach(): unknown;
     };
-    MakeFromSVGString(d: string): unknown;
   };
   XYWHRect(x: number, y: number, w: number, h: number): unknown;
 }

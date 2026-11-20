@@ -9,7 +9,13 @@
  */
 
 import { argbToFloat4Into } from '@flare-engine/math';
-import type { SkCanvas, Skia as SkiaModule, SkPaint, SkPath } from '@shopify/react-native-skia';
+import type {
+  SkCanvas,
+  Skia as SkiaModule,
+  SkPaint,
+  SkPath,
+  SkRect,
+} from '@shopify/react-native-skia';
 import { singleShapeRadius } from './bounds.js';
 import type {
   AnnulusSpec,
@@ -124,6 +130,39 @@ function fillStrokePath(
     applyStroke(paint, stroke, strokeWidth ?? 1);
     canvas.drawPath(path, paint);
   }
+}
+
+// ---- Path building ----------------------------------------------------------
+
+/** The building calls `SkPathBuilder` and the mutable `SkPath` have in common. */
+interface PathSink {
+  moveTo(x: number, y: number): unknown;
+  lineTo(x: number, y: number): unknown;
+  close(): unknown;
+  addArc(oval: SkRect, startDeg: number, sweepDeg: number): unknown;
+}
+
+interface PathBuilderSink extends PathSink {
+  detach(): SkPath;
+}
+
+// react-native-skia 2.6 added `Skia.PathBuilder` and 2.14 removed the `SkPath`
+// mutators, so the builder is used wherever the handle has one. Read from the
+// handle on every call: native and web handles coexist in one process.
+interface PathBuilderHost {
+  PathBuilder?: { Make(): PathBuilderSink };
+}
+
+function beginPath(Skia: SkiaApi): PathSink {
+  const builders = (Skia as PathBuilderHost).PathBuilder;
+  return builders !== undefined ? builders.Make() : Skia.Path.Make();
+}
+
+/** The drawable path for a sink `beginPath` returned from the same handle. */
+function endPath(Skia: SkiaApi, sink: PathSink): SkPath {
+  return (Skia as PathBuilderHost).PathBuilder !== undefined
+    ? (sink as PathBuilderSink).detach()
+    : (sink as SkPath);
 }
 
 // ---- Dispatcher -------------------------------------------------------------
@@ -241,15 +280,15 @@ function drawTriangle(
   rot: number,
 ): void {
   const s = spec.size;
-  const path = Skia.Path.Make();
-  path.moveTo(0, -s);
-  path.lineTo(-s * 0.6, s * 0.4);
-  path.lineTo(s * 0.6, s * 0.4);
-  path.close();
+  const sink = beginPath(Skia);
+  sink.moveTo(0, -s);
+  sink.lineTo(-s * 0.6, s * 0.4);
+  sink.lineTo(s * 0.6, s * 0.4);
+  sink.close();
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
-  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
+  fillStrokePath(canvas, paint, endPath(Skia, sink), spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -262,19 +301,19 @@ function drawNgon(
   cy: number,
   rot: number,
 ): void {
-  const path = Skia.Path.Make();
+  const sink = beginPath(Skia);
   for (let i = 0; i < spec.n; i++) {
     const a = (i / spec.n) * Math.PI * 2 - Math.PI / 2;
     const px = Math.cos(a) * spec.r;
     const py = Math.sin(a) * spec.r;
-    if (i === 0) path.moveTo(px, py);
-    else path.lineTo(px, py);
+    if (i === 0) sink.moveTo(px, py);
+    else sink.lineTo(px, py);
   }
-  path.close();
+  sink.close();
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
-  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
+  fillStrokePath(canvas, paint, endPath(Skia, sink), spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -287,21 +326,21 @@ function drawStar(
   cy: number,
   rot: number,
 ): void {
-  const path = Skia.Path.Make();
+  const sink = beginPath(Skia);
   const total = spec.points * 2;
   for (let i = 0; i < total; i++) {
     const a = (i / total) * Math.PI * 2 - Math.PI / 2;
     const r = i % 2 === 0 ? spec.rOuter : spec.rInner;
     const px = Math.cos(a) * r;
     const py = Math.sin(a) * r;
-    if (i === 0) path.moveTo(px, py);
-    else path.lineTo(px, py);
+    if (i === 0) sink.moveTo(px, py);
+    else sink.lineTo(px, py);
   }
-  path.close();
+  sink.close();
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
-  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
+  fillStrokePath(canvas, paint, endPath(Skia, sink), spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -316,16 +355,16 @@ function drawPolyline(
 ): void {
   const pts = spec.points;
   if (pts.length < 4) return;
-  const path = Skia.Path.Make();
-  path.moveTo(pts[0] ?? 0, pts[1] ?? 0);
+  const sink = beginPath(Skia);
+  sink.moveTo(pts[0] ?? 0, pts[1] ?? 0);
   for (let i = 2; i < pts.length; i += 2) {
-    path.lineTo(pts[i] ?? 0, pts[i + 1] ?? 0);
+    sink.lineTo(pts[i] ?? 0, pts[i + 1] ?? 0);
   }
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate((rot * 180) / Math.PI, 0, 0);
   applyStroke(paint, spec.stroke ?? 0xff000000, spec.strokeWidth ?? 1);
-  canvas.drawPath(path, paint);
+  canvas.drawPath(endPath(Skia, sink), paint);
   canvas.restore();
 }
 
@@ -373,21 +412,21 @@ function drawArc(
   cy: number,
   rot: number,
 ): void {
-  const path = Skia.Path.Make();
+  const sink = beginPath(Skia);
   const oval = Skia.XYWHRect(-spec.r, -spec.r, spec.r * 2, spec.r * 2);
   const startDeg = radToDeg(spec.startAngle);
   const sweepDeg = radToDeg(spec.endAngle - spec.startAngle);
   if (spec.sector === true) {
-    path.moveTo(0, 0);
-    path.addArc(oval, startDeg, sweepDeg);
-    path.close();
+    sink.moveTo(0, 0);
+    sink.addArc(oval, startDeg, sweepDeg);
+    sink.close();
   } else {
-    path.addArc(oval, startDeg, sweepDeg);
+    sink.addArc(oval, startDeg, sweepDeg);
   }
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate(radToDeg(rot), 0, 0);
-  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
+  fillStrokePath(canvas, paint, endPath(Skia, sink), spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 
@@ -411,11 +450,11 @@ function drawAnnulus(
   if (rot !== 0) canvas.rotate(radToDeg(rot), 0, 0);
 
   if (spec.startAngle !== undefined && spec.endAngle !== undefined) {
-    const path = Skia.Path.Make();
+    const sink = beginPath(Skia);
     const oval = Skia.XYWHRect(-midR, -midR, midR * 2, midR * 2);
-    path.addArc(oval, radToDeg(spec.startAngle), radToDeg(spec.endAngle - spec.startAngle));
+    sink.addArc(oval, radToDeg(spec.startAngle), radToDeg(spec.endAngle - spec.startAngle));
     applyStroke(paint, ringColor, thickness);
-    canvas.drawPath(path, paint);
+    canvas.drawPath(endPath(Skia, sink), paint);
   } else {
     applyStroke(paint, ringColor, thickness);
     canvas.drawCircle(0, 0, midR, paint);
@@ -433,20 +472,20 @@ function drawTrapezoid(
   cy: number,
   rot: number,
 ): void {
-  const path = Skia.Path.Make();
+  const sink = beginPath(Skia);
   const halfTopW = spec.topW / 2;
   const halfBotW = spec.botW / 2;
   const halfH = spec.h / 2;
   // Apex up: narrow top edge at -h/2, wide bottom edge at +h/2.
-  path.moveTo(-halfTopW, -halfH);
-  path.lineTo(halfTopW, -halfH);
-  path.lineTo(halfBotW, halfH);
-  path.lineTo(-halfBotW, halfH);
-  path.close();
+  sink.moveTo(-halfTopW, -halfH);
+  sink.lineTo(halfTopW, -halfH);
+  sink.lineTo(halfBotW, halfH);
+  sink.lineTo(-halfBotW, halfH);
+  sink.close();
   canvas.save();
   canvas.translate(cx, cy);
   if (rot !== 0) canvas.rotate(radToDeg(rot), 0, 0);
-  fillStrokePath(canvas, paint, path, spec.fill, spec.stroke, spec.strokeWidth);
+  fillStrokePath(canvas, paint, endPath(Skia, sink), spec.fill, spec.stroke, spec.strokeWidth);
   canvas.restore();
 }
 

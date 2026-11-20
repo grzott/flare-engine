@@ -59,6 +59,7 @@ mock.module('react-native', () => ({
   StyleSheet: { create: (s: unknown) => s, absoluteFill: {} },
   Platform: { OS: 'ios' },
   PixelRatio: { get: () => 1 },
+  Dimensions: { addEventListener: () => ({ remove: () => {} }) },
 }));
 
 mock.module('@shopify/react-native-skia', () => ({

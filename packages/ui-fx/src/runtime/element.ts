@@ -44,7 +44,10 @@ export interface FlareElementHandle {
    * the element takes no touches.
    */
   phase: 'entering' | 'present' | 'exiting' | 'released';
-  /** Whether the element is now the hidden placeholder of a `holdSpace` exit. */
+  /**
+   * Whether the element is now a hidden placeholder: during a `holdSpace` exit, or after its key
+   * came back too late to cancel a snapshot exit.
+   */
   holdSpace: boolean;
   /** `point` is the press point in element pixels. */
   onPressIn(point: Vec2Out | null): void;
@@ -261,7 +264,9 @@ function snapshot(m: Machine, op: Op, preset: SnapshotStep): void {
         if (op.settled || op.stage !== 'run') return;
         op.stage = 'handed';
         if (op.cause !== 'exit') return;
-        if (m.o.holdSpace === true) {
+        // A key that came back after the runtime handed off, but before this callback, could not
+        // cancel the run: hold the element hidden and show it at the end, as with `holdSpace`.
+        if (m.o.holdSpace === true || (m.isPresent && !m.pressExit)) {
           m.held = true;
           if (m.alive) m.rerender();
         } else {
@@ -499,6 +504,9 @@ export function useFlareElement(o: FlareElementOptions, p: ElementPlatform): Fla
     m.ctx = ctx;
     m.release = release;
     m.isPresent = isPresent;
+    // A release asked for while the key was still present (a press exit) was refused; the caller
+    // has since dropped the key, so ask again.
+    if (m.released && !isPresent) release();
   });
 
   useLayoutEffect(() => {

@@ -282,6 +282,32 @@ test('same key returns after handoff enters fresh', async () => {
   expect(phaseOf(r)).toBe('entering');
 });
 
+test('a key back between the runtime handoff and onHandoff is held, then shown at the end', async () => {
+  const h = harness();
+  const options = { exit: shatter() };
+  const r = h.mount(options);
+  r.rerender(h.tree(false, options));
+  await settle();
+  const run = h.fx.runs[0]!;
+  // A native runtime hands off on the UI thread; its onHandoff reaches JS a moment later.
+  run.handedOff = true;
+  run.target.hidden.value = 1;
+  r.rerender(h.tree(true, options));
+  expect(run.cancelResults).toEqual([false]);
+
+  act(() => run.options.onHandoff());
+  expect(boxes(r)).toHaveLength(1);
+  act(() => h.fx.end(true));
+  expect(h.onExited.mock.calls).toEqual([[true]]);
+  expect(h.target.hidden.value).toBe(0);
+  expect(phaseOf(r)).toBe('present');
+
+  r.rerender(h.tree(false, options));
+  expect(phaseOf(r)).toBe('exiting');
+  await settle();
+  expect(h.fx.runs).toHaveLength(2);
+});
+
 test('capture resolves after unmount: nothing drawn, no throw', async () => {
   const h = harness({}, { deferCapture: true });
   const options = { exit: shatter() };
@@ -493,6 +519,34 @@ test('exitOn press plays exit then onExited', () => {
   act(() => h.driver.end(true));
   expect(h.onExited.mock.calls).toEqual([[true]]);
   expect(phaseOf(r)).toBe('released');
+});
+
+test('a press exit inside FlarePresence unmounts once the caller drops the item', () => {
+  const h = harness();
+  const options: FlareElementOptions = { exit: fade(), exitOn: 'press' };
+  const r = h.mount(options);
+  act(() => h.handle().onPress());
+  act(() => h.driver.end(true));
+  expect(h.onExited.mock.calls).toEqual([[true]]);
+  expect(boxes(r)).toHaveLength(1);
+
+  r.rerender(h.tree(false, options));
+  expect(boxes(r)).toHaveLength(0);
+});
+
+test('a snapshot press exit inside FlarePresence unmounts once the caller drops the item', async () => {
+  const h = harness();
+  const options: FlareElementOptions = { exit: shatter(), exitOn: 'press' };
+  const r = h.mount(options);
+  act(() => h.handle().onPressIn({ x: 1, y: 1 }));
+  act(() => h.handle().onPress());
+  await settle();
+  act(() => h.fx.handoff());
+  act(() => h.fx.end(true));
+  expect(h.onExited.mock.calls).toEqual([[true]]);
+
+  r.rerender(h.tree(false, options));
+  expect(boxes(r)).toHaveLength(0);
 });
 
 test('timeline: live entries then fx.run at the snapshot start', async () => {

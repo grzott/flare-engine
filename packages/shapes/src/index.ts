@@ -11,6 +11,7 @@ export {
   type ShapeAtlasSkia,
   type ShapeAtlasSurface,
   type ShapeBatchLike,
+  type ShapeDrawSkia,
   shapeAtlasNeedsRebake,
 } from './atlas.js';
 export {

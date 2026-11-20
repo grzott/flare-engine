@@ -11,7 +11,6 @@ import {
   type SpriteFrame,
   type SpriteSheet,
 } from '@flare-engine/assets';
-import type { SkCanvas, Skia as SkiaModule, SkPaint } from '@shopify/react-native-skia';
 import { type ShapeBoundsBox, shapeBoundsBoxInto } from './bounds.js';
 import { drawShape } from './draw.js';
 import type { ShapeSpec } from './types.js';
@@ -54,14 +53,10 @@ export interface ShapeAtlasSurface {
 }
 
 /**
- * The Skia handle `bakeShapeAtlas` needs: what `drawShape` reads plus an
- * offscreen surface factory. `Skia` from `@shopify/react-native-skia`
- * satisfies it; on web, `createWebShapeSkia(kit)` from
- * `@flare-engine/render-web` builds one over CanvasKit.
+ * The Skia handle `drawShape` needs: path construction and a rect factory.
+ * `Skia` from `@shopify/react-native-skia` satisfies it.
  */
-export interface ShapeAtlasSkia {
-  Surface: { Make(width: number, height: number): ShapeAtlasSurface | null };
-  Paint(): ShapeAtlasPaint;
+export interface ShapeDrawSkia {
   Path: {
     /**
      * Built on with `moveTo` / `lineTo` / `close` / `addArc` when the handle
@@ -86,6 +81,17 @@ export interface ShapeAtlasSkia {
     };
   };
   XYWHRect(x: number, y: number, w: number, h: number): unknown;
+}
+
+/**
+ * The Skia handle `bakeShapeAtlas` needs: what `drawShape` reads plus an
+ * offscreen surface factory. `Skia` from `@shopify/react-native-skia`
+ * satisfies it; on web, `createWebShapeSkia(kit)` from
+ * `@flare-engine/render-web` builds one over CanvasKit.
+ */
+export interface ShapeAtlasSkia extends ShapeDrawSkia {
+  Surface: { Make(width: number, height: number): ShapeAtlasSurface | null };
+  Paint(): ShapeAtlasPaint;
 }
 
 /** Layout options for `bakeShapeAtlas`. */
@@ -246,9 +252,7 @@ export function bakeShapeAtlas(
     canvas.save();
     canvas.translate(pos.x + (originX[i] ?? 0), pos.y + (originY[i] ?? 0));
     canvas.scale(cell.scale, cell.scale);
-    // `ShapeAtlasSkia` declares exactly the members `drawShape` reads, which is
-    // what lets a CanvasKit handle stand in for the react-native-skia one here.
-    drawShape(Skia as typeof SkiaModule, canvas as SkCanvas, paint as SkPaint, spec, 0, 0, 0);
+    drawShape(Skia, canvas, paint, spec, 0, 0, 0);
     canvas.restore();
     i++;
   }

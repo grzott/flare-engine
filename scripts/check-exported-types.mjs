@@ -49,11 +49,6 @@ export const ALLOWLIST = [
     name: 'ErrorBoundaryState',
     reason: 'React class component state, internal to ErrorBoundary',
   },
-  {
-    pkg: '@flare-engine/shapes',
-    name: 'SkiaApi',
-    reason: 'alias of `typeof Skia` (the RN-Skia module); its value is the module itself',
-  },
 ];
 
 const normalize = (path) => path.replaceAll('\\', '/');

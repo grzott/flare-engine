@@ -135,7 +135,10 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
       ...rest
     } = props;
 
-    const { driver, style: animated } = useNativeLiveDriver();
+    const [isPresent] = usePresence();
+    // `useFlareElement` starts the enter under this condition, from a layout effect, so the host
+    // is hidden until it plays instead of showing its rest pose for the first frame.
+    const { driver, style: animated } = useNativeLiveDriver(enter !== undefined && isPresent);
     const host = useRef<unknown>(null);
     const layout = useRef<Size | null>(null);
     const created = useRef<ElementPlatform | null>(null);
@@ -170,7 +173,6 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
     const exiting = handle.phase === 'exiting';
 
     // An exit that starts while the owner still renders the element was started by its own press.
-    const [isPresent] = usePresence();
     const exitingByPress = exiting && isPresent;
     useLayoutEffect(() => {
       if (exitingByPress) moveAccessibilityFocus(parentTagOf(host.current));

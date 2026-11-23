@@ -45,6 +45,8 @@ interface DriverState {
   /** The running play follows an external progress value, so no timing of its own runs. */
   scrubbed: boolean;
   pressSeconds: number;
+  /** `hidden` still holds the hide the driver was made with, which the first play clears. */
+  hiddenUntilPlay: boolean;
 }
 
 /**
@@ -58,12 +60,20 @@ interface DriverState {
  * `false` when `cancel`, `reverse` or another `play` got there first. A play that follows
  * `progress` has no end of its own; only `cancel` or another `play` ends it. `dispose` ends
  * nothing.
+ *
+ * With `hiddenUntilPlay`, `hidden` starts at 1 and the first `play` sets it to 0. An element
+ * whose enter starts in a layout effect needs this: that effect runs after the first frame is
+ * committed, so a driver that started visible would show the rest pose for one frame. Only the
+ * mount hide is cleared; a later write to `hidden` stays until its writer clears it.
  */
-export function useNativeLiveDriver(): { driver: LiveDriver; style: AnimatedStyle<ViewStyle> } {
+export function useNativeLiveDriver(hiddenUntilPlay = false): {
+  driver: LiveDriver;
+  style: AnimatedStyle<ViewStyle>;
+} {
   const t = useSharedValue(0);
   const dir = useSharedValue<1 | -1>(1);
   const pressT = useSharedValue(0);
-  const hidden = useSharedValue(0);
+  const hidden = useSharedValue(hiddenUntilPlay ? 1 : 0);
   const compiled = useSharedValue<CompiledLive | null>(null);
   const pressPose = useSharedValue<CompiledLive | null>(null);
   // A worklet can only read a shared value it captured, so the progress source is a dependency
@@ -72,7 +82,13 @@ export function useNativeLiveDriver(): { driver: LiveDriver; style: AnimatedStyl
 
   const created = useRef<LiveDriver | null>(null);
   if (created.current === null) {
-    const state: DriverState = { serial: 0, playing: null, scrubbed: false, pressSeconds: 0 };
+    const state: DriverState = {
+      serial: 0,
+      playing: null,
+      scrubbed: false,
+      pressSeconds: 0,
+      hiddenUntilPlay,
+    };
 
     const endPlaying = (finished: boolean): void => {
       const playing = state.playing;
@@ -93,6 +109,10 @@ export function useNativeLiveDriver(): { driver: LiveDriver; style: AnimatedStyl
         state.scrubbed = o.progress !== undefined;
         compiled.value = c;
         dir.value = direction;
+        if (state.hiddenUntilPlay) {
+          state.hiddenUntilPlay = false;
+          hidden.value = 0;
+        }
         setProgress(o.progress ?? null);
         if (o.progress !== undefined) {
           cancelAnimation(t);

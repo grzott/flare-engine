@@ -117,6 +117,34 @@ test('a FlareView enter={fade()} is transparent at t = 0 and opaque after the fl
   expect(onEntered).toHaveBeenCalledTimes(1);
 });
 
+/** The animated style each render handed the host, evaluated during that render. */
+const renderStyles: Style[] = [];
+
+function Recorder(props: { style?: unknown }): ReactNode {
+  renderStyles.push(reanimated.styleOf(props.style) as unknown as Style);
+  return <View testID="recorder" {...(props as object)} />;
+}
+
+const FlareRecorder = createFlareComponent(Recorder);
+
+test('an element with an enter is hidden from its first render, so its rest pose never shows', () => {
+  renderStyles.length = 0;
+  const r = mount(<FlareRecorder enter={slide({ from: 'bottom', distance: 30 })} />);
+
+  // The enter starts in a layout effect, after this first render has been committed.
+  expect(renderStyles[0]!.opacity).toBe(0);
+
+  const playing = styleOf(find(r, 'recorder'));
+  expect(playing.opacity).toBe(1);
+  expect(transformValue(playing, 'translateY')).toBe(30);
+});
+
+test('an element without an enter is visible from its first render', () => {
+  renderStyles.length = 0;
+  mount(<FlareRecorder />);
+  expect(renderStyles[0]!.opacity).toBe(1);
+});
+
 test('the style keeps the stable seven-entry transform list', () => {
   const r = mount(<FlareView testID="box" enter={slide({ from: 'right' })} />);
   const keys = (): string[] =>

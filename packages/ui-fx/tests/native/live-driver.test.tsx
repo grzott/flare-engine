@@ -51,11 +51,11 @@ interface Harness {
   rerender(): void;
 }
 
-function mount(): Harness {
+function mount(hiddenUntilPlay?: boolean): Harness {
   const drivers: LiveDriver[] = [];
   let styleProp: unknown = null;
   function Probe(): ReactNode {
-    const { driver, style } = useNativeLiveDriver();
+    const { driver, style } = useNativeLiveDriver(hiddenUntilPlay);
     drivers.push(driver);
     styleProp = style;
     return null;
@@ -92,6 +92,36 @@ test('at rest the style is opaque, with the full identity transform list', () =>
       { scale: 1 },
     ],
   });
+});
+
+test('hidden until its first play, the style is transparent from the first render', () => {
+  const h = mount(true);
+  expect(h.style().opacity).toBe(0);
+  expect(h.driver.hidden.value).toBe(1);
+
+  act(() => h.driver.play(compiled(slide({ from: 'bottom', distance: 30 })), 1, { onEnd() {} }));
+  const style = h.style();
+  expect(style.opacity).toBe(1);
+  expect(transformValue(style, 'translateY')).toBe(30);
+  expect(h.driver.hidden.value).toBe(0);
+});
+
+test('a play clears only the hide it was made with, never one set on hidden later', () => {
+  const h = mount(true);
+  act(() => h.driver.play(compiled(fade()), 1, { onEnd() {} }));
+  act(() => reanimated.flush());
+  expect(h.style().opacity).toBe(1);
+
+  h.driver.hidden.value = 1;
+  act(() => h.driver.play(compiled(fade()), -1, { onEnd() {} }));
+  expect(h.style().opacity).toBe(0);
+  expect(h.driver.hidden.value).toBe(1);
+});
+
+test('a driver made without it shows its rest pose before any play', () => {
+  const h = mount(false);
+  expect(h.style().opacity).toBe(1);
+  expect(h.driver.hidden.value).toBe(0);
 });
 
 test('an entering fade is transparent at t = 0 and opaque after the timing ends', () => {

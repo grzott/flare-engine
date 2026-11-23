@@ -46,6 +46,7 @@ work itself lives in [GitHub issues](https://github.com/grzott/flare-engine/issu
 | [Adoption basics](https://github.com/grzott/flare-engine/milestone/8) | Quickstart, recipes, first issues, Discussions |
 | [UI FX](https://github.com/grzott/flare-engine/milestone/10) | `@flare-engine/ui-fx`, animated RN, react-native-web and React DOM component wrappers ([plan](ui-fx-2026-11-tasks.md)); it publishes in 0.5.0 |
 | [0.5.0](https://github.com/grzott/flare-engine/milestone/9) | The breaking changes held back during `0.4.x`, each behind an ADR |
+| [UI Canvas](https://github.com/grzott/flare-engine/milestone/11) | `@flare-engine/ui-canvas`, Skia-drawn components on the UI thread, animated by ui-fx and built on `ui` ([plan](ui-canvas-2026-11.md)); Gate 0 now, build after 0.5.0 |
 
 In due-date order. The dates live on the [milestones page](https://github.com/grzott/flare-engine/milestones);
 they are targets, and the owner moves them.

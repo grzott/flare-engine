@@ -2,7 +2,9 @@
 
 - **Status:** approved by the owner on 2026-11-23, every decision in §7. Gate 0 round 1 ran on the
   phone the same day: G0-0 and G0-7 passed with fixes, G0-2 done, G0-1's mount half done, E1's cause
-  found. The issues are #542-#566 (§10).
+  found. G0-3 passed that evening with conditions, now in §3.1, §3.2 and §3.5: the shadow
+  layer holds visible nodes only and mounts after the canvas's first paint, and text sizes come
+  from the platform's own conversion. The issues are #542-#566 (§10).
 - **Evidence:** [ui-canvas-2026-11-measurements.md](ui-canvas-2026-11-measurements.md). Every speed claim below points at a measured row there, and
   its §2.5 lists what those measurements cannot show.
 - **When:** the open Gate 0 items are measurement only, in the spike apps outside the repo, and run
@@ -133,15 +135,18 @@ escape hatch if RN-Skia's tree is too slow to mount or too heavy in memory.
   (4x4 matrix for 3D tilt, opacity, a colour matrix for brightness, a shadow). Snapshot presets
   (shatter, disintegrate, dust) use the node's own recorded picture: no screen capture.
 - **Scrolling** uses a native `ScrollView` proxy for platform physics.
-- **Touch and accessibility:** invisible native views for visible interactive nodes only; the full
-  contract is §3.5. Cost measured in G0-3.
+- **Touch and accessibility:** invisible native views for visible interactive nodes only (plus an
+  overscan row), mounted one commit after the canvas's first paint; the full contract is §3.5. G0-3
+  measured why both are needed: a full layer mounted with the canvas adds 76-85% to opening a
+  200-slot grid, visible nodes only add 13%, and deferring keeps first paint unchanged
+  (measurements §3.6).
 - **Haptics:** interactive components cue through `@flare-engine/haptics` (§3.6).
 
 ### 3.2 Package layout
 
 | Entry | Contents | Runs on |
 |---|---|---|
-| `@flare-engine/ui-canvas/core` | text measure interface and cache (with the OS font scale), virtualization, hit boxes, scroll maths, signals, ECS bindings | anywhere; `bun test` |
+| `@flare-engine/ui-canvas/core` | text measure interface and cache (with the host's font-size mapping), virtualization, hit boxes, scroll maths, signals, ECS bindings | anywhere; `bun test` |
 | `@flare-engine/ui-canvas` | components, the native host (`<UICanvas>`), shadow layer | React Native |
 | `@flare-engine/ui-canvas/web` | the same components on a web host (CanvasKit or DOM, by D3), ARIA mirror | browser |
 
@@ -149,7 +154,11 @@ escape hatch if RN-Skia's tree is too slow to mount or too heavy in memory.
   layout; D12), `ui-fx` (presets, timelines, runtime; D10, D18), `a11y`, `haptics`, `math`,
   `animation`.
 - **Text** needs a measuring callback from the host (Skia Paragraph on native, CanvasKit or DOM on
-  the web), so `core` takes a `measureText` interface rather than importing Skia.
+  the web), so `core` takes a `measureText` interface rather than importing Skia. It also takes a
+  font-size mapping from the host, not a scale factor: Android 14+ scales text sizes non-linearly,
+  so multiplying by `PixelRatio.getFontScale()` draws larger text than native views at 200% (G0-3).
+  The native host gets the mapping from the platform (`TypedValue.applyDimension` with `SP` on
+  Android) and refreshes it when the font scale changes.
 - **Not in the `@flare-engine/engine` barrel** (generic names, as ui-fx C17).
 
 ### 3.3 Components, first cut
@@ -172,13 +181,13 @@ E4).
 
 | Concern | How ui-canvas meets it | Verified by |
 |---|---|---|
-| Screen readers (TalkBack, VoiceOver) | The shadow layer: one invisible native view per visible interactive node, laid out from the same boxes, with role, label, state, value and actions (activate, increment, dismiss). Non-interactive text joins its container's label. Exiting nodes leave the tree through ui-fx's existing exit handling | G0-3 |
+| Screen readers (TalkBack, VoiceOver) | The shadow layer: one invisible native view per visible interactive node (plus an overscan row), laid out from the same boxes, with role, label, state, value and actions (activate, increment, dismiss). It mounts one commit after the canvas's first paint, so opening a screen is not slowed; touch and the screen reader wait 2-4 frames. Non-interactive text joins its container's label. Exiting nodes leave the tree through ui-fx's existing exit handling | G0-3 passed on TalkBack, including across a virtualized layer |
 | Reduced motion | ui-fx's runtime: the OS setting and `A11yManager`, the same fallback as on RN views | ui-fx's tests |
-| Keyboard and gamepad focus | `ui`'s `FocusManager` with spatial navigation (D12, E7); the focus ring is drawn on the canvas and moves the screen reader's focus too | G0-3 |
+| Keyboard and gamepad focus | `ui`'s `FocusManager` with spatial navigation (D12, E7); the focus ring is drawn on the canvas, and each move calls `AccessibilityInfo.sendAccessibilityEvent(node, 'focus')` on the node's shadow view, retrying until a virtualized node has mounted (`ref.focus()` does not move TalkBack). The host owns arrow and confirm keys and keeps Android's own input focus in step with `FocusManager` | G0-3 passed |
 | Contrast | Theme tokens from `ui`; `a11y`'s high-contrast setting picks the contrast palette; `auditColors` in tests | unit tests |
-| OS text size | Paragraph font sizes multiplied by the OS font scale; a change re-lays out the scene | G0-3 at 200% |
-| Rich text | An inline icon carries an accessibility label that joins the surrounding text ("Costs 50 coins") | G0-3 |
-| Drag and drop | Accessibility actions on the dragged item and its targets ("pick up", "move to", "drop") are the screen-reader alternative to the gesture | G0-3 |
+| OS text size | Paragraph font sizes from the host's font-size mapping, the platform's own per-size conversion (non-linear on Android 14+); a change re-lays out the scene. Grid and button layout picks columns from Paragraph's longest-word width at the current size, so words do not break mid-word | G0-3 passed at 200% (no clipping) |
+| Rich text | An inline icon carries an accessibility label that joins the surrounding text ("Costs 50 coins") | G0-3 passed |
+| Drag and drop | Accessibility actions on the dragged item and its targets ("pick up", "move to", "drop") are the screen-reader alternative to the gesture | G0-3 passed |
 | Web | DOM host for app screens (native semantics); CanvasKit in-game UI gets an ARIA mirror (D3) | phase 4 |
 
 ### 3.6 Haptics (D17)
@@ -209,7 +218,7 @@ branch.**
 | **G0-0** | Do Skia surfaces present at the display rate? Presented frames from SurfaceFlinger for canvas and Reanimated views at 100 / 1,000 / 3,000 elements, at 90 Hz and 60 Hz; then the fix | **Go:** the canvas presents at the display rate (within 5%) at 100 and 1,000 elements. **No-go:** re-scope to the heavy cases | **Passed with a fix.** Stock: 44.9 at 90 Hz, 30.0 at 60 Hz. With the `TextureView` fix: 89.8-89.9 and 59.9, no long frames. Not a frame-rate policy (measurements §3.0) |
 | **G0-1** | Branch A vs B on three tests: mount of 1,000 cards with Paragraph text (including rich spans with an inline icon) and layout; memory of that screen; the G0-6 scene's presented fps | A is chosen unless B is at least 1.5x better on mount or presented fps, or A uses over 1.5x B's memory | **Mount, single-line text:** A 88 ms, B's best 75 ms at 1,000 (1.17x); 53 vs 52 ms at 200. Paragraph, memory and G0-6 open |
 | G0-2 | Chrome on the Pixel 7: DOM vs CanvasKit for lists, 3,000 animated, HUD, mount | Numbers recorded; D3 decided | **Done** (measurements §4.1): DOM mounts 1.2-2.3x faster and loads nothing; only CanvasKit holds 90 fps at 3,000 animated (React 49). D3 stands |
-| G0-3 | Accessibility contract (§3.5): TalkBack reads and activates canvas buttons and grid slots; presses route correctly; gamepad focus moves the screen reader's focus; text at 200% OS font scale; drag of a grid item on the UI thread through the shadow layer, and its accessibility actions; cost of N invisible views on mount | TalkBack works on a 20-button menu and a 200-slot grid; 200% text re-lays out without clipping; a drag follows the finger at the display rate and TalkBack can move an item without it; shadow views add under 20% to mount | Open |
+| G0-3 | Accessibility contract (§3.5): TalkBack reads and activates canvas buttons and grid slots; presses route correctly; gamepad focus moves the screen reader's focus; text at 200% OS font scale; drag of a grid item on the UI thread through the shadow layer, and its accessibility actions; cost of N invisible views on mount | TalkBack works on a 20-button menu and a 200-slot grid; 200% text re-lays out without clipping; a drag follows the finger at the display rate and TalkBack can move an item without it; shadow views add under 20% to mount | **Passed with conditions** (measurements §3.6): TalkBack 19 of 19 presses on the focused node, custom-action move works; text needs the platform's size conversion; drag at 89.8-89.9 presented only with the `TextureView` fix (stock 44.9); mount +76-85% for a full 200-node layer, +13% for visible nodes only, first paint unchanged when the layer is deferred |
 | G0-4 | Memory: a 1,000-card screen, canvas vs RN views | Within 1.5x of RN, or a cache cap is set | Open |
 | G0-5 | A low-end Android phone (the Q1 2027 hardware, or a borrowed device) | Informs defaults, not the decision | Open |
 | G0-6 | A realistic scene: 200 inventory slots, each a nine-slice panel, an icon, a Paragraph count and a badge; 50 of them animating at once through ui-fx: every live preset including emerge's brightness and shadow, a `stagger` chain, one shatter; presented fps and UI-thread time per animating node | Canvas presents at the display rate; RN-view equivalent measured for comparison. A preset too slow at 50 concurrent gets a documented limit (D10) | Open |
@@ -243,8 +252,8 @@ already has its issue. E3, E4 and E6-E10 are additive (patch). E5 is not repo wo
 | Phase | Work | Done when |
 |---|---|---|
 | 0. Other packages | E6 `ui-fx/runtime`, E7 `ui` spatial focus and host props, E8-E10 haptics | Released in a patch; a test host drives ui-fx's runtime through `ui-fx/runtime` |
-| 1. Core | text measure interface and Paragraph cache (OS font scale), virtualization, hit boxes, scroll maths, signals, ECS bindings; layout and focus come from `ui` | Headless tests pass; Hermes microbench rows recorded |
-| 2. Native host | `<UICanvas>` host with the `TextureView` presentation fix (D14), shadow layer (the §3.5 contract), ScrollView proxy, the canvas `LiveDriver` and `FxTarget` for ui-fx's runtime | G0-6's scene rebuilt on the package presents at the display rate at 90 and 60 Hz |
+| 1. Core | text measure interface and Paragraph cache (host font-size mapping), virtualization, hit boxes, scroll maths, signals, ECS bindings; layout and focus come from `ui` | Headless tests pass; Hermes microbench rows recorded |
+| 2. Native host | `<UICanvas>` host with the `TextureView` presentation fix (D14) and the platform font-size mapping, shadow layer (the §3.5 contract: visible nodes, deferred mount), ScrollView proxy, the canvas `LiveDriver` and `FxTarget` for ui-fx's runtime | G0-6's scene rebuilt on the package presents at the display rate at 90 and 60 Hz; G0-3's criteria pass on the package |
 | 3. Components | v1 components with every ui-fx preset and timeline (D10), haptic cues (D17), rich text (D9) and drag and drop in grids and lists (D11) | A menu, an inventory and a HUD built from components only; TalkBack and gamepad pass on all three |
 | 4. Web host | per D3: CanvasKit or DOM host, ARIA mirror | Same three screens on the web; G0-2's numbers hold |
 | 5. Game integration | `<UICanvas>` over `GameView`, input routing between UI and game, gamepad across UI and game | G0-7's pause menu and HUD present at the display rate |
@@ -287,11 +296,12 @@ compositor to phases 1 and 2.
 | The `TextureView` fix behaves differently on other phones, Android versions or RN-Skia releases | Measured on one Pixel 7 only. G0-5 repeats G0-0 on the Q1 2027 hardware; the host checks presented frames in a dev-only probe; upstreaming (E5) puts it under RN-Skia's own tests |
 | The fix's redraw pass costs 0.7-1.2 ms per frame on the UI thread | Redraw only after Skia queued a frame, never while idle |
 | Accessibility on a canvas is "never finished" (Figma) | The shadow layer is in Gate 0; the package is for dense UI, not documents |
+| Shadow views slow opening a screen | Visible nodes only and a deferred mount (G0-3: +13% at 200 slots, first paint unchanged). If that stops holding, one native view with virtual accessibility children (`AccessibilityNodeProvider`, RN-Skia #4345) with touch from hit boxes; not measured |
 | RN-Skia v3 (#349) changes the API | Branch A touches RN-Skia through components only; keep host code in one module |
 | Paragraph costs 67-87 µs per paragraph on Hermes | Cache by text and style; G0-1 and G0-6 measure the real mount |
-| Canvas text ignores the OS text size unless scaled by hand | The §3.5 contract; G0-3 tests 200% |
+| Canvas text ignores the OS text size unless scaled by hand | The §3.5 contract: sizes from the platform's own conversion. G0-3 at 200%: a linear factor drew a 22 sp title 52 dp tall against 41 dp with Android's conversion |
 | ui-fx's pose maths per node is unmeasured at scale (the spike used one sine and cosine) | G0-6 times it with 50 concurrent presets |
-| Drag fights the `ScrollView` proxy for the same touch | One gesture owner per region: a long-press starts a drag, a plain move scrolls; G0-3 tests it in a scrolling grid |
+| Drag fights the `ScrollView` proxy for the same touch | One gesture owner per region: a long-press starts a drag, a plain move scrolls. G0-3 confirmed it in a scrolling grid: a swipe scrolled without a drag or a press, and a drag after scrolling picked the right slot without scrolling |
 | Haptics on Android are weak and one cue cancels another | E9 merges cues per frame; HAPTICS-ANDROID-1 for strength; checks read `dumpsys vibrator_manager` |
 | Low-end Android unknown | G0-5; defaults set from it |
 | Scope creep toward a full UI toolkit | v1 list fixed (§3.3); text input, documents, drag out |

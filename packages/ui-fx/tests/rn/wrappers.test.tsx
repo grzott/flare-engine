@@ -314,7 +314,8 @@ test('a removed FlareView unmounts once its exit ends', () => {
   expect(onExited.mock.calls).toEqual([[true]]);
 });
 
-test('a FlareButton exitOn="press" moves accessibility focus to its parent once, before it is hidden', () => {
+test('on iOS a FlareButton exitOn="press" moves accessibility focus to its parent once, before it is hidden', () => {
+  rn.platform.OS = 'ios';
   const r = mount(
     <View testID="parent">
       <FlareButton testID="button" label="Delete" exit={fade()} exitOn="press" />
@@ -335,7 +336,25 @@ test('a FlareButton exitOn="press" moves accessibility focus to its parent once,
   expect(rn.focused).toHaveLength(1);
 });
 
+test('on Android a press exit moves no focus, and still leaves the accessibility tree', () => {
+  const r = mount(
+    <View testID="parent">
+      <FlareButton testID="button" label="Delete" exit={fade()} exitOn="press" />
+    </View>,
+  );
+  const button = find(r, 'button');
+  fire(button, 'onPressIn', touch(2, 2));
+  fire(button, 'onPress');
+
+  expect(rn.props(button).pointerEvents).toBe('none');
+  expect(rn.props(button).importantForAccessibility).toBe('no-hide-descendants');
+  act(() => reanimated.flush());
+  expect(find(r, 'button')).toBeNull();
+  expect(rn.focused).toEqual([]);
+});
+
 test('a list removal never moves accessibility focus', () => {
+  rn.platform.OS = 'ios';
   const button = (show: boolean): ReactNode => (
     <View testID="parent">
       <FlarePresence>

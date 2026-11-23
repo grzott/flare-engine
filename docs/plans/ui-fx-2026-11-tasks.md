@@ -969,7 +969,7 @@ test('cancelled press discards the prepared capture', ...)
   - An exiting element in a Task 10 harness gets `aria-hidden`.
   - A focused element that starts an exit moves focus first:
     - on the web, to the next focusable sibling or `document.body`
-    - on native, `AccessibilityInfo.setAccessibilityFocus` on the parent
+    - on iOS, `AccessibilityInfo.setAccessibilityFocus` on the parent; on Android, no move (#538)
     - focus moves before `hidden` is set
 - [ ] **Step 2:** run the tests. **Expected:** FAIL.
 - [ ] **Step 3:** implement, and wire `effectiveReduced` into `element.ts`.
@@ -1044,10 +1044,14 @@ test('cancelled press discards the prepared capture', ...)
     never removed, so a remount or StrictMode must not add another.
   - Exit accessibility, on every exit, not only snapshot exits:
     - While `phase` is `'exiting'`, the host gets `exitA11yProps(true)`.
-    - When an exit is started by the element's own press, a layout effect calls
+    - On iOS, when an exit is started by the element's own press, a layout effect calls
       `moveAccessibilityFocus` with the parent view's native tag before `hidden` is set. React
       Native cannot tell which view holds accessibility focus, so other exits, such as a list
       removal or a toast timing out, leave it where it is.
+    - On Android no exit moves focus (#538). There, `setAccessibilityFocus` only sends a
+      view-focused event. TalkBack ignores it on a container with nothing to read, and a parent
+      that Fabric flattened has no view, so the call logs a MissingViewState error. On the Pixel 7,
+      TalkBack found the next element itself once the exited element was released.
   - `createFlareComponent<P>(C: ComponentType<P>): ComponentType<P & FlareElementOptions>`. `C` must
     pass `ref` to a host view; Reanimated's `createAnimatedComponent` is applied once, at module scope.
   - `FlareView`, `FlareText`, `FlareImage`, `FlarePressable`, and
@@ -1075,8 +1079,8 @@ test('cancelled press discards the prepared capture', ...)
     that again if it re-presents (C40).
   - An exiting `FlareView` has `importantForAccessibility="no-hide-descendants"` and
     `accessibilityElementsHidden`, and drops both if it re-presents.
-  - `FlareButton exitOn="press"` calls `setAccessibilityFocus` once, before `hidden` is set. A list
-    removal never calls it.
+  - On iOS, `FlareButton exitOn="press"` calls `setAccessibilityFocus` once, before `hidden` is
+    set. A list removal never calls it. On Android a press exit never calls it (#538).
   - Two `FlareProvider` mounts, one under StrictMode, add one `reduceMotionChanged` listener.
   - `createFlareComponent(Custom)` forwards `ref` to the host and passes props through.
   - No `TouchableWithoutFeedback` is imported anywhere: grep `src/` in the test.

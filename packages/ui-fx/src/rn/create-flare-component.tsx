@@ -83,10 +83,16 @@ function measuredSize(host: unknown): Size | null {
   return { w: rect.width, h: rect.height };
 }
 
-/** The native tag of the view around `host`, or `null` when there is none to focus. */
+/**
+ * The native tag of the view around `host` to move accessibility focus to, or `null` to leave
+ * focus alone. Only iOS gets one.
+ */
 function parentTagOf(host: unknown): number | null {
-  // react-native-web has no native tags to give.
-  if (Platform.OS === 'web') return null;
+  // On Android `setAccessibilityFocus` only sends a view-focused event. TalkBack ignores it on a
+  // container with nothing to read, and a parent Fabric flattened has no view, so the event fails
+  // with a logged MissingViewState error. TalkBack finds the next element itself once the exited
+  // one is released. react-native-web has no native tags to give.
+  if (Platform.OS !== 'ios') return null;
   if (typeof host !== 'object' || host === null || !('parentElement' in host)) return null;
   const parent = host.parentElement;
   if (typeof parent !== 'object' || parent === null) return null;

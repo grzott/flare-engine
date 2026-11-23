@@ -1,5 +1,15 @@
 # @flare-engine/ui-fx
 
+## 0.4.17
+
+### Patch Changes
+
+- Updated dependencies [a9564a9]
+- Updated dependencies [95e5338]
+  - @flare-engine/render-web@0.4.17
+  - @flare-engine/a11y@0.4.17
+  - @flare-engine/math@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes

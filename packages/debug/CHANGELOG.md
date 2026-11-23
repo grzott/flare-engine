@@ -1,5 +1,11 @@
 # @flare-engine/debug
 
+## 0.4.17
+
+### Patch Changes
+
+- @flare-engine/core@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes

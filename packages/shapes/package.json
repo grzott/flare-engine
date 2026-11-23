@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/shapes",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "description": "Procedural 2D shape primitives for Skia — atomic primitives + SVG path escape hatch, composable for fast game prototyping",
   "keywords": [
     "flare-engine",
@@ -47,11 +47,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flare-engine/assets": "^0.4.16",
-    "@flare-engine/math": "^0.4.16"
+    "@flare-engine/assets": "^0.4.17",
+    "@flare-engine/math": "^0.4.17"
   },
   "devDependencies": {
-    "@flare-engine/render": "^0.4.16"
+    "@flare-engine/render": "^0.4.17"
   },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=2.0.0"

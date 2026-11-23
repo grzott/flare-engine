@@ -1,5 +1,12 @@
 # @flare-engine/input
 
+## 0.4.17
+
+### Patch Changes
+
+- @flare-engine/events@0.4.17
+- @flare-engine/math@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes

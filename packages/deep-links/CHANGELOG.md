@@ -1,5 +1,11 @@
 # @flare-engine/deep-links
 
+## 0.4.17
+
+### Patch Changes
+
+- @flare-engine/events@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes

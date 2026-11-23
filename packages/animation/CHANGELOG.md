@@ -1,5 +1,13 @@
 # @flare-engine/animation
 
+## 0.4.17
+
+### Patch Changes
+
+- Updated dependencies [4ccd239]
+  - @flare-engine/assets@0.4.17
+  - @flare-engine/math@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes

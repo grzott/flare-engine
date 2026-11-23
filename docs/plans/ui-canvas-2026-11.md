@@ -2,7 +2,7 @@
 
 - **Status:** approved by the owner on 2026-11-23, every decision in §7. Gate 0 round 1 ran on the
   phone the same day: G0-0 and G0-7 passed with fixes, G0-2 done, G0-1's mount half done, E1's cause
-  found. The issues in §10 are created after this document lands.
+  found. The issues are #542-#566 (§10).
 - **Evidence:** [ui-canvas-2026-11-measurements.md](ui-canvas-2026-11-measurements.md). Every speed claim below points at a measured row there, and
   its §2.5 lists what those measurements cannot show.
 - **When:** the open Gate 0 items are measurement only, in the spike apps outside the repo, and run
@@ -318,51 +318,51 @@ compositor to phases 1 and 2.
 
 ## 10. Issues
 
-Created after this document lands, none labelled `status:ready`: the owner labels each one when it
-should start. Results already measured (G0-0, G0-2, G0-7) live in the measurements document, not in
+Created on 2026-11-23, none labelled `status:ready`: the owner labels each one when it should
+start. Results already measured (G0-0, G0-2, G0-7) live in the measurements document, not in
 issues. The upstream RN-Skia report is not a repo issue (D14).
 
 **Now, hand lane (milestone "UI Canvas", `type:verification`):**
 
-| # | Title | Labels |
+| Issue | Title | Labels |
 |---|---|---|
-| 1 | `ui-canvas: Gate 0 — mount, memory and a realistic scene with every ui-fx preset and rich text (G0-1, G0-4, G0-6)` | size:m |
-| 2 | `ui-canvas: Gate 0 — accessibility contract, gamepad focus, text scaling and drag (G0-3)` | size:m |
-| 3 | `ui-canvas: Gate 0 — repeat G0-0 and G0-6 on a low-end Android phone (G0-5)` | size:s, status:blocked (waits for the Q1 2027 hardware) |
+| #542 | `ui-canvas: Gate 0 — mount, memory and a realistic scene with every ui-fx preset and rich text (G0-1, G0-4, G0-6)` | size:m |
+| #543 | `ui-canvas: Gate 0 — accessibility contract, gamepad focus, text scaling and drag (G0-3)` | size:m |
+| #544 | `ui-canvas: Gate 0 — repeat G0-0 and G0-6 on a low-end Android phone (G0-5)` | size:s, status:blocked (waits for the Q1 2027 hardware) |
 
 **Now, milestone "Deferred defects":**
 
-| # | Title | Labels |
+| Issue | Title | Labels |
 |---|---|---|
-| 4 | `react: GameView's loop runs at 45 Hz on high-refresh Android with opaque: true (E1)` | type:defect, priority:p2, size:m |
+| #545 | `react: GameView's loop runs at 45 Hz on high-refresh Android with opaque: true (E1)` | type:defect, priority:p2, size:m |
 
 **After 0.5.0, milestone "UI Canvas". Other packages first (patch, additive):**
 
-| # | Title | Labels |
+| Issue | Title | Labels |
 |---|---|---|
-| 5 | `ui-fx: export the host seam as @flare-engine/ui-fx/runtime (E6, D18)` | type:feature, size:s |
-| 6 | `ui: spatial focus navigation; components forward host props (E7, D12, D15)` | type:feature, size:m |
-| 7 | `ui-fx: optional haptic cues in presets and timelines (E8, D17)` | type:feature, size:s |
-| 8 | `haptics: merge cues to one per frame (E9, D17)` | type:feature, size:s |
-| 9 | `ui: haptic cue on Button press (E10, D17)` | type:feature, size:s |
-| 10 | `docs: ADR-0001 scope note for the UI-thread packages, ui-fx and ui-canvas (D6, ui-fx C16)` | type:hygiene, size:s |
+| #546 | `ui-fx: export the host seam as @flare-engine/ui-fx/runtime (E6, D18)` | type:feature, size:s |
+| #547 | `ui: spatial focus navigation; components forward host props (E7, D12, D15)` | type:feature, size:m |
+| #548 | `ui-fx: optional haptic cues in presets and timelines (E8, D17)` | type:feature, size:s |
+| #549 | `haptics: merge cues to one per frame (E9, D17)` | type:feature, size:s |
+| #550 | `ui: haptic cue on Button press (E10, D17)` | type:feature, size:s |
+| #551 | `docs: ADR-0001 scope note for the UI-thread packages, ui-fx and ui-canvas (D6, ui-fx C16)` | type:hygiene, size:s |
 
 **ui-canvas (milestone "UI Canvas", `type:feature`):**
 
-| # | Title | Size | Depends on |
+| Issue | Title | Size | Depends on |
 |---|---|---|---|
-| 11 | `ui-canvas: design doc and package scaffold` | m | Gate 0 issues 1 and 2 |
-| 12 | `ui-canvas/core: text measure and Paragraph cache, rich spans and the OS font scale (D9)` | m | 11 |
-| 13 | `ui-canvas/core: virtualization, hit boxes and scroll maths` | m | 11 |
-| 14 | `ui-canvas/core: signals and ECS bindings (D4)` | s | 11 |
-| 15 | `ui-canvas: native host with the TextureView presentation fix (D14)` | m | 11 |
-| 16 | `ui-canvas: shadow layer for touch, scrolling and accessibility (D16)` | l | 6, 15 |
-| 17 | `ui-canvas: canvas LiveDriver and FxTarget for every ui-fx preset and timeline (D10)` | m | 5, 15 |
-| 18 | `ui-canvas: v1 components with haptic cues (D17)` | l | 12-17, 7, 8 |
-| 19 | `ui-canvas: drag and drop in grids and lists (D11)` | m | 16, 18 |
-| 20 | `ui-canvas/web: DOM host for app screens, CanvasKit host and ARIA mirror for in-game UI (D3)` | l | 18 |
-| 21 | `ui-canvas: GameView integration and input routing` | m | 18, issue 4 |
-| 22 | `render: batch nine-slice panels into one atlas run (E3)` | s | - |
-| 23 | `ui-canvas: bench rows, docs and recipes` | m | 18 |
-| 24 | `release: create the ui-canvas package name and its trusted publisher (D13)` | s, type:owner-action | - |
-| 25 | `ui-canvas: first publish as Beta (D13)` | s | 18, 23, 24 |
+| #552 | `ui-canvas: design doc and package scaffold` | m | #542, #543 |
+| #553 | `ui-canvas/core: text measure and Paragraph cache, rich spans and the OS font scale (D9)` | m | #552 |
+| #554 | `ui-canvas/core: virtualization, hit boxes and scroll maths` | m | #552 |
+| #555 | `ui-canvas/core: signals and ECS bindings (D4)` | s | #552 |
+| #556 | `ui-canvas: native host with the TextureView presentation fix (D14)` | m | #552 |
+| #557 | `ui-canvas: shadow layer for touch, scrolling and accessibility (D16)` | l | #547, #556 |
+| #558 | `ui-canvas: canvas LiveDriver and FxTarget for every ui-fx preset and timeline (D10)` | m | #546, #556 |
+| #559 | `ui-canvas: v1 components with haptic cues (D17)` | l | #553, #554, #555, #556, #557, #558, #548, #549 |
+| #560 | `ui-canvas: drag and drop in grids and lists (D11)` | m | #557, #559 |
+| #561 | `ui-canvas/web: DOM host for app screens, CanvasKit host and ARIA mirror for in-game UI (D3)` | l | #559 |
+| #562 | `ui-canvas: GameView integration and input routing` | m | #559, #545 |
+| #563 | `render: batch nine-slice panels into one atlas run (E3)` | s | - |
+| #564 | `ui-canvas: bench rows, docs and recipes` | m | #559 |
+| #565 | `release: create the ui-canvas package name and its trusted publisher (D13)` | s, type:owner-action | - |
+| #566 | `ui-canvas: first publish as Beta (D13)` | s | #559, #564, #565 |

@@ -1,5 +1,18 @@
 # @flare-engine/testing
 
+## 0.4.17
+
+### Patch Changes
+
+- Updated dependencies [4ccd239]
+- Updated dependencies [a78517b]
+  - @flare-engine/assets@0.4.17
+  - @flare-engine/render@0.4.17
+  - @flare-engine/core@0.4.17
+  - @flare-engine/ecs@0.4.17
+  - @flare-engine/input@0.4.17
+  - @flare-engine/math@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes

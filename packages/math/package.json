@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/math",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "description": "Vec2, Rect, Transform, Color, easings, intersection tests",
   "keywords": [
     "flare-engine",

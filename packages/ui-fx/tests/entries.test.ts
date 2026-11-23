@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { installReanimatedMock } from './support/mock-reanimated';
+import { installRnMock } from './support/mock-rn';
+
+// `.` imports `react-native` and Reanimated, which bun cannot load.
+installRnMock();
+installReanimatedMock();
 
 const SRC = join(import.meta.dir, '..', 'src');
 
@@ -65,6 +71,20 @@ const SKIA = '@shopify/react-native-skia';
 describe('entries report which one they are', () => {
   test('. is the RN and react-native-web entry', async () => {
     expect((await import('../src/index')).UI_FX_ENTRY).toBe('rn');
+  });
+
+  test('. exports the provider, the factory, the wrappers and the hook', async () => {
+    expect(Object.keys(await import('../src/index')).sort()).toEqual([
+      'FlareButton',
+      'FlareImage',
+      'FlarePressable',
+      'FlareProvider',
+      'FlareText',
+      'FlareView',
+      'UI_FX_ENTRY',
+      'createFlareComponent',
+      'useFlareFx',
+    ]);
   });
 
   test('./core is the headless entry', async () => {

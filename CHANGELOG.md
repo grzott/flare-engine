@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.17](#0417) | 2026-11-23 | 42 | Frame-rate-independent camera shake, a live `GameView` pixel ratio, CanvasKit-assignable types |
 | [0.4.16](#0416) | 2026-11-20 | 42 | Shape paths work on react-native-skia 2.14, the version the templates pin |
 | [0.4.15](#0415) | 2026-11-19 | 42 | Uncoloured sprite batching back to its 0.4.12 speed |
 | [0.4.14](#0414) | 2026-11-19 | 42 | ECS storage keyed by component definition, deprecations ahead of 0.5.0, a clearer CanvasKit load error |
@@ -38,6 +39,44 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.17
+
+Fixes and type additions in 6 packages. The other 36 change only their version. Two behaviour
+changes, in `render` and `render-web`.
+
+- **`render`** — `Camera2D.shake()` moves about the same whatever rate `update()` is called at.
+  Every `update()` used to draw a new, unrelated jitter value, so a faster display shook harder: one
+  `shake(10, 1)` travelled about 201 units along X at 60 Hz and 549 at 165 Hz. The jitter is now a
+  function of the shake's elapsed time, 30 values per second eased from one to the next, and the
+  same shake travels about 90 units at 60 Hz and 97 at 165 Hz. **Behaviour change:** the shake looks
+  different. It is smoother and covers about half the ground per second that the old shake did at
+  60 Hz; the maximum offset is the same. Code that compared `effectiveX` / `effectiveY` during a
+  shake against recorded values needs new values. Intensity, duration, the linear decay,
+  `setMotionScale` and `shakePerlin` are unchanged.
+- **`render-web`** — `loadCanvasKit` rejects a later call that names a different `wasmUrl`, with an
+  `Error` naming both URLs, instead of silently returning the kit loaded from the first URL. The
+  first load and its promise are unaffected. A later call with the same `wasmUrl` behaves as before;
+  URLs are compared as exact strings, so pass the same string each time. A failed load is still not
+  cached. **Behaviour change** only for code that passed a second, different URL. The README gains
+  a "Sizing" section: the caller owns canvas size and `devicePixelRatio`, and calls
+  `PostFxSurface.resize()` (or disposes a `WebSurface` and creates a new one).
+- **`react`** — `GameView` picks up a pixel-ratio change after it mounts. It re-reads
+  `PixelRatio.get()` on every render and on a `Dimensions` `change` event. From the next frame, the
+  frame, the scene capture and, on web, the postfx passes use the new physical size. A scale change
+  that causes neither a render nor a `change` event is still not seen.
+- **`assets`** — a CanvasKit `Image` is assignable to `SkImageLike`, so it can be passed to
+  `createTexture` and returned from a `decodeImage` callback with no cast. `SkImageLike.readPixels`
+  now declares optional `srcX`, `srcY` and `imageInfo` parameters, typed by the new exported
+  `SkImageInfoLike`. Type-only. The arguments are not portable between backends, so read pixels back
+  through the backend's own image type.
+- **`shapes`** — the published types no longer import `@shopify/react-native-skia`, so they resolve
+  in a project without that optional peer. `drawShape`, `applyGlow`, `applyFriendlyGlow` and
+  `applyHazardGlow` take the package's structural `ShapeAtlasCanvas`, `ShapeAtlasPaint` and the new
+  `ShapeDrawSkia`. react-native-skia's types and the handle from `createWebShapeSkia` pass with no
+  cast. Type-only. On the web the per-frame path is `bakeShapeAtlas` followed by `drawBakedShape`.
+- **`ui`** — `Button`, `Panel` and `Label` accept an optional `ref`, React 19's ref-as-a-prop, and
+  pass it to their root element.
 
 ## 0.4.16
 

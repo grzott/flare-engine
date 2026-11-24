@@ -118,28 +118,22 @@ export interface GameConfig {
   onRenderPostFx?: PostFxRenderHook;
   /**
    * Promote the underlying Skia surface from a TextureView (default) to a
-   * SurfaceView on Android. With `opaque: true`, SurfaceView paints in a
-   * separate compositing layer below the regular RN view tree, which lets
-   * full-screen RN overlays (HUDs, menus) render on top without needing
-   * elevation/zIndex tricks.
+   * SurfaceView on Android. The SurfaceView paints in its own compositing
+   * layer below the RN view tree, so full-screen RN overlays (HUDs, menus)
+   * render on top without elevation/zIndex tricks; RN-Skia's TextureView can
+   * clip them on some Android devices/Fabric configurations.
    *
-   * Without this, RN-Skia's TextureView can clip overlapping full-screen
-   * RN siblings on certain Android devices/Fabric configurations.
+   * Implies opaque content: the clearColor's alpha must be 0xFF, as the
+   * default `0xff000000` is. Defaults to `false`.
    *
-   * Implies the canvas content is opaque — the clearColor's alpha must be
-   * fully opaque (0xFF), which the default `0xff000000` already satisfies.
-   * Defaults to `false` to preserve the current iOS-equivalent behavior.
-   *
-   * **Recommended on Android.** Measured on a Pixel 7 (Android 17, release
-   * build, XR-1c): with the default TextureView path RN-Skia logs its
-   * `updateTexImage: LegacySurfaceTexture is not attached!` /
-   * `updateAndRelease() failed` pair **22 028 times per 60 s** — 90% of all
-   * logcat output, saturating the 256 KiB ring buffer so unrelated diagnostics
-   * are lost. With `opaque: true` the same build over three 60 s windows logs
-   * the pair **zero** times and total log volume drops ~10x. RN-Skia labels the
-   * pair ignorable and rendering is correct either way, so this is log noise
-   * and TextureView overhead, not a correctness fix. Native memory is flat
-   * across a 6-minute soak on both paths.
+   * **Leave it `false` on Android unless overlays are clipped.** The
+   * SurfaceView's buffer queue stays full, so the loop gets every other vsync:
+   * on a Pixel 7 an empty scene looped at 45 Hz on a 90 Hz display and 30 Hz
+   * at 60 Hz, frames reaching the screen 40 ms after queueing, against the
+   * display rate and 22-33 ms by default (#545). The default's cost is log
+   * noise, not rendering or memory: RN-Skia logs `LegacySurfaceTexture is not
+   * attached!` and `updateAndRelease() failed` on every render. Filter them:
+   * `adb logcat | grep -vE "LegacySurfaceTexture|updateAndRelease"`.
    */
   opaque?: boolean;
 }

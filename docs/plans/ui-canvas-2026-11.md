@@ -4,7 +4,14 @@
   phone the same day: G0-0 and G0-7 passed with fixes, G0-2 done, G0-1's mount half done, E1's cause
   found. G0-3 passed that evening with conditions, now in §3.1, §3.2 and §3.5: the shadow
   layer holds visible nodes only and mounts after the canvas's first paint, and text sizes come
-  from the platform's own conversion. The issues are #542-#566 (§10).
+  from the platform's own conversion. G0-1, G0-4 and G0-6 passed on 2026-11-24, also with
+  conditions, now in §2.4, §3.1, §3.2 and §8:
+  - branch A is kept;
+  - opacity and brightness effects need a layer per node on the canvas, with a documented limit
+    of about 25 at once at 90 Hz;
+  - the Paragraph cache reuses one builder per style and keeps Paragraphs for visible nodes only.
+
+  The issues are #542-#566 (§10).
 - **Evidence:** [ui-canvas-2026-11-measurements.md](ui-canvas-2026-11-measurements.md). Every speed claim below points at a measured row there, and
   its §2.5 lists what those measurements cannot show.
 - **When:** the open Gate 0 items are measurement only, in the spike apps outside the repo, and run
@@ -51,7 +58,9 @@ Those stay native views (FlashList, Legend List) or DOM, which the measurements 
 | 3,000 animated elements, 90 Hz | 6 | 89.9 | 89.9; 9.2 ms | canvas 15x |
 | 100 / 1,000 animated, 60 Hz | 59.9 (100) | 30.0 / 29.9 | 59.9 / 59.9 | tie, then canvas |
 | 100 HUD labels changing every frame | 72 (React state), 46 (Reanimated text) | 44.9-66 | 89.8 | canvas ahead |
-| Open a 1,000-card screen | 497 ms | 88 ms declarative, 75 ms one picture | same | canvas 5-6x; Paragraph and shadow views will narrow it (G0-1, G0-6) |
+| Open a 1,000-card screen, single-line text | 497 ms | 88 ms declarative, 75 ms one picture | same | canvas 5-6x |
+| Open a 1,000-card screen, wrapping Paragraph text, rich spans, flex layout | 1,252 ms | 319 ms declarative, 243 ms one picture | same | canvas 3.9x (G0-1) |
+| 200-slot inventory, 50 slots playing ui-fx presets at once, 90 Hz | 89.9 (41 animating) | 39.8-43.5 | 84.4-89.9; 8.8 ms | tie, if opacity and brightness effects stay under about 25 at once (G0-6) |
 | Scroll 1,000 plain rows | FlashList: no slow frames, 0 blank | same | - | no gain: keep FlashList |
 
 The canvas's half rate came from RN-Skia's `TextureView` handoff, not from Android (measurements §3.0).
@@ -91,12 +100,14 @@ condition that the fix ships (D14).
 
 | Branch | What it is | Evidence | Default |
 |---|---|---|---|
-| **A. Declarative RN-Skia** | Components render RN-Skia JSX nodes (`Group`, `RoundedRect`, `Paragraph`, `Atlas`); animated props are shared values evaluated on the UI thread | Every UI-thread number in the measurements (`u2`, `u3`) was measured this way. Mount of 1,000 cards: 88 ms, against 75 ms for B's best case (1.17x) | **Start here** |
-| B. Own compositor | Own reconciler into a typed-array node store; one packet per change; a worklet draws per-node pictures and atlases | Only pieces measured: per-frame composition of two pictures (`u1`), atlas buffers (`u2`) | Only if G0-1 shows A failing on mount, memory or a realistic scene |
+| **A. Declarative RN-Skia** | Components render RN-Skia JSX nodes (`Group`, `RoundedRect`, `Paragraph`, `Atlas`); animated props are shared values evaluated on the UI thread | Every UI-thread number in the measurements (`u2`, `u3`, `u9`) was measured this way. G0-1: 1,000 cards with Paragraph text mount in 319 ms; the G0-6 scene presents 84.4-89.9 at 90 Hz; the screen holds 286 MB | **Chosen (G0-1, 2026-11-24)** |
+| B. Own compositor | Own reconciler into a typed-array node store; one packet per change; a worklet draws per-node pictures and atlases | G0-1, B's best case (one recorded picture, or a worklet recording each frame): mount 243 ms (1.31x better), the G0-6 scene 87.1-89.9 (1.01x), memory 1.02x less | Not chosen: short of the 1.5x on every test |
 
 Branch A is far smaller: no reconciler, no node store, no packet transfer and no compositor to
-write. RN-Skia already does those, on the UI thread, and is a dependency Flare has. Branch B is the
-escape hatch if RN-Skia's tree is too slow to mount or too heavy in memory.
+write. RN-Skia already does those, on the UI thread, and is a dependency Flare has. G0-1 found it
+close enough to B's best case on mount, memory and a realistic scene (measurements §3.7), so the
+plan builds A. Branch B's per-frame recording stays the measured alternative for scenes with many
+layered effects (§3.1).
 
 ---
 
@@ -131,9 +142,23 @@ escape hatch if RN-Skia's tree is too slow to mount or too heavy in memory.
 - **Animation** never touches JS per frame. ui-canvas implements ui-fx's `LiveDriver` and
   `FxTarget` for Skia nodes and plugs them into ui-fx's runtime (D10, D18), which already runs
   enter, exit, press, timelines and reduced motion. Each animating node's pose comes from
-  `livePoseAtInto`, a worklet (`packages/ui-fx/src/core/live.ts:290`), mapped to a Skia `Group`
-  (4x4 matrix for 3D tilt, opacity, a colour matrix for brightness, a shadow). Snapshot presets
-  (shatter, disintegrate, dust) use the node's own recorded picture: no screen capture.
+  `livePoseAtInto`, a worklet (`packages/ui-fx/src/core/live.ts:290`), mapped to a Skia `Group`:
+  - a 4x4 matrix for 3D tilt;
+  - opacity and brightness through the group's layer paint (opacity and a colour matrix);
+  - emerge's shadow as a gradient whose stops follow `shadowEdge`.
+
+  Snapshot presets (shatter, disintegrate, dust) use the node's own recorded picture: no screen
+  capture.
+- **Layers, and their limit (G0-6, D10):**
+  - Opacity needs the layer because RN-Skia's `Group` opacity does not reach `Picture` or
+    `Paragraph` children.
+  - Layers cost: the driver adds one only to nodes whose preset changes opacity or brightness
+    (fade, press, emerge, and timelines containing them), and only while the effect plays.
+  - On the Pixel 7 at 90 Hz, about 25 layered nodes at once hold the display rate, 35 drop the
+    occasional frame, and 50 fall to 50-75 fps. That is D10's documented limit.
+  - Above a cap, further layered effects start later or play their reduced-motion fallback.
+  - Moves, scales, rotations and shatter need no layer: about 5 µs of UI thread per moving node,
+    and 0.16 ms per 40-piece shatter (measurements §3.7).
 - **Scrolling** uses a native `ScrollView` proxy for platform physics.
 - **Touch and accessibility:** invisible native views for visible interactive nodes only (plus an
   overscan row), mounted one commit after the canvas's first paint; the full contract is §3.5. G0-3
@@ -159,6 +184,12 @@ escape hatch if RN-Skia's tree is too slow to mount or too heavy in memory.
   so multiplying by `PixelRatio.getFontScale()` draws larger text than native views at 200% (G0-3).
   The native host gets the mapping from the platform (`TypedValue.applyDimension` with `SP` on
   Android) and refreshes it when the font scale changes.
+- **The Paragraph cache** reuses one `ParagraphBuilder` per style (`reset()` between Paragraphs)
+  and keeps Paragraphs only for visible nodes plus overscan, disposing the rest (G0-1).
+  - A Paragraph takes 83 µs to build and lay out on Hermes, and holds about 30 KB of native
+    memory, or 43 KB with a builder per Paragraph.
+  - Text is half of the canvas's mount time for 1,000 cards (166 of 319 ms) and most of its
+    native heap.
 - **Not in the `@flare-engine/engine` barrel** (generic names, as ui-fx C17).
 
 ### 3.3 Components, first cut
@@ -213,15 +244,15 @@ Run in the spike app (`ui-fx-spike/uifx-native`) and `uibench-web`, outside the 
 reports on its issue with numbers, as ui-fx Gate 0 did. **G0-0 decides go or no-go; G0-1 decides the
 branch.**
 
-| ID | Question | Pass when | Result, 2026-11-23 |
+| ID | Question | Pass when | Result (2026-11-23; G0-1, G0-4 and G0-6 on 2026-11-24) |
 |---|---|---|---|
 | **G0-0** | Do Skia surfaces present at the display rate? Presented frames from SurfaceFlinger for canvas and Reanimated views at 100 / 1,000 / 3,000 elements, at 90 Hz and 60 Hz; then the fix | **Go:** the canvas presents at the display rate (within 5%) at 100 and 1,000 elements. **No-go:** re-scope to the heavy cases | **Passed with a fix.** Stock: 44.9 at 90 Hz, 30.0 at 60 Hz. With the `TextureView` fix: 89.8-89.9 and 59.9, no long frames. Not a frame-rate policy (measurements §3.0) |
-| **G0-1** | Branch A vs B on three tests: mount of 1,000 cards with Paragraph text (including rich spans with an inline icon) and layout; memory of that screen; the G0-6 scene's presented fps | A is chosen unless B is at least 1.5x better on mount or presented fps, or A uses over 1.5x B's memory | **Mount, single-line text:** A 88 ms, B's best 75 ms at 1,000 (1.17x); 53 vs 52 ms at 200. Paragraph, memory and G0-6 open |
+| **G0-1** | Branch A vs B on three tests: mount of 1,000 cards with Paragraph text (including rich spans with an inline icon) and layout; memory of that screen; the G0-6 scene's presented fps | A is chosen unless B is at least 1.5x better on mount or presented fps, or A uses over 1.5x B's memory | **Passed: A kept** (measurements §3.7). Mount of 1,000 cards with Paragraph text, rich spans and flex layout: A 319 ms, B's best 243 ms (1.31x), RN views 1,252 ms. Memory: A 1.02x B. The G0-6 scene: A 84.4-89.9 presented, B 87.1-89.9 (1.01x) |
 | G0-2 | Chrome on the Pixel 7: DOM vs CanvasKit for lists, 3,000 animated, HUD, mount | Numbers recorded; D3 decided | **Done** (measurements §4.1): DOM mounts 1.2-2.3x faster and loads nothing; only CanvasKit holds 90 fps at 3,000 animated (React 49). D3 stands |
 | G0-3 | Accessibility contract (§3.5): TalkBack reads and activates canvas buttons and grid slots; presses route correctly; gamepad focus moves the screen reader's focus; text at 200% OS font scale; drag of a grid item on the UI thread through the shadow layer, and its accessibility actions; cost of N invisible views on mount | TalkBack works on a 20-button menu and a 200-slot grid; 200% text re-lays out without clipping; a drag follows the finger at the display rate and TalkBack can move an item without it; shadow views add under 20% to mount | **Passed with conditions** (measurements §3.6): TalkBack 19 of 19 presses on the focused node, custom-action move works; text needs the platform's size conversion; drag at 89.8-89.9 presented only with the `TextureView` fix (stock 44.9); mount +76-85% for a full 200-node layer, +13% for visible nodes only, first paint unchanged when the layer is deferred |
-| G0-4 | Memory: a 1,000-card screen, canvas vs RN views | Within 1.5x of RN, or a cache cap is set | Open |
+| G0-4 | Memory: a 1,000-card screen, canvas vs RN views | Within 1.5x of RN, or a cache cap is set | **Passed** (measurements §3.7): canvas 286 MB total PSS against 401 MB for RN views (0.71x). The canvas adds 43 MB of graphics memory before drawing anything; each Paragraph holds about 30 KB of native memory with a reused builder |
 | G0-5 | A low-end Android phone (the Q1 2027 hardware, or a borrowed device) | Informs defaults, not the decision | Open |
-| G0-6 | A realistic scene: 200 inventory slots, each a nine-slice panel, an icon, a Paragraph count and a badge; 50 of them animating at once through ui-fx: every live preset including emerge's brightness and shadow, a `stagger` chain, one shatter; presented fps and UI-thread time per animating node | Canvas presents at the display rate; RN-view equivalent measured for comparison. A preset too slow at 50 concurrent gets a documented limit (D10) | Open |
+| G0-6 | A realistic scene: 200 inventory slots, each a nine-slice panel, an icon, a Paragraph count and a badge; 50 of them animating at once through ui-fx: every live preset including emerge's brightness and shadow, a `stagger` chain, one shatter; presented fps and UI-thread time per animating node | Canvas presents at the display rate; RN-view equivalent measured for comparison. A preset too slow at 50 concurrent gets a documented limit (D10) | **Passed with a documented limit** (measurements §3.7). At 90 Hz: 84.4-89.9 presented, UI thread 8.8 ms (p50). At 60 Hz: 58.1-59.9. RN views: 89.9 with 41 animating. **Limit:** presets that change opacity or brightness need a layer per node; about 25 at once hold 90 Hz, and 50 fall to 50-75 fps (§3.1). Slides, path slides and shatter (to 10 at once) show none. Pose maths: 2-6 µs per node |
 | G0-7 | A HUD and pause menu over a running GameView (transparent canvas on top); E1's cause | Both present at the display rate, or E1's fix is known | **Passed with both fixes** (measurements §3.0 E): GameView on a `TextureView` plus the overlay fix gives overlay 89.8-89.9 and a game loop near 87 Hz. With today's `SurfaceView` GameView the loop stays at 45-48 Hz |
 
 ---
@@ -252,15 +283,15 @@ already has its issue. E3, E4 and E6-E10 are additive (patch). E5 is not repo wo
 | Phase | Work | Done when |
 |---|---|---|
 | 0. Other packages | E6 `ui-fx/runtime`, E7 `ui` spatial focus and host props, E8-E10 haptics | Released in a patch; a test host drives ui-fx's runtime through `ui-fx/runtime` |
-| 1. Core | text measure interface and Paragraph cache (host font-size mapping), virtualization, hit boxes, scroll maths, signals, ECS bindings; layout and focus come from `ui` | Headless tests pass; Hermes microbench rows recorded |
-| 2. Native host | `<UICanvas>` host with the `TextureView` presentation fix (D14) and the platform font-size mapping, shadow layer (the §3.5 contract: visible nodes, deferred mount), ScrollView proxy, the canvas `LiveDriver` and `FxTarget` for ui-fx's runtime | G0-6's scene rebuilt on the package presents at the display rate at 90 and 60 Hz; G0-3's criteria pass on the package |
+| 1. Core | text measure interface and Paragraph cache (host font-size mapping, one reused builder per style, visible nodes only), virtualization, hit boxes, scroll maths, signals, ECS bindings; layout and focus come from `ui` | Headless tests pass; Hermes microbench rows recorded |
+| 2. Native host | `<UICanvas>` host with the `TextureView` presentation fix (D14) and the platform font-size mapping, shadow layer (the §3.5 contract: visible nodes, deferred mount), ScrollView proxy, the canvas `LiveDriver` and `FxTarget` for ui-fx's runtime, layering only opacity and brightness effects while they play | G0-6's scene rebuilt on the package presents at the display rate at 90 and 60 Hz, with the layered-effect cap enforced; G0-3's criteria pass on the package |
 | 3. Components | v1 components with every ui-fx preset and timeline (D10), haptic cues (D17), rich text (D9) and drag and drop in grids and lists (D11) | A menu, an inventory and a HUD built from components only; TalkBack and gamepad pass on all three |
 | 4. Web host | per D3: CanvasKit or DOM host, ARIA mirror | Same three screens on the web; G0-2's numbers hold |
 | 5. Game integration | `<UICanvas>` over `GameView`, input routing between UI and game, gamepad across UI and game | G0-7's pause menu and HUD present at the display rate |
 | 6. Proof and release | pilot screens in Berek and Pan Tvardowski with before/after presented-frame numbers, bench rows, docs, recipes | First publish as Beta (D13) |
 
-Branch B, if G0-1 picks it, adds a reconciler, a node store, a packet format and a worklet
-compositor to phases 1 and 2.
+G0-1 kept branch A (§2.4), so phases 1 and 2 add no reconciler, node store, packet format or
+worklet compositor.
 
 ---
 
@@ -298,9 +329,11 @@ compositor to phases 1 and 2.
 | Accessibility on a canvas is "never finished" (Figma) | The shadow layer is in Gate 0; the package is for dense UI, not documents |
 | Shadow views slow opening a screen | Visible nodes only and a deferred mount (G0-3: +13% at 200 slots, first paint unchanged). If that stops holding, one native view with virtual accessibility children (`AccessibilityNodeProvider`, RN-Skia #4345) with touch from hit boxes; not measured |
 | RN-Skia v3 (#349) changes the API | Branch A touches RN-Skia through components only; keep host code in one module |
-| Paragraph costs 67-87 µs per paragraph on Hermes | Cache by text and style; G0-1 and G0-6 measure the real mount |
+| A Paragraph costs 83 µs to build and lay out on Hermes and holds about 30 KB of native memory (G0-1) | One reused builder per style; Paragraphs only for visible nodes plus overscan, disposed on unmount rather than left to a garbage collection |
 | Canvas text ignores the OS text size unless scaled by hand | The §3.5 contract: sizes from the platform's own conversion. G0-3 at 200%: a linear factor drew a 22 sp title 52 dp tall against 41 dp with Android's conversion |
-| ui-fx's pose maths per node is unmeasured at scale (the spike used one sine and cosine) | G0-6 times it with 50 concurrent presets |
+| Opacity and brightness effects need a layer per node: 50 at once fall to 50-75 fps on the Pixel 7 (G0-6) | Layer only those presets, only while they play; cap concurrent layered effects (about 25 at 90 Hz on the Pixel 7, G0-5 sets the low-end value) and start the rest later or play their reduced-motion fallback. Unmeasured: drawing a fading node from a raster of its own picture, which needs no layer. Measured alternative: branch B's per-frame recording held 85.8-89.9 with 50 fades |
+| RN-Skia redraws the whole canvas whenever anything animates: 8.0 ms of UI thread per frame for a 200-slot inventory with one node moving (G0-6) | Keep canvases to the dense part of a screen. Phase 2 measures a static subtree frozen into one `Picture`; G0-6's run of it was taken on a warm phone and is not comparable |
+| A canvas costs 43 MB of graphics memory before it draws anything (its `TextureView` buffers, G0-4) | One `<UICanvas>` per screen, not one per component |
 | Drag fights the `ScrollView` proxy for the same touch | One gesture owner per region: a long-press starts a drag, a plain move scrolls. G0-3 confirmed it in a scrolling grid: a swipe scrolled without a drag or a press, and a drag after scrolling picked the right slot without scrolling |
 | Haptics on Android are weak and one cue cancels another | E9 merges cues per frame; HAPTICS-ANDROID-1 for strength; checks read `dumpsys vibrator_manager` |
 | Low-end Android unknown | G0-5; defaults set from it |
@@ -313,9 +346,9 @@ compositor to phases 1 and 2.
 | Question | Answer |
 |---|---|
 | Did the canvas present 90 frames per second? | Stock RN-Skia: not in most runs, about 45. With the `TextureView` fix: 89.8-89.9 at 90 Hz and 59.9 at 60 Hz (measurements §3.0) |
-| What draws a real component when it animates? | Unmeasured. G0-6 is a realistic inventory scene; it also feeds G0-1 |
-| Plan before G0-1 resolves? | Branch A is the default; G0-1 has numeric criteria to switch to B (§4) |
-| What must `Text` do? | D9. Mount numbers with Paragraph come from G0-1 |
+| What draws a real component when it animates? | G0-6: 50 inventory slots with Paragraph text playing ui-fx presets at once present 84.4-89.9 at 90 Hz; opacity and brightness need a layer per node (§3.1) |
+| Plan before G0-1 resolves? | G0-1 kept branch A (§2.4) |
+| What must `Text` do? | D9. With Paragraph text, 1,000 cards mount in 319 ms (G0-1) |
 | Is the HUD over a game in scope, and is E1 a prerequisite? | G0-7 measures it; phase 5's acceptance depends on it. E1's cause is known (§5) |
 | Which ui-fx presets? | D10: all of them, with chains |
 | Do we still need `@flare-engine/ui`? | Yes, as the shared base and the native-view kit (D15) |

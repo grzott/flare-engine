@@ -3,13 +3,15 @@
 - **Status:** measured on 2026-11-23 and checked by an independent review the same day. §3.0 is the
   afternoon Gate 0 round, which found why the canvas showed half frame rate and measured a fix.
   §3.6 is the evening G0-3 round: the shadow layer with TalkBack, gamepad focus, 200% text, drag
-  and the layer's mount cost. Raw logs, traces and the spike tools stay outside the repo, in the
-  gitignored `docs/plans/_local/fast-ui-2026-11/`.
+  and the layer's mount cost. §3.7 is the G0-1, G0-4 and G0-6 round of 2026-11-24: mount with
+  Paragraph text, memory, and an inventory scene playing ui-fx presets. The spike scenarios and
+  the last round's scripts stay outside the repo, in `ui-fx-spike/uifx-native`. The raw logs and
+  traces were kept locally and are no longer available.
 - **Question:** can Flare ship the fastest UI components for React Native and the web, usable by
   RN/web developers and by game developers? Is building UI "like a game" (ECS, canvas) the way?
 - **Companion:** [ui-canvas-2026-11.md](ui-canvas-2026-11.md), the plan.
-- **Rule for this doc:** every number is either measured on 2026-11-23 (with the run it came from)
-  or published (with its source). Nothing is estimated. Where a measurement cannot show what it
+- **Rule for this doc:** every number is either measured on 2026-11-23 or 2026-11-24 (with the run
+  it came from) or published (with its source). Nothing is estimated. Where a measurement cannot show what it
   seems to show, §2.5 says so.
 
 ---
@@ -38,7 +40,7 @@
 5. **Opening screens is 5-6x faster on a canvas, and declarative RN-Skia is close to the best
    custom path.** 1,000 cards: 497 ms with RN views, **88 ms with declarative RN-Skia**, 75 ms for
    one pre-recorded picture (1.17x). The canvas variants drew single-line text without layout, so
-   this is an upper bound on the gain (§2.5).
+   this is an upper bound on the gain (§2.5). With Paragraph text and layout the gain is 3.9x (§3.7).
 6. **Plain scrolling lists are already fast.** FlashList v2, Legend List and a Skia canvas list all
    scrolled 1,000 rows with no slow UI frames and zero blank rows in 128 mid-fling screenshots, even
    with the JS thread blocked a quarter of the time. Only FlatList dropped frames.
@@ -62,14 +64,23 @@
    without). Mounting a view for every node with the canvas slowed opening a 200-slot grid by
    76-85%; visible nodes only cost 13%, and mounting them one commit later left first paint
    unchanged. Text at 200% needs Android's own size conversion, not a scale factor (§3.6).
+12. **With real text and a realistic scene, declarative RN-Skia stays close to the best custom path.**
+   - **Mount:** 1,000 cards with wrapping Paragraph text, a rich span with an inline icon and flex
+     layout open in 319 ms on the canvas, against 1,252 ms with RN views and 243 ms for one
+     recorded picture (1.31x).
+   - **Memory:** the canvas screen uses 0.71x the RN views' memory.
+   - **A 200-slot inventory with 50 ui-fx presets playing at once** presents 84.4-89.9 at 90 Hz,
+     provided opacity and brightness effects stay under about 25 at once. On the canvas each of
+     them needs a layer, and 50 fall to 50-75 fps (§3.7).
 
 **Verdict:** on this phone, a UI-thread canvas now **reaches the screen at the display rate, at 90
 and 60 Hz, from 100 to 3,000 animated elements**, provided the `TextureView` fix ships (in RN-Skia
 upstream, or in the package's own host until then). It ties native views on light screens and beats
-them by 5-15x on dense ones, and opens screens about 5x faster. The touch and screen-reader layer
-works on TalkBack when it holds visible nodes only and mounts after the first paint (§3.6). Still
-unmeasured: Paragraph text and layout at mount of a large screen, memory, a realistic mixed scene,
-iOS and a low-end phone. Plain lists and forms should stay native (or DOM); they are already fast.
+them by 5-15x on dense ones, and opens screens about 4x faster with real text and layout. The touch
+and screen-reader layer works on TalkBack when it holds visible nodes only and mounts after the
+first paint (§3.6). A realistic inventory with 50 ui-fx presets playing reaches the display rate
+when no more than about 25 of them change opacity or brightness (§3.7). Still unmeasured: iOS and a
+low-end phone. Plain lists and forms should stay native (or DOM); they are already fast.
 
 ---
 
@@ -128,12 +139,13 @@ median reported. Host instances were plain objects written into an ECS World; no
 - VoiceOver, and TalkBack's spoken output (§3.6 checks where TalkBack's focus lands and what the
   node exposes, not the speech).
 - Text input on a canvas (out of scope: forms stay native).
-- Mount with Paragraph text and layout, memory, and a realistic mixed scene (plan G0-1, G0-4, G0-6).
 - Input-to-screen latency. §3.0's queue-to-present time is one part of it.
 - Measured in the afternoon round, no longer open: presented frames from SurfaceFlinger, a 60 Hz
   mode, declarative RN-Skia mount (with the timer fixed: a marker inside the Skia tree).
 - Measured in the evening round (§3.6), no longer open: accessibility and touch through a canvas
   (a shadow layer of native views), gamepad focus, 200% text, drag on the UI thread.
+- Measured on 2026-11-24 (§3.7), no longer open: mount with Paragraph text and layout, memory, and
+  a realistic mixed scene (plan G0-1, G0-4, G0-6).
 
 ### 2.5 Limits of these measurements (from the review)
 
@@ -143,12 +155,12 @@ An independent review of the plan against this data found these limits. They sta
 |---|---|
 | "The canvas runs at 90 fps" | Stock RN-Skia: no, about 45 presented in most runs (§3.1, §3.2). With the `TextureView` fix: yes, 89.8-89.9 presented by SurfaceFlinger's count (§3.0) |
 | "3,000 elements cost 2.98 ms" | That is the span of the transform worklet only. The whole UI-thread frame, from a trace, was 9.2 ms (p50) at 3,000, 7.8 at 1,000 and 6.5 at 100; the CPU clocks up with load, so these do not add linearly. GPU time was not measured |
-| "Real components animate this fast" | Every animated element was the same 40x40 sprite from one atlas, drawn through RN-Skia's declarative `<Atlas>`. No run animated many distinct nodes with text |
-| "ui-fx presets run in the worklet at this cost" | The worklet computed one sine and one cosine per element, not ui-fx's pose evaluation |
+| "Real components animate this fast" | Every animated element was the same 40x40 sprite from one atlas, drawn through RN-Skia's declarative `<Atlas>`. No run animated many distinct nodes with text. §3.7 did: 50 inventory slots with Paragraph text, 84.4-89.9 presented, with a limit on layered effects |
+| "ui-fx presets run in the worklet at this cost" | The worklet computed one sine and one cosine per element, not ui-fx's pose evaluation. §3.7 timed ui-fx's own `livePoseAtInto`: 2-6 µs per node |
 | "Skia text HUD at 90 fps" | Measured with 100 declarative `<Text>` nodes, each with its own derived value; presented about 66 per second at 100 labels |
 | "Opening a screen is 5-7x faster" | The canvas variants drew single-line `drawText` at precomputed positions: no layout, no measuring, no Paragraph, no shadow views. The stop marker (second UI frame after commit) does not prove the picture was rasterised, while RN view mounting delays that same marker |
 | "A React reconciler mounts 1,000 nodes in 7.9 ms" | True for the microbench with plain host objects. In the app, the reconciler path's build took 81 ms against 41 ms for drawing the same picture directly |
-| "Paragraph costs about 40 µs per card" | 40 µs was a rounded rect plus `drawText`. Paragraph text (u1) cost about 67-87 µs per paragraph |
+| "Paragraph costs about 40 µs per card" | 40 µs was a rounded rect plus `drawText`. Paragraph text (u1) cost about 67-87 µs per paragraph; §3.7 measured 83 µs to build and lay out one with a rich span |
 | "Lists: the canvas list has zero blank rows" | It pre-recorded all 1,000 rows (134-175 ms) and was not virtualized. Screenshots cannot show lag between the native scroll offset and the canvas |
 | "GameView is 45 fps" | Its `SurfaceView` presents 90 buffers a second, but its JS loop runs at 45 Hz, so every other frame repeats. Cause found (§3.0) |
 | "The fix costs nothing" | It adds the window's redraw pass every frame: 0.7-1.2 ms on the UI thread (p50). The spike redraws even when the canvas is idle; a real fix redraws only after Skia queued a frame |
@@ -481,6 +493,175 @@ up).
 ("reads" means its focus landed on the node, whose text the dump shows). A `View` layer mounts
 faster than `Pressable`s, but its TalkBack activation and touch through hit boxes were not tested.
 The size conversion and the key forwarding were spike code.
+
+### 3.7 Paragraph mount, memory and a realistic animated scene (`u8`, `u9`, 2026-11-24, G0-1, G0-4, G0-6)
+
+**Setup.** Versions as §2.1. ui-fx was the #538 build: `compileLive`, `livePoseAtInto`, `stagger`,
+`generateFracture` and `fragmentPoseInto`. The `TextureView` fix was on unless a row says stock.
+The window's `preferredDisplayModeId` held the display at 90 Hz, or at 60 Hz where marked.
+
+**Thermal control.** The first G0-6 runs drifted as the phone warmed on its charger: one
+configuration went from 8.67 to 10.14 ms per frame and from 89.9 to 72-87 presented, while
+Android's `Thermal Status` stayed 0. Every G0-6 number below comes from a run started after the
+phone cooled to a skin temperature under 34 °C and big cores under 55 °C (`dumpsys thermalservice`,
+live HAL values). The variants were interleaved, and the main comparison ran in two rounds.
+
+**A. Mount of 1,000 cards with Paragraph text (G0-1).**
+- **Each card:** a coloured rounded rect, a 28 dp icon and a bold one-line title (ellipsis). Below
+  them, a wrapping body Paragraph of 1-6 lines with a rich span, "Costs **50** [coin] · …": a bold
+  coloured number, and an inline icon placed through a Paragraph placeholder.
+- **Layout:** `ui`'s `resolveLayout` (`packages/ui/src/layout.ts`), copied into the spike. It is a
+  column of rows, two cards per row, each card a row of icon and text, and each row's height comes
+  from the measured Paragraph heights.
+- **RN views:** the same strings in `View` and `Text`, with nested spans and an inline `Image`,
+  laid out by Yoga.
+- **Method:** §3.4's: from `setState` to the second UI frame after commit, with the marker inside
+  the Skia tree. 12 repetitions after 2 warm-ups, median.
+
+| Cards | RN views | A: declarative RN-Skia | B: one recorded picture | B better by |
+|---:|---:|---:|---:|---:|
+| 200 | 407 ms | 131 ms | 128 ms | 1.02x |
+| 1,000, a builder per Paragraph | 1,254 / 1,252 ms | 375 ms | 289 ms | 1.30x |
+| 1,000, one reused builder per style | - | 319 / 319 ms | 243 ms | 1.31x |
+
+**Where A's 319 ms went:**
+- building and laying out 2,000 Paragraphs: 166-168 ms, or 83 µs each;
+- the flex layout: about 10 ms;
+- RN-Skia's reconciler committing about 6,000 nodes: about 114 ms;
+- the first draw: about 29 ms.
+
+B spent 31 ms recording instead of committing nodes. RN views committed in 918-929 ms, then took
+about 330 ms more to mount 5,010 native views.
+
+**B. Memory of that screen (G0-1, G0-4).**
+- **Method:** `dumpsys meminfo` 10 s after mount, 3 samples each, in MB.
+- **Two fresh launches** for the empty, A, B and RN rows. They agree within 1 MB, except the empty
+  screen: its first launch fell to 121.5 as code pages were reclaimed, and the table shows the
+  second.
+- **One launch** for the reused-builder and 200-card rows.
+
+| Screen | Total PSS | Native heap | Graphics | Java heap | Views |
+|---|---:|---:|---:|---:|---:|
+| Empty (same app) | 137.4 | 27.7 | 43.0 | 5.2 | 10 |
+| A, 1,000 cards | 285.6-286.4 | 124.9-125.3 | 85.8-86.2 | 5.3-5.4 | 12 |
+| A, 1,000 cards, one reused builder | 242.8-250.3 | 97.2-97.6 | 85.8 | 5.4 | 12 |
+| A, 200 cards | 213.1 | 55.7 | 86.2 | 5.4 | 12 |
+| B, 1,000 cards | 279.2-280.9 | 123.1-123.2 | 86.0-86.6 | 5.4 | 12 |
+| RN views, 1,000 cards | 400.7-401.7 | 220.7-221.6 | 61.2 | 38.8 | 5,010 |
+
+- **The canvas's own cost:** 43 MB of graphics memory (EGL and GL mtrack both double), whatever it
+  shows. That is its `TextureView` buffers.
+- **Paragraph cost:** native heap grows 86.5 KB per card between 200 and 1,000 cards, about 43 KB
+  per Paragraph. Reusing one `ParagraphBuilder` per style (`reset()` between Paragraphs) cuts that
+  to about 30 KB, and cuts A's mount by 56 ms.
+- **B's native heap** is the same as A's. Its Paragraph objects were not disposed after recording,
+  so this does not show what a picture alone holds.
+
+**C. The inventory scene (G0-6).**
+- **Slots:** 200 in 6 columns, 60.9 dp each. Each slot has a nine-slice panel (`drawImageNine`
+  recorded once into a `Picture` that every slot shares), an icon `Image`, a bold count Paragraph,
+  and a badge (`Circle` plus Paragraph).
+- **Animation:** 50 of the 72 visible slots animate at once, on a loop: enter, hold 0.25 s, exit,
+  hold. Each node's pose comes from ui-fx's `livePoseAtInto` in a `useDerivedValue` worklet. The
+  mix:
+  - 9 fades;
+  - 8 slides, from all 4 edges;
+  - 8 slides along an SVG path, auto-rotating;
+  - 8 presses (scale 0.9, brightness 1.35);
+  - 8 live emerges;
+  - 8 stagger chains, `stagger(0.08, fade, slide, emerge)` compiled through `liveEntries`;
+  - 1 shatter: ui-fx's 40-piece radial glass, posed by `fragmentPoseInto` every frame and drawn as
+    `<Vertices>`, textured with the slot's own recorded picture.
+- **Pose to Skia:**
+  - a `Group` transform (translate, rotate, scale about the slot's centre);
+  - opacity and brightness through the group's `layer` paint (opacity and a `ColorMatrix`);
+  - emerge's shadow as a gradient `Rect` whose stops follow `shadowEdge`, at opacity
+    `shadowOpacity`.
+
+**Found while building it: `Group` opacity does not reach `Picture` or `Paragraph` children** in
+RN-Skia 2.14. It is applied to the paint children inherit, and those two ignore paint: a fading
+slot faded its icon and badge circle, but not its panel or its count. Correct opacity on such a
+node needs a layer.
+
+**How to read the tables.** "Presented" is SurfaceFlinger's count, 3 samples of 63 frames per run.
+"UI frame" is the main thread's `Choreographer#doFrame` from `atrace`, 4 s per run.
+
+| Variant, 90 Hz | Presented, round 1 | Presented, round 2 | UI frame p50 / p95 |
+|---|---|---|---|
+| A, a layer on every animating node | 58.7-64.1 | 60.6-63.3 | 14.0-14.9 / 21-24 ms |
+| **A, a layer only on presets that change opacity or brightness** (33 of 50) | 84.4-89.9 | 87.1-89.9 | 8.8 / 10.4-13.2 ms |
+| B: static slots in one picture, a worklet records the 50 every frame | 88.5-89.9 | 87.1-89.9 | 8.4-8.5 / 10.0-12.3 ms, including 2.25 ms of recording |
+| RN views through ui-fx's `FlareView` with `progress`, 41 animating* | 89.9 | - | 8.0 / 9.5 ms, plus RenderThread 6.7 ms |
+| A, no opacity layers (fades drawn wrong) | 89.9 | - | 8.6 / 10.1 ms |
+| A, stock `TextureView` | 39.8-43.5 | - | 8.8 ms |
+
+| Variant, 60 Hz | Presented | UI frame p50 |
+|---|---:|---:|
+| A, a layer only where needed | 58.1-59.9 | 11.6 ms |
+| A, a layer on every node | 57.1-59.9 | 12.7 ms |
+| B | 58.0-59.9 | 11.0 ms |
+| RN views (41*) | 59.9 | 10.1 ms, plus RenderThread 7.2 ms |
+
+\*The RN host has no press without a touch and no shatter, so those 9 slots stood still in the RN
+runs.
+
+**D. Each preset alone, 50 at once** (A, 90 Hz)
+
+| Preset | Needs a layer | Presented | UI frame p50 | Pose worklets per frame |
+|---|---|---:|---:|---:|
+| slide | no | 89.9 | 8.24 ms | 0.17 ms |
+| slide along a path | no | 89.9 | 8.26 ms | 0.18 ms |
+| slide, forced through a layer | yes | 56.3-68.8 | 13.5 ms | 0.11 ms |
+| fade | yes | 66.4-75.4 | 12.5 ms | 0.11 ms |
+| press | yes (brightness) | 49.8-56.9 | 14.1 ms | 0.10 ms |
+| emerge | yes (brightness) | 50.7-68.8 | 14.1 ms | 0.13 ms |
+| stagger chain | yes | 75.3-85.7 | 10.1 ms | 0.18 ms |
+| fade, 25 at once | yes | 89.9 | 8.2 ms | 0.08 ms |
+| fade, 35 at once | yes | 83.2-89.9 | 8.5 ms | 0.10 ms |
+| shatter, 10 at once (40 pieces each) | no | 89.9 | 8.6 ms | 1.6 ms |
+| B: fade, 50 at once | only while opacity < 1 | 85.8-89.9 | 8.9 ms | 0.73 ms |
+
+**E. UI-thread time per animating node.**
+- **The base:** the same scene with one animating node takes 8.0 ms a frame, because RN-Skia
+  redraws the whole canvas (about 1,200 nodes) whenever any value changes.
+- **A moving node without a layer** adds about 5 µs (50 slides: 8.24 ms), of which evaluating its
+  pose is 2-6 µs.
+- **A node with a layer** adds little up to about 25 at once, then the frame falls off a cliff: at
+  35 the occasional frame is long, and at 50 a frame takes 12.5-14 ms. The pose worklets did not
+  grow; RN-Skia's draw did. The cause is not traced.
+
+**Reading:**
+- G0-1 keeps branch A. B's best case was 1.31x better to mount, 1.01x on the scene's presented
+  fps, and used 1.02x less memory. Each falls short of the 1.5x that would switch.
+- G0-4 passes: the canvas screen uses 0.71x the memory of the RN-view screen. Text is the
+  canvas's main cost in both mount time and native memory, so the Paragraph cache matters more
+  than the node count.
+- G0-6 passes with a documented limit (D10). The canvas reaches the display rate when the driver
+  layers only the nodes whose preset changes opacity or brightness: 5 of 6 samples are within 5% at
+  90 Hz, and 58.1-59.9 at 60 Hz.
+- **The named limit:** fade, press, emerge and timelines containing them. About 25 at once hold the
+  display rate on this phone, 35 drop the occasional frame, and 50 fall to 50-75 fps. Slide, slide
+  along a path and shatter showed no limit.
+- **Fallbacks, unmeasured:**
+  1. Layer a node only while its effect plays: enters and exits are short, and this test kept all
+     50 playing.
+  2. Above a cap, start further layered effects later, or play their reduced-motion fallback.
+  3. Draw a fading node from a raster of its own picture: an `Image` with paint alpha needs no
+     layer, and shatter already rasterises its slot.
+
+  B's per-frame recording is the measured alternative: it layered a node only while its opacity or
+  brightness differed from 1, and held 85.8-89.9 with 50 fades.
+
+**Limits:**
+- One phone (Pixel 7, Android 17), and RN-Skia 2.14.0 with a spike patch. GPU time was not
+  measured.
+- All 50 nodes animated continuously, which is a worst case.
+- B is a spike of its best case: no reconciler, no hit testing, and everything recorded every
+  frame.
+- The mount timer's stop does not prove the frame was rasterised.
+- One run froze A's static slots into a single `Picture`. It ran before the cooling protocol, so
+  it is left out.
+- Results posted on #542.
 
 ---
 

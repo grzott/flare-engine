@@ -7,8 +7,8 @@ argument-hint: "next | <issue-number>"
 # /start
 
 One issue in, one pull request out. The queue is GitHub Issues: an issue is approved when the owner
-gives it `status:ready` (a phase is approved by labelling its milestone's issues) — never add that
-label yourself.
+gives it `status:ready` (a milestone is approved by labelling its issues) — never add that label
+yourself. Labels follow [`docs/work-tracking.md`](../../../docs/work-tracking.md).
 
 Use `gh api` for every GitHub read and write: cloud sessions block `gh pr` and `gh issue`.
 `{owner}/{repo}` placeholders are filled from the git remote by `gh api` itself. `BOT_LOGIN` comes
@@ -54,12 +54,16 @@ Runner sentinels — print exactly one, as the last line, so `scripts/runner/loo
 - **A number** → that issue; interactive mode.
 - **`next`** → open issues labelled `status:ready`
   (`gh api "repos/{owner}/{repo}/issues?state=open&labels=status:ready&per_page=100"`, skipping
-  entries that carry a `pull_request` key). Order by milestone `due_on` ascending (no milestone last),
-  then `priority:p1` < `p2` < `p3` (none last), then issue number. Take the first and **claim it at
-  once**: swap its `status:ready` for `status:in-progress` before anything else, so a second runner
-  sees it as taken.
-- **None ready** → if a milestone now has no open issue other than its `type:phase` issue, comment on
-  that issue `@grzott phase <milestone title> complete` and close it. Print `RUNNER: QUEUE EMPTY`.
+  entries that carry a `pull_request` key and entries labelled `owner-action`, which only the owner
+  can do). Order by milestone `due_on` ascending (no milestone last), then `priority:p1` < `p2` <
+  `p3` (none last), then issue number. Take the first and **claim it at once**: swap its
+  `status:ready` for `status:in-progress` before anything else, so a second runner sees it as taken.
+- **None ready** → close every open milestone that has no open issue (`docs/work-tracking.md` §5):
+  list them with `gh api "repos/{owner}/{repo}/milestones?state=open&per_page=100" --jq '.[] |
+  select(.open_issues == 0 and .closed_issues > 0) | [.number, .title] | @tsv'`, close each with
+  `gh api -X PATCH "repos/{owner}/{repo}/milestones/<number>" -f state=closed`, and report it on the
+  milestone's most recently closed issue (`gh api "repos/{owner}/{repo}/issues?milestone=<number>&state=closed&sort=updated&direction=desc&per_page=1" --jq '.[0].number'`)
+  with the comment `@grzott milestone <title> complete: closed`. Print `RUNNER: QUEUE EMPTY`.
 
 ## Step 3 — Large work needs a design first
 

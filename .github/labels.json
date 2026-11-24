@@ -9,26 +9,40 @@
   },
   { "name": "risk:auto", "color": "d93f0b", "description": "Merges on green checks and review" },
   { "name": "risk:held", "color": "d93f0b", "description": "Waits for the owner's approval" },
-  { "name": "size:s", "color": "bfdadc", "description": "Under one session" },
-  { "name": "size:m", "color": "bfdadc", "description": "About one session" },
+  { "name": "owner-action", "color": "d93f0b", "description": "Only the owner can do it" },
+  { "name": "size:s", "color": "bfdadc", "description": "Small: a few hours" },
+  { "name": "size:m", "color": "bfdadc", "description": "Medium: about a day" },
   {
     "name": "size:l",
     "color": "bfdadc",
-    "description": "Several sessions; needs a design doc first"
+    "description": "Large: several days; needs a design doc first"
   },
   { "name": "priority:p1", "color": "5319e7", "description": "Do first" },
   { "name": "priority:p2", "color": "5319e7", "description": "Do next" },
   { "name": "priority:p3", "color": "5319e7", "description": "When there is room" },
-  { "name": "type:phase", "color": "1d76db", "description": "Tracks one milestone's phase" },
-  { "name": "type:deadline", "color": "1d76db", "description": "Has a hard date" },
-  { "name": "type:defect", "color": "1d76db", "description": "Something is broken" },
-  { "name": "type:verification", "color": "1d76db", "description": "Prove something works" },
-  { "name": "type:hygiene", "color": "1d76db", "description": "Cleanup with no behaviour change" },
   { "name": "type:feature", "color": "1d76db", "description": "New capability" },
-  { "name": "type:owner-action", "color": "1d76db", "description": "Only the owner can do it" },
+  { "name": "type:defect", "color": "1d76db", "description": "Something is broken" },
+  { "name": "type:hygiene", "color": "1d76db", "description": "Cleanup with no behaviour change" },
   { "name": "type:perf", "color": "1d76db", "description": "Performance or benchmark work" },
+  { "name": "type:verification", "color": "1d76db", "description": "Prove something works" },
+  { "name": "type:docs", "color": "1d76db", "description": "Documentation only" },
+  { "name": "type:content", "color": "1d76db", "description": "Posts, news, CMS copy and media" },
+  {
+    "name": "type:ops",
+    "color": "1d76db",
+    "description": "Running systems: hosting, DNS, dashboards, backups"
+  },
+  {
+    "name": "type:decision",
+    "color": "1d76db",
+    "description": "The outcome is a recorded decision"
+  },
+  {
+    "name": "type:admin",
+    "color": "1d76db",
+    "description": "Paperwork and accounts outside any repo"
+  },
   { "name": "scope:engine", "color": "c5def5", "description": "packages/**" },
-  { "name": "scope:demo", "color": "c5def5", "description": "apps/** demo games" },
-  { "name": "scope:harness", "color": "c5def5", "description": ".claude, .github, scripts" },
+  { "name": "scope:harness", "color": "c5def5", "description": "Repo tooling, CI and scripts" },
   { "name": "scope:docs", "color": "c5def5", "description": "Documentation only" }
 ]

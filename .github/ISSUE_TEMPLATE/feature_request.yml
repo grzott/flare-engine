@@ -1,6 +1,6 @@
 name: Feature request
 description: Propose a new capability or API for a @flare-engine/* package
-labels: ["enhancement"]
+labels: ["type:feature"]
 body:
   - type: markdown
     attributes:

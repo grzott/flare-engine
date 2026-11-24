@@ -23,6 +23,8 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # The repo's taxonomy (docs/work-tracking.md), not Dependabot's own dependencies/javascript labels.
+    labels: ["type:hygiene", "scope:harness"]
     ignore:
       # TypeScript 7 changes the .d.ts output of all 42 packages and every export gate;
       # it is its own evaluated migration, not a weekly bump.
@@ -62,6 +64,7 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 3
+    labels: ["type:hygiene", "scope:harness"]
     ignore:
       # v2 renames every input release.yml uses and needs Changesets CLI 3 — migrated with it.
       - dependency-name: "changesets/action"

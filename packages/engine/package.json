@@ -1,7 +1,7 @@
 {
   "name": "@flare-engine/engine",
   "version": "0.4.17",
-  "description": "Flare Engine umbrella — curated barrel (14 headless packages + postfx + react); ./headless subpath for web-only and Node consumers",
+  "description": "Flare Engine umbrella — curated barrel (14 headless packages + postfx + react); ./headless subpath imports no React Native, but React Native is a required peer, so web and Node apps install the leaf packages",
   "keywords": [
     "flare-engine",
     "2d",

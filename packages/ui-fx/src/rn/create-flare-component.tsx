@@ -25,6 +25,7 @@ import {
   useFlareElement,
 } from '../runtime/element';
 import { usePresence } from '../runtime/presence';
+import { createWebLiveDriver } from '../web/live-driver';
 import { bindFlareFx } from './use-flare-fx';
 
 /** The props of `C`, with the `ref` a class component takes but does not list among them. */
@@ -99,21 +100,50 @@ function parentTagOf(host: unknown): number | null {
   return findNodeHandle(parent as Parameters<typeof findNodeHandle>[0]);
 }
 
+/** What a render gives its host: the driver its component owns, and the style that shows it. */
+interface HostLive {
+  driver: LiveDriver | null;
+  style: unknown;
+}
+
+const NO_HOST_LIVE: HostLive = { driver: null, style: undefined };
+
+/**
+ * react-native-web: the driver is made from the mounted node instead, so a render owns none and
+ * Reanimated is never asked for a style.
+ */
+const useNoLiveDriver = (_hiddenUntilPlay: boolean): HostLive => NO_HOST_LIVE;
+
+const isAnimatable = (host: unknown): host is HTMLElement =>
+  typeof host === 'object' &&
+  host !== null &&
+  'animate' in host &&
+  typeof host.animate === 'function';
+
 /**
  * The live driver of a mounted host: the seam where a platform swaps its own in. On native every
- * host is driven by the Reanimated driver its component owns.
+ * host is driven by the Reanimated driver its component owns. On react-native-web there is none
+ * to own, and the host, a DOM node, gets a Web Animations driver of its own.
  */
-function driverFor(_host: unknown, native: LiveDriver): LiveDriver {
-  return native;
+function driverFor(host: unknown, native: LiveDriver | null): LiveDriver | null {
+  if (native !== null) return native;
+  return isAnimatable(host) ? createWebLiveDriver(host) : null;
 }
 
 function createFlareHost<C extends JSXElementConstructor<never>>(
   component: C,
   source: PressSource,
 ): FlareComponent<C> {
-  const Animated = createAnimatedComponent(
-    component as unknown as FunctionComponent<HostProps>,
-  ) as unknown as ComponentType<HostProps>;
+  // Read once, here: the platform never changes, and a render may not pick between hooks.
+  const web = Platform.OS === 'web';
+  const Host = (web
+    ? component
+    : createAnimatedComponent(
+        component as unknown as FunctionComponent<HostProps>,
+      )) as unknown as ComponentType<HostProps>;
+  const useLiveDriver: (hiddenUntilPlay: boolean) => HostLive = web
+    ? useNoLiveDriver
+    : useNativeLiveDriver;
 
   // biome-ignore lint/correctness/noComponentHookFactories: the factory runs once per component, at module scope
   function FlareHost(props: HostProps & FlareElementOptions): ReactNode {
@@ -143,8 +173,9 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
 
     const [isPresent] = usePresence();
     // `useFlareElement` starts the enter under this condition, from a layout effect, so the host
-    // is hidden until it plays instead of showing its rest pose for the first frame.
-    const { driver, style: animated } = useNativeLiveDriver(enter !== undefined && isPresent);
+    // is hidden until it plays instead of showing its rest pose for the first frame. On the web
+    // that effect starts the animation before the first paint, so there is nothing to hide.
+    const { driver, style: animated } = useLiveDriver(enter !== undefined && isPresent);
     const host = useRef<unknown>(null);
     const layout = useRef<Size | null>(null);
     const created = useRef<ElementPlatform | null>(null);
@@ -157,7 +188,12 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
 
     // Declared before `useFlareElement`, so its mount effect already finds the driver.
     useLayoutEffect(() => {
-      platform.driver = driverFor(host.current, driver);
+      const made = driverFor(host.current, driver);
+      platform.driver = made;
+      if (made === null || made === driver) return;
+      // A driver made here holds animations on the node. Left behind, as by the first of
+      // StrictMode's two effect passes, their transforms would add to the next driver's.
+      return () => made.dispose();
     }, [platform, driver]);
 
     const handle = useFlareElement(
@@ -244,12 +280,12 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
     }
 
     return (
-      <Animated
+      <Host
         {...rest}
         {...handlers}
         {...exitA11yProps(exiting)}
         ref={attach}
-        style={[style, animated]}
+        style={animated === undefined ? style : [style, animated]}
         pointerEvents={exiting ? 'none' : pointerEvents}
         onLayout={(event) => {
           layout.current ??= { w: 0, h: 0 };
@@ -271,6 +307,10 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
  * `C` must pass its `ref` and the host props it is given (`style`, `pointerEvents`, `onLayout`,
  * the touch handlers and the accessibility props) on to one host view. The animated style comes
  * last in `style` and owns `opacity` and `transform`.
+ *
+ * On react-native-web `C` is used as it is, with no Reanimated around it, and its `ref` must
+ * reach a DOM node. The element is animated through the Web Animations API instead: the
+ * transform adds to the node's own, and the opacity replaces it once a preset has played.
  *
  * The press point is read from `onTouchStart`. `exitOn: 'press'` needs a `C` that calls `onPress`.
  * While the element exits it takes no touches and is hidden from the accessibility tree; once a

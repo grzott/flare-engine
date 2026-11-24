@@ -1,9 +1,10 @@
 # UI Canvas: measurements (2026-11-23)
 
 - **Status:** measured on 2026-11-23 and checked by an independent review the same day. §3.0 is the
-  afternoon Gate 0 round, which found why the canvas showed half frame rate and measured a fix. Raw
-  logs, traces and the spike tools stay outside the repo, in the gitignored
-  `docs/plans/_local/fast-ui-2026-11/`.
+  afternoon Gate 0 round, which found why the canvas showed half frame rate and measured a fix.
+  §3.6 is the evening G0-3 round: the shadow layer with TalkBack, gamepad focus, 200% text, drag
+  and the layer's mount cost. Raw logs, traces and the spike tools stay outside the repo, in the
+  gitignored `docs/plans/_local/fast-ui-2026-11/`.
 - **Question:** can Flare ship the fastest UI components for React Native and the web, usable by
   RN/web developers and by game developers? Is building UI "like a game" (ECS, canvas) the way?
 - **Companion:** [ui-canvas-2026-11.md](ui-canvas-2026-11.md), the plan.
@@ -54,13 +55,21 @@
    on the Pixel 7, React DOM mounted 1,000 cards in 64 ms against 76-82 ms for CanvasKit, and
    CanvasKit costs 314 ms and 8 MB to load. With 3,000 animated elements only the canvas held 90 fps
    (React 49, WAAPI 24). The desktop shows the same split.
+11. **A layer of invisible native views makes a canvas accessible, if it stays small and comes
+   second.** TalkBack read and activated every canvas button and grid slot through the layer, moved
+   items through custom actions, followed gamepad focus and crossed a virtualized layer without
+   stalling. A drag followed the finger on every frame (89.8-89.9 presented with the fix, 44.9
+   without). Mounting a view for every node with the canvas slowed opening a 200-slot grid by
+   76-85%; visible nodes only cost 13%, and mounting them one commit later left first paint
+   unchanged. Text at 200% needs Android's own size conversion, not a scale factor (§3.6).
 
 **Verdict:** on this phone, a UI-thread canvas now **reaches the screen at the display rate, at 90
 and 60 Hz, from 100 to 3,000 animated elements**, provided the `TextureView` fix ships (in RN-Skia
 upstream, or in the package's own host until then). It ties native views on light screens and beats
-them by 5-15x on dense ones, and opens screens about 5x faster. Still unmeasured: Paragraph text and
-layout at mount, the touch and screen-reader layer, memory, a realistic mixed scene, iOS and a
-low-end phone. Plain lists and forms should stay native (or DOM); they are already fast.
+them by 5-15x on dense ones, and opens screens about 5x faster. The touch and screen-reader layer
+works on TalkBack when it holds visible nodes only and mounts after the first paint (§3.6). Still
+unmeasured: Paragraph text and layout at mount of a large screen, memory, a realistic mixed scene,
+iOS and a low-end phone. Plain lists and forms should stay native (or DOM); they are already fast.
 
 ---
 
@@ -116,12 +125,15 @@ median reported. Host instances were plain objects written into an ECS World; no
 ### 2.4 What was not measured
 
 - iOS (no device), a low-end Android phone, GPU time on any lane.
-- Accessibility and touch through a canvas (a shadow layer of native views).
+- VoiceOver, and TalkBack's spoken output (§3.6 checks where TalkBack's focus lands and what the
+  node exposes, not the speech).
 - Text input on a canvas (out of scope: forms stay native).
 - Mount with Paragraph text and layout, memory, and a realistic mixed scene (plan G0-1, G0-4, G0-6).
 - Input-to-screen latency. §3.0's queue-to-present time is one part of it.
 - Measured in the afternoon round, no longer open: presented frames from SurfaceFlinger, a 60 Hz
   mode, declarative RN-Skia mount (with the timer fixed: a marker inside the Skia tree).
+- Measured in the evening round (§3.6), no longer open: accessibility and touch through a canvas
+  (a shadow layer of native views), gamepad focus, 200% text, drag on the UI thread.
 
 ### 2.5 Limits of these measurements (from the review)
 
@@ -362,6 +374,113 @@ At 100 nodes Hermes scales linearly (React mount 0.84 ms, update 10% 0.58 ms, si
 
 **Reading:** Hermes is 10-40x slower than the desktop engines, so desktop numbers mislead. A React
 re-render of 1,000 nodes takes half of a 90 Hz frame even when only 10% changed.
+
+### 3.6 Shadow layer, focus, text scaling and drag (`u7`, evening round, G0-3)
+
+**Scene.** A 20-button canvas menu (2 columns, toggles, an adjustable value, a disabled button, rich
+text with inline coin and gem icons) and a scrolling 200-slot inventory grid (4 columns), drawn
+with declarative RN-Skia, every label a Paragraph, icons through Paragraph placeholders. A native
+`ScrollView` proxy on top holds the shadow layer: one invisible `Pressable` per node, laid out from
+the same boxes, with role, label, state, value and actions. The `TextureView` fix on (§3.0) unless
+noted; 90 Hz. Versions as §2.1, plus `react-native-gesture-handler` 3.3.0 (v3 hook API).
+
+**How it was driven.** TalkBack 17.1.0 on Android 17, through its keyboard shortcuts from a virtual
+USB keyboard (`/system/bin/uinput`; TalkBack's key is Meta in its Enhanced keymap). `adb shell
+input` events bypass TalkBack on this build: an injected tap pressed the button instead of
+exploring it, so they cannot test a screen reader. Drags came from a virtual touchscreen reporting
+at 240 Hz, like the panel; `input draganddrop` delivers only about 63 moves a second. What TalkBack
+sees was read from each shadow view's `AccessibilityNodeInfo` (class, description, state, actions,
+accessibility focus) by a spike helper.
+
+**A. TalkBack**
+
+| Check | Result |
+|---|---|
+| Node tree | Buttons as `Button`, toggles as `Switch` (checkable, checked), the adjustable value as `SeekBar` with increment and decrement, the locked button disabled, the title a heading. Rich-text labels join the icons' labels: "Buy potion, Costs 50 coins", "Upgrade sword, 120 coins and 2 gems" |
+| Menu, 21 × next then click | TalkBack visited all 20 nodes in order; 19 of 19 enabled clicks arrived at the focused node through the accessibility click (no touch coordinates); the disabled node was read and not activated; a changed value was read back |
+| Touch, TalkBack off | 19 of 19 taps at node centres pressed the right node; the disabled node got none |
+| Grid | Slots read as "Potion, 1, slot 1"; 2 of 2 clicks correct; TalkBack's next-item scrolled the proxy page by page and the canvas followed (TalkBack's box and the drawn slot align in screenshots) |
+| Drag alternative | The actions list offered "Pick up"; other slots then offered "Move Potion here" and the held one "Put back". After "Move here" the canvas and the shadow labels swapped and TalkBack stayed on the moved item |
+| Virtualized layer, visible rows + 1 (48 nodes mounted) | 60 × next from slot 1 ended on slot 61 |
+| Virtualized layer, visible rows only (44 nodes) | 60 × next ended on slot 61; 30 × previous on slot 31. No stall at the window's edge |
+
+**B. Gamepad and keyboard focus.** Spatial navigation ran in JS over the same boxes, with the ring
+drawn on the canvas. With TalkBack on, each move tried one way of moving TalkBack's focus to the
+node's shadow view (the first key of each run, which lands where TalkBack already was, is left out):
+
+| How the host moves TalkBack | Moves TalkBack followed |
+|---|---|
+| Native `performAccessibilityAction(ACTION_ACCESSIBILITY_FOCUS)` | 6 of 6 |
+| `AccessibilityInfo.sendAccessibilityEvent(ref, 'focus')` | 3 of 3 |
+| `sendAccessibilityEvent(ref, 'viewHoverEnter')` | 3 of 3 |
+| `ref.focus()` | 0 of 3 |
+| No call | 0 of 3 |
+
+With a virtualized layer, a move into unmounted rows worked once the call retried until the node
+mounted (15 rows down from the top, TalkBack followed to slot 57). Android's own input focus moves
+by itself: the first arrow key after a touch is consumed to leave touch mode and puts input focus
+on the first focusable shadow view, and TalkBack's own navigation moves it too. RN has no event for
+accessibility focus, so TalkBack's navigation does not move the canvas ring.
+
+**C. Text at 200% OS font scale**
+
+| Screen | Font sizes | Row or cell height (dp) | Nodes wrapped | Clipped | Mid-word breaks |
+|---|---|---|---:|---:|---|
+| Menu, 100% | as authored | 56-61 | 0 | 0 | 0 |
+| Menu, 200% | size × `PixelRatio.getFontScale()` (linear) | 59-154 | 6 | 0 | 3 |
+| Menu, 200% | `TypedValue.applyDimension(SP)` (Android's, non-linear on 14+) | 56-146 | 4 | 0 | 1 |
+| Grid, 200% | Android's | cells 89 → 108 | 89 of 200 names | 0, none ellipsized | 2 item names; the count overlaps the icon |
+
+The linear factor drew the 22 sp title 52 dp tall against 41 dp with Android's conversion, and the
+two-line "Upgrade sword" 70 dp against 64 dp (a native RN `Text` measured 67.8 dp, including its
+font padding). Inline icons scale and wrap with the text. Changing the font scale while the app runs
+recreates the activity and the scene re-lays out.
+
+**D. Drag on the UI thread.** A long-press (350 ms) pan through gesture-handler over the shadow
+layer, in the scrolling grid; the dragged item is drawn on the canvas from shared values.
+
+| Input | Canvas | Moves per second | Frames with a new position | UI frame p50 / p95 / max (ms) | Presented | Queue to present p50 |
+|---|---|---:|---|---|---:|---:|
+| Touchscreen, 240 Hz | `TextureView` + fix | 86.5 | every frame of the 4 s move (359 of 390 drag frames) | 11.13 / 11.14 / 22.3 | **89.8-89.9**, none long | 18.1-18.3 ms |
+| Touchscreen, 240 Hz | stock `TextureView` | 85.8 | 358 of 384 | 11.13 / 11.15 / 33.4 | **44.9** | 18.6 ms |
+| `input draganddrop` | `TextureView` + fix | 63.5 | 294 of 415, each move drawn on the next frame | 11.13 / 11.14 / 22.3 | 89.8-89.9 | 19.0-19.6 ms |
+
+Never more than one gesture update per frame: Android resamples the 240 Hz input to one move per
+vsync. The unchanged frames are the long-press hold and the pause before release. A fast swipe
+scrolled the grid without a drag or a press; a long-press drag after scrolling picked the right
+slot and the grid did not scroll during it.
+
+**E. Mount cost of the layer.** u4's method (§3.4): `setState` to the second UI frame after the
+commit, p50 / p95 ms, 24 repetitions unless marked ¹ (12). The measure moves in whole frames
+(11.1 ms).
+
+| Scene | No layer | `View` layer | `Pressable` layer | `Pressable`, visible rows + 1 | `Pressable`, deferred one commit | Visible rows + 1, deferred |
+|---|---|---|---|---|---|---|
+| Menu, 20 nodes (all visible), TalkBack off | 63 / 73 | 76 / 94 (+21%) | 85 / 101 (+35%) | as the full layer | first paint 52 / 63; layer ready 74 / 87 | - |
+| Grid, 200 slots, TalkBack off | 74-75 / 86-96 | 127 / 138 (+72%)¹ | 130 / 141 (+76%)¹ | 84-85 / 99-102 (**+13%**, 40 nodes) | first paint 63 / 96; layer ready 108 / 141 | first paint 63 / 75; layer ready 96 / 98 |
+| Grid, TalkBack on | 75 / 86¹ | 118 / 140 (+57%)¹ | 139 / 152 (+85%)¹ | 84 / 98 (+12%) | - | - |
+| Menu, TalkBack on | 54 / 63¹ | - | 74 / 105 (+37%)¹ | - | - | - |
+
+The deferred variants' first paint measured below the no-layer runs although the canvas is the
+same; read it as "not slower" (the layer's work between repetitions likely kept the CPU clocked
+up).
+
+**Reading:**
+- The layer gives TalkBack everything it needs: reading, activation, custom actions, scrolling and
+  focus that follows the canvas, with one stock RN call per focus move.
+- Its cost is the problem: a view per node mounted with the canvas misses the 20% mount budget at 20
+  nodes and badly at 200. Mounting only visible nodes passes at 200; deferring the layer one commit
+  keeps first paint at the canvas's own time, at the price of 2-4 frames without touch and
+  screen-reader nodes.
+- The drag keeps up with a real panel's input on the UI thread, and needs the `TextureView` fix to
+  reach the screen at that rate.
+- Canvas text must take its sizes from the platform. Multiplying by the font scale overshoots on
+  Android 14+, and a fixed-width slot at 200% breaks words unless the layout picks fewer columns.
+
+**Limits:** one phone and one screen reader (TalkBack 17.1.0); TalkBack's speech was not recorded
+("reads" means its focus landed on the node, whose text the dump shows). A `View` layer mounts
+faster than `Pressable`s, but its TalkBack activation and touch through hit boxes were not tested.
+The size conversion and the key forwarding were spike code.
 
 ---
 

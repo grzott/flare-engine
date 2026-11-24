@@ -5,7 +5,7 @@ Convenience integration layer — `createGame(config)` is a pure factory that co
 The package ships two entry points:
 
 - **`.` (default)** — full curated barrel: the 14 headless packages + `@flare-engine/dynamics` + `@flare-engine/postfx` + curated `@flare-engine/react` exports. Pulls in React Native at module scope. `CompiledShader` and `SkImageLike` from postfx are aliased as `PostFxCompiledShader` and `PostFxSkImageLike` to avoid clashing with the render/assets versions. Dynamics' `World` and `Body` are aliased as `DynamicsWorld` and `DynamicsBody` so the ECS `World` keeps the name. React's `GameConfig` is re-exported as `GameViewConfig` to avoid clashing with `createGame`'s own `GameConfig`.
-- **`./headless`** — RN-free subset: the 14 headless packages (math, events, core, ecs, render, input, physics, audio, assets, scene, animation, particles, tilemap, debug) plus `createGame` and tier2-wiring. No `@flare-engine/react`, no `@flare-engine/postfx`, no `@flare-engine/dynamics`. Safe for web-only and Node consumers.
+- **`./headless`** — RN-free subset: the 14 headless packages (math, events, core, ecs, render, input, physics, audio, assets, scene, animation, particles, tilemap, debug) plus `createGame` and tier2-wiring. No `@flare-engine/react`, no `@flare-engine/postfx`, no `@flare-engine/dynamics`. It imports no React Native at runtime, but **installing `@flare-engine/engine` still installs React Native**, Skia, Reanimated and Worklets. They are this package's required peers, and its `@flare-engine/react` dependency requires them too. A web or Node project without React Native installs the leaf packages instead ([below](#web-and-node-without-react-native)).
 
 `createTier2Wiring` glues optional `AchievementsProvider` / `LeaderboardsProvider` / `AnalyticsProvider` instances to a Tier-2 event source via declarative rules.
 
@@ -24,7 +24,7 @@ const game = createGame({ fixedDt: 1 / 60 });
 game.start();
 ```
 
-## Usage — headless (web-only / Node / tests)
+## Usage — headless (tests, or code that must not import React Native)
 
 ```ts
 import { createGame, World, GameLoop } from '@flare-engine/engine/headless';
@@ -32,6 +32,36 @@ import { createGame, World, GameLoop } from '@flare-engine/engine/headless';
 const game = createGame({ fixedDt: 1 / 60 });
 game.start();
 ```
+
+## Web and Node without React Native
+
+Install only the leaf packages you use. The 14 that `./headless` re-exports declare no required
+React Native peer (`audio`'s `react-native-audio-api` is optional), so this adds no React Native
+to the tree:
+
+```sh
+bun add @flare-engine/core @flare-engine/ecs @flare-engine/render
+```
+
+```ts
+import { GameLoop } from '@flare-engine/core';
+import { World } from '@flare-engine/ecs';
+
+const world = new World();
+const loop = new GameLoop({ fixedDt: 1 / 60 });
+loop.onUpdate.add((dt) => {
+  // run your systems over `world` here; dt is in seconds
+});
+loop.start();
+```
+
+- **Without `createGame`.** `createGame` and `createTier2Wiring` exist only in this package.
+  `createGame` just constructs a `World`, `Camera2D`, `Renderer`, `SpriteBatch`, `InputManager`,
+  `AudioManager`, `AssetManager`, `SceneManager` and `GameLoop`, so construct the ones you need,
+  as above.
+- **In Node.** Node has no `requestAnimationFrame`, so any `GameLoop` (yours or `createGame`'s)
+  needs `loop.tick` and `loop.cancelTick` set before `start()`. In tests, `@flare-engine/testing`'s `createTestWorld` steps a loop with a
+  fake clock instead.
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-engineengine).
 

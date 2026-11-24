@@ -7,31 +7,32 @@ Grid pathfinding — A* (`findPath`), Jump-Point Search (`findPathJPS`) for unif
 > for the cases below, but it has not been through the shakedown that real use provides. Treat
 > signatures as stable and behaviour as less battle-tested than the rest of the scope.
 
-## `findPath` and `findPathJPS` disagree about corner cutting
+## Corner rule: no corner cutting
 
-They are **not** drop-in replacements for each other. Given a diagonal step whose two shared
-cardinal neighbours are both blocked:
+`findPath` and `findPathJPS` follow one rule. A diagonal step is taken only when both cardinal
+neighbours it passes are walkable, so a path never squeezes past a wall's corner:
 
 ```
 . X .     start (0,0), goal (1,1)
-X . .     findPath      → null   (refuses to squeeze the corner)
-. . .     findPathJPS   → [{x:0,y:0},{x:1,y:1}]   (takes the diagonal)
+X . .     findPath     → null
+. . .     findPathJPS  → null
 ```
 
-`findPath` requires both cardinal neighbours of a diagonal to be walkable; `findPathJPS` does not.
-Swapping one for the other to gain speed therefore changes movement semantics, and on a map with
-tight diagonal gaps it changes which routes exist at all. Pinned by tests in
-`tests/jps.test.ts`. If your game's collision shape is a circle or box wider than a point, you
-almost certainly want `findPath`'s rule.
+With one of the two neighbours blocked, both go round in two straight steps (cost 2) instead of
+one diagonal. On a uniform-cost grid the two functions return paths of the same cost, so either
+can check reachability for the other. Pinned by tests in `tests/jps.test.ts`, including a
+randomised comparison of the two.
+
+Up to 0.4.17, `findPathJPS` cut corners on uniform grids, and followed `findPath`'s rule only when
+a weighted tile made it delegate (#507).
 
 ## `findPathJPS` on weighted grids
 
 JPS pruning is only correct when every walkable tile costs 1. If any tile's cost is above 1,
 `findPathJPS` detects it with one linear scan of `grid.data` and delegates the call to `findPath`
 with `diagonal: true`, forwarding `maxIterations` and `heuristic`. The result is a cost-correct
-weighted A* path — with A*'s corner-cutting rule above, not JPS's — never a JPS path that ignored
-the costs. A grid whose tiles all share a cost above 1 (`createGrid({ defaultCost: 2 })`) delegates
-on every call too: same path as JPS, `cost` doubled to the true weighted total, and no JPS speed-up.
+weighted A* path under the same corner rule, never a JPS path that ignored the costs. A grid
+whose tiles all share a cost above 1 (`createGrid({ defaultCost: 2 })`) delegates on every call too: same path as JPS, `cost` doubled to the true weighted total, and no JPS speed-up.
 Keep every cost at 1 to get the JPS speed-up.
 
 ## Install

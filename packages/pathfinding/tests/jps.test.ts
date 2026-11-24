@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { findPath } from '../src/astar.js';
-import { createGrid, setCost, setWalkable } from '../src/grid.js';
+import { createGrid, type Grid, setCost, setWalkable } from '../src/grid.js';
 import { findPathJPS } from '../src/jps.js';
 
 describe('findPathJPS', () => {
@@ -77,9 +77,8 @@ describe('findPathJPS', () => {
 
     expect(astarResult).not.toBeNull();
     expect(jpsResult).not.toBeNull();
-    // JPS permits corner-cutting through walls (classic JPS behavior); A* blocks it.
-    // JPS's path may therefore be shorter, but never longer than A*'s.
-    expect(jpsResult!.cost).toBeLessThanOrEqual(astarResult!.cost + 1e-6);
+    // Both follow the same corner rule, so both find an optimal path of the same cost.
+    expect(jpsResult!.cost).toBeCloseTo(astarResult!.cost, 9);
   });
 
   test('JPS explores fewer nodes than A* on open grid', () => {
@@ -118,17 +117,56 @@ describe('findPathJPS', () => {
 });
 
 // ---------------------------------------------------------------------------
-// OSS-B18 — A* and JPS disagree about corner cutting, and the divergence is
-// pinned here rather than left to prose: `findPath` refuses a diagonal whose
-// two shared cardinal neighbours are both blocked, `findPathJPS` allows it.
-// Swapping one for the other to gain speed silently changes movement rules.
-// This test documents current behaviour; it is NOT an endorsement of either
-// rule, and the JPS corner rules are deliberately not rewritten here.
+// #507 (was OSS-B18) — one corner rule for both searches: a diagonal step needs
+// both of its cardinal neighbours walkable. Before #507, `findPathJPS` stepped
+// diagonally past a wall's tip, and switched rules whenever any tile on the grid
+// cost more than 1 (it then delegates to `findPath`).
 // ---------------------------------------------------------------------------
 
-describe('corner cutting — A* vs JPS divergence (B18)', () => {
+type Pt = { x: number; y: number };
+
+function walkable(grid: Grid, x: number, y: number): boolean {
+  return (
+    x >= 0 && y >= 0 && x < grid.width && y < grid.height && grid.data[y * grid.width + x]! > 0
+  );
+}
+
+/** Every step moves one cell onto a walkable cell, no diagonal squeezes a corner, and the step lengths sum to `cost`. */
+function expectLegalPath(grid: Grid, path: readonly Pt[], cost: number, from: Pt, to: Pt): void {
+  expect(path[0]).toEqual(from);
+  expect(path[path.length - 1]).toEqual(to);
+  let sum = 0;
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1]!;
+    const b = path[i]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    expect(Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && (dx !== 0 || dy !== 0)).toBe(true);
+    expect(walkable(grid, b.x, b.y)).toBe(true);
+    if (dx !== 0 && dy !== 0) {
+      expect(walkable(grid, a.x + dx, a.y) && walkable(grid, a.x, a.y + dy)).toBe(true);
+      sum += Math.SQRT2;
+    } else {
+      sum += 1;
+    }
+  }
+  expect(cost).toBeCloseTo(sum, 9);
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+describe('corner cutting — one rule for findPath and findPathJPS (#507)', () => {
   // . X .      start (0,0), goal (1,1); both cardinal neighbours of the
-  // X . .      diagonal step are blocked, so the step squeezes a corner.
+  // X . .      diagonal step are blocked, so the step would squeeze a corner.
   // . . .
   const cornerGrid = () => {
     const data = new Uint8Array(9).fill(1);
@@ -137,17 +175,68 @@ describe('corner cutting — A* vs JPS divergence (B18)', () => {
     return { width: 3, height: 3, data };
   };
 
-  test('A* refuses the corner cut and reports no path', () => {
+  test('both refuse the corner cut and report no path', () => {
     expect(findPath(cornerGrid(), 0, 0, 1, 1)).toBeNull();
+    expect(findPathJPS(cornerGrid(), 0, 0, 1, 1)).toBeNull();
   });
 
-  test('JPS permits the corner cut and returns the diagonal', () => {
-    const result = findPathJPS(cornerGrid(), 0, 0, 1, 1);
-    expect(result).not.toBeNull();
-    expect(result!.path).toEqual([
-      { x: 0, y: 0 },
-      { x: 1, y: 1 },
-    ]);
+  test('JPS does not step past a single blocked cardinal neighbour', () => {
+    // (1,0) is a wall, so the diagonal (0,0) -> (1,1) would pass its corner: the route goes (0,0) -> (0,1) -> (1,1).
+    const g = createGrid({ width: 3, height: 3 });
+    setWalkable(g, 1, 0, false);
+    const jps = findPathJPS(g, 0, 0, 1, 1);
+    const astar = findPath(g, 0, 0, 1, 1);
+    expect(jps).not.toBeNull();
+    expect(astar).not.toBeNull();
+    expect(jps!.cost).toBeCloseTo(2, 9);
+    expect(jps!.cost).toBeCloseTo(astar!.cost, 9);
+    expectLegalPath(g, jps!.path, jps!.cost, { x: 0, y: 0 }, { x: 1, y: 1 });
+  });
+
+  test('the issue probe prints one cost for all three calls', () => {
+    const grid = createGrid({ width: 16, height: 16 });
+    for (let y = 0; y < 12; y++) setWalkable(grid, 8, y, false);
+    const astar = findPath(grid, 1, 1, 14, 14);
+    const jps = findPathJPS(grid, 1, 1, 14, 14);
+    expect(astar).not.toBeNull();
+    expect(jps).not.toBeNull();
+    expect(jps!.cost).toBeCloseTo(astar!.cost, 9);
+    expectLegalPath(grid, jps!.path, jps!.cost, { x: 1, y: 1 }, { x: 14, y: 14 });
+    setCost(grid, 0, 15, 2); // one weighted tile, off the route: JPS delegates to findPath
+    const delegated = findPathJPS(grid, 1, 1, 14, 14);
+    expect(delegated).not.toBeNull();
+    expect(delegated!.cost).toBeCloseTo(astar!.cost, 9);
+  });
+
+  test('on random uniform grids JPS matches A* cost and never cuts a corner', () => {
+    const rnd = mulberry32(507);
+    let searches = 0;
+    let found = 0;
+    for (let n = 0; n < 300; n++) {
+      const width = 6 + Math.floor(rnd() * 15);
+      const height = 6 + Math.floor(rnd() * 15);
+      const density = 0.1 + Math.floor(rnd() * 4) * 0.1;
+      const grid = createGrid({ width, height });
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) if (rnd() < density) setWalkable(grid, x, y, false);
+      }
+      for (let k = 0; k < 4; k++) {
+        const from = { x: Math.floor(rnd() * width), y: Math.floor(rnd() * height) };
+        const to = { x: Math.floor(rnd() * width), y: Math.floor(rnd() * height) };
+        setWalkable(grid, from.x, from.y, true);
+        setWalkable(grid, to.x, to.y, true);
+        const astar = findPath(grid, from.x, from.y, to.x, to.y);
+        const jps = findPathJPS(grid, from.x, from.y, to.x, to.y);
+        searches++;
+        expect(jps === null).toBe(astar === null);
+        if (jps === null || astar === null) continue;
+        found++;
+        expect(jps.cost).toBeCloseTo(astar.cost, 9);
+        expectLegalPath(grid, jps.path, jps.cost, from, to);
+      }
+    }
+    expect(searches).toBe(1200);
+    expect(found).toBeGreaterThan(600);
   });
 });
 

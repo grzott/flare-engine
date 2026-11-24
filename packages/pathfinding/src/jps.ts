@@ -5,7 +5,8 @@
  * after one linear scan of `grid.data`.
  *
  * JPS prunes symmetric paths by "jumping" along directions until hitting
- * a wall, the goal, or a forced neighbor.
+ * a wall, the goal, or a forced neighbor. It follows `findPath`'s corner rule
+ * (no diagonal step past a wall's corner), using JPS's no-corner-cutting variant.
  */
 
 import type { PathResult } from './astar.js';
@@ -35,6 +36,13 @@ export interface JpsOptions {
   heuristic?: (ax: number, ay: number, bx: number, by: number) => number;
 }
 
+/**
+ * Jump Point Search between two cells, 8-directional. Same corner rule as
+ * `findPath`: a diagonal step is taken only when both cardinal neighbours it
+ * passes are walkable, so a path never squeezes past a wall's corner. On a
+ * uniform-cost grid it returns a path of the same cost as `findPath`, exploring
+ * fewer nodes; a grid with any tile cost above 1 is delegated to `findPath`.
+ */
 export function findPathJPS(
   grid: Grid,
   startX: number,
@@ -122,7 +130,13 @@ export function findPathJPS(
 /**
  * Writes the cell index of each jump point reachable from (cx, cy) into `out`
  * and returns how many. At most one per direction tried — 8 from the start
- * node, 5 after a diagonal move, 3 after a cardinal one — so `out` needs 8 slots.
+ * node, 3 after a diagonal move, 5 after a cardinal one — so `out` needs 8 slots.
+ *
+ * The pruning rules are JPS's no-corner-cutting variant (Harabor and Grastien,
+ * 2014): a diagonal neighbour is tried only when both of its cardinal neighbours
+ * are walkable, a diagonal move has no forced neighbours, and after a cardinal
+ * move the forced neighbours are the sides that opened up beside this cell
+ * (blocked beside the previous one), each with the diagonal towards it.
  */
 function identifySuccessors(
   grid: Grid,
@@ -139,7 +153,7 @@ function identifySuccessors(
   const parentIdx = cameFrom[cy * w + cx]!;
 
   if (parentIdx === -1) {
-    // Start node: explore all 8 directions
+    // Start node: explore all 8 directions (jump refuses a diagonal past a corner)
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         if (dx === 0 && dy === 0) continue;
@@ -147,69 +161,75 @@ function identifySuccessors(
         if (jp !== -1) out[n++] = jp;
       }
     }
-  } else {
-    const px = parentIdx % w;
-    const py = (parentIdx / w) | 0;
-    const dx = clampDir(cx - px);
-    const dy = clampDir(cy - py);
+    return n;
+  }
 
-    if (dx !== 0 && dy !== 0) {
-      // Diagonal move: check straight and diagonal successors
-      if (isWalkable(grid, cx, cy + dy)) {
-        const jp = jump(grid, cx, cy, 0, dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (isWalkable(grid, cx + dx, cy)) {
-        const jp = jump(grid, cx, cy, dx, 0, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (isWalkable(grid, cx + dx, cy + dy)) {
-        const jp = jump(grid, cx, cy, dx, dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      // Forced neighbors
-      if (!isWalkable(grid, cx - dx, cy) && isWalkable(grid, cx - dx, cy + dy)) {
-        const jp = jump(grid, cx, cy, -dx, dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (!isWalkable(grid, cx, cy - dy) && isWalkable(grid, cx + dx, cy - dy)) {
-        const jp = jump(grid, cx, cy, dx, -dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-    } else if (dx !== 0) {
-      // Horizontal move
-      if (isWalkable(grid, cx + dx, cy)) {
-        const jp = jump(grid, cx, cy, dx, 0, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (!isWalkable(grid, cx, cy + 1) && isWalkable(grid, cx + dx, cy + 1)) {
-        const jp = jump(grid, cx, cy, dx, 1, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (!isWalkable(grid, cx, cy - 1) && isWalkable(grid, cx + dx, cy - 1)) {
-        const jp = jump(grid, cx, cy, dx, -1, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-    } else {
-      // Vertical move
-      if (isWalkable(grid, cx, cy + dy)) {
-        const jp = jump(grid, cx, cy, 0, dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (!isWalkable(grid, cx + 1, cy) && isWalkable(grid, cx + 1, cy + dy)) {
-        const jp = jump(grid, cx, cy, 1, dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-      if (!isWalkable(grid, cx - 1, cy) && isWalkable(grid, cx - 1, cy + dy)) {
-        const jp = jump(grid, cx, cy, -1, dy, w, h, ex, ey);
-        if (jp !== -1) out[n++] = jp;
-      }
-    }
+  const px = parentIdx % w;
+  const py = (parentIdx / w) | 0;
+  const dx = clampDir(cx - px);
+  const dy = clampDir(cy - py);
+
+  if (dx !== 0 && dy !== 0) {
+    // Diagonal move: the two cardinal components, then the diagonal itself
+    const openY = isWalkable(grid, cx, cy + dy);
+    const openX = isWalkable(grid, cx + dx, cy);
+    n = tryJump(grid, cx, cy, 0, dy, openY, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, dx, 0, openX, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, dx, dy, openX && openY, w, h, ex, ey, out, n);
+  } else if (dx !== 0) {
+    // Horizontal move: ahead, plus each side that opened up here (walkable beside
+    // this cell, blocked beside the previous one) and the diagonal towards it
+    const ahead = isWalkable(grid, cx + dx, cy);
+    const down = isWalkable(grid, cx, cy + 1) && !isWalkable(grid, cx - dx, cy + 1);
+    const up = isWalkable(grid, cx, cy - 1) && !isWalkable(grid, cx - dx, cy - 1);
+    n = tryJump(grid, cx, cy, dx, 0, ahead, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, 0, 1, down, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, dx, 1, ahead && down, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, 0, -1, up, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, dx, -1, ahead && up, w, h, ex, ey, out, n);
+  } else {
+    // Vertical move: the same, with the axes swapped
+    const ahead = isWalkable(grid, cx, cy + dy);
+    const right = isWalkable(grid, cx + 1, cy) && !isWalkable(grid, cx + 1, cy - dy);
+    const left = isWalkable(grid, cx - 1, cy) && !isWalkable(grid, cx - 1, cy - dy);
+    n = tryJump(grid, cx, cy, 0, dy, ahead, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, 1, 0, right, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, 1, dy, ahead && right, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, -1, 0, left, w, h, ex, ey, out, n);
+    n = tryJump(grid, cx, cy, -1, dy, ahead && left, w, h, ex, ey, out, n);
   }
 
   return n;
 }
 
+function tryJump(
+  grid: Grid,
+  cx: number,
+  cy: number,
+  dx: number,
+  dy: number,
+  open: boolean,
+  w: number,
+  h: number,
+  ex: number,
+  ey: number,
+  out: Int32Array,
+  n: number,
+): number {
+  if (!open) return n;
+  const jp = jump(grid, cx, cy, dx, dy, w, h, ex, ey);
+  if (jp !== -1) out[n++] = jp;
+  return n;
+}
+
+/**
+ * Scans from (cx, cy) in direction (dx, dy) and returns the index of the first
+ * jump point, or -1. A diagonal step is taken only when both cardinal
+ * neighbours it passes are walkable, so the scan never squeezes a corner.
+ * On a cardinal ray a cell is a jump point when a perpendicular neighbour opens
+ * up beside it that was blocked beside the previous cell; a diagonal ray stops
+ * where one of its two cardinal probes finds a jump point.
+ */
 function jump(
   grid: Grid,
   cx: number,
@@ -227,37 +247,32 @@ function jump(
   let nx = cx;
   let ny = cy;
   for (;;) {
+    if (dx !== 0 && dy !== 0) {
+      if (!isWalkable(grid, nx + dx, ny) || !isWalkable(grid, nx, ny + dy)) return -1;
+    }
     nx += dx;
     ny += dy;
 
     if (!isWalkable(grid, nx, ny)) return -1;
     if (nx === ex && ny === ey) return ny * w + nx;
 
-    // Forced neighbor check
     if (dx !== 0 && dy !== 0) {
-      // Diagonal
-      if (
-        (!isWalkable(grid, nx - dx, ny) && isWalkable(grid, nx - dx, ny + dy)) ||
-        (!isWalkable(grid, nx, ny - dy) && isWalkable(grid, nx + dx, ny - dy))
-      ) {
-        return ny * w + nx;
-      }
-      // Probe the cardinal directions
+      // Diagonal: probe the cardinal directions
       if (jump(grid, nx, ny, dx, 0, w, h, ex, ey) !== -1) return ny * w + nx;
       if (jump(grid, nx, ny, 0, dy, w, h, ex, ey) !== -1) return ny * w + nx;
     } else if (dx !== 0) {
-      // Horizontal
+      // Horizontal: a row above or below opens up here
       if (
-        (!isWalkable(grid, nx, ny + 1) && isWalkable(grid, nx + dx, ny + 1)) ||
-        (!isWalkable(grid, nx, ny - 1) && isWalkable(grid, nx + dx, ny - 1))
+        (isWalkable(grid, nx, ny + 1) && !isWalkable(grid, nx - dx, ny + 1)) ||
+        (isWalkable(grid, nx, ny - 1) && !isWalkable(grid, nx - dx, ny - 1))
       ) {
         return ny * w + nx;
       }
     } else {
-      // Vertical
+      // Vertical: a column to the right or left opens up here
       if (
-        (!isWalkable(grid, nx + 1, ny) && isWalkable(grid, nx + 1, ny + dy)) ||
-        (!isWalkable(grid, nx - 1, ny) && isWalkable(grid, nx - 1, ny + dy))
+        (isWalkable(grid, nx + 1, ny) && !isWalkable(grid, nx + 1, ny - dy)) ||
+        (isWalkable(grid, nx - 1, ny) && !isWalkable(grid, nx - 1, ny - dy))
       ) {
         return ny * w + nx;
       }

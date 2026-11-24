@@ -18,7 +18,7 @@ export interface PathResult {
 }
 
 export interface PathOptions {
-  /** Allow diagonal movement. Default: true. */
+  /** Allow diagonal movement, never past a wall's corner. Default: true. */
   diagonal?: boolean;
   /** Custom heuristic. Default: octile distance (diagonal) or Manhattan (4-dir). */
   heuristic?: (ax: number, ay: number, bx: number, by: number) => number;
@@ -63,6 +63,11 @@ const DIR8_COST = [1, SQRT2, 1, SQRT2, 1, SQRT2, 1, SQRT2];
 
 // ─── A* ──────────────────────────────────────────────────────────
 
+/**
+ * A* between two cells. With `diagonal` (the default), a diagonal step is taken
+ * only when both cardinal neighbours it passes are walkable, so a path never
+ * squeezes past a wall's corner; `findPathJPS` follows the same rule.
+ */
 export function findPath(
   grid: Grid,
   startX: number,

@@ -2,18 +2,26 @@ name: issue-closed
 
 # A closed issue keeps whatever status:* label it had, so the queue's labels drift from the truth
 # (the pilot left status:in-review on #23-#26 after their PRs merged). Status labels describe open
-# work only: drop every one of them when an issue closes.
+# work only: drop every one of them when an issue closes, and from a PR when it merges
+# (docs/work-tracking.md §4).
+#
+# The PR job runs on `pull_request_target` so it gets a write token for PRs from forks too; it is
+# safe because it checks out no code and reads only the event payload.
 
 on:
   issues:
     types: [closed]
+  pull_request_target:
+    types: [closed]
 
-permissions:
-  issues: write
+permissions: {}
 
 jobs:
   drop-status-labels:
+    if: github.event_name == 'issues'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -24,4 +32,21 @@ jobs:
             while read -r label; do
               gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/${label//:/%3A}" --silent
               echo "removed $label from #$NUMBER"
+            done
+
+  drop-pr-status-labels:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - run: |
+          jq -r '.pull_request.labels[].name | select(startswith("status:"))' "$GITHUB_EVENT_PATH" |
+            while read -r label; do
+              gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/${label//:/%3A}" --silent
+              echo "removed $label from PR #$NUMBER"
             done

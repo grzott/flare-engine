@@ -407,5 +407,5 @@ issues. The upstream RN-Skia report is not a repo issue (D14).
 | #562 | `ui-canvas: GameView integration and input routing` | m | #559, #545 |
 | #563 | `render: batch nine-slice panels into one atlas run (E3)` | s | - |
 | #564 | `ui-canvas: bench rows, docs and recipes` | m | #559 |
-| #565 | `release: create the ui-canvas package name and its trusted publisher (D13)` | s, type:owner-action | - |
+| #565 | `release: create the ui-canvas package name and its trusted publisher (D13)` | s, type:admin, owner-action | - |
 | #566 | `ui-canvas: first publish as Beta (D13)` | s | #559, #564, #565 |

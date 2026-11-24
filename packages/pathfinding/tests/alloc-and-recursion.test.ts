@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Vec2 } from '@flare-engine/math';
-import { octileDistance } from '../src/astar.js';
+import { findPath, octileDistance } from '../src/astar.js';
 import type { Grid } from '../src/grid.js';
 import { createGrid, setWalkable } from '../src/grid.js';
 import { findPathJPS } from '../src/jps.js';
@@ -188,7 +188,9 @@ describe('findNavMeshPath per-mesh index (#123)', () => {
 describe('findPathJPS successor buffer (#124)', () => {
   test('a start node with a jump point in every direction yields all eight, in direction order', () => {
     // Four blockers, each two cells from the start, give every one of the eight
-    // rays a forced neighbour one step past the start's neighbourhood.
+    // rays a jump point near the start's neighbourhood (#507's corner rule: a
+    // cardinal ray stops where a side opens up past a blocker, a diagonal ray
+    // where one of its cardinal probes does).
     const grid = createGrid({ width: 7, height: 7 });
     setWalkable(grid, 5, 4, false);
     setWalkable(grid, 1, 2, false);
@@ -205,18 +207,19 @@ describe('findPathJPS successor buffer (#124)', () => {
     expect(result).not.toBeNull();
     expect(seen.slice(0, 9)).toEqual([
       [3, 3],
-      [1, 1],
-      [1, 3],
-      [1, 5],
-      [3, 1],
-      [3, 5],
-      [5, 1],
-      [5, 3],
-      [5, 5],
+      [2, 2],
+      [0, 3],
+      [2, 4],
+      [3, 0],
+      [3, 6],
+      [4, 2],
+      [6, 3],
+      [4, 4],
     ]);
-    // The goal is reached through the last of the eight; dropping it would cost 2 + sqrt(2) more.
-    expect(result!.cost).toBeCloseTo(3 * Math.SQRT2, 12);
-    expect(result!.explored).toBe(2);
+    // (5,4) blocks the diagonal past (4,4), so the route is two diagonals and two straights.
+    expect(result!.cost).toBeCloseTo(2 + 2 * Math.SQRT2, 12);
+    expect(result!.cost).toBeCloseTo(findPath(grid, 3, 3, 6, 6)!.cost, 12);
+    expect(result!.explored).toBe(4);
   });
 });
 
@@ -269,29 +272,33 @@ function hashPair(k: number): [number, number, number, number] {
   return [h & 63, (h >>> 6) & 63, (h >>> 12) & 63, (h >>> 18) & 63];
 }
 
-describe('findPathJPS results are unchanged by the buffer and the loop', () => {
-  test('cost, explored count and path length match the recorded recursive implementation', () => {
-    // [cost, explored, path.length] per pair, recorded before #124/#125; `explored`
-    // is sensitive to successor order and to which cell each jump stops at.
+describe('findPathJPS results are pinned', () => {
+  test('cost, explored count and path length match the recorded values', () => {
+    // [cost, explored, path.length] per pair, recorded at #507 (the no-corner-cutting
+    // rule; the values recorded before #124/#125 cut corners). `explored` is sensitive
+    // to successor order and to which cell each jump stops at; every cost is A*'s.
     const recorded: ([number, number, number] | null)[] = [
-      [54.669047558312116, 101, 42],
-      [43.62741699796951, 138, 38],
-      [55.9116882454314, 96, 42],
-      [44.76955262170046, 92, 35],
-      [6.82842712474619, 6, 7],
-      [48.59797974644665, 72, 38],
+      [61.11269837220808, 206, 53],
+      [45.38477631085023, 136, 41],
+      [64.69848480983498, 287, 57],
+      [50.041630560342625, 144, 44],
+      [7.414213562373095, 5, 8],
+      [53.2842712474619, 121, 46],
       null,
-      [13.727922061357859, 11, 11],
-      [54.14213562373094, 89, 51],
-      [30.627416997969526, 40, 25],
+      [14.313708498984763, 9, 12],
+      [58.142135623730944, 221, 55],
+      [32.97056274847715, 69, 29],
       null,
-      [5.82842712474619, 4, 6],
+      [6.414213562373095, 4, 7],
     ];
     const grid = hashedGrid();
     for (let k = 0; k < recorded.length; k++) {
       const [sx, sy, ex, ey] = hashPair(k);
       const r = findPathJPS(grid, sx, sy, ex, ey);
       expect(r === null ? null : [r.cost, r.explored, r.path.length]).toEqual(recorded[k]!);
+      const astar = findPath(grid, sx, sy, ex, ey);
+      expect(astar === null).toBe(r === null);
+      if (astar !== null && r !== null) expect(r.cost).toBeCloseTo(astar.cost, 9);
     }
   });
 });

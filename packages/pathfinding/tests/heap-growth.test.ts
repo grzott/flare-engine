@@ -54,8 +54,9 @@ describe('open-set heap growth (B18)', () => {
 
     const result = findPathJPS({ width: n, height: n, data }, 0, 0, n - 1, n - 1);
     expect(result).not.toBeNull();
-    // Unfixed: 3064.1874 over 2337 nodes. Fixed: the shorter route below.
-    expect(result!.cost).toBeCloseTo(3055.9864, 3);
+    // The optimum under #507's corner rule, equal to A*'s on the same grid. (Before
+    // #507 JPS cut corners: the unfixed heap returned 3064.1874, the fixed 3055.9864.)
+    expect(result!.cost).toBeCloseTo(3222.3498, 3);
   });
 
   test('the returned path is contiguous and finite past the cap', () => {

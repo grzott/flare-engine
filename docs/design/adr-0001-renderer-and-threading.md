@@ -153,6 +153,15 @@ Any one of these should reopen the decision:
    messages per 60 s to **zero** while rendering identically. Nothing was accumulating, which is
    consistent with the worklet path having no retention ring. Evidence:
    [external review §11.4d](../plans/external-review-2026-08.md).
+   **Update 2026-11-24.**
+   - "Rendering identically" holds for the pixels, not for the frame rate. On a high-refresh phone,
+     `opaque: true` halves GameView's loop: 45 Hz on a 90 Hz display and 30 Hz at 60 Hz, with
+     frames reaching the screen about 40 ms after they are queued. The SurfaceView's buffer queue
+     stays full, which delays `requestAnimationFrame` (#545).
+   - So `GameConfig.opaque` no longer recommends it, and the TextureView default keeps the log
+     pair.
+   - The pair comes from RN-Skia's per-render `updateTexImage()` drain (RN-Skia #4058). Removing
+     it at the source is tracked in #570.
 
 ## 6. Status
 

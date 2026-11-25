@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.18](#0418) | 2026-11-25 | 42 | `findPathJPS` follows `findPath`'s corner rule; corrected `GameView` `opaque` and `./headless` install advice |
 | [0.4.17](#0417) | 2026-11-23 | 42 | Frame-rate-independent camera shake, a live `GameView` pixel ratio, CanvasKit-assignable types |
 | [0.4.16](#0416) | 2026-11-20 | 42 | Shape paths work on react-native-skia 2.14, the version the templates pin |
 | [0.4.15](#0415) | 2026-11-19 | 42 | Uncoloured sprite batching back to its 0.4.12 speed |
@@ -39,6 +40,38 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.18
+
+A fix in 1 package and docs in 2. The other 39 change only their version. One behaviour change, in
+`pathfinding`.
+
+- **`pathfinding`** — `findPathJPS` no longer cuts corners, so it now follows `findPath`'s rule: a
+  diagonal step is taken only when both cardinal neighbours it passes are walkable (#507).
+  - **What was wrong.** On a uniform-cost grid, JPS stepped diagonally past a wall's tip where
+    `findPath` went round. It also switched to `findPath`'s rule whenever any tile cost more than 1,
+    even off the route. A game that checked reachability with one function and moved units with the
+    other could send units through a gap the check had reported as sealed.
+  - **Now:** on a uniform grid both return a path of the same cost, and both return `null` when only
+    a corner cut would connect start and goal.
+  - **Behaviour change:** a `findPathJPS` path on a uniform grid may be longer than before, by
+    `2 - √2` for each corner it used to cut, and may go round where it used to squeeze through.
+  - **Speed:** in the published benchmarks, a JPS search on the 128×128 open map now takes 148 µs
+    (was 94 µs; A* takes 8 µs), and on the 128×128 maze 40 µs (was 55 µs; A* takes 46 µs). On the
+    256×256 maps measured in #574, JPS took 1.3-2× longer than before, and still searched 2.3×
+    faster than A* on a rooms-and-corridors map and 1.3-1.4× faster with 10-20% scattered walls.
+- **`react`** — `GameConfig.opaque` no longer recommends `true` on Android. Docs only; the default
+  stays `false`. On a 90 Hz Pixel 7, `opaque: true` ran the game loop at 45 Hz (30 Hz at 60 Hz),
+  with frames reaching the screen about 40 ms after they were queued. The default loops at the
+  display rate. Its one cost, a harmless react-native-skia log pair on every render, can be
+  filtered out of logcat as the JSDoc shows. Keep `opaque: true` only for overlays that a
+  TextureView clips (#545).
+- **`engine`** — the README and the package description no longer call `./headless` safe for
+  web-only and Node projects. Docs only. `./headless` imports no React Native, but installing
+  `@flare-engine/engine` installs React Native, Skia, Reanimated and Worklets as required peers. A
+  new README section, "Web and Node without React Native", says to install the leaf packages
+  instead, and gives what to build in place of `createGame` and how to run a `GameLoop` in Node
+  (#505).
 
 ## 0.4.17
 

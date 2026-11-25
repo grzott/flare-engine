@@ -37,6 +37,27 @@ expect_allow() {
   fi
 }
 
+# Body files the guard reads (it refuses one it cannot read), in a temp dir in the form the
+# native python3 on Windows can open.
+TMPD=$(mktemp -d)
+trap 'rm -rf "$TMPD"' EXIT
+path_for_guard() { cygpath -m "$1" 2>/dev/null || printf '%s' "$1"; }
+DIRW=$(path_for_guard "$TMPD")
+NL=$'\n'
+printf 'Summary\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n' > "$TMPD/footer.md"
+printf 'Summary\n\nhttps://claude.ai/code/session_01ABC\n' > "$TMPD/session.md"
+printf 'fix(math): clamp lerp t\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n' > "$TMPD/msg.txt"
+printf 'Summary\n\nNo co-authored-by trailer, by repo rule.\n' > "$TMPD/clean.md"
+mkdir "$TMPD/mixed" "$TMPD/tidy"
+printf 'clean\n' > "$TMPD/mixed/pr-1.md"
+cp "$TMPD/footer.md" "$TMPD/mixed/pr-2.md"
+printf 'clean\n' > "$TMPD/tidy/pr-1.md"
+printf 'clean too\n' > "$TMPD/tidy/pr-2.md"
+FOOTER="$DIRW/footer.md"
+SESSION="$DIRW/session.md"
+MSG="$DIRW/msg.txt"
+CLEAN="$DIRW/clean.md"
+
 echo "pre-bash-guard contract"
 
 echo " state-changing git"
@@ -144,7 +165,7 @@ expect_block "gh variable set BOT_LOGIN"
 expect_block "gh workflow run runner.yml"
 expect_block "gh repo edit --visibility private"
 expect_block 'bash -c "gh pr merge 12"'
-expect_allow 'gh api repos/{owner}/{repo}/pulls -f title=x -f head=claude/issue-1-x -f base=main -F body=@/tmp/b.md'
+expect_allow "gh api repos/{owner}/{repo}/pulls -f title=x -f head=claude/issue-1-x -f base=main -F body=@$CLEAN"
 expect_allow 'gh api "repos/{owner}/{repo}/issues?state=open&labels=status:ready&per_page=100"'
 expect_allow "gh api -X POST repos/{owner}/{repo}/issues/12/labels -f labels[]=status:in-review"
 expect_allow "gh api -X DELETE repos/{owner}/{repo}/issues/12/labels/status:ready"
@@ -237,20 +258,8 @@ expect_allow "git submodule status"
 expect_allow "git blame src/index.ts"
 
 # 2026-11-25 (owner): nothing written from here carries AI attribution. The markers are in
-# .github/attribution-markers.json; body files are read, so they live in a temp dir here.
+# .github/attribution-markers.json.
 echo " no AI attribution in commits, PRs, issues or comments"
-TMPD=$(mktemp -d)
-trap 'rm -rf "$TMPD"' EXIT
-path_for_guard() { cygpath -m "$1" 2>/dev/null || printf '%s' "$1"; }
-NL=$'\n'
-printf 'Summary\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n' > "$TMPD/footer.md"
-printf 'Summary\n\nhttps://claude.ai/code/session_01ABC\n' > "$TMPD/session.md"
-printf 'fix(math): clamp lerp t\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n' > "$TMPD/msg.txt"
-printf 'Summary\n\nNo co-authored-by trailer, by repo rule.\n' > "$TMPD/clean.md"
-FOOTER=$(path_for_guard "$TMPD/footer.md")
-SESSION=$(path_for_guard "$TMPD/session.md")
-MSG=$(path_for_guard "$TMPD/msg.txt")
-CLEAN=$(path_for_guard "$TMPD/clean.md")
 expect_block 'git commit -m "fix(math): clamp lerp t" -m "Co-Authored-By: Claude <noreply@anthropic.com>"'
 expect_block 'git commit -m "fix(math): clamp lerp t" -m "Claude-Session: https://claude.ai/code/session_01ABC"'
 expect_block "git commit -F $MSG"
@@ -266,6 +275,26 @@ expect_allow "gh api repos/o/r/pulls -f title=t -f head=claude/x -f base=main -F
 expect_allow "gh issue comment 5 --body-file $CLEAN"
 expect_allow 'gh pr view 5 --json body --jq .body'
 expect_allow 'grep -rn "Generated with" docs/'
+
+echo " a body the guard cannot read is refused, not assumed clean"
+expect_block "D=$DIRW; gh pr create --title t --body-file \$D/footer.md"
+expect_allow "D=$DIRW; gh pr create --title t --body-file \"\$D/clean.md\""
+expect_block "for n in 1 2; do gh api -X PATCH repos/o/r/pulls/\$n -F body=@$DIRW/mixed/pr-\$n.md; done"
+expect_allow "for n in 1 2; do gh api -X PATCH repos/o/r/pulls/\$n -F body=@$DIRW/tidy/pr-\$n.md; done"
+expect_block "gh pr create --title t --body-file \"\$(mktemp)\""
+expect_block "gh pr create --title t --body-file \$UNSET_BODY_FILE"
+expect_block "gh pr create --title t --body-file $DIRW/missing.md"
+expect_block "cat $FOOTER | gh pr create --title t --body-file -"
+expect_allow "gh pr create --title t --body-file - <<EOF${NL}clean body${NL}EOF"
+expect_block "gh pr create --title t --body-file - <<EOF${NL}Generated with [Claude Code](x)${NL}EOF"
+expect_block "M='Co-Authored-By: Claude <x@y>'; git commit -m fix -m \"\$M\""
+expect_block "gh issue close 5 --comment \"\$(cat $FOOTER)\""
+expect_allow "gh issue close 5 --comment \"\$(cat $CLEAN)\""
+expect_block "gh issue comment 5 --body \"\$UNSET_BODY_TEXT\""
+expect_block "gh issue comment 5 --body \$(cat $CLEAN)"
+expect_block "gh api repos/o/r/pulls/5 \\${NL} -X PATCH -F body=@$FOOTER"
+expect_allow "gh api -X PATCH repos/o/r/pulls/\$n -f state=closed"
+expect_allow "git commit -m \"\$(cat <<EOF${NL}fix(math): clamp lerp t${NL}EOF${NL})\""
 
 echo " ordinary work stays allowed"
 expect_allow "bun test"

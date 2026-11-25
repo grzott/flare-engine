@@ -1,5 +1,38 @@
 # @flare-engine/engine
 
+## 0.4.18
+
+### Patch Changes
+
+- ed5c68c: The README and the package description no longer call `./headless` safe for web-only and Node projects (#505). Docs only: no behaviour change.
+
+  **Why the old wording was wrong.** At runtime `./headless` imports no React Native, but installing `@flare-engine/engine` still installs React Native, Skia, Reanimated and Worklets. They are the package's required peers, and its `@flare-engine/react` dependency requires them too.
+
+  **What the README adds**, in a new section, "Web and Node without React Native":
+
+  - install only the leaf packages (`core`, `ecs`, `render`, …), which declare no required React Native peer;
+  - build the few subsystems `createGame` would construct;
+  - in Node, set `loop.tick` and `loop.cancelTick` before `start()`, since Node has no `requestAnimationFrame`.
+
+- Updated dependencies [1f14230]
+  - @flare-engine/react@0.4.18
+  - @flare-engine/animation@0.4.18
+  - @flare-engine/assets@0.4.18
+  - @flare-engine/audio@0.4.18
+  - @flare-engine/core@0.4.18
+  - @flare-engine/debug@0.4.18
+  - @flare-engine/dynamics@0.4.18
+  - @flare-engine/ecs@0.4.18
+  - @flare-engine/events@0.4.18
+  - @flare-engine/input@0.4.18
+  - @flare-engine/math@0.4.18
+  - @flare-engine/particles@0.4.18
+  - @flare-engine/physics@0.4.18
+  - @flare-engine/postfx@0.4.18
+  - @flare-engine/render@0.4.18
+  - @flare-engine/scene@0.4.18
+  - @flare-engine/tilemap@0.4.18
+
 ## 0.4.17
 
 ### Patch Changes

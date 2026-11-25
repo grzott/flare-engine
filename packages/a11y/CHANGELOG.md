@@ -1,5 +1,12 @@
 # @flare-engine/a11y
 
+## 0.4.18
+
+### Patch Changes
+
+- @flare-engine/events@0.4.18
+- @flare-engine/math@0.4.18
+
 ## 0.4.17
 
 ### Patch Changes

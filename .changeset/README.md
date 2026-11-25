@@ -23,6 +23,37 @@ All `@flare-engine/*` packages are versioned in lockstep via the `fixed` group i
 ## Publishing prerequisites (one-time)
 
 - The `@flare-engine` org on npm.
-- npm Trusted Publishing: each published package lists `grzott/flare-engine` + `release.yml` as its trusted publisher, with direct publish allowed. `release.yml` authenticates by OIDC (`id-token: write`); there is no `NPM_TOKEN`, and a local `bun run release` cannot publish.
+- npm Trusted Publishing: each published package lists `grzott/flare-engine` + `release.yml` as its trusted publisher, with direct publish allowed. `release.yml` authenticates by OIDC (`id-token: write`); there is no `NPM_TOKEN`, and a local `bun run release` cannot publish. A package that has never been published needs the two steps below first.
 - The `ENABLE_RELEASE=true` repo variable (`release.yml` does nothing without it) and the `BOT_TOKEN` secret (the version PR must be opened by the bot so that CI and the gate run on it).
 - Every published package carries `publishConfig.access: "public"`. A `private` package with `access: "public"` fails `check:publish-safety`.
+
+## First publish of a new package
+
+Without these two owner steps, a new package's first publish fails with `ENEEDAUTH`. The npm facts
+were checked against npm's trusted-publisher and staged-publishing docs on 2026-11-16 and used for
+`@flare-engine/ui-fx` (#378).
+
+1. **Reserve the name, at any time.** A trusted publisher can only be added to a package that
+   exists, so create the name with a staged placeholder.
+   - In an empty folder outside the repo, write a `package.json` with the package's `name`, a
+     prerelease `version` such as `0.0.1-reserve.0`, `"license": "Apache-2.0"`, and a `repository`
+     of `git+https://github.com/grzott/flare-engine.git` with `"directory": "packages/<dir>"`. Add a
+     one-line `README.md`.
+   - Run `npx -y npm@11 stage publish --access public --tag reserve`. It creates a public
+     `0.0.0-stage` placeholder, and the staged contents stay private. Use npm 11 (11.15.0 or
+     newer): npm 12 needs Node `^22.22.2 || ^24.15.0 || >=26`. A prerelease version needs `--tag`.
+   - Leave the staged version pending. Approving it publishes the placeholder, and rejecting it
+     removes the name.
+   - Check with `npx -y npm@11 view <name> versions --prefer-online`. Without `--prefer-online`, a
+     cached 404 can show for a while.
+   - In the package's settings, set publishing access to require two-factor authentication and
+     disallow tokens, as on every other package.
+2. **Add the trusted publisher in the release window.** An entry that no publish uses within 2 days
+   expires and has to be deleted and recreated, so add it at most 2 days before the version PR that
+   first publishes the package merges.
+   - On the package page: Settings, Trusted publishing, add a GitHub Actions publisher with
+     organization `grzott`, repository `flare-engine`, workflow `release.yml`, and no environment.
+     The fields are case-sensitive, so copy them from an existing package's entry.
+   - Under allowed actions, tick `npm publish`. New entries allow only staged publishing by default,
+     and Changesets publishes directly.
+   - The first publish from `release.yml` validates the entry.

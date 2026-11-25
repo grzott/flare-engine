@@ -95,6 +95,20 @@ describe('entries report which one they are', () => {
     expect((await import('../src/dom')).UI_FX_ENTRY).toBe('dom');
   });
 
+  test('./dom exports the provider, the factory, the wrappers and the hook', async () => {
+    expect(Object.keys(await import('../src/dom')).sort()).toEqual([
+      'FlareButton',
+      'FlareDiv',
+      'FlareImg',
+      'FlareLi',
+      'FlareProvider',
+      'FlareSpan',
+      'UI_FX_ENTRY',
+      'createFlareComponent',
+      'useFlareFx',
+    ]);
+  });
+
   test('./fx resolves to a native and a web file', async () => {
     expect((await import('../src/fx.native')).UI_FX_ENTRY).toBe('fx-native');
     expect((await import('../src/fx.web')).UI_FX_ENTRY).toBe('fx-web');

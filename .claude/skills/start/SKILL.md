@@ -121,7 +121,8 @@ cannot, a plan that does not fit the issue. Swap `status:in-progress` for `statu
 3. Write the PR body from `.github/PULL_REQUEST_TEMPLATE.md` to `.superpowers/pr-body.md` (inside
    the repo and gitignored, so writing it needs no permission and it is never committed) with the
    Write tool — `Closes #<n>`, a summary, the verification you ran with its results, the expected
-   risk class and why, and the frictions line (grammar in the `/close` skill) — then:
+   risk class and why, and the frictions line (grammar in the `/close` skill), and no AI
+   attribution footer or session link (`AGENTS.md`; the guard refuses it) — then:
 
    ```bash
    gh api repos/{owner}/{repo}/pulls -f title="<subject>" -f head="claude/issue-<n>-<slug>" -f base=main -F body=@.superpowers/pr-body.md

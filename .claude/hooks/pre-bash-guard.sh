@@ -20,8 +20,13 @@ set -u
 
 INPUT=$(cat)
 
+# The AI-attribution markers are shared with ci (scripts/check-attribution.mjs). `pwd -W` gives
+# Git Bash on Windows a path the native python3 can open; elsewhere it fails and `pwd` answers.
+HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd; })
+MARKERS="$HOOK_DIR/../../.github/attribution-markers.json"
+
 VERDICT=$(printf '%s' "$INPUT" | python3 -c '
-import json, re, shlex, sys
+import json, os, re, shlex, shutil, subprocess, sys
 
 RAW = sys.stdin.read()
 
@@ -33,7 +38,9 @@ if not RAW.strip():
     sys.exit(0)
 
 try:
-    CMD = json.loads(RAW).get("tool_input", {}).get("command", "") or ""
+    PAYLOAD = json.loads(RAW)
+    CMD = PAYLOAD.get("tool_input", {}).get("command", "") or ""
+    CWD = PAYLOAD.get("cwd") or ""
 except Exception:
     # Fail CLOSED. The old hook swallowed a parse error and allowed the call,
     # which made every rule below advisory whenever the payload shape changed.
@@ -380,13 +387,78 @@ def walk(seg, depth=0):
 
     return None
 
+# No AI attribution (owner rule, 2026-11-25). A commit, PR, issue or comment written from here
+# never carries a generated-by footer, a co-author or session trailer, or a claude.ai session
+# link. The markers live in .github/attribution-markers.json, which ci reads too. A write is
+# checked over the raw command (heredocs included), each argument on a line of its own (so a
+# `-m` trailer is at the start of a line, as in the commit), and every body file it sends.
+ATTR_WRITE = re.compile(
+    r"\bgit\b[^\n]*\bcommit\b"
+    r"|\bgh\s+(pr|issue|release)\s+(create|edit|comment|review)\b"
+    r"|\bgh\s+api\b[^\n]*(\s(-X|--method)[=\s]*(POST|PATCH|PUT)\b|\s(-f|-F|--field|--raw-field|--input)[=\s])",
+    re.I,
+)
+# `-F body=@file` (gh api), `--body-file file` (gh pr/issue), `-F file` / `--file` (git commit).
+ATTR_REF = re.compile(r"(?:=@|(?:^|\s)(?:--body-file|--input|-F|--file)(?:=|\s+))([^\s;|&()]+)")
+
+def attr_read(ref):
+    p = ref.strip(chr(34) + chr(39))
+    if "=@" in p:
+        p = p.split("=@", 1)[1]
+    if not p or p == "-":
+        return ""
+    cands = [p]
+    if CWD and not os.path.isabs(p):
+        cands.append(os.path.join(CWD, p))
+    m = re.match(r"^/([A-Za-z])/(.*)$", p)
+    if m:
+        cands.append(m.group(1) + ":/" + m.group(2))
+    if p.startswith("/") and shutil.which("cygpath"):
+        try:
+            out = subprocess.run(["cygpath", "-w", p], capture_output=True, text=True, timeout=5)
+            if out.stdout.strip():
+                cands.append(out.stdout.strip())
+        except Exception:
+            pass
+    for c in cands:
+        try:
+            with open(c, encoding="utf-8", errors="replace") as fh:
+                return fh.read(1 << 20)
+        except (OSError, ValueError):
+            continue
+    return ""
+
+def attr_reason(cmd):
+    if not ATTR_WRITE.search(cmd):
+        return None
+    try:
+        with open(sys.argv[1], encoding="utf-8") as fh:
+            pats = [re.compile(p, re.I | re.M) for p in json.load(fh)["patterns"]]
+    except Exception:
+        return "could not read .github/attribution-markers.json - refusing a commit or GitHub write unchecked"
+    texts = [cmd]
+    texts.extend("\n".join(tokens(seg)) for seg in split_segments(cmd))
+    texts.extend(attr_read(ref) for ref in ATTR_REF.findall(cmd))
+    for text in texts:
+        for pat in pats:
+            hit = pat.search(text)
+            if hit:
+                return ("AI attribution in a commit or GitHub write (%r): this repo never carries a "
+                        "generated-by footer, a co-author or session trailer, or a claude.ai session "
+                        "link. Remove it and retry." % hit.group(0).strip())
+    return None
+
 for segment in split_segments(CMD):
     reason = walk(segment)
     if reason:
         emit(reason)
 
+reason = attr_reason(CMD)
+if reason:
+    emit(reason)
+
 sys.exit(0)
-' 2>/dev/null)
+' "$MARKERS" 2>/dev/null)
 
 # If python3 is unavailable the guard cannot reason about the command. Refuse rather
 # than allow: an unenforced rule is the failure mode this hook exists to prevent.

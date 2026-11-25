@@ -1,5 +1,11 @@
 # @flare-engine/progression
 
+## 0.4.18
+
+### Patch Changes
+
+- @flare-engine/math@0.4.18
+
 ## 0.4.17
 
 ### Patch Changes

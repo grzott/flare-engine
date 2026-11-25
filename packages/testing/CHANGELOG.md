@@ -1,5 +1,16 @@
 # @flare-engine/testing
 
+## 0.4.18
+
+### Patch Changes
+
+- @flare-engine/assets@0.4.18
+- @flare-engine/core@0.4.18
+- @flare-engine/ecs@0.4.18
+- @flare-engine/input@0.4.18
+- @flare-engine/math@0.4.18
+- @flare-engine/render@0.4.18
+
 ## 0.4.17
 
 ### Patch Changes

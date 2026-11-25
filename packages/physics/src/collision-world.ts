@@ -1,27 +1,26 @@
 import { Signal } from '@flare-engine/events';
 import type { Rect } from '@flare-engine/math';
 import type { Collider } from './collider.js';
+import {
+  type CollisionEntry,
+  createCollisionGrid,
+  gridClear,
+  gridInsert,
+  gridMove,
+  gridQuery,
+  gridRelink,
+  gridRemove,
+  gridUnlink,
+} from './collision-grid.js';
 import type { RaycastHit } from './raycast.js';
 import { rayVsShapeInto } from './raycast.js';
 import type { Shape } from './shape.js';
 import { shapeBoundsInto, shapeOverlap } from './shape.js';
-import { SpatialIndex } from './spatial-index.js';
 
 /** Collision pair data emitted by collision signals. */
 export interface CollisionPair {
   readonly entityA: number;
   readonly entityB: number;
-}
-
-/** Per-entity collision data stored in the world. */
-interface CollisionEntry {
-  entity: number;
-  shape: Shape;
-  x: number;
-  y: number;
-  isTrigger: boolean;
-  layer: number;
-  mask: number;
 }
 
 // Packed pair-key layout: `lo * ENTITY_SHIFT + hi`, lo = min(a,b), hi = max(a,b).
@@ -56,7 +55,7 @@ export class CollisionWorld {
   readonly onTriggerExit = new Signal<CollisionPair>();
 
   private entries = new Map<number, CollisionEntry>();
-  private spatial = new SpatialIndex<number>();
+  private spatial = createCollisionGrid();
   /**
    * Two pre-allocated pair buffers — swapped each step (no per-frame allocation).
    * Keys are packed numbers via `encodePair(a, b)`.
@@ -64,9 +63,7 @@ export class CollisionWorld {
   private pairBufA = new Set<number>();
   private pairBufB = new Set<number>();
   private activePairs: Set<number> = this.pairBufA;
-  /** Reusable query result buffer. */
-  private queryBuf: number[] = [];
-  /** Reusable bounds rect — avoids per-entity Rect allocation in step(). */
+  /** Reusable bounds rect — avoids a Rect allocation per add / setPosition. */
   private boundsBuf: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
   /**
@@ -82,16 +79,49 @@ export class CollisionWorld {
     layer = 1,
     mask = 0xffffffff,
   ): void {
-    const entry: CollisionEntry = { entity, shape, x, y, isTrigger, layer, mask };
-    const previous = this.entries.get(entity);
-    this.entries.set(entity, entry);
-    shapeBoundsInto(shape, x, y, this.boundsBuf);
-    if (previous === undefined) {
-      this.spatial.insert(entity, this.boundsBuf);
+    const b = shapeBoundsInto(shape, x, y, this.boundsBuf);
+    const existing = this.entries.get(entity);
+    if (existing === undefined) {
+      const entry: CollisionEntry = {
+        entity,
+        shape,
+        x,
+        y,
+        isTrigger,
+        layer,
+        mask,
+        minX: 0,
+        minY: 0,
+        maxX: 0,
+        maxY: 0,
+        cxMin: 0,
+        cxMax: 0,
+        cyMin: 0,
+        cyMax: 0,
+        cellCount: 0,
+        cells: [],
+        groups: [],
+        at: [],
+        stamp: 0,
+      };
+      this.entries.set(entity, entry);
+      gridInsert(this.spatial, entry, b.x, b.y, b.x + b.width, b.y + b.height);
       return;
     }
-    this.spatial.update(entity, this.boundsBuf);
-    if (previous.isTrigger === isTrigger) return;
+
+    // A re-add rewrites the entry the grid already links. It is unlinked first
+    // and relinked after, even when it stays in the same cells: the grid files
+    // an entry under its layer and mask, and both may be changing here.
+    const wasTrigger = existing.isTrigger;
+    gridUnlink(this.spatial, existing);
+    existing.shape = shape;
+    existing.x = x;
+    existing.y = y;
+    existing.isTrigger = isTrigger;
+    existing.layer = layer;
+    existing.mask = mask;
+    gridRelink(this.spatial, existing, b.x, b.y, b.x + b.width, b.y + b.height);
+    if (wasTrigger === isTrigger) return;
 
     // A pair is a trigger pair when either side is a trigger, so flipping this
     // side changes the kind only of pairs whose other side is solid. End those
@@ -103,7 +133,7 @@ export class CollisionWorld {
       const other = this.entries.get(lo === entity ? hi : lo);
       if (other?.isTrigger) continue;
       this.activePairs.delete(key);
-      this.emitPair(lo, hi, previous, other, false);
+      this.emitPair(lo, hi, wasTrigger, false);
     }
   }
 
@@ -128,7 +158,7 @@ export class CollisionWorld {
     if (!entry) return;
 
     this.entries.delete(entity);
-    this.spatial.remove(entity);
+    gridRemove(this.spatial, entry);
 
     // Fire exit signals for all active pairs involving this entity
     for (const key of this.activePairs) {
@@ -136,8 +166,9 @@ export class CollisionWorld {
       const hi = decodeHi(key);
       if (lo !== entity && hi !== entity) continue;
       this.activePairs.delete(key);
-      const otherEntity = lo === entity ? hi : lo;
-      this.emitPair(lo, hi, entry, this.entries.get(otherEntity), false);
+      const other = this.entries.get(lo === entity ? hi : lo);
+      // The removed entry is passed in: it is already gone from `entries`.
+      this.emitPair(lo, hi, entry.isTrigger || other?.isTrigger === true, false);
     }
   }
 
@@ -147,8 +178,8 @@ export class CollisionWorld {
     if (!entry) return;
     entry.x = x;
     entry.y = y;
-    shapeBoundsInto(entry.shape, x, y, this.boundsBuf);
-    this.spatial.update(entity, this.boundsBuf);
+    const b = shapeBoundsInto(entry.shape, x, y, this.boundsBuf);
+    gridMove(this.spatial, entry, b.x, b.y, b.x + b.width, b.y + b.height);
   }
 
   /** Number of entities in the world. */
@@ -165,29 +196,45 @@ export class CollisionWorld {
   step(): void {
     const newPairs = this.activePairs === this.pairBufA ? this.pairBufB : this.pairBufA;
     newPairs.clear();
+    const grid = this.spatial;
 
-    for (const entryA of this.entries.values()) {
-      const entityA = entryA.entity;
-      shapeBoundsInto(entryA.shape, entryA.x, entryA.y, this.boundsBuf);
-      this.queryBuf.length = 0;
-      this.spatial.query(this.boundsBuf, this.queryBuf);
+    // A pair is recorded from its lower id, so `a` only looks for higher ids.
+    for (const a of this.entries.values()) {
+      const entityA = a.entity;
+      const layerA = a.layer;
+      const maskA = a.mask;
+      const cells = a.cells;
+      const cellCount = a.cellCount;
+      // Two bodies can share several cells; one cell needs no duplicate check.
+      const gen = cellCount > 1 ? ++grid.gen : 0;
 
-      for (let i = 0; i < this.queryBuf.length; i++) {
-        const entityB = this.queryBuf[i]!;
-        if (entityB <= entityA) continue; // Avoid self and duplicates
+      for (let c = 0; c < cellCount; c++) {
+        const groups = cells[c]!.groups;
+        for (let g = 0; g < groups.length; g++) {
+          const group = groups[g]!;
+          // Layer/mask filtering, once for the whole group: every body in it
+          // carries exactly this layer and mask, so a group that fails holds
+          // no pair for `a`, and one that passes is walked in full.
+          if ((layerA & group.mask) === 0 && (group.layer & maskA) === 0) continue;
 
-        const entryB = this.entries.get(entityB);
-        if (!entryB) continue;
+          const items = group.items;
+          for (let i = 0; i < items.length; i++) {
+            const b = items[i]!;
+            if (b.entity <= entityA) continue; // Avoid self and duplicates
 
-        // Layer/mask filtering
-        if ((entryA.layer & entryB.mask) === 0 && (entryB.layer & entryA.mask) === 0) continue;
+            if (cellCount > 1) {
+              if (b.stamp === gen) continue;
+              b.stamp = gen;
+            }
 
-        // Narrowphase
-        if (!shapeOverlap(entryA.shape, entryA.x, entryA.y, entryB.shape, entryB.x, entryB.y)) {
-          continue;
+            // Bounding boxes (strictly overlapping), then narrowphase
+            const boxes = b.maxX > a.minX && b.minX < a.maxX && b.maxY > a.minY && b.minY < a.maxY;
+            if (!boxes) continue;
+            if (!shapeOverlap(a.shape, a.x, a.y, b.shape, b.x, b.y)) continue;
+
+            newPairs.add(encodePair(entityA, b.entity));
+          }
         }
-
-        newPairs.add(encodePair(entityA, entityB));
       }
     }
 
@@ -196,7 +243,7 @@ export class CollisionWorld {
       if (!this.activePairs.has(key)) {
         const lo = decodeLo(key);
         const hi = decodeHi(key);
-        this.emitPair(lo, hi, this.entries.get(lo), this.entries.get(hi), true);
+        this.emitPair(lo, hi, this.isTriggerPair(lo, hi), true);
       }
     }
 
@@ -205,28 +252,27 @@ export class CollisionWorld {
       if (!newPairs.has(key)) {
         const lo = decodeLo(key);
         const hi = decodeHi(key);
-        this.emitPair(lo, hi, this.entries.get(lo), this.entries.get(hi), false);
+        this.emitPair(lo, hi, this.isTriggerPair(lo, hi), false);
       }
     }
 
     this.activePairs = newPairs;
   }
 
+  /** A pair is a trigger pair when either of its entities is a trigger. */
+  private isTriggerPair(lo: number, hi: number): boolean {
+    return this.entries.get(lo)?.isTrigger === true || this.entries.get(hi)?.isTrigger === true;
+  }
+
   /**
-   * The one place that decides trigger vs collision for a pair and emits its
-   * enter or exit signal. `a` and `b` are the pair's two entries in either
-   * order. They are passed in rather than looked up because in `remove` the
-   * removed entity is already gone from `entries`.
+   * The one place that emits a pair's enter or exit signal, in the trigger or
+   * the collision family. `trigger` is passed in rather than looked up because
+   * `remove` and a re-add classify by data `entries` no longer holds: the
+   * removed entry, and the `isTrigger` the entity had before the re-add.
    */
-  private emitPair(
-    lo: number,
-    hi: number,
-    a: CollisionEntry | undefined,
-    b: CollisionEntry | undefined,
-    entering: boolean,
-  ): void {
+  private emitPair(lo: number, hi: number, trigger: boolean, entering: boolean): void {
     const pair: CollisionPair = { entityA: lo, entityB: hi };
-    if (a?.isTrigger || b?.isTrigger) {
+    if (trigger) {
       if (entering) this.onTriggerEnter.emit(pair);
       else this.onTriggerExit.emit(pair);
     } else if (entering) {
@@ -254,15 +300,14 @@ export class CollisionWorld {
   /** Remove all entities. */
   clear(): void {
     this.entries.clear();
-    this.spatial.clear();
+    gridClear(this.spatial);
     this.pairBufA.clear();
     this.pairBufB.clear();
     this.activePairs = this.pairBufA;
   }
 
   /** Reused across raycasts — see `raycast`. */
-  private raycastBounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
-  private raycastCandidates: number[] = [];
+  private raycastCandidates: CollisionEntry[] = [];
   private raycastHit: RaycastHit = {
     entity: -1,
     distance: 0,
@@ -317,19 +362,19 @@ export class CollisionWorld {
     // the cell loop never runs. The broadphase is a conservative prefilter
     // anyway, so over-including by a hair costs nothing: the exact ray test
     // below rejects the extras.
-    this.raycastBounds.x = minX - RAY_BOUNDS_PAD;
-    this.raycastBounds.y = minY - RAY_BOUNDS_PAD;
-    this.raycastBounds.width = Math.abs(ex - ox) + RAY_BOUNDS_PAD * 2;
-    this.raycastBounds.height = Math.abs(ey - oy) + RAY_BOUNDS_PAD * 2;
+    const qMinX = minX - RAY_BOUNDS_PAD;
+    const qMinY = minY - RAY_BOUNDS_PAD;
+    const qMaxX = qMinX + (Math.abs(ex - ox) + RAY_BOUNDS_PAD * 2);
+    const qMaxY = qMinY + (Math.abs(ey - oy) + RAY_BOUNDS_PAD * 2);
 
-    this.raycastCandidates.length = 0;
-    this.spatial.query(this.raycastBounds, this.raycastCandidates);
+    const candidates = this.raycastCandidates;
+    candidates.length = 0;
+    gridQuery(this.spatial, qMinX, qMinY, qMaxX, qMaxY, candidates);
 
     let bestDist = Number.POSITIVE_INFINITY;
     let found = false;
-    for (let i = 0; i < this.raycastCandidates.length; i++) {
-      const entry = this.entries.get(this.raycastCandidates[i]!);
-      if (entry === undefined) continue;
+    for (let i = 0; i < candidates.length; i++) {
+      const entry = candidates[i]!;
       if ((entry.layer & mask) === 0) continue;
       const hit = rayVsShapeInto(
         ox,

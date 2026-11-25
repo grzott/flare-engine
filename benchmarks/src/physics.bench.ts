@@ -1,7 +1,11 @@
 import { AABB, CollisionWorld } from '@flare-engine/physics';
 import { createBenchSession } from '@flare-engine/testing';
 import { type BenchOverrides, type BenchStats, runBench } from './harness.js';
-import { PHYSICS_SCENARIOS } from './scenarios/physics.js';
+import {
+  PHYSICS_CURTAIN_SCENARIOS,
+  PHYSICS_SCENARIOS,
+  type PhysicsCurtainPass,
+} from './scenarios/physics.js';
 
 export type PhysicsState = {
   world: CollisionWorld;
@@ -75,6 +79,110 @@ export function physicsBenches(overrides?: BenchOverrides): BenchStats[] {
         name,
         setup: () => buildWorld(n, density),
         run: stepAndMove,
+        innerIters,
+      },
+      overrides,
+    ),
+  );
+}
+
+const LAYER_SHIP = 1;
+const LAYER_SHOT = 2;
+const LAYER_ENEMY = 4;
+
+/** Portrait play field: 6 x 12 broadphase cells, so 2000 bolts fill each bucket about 28 deep. */
+const CURTAIN_WIDTH = 384;
+const CURTAIN_HEIGHT = 768;
+
+export type CurtainState = {
+  world: CollisionWorld;
+  /** Bolts first, then shots, then the ship; a body's entity id is its index + 1. */
+  bodies: { x: number; y: number; vx: number; vy: number }[];
+  width: number;
+  height: number;
+};
+
+export function buildCurtain(bolts: number, shots: number): CurtainState {
+  const session = createBenchSession({ seed: 0xb017 });
+  try {
+    const world = new CollisionWorld();
+    const bodies: CurtainState['bodies'] = [];
+    const place = (vx: number, vy: number) => {
+      const body = {
+        x: session.rng.float(0, CURTAIN_WIDTH),
+        y: session.rng.float(0, CURTAIN_HEIGHT),
+        vx,
+        vy,
+      };
+      bodies.push(body);
+      return body;
+    };
+
+    // Enemy bodies hit both player layers and never each other.
+    const boltShape = AABB(8, 8);
+    for (let i = 0; i < bolts; i++) {
+      const b = place(session.rng.float(-20, 20), session.rng.float(60, 180));
+      world.add(bodies.length, boltShape, b.x, b.y, false, LAYER_ENEMY, LAYER_SHIP | LAYER_SHOT);
+    }
+    const shotShape = AABB(4, 12);
+    for (let i = 0; i < shots; i++) {
+      const s = place(0, -600);
+      world.add(bodies.length, shotShape, s.x, s.y, false, LAYER_SHOT, LAYER_ENEMY);
+    }
+    const ship = place(120, 0);
+    world.add(bodies.length, AABB(24, 24), ship.x, ship.y, false, LAYER_SHIP, LAYER_ENEMY);
+
+    return { world, bodies, width: CURTAIN_WIDTH, height: CURTAIN_HEIGHT };
+  } finally {
+    session.end();
+  }
+}
+
+export function curtainMove(state: CurtainState): void {
+  const { world, bodies, width, height } = state;
+  for (let i = 0; i < bodies.length; i++) {
+    const b = bodies[i];
+    if (!b) continue;
+    b.x += b.vx * DT;
+    b.y += b.vy * DT;
+    if (b.x < 0) b.x += width;
+    else if (b.x >= width) b.x -= width;
+    if (b.y < 0) b.y += height;
+    else if (b.y >= height) b.y -= height;
+    world.setPosition(i + 1, b.x, b.y);
+  }
+}
+
+export function curtainStep(state: CurtainState): void {
+  state.world.step();
+}
+
+export function curtainFrame(state: CurtainState): void {
+  curtainMove(state);
+  state.world.step();
+}
+
+export function curtainOutOfBoundsCount(state: CurtainState): number {
+  let escaped = 0;
+  for (const b of state.bodies) {
+    if (b.x < 0 || b.x >= state.width || b.y < 0 || b.y >= state.height) escaped++;
+  }
+  return escaped;
+}
+
+const CURTAIN_RUN: Record<PhysicsCurtainPass, (state: CurtainState) => void> = {
+  move: curtainMove,
+  step: curtainStep,
+  frame: curtainFrame,
+};
+
+export function physicsCurtainBenches(overrides?: BenchOverrides): BenchStats[] {
+  return PHYSICS_CURTAIN_SCENARIOS.map(({ name, pass, bolts, shots, innerIters }) =>
+    runBench(
+      {
+        name,
+        setup: () => buildCurtain(bolts, shots),
+        run: CURTAIN_RUN[pass],
         innerIters,
       },
       overrides,

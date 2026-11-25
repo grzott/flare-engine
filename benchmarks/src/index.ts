@@ -26,7 +26,7 @@ import { mathBenches } from './math.bench.js';
 import { particlesBenches } from './particles.bench.js';
 import { particlesDrawBenches } from './particles-draw.bench.js';
 import { pathfindingBenches } from './pathfinding.bench.js';
-import { physicsBenches } from './physics.bench.js';
+import { physicsBenches, physicsCurtainBenches } from './physics.bench.js';
 import { postfxBenches } from './postfx.bench.js';
 import { judgePowerScheme, readPowerScheme } from './power.js';
 import { aggregateRuns } from './promote.js';
@@ -91,6 +91,7 @@ function runAll(): Group[] {
     { title: 'RenderSystem', results: renderSystemBenches() },
     { title: 'ParticlesDraw', results: particlesDrawBenches() },
     { title: 'ShapesDraw', results: shapesDrawBenches() },
+    { title: 'PhysicsCurtain', results: physicsCurtainBenches() },
   ];
 }
 
@@ -553,6 +554,9 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
   );
   lines.push(
     "- **Tilemap** — `drawInto` queues the tiles an 800×600 camera sees on a 256×256 map of 16 px tiles (two layers, a quarter of the decor flipped), then clears the batch; flushing is the Render suite's cost. `getTileAt` reads every cell of one layer; `decodeGid` runs `decodeGidFlags` + `stripGidFlags` over 4096 non-empty gids.",
+  );
+  lines.push(
+    '- **PhysicsCurtain** — a bullet curtain in one `CollisionWorld`: 2000 enemy-layer 8×8 bodies that do not collide with each other, 100 player shots and one ship, in a 384×768 field (6×12 broadphase cells) that wraps at its edges. Enemy bodies collide with the shots and the ship; shots and the ship do not collide with each other. `setPosition` is one pass moving every body by its per-frame velocity; `step` is one `world.step()` on a frame that is not moving; `frame` is both.',
   );
   lines.push(
     '- **Pathfinding** — "op" is one corner-to-corner search on a 128×128 grid: `open` has no walls, `maze` is a seeded perfect maze with one-cell corridors. The path array each search returns is the engine\'s own allocation. JPS cuts wall corners and A* does not (see the pathfinding README), so on the maze the two rows find different routes: compare each row with itself across captures, not with the other.',

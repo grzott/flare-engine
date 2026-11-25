@@ -74,6 +74,9 @@ export const PUBLIC_ROW_IDS: Readonly<Record<string, string>> = {
   'render.system  1000 sprites / 3 z layers interleaved': 'render-system.1000',
   'particles.draw  1000 coloured + fading / 1 atlas': 'particles.draw.1000',
   'shapes.draw  1000 baked instances / 8 specs / 1 atlas': 'shapes.draw.1000',
+  'physics.curtain  setPosition  2000 bolts + 100 shots + 1 ship': 'physics.curtain.set-position',
+  'physics.curtain  step         2000 bolts + 100 shots + 1 ship': 'physics.curtain.step',
+  'physics.curtain  frame        2000 bolts + 100 shots + 1 ship': 'physics.curtain.frame',
 
   'integration.heap   500 entities': 'heap.integration.500',
   'integration.heap  1000 entities': 'heap.integration.1000',

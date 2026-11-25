@@ -27,7 +27,14 @@ import {
   type PathfindingLayout,
   type PathfindingScenario,
 } from './pathfinding.js';
-import { PHYSICS_SCENARIOS, type PhysicsDensity, type PhysicsScenario } from './physics.js';
+import {
+  PHYSICS_CURTAIN_SCENARIOS,
+  PHYSICS_SCENARIOS,
+  type PhysicsCurtainPass,
+  type PhysicsCurtainScenario,
+  type PhysicsDensity,
+  type PhysicsScenario,
+} from './physics.js';
 import { POSTFX_SCENARIOS, type PostFxKind, type PostFxScenario } from './postfx.js';
 import {
   FLUSH_SCENARIOS,
@@ -56,6 +63,8 @@ export type {
   PathfindingAlgorithm,
   PathfindingLayout,
   PathfindingScenario,
+  PhysicsCurtainPass,
+  PhysicsCurtainScenario,
   PhysicsDensity,
   PhysicsScenario,
   PostFxKind,
@@ -79,6 +88,7 @@ export {
   PARTICLES_DRAW_SCENARIOS,
   PARTICLES_SCENARIOS,
   PATHFINDING_SCENARIOS,
+  PHYSICS_CURTAIN_SCENARIOS,
   PHYSICS_SCENARIOS,
   POSTFX_SCENARIOS,
   RENDER_SYSTEM_SCENARIOS,
@@ -100,7 +110,8 @@ type SuiteTitle =
   | 'Math'
   | 'RenderSystem'
   | 'ParticlesDraw'
-  | 'ShapesDraw';
+  | 'ShapesDraw'
+  | 'PhysicsCurtain';
 
 type NamedScenario = { readonly name: string };
 
@@ -119,4 +130,5 @@ export const SCENARIOS: Readonly<Record<SuiteTitle, readonly NamedScenario[]>> =
   RenderSystem: RENDER_SYSTEM_SCENARIOS,
   ParticlesDraw: PARTICLES_DRAW_SCENARIOS,
   ShapesDraw: SHAPES_DRAW_SCENARIOS,
+  PhysicsCurtain: PHYSICS_CURTAIN_SCENARIOS,
 };

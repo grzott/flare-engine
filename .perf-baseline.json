@@ -272,9 +272,9 @@
       "measuredAt": "2026-11-09"
     },
     "@flare-engine/physics": {
-      "ceiling": 55973,
-      "measured": 50884,
-      "measuredAt": "2026-09-08"
+      "ceiling": 74205,
+      "measured": 67459,
+      "measuredAt": "2026-11-25"
     },
     "@flare-engine/postfx": {
       "ceiling": 59875,
@@ -538,6 +538,10 @@
     {
       "date": "2026-11-20",
       "reason": "render ceiling raised 158779 -> 174836 B (measured 158942 x1.1), pending the owner's approval of the PR for issue #502. Camera2D.shake samples its jitter at 30 eased values per second of elapsed time instead of one value per update(), through a new shakeJitter helper, so its path no longer grows with the frame rate. Measured 2026-11-20 against the published 0.4.16 tarball (158188 B; packages/render has no commits on main since that release): the tarball grows 754 B, each file gzipped alone 167330 -> 168119 B (+789). What an app bundles: dist/index.mjs 71404 -> 71682 B raw (20590 -> 20711 B gzipped, +121 B); each source map +272 B gzipped. The fix itself is small: the package had no headroom left, because it grew from the 2026-11-12 measurement (144344 B) to 158188 B in the 0.4.13-0.4.16 releases inside the old ceiling. A defect fix, not a regression."
+    },
+    {
+      "date": "2026-11-25",
+      "reason": "physics ceiling raised 55973 -> 74205 B (measured 67459 x1.1), pending the owner's approval of the PR for issue #579. CollisionWorld gets its own internal broadphase grid (new src/collision-grid.ts, not exported) that links the world's entries directly and groups them per cell by (layer, mask), so step() tests layer and mask once per group and setPosition skips the relink while a body stays in the same cells; SpatialIndex.update skips the same relink and removes from a bucket in O(1) through a per-item bucket-position record; the cell maths both grids share moved to src/cells.ts. No exported symbol or .d.ts signature changes. The growth is not measured against a published tarball here: main passes check:perf-bytes, so main packs at or under 55973 B and this change adds at least 11486 B to the tarball; the last recorded measurement is 50884 B (2026-09-08). The tarball ships the new module in index.mjs, index.js and in both source maps' sourcesContent, so it grows by more than an app bundles (dist/index.mjs is 32837 B raw after the change). What the bytes bought, on the new physics.curtain bench rows (2000 enemy-layer bodies that do not pair with each other, 100 shots, one ship; shared Linux runner, Bun 1.3.11, two runs each side): setPosition pass 322-343 us -> 138-142 us, step 1.27 ms -> 117-126 us; physics.step 1000 dense 958-992 us -> 708-728 us. The same change adds the PhysicsCurtain bench suite, listed in PENDING_FIRST_CAPTURE until the next owner recapture; freshness.suites is unchanged. A performance fix, not a regression."
     }
   ]
 }

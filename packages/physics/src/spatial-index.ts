@@ -1,4 +1,5 @@
 import type { Rect } from '@flare-engine/math';
+import { cellKey, cellMax, cellMin } from './cells.js';
 
 // Internal entry: bounding rect (minX, minY, maxX, maxY) plus a per-query stamp
 // for zero-alloc dedup.
@@ -8,50 +9,18 @@ interface _Entry<T> {
   minY: number;
   maxX: number;
   maxY: number;
+  // The clamped cell range the entry is linked into. Cached so an update can
+  // tell "same cells" without touching a bucket. A NaN bound leaves NaN here,
+  // which equals nothing — such an entry is linked nowhere and always relinks.
+  cxMin: number;
+  cxMax: number;
+  cyMin: number;
+  cyMax: number;
+  // This entry's position inside the bucket of each cell it occupies, indexed
+  // `(cx - cxMin) * rows + (cy - cyMin)` with rows = cyMax - cyMin + 1. Lets
+  // unlink swap-remove without searching the bucket. Grown, never reallocated.
+  readonly _at: number[];
   _stamp: number;
-}
-
-// Uniform grid cell size in world units. Tuned for typical game-object sizes (16–64 px).
-const CELL = 64;
-
-// Packed cell-key encoding.  Supports cell coords in [-32768, 32767],
-// i.e. world coordinates ±2 097 152.  All keys fit within Number.MAX_SAFE_INTEGER.
-const KEY_RANGE = 65536; // 2^16
-const KEY_OFFSET = 32768; // 2^15
-
-function _key(cx: number, cy: number): number {
-  return (cx + KEY_OFFSET) * KEY_RANGE + (cy + KEY_OFFSET);
-}
-
-// Inclusive min cell that contains world coordinate v.
-function _cMin(v: number): number {
-  return Math.floor(v / CELL);
-}
-
-// Inclusive max cell that contains world coordinate v (exclusive-end: a coord
-// falling exactly on a cell boundary is NOT part of the adjacent cell — matches
-// the strict-inequality overlap semantics of query()).
-function _cMax(v: number): number {
-  return Math.ceil(v / CELL) - 1;
-}
-
-// Supported cell-coordinate range for the packed key above.
-const MIN_CELL = -KEY_OFFSET;
-const MAX_CELL = KEY_OFFSET - 1;
-
-// Bounds a derived cell coordinate to the packed-key range. Without this, a
-// non-finite world coordinate (±Infinity — an unbounded raycast maxDist, or an
-// entity parked at Infinity) makes cxMin/cxMax/cyMin/cyMax infinite, and
-// `for (cx = cxMin; cx <= cxMax; cx++)` never exits: once cx itself is
-// Infinity, `cx <= Infinity` stays true and `cx++` is a no-op, so the loop
-// spins forever pushing/reading the same bucket (unbounded memory growth on
-// the link side). NaN is left untouched: every comparison against NaN is
-// false, so the loop already runs zero times, which is the existing (safe)
-// behaviour for a degenerate direction like `0 * Infinity`.
-function _clampCell(c: number): number {
-  if (c > MAX_CELL) return MAX_CELL;
-  if (c < MIN_CELL) return MIN_CELL;
-  return c;
 }
 
 /**
@@ -81,12 +50,19 @@ export class SpatialIndex<T> {
       this.update(item, bounds);
       return;
     }
+    const maxX = bounds.x + bounds.width;
+    const maxY = bounds.y + bounds.height;
     const entry: _Entry<T> = {
       item,
       minX: bounds.x,
       minY: bounds.y,
-      maxX: bounds.x + bounds.width,
-      maxY: bounds.y + bounds.height,
+      maxX,
+      maxY,
+      cxMin: cellMin(bounds.x),
+      cxMax: cellMax(maxX),
+      cyMin: cellMin(bounds.y),
+      cyMax: cellMax(maxY),
+      _at: [],
       _stamp: 0,
     };
     this._slots.set(item, this._data.length);
@@ -115,11 +91,32 @@ export class SpatialIndex<T> {
     const slot = this._slots.get(item);
     if (slot === undefined) return;
     const entry = this._data[slot]!;
-    this._unlink(entry);
+    const maxX = bounds.x + bounds.width;
+    const maxY = bounds.y + bounds.height;
     entry.minX = bounds.x;
     entry.minY = bounds.y;
-    entry.maxX = bounds.x + bounds.width;
-    entry.maxY = bounds.y + bounds.height;
+    entry.maxX = maxX;
+    entry.maxY = maxY;
+
+    const cxMin = cellMin(bounds.x);
+    const cxMax = cellMax(maxX);
+    const cyMin = cellMin(bounds.y);
+    const cyMax = cellMax(maxY);
+    // Same cells: the buckets already hold this entry, and a query reads the
+    // bounds refreshed above.
+    if (
+      cxMin === entry.cxMin &&
+      cxMax === entry.cxMax &&
+      cyMin === entry.cyMin &&
+      cyMax === entry.cyMax
+    ) {
+      return;
+    }
+    this._unlink(entry);
+    entry.cxMin = cxMin;
+    entry.cxMax = cxMax;
+    entry.cyMin = cyMin;
+    entry.cyMax = cyMax;
     this._link(entry);
   }
 
@@ -136,14 +133,14 @@ export class SpatialIndex<T> {
     const qMaxX = bounds.x + bounds.width;
     const qMaxY = bounds.y + bounds.height;
 
-    const cxMin = _clampCell(_cMin(qMinX));
-    const cxMax = _clampCell(_cMax(qMaxX));
-    const cyMin = _clampCell(_cMin(qMinY));
-    const cyMax = _clampCell(_cMax(qMaxY));
+    const cxMin = cellMin(qMinX);
+    const cxMax = cellMax(qMaxX);
+    const cyMin = cellMin(qMinY);
+    const cyMax = cellMax(qMaxY);
 
     for (let cx = cxMin; cx <= cxMax; cx++) {
       for (let cy = cyMin; cy <= cyMax; cy++) {
-        const bucket = this._cells.get(_key(cx, cy));
+        const bucket = this._cells.get(cellKey(cx, cy));
         if (bucket === undefined) continue;
         for (let i = 0; i < bucket.length; i++) {
           const e = bucket[i]!;
@@ -165,41 +162,40 @@ export class SpatialIndex<T> {
     this._cells.clear();
   }
 
-  // Register entry in all grid cells it overlaps.
+  // Register entry in every cell of its cached range, recording where in each
+  // bucket it landed.
   private _link(entry: _Entry<T>): void {
-    const cxMin = _clampCell(_cMin(entry.minX));
-    const cxMax = _clampCell(_cMax(entry.maxX));
-    const cyMin = _clampCell(_cMin(entry.minY));
-    const cyMax = _clampCell(_cMax(entry.maxY));
+    const { cxMin, cxMax, cyMin, cyMax, _at } = entry;
+    let n = 0;
     for (let cx = cxMin; cx <= cxMax; cx++) {
       for (let cy = cyMin; cy <= cyMax; cy++) {
-        const k = _key(cx, cy);
+        const k = cellKey(cx, cy);
         let b = this._cells.get(k);
         if (b === undefined) {
           b = [];
           this._cells.set(k, b);
         }
+        _at[n++] = b.length;
         b.push(entry);
       }
     }
   }
 
-  // Remove entry from all grid cells it currently occupies.
+  // Remove entry from every cell of its cached range. O(1) per cell: the last
+  // entry of the bucket takes the vacated position, and its own record of where
+  // it sits in this cell is corrected to match.
   private _unlink(entry: _Entry<T>): void {
-    const cxMin = _clampCell(_cMin(entry.minX));
-    const cxMax = _clampCell(_cMax(entry.maxX));
-    const cyMin = _clampCell(_cMin(entry.minY));
-    const cyMax = _clampCell(_cMax(entry.maxY));
+    const { cxMin, cxMax, cyMin, cyMax, _at } = entry;
+    let n = 0;
     for (let cx = cxMin; cx <= cxMax; cx++) {
       for (let cy = cyMin; cy <= cyMax; cy++) {
-        const b = this._cells.get(_key(cx, cy));
+        const i = _at[n++]!;
+        const b = this._cells.get(cellKey(cx, cy));
         if (b === undefined) continue;
-        const i = b.indexOf(entry);
-        if (i !== -1) {
-          // Swap-remove within the bucket.
-          const last = b.pop()!;
-          if (i < b.length) b[i] = last;
-        }
+        const last = b.pop()!;
+        if (last === entry) continue;
+        b[i] = last;
+        last._at[(cx - last.cxMin) * (last.cyMax - last.cyMin + 1) + (cy - last.cyMin)] = i;
       }
     }
   }

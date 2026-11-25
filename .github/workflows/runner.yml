@@ -76,6 +76,7 @@ jobs:
         run: |
           echo "allow=$(jq -r '.permissions.allow | join(",")' .claude/settings.json)" >> "$GITHUB_OUTPUT"
           echo "deny=$(jq -r '.permissions.deny | join(",")' .claude/settings.json)" >> "$GITHUB_OUTPUT"
+          echo "settings=$(jq -c '{attribution}' .claude/settings.json)" >> "$GITHUB_OUTPUT"
 
       - if: steps.probe.outputs.state != 'inflight'
         id: claude
@@ -91,6 +92,8 @@ jobs:
           github_token: ${{ secrets.BOT_TOKEN }}
           bot_name: ${{ vars.BOT_LOGIN }}
           bot_id: ${{ vars.BOT_ID }}
+          # No AI attribution in the bot's commits and PRs, from the same settings file.
+          settings: ${{ steps.perms.outputs.settings }}
           # The literal slash command, exactly what scripts/runner/loop.sh sends: it expands the
           # skill directly instead of asking the model to call the Skill tool.
           prompt: /start next

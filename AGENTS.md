@@ -42,6 +42,9 @@ Roadmap: [docs/plans/roadmap.md](docs/plans/roadmap.md). Architecture: [docs/des
 ## Conventions
 
 - Conventional Commits: `feat(math): add Vec2.lerp` — ≤72 chars, no body, no emoji, no Co-Authored-By trailer
+- No AI attribution anywhere: no generated-by footer, Claude co-author or session trailer, or
+  claude.ai session link in a commit, PR, issue or comment. `.claude/hooks/pre-bash-guard.sh`
+  refuses such a write and `ci` fails such a PR; both read `.github/attribution-markers.json`
 - One source per fact (no mirror rows, no duplicate changelogs)
 - Status: **public since 2026-10-26** — the repo and every `@flare-engine/*` package; read
   `CHANGELOG.md` for the current version rather than trusting a literal here. The launch record is

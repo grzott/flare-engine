@@ -20,8 +20,13 @@ set -u
 
 INPUT=$(cat)
 
+# The AI-attribution markers are shared with ci (scripts/check-attribution.mjs). `pwd -W` gives
+# Git Bash on Windows a path the native python3 can open; elsewhere it fails and `pwd` answers.
+HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd; })
+MARKERS="$HOOK_DIR/../../.github/attribution-markers.json"
+
 VERDICT=$(printf '%s' "$INPUT" | python3 -c '
-import json, re, shlex, sys
+import glob, json, os, re, shlex, shutil, subprocess, sys
 
 RAW = sys.stdin.read()
 
@@ -33,7 +38,9 @@ if not RAW.strip():
     sys.exit(0)
 
 try:
-    CMD = json.loads(RAW).get("tool_input", {}).get("command", "") or ""
+    PAYLOAD = json.loads(RAW)
+    CMD = PAYLOAD.get("tool_input", {}).get("command", "") or ""
+    CWD = PAYLOAD.get("cwd") or ""
 except Exception:
     # Fail CLOSED. The old hook swallowed a parse error and allowed the call,
     # which made every rule below advisory whenever the payload shape changed.
@@ -380,13 +387,194 @@ def walk(seg, depth=0):
 
     return None
 
+# No AI attribution (owner rule, 2026-11-25). A commit, PR, issue or comment written from here
+# never carries a generated-by footer, a co-author or session trailer, or a claude.ai session
+# link. The markers live in .github/attribution-markers.json, which ci reads too.
+#
+# A write is checked over the raw command (heredocs included), each argument on a line of its
+# own (so a `-m` trailer starts a line, as in the commit), every body text an argument carries,
+# and every body file it sends. Variables assigned earlier in the same command are expanded. A
+# variable left in the file-name part of a body-file path (a loop variable) becomes a glob, and
+# every file it can name is read. What the guard still cannot read is refused, never assumed
+# clean: a command substitution, stdin from a pipe, an unknown variable, a missing file.
+ATTR_WRITE = re.compile(
+    r"\bgit\b[^\n]*\bcommit\b"
+    r"|\bgh\s+(pr|issue|release)\s+(create|edit|comment|review|close|reopen)\b"
+    r"|\bgh\s+api\b[^\n]*(\s(-X|--method)[=\s]*(POST|PATCH|PUT)\b|\s(-f|-F|--field|--raw-field|--input)[=\s])",
+    re.I,
+)
+ATTR_VAR = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+ATTR_ASSIGN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$", re.S)
+ATTR_CAT = re.compile(r"^\$\(\s*cat\s+([^\s()]+)\s*\)$")
+# A flag whose value is a body file, or body text. `-F` names a body file for gh pr, issue and
+# release and for git commit; for gh api it is a field (`key=value`, or `key=@file`).
+ATTR_FILE_FLAGS = {"--body-file", "--input", "--notes-file", "--file"}
+ATTR_TEXT_FLAGS = {"--body", "-b", "--title", "-t", "-m", "--message", "--notes", "--comment", "-c"}
+ATTR_FIELD_FLAGS = {"-f", "-F", "--field", "--raw-field"}
+ATTR_TEXT_FIELDS = {"body", "title", "message", "notes"}
+ATTR_UNREAD = ("the guard cannot read %s (%r), so it cannot check it for AI attribution. "
+               "Write the body to a file and pass its literal path.")
+
+def attr_env(cmd):
+    env = dict(os.environ)
+    for seg in split_segments(cmd):
+        tok = tokens(seg)
+        if tok[:1] == ["export"]:
+            tok = tok[1:]
+        for t in tok:
+            m = ATTR_ASSIGN.match(t)
+            if not m:
+                break
+            env[m.group(1)] = m.group(2)
+    return env
+
+def attr_expand(text, env):
+    for _ in range(3):
+        nxt = ATTR_VAR.sub(lambda m: env.get(m.group(1) or m.group(2), m.group(0)), text)
+        if nxt == text:
+            break
+        text = nxt
+    return text
+
+def attr_text_values(tok):
+    """Body text the arguments carry. None stands for a flag whose value was split off."""
+    vals = []
+    long_text = {"--body", "--title", "--message", "--notes", "--comment"}
+    for j, t in enumerate(tok):
+        nxt = tok[j + 1] if j + 1 < len(tok) else None
+        if t in ATTR_TEXT_FLAGS:
+            vals.append(nxt)
+        elif "=" in t and t.split("=", 1)[0] in long_text:
+            vals.append(t.split("=", 1)[1])
+        elif t in ATTR_FIELD_FLAGS:
+            if nxt is None:
+                vals.append(None)
+            elif "=" in nxt and "=@" not in nxt and nxt.split("=", 1)[0] in ATTR_TEXT_FIELDS:
+                vals.append(nxt.split("=", 1)[1])
+    return vals
+
+def attr_file_refs(tok):
+    """Body files the arguments send. None stands for a flag whose value was split off."""
+    refs = []
+    names = [basename(t) for t in tok]
+    gh_body = "gh" in names and any(t in ("pr", "issue", "release") for t in tok)
+    commit = "git" in names and "commit" in tok
+    for j, t in enumerate(tok):
+        nxt = tok[j + 1] if j + 1 < len(tok) else None
+        if "=@" in t:
+            refs.append(t.split("=@", 1)[1])
+        elif t in ATTR_FILE_FLAGS or (t == "-F" and (gh_body or commit)):
+            refs.append(nxt)
+        elif "=" in t and t.split("=", 1)[0] in ATTR_FILE_FLAGS:
+            refs.append(t.split("=", 1)[1])
+    return refs
+
+def attr_file_texts(ref, env, cmd):
+    """The contents of every file `ref` can name, or the reason it cannot be read."""
+    p = attr_expand(ref, env)
+    if p == "-":
+        return [] if "<<" in cmd else ATTR_UNREAD % ("a body read from stdin", ref)
+    if "$(" in p or chr(96) in p:
+        return ATTR_UNREAD % ("a body-file path built by a command", ref)
+    p = ATTR_VAR.sub("*", p)
+    # Only the file name may hold a variable, and never all of it: a bare `$X` would glob the
+    # whole working directory and read whatever happens to be there.
+    if "$" in p or "*" in os.path.dirname(p) or not os.path.basename(p).replace("*", ""):
+        return ATTR_UNREAD % ("a body-file path", ref)
+    for cand in attr_paths(p):
+        if "*" in cand:
+            found = sorted(n for n in glob.glob(cand) if os.path.isfile(n))
+        else:
+            found = [cand] if os.path.isfile(cand) else []
+        if not found:
+            continue
+        out = []
+        for name in found[:5000]:
+            try:
+                with open(name, encoding="utf-8", errors="replace") as fh:
+                    out.append(fh.read(1 << 20))
+            except (OSError, ValueError):
+                return ATTR_UNREAD % ("a body file", name)
+        return out
+    return ATTR_UNREAD % ("a body file that does not exist", ref)
+
+def attr_paths(p):
+    """Where a body-file path can point: as given, under the session cwd, as a Windows path."""
+    cands = [p]
+    if CWD and not os.path.isabs(p):
+        cands.append(os.path.join(CWD, p))
+    m = re.match(r"^/([A-Za-z])/(.*)$", p)
+    if m:
+        cands.append(m.group(1) + ":/" + m.group(2))
+    if p.startswith("/") and shutil.which("cygpath"):
+        try:
+            out = subprocess.run(["cygpath", "-w", p], capture_output=True, text=True, timeout=5)
+            if out.stdout.strip():
+                cands.append(out.stdout.strip())
+        except Exception:
+            pass
+    return cands
+
+def attr_reason(cmd):
+    # A backslash-newline continues a command, and must not hide a write behind a line break.
+    cmd = cmd.replace(chr(92) + "\r\n", " ").replace(chr(92) + "\n", " ")
+    if not ATTR_WRITE.search(cmd):
+        return None
+    try:
+        with open(sys.argv[1], encoding="utf-8") as fh:
+            pats = [re.compile(p, re.I | re.M) for p in json.load(fh)["patterns"]]
+    except Exception:
+        return "could not read .github/attribution-markers.json - refusing a commit or GitHub write unchecked"
+    env = attr_env(cmd)
+    texts = [cmd]
+    for seg in split_segments(cmd):
+        tok = tokens(seg)
+        texts.append("\n".join(tok))
+        if not ATTR_WRITE.search(seg):
+            continue
+        for val in attr_text_values(tok):
+            if val is None:
+                return ATTR_UNREAD % ("a body built by a command", seg)
+            v = attr_expand(val, env)
+            cat = ATTR_CAT.match(v.strip())
+            if cat:
+                got = attr_file_texts(cat.group(1), env, cmd)
+                if isinstance(got, str):
+                    return got
+                texts.extend(got)
+            elif ("$(" in v or chr(96) in v) and "<<" not in v:
+                return ATTR_UNREAD % ("a body built by a command", val)
+            elif ATTR_VAR.search(v):
+                return ATTR_UNREAD % ("a body taken from a shell variable", val)
+            else:
+                texts.append(v)
+        for ref in attr_file_refs(tok):
+            if ref is None:
+                return ATTR_UNREAD % ("a body file named by a command", seg)
+            got = attr_file_texts(ref, env, cmd)
+            if isinstance(got, str):
+                return got
+            texts.extend(got)
+    for text in texts:
+        for pat in pats:
+            hit = pat.search(text)
+            if hit:
+                return ("AI attribution in a commit or GitHub write (%r): this repo never carries a "
+                        "generated-by footer, a co-author or session trailer, or a claude.ai session "
+                        "link. Remove it and retry." % hit.group(0).strip())
+    return None
+
 for segment in split_segments(CMD):
     reason = walk(segment)
     if reason:
         emit(reason)
 
+reason = attr_reason(CMD)
+if reason:
+    emit(reason)
+
 sys.exit(0)
-' 2>/dev/null)
+' "$MARKERS" 2>/dev/null)
 
 # If python3 is unavailable the guard cannot reason about the command. Refuse rather
 # than allow: an unenforced rule is the failure mode this hook exists to prevent.

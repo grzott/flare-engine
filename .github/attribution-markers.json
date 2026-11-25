@@ -1,0 +1,10 @@
+{
+  "description": "AI attribution this repo never carries: a generated-by footer, a Claude co-author or session trailer, a claude.ai session link. A co-author trailer for a person or a bot account is not attribution: GitHub adds those to squash commits. Matched case-insensitively, per line. Read by .claude/hooks/pre-bash-guard.sh (commits, PR and issue bodies, comments) and scripts/check-attribution.mjs (the PR title, body and commits in ci).",
+  "patterns": [
+    "^\\s*co-authored-by:.*\\b(claude|anthropic)\\b",
+    "^\\s*claude-session:",
+    "generated (with|by) \\[?claude",
+    "claude\\.ai/code/session",
+    "noreply@anthropic\\.com"
+  ]
+}

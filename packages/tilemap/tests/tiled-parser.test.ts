@@ -403,6 +403,147 @@ describe('parseTiled — validation errors', () => {
   });
 });
 
+describe('parseTiled — malformed properties and entries (#509)', () => {
+  const tileset = {
+    firstgid: 1,
+    name: 't',
+    tilewidth: 16,
+    tileheight: 16,
+    tilecount: 1,
+    columns: 1,
+    image: 't.png',
+    imagewidth: 16,
+    imageheight: 16,
+    margin: 0,
+    spacing: 0,
+  };
+  const tileLayer = {
+    type: 'tilelayer',
+    name: 'g',
+    width: 1,
+    height: 1,
+    data: [1],
+    visible: true,
+    opacity: 1,
+    x: 0,
+    y: 0,
+  };
+  const objectLayer = { type: 'objectgroup', name: 'objs', visible: true, opacity: 1, objects: [] };
+  const object = { id: 7, name: 'spawn', x: 0, y: 0, width: 16, height: 16, rotation: 0 };
+  const base = {
+    orientation: 'orthogonal',
+    infinite: false,
+    width: 1,
+    height: 1,
+    tilewidth: 16,
+    tileheight: 16,
+    layers: [tileLayer],
+    tilesets: [tileset],
+  };
+
+  function errorOf(json: unknown): unknown {
+    try {
+      parseTiled(json);
+    } catch (e) {
+      return e;
+    }
+    throw new Error('expected parseTiled to throw');
+  }
+
+  function expectParseError(json: unknown, ...fragments: string[]): void {
+    const error = errorOf(json);
+    expect(error).toBeInstanceOf(TilemapParseError);
+    const message = (error as Error).message;
+    expect(message).toStartWith('parseTiled: ');
+    for (const fragment of fragments) expect(message).toContain(fragment);
+  }
+
+  test('the well-formed base map parses', () => {
+    const map = parseTiled(base);
+    expect(map.properties).toEqual({});
+    expect(map.layers[0]!.properties).toEqual({});
+    expect(map.tilesets).toHaveLength(1);
+  });
+
+  test('object-form properties on the map throw TilemapParseError naming the map', () => {
+    expectParseError({ ...base, properties: { solid: true } }, 'map has "properties"', 'array');
+  });
+
+  test('object-form properties on a tile layer throw TilemapParseError naming the layer', () => {
+    expectParseError(
+      { ...base, layers: [{ ...tileLayer, properties: { solid: true } }] },
+      'layer "g" has "properties"',
+    );
+  });
+
+  test('object-form properties on an object layer throw TilemapParseError naming the layer', () => {
+    expectParseError(
+      { ...base, layers: [{ ...objectLayer, properties: { solid: true } }] },
+      'layer "objs" has "properties"',
+    );
+  });
+
+  test('object-form properties on a tile throw TilemapParseError naming tileset and tile', () => {
+    expectParseError(
+      { ...base, tilesets: [{ ...tileset, tiles: [{ id: 0, properties: { solid: true } }] }] },
+      'tileset "t" tile 0 has "properties"',
+    );
+  });
+
+  test('object-form properties on an object throw TilemapParseError naming layer and object', () => {
+    expectParseError(
+      {
+        ...base,
+        layers: [{ ...objectLayer, objects: [{ ...object, properties: { solid: true } }] }],
+      },
+      'layer "objs" object 7 has "properties"',
+    );
+  });
+
+  test('a non-array, non-object properties value throws TilemapParseError', () => {
+    expectParseError({ ...base, properties: 'solid' }, 'map has "properties"', 'string');
+  });
+
+  test('a null tileset entry throws TilemapParseError naming its index', () => {
+    expectParseError({ ...base, tilesets: [null] }, 'tilesets[0]', 'null');
+    expectParseError({ ...base, tilesets: [tileset, null] }, 'tilesets[1]', 'null');
+  });
+
+  test('a non-object tileset entry throws TilemapParseError naming its index', () => {
+    expectParseError({ ...base, tilesets: ['terrain.tsj'] }, 'tilesets[0]', 'string');
+  });
+
+  test('a null layer entry throws TilemapParseError naming its index', () => {
+    expectParseError({ ...base, layers: [null] }, 'layers[0]', 'null');
+    expectParseError({ ...base, layers: [tileLayer, null] }, 'layers[1]', 'null');
+  });
+
+  test('a non-object layer entry throws TilemapParseError naming its index', () => {
+    expectParseError({ ...base, layers: [42] }, 'layers[0]', 'number');
+  });
+
+  test('absent, null and empty properties still yield {}', () => {
+    for (const properties of [undefined, null, []]) {
+      const map = parseTiled({
+        ...base,
+        properties,
+        layers: [
+          { ...tileLayer, properties },
+          { ...objectLayer, properties, objects: [{ ...object, properties }] },
+        ],
+        tilesets: [{ ...tileset, tiles: [{ id: 0, properties }] }],
+      });
+      expect(map.properties).toEqual({});
+      expect(map.layers[0]!.properties).toEqual({});
+      const objects = map.layers[1]!;
+      expect(objects.properties).toEqual({});
+      if (objects.type !== 'object') throw new Error('expected an object layer');
+      expect(objects.objects[0]!.properties).toEqual({});
+      expect(map.tilesets[0]!.tileProperties.size).toBe(0);
+    }
+  });
+});
+
 describe('parseTiled — tile animations', () => {
   // A 4x4 tileset (tilecount 16) whose `tiles[]` carries the per-tile animation arrays.
   function withTiles(tiles: unknown[]) {

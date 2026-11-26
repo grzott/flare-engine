@@ -44,7 +44,7 @@ changed in a given package, and it is not duplicated here.
 
 ## 0.4.19
 
-Fixes, additions and docs in 12 packages. The other 30 change only their version. There are two
+Fixes, additions and docs in 17 packages. The other 25 change only their version. There are two
 behaviour changes, in `render` and `scene`. This release also announces the twelve changes that
 0.5.0 makes ([ADR-0012](docs/design/adr-0012-0-5-0-breaking-set.md)), each in the JSDoc of what it
 changes. Nothing announced here changes in this release.
@@ -96,6 +96,11 @@ changes. Nothing announced here changes in this release.
     broadphase and refine its pairs with these. None of the per-frame functions allocates.
   - **Docs (#510):** the broadphase cell is a fixed 64 world units, so scale tile-sized worlds up. A
     ray that starts inside a collider hits it at its exit distance.
+- **`leaderboards`, `achievements`, `analytics`, `haptics`, `iap`**: importing only a React-free
+  export, such as `createMemoryLeaderboards`, no longer pulls `react` into the bundle (#506). Each
+  package now builds one output file per source module, and its `createContext` call is marked
+  pure, so a bundler drops the context module with its `react` import. Checked with Bun's bundler;
+  other bundlers were not tested. The `exports` maps are unchanged.
 - **`debug`**: new `createStatsTracker()`, returning a `StatsTrackerHandle` with the same members as
   the `StatsTracker` class (#177). The class is `@deprecated`.
 - **`ecs`**: the npm description and the README now describe the storage as `World` implements it:

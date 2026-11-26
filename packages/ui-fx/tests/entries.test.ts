@@ -3,10 +3,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { installReanimatedMock } from './support/mock-reanimated';
 import { installRnMock } from './support/mock-rn';
+import { installSkiaMock } from './support/mock-skia';
 
-// `.` imports `react-native` and Reanimated, which bun cannot load.
+// `.` imports `react-native` and Reanimated, and `./fx` on native imports Skia too. bun can
+// load none of them.
 installRnMock();
 installReanimatedMock();
+installSkiaMock();
 
 const SRC = join(import.meta.dir, '..', 'src');
 
@@ -112,6 +115,20 @@ describe('entries report which one they are', () => {
   test('./fx resolves to a native and a web file', async () => {
     expect((await import('../src/fx.native')).UI_FX_ENTRY).toBe('fx-native');
     expect((await import('../src/fx.web')).UI_FX_ENTRY).toBe('fx-web');
+  });
+
+  test('./fx on native exports the host, the capture seam, the pool and the display mode', async () => {
+    expect(Object.keys(await import('../src/fx.native')).sort()).toEqual([
+      'CAPTURE_PADDING',
+      'FlareFxHost',
+      'FxCaptureRoot',
+      'SPRITE_POOL_CAPACITY',
+      'UI_FX_ENTRY',
+      'acquireFastDisplayMode',
+      'captureView',
+      'createSpritePool',
+      'handOff',
+    ]);
   });
 });
 

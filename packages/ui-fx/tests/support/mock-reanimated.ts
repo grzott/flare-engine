@@ -44,9 +44,18 @@ function end(shared: object, finished: boolean): void {
   run.callback?.(finished);
 }
 
-function createShared<T>(initial: T): { value: T } {
+interface Shared<T> {
+  value: T;
+  modify(modifier: (value: T) => T): void;
+}
+
+function createShared<T>(initial: T): Shared<T> {
   let current = initial;
   const shared = {
+    // As on the UI thread: the modifier gets the value itself, to change in place.
+    modify(modifier: (value: T) => T): void {
+      current = modifier(current);
+    },
     get value(): T {
       return current;
     },
@@ -120,8 +129,9 @@ export const reanimated = {
 };
 
 const reanimatedModule = {
-  useSharedValue<T>(initial: T): { value: T } {
-    const ref = useRef<{ value: T } | null>(null);
+  makeMutable: createShared,
+  useSharedValue<T>(initial: T): Shared<T> {
+    const ref = useRef<Shared<T> | null>(null);
     ref.current ??= createShared(initial);
     return ref.current;
   },

@@ -19,4 +19,4 @@ Each entry currently exports only `UI_FX_ENTRY`, a marker naming the entry that 
 
 `react >=19.0.0` is required. Every other peer is optional and belongs to one platform: `react-dom`,
 `react-native`, `react-native-reanimated`, `react-native-worklets`, `@shopify/react-native-skia`,
-`canvaskit-wasm`, `modern-screenshot` and `react-native-safe-area-context`.
+`canvaskit-wasm`, `modern-screenshot`, `react-native-safe-area-context` and `expo-modules-core`.

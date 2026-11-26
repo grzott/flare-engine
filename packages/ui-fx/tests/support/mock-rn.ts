@@ -17,6 +17,8 @@ let nextTag = 1;
 export const rn = {
   platform: { OS: 'android' },
   i18n: { isRTL: false },
+  /** What `PixelRatio.get()` answers. */
+  pixelRatio: 1,
   handlers: new Map<string, Set<Handler>>(),
   /** Every tag `AccessibilityInfo.setAccessibilityFocus` was called with. */
   focused: [] as number[],
@@ -50,6 +52,7 @@ export const rn = {
     rn.onFocus = null;
     rn.platform.OS = 'android';
     rn.i18n.isRTL = false;
+    rn.pixelRatio = 1;
   },
 };
 
@@ -76,6 +79,7 @@ const reactNativeModule = {
   Pressable: host('div'),
   Platform: rn.platform,
   I18nManager: rn.i18n,
+  PixelRatio: { get: (): number => rn.pixelRatio },
   findNodeHandle: (node: object | null): number | null => (node === null ? null : rn.tagOf(node)),
   AccessibilityInfo: {
     isReduceMotionEnabled: (): Promise<boolean> => Promise.resolve(false),

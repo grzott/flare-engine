@@ -29,9 +29,16 @@ export interface LiveDriver {
 
 /** A capture of an element. `handle` is the platform's image. */
 export interface FxImage {
+  /** In image pixels, the padding included. */
   width: number;
   height: number;
+  /** Image pixels per layout pixel. Lower than the screen's when the capture was downscaled. */
   pixelRatio: number;
+  /**
+   * How far the capture reaches beyond the element on every side, in layout pixels. The overlay
+   * draws the image offset by it, so the element's own box lands on its measured rect.
+   */
+  padding: number;
   handle: unknown;
 }
 

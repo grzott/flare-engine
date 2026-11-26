@@ -64,7 +64,7 @@ export interface FlareElementHandle {
 declare const process: { env: { NODE_ENV?: string } } | undefined;
 
 // The default cap on a capture's longer side (C32).
-const CAPTURE_MAX_PX = 2048;
+export const CAPTURE_MAX_PX = 2048;
 
 type SnapshotStep = SnapshotPreset & PresetCommon;
 

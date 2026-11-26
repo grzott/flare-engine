@@ -85,17 +85,19 @@ export const EXPECTED_SUITE_TITLES = [
  * the capture that made it unnecessary. A fresh capture is never exempt:
  * `promote.ts` still demands every suite.
  *
- * Emptied by the 0.4.12 recapture (#159, #96), and again by the 2026-11-17
- * recapture after #430, which first captured `ParticlesDraw` (#347) and
- * `ShapesDraw` (#348). This file is under `benchmarks/src`, which
- * `check:perf-freshness` treats as the instrument for every node suite, so
- * commit the emptied list first and capture the node window on top of that
- * commit: then one window covers it and no second one is needed.
+ * Emptied by the 0.4.12 recapture (#159, #96), by the 2026-11-17 recapture
+ * after #430 (`ParticlesDraw`, #347; `ShapesDraw`, #348), and by the
+ * 2026-11-26 recapture (`PhysicsCurtain`, #579).
  *
- * `PhysicsCurtain` (#579) is the bullet-curtain suite over `CollisionWorld`,
- * added after that recapture; the next one removes it from this list.
+ * Emptying it takes two recaptures. This file is under `benchmarks/src`, which
+ * `check:perf-freshness` treats as the instrument for every node suite, and a
+ * capture must name a commit that is already on `main`: a squash merge drops a
+ * branch commit, so a window captured on top of a branch-only emptying commit
+ * names a SHA that `main` never gets. Capture every lane at `main`, then empty
+ * the list in the same PR as that data. After it merges, capture one more node
+ * window at the new `main` and open a data-only PR.
  */
-export const PENDING_FIRST_CAPTURE: readonly string[] = ['PhysicsCurtain'];
+export const PENDING_FIRST_CAPTURE: readonly string[] = [];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [

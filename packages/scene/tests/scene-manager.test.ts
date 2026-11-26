@@ -1726,3 +1726,152 @@ describe('SceneManager — push/pop during a pending go()', () => {
     expect(mgr.current?.name).toBe('a');
   });
 });
+
+describe('SceneManager — go() from inside onEnter', () => {
+  /** Like `createTestScene`, but `onEnter` logs and then runs `enter`. */
+  function registerRedirecting(
+    mgr: SceneManager,
+    name: string,
+    log: string[],
+    enter: () => void,
+  ): void {
+    const base = createTestScene(name, log);
+    mgr.register(name, (world, camera) => {
+      const scene = base(world, camera);
+      return {
+        ...scene,
+        onEnter(data?: unknown) {
+          scene.onEnter?.(data);
+          enter();
+        },
+      };
+    });
+  }
+
+  function countOf(log: string[], entry: string): number {
+    return log.filter((e) => e === entry).length;
+  }
+
+  it('an animated go() whose target calls go() from onEnter ends on the redirect target', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    registerRedirecting(mgr, 'b', log, () => void mgr.go('next'));
+    mgr.register('next', createTestScene('next', log));
+    await mgr.go('a');
+    log.length = 0;
+
+    void mgr.go('b');
+    mgr.update(1.0); // 'out' done → b enters and redirects: a new 'out' is running
+    expect(mgr.current?.name).toBe('b');
+    expect(mgr.transitionPhase).toBe('out');
+    expect(mgr.transitionProgress).toBe(0);
+
+    mgr.update(1.0); // second 'out' done → next is current, 'in' running
+    expect(mgr.current?.name).toBe('next');
+    expect(mgr.transitionPhase).toBe('in');
+    mgr.update(1.0); // 'in' done
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.current?.name).toBe('next');
+    expect(mgr.stackSize).toBe(1);
+
+    expect(countOf(log, 'b:exit')).toBe(1);
+    expect(countOf(log, 'b:destroy')).toBe(1);
+    expect(countOf(log, 'next:init')).toBe(1);
+    expect(countOf(log, 'next:enter')).toBe(1);
+    expect(log.indexOf('b:destroy')).toBeLessThan(log.indexOf('next:init'));
+  });
+
+  it('later go() and push() calls work after a go() from onEnter', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    registerRedirecting(mgr, 'b', log, () => void mgr.go('next'));
+    mgr.register('next', createTestScene('next', log));
+    mgr.register('hub', createTestScene('hub', log));
+    mgr.register('pause', createTestScene('pause', log));
+    await mgr.go('a');
+    void mgr.go('b');
+    for (let i = 0; i < 3; i++) mgr.update(1.0);
+    expect(mgr.current?.name).toBe('next');
+    expect(mgr.isTransitioning).toBe(false);
+
+    log.length = 0;
+    await mgr.push('pause');
+    expect(log).toEqual(['next:exit', 'pause:preload', 'pause:init', 'pause:enter']);
+    expect(mgr.stackSize).toBe(2);
+    mgr.pop();
+    expect(mgr.current?.name).toBe('next');
+
+    log.length = 0;
+    void mgr.go('hub');
+    expect(mgr.transitionPhase).toBe('out');
+    mgr.update(1.0);
+    mgr.update(1.0);
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.current?.name).toBe('hub');
+    expect(mgr.stackSize).toBe(1);
+    expect(countOf(log, 'next:destroy')).toBe(1);
+    expect(countOf(log, 'hub:enter')).toBe(1);
+  });
+
+  it('go(name, data) from onEnter delivers the data to the redirect target', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    registerRedirecting(mgr, 'b', log, () => void mgr.go('next', 'payload'));
+    mgr.register('next', createTestScene('next', log));
+    await mgr.go('a');
+
+    void mgr.go('b', 'first');
+    for (let i = 0; i < 3; i++) mgr.update(1.0);
+
+    expect(mgr.current?.name).toBe('next');
+    expect(log).toContain('b:enter:first');
+    expect(log).toContain('next:enter:payload');
+  });
+
+  it('an instant go() from onEnter leaves no transition running', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    let redirect: Promise<void> | undefined;
+    registerRedirecting(mgr, 'b', log, () => {
+      mgr.setTransition(noneTransition());
+      redirect = mgr.go('next');
+    });
+    mgr.register('next', createTestScene('next', log));
+    await mgr.go('a');
+
+    void mgr.go('b');
+    mgr.update(1.0);
+    await redirect;
+
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.transitionPhase).toBe(null);
+    expect(mgr.current?.name).toBe('next');
+    expect(mgr.stackSize).toBe(1);
+    expect(countOf(log, 'b:destroy')).toBe(1);
+    expect(countOf(log, 'next:enter')).toBe(1);
+  });
+
+  it('destroy() from onEnter leaves no transition running', async () => {
+    const log: string[] = [];
+    const mgr = new SceneManager();
+    mgr.setTransition(fadeTransition(1));
+    mgr.register('a', createTestScene('a', log));
+    registerRedirecting(mgr, 'b', log, () => mgr.destroy());
+    await mgr.go('a');
+
+    void mgr.go('b');
+    mgr.update(1.0);
+
+    expect(mgr.isTransitioning).toBe(false);
+    expect(mgr.current).toBeUndefined();
+    expect(countOf(log, 'b:destroy')).toBe(1);
+  });
+});

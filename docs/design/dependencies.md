@@ -1,21 +1,40 @@
 # Flare Engine — Technology Dependencies
 
-> Last updated: 2026-07-01
+> Last updated: 2026-11-26
 
 ---
 
 ## Peer Dependencies (user installs)
 
-### Core (Phases 1–6)
+### Declared peers
 
-| Package                        | DL/week | Stars | Role in Flare                                  | Required by                                                                                 |
-| ------------------------------ | ------- | ----- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `@shopify/react-native-skia`   | 708K    | 8.3K  | GPU rendering, Atlas API, Canvas               | `@flare-engine/engine`, `@flare-engine/react`, `@flare-engine/postfx`, `@flare-engine/shapes` |
-| `react-native-audio-api`       | 37K     | —     | Native C++ audio engine (Software Mansion)     | `@flare-engine/audio`                                                                       |
-| `canvaskit-wasm`               | —       | —     | Skia CanvasKit-WASM backend for the web (optional — tree-shaken when unused) | `@flare-engine/render-web` (peer `>=0.40.0`)                                   |
-| `react`, `react-native`        | —       | —     | Required by every Layer 4 / UI / React package | `@flare-engine/react`, `@flare-engine/ui`, `@flare-engine/errors`, `@flare-engine/devtools`, `@flare-engine/haptics` |
+Every peer a published `@flare-engine/*` manifest declares, read from `peerDependencies` and
+`peerDependenciesMeta` on 2026-11-26. The manifests are the source of truth, and
+`bun run check:peers` fails when a package omits a peer that one of its dependencies requires. A
+peer that is required by one package and optional in another has one row for each. Package names
+in the last column drop the `@flare-engine/` scope.
+
+| Peer                             | Range      | Optional | Role in Flare                                 | Declared by                                                                                                          |
+| -------------------------------- | ---------- | -------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `react`                          | `>=19.0.0` | no       | Components, hooks and provider contexts       | `achievements`, `analytics`, `devtools`, `engine`, `errors`, `haptics`, `iap`, `leaderboards`, `react`, `ui`, `ui-shop` |
+| `react-native`                   | `>=0.79.0` | no       | Native host                                   | `devtools`, `engine`, `iap-revenuecat`, `react`, `ui`, `ui-shop`                                                     |
+| `@shopify/react-native-skia`     | `>=2.0.0`  | no       | GPU rendering, Atlas API, Canvas              | `engine`, `react`                                                                                                    |
+| `@shopify/react-native-skia`     | `>=2.0.0`  | yes      | Same; optional for these packages             | `postfx`, `shapes`                                                                                                   |
+| `react-native-reanimated`        | `>=4.0.0`  | no       | UI-thread animation runtime (ADR-0002 floor)  | `engine`, `react`                                                                                                    |
+| `react-native-worklets`          | `>=0.7.0`  | no       | Native scene-capture dispatch (ADR-0002)      | `engine`, `react`                                                                                                    |
+| `react-native-safe-area-context` | `>=4.0.0`  | no       | Safe-area insets                              | `engine`, `react`                                                                                                    |
+| `react-native-web`               | `>=0.20.0` | yes      | React Native on the web                       | `react`                                                                                                              |
+| `canvaskit-wasm`                 | `>=0.40.0` | yes      | Skia CanvasKit-WASM backend for the web       | `react`, `render-web`                                                                                                |
+| `react-native-audio-api`         | `>=0.3.0`  | yes      | Native C++ audio engine (Software Mansion)    | `audio`, `engine`                                                                                                    |
+| `@sentry/react-native`           | `>=5.0.0`  | yes      | Sentry error reporter                         | `errors`                                                                                                             |
+| `react-native-purchases`         | `>=8.0.0`  | no       | RevenueCat SDK                                | `iap-revenuecat`                                                                                                     |
+
+`@flare-engine/ui-fx` is not published yet (`"private": true`), so its peers are not in this table.
+It declares higher floors of its own; read `packages/ui-fx/package.json`.
 
 ### Phase 11 additions
+
+These are not declared peers: no manifest lists them, and the app installs the ones it uses.
 
 | Package             | Role in Flare                                                          | Required by                             |
 | ------------------- | ---------------------------------------------------------------------- | --------------------------------------- |

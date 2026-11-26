@@ -25,5 +25,10 @@ export {
   type PerfReport,
   type PerfSectionStats,
 } from './perf-recorder.js';
-export { type DebugStats, StatsTracker } from './stats.js';
+export {
+  createStatsTracker,
+  type DebugStats,
+  StatsTracker,
+  type StatsTrackerHandle,
+} from './stats.js';
 export { TimeControl } from './time-control.js';

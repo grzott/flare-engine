@@ -77,6 +77,9 @@ export interface DrawParticlesOptions {
    * their colours and alphas — a fading, colour-shifting emitter becomes one draw
    * call instead of one per distinct alpha. The batch's renderer must support
    * per-sprite colours (both of the engine's backends do).
+   *
+   * The default becomes `true` in 0.5.0. Pass `color: false` to keep today's
+   * colourless draw after that release.
    */
   color?: boolean;
 }
@@ -116,7 +119,8 @@ function channelByte(value: number): number {
  * `SpriteBatch`, sprites drawn with a colour share one run per image whatever
  * their colours and alphas, so a fading, colour-shifting emitter is one draw
  * call rather than one per distinct alpha. Without the option, colour is not
- * applied and each distinct alpha is its own run, as before.
+ * applied and each distinct alpha is its own run, as before. From 0.5.0 colour
+ * is on by default, and `{ color: false }` turns it off.
  *
  * `image` and `frame` are separate parameters because they are separate
  * everywhere else in the engine — a frame is a rectangle within a texture and

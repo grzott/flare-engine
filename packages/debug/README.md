@@ -1,6 +1,6 @@
 # @flare-engine/debug
 
-Dev-only stats + overlays. `StatsTracker` collects per-frame timings via `updateFromClock` / `setEntityCount` / `setDrawCalls`; `createFpsWidget` formats a one-line `"60 FPS | 16.7ms | e:42 d:8"` summary plus a multi-line breakdown — rendering-agnostic so hosts can draw via Skia or RN `<Text>`. `TimeControl` exposes pause / step-frame / slow-motion via `Clock.timescale`.
+Dev-only stats + overlays. `createStatsTracker` collects per-frame timings via `updateFromClock` / `setEntityCount` / `setDrawCalls`; `createFpsWidget` formats a one-line `"60 FPS | 16.7ms | e:42 d:8"` summary plus a multi-line breakdown — rendering-agnostic so hosts can draw via Skia or RN `<Text>`. `TimeControl` exposes pause / step-frame / slow-motion via `Clock.timescale`.
 
 ## Install
 
@@ -11,10 +11,10 @@ bun add @flare-engine/debug
 ## Usage
 
 ```ts
-import { StatsTracker, createFpsWidget, TimeControl } from '@flare-engine/debug';
+import { createFpsWidget, createStatsTracker, TimeControl } from '@flare-engine/debug';
 import type { Clock } from '@flare-engine/core';
 
-const tracker = new StatsTracker();
+const tracker = createStatsTracker();
 const widget = createFpsWidget();
 
 declare const clock: Clock;
@@ -36,6 +36,8 @@ time.setTimescale(0.5);
 ```
 
 Tree-shaken in production via `__DEV__` guard at the call site.
+
+The `StatsTracker` class is deprecated and removed in 0.5.0: replace `new StatsTracker()` with `createStatsTracker()`, and a `StatsTracker` type annotation with `StatsTrackerHandle`.
 
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginedebug-tree-shaken-in-prod).
 

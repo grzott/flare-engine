@@ -56,6 +56,14 @@ export interface AudioContextLike {
   readonly currentTime: number;
   readonly destination: AudioDestinationNodeLike;
   createGain(): GainNodeLike;
+  /**
+   * Returns a new source node. In 0.5.0 the return type widens to
+   * `AudioBufferSourceNodeLike | PromiseLike<AudioBufferSourceNodeLike>`, so a
+   * context whose `createBufferSource()` resolves asynchronously (the
+   * `react-native-audio-api` web context) type-checks. A context that returns a
+   * node at once still satisfies it. Code that calls `createBufferSource()`
+   * itself must then await or narrow the result.
+   */
   createBufferSource(): AudioBufferSourceNodeLike;
   /**
    * Allocates a writable buffer for `fillPCMBuffer`. Optional so hand-written contexts

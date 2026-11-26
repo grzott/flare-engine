@@ -1,5 +1,95 @@
 # @flare-engine/physics
 
+## 0.4.19
+
+### Patch Changes
+
+- 9e6b6ba: `CollisionWorld.setPosition` and `CollisionWorld.step` do less work in a crowded world, and
+  `SpatialIndex.update` no longer relinks an item that stays in the same cells. No exported symbol
+  or signature changes.
+
+  - **`SpatialIndex.update`** always stores the new bounds, but leaves the buckets alone when the
+    item's cell range is unchanged. When the range does change, removal from a bucket is O(1): each
+    item records its position in every bucket it occupies, so nothing is searched. It was an
+    `indexOf` per cell on every call.
+  - **`CollisionWorld`** has its own broadphase grid now (same 64-unit cells), which links the
+    world's entries directly and groups them, per cell, by `(layer, mask)`. `setPosition` skips the
+    relink in the same way. `step` tests layer and mask once per group instead of once per candidate
+    after a `Map` lookup, so a body never walks the bodies in its cells that it cannot pair with.
+    Each pair is still recorded once, from its lower entity id, after the same bounding-box and
+    shape tests. `raycast` reads the same grid.
+
+  Which pairs a step reports, and which signal each gets, is unchanged. Two orders that were never
+  specified can differ from before: the order in which one `step` emits pairs that share their lower
+  entity id, and which of two colliders `raycast` returns when both are hit at exactly the same
+  distance.
+
+  Measured on the new `physics.curtain` bench rows — 2000 enemy-layer bodies that do not collide
+  with each other, 100 player shots and one ship in a 384x768 field — on a shared Linux CI runner
+  (Bun 1.3.11), two runs each side, so read the ratios and not the absolute figures:
+
+  | row                             | before       | after      |
+  | ------------------------------- | ------------ | ---------- |
+  | `setPosition` pass (2101 calls) | 322-343 us   | 138-142 us |
+  | `step()` on a still frame       | 1.27 ms      | 117-126 us |
+  | both, one frame                 | 1.67-1.69 ms | 341-352 us |
+
+  The existing `physics.step` rows, where every body can hit every other, also got faster on the
+  same runner (1000 dense: 958-992 us before, 708-728 us after).
+
+- 0503969: Pixel-mask collision: a `MaskShape` and the functions that test one, in a new module beside `Shape`
+  and `SolidGrid`. Everything here is new; no existing export or signature changes.
+
+  `MaskShape` is **not** added to the `Shape` union, and `CollisionWorld`, `shapeOverlap`,
+  `overlapInto` and `raycast` do not accept one. Keep a box collider for the broadphase and refine the
+  pairs it reports with the functions below.
+
+  - **`MaskShape`** is `{ x, y, w, h, words }`: the bounds of the solid region inside a sprite frame,
+    in frame px, and its rows as 32-bit words, `Math.ceil(w / 32)` per row, top row first; bit
+    `c & 31` of word `c >>> 5` is column `c` of the bounds. `x` / `y` offset the solid region from the
+    frame's corner. `words` is typed as any array-like of numbers, so a `number[]` and a `Uint32Array` both fit.
+    `createMaskShape(rows, x?, y?)` builds one from rows of text in which `#` is solid.
+  - **`MaskPose`** is `{ x, y, cos, sin, px, py, unit }`: world position, cosine and sine of the turn,
+    the pivot in frame px, and world units per px. `createMaskPose()` returns an unturned one. A world
+    point is taken into the mask's frame by the inverse turn.
+  - **`isMaskSolidAt(mask, col, row, erode?)`** reads one pixel at integer frame coordinates; with
+    `erode` the pixel counts only when its four neighbours are solid too.
+  - **`maskBoundsInto(mask, pose, out)`** writes the world bounding box of the posed bounds rectangle
+    (the box around the turned rectangle, not shrunk to the solid pixels); `maskBounds` allocates one.
+  - **`maskOverlapsBox(mask, pose, cx, cy, hw, hh, erode?)`** tests a world axis-aligned box. Against
+    a turned mask the box is tested by its bounding box in the mask's frame: exact at a multiple of a
+    quarter turn, generous by the box's corners at any other.
+  - **`maskOverlapsSweptBox(mask, pose, x0, y0, x1, y1, hw, hh)`** samples `maskOverlapsBox` along a
+    segment, both ends included, at most half a px and at most the box's smaller non-zero half extent
+    apart. It takes at most 257 samples, so a segment too long for that spacing is sampled more
+    coarsely and can miss.
+  - **`maskOverlapsCircle(mask, pose, cx, cy, radius)`** tests a circle against each pixel's square in
+    the mask's frame, which is exact at any turn. A zero radius hits only strictly inside a pixel.
+  - **`maskOverlapsMask(a, poseA, b, poseB)`** tests two masks, each turned and scaled on its own.
+    Pixels are compared as turned squares by separating axes, not by bounding boxes, so the result is
+    exact up to floating-point rounding; for masks at different turns a contact within rounding of
+    touching can read either way. It visits the solid pixels of the smaller mask that lie under the
+    other's world bounds and, for each, the pixels of the other it can reach.
+  - **`rayVsMask(mask, pose, ox, oy, dx, dy, len)`** returns the distance along a unit-direction ray
+    to the first solid pixel, `0` when the ray starts inside one, `-1` when it meets none within
+    `len`. It returns a number only: no hit record, point or normal.
+  - **`maskStripStop(mask, pose, x0, y0, x1, y1, dirX, dirY)`** returns where a beam filling a world
+    rect and travelling along one axis first meets the mask, as a coordinate on that axis, or `NaN`.
+    A turned pixel counts by its bounding box, and every pixel of the mask is visited.
+
+  In every overlap test, touching is not overlapping. None of the per-frame functions allocates;
+  `createMaskShape`, `createMaskPose` and `maskBounds` do. `@flare-engine/engine` re-exports all of
+  it through its existing `export *`.
+
+- 193822a: Documents two `CollisionWorld.raycast` behaviours that matter in tile-scale worlds (#510). No behaviour changes.
+
+  - **The broadphase cell is a fixed 64 world units.** There is no option to change it. In a world of one unit per tile, colliders crowd a few cells, so `raycast` and `step` approach a scan of every collider. The README and the `CollisionWorld` JSDoc now say so.
+  - **A ray that starts inside a collider hits it at its exit distance**, not at 0. Its `normal` differs by shape: for a box, the face the ray entered through behind its origin; for a circle, the outward normal at the exit point. To skip that collider, use a layer `mask`, or start the ray just past the collider's edge. A ray that starts exactly on the edge still hits it, at distance 0. This is now in the JSDoc of `CollisionWorld.raycast` and of the standalone `raycast`, and in the README.
+
+- Updated dependencies [7662231]
+  - @flare-engine/math@0.4.19
+  - @flare-engine/events@0.4.19
+
 ## 0.4.18
 
 ### Patch Changes

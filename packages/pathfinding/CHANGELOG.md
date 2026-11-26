@@ -1,5 +1,12 @@
 # @flare-engine/pathfinding
 
+## 0.4.19
+
+### Patch Changes
+
+- Updated dependencies [7662231]
+  - @flare-engine/math@0.4.19
+
 ## 0.4.18
 
 ### Patch Changes

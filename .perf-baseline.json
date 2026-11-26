@@ -187,9 +187,9 @@
       "measuredAt": "2026-11-16"
     },
     "@flare-engine/debug": {
-      "ceiling": 21614,
-      "measured": 19649,
-      "measuredAt": "2026-09-08"
+      "ceiling": 32580,
+      "measured": 29618,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/deep-links": {
       "ceiling": 14989,
@@ -542,6 +542,10 @@
     {
       "date": "2026-11-25",
       "reason": "physics ceiling raised 55973 -> 74205 B (measured 67459 x1.1), pending the owner's approval of the PR for issue #579. CollisionWorld gets its own internal broadphase grid (new src/collision-grid.ts, not exported) that links the world's entries directly and groups them per cell by (layer, mask), so step() tests layer and mask once per group and setPosition skips the relink while a body stays in the same cells; SpatialIndex.update skips the same relink and removes from a bucket in O(1) through a per-item bucket-position record; the cell maths both grids share moved to src/cells.ts. No exported symbol or .d.ts signature changes. The growth is not measured against a published tarball here: main passes check:perf-bytes, so main packs at or under 55973 B and this change adds at least 11486 B to the tarball; the last recorded measurement is 50884 B (2026-09-08). The tarball ships the new module in index.mjs, index.js and in both source maps' sourcesContent, so it grows by more than an app bundles (dist/index.mjs is 32837 B raw after the change). What the bytes bought, on the new physics.curtain bench rows (2000 enemy-layer bodies that do not pair with each other, 100 shots, one ship; shared Linux runner, Bun 1.3.11, two runs each side): setPosition pass 322-343 us -> 138-142 us, step 1.27 ms -> 117-126 us; physics.step 1000 dense 958-992 us -> 708-728 us. The same change adds the PhysicsCurtain bench suite, listed in PENDING_FIRST_CAPTURE until the next owner recapture; freshness.suites is unchanged. A performance fix, not a regression."
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "debug ceiling raised 21614 -> 32580 B (measured 29618 x1.1), pending the owner's approval of the ADR-0012 announcement PR (rows 5-11; #177). createStatsTracker() and its StatsTrackerHandle interface are added beside the now-deprecated StatsTracker class, which stays until 0.5.0. Measured 2026-11-26 against the published 0.4.18 tarball (21106 B; packages/debug/src has no commits on main since that release): the tarball grows 8512 B, but each file gzipped alone grows only 38087 -> 39997 B (+1910). The difference is the deflate window: the two source maps grow from 30164 to 32294 B each, and the tarball is one gzip stream that back-references only 32 KB, so the second map no longer compresses against the first. What an app bundles: dist/index.mjs 13049 -> 14027 B raw (4225 -> 4469 B gzipped, +244 B). Both the class and the factory ship until 0.5.0 removes the class. A deprecation announcement, not a regression."
     }
   ]
 }

@@ -7,7 +7,7 @@
     "bunfig.toml",
     "scripts/test-isolated.mjs"
   ],
-  "globalPassThroughEnv": ["FLARE_PERF_ALLOW_STALE", "FLARE_PERF_BASE_REF"],
+  "globalPassThroughEnv": ["FLARE_PERF_ALLOW_STALE", "FLARE_PERF_BASE_REF", "GITHUB_EVENT_PATH"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

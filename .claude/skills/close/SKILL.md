@@ -50,7 +50,8 @@ re-run; count each failure in `gate:N`.
 3. `git push -u origin claude/<slug>`.
 4. Fill `.github/PULL_REQUEST_TEMPLATE.md` into `.superpowers/pr-body.md` with the Write tool (in the
    repo and gitignored: no permission prompt, never committed) — summary, verification with
-   results, expected risk class, frictions line — then:
+   results, expected risk class, frictions line, and no AI attribution footer or session link
+   (`AGENTS.md`; the guard refuses it) — then:
 
    ```bash
    gh api repos/{owner}/{repo}/pulls -f title="<subject>" -f head="claude/<slug>" -f base=main -F body=@.superpowers/pr-body.md

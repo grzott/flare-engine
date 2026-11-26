@@ -44,6 +44,14 @@ export interface BaseSpec {
    *   'friendly' — safe-green rim  (player ship, weapon/upgrade pickups)
    *   'hazard'   — orange double-stroke (danger cues, enemy bullets)
    *   GlowSpec   — one ring in the caller's colour and width (themeable)
+   *
+   * Deprecated: the `'friendly'` and `'hazard'` strings are removed in 0.5.0;
+   * pass a `GlowSpec` instead. `'friendly'` becomes
+   * `{ color: friendlyGlowArgb(), width: 3 }`, which paints the same pixels.
+   * `'hazard'` becomes `{ color: hazardGlowArgb(), width: 1 }`: the same colour
+   * and the same 1 px of stroke, but one ring instead of two, and further out —
+   * its inner edge moves from 0.75 px to 2.5 px outside the shape's radius. To
+   * keep the two-ring look, draw it yourself with `applyHazardGlow`.
    */
   readonly glow?: 'friendly' | 'hazard' | GlowSpec;
 }

@@ -46,6 +46,9 @@ export interface FocusManagerOptions {
    * order (`true`, the default — keyboard users keep a focus target) or clear
    * it to `null` (`false`). Subscribers are notified either way, and a later
    * `next()` / `prev()` starts from the first / last node as it does from `null`.
+   *
+   * The default becomes `false` in 0.5.0. Pass `true` to keep today's re-home
+   * after that release.
    */
   refocusOnUnregister?: boolean;
 }

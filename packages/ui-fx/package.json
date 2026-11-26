@@ -1,6 +1,6 @@
 {
   "name": "@flare-engine/ui-fx",
-  "version": "0.4.18",
+  "version": "0.4.19",
   "private": true,
   "description": "Animated wrappers for React Native, react-native-web and React DOM components",
   "keywords": [
@@ -104,9 +104,9 @@
     "react-dom": "^19.3.1"
   },
   "dependencies": {
-    "@flare-engine/a11y": "^0.4.18",
-    "@flare-engine/math": "^0.4.18",
-    "@flare-engine/render-web": "^0.4.18"
+    "@flare-engine/a11y": "^0.4.19",
+    "@flare-engine/math": "^0.4.19",
+    "@flare-engine/render-web": "^0.4.19"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

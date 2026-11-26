@@ -1,5 +1,11 @@
 # @flare-engine/dialogue
 
+## 0.4.19
+
+### Patch Changes
+
+- @flare-engine/events@0.4.19
+
 ## 0.4.18
 
 ### Patch Changes

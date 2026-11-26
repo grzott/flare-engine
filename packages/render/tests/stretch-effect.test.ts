@@ -1,8 +1,8 @@
 /**
  * Verifies that the stretch branch in frame-renderer routes effects correctly:
  *
- * - stretch + shader effect (water/custom): resolveEffectPaint() is used so
- *   the effect shader reaches drawImageRect — the fix under test.
+ * - stretch + shader effect (water/custom): drawn as a shader-filled rect, not
+ *   through drawImageRect — Skia ignores a paint's shader on a colour image.
  * - stretch + outline: outline requires two passes (SRC_IN silhouette + source)
  *   incompatible with the single drawImageRect stretch path; falls back to the
  *   plain stretchPaint (no shader) — regression guard for fix #1.
@@ -34,8 +34,10 @@ function makePaint(): TrackPaint {
 function makeStretchTestModule(): {
   mod: FrameRendererModule;
   drawImageRectPaints: TrackPaint[];
+  drawRectPaints: TrackPaint[];
 } {
   const drawImageRectPaints: TrackPaint[] = [];
+  const drawRectPaints: TrackPaint[] = [];
 
   const fakeCanvas = {
     save() {
@@ -47,7 +49,9 @@ function makeStretchTestModule(): {
     rotate() {},
     clear() {},
     drawAtlas() {},
-    drawRect() {},
+    drawRect(_rect: unknown, paint: unknown) {
+      drawRectPaints.push(paint as TrackPaint);
+    },
     drawImageRect(_img: unknown, _src: unknown, _dst: unknown, paint: unknown) {
       drawImageRectPaints.push(paint as TrackPaint);
     },
@@ -114,7 +118,7 @@ function makeStretchTestModule(): {
     },
   };
 
-  return { mod, drawImageRectPaints };
+  return { mod, drawImageRectPaints, drawRectPaints };
 }
 
 function stretchCmd(partial: Partial<SpriteDrawCommand> = {}): SpriteDrawCommand {
@@ -142,8 +146,8 @@ function stretchCmd(partial: Partial<SpriteDrawCommand> = {}): SpriteDrawCommand
 }
 
 describe('frame-renderer — stretch branch effect routing', () => {
-  it('stretch + water: resolveEffectPaint used — setShader reaches the drawImageRect paint', () => {
-    const { mod, drawImageRectPaints } = makeStretchTestModule();
+  it('stretch + water: drawn as one shader-filled rect, never through drawImageRect', () => {
+    const { mod, drawImageRectPaints, drawRectPaints } = makeStretchTestModule();
     const renderer = createFrameRenderer(mod);
     renderer.beginFrame(128, 64, 1.0, 1);
     renderer.drawAtlas({} as SkImageLike, [
@@ -152,8 +156,9 @@ describe('frame-renderer — stretch branch effect routing', () => {
       }),
     ]);
 
-    expect(drawImageRectPaints).toHaveLength(1);
-    expect(drawImageRectPaints[0]!._shaderSet).toBe(true);
+    expect(drawImageRectPaints).toHaveLength(0);
+    expect(drawRectPaints).toHaveLength(1);
+    expect(drawRectPaints[0]!._shaderSet).toBe(true);
   });
 
   it('stretch + outline: falls back to plain stretchPaint — no shader on drawImageRect paint', () => {

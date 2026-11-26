@@ -112,6 +112,8 @@ interface MockCanvas {
     paint: MockPaint;
     paintAlphaf: number;
   }>;
+  /** Paint handed to each `drawRect` — the shader sprite effects draw this way. */
+  drawRectCalls: Array<{ paint: MockPaint }>;
   clearCalls: Float32Array[];
   scaleCalls: Array<{ sx: number; sy: number }>;
 }
@@ -127,7 +129,13 @@ let finishCalls = 0;
 let beginRecordingBoundsArgs: Array<{ x: number; y: number; width: number; height: number }> = [];
 
 function createMockCanvas(): MockCanvas {
-  return { drawAtlasCalls: [], drawImageRectCalls: [], clearCalls: [], scaleCalls: [] };
+  return {
+    drawAtlasCalls: [],
+    drawImageRectCalls: [],
+    drawRectCalls: [],
+    clearCalls: [],
+    scaleCalls: [],
+  };
 }
 
 function makeMockSkia(): SkiaModuleLike {
@@ -214,6 +222,7 @@ function makeMockSkia(): SkiaModuleLike {
               paint: MockPaint,
             ): void;
             drawImageRect(image: unknown, src: unknown, dst: unknown, paint: MockPaint): void;
+            drawRect(rect: unknown, paint: MockPaint): void;
           } = {
             ...createMockCanvas(),
             save: () => 0,
@@ -268,6 +277,9 @@ function makeMockSkia(): SkiaModuleLike {
                 paint,
                 paintAlphaf: (paint as MockPaint).alphaf,
               });
+            },
+            drawRect(_rect, paint) {
+              this.drawRectCalls.push({ paint });
             },
           };
           currentMockCanvas = canvas;
@@ -735,7 +747,9 @@ describe('createSkiaFrameRenderer — sprite effects', () => {
     const flat = shader.makeShaderCalls[0]!;
     expect(flat).toEqual([1.5, 800, 600]);
 
-    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(0);
+    const call = currentMockCanvas?.drawRectCalls[0];
+    expect(call).toBeDefined();
     expect(call?.paint.shader).not.toBeNull();
   });
 
@@ -800,7 +814,9 @@ describe('createSkiaFrameRenderer — water effect', () => {
     };
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
     expect(currentMockWaterEffect?.makeShaderCalls).toHaveLength(1);
-    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(0);
+    const call = currentMockCanvas?.drawRectCalls[0];
+    expect(call).toBeDefined();
     expect(call?.paint.shader).not.toBeNull();
   });
 
@@ -945,7 +961,9 @@ describe('createSkiaFrameRenderer — fog effect', () => {
     };
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
     expect(currentMockFogEffect?.makeShaderCalls).toHaveLength(1);
-    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(0);
+    const call = currentMockCanvas?.drawRectCalls[0];
+    expect(call).toBeDefined();
     expect(call?.paint.shader).not.toBeNull();
   });
 
@@ -1050,7 +1068,9 @@ describe('fire effect', () => {
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
     expect(runtimeEffectMakeCalls).toBe(1);
     expect(currentMockFireEffect?.makeShaderCalls).toHaveLength(1);
-    const call = currentMockCanvas?.drawAtlasCalls[0];
+    expect(currentMockCanvas?.drawAtlasCalls).toHaveLength(0);
+    const call = currentMockCanvas?.drawRectCalls[0];
+    expect(call).toBeDefined();
     expect(call?.paint.shader).not.toBeNull();
   });
 
@@ -1105,7 +1125,7 @@ describe('fire effect', () => {
     expect(uniforms?.[10]).toBeCloseTo(3.7);
   });
 
-  it('fire arm in resolveEffectPaint — drawAtlas called, no fallthrough to default', () => {
+  it('fire draws a rect with its own paint — no fallthrough to the default paint', () => {
     const bridge = createSkiaFrameRenderer(makeMockSkiaWithFireRuntimeEffect());
     bridge.beginFrame(800, 600);
     const effect: FireEffect = {
@@ -1116,7 +1136,7 @@ describe('fire effect', () => {
       intensity: 0.8,
     };
     bridge.drawAtlas(mockImage(), [cmd({ effect })]);
-    const call = currentMockCanvas?.drawAtlasCalls[0];
+    const call = currentMockCanvas?.drawRectCalls[0];
     expect(call).toBeDefined();
     // Fire paint has shader set; default paint (id=1) has shader=null.
     expect(call?.paint.shader).not.toBeNull();

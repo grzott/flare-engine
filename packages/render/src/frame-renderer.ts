@@ -500,6 +500,19 @@ function isZoneBgEffect(effect: AnySpriteEffect | undefined): effect is ZoneBgEf
   return effect !== undefined && effect.type in ZONE_BG;
 }
 
+/**
+ * Effects whose output is a shader. Skia ignores a paint's shader when the
+ * draw is a colour image, so these fill the sprite's rect instead of drawing
+ * its atlas frame.
+ */
+type ShaderEffect = CustomShaderEffect | WaterEffect | FogEffect | FireEffect;
+
+function isShaderEffect(effect: AnySpriteEffect | undefined): effect is ShaderEffect {
+  if (effect === undefined) return false;
+  const type = effect.type;
+  return type === 'custom' || type === 'water' || type === 'fog' || type === 'fire';
+}
+
 /** Generic over the type so the descriptor and the effect are the same variant — no cast. */
 function fillZoneBgUniforms<T extends ZoneBgType>(
   type: T,
@@ -599,6 +612,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   let stretchPaint: PaintLike | null = null;
 
   const zoneBgRects: RectLike[] = [];
+  let shaderRect: RectLike | null = null;
 
   const imageSampling = new WeakMap<SkImageLike, SamplingOptionsLike>();
 
@@ -635,8 +649,6 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
   const fireUniforms: number[] = new Array(11).fill(0);
 
   let currentFrameTime = 0;
-  let currentSpriteW = 0;
-  let currentSpriteH = 0;
   let current: DrawSurfaceLike | null = null;
 
   let _boundRuntime: FrameRendererPostFxRuntime | null = null;
@@ -833,16 +845,16 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return customPaint;
   }
 
-  function applyWater(effect: WaterEffect, time: number): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyWater(effect: WaterEffect, w: number, h: number, time: number): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (waterRuntimeEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(WATER_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       waterRuntimeEffect = compiled;
     }
     if (waterPaint === null) waterPaint = Skia.Paint();
-    waterUniforms[0] = currentSpriteW;
-    waterUniforms[1] = currentSpriteH;
+    waterUniforms[0] = w;
+    waterUniforms[1] = h;
     waterUniforms[2] = effect.color.r;
     waterUniforms[3] = effect.color.g;
     waterUniforms[4] = effect.color.b;
@@ -856,16 +868,16 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return waterPaint;
   }
 
-  function applyFog(effect: FogEffect, time: number): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyFog(effect: FogEffect, w: number, h: number, time: number): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (fogRuntimeEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(FOG_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       fogRuntimeEffect = compiled;
     }
     if (fogPaint === null) fogPaint = Skia.Paint();
-    fogUniforms[0] = currentSpriteW;
-    fogUniforms[1] = currentSpriteH;
+    fogUniforms[0] = w;
+    fogUniforms[1] = h;
     fogUniforms[2] = effect.color.r;
     fogUniforms[3] = effect.color.g;
     fogUniforms[4] = effect.color.b;
@@ -877,16 +889,16 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     return fogPaint;
   }
 
-  function applyFire(effect: FireEffect, time: number): PaintLike {
-    if (Skia.RuntimeEffect === undefined) return defaultPaint;
+  function applyFire(effect: FireEffect, w: number, h: number, time: number): PaintLike | null {
+    if (Skia.RuntimeEffect === undefined) return null;
     if (fireRuntimeEffect === null) {
       const compiled = Skia.RuntimeEffect.Make(FIRE_SKSL);
-      if (compiled === null) return defaultPaint;
+      if (compiled === null) return null;
       fireRuntimeEffect = compiled;
     }
     if (firePaint === null) firePaint = Skia.Paint();
-    fireUniforms[0] = currentSpriteW;
-    fireUniforms[1] = currentSpriteH;
+    fireUniforms[0] = w;
+    fireUniforms[1] = h;
     fireUniforms[2] = effect.color.r;
     fireUniforms[3] = effect.color.g;
     fireUniforms[4] = effect.color.b;
@@ -964,7 +976,27 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
     defaultPaint.setAlphaf(1);
   }
 
-  function resolveEffectPaint(effect: Exclude<AnySpriteEffect, ZoneBgEffect>): PaintLike {
+  /**
+   * The paint carrying the effect's shader, built for a `w` × `h` sprite.
+   * `null` when a built-in shader is not compiled; the caller then draws the
+   * plain sprite. A `custom` shader is supplied compiled, so it never is.
+   */
+  function applyShaderEffect(effect: ShaderEffect, w: number, h: number): PaintLike | null {
+    switch (effect.type) {
+      case 'custom':
+        return applyCustom(effect);
+      case 'water':
+        return applyWater(effect, w, h, currentFrameTime);
+      case 'fog':
+        return applyFog(effect, w, h, currentFrameTime);
+      case 'fire':
+        return applyFire(effect, w, h, currentFrameTime);
+    }
+  }
+
+  function resolveEffectPaint(
+    effect: Exclude<AnySpriteEffect, ZoneBgEffect | ShaderEffect>,
+  ): PaintLike {
     switch (effect.type) {
       case 'tint':
         return applyTint(effect);
@@ -972,14 +1004,6 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
         return applyFlash(effect);
       case 'grayscale':
         return applyGrayscale(effect);
-      case 'custom':
-        return applyCustom(effect);
-      case 'water':
-        return applyWater(effect, currentFrameTime);
-      case 'fog':
-        return applyFog(effect, currentFrameTime);
-      case 'fire':
-        return applyFire(effect, currentFrameTime);
       case 'drop-shadow':
         return applyDropShadow(effect);
       case 'outline':
@@ -1007,7 +1031,7 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       if (n === 0) return;
 
       const cmd0 = commands[0] as SpriteDrawCommand;
-      const effect = cmd0.effect;
+      let effect = cmd0.effect;
       // A coloured run carries each sprite's opacity in its colour, so the
       // paint stays opaque: on the atlas path for the whole run, and on the
       // per-sprite paths (zone-bg, stretch/flip) set from the colour per sprite.
@@ -1016,8 +1040,6 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
       const flipX = cmd0.flipX;
       const flipY = cmd0.flipY;
       const sampling = imageSampling.get(image);
-      currentSpriteW = cmd0.dstW;
-      currentSpriteH = cmd0.dstH;
 
       if (isZoneBgEffect(effect)) {
         const paint = applyZoneBg(effect);
@@ -1034,6 +1056,54 @@ export function createFrameRenderer(Skia: FrameRendererModule): FrameRenderer {
         paint.setAlphaf(1);
         if (blendAdditive) paint.setBlendMode?.(BLEND_SRC_OVER);
         return;
+      }
+
+      if (isShaderEffect(effect)) {
+        let paint = applyShaderEffect(effect, cmd0.dstW, cmd0.dstH);
+        if (paint !== null) {
+          if (shaderRect === null) shaderRect = Skia.XYWHRect(0, 0, 0, 0);
+          const sized = effect.type !== 'custom';
+          let shaderW = cmd0.dstW;
+          let shaderH = cmd0.dstH;
+          if (blendAdditive) paint.setBlendMode?.(BLEND_PLUS);
+          paint.setAlphaf(alpha);
+          for (let i = 0; i < n; i++) {
+            const cmd = commands[i] as SpriteDrawCommand;
+            // The built-in shaders take the sprite's size as a uniform, so a
+            // sprite of another size in the same run needs its own shader.
+            if (sized && (cmd.dstW !== shaderW || cmd.dstH !== shaderH)) {
+              shaderW = cmd.dstW;
+              shaderH = cmd.dstH;
+              paint = applyShaderEffect(effect, shaderW, shaderH) ?? paint;
+            }
+            if (colors !== undefined) paint.setAlphaf(((colors[i] as number) >>> 24) / 255);
+            shaderRect.setXYWH(0, 0, cmd.dstW, cmd.dstH);
+            current.save();
+            // Canvas ops apply to geometry in reverse call order: the rect at
+            // the origin is mirrored about its centre, moved to the sprite's
+            // position, then turned about the anchor pivot. Drawing at the
+            // origin is what makes the shader's coordinates sprite-local.
+            if (cmd.rotation !== 0) {
+              current.rotate(
+                cmd.rotation * RAD_TO_DEG,
+                cmd.dstX + cmd.anchorX * cmd.dstW,
+                cmd.dstY + cmd.anchorY * cmd.dstH,
+              );
+            }
+            current.translate(cmd.dstX, cmd.dstY);
+            if (cmd.flipX || cmd.flipY) {
+              current.translate(cmd.dstW * 0.5, cmd.dstH * 0.5);
+              current.scale(cmd.flipX ? -1 : 1, cmd.flipY ? -1 : 1);
+              current.translate(-cmd.dstW * 0.5, -cmd.dstH * 0.5);
+            }
+            current.drawRect(shaderRect, paint);
+            current.restore();
+          }
+          paint.setAlphaf(1);
+          if (blendAdditive) paint.setBlendMode?.(BLEND_SRC_OVER);
+          return;
+        }
+        effect = undefined;
       }
 
       if (cmd0.stretch || flipX || flipY) {

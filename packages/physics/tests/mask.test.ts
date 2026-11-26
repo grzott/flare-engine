@@ -320,6 +320,37 @@ describe('maskOverlapsBox with an offset mask', () => {
   });
 });
 
+describe('maskOverlapsBox against a turned mask', () => {
+  // A bar 5 px wide and 1 tall, pivot at its centre. A quarter turn stands it upright, so with
+  // UNIT 2 it covers world x -1..1 and y -5..5.
+  const bar = createMaskShape(['#####']);
+  const upright = pose(0, 0, 2.5, 0.5, Math.PI / 2);
+
+  test('a quarter turn swaps the box extents: a tall box reaches the top end through its height', () => {
+    // Centred 1 unit above the top end; only the half height reaches it.
+    expect(maskOverlapsBox(bar, upright, 0, -6, 0.2, 1.5)).toBe(true);
+    expect(maskOverlapsBox(bar, upright, 0, -6, 0.2, 0.8)).toBe(false);
+  });
+
+  test('a quarter turn swaps the box extents: a wide box reaches the side through its width', () => {
+    // Centred 1 unit right of the right side; only the half width reaches it.
+    expect(maskOverlapsBox(bar, upright, 2, 0, 1.5, 0.2)).toBe(true);
+    expect(maskOverlapsBox(bar, upright, 2, 0, 0.8, 0.2)).toBe(false);
+  });
+
+  test('at an eighth turn the box is generous by its corners, as documented, and no further', () => {
+    // A 1 px diamond about the origin, its tips at sqrt(2)/2 on the axes.
+    const dot = createMaskShape(['#']);
+    const p = pose(0, 0, 0.5, 0.5, Math.PI / 4, 1);
+    // 0.78-0.98 on x: clear of the tip, as the exact circle test confirms, but the box's bounding
+    // box in the mask's frame reaches the pixel's corner.
+    expect(maskOverlapsCircle(dot, p, 0.88, 0, 0.1)).toBe(false);
+    expect(maskOverlapsBox(dot, p, 0.88, 0, 0.1, 0.1)).toBe(true);
+    // Farther out the bounding box clears the pixel too.
+    expect(maskOverlapsBox(dot, p, 1.2, 0, 0.1, 0.1)).toBe(false);
+  });
+});
+
 describe('maskOverlapsCircle', () => {
   // One solid px, 1 world unit, occupying the world square (0..1, 0..1).
   const dot = createMaskShape(['#']);

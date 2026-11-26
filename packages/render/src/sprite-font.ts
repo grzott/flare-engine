@@ -32,7 +32,14 @@ export interface BitmapFont {
   base: number;
   /** Glyph map by character code. */
   glyphs: Map<number, Glyph>;
-  /** Kerning map. Key = `first << 16 | second`. */
+  /**
+   * Kerning map. Key = `first << 16 | second`.
+   *
+   * The key changes in 0.5.0 to `first * 0x200000 + second`, so that glyph ids
+   * above 0xFFFF stop aliasing. A map built by `parseBMFontJSON` and read
+   * through `getKerning` is unaffected. Code that fills or reads this map with
+   * the formula above has to change with it.
+   */
   kernings: Map<number, number>;
 }
 

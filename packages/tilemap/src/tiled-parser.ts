@@ -99,9 +99,26 @@ interface TiledMapJSON {
   properties?: TiledProperty[];
 }
 
-/** Convert Tiled properties array to a Record. */
-function parseProperties(props?: TiledProperty[]): Record<string, unknown> {
-  if (!props || props.length === 0) return {};
+/** How a malformed value reads in an error message: `null`, `array`, or its `typeof`. */
+function describeValue(value: unknown): string {
+  if (value === null) return 'null';
+  return Array.isArray(value) ? 'array' : typeof value;
+}
+
+/**
+ * Convert Tiled properties array to a Record. `where` names the owner (map, layer,
+ * tile, object) in the error thrown when `props` is present but not an array.
+ */
+function parseProperties(
+  props: TiledProperty[] | null | undefined,
+  where: string,
+): Record<string, unknown> {
+  if (props === undefined || props === null) return {};
+  if (!Array.isArray(props)) {
+    throw new TilemapParseError(
+      `parseTiled: ${where} has "properties" of type ${describeValue(props)} — expected an array of { name, type, value } entries, as Tiled exports them.`,
+    );
+  }
   const result: Record<string, unknown> = {};
   for (const p of props) {
     result[p.name] = p.value;
@@ -177,10 +194,16 @@ export function parseTiled(json: unknown): TilemapData {
   }
 
   const map = createTilemapData(data.width, data.height, data.tilewidth, data.tileheight);
-  map.properties = parseProperties(data.properties);
+  map.properties = parseProperties(data.properties, 'map');
 
   // Parse tilesets
-  for (const ts of data.tilesets) {
+  for (let i = 0; i < data.tilesets.length; i++) {
+    const ts = data.tilesets[i]!;
+    if (ts === null || typeof ts !== 'object') {
+      throw new TilemapParseError(
+        `parseTiled: tilesets[${i}] is ${describeValue(ts)} — expected a tileset object.`,
+      );
+    }
     if (ts.source !== undefined) {
       throw new TilemapParseError(
         `parseTiled: external tileset "${ts.source}" is not supported. Embed tilesets on export (Tiled ▸ Map ▸ "Embed tilesets") or run it through \`flare tiled-to-flare\` (which embeds tilesets by default).`,
@@ -193,7 +216,7 @@ export function parseTiled(json: unknown): TilemapData {
 
     if (ts.tiles) {
       for (const tile of ts.tiles) {
-        const props = parseProperties(tile.properties);
+        const props = parseProperties(tile.properties, `tileset "${ts.name}" tile ${tile.id}`);
         if (Object.keys(props).length > 0) {
           tileProperties.set(tile.id, props);
         }
@@ -231,7 +254,13 @@ export function parseTiled(json: unknown): TilemapData {
   map.tilesets.sort((a, b) => a.firstGid - b.firstGid);
 
   // Parse layers
-  for (const layer of data.layers) {
+  for (let i = 0; i < data.layers.length; i++) {
+    const layer = data.layers[i]!;
+    if (layer === null || typeof layer !== 'object') {
+      throw new TilemapParseError(
+        `parseTiled: layers[${i}] is ${describeValue(layer)} — expected a layer object.`,
+      );
+    }
     map.layers.push(parseLayer(layer));
   }
 
@@ -274,7 +303,7 @@ function parseTileLayer(layer: TiledTileLayer): TileLayer {
     opacity: layer.opacity,
     offsetX: layer.offsetx ?? 0,
     offsetY: layer.offsety ?? 0,
-    properties: parseProperties(layer.properties),
+    properties: parseProperties(layer.properties, `layer "${layer.name}"`),
   };
 }
 
@@ -288,7 +317,7 @@ function parseObjectLayer(layer: TiledObjectLayer): ObjectLayer {
     width: obj.width,
     height: obj.height,
     rotation: obj.rotation,
-    properties: parseProperties(obj.properties),
+    properties: parseProperties(obj.properties, `layer "${layer.name}" object ${obj.id}`),
   }));
 
   return {
@@ -297,6 +326,6 @@ function parseObjectLayer(layer: TiledObjectLayer): ObjectLayer {
     objects,
     visible: layer.visible,
     opacity: layer.opacity,
-    properties: parseProperties(layer.properties),
+    properties: parseProperties(layer.properties, `layer "${layer.name}"`),
   };
 }

@@ -27,12 +27,7 @@ const SCOPE = '@flare-engine/';
  * explaining why the exception is legitimate.
  * @type {Array<{ pkg: string, dep: string, kind: 'phantom' | 'missing' | 'tier' }>}
  */
-const ALLOWLIST = [
-  // ui-fx is scaffolded with its final dependency set before the code that imports it
-  // (docs/plans/ui-fx-2026-11-tasks.md, Task 1). The entry goes when its first import lands,
-  // with the web fx host.
-  { pkg: 'ui-fx', dep: 'render-web', kind: 'phantom' },
-];
+const ALLOWLIST = [];
 
 /**
  * Lower number = lower tier. A package may depend only on EQUAL-or-lower tier.

@@ -61,6 +61,9 @@ export const render = (el: ReactNode): Rendered => {
   };
 };
 
+/** How many animation frames are requested and not yet run or cancelled. */
+export const pendingFrameCount = (): number => pendingFrames.size;
+
 /**
  * Runs `n` animation frames and flushes the React work they schedule. Each frame calls the
  * callbacks requested before it, with a timestamp on a virtual 60 Hz clock that starts at 0.

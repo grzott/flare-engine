@@ -98,10 +98,11 @@ describe('entries report which one they are', () => {
     expect((await import('../src/dom')).UI_FX_ENTRY).toBe('dom');
   });
 
-  test('./dom exports the provider, the factory, the wrappers and the hook', async () => {
+  test('./dom exports the provider, the factory, the wrappers, the hook and the FX host', async () => {
     expect(Object.keys(await import('../src/dom')).sort()).toEqual([
       'FlareButton',
       'FlareDiv',
+      'FlareFxHost',
       'FlareImg',
       'FlareLi',
       'FlareProvider',
@@ -129,6 +130,23 @@ describe('entries report which one they are', () => {
       'createSpritePool',
       'handOff',
     ]);
+  });
+
+  test('./fx on the web exports the host, the capture seam and the rasterizer', async () => {
+    expect(Object.keys(await import('../src/fx.web')).sort()).toEqual([
+      'CAPTURE_PADDING',
+      'FlareFxHost',
+      'UI_FX_ENTRY',
+      'captureView',
+      'modernScreenshotRasterizer',
+      'setWebRasterizer',
+    ]);
+  });
+
+  test('./dom and ./fx on the web give the same FX host', async () => {
+    expect((await import('../src/dom')).FlareFxHost).toBe(
+      (await import('../src/fx.web')).FlareFxHost,
+    );
   });
 });
 

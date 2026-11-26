@@ -50,7 +50,24 @@ export type CompiledShader = object;
 /** Uniform values keyed by name. Scalars for floats, arrays for vec/mat. */
 export type ShaderUniforms = Record<string, number | readonly number[]>;
 
-/** Custom shader effect — apply a pre-compiled runtime shader with uniforms. */
+/**
+ * Custom shader effect — fill the sprite's destination rect with a pre-compiled
+ * runtime shader. `water`, `fog` and `fire` are drawn the same way.
+ *
+ * The shader's output replaces the sprite: the atlas frame is not drawn and is
+ * not available to the shader, so the frame only gives the draw its place in
+ * the batch. The sprite's alpha and blend mode apply to the shader's output; of
+ * a per-sprite colour only the alpha does. `stretch` makes no difference.
+ *
+ * **Coordinates.** `main(float2 xy)` receives sprite-local coordinates in the
+ * units the destination is given in: `(0, 0)` is the top-left corner of the
+ * destination rect and `(dstW, dstH)` its bottom-right, wherever the sprite is
+ * on the canvas and whatever camera transform or pixel density is in force.
+ * Rotation and `flipX` / `flipY` transform the rect and its coordinates
+ * together, so the pattern turns and mirrors with the sprite. The size is not
+ * passed to a custom shader: one that needs normalized coordinates declares
+ * its own uniform and is given the size in `uniforms`.
+ */
 export interface CustomShaderEffect extends SpriteEffect {
   readonly type: 'custom';
   readonly shader: CompiledShader;

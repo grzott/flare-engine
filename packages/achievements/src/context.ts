@@ -5,7 +5,8 @@ import { type AchievementsProvider, NoopAchievementsProvider } from './provider.
  * React context carrying the active `AchievementsProvider`. Defaults to
  * `NoopAchievementsProvider`.
  */
-export const AchievementsContext = createContext<AchievementsProvider>(NoopAchievementsProvider);
+export const AchievementsContext =
+  /* @__PURE__ */ createContext<AchievementsProvider>(NoopAchievementsProvider);
 
 /** Hook returning the current `AchievementsProvider`. */
 export function useAchievements(): AchievementsProvider {

@@ -422,6 +422,14 @@ on web — `Skia.RuntimeShaderBuilder` and `ImageFilter.MakeRuntimeShaderWithChi
 created. `onRenderPostFx` + `setPostFxBinding` therefore work on web; `setPasses` still never fires
 there, so the tree stays the plain `<Image>`. Native postfx is unchanged.
 
+**WebGL context loss on web.** `GameView` listens for `webglcontextlost` (calling
+`preventDefault()`) and `webglcontextrestored` on the on-screen `<canvas>`, which it finds with
+`querySelector('canvas')` under its container `View`. At the restore, or on the first frame after a
+loss when no restore has arrived by then, it disposes the scene capture (the next frame builds a new
+offscreen surface) and remounts `<Canvas>` under a new `key`. Only a loss of the on-screen canvas's
+context is detected: the capture surface's canvas is internal to RN-Skia's `MakeOffscreen`, so a
+loss of that context alone is not seen (#605). Native is unchanged.
+
 | API                     | Description                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `<GameView>`            | Root component. Skia Canvas + game loop + input. Props: `config`, `onReady`, `style`, `children`, `safeArea?`. If `safeArea` is omitted, insets are read via `useContext` from `react-native-safe-area-context` (a required peer dep — a project without it fails to resolve at runtime) and fall back to `{ top: 0, right: 0, bottom: 0, left: 0 }` when no `<SafeAreaProvider>` ancestor is mounted. Unlike `useSafeAreaInsets()`, this never throws. `GameConfig.onRenderPostFx` is typed as `PostFxRenderHook` (receives `bridge` as 3rd arg). **Multi-touch:** GameView holds the RN responder for its container and routes all concurrent touches to `InputManager` via `nativeEvent.changedTouches`, each with its real `identifier` as the pointer id. Overlay controls (`<VirtualJoystick>`, `<VirtualButton>`) operate independently of this routing and do not conflict with it. |

@@ -287,9 +287,9 @@
       "measuredAt": "2026-11-08"
     },
     "@flare-engine/react": {
-      "ceiling": 76323,
-      "measured": 69384,
-      "measuredAt": "2026-11-04"
+      "ceiling": 89000,
+      "measured": 80909,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/render": {
       "ceiling": 174836,
@@ -550,6 +550,10 @@
     {
       "date": "2026-11-26",
       "reason": "physics ceiling raised 74205 -> 99678 B (measured 90616 x1.1), pending the owner's approval of the PR for issue #580. A new module, src/mask.ts, adds pixel-mask collision beside Shape and SolidGrid: the MaskShape and MaskPose types, createMaskShape, createMaskPose, isMaskSolidAt, maskBounds / maskBoundsInto, maskOverlapsBox, maskOverlapsSweptBox, maskOverlapsCircle, maskOverlapsMask, rayVsMask and maskStripStop, with a README section. Nothing existing changes. Measured 2026-11-26 against the 2026-11-25 measurement of main (67459 B, #592): the tarball grows 23157 B. It ships the new module in index.mjs, index.js and in both source maps' sourcesContent, plus its JSDoc in both .d.ts files, so it grows by more than an app bundles: dist/index.mjs is 32837 -> 44927 B raw. A feature, not a regression."
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "react ceiling raised 76323 -> 89000 B (measured 80909 x1.1), pending the owner's approval of the PR for issue #583. On the web, GameView now recovers from a lost WebGL context on its on-screen canvas: a new internal module, src/context-loss.ts (3206 B raw, not exported), holds the webglcontextlost / webglcontextrestored watch, and game-view.tsx (+39 lines) wires it to dispose the scene capture and remount <Canvas> under a new key. No exported symbol or .d.ts signature changes. The growth is not measured against main or a published tarball here: main passes check:perf-bytes, so main packs at or under 76323 B and this change adds at least 4586 B to the tarball; the last recorded measurement is 69384 B (2026-11-04), so part of the 11525 B since then belongs to earlier changes that stayed under the ceiling. The tarball ships the new code in index.mjs, index.js and in both source maps' sourcesContent, comments included, so it grows by more than an app bundles. A defect fix, not a regression."
     }
   ]
 }

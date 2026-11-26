@@ -69,6 +69,26 @@ let _origWarn: typeof console.warn | null = null;
 // Populated during mount(); reset in beforeEach.
 let _capturedContainerProps: Record<string, unknown> | null = null;
 
+// #583: the mocked useEffect normally runs an effect during render, before any
+// ref could be set. With _deferEffects the effects queue up instead and
+// flushEffects() runs them, so a test can fill the container View's ref first,
+// the order React itself guarantees. Reset in beforeEach.
+let _deferEffects = false;
+let _pendingEffects: Array<() => undefined | (() => void)> = [];
+// #583: the <Canvas> key state. The override is the epoch a mount renders with;
+// _setEpochArgs logs what the (non-re-rendering) mocked setter was handed.
+let _canvasEpochOverride: number | null = null;
+let _setEpochArgs: unknown[] = [];
+
+function flushEffects(): void {
+  const effects = _pendingEffects;
+  _pendingEffects = [];
+  for (const fn of effects) {
+    const cleanup = fn();
+    if (typeof cleanup === 'function') _effectCleanups.push(cleanup);
+  }
+}
+
 // Mock all external deps before import
 mock.module('react', () => ({
   createElement: () => null,
@@ -78,10 +98,23 @@ mock.module('react', () => ({
   useRef: (init: unknown) => ({ current: init }),
   useMemo: (fn: () => unknown) => fn(),
   useEffect: (fn: () => undefined | (() => void)) => {
+    if (_deferEffects) {
+      _pendingEffects.push(fn);
+      return;
+    }
     const cleanup = fn();
     if (typeof cleanup === 'function') _effectCleanups.push(cleanup);
   },
   useState: (init: unknown) => {
+    // The <Canvas> key epoch is the only useState seeded with a number.
+    if (typeof init === 'number') {
+      return [
+        _canvasEpochOverride ?? init,
+        (val: unknown) => {
+          _setEpochArgs.push(val);
+        },
+      ];
+    }
     // If this is the viewportSize state (initial value has w/h), allow override.
     if (
       _viewportOverride !== null &&
@@ -625,6 +658,10 @@ function unmountAll(): void {
 
 beforeEach(() => {
   _effectCleanups.length = 0;
+  _deferEffects = false;
+  _pendingEffects = [];
+  _canvasEpochOverride = null;
+  _setEpochArgs = [];
   _loopInstance = null;
   _hasPostFxBinding = false;
   _warnMessages = [];
@@ -1996,6 +2033,220 @@ describe('GameView — postfx passes with sampler children (#53)', () => {
     expect(findByType(tree, 'Rect')).toBeNull();
     expect(findByType(tree, 'Shader')).toBeNull();
     expect(findByType(tree, 'ImageShader')).toBeNull();
+    unmountAll();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #583: a lost WebGL context on the web left the field black for good. GameView
+// now finds the on-screen <canvas> under its container View, listens for
+// webglcontextlost / webglcontextrestored on it, and on a loss drops the scene
+// capture and remounts <Canvas> under a new key.
+//
+// The mocked setter does not re-render, so the remount is asserted in two
+// halves: the epoch setter is handed an updater that moves the epoch, and a
+// mount at another epoch renders <Canvas> under another key.
+// ---------------------------------------------------------------------------
+
+interface FakeCanvas {
+  addEventListener(type: string, fn: (ev: unknown) => void): void;
+  removeEventListener(type: string, fn: (ev: unknown) => void): void;
+  fire(type: string): { defaultPrevented: boolean };
+  listenerCount(): number;
+}
+
+// The same shape as packages/render-web/tests/postfx-surface.test.ts's fake canvas.
+function makeFakeCanvas(): FakeCanvas {
+  const listeners = new Map<string, Set<(ev: unknown) => void>>();
+  return {
+    addEventListener(type, fn) {
+      const set = listeners.get(type) ?? new Set();
+      set.add(fn);
+      listeners.set(type, set);
+    },
+    removeEventListener(type, fn) {
+      listeners.get(type)?.delete(fn);
+    },
+    fire(type) {
+      const ev = {
+        defaultPrevented: false,
+        preventDefault() {
+          ev.defaultPrevented = true;
+        },
+      };
+      for (const fn of [...(listeners.get(type) ?? [])]) fn(ev);
+      return ev;
+    },
+    listenerCount: () => [...listeners.values()].reduce((n, s) => n + s.size, 0),
+  };
+}
+
+/** Mount with the container View's ref pointing at a DOM-like node that holds `canvas`. */
+function mountWithCanvas(canvas: FakeCanvas | null): { tree: unknown; selectors: string[] } {
+  const selectors: string[] = [];
+  _deferEffects = true;
+  const tree = mount();
+  const ref = _capturedContainerProps?.ref as { current: unknown };
+  ref.current = {
+    querySelector(selector: string) {
+      selectors.push(selector);
+      return canvas;
+    },
+  };
+  flushEffects();
+  const camera = _cameraInstance!;
+  camera.viewportWidth = 320;
+  camera.viewportHeight = 240;
+  return { tree, selectors };
+}
+
+/** Apply what the epoch setter was last handed to `from`, as React would. */
+function lastEpochFrom(from: number): unknown {
+  const arg = _setEpochArgs.at(-1);
+  return typeof arg === 'function' ? (arg as (n: number) => number)(from) : arg;
+}
+
+describe('GameView — WebGL context loss on the web (#583)', () => {
+  it('web: listens for both events on the canvas found under the container View', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    const { selectors } = mountWithCanvas(canvas);
+
+    expect(selectors).toEqual(['canvas']);
+    expect(canvas.listenerCount()).toBe(2);
+    unmountAll();
+  });
+
+  it('web: calls preventDefault on the loss', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    mountWithCanvas(canvas);
+
+    expect(canvas.fire('webglcontextlost').defaultPrevented).toBe(true);
+    unmountAll();
+  });
+
+  it('web: loss then restore drops the capture, remounts <Canvas> and removes the old listeners (fail-old: nothing listens)', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    mountWithCanvas(canvas);
+    tick();
+    expect(_makeOffscreenCalls).toHaveLength(1);
+    expect(_setEpochArgs).toHaveLength(0);
+
+    canvas.fire('webglcontextlost');
+    canvas.fire('webglcontextrestored');
+
+    // The capture went with its surface, and the shared value no longer holds
+    // an image that dispose() released.
+    if (DISPOSE !== undefined) expect(_surfaceDisposeCount).toBe(1);
+    expect((_sharedValues[0] as { value: unknown }).value).toBeNull();
+    expect(_setEpochArgs).toHaveLength(1);
+    expect(lastEpochFrom(0)).toBe(1);
+    expect(canvas.listenerCount()).toBe(0);
+
+    // The next frame captures into a new offscreen surface.
+    tick();
+    expect(_makeOffscreenCalls).toHaveLength(2);
+    expect((_sharedValues[0] as { value: unknown }).value).not.toBeNull();
+    unmountAll();
+  });
+
+  it('web: a loss with no restore recovers on the next frame, and that frame draws into a new surface', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    mountWithCanvas(canvas);
+    tick();
+
+    canvas.fire('webglcontextlost');
+    expect(_setEpochArgs).toHaveLength(0);
+    expect(canvas.listenerCount()).toBe(2);
+
+    tick();
+
+    if (DISPOSE !== undefined) expect(_surfaceDisposeCount).toBe(1);
+    expect(_setEpochArgs).toHaveLength(1);
+    expect(lastEpochFrom(3)).toBe(4);
+    expect(canvas.listenerCount()).toBe(0);
+    expect(_makeOffscreenCalls).toHaveLength(2);
+    expect((_sharedValues[0] as { value: unknown }).value).not.toBeNull();
+    unmountAll();
+  });
+
+  it('web: the loss RN-Skia causes as it unmounts the old canvas starts no second remount', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    mountWithCanvas(canvas);
+    tick();
+    canvas.fire('webglcontextlost');
+    tick();
+    expect(_setEpochArgs).toHaveLength(1);
+
+    // What the unmounting <canvas> reports after its loseContext().
+    canvas.fire('webglcontextlost');
+    tick();
+    tick();
+
+    expect(_setEpochArgs).toHaveLength(1);
+    expect(_makeOffscreenCalls).toHaveLength(2);
+    unmountAll();
+  });
+
+  it('web: frames with no loss never touch the epoch or the capture', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    mountWithCanvas(canvas);
+
+    for (let i = 0; i < 10; i++) tick();
+
+    expect(_setEpochArgs).toHaveLength(0);
+    expect(_makeOffscreenCalls).toHaveLength(1);
+    expect(_surfaceDisposeCount).toBe(0);
+    unmountAll();
+  });
+
+  it('web: unmount removes the listeners', () => {
+    _mockPlatformOS = 'web';
+    const canvas = makeFakeCanvas();
+    mountWithCanvas(canvas);
+    expect(canvas.listenerCount()).toBe(2);
+
+    unmountAll();
+
+    expect(canvas.listenerCount()).toBe(0);
+  });
+
+  it('web: a container with no canvas under it mounts and runs without listening', () => {
+    _mockPlatformOS = 'web';
+    mountWithCanvas(null);
+    expect(() => tick()).not.toThrow();
+    expect(_setEpochArgs).toHaveLength(0);
+    unmountAll();
+  });
+
+  it('<Canvas> is keyed by the epoch, so a changed epoch remounts it', () => {
+    _viewportOverride = { w: 320, h: 240 };
+    const first = findByType(mount(), 'Canvas');
+    unmountAll();
+    _canvasEpochOverride = 1;
+    const second = findByType(mount(), 'Canvas');
+    unmountAll();
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(first!.key).toBe(0);
+    expect(second!.key).toBe(1);
+  });
+
+  it('native: the container is never queried and no listener is added', () => {
+    _mockPlatformOS = 'ios';
+    const canvas = makeFakeCanvas();
+    const { selectors } = mountWithCanvas(canvas);
+    tick();
+
+    expect(selectors).toEqual([]);
+    expect(canvas.listenerCount()).toBe(0);
+    expect(_setEpochArgs).toHaveLength(0);
     unmountAll();
   });
 });

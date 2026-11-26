@@ -44,8 +44,8 @@ changed in a given package, and it is not duplicated here.
 
 ## 0.4.19
 
-Fixes, additions and docs in 17 packages. The other 25 change only their version. There are two
-behaviour changes, in `render` and `scene`. This release also announces the twelve changes that
+Fixes, additions and docs in 19 packages. The other 23 change only their version. There are
+behaviour changes in `render`, `scene` and `localization`. This release also announces the twelve changes that
 0.5.0 makes ([ADR-0012](docs/design/adr-0012-0-5-0-breaking-set.md)), each in the JSDoc of what it
 changes. Nothing announced here changes in this release.
 
@@ -101,6 +101,16 @@ changes. Nothing announced here changes in this release.
   package now builds one output file per source module, and its `createContext` call is marked
   pure, so a bundler drops the context module with its `react` import. Checked with Bun's bundler;
   other bundlers were not tested. The `exports` maps are unchanged.
+- **`localization`**: `pluralCategory` classifies negative and non-integer counts the way
+  `Intl.PluralRules` does (#508), and `formatMessage` and `LocalizationManager.t` change with it.
+  **Behaviour change:** the sign of a count is ignored (`en -1` is now `one`); in `pl`, `ru`, `uk`
+  and `ar` a non-integer count is `other`; in `fr` a count below 2 is `one`; `pt` follows CLDR's
+  `pt` rule (`0` is `one`), while `pt-PT` keeps the English rule. Checked against `Intl` over the
+  integers -100 to 100 and ±0.5, ±1.5, ±2.5.
+- **`tilemap`**: `parseTiled` throws `TilemapParseError`, naming where, for a `properties` that
+  is not an array and for a `tilesets` or `layers` entry that is not an object (#509). Both used
+  to escape as a raw `TypeError`. A `properties` of `false`, `0`, `""` or a string, and a primitive
+  `tilesets` entry, are now rejected too; they used to parse into empty or junk values.
 - **`debug`**: new `createStatsTracker()`, returning a `StatsTrackerHandle` with the same members as
   the `StatsTracker` class (#177). The class is `@deprecated`.
 - **`ecs`**: the npm description and the README now describe the storage as `World` implements it:

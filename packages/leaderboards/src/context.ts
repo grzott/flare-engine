@@ -7,7 +7,8 @@ import { type LeaderboardsProvider, NoopLeaderboardsProvider } from './provider.
  * tree — consumers wrap their app in a `<LeaderboardsContext.Provider>` with
  * a real adapter when they need one.
  */
-export const LeaderboardsContext = createContext<LeaderboardsProvider>(NoopLeaderboardsProvider);
+export const LeaderboardsContext =
+  /* @__PURE__ */ createContext<LeaderboardsProvider>(NoopLeaderboardsProvider);
 
 /** Hook returning the current `LeaderboardsProvider`. */
 export function useLeaderboards(): LeaderboardsProvider {

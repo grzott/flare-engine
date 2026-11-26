@@ -5,7 +5,7 @@ import { type HapticsProvider, NoopHapticsProvider } from './provider.js';
  * React context carrying the active `HapticsProvider`. Defaults to
  * `NoopHapticsProvider`.
  */
-export const HapticsContext = createContext<HapticsProvider>(NoopHapticsProvider);
+export const HapticsContext = /* @__PURE__ */ createContext<HapticsProvider>(NoopHapticsProvider);
 
 /** Hook returning the current `HapticsProvider`. */
 export function useHaptics(): HapticsProvider {

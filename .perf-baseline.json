@@ -147,14 +147,14 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/achievements": {
-      "ceiling": 12098,
-      "measured": 10998,
-      "measuredAt": "2026-09-08"
+      "ceiling": 13312,
+      "measured": 12101,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/analytics": {
-      "ceiling": 9914,
-      "measured": 9012,
-      "measuredAt": "2026-09-08"
+      "ceiling": 11149,
+      "measured": 10135,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/animation": {
       "ceiling": 18354,
@@ -227,14 +227,14 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/haptics": {
-      "ceiling": 15352,
-      "measured": 13956,
-      "measuredAt": "2026-11-12"
+      "ceiling": 18853,
+      "measured": 17139,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/iap": {
-      "ceiling": 12142,
-      "measured": 11034,
-      "measuredAt": "2026-09-08"
+      "ceiling": 14464,
+      "measured": 13149,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/iap-revenuecat": {
       "ceiling": 12459,
@@ -247,9 +247,9 @@
       "measuredAt": "2026-09-08"
     },
     "@flare-engine/leaderboards": {
-      "ceiling": 11048,
-      "measured": 9919,
-      "measuredAt": "2026-09-08"
+      "ceiling": 12284,
+      "measured": 11167,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/localization": {
       "ceiling": 16320,
@@ -554,6 +554,10 @@
     {
       "date": "2026-11-26",
       "reason": "react ceiling raised 76323 -> 89000 B (measured 80909 x1.1), pending the owner's approval of the PR for issue #583. On the web, GameView now recovers from a lost WebGL context on its on-screen canvas: a new internal module, src/context-loss.ts (3206 B raw, not exported), holds the webglcontextlost / webglcontextrestored watch, and game-view.tsx (+39 lines) wires it to dispose the scene capture and remount <Canvas> under a new key. No exported symbol or .d.ts signature changes. The growth is not measured against main or a published tarball here: main passes check:perf-bytes, so main packs at or under 76323 B and this change adds at least 4586 B to the tarball; the last recorded measurement is 69384 B (2026-11-04), so part of the 11525 B since then belongs to earlier changes that stayed under the ceiling. The tarball ships the new code in index.mjs, index.js and in both source maps' sourcesContent, comments included, so it grows by more than an app bundles. A defect fix, not a regression."
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "Issue #506: byte ceilings raised for the five game-service packages (each measured x1.1), pending the owner's approval of the PR: achievements 12098 -> 13312 B (measured 12101), analytics 9914 -> 11149 B (10135), haptics 15352 -> 18853 B (17139), iap 12142 -> 14464 B (13149), leaderboards 11048 -> 12284 B (11167). Each package declares sideEffects: false but shipped a single dist/index.mjs that imports react and calls createContext at the top level, so a bundle using only a React-free export kept both. The createContext call is now annotated pure and tsdown builds with unbundle: true, one output file per source module, so a bundler can drop the context module and its react import whole; the annotation alone removed the call but left the import. The growth is packaging, not code: the same modules ship as separate .mjs, .js, source-map and declaration files, each with its own overhead in the tarball. Against the last recorded measurements (2026-09-08; haptics 2026-11-12) the tarballs grow 1103, 1123, 3183, 2115 and 1248 B. No exported symbol, exports-map entry or .d.ts signature changes. A defect fix, not a regression."
     }
   ]
 }

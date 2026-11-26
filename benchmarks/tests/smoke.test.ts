@@ -37,8 +37,12 @@ import {
 } from '../src/particles-draw.bench.js';
 import { buildSearchState, pathfindingBenches, searchRun } from '../src/pathfinding.bench.js';
 import {
+  buildCurtain,
   buildWorld,
+  curtainFrame,
+  curtainOutOfBoundsCount,
   physicsBenches,
+  physicsCurtainBenches,
   outOfBoundsCount as physicsOutOfBounds,
   stepAndMove,
 } from '../src/physics.bench.js';
@@ -116,6 +120,7 @@ const SUITES: Record<string, () => BenchStats[]> = {
   RenderSystem: () => renderSystemBenches(SMOKE_OVERRIDES),
   ParticlesDraw: () => particlesDrawBenches(SMOKE_OVERRIDES),
   ShapesDraw: () => shapesDrawBenches(SMOKE_OVERRIDES),
+  PhysicsCurtain: () => physicsCurtainBenches(SMOKE_OVERRIDES),
 };
 
 describe('microbench smoke', () => {
@@ -175,6 +180,18 @@ describe('workload stationarity', () => {
     const sparse = buildWorld(100, 'sparse');
     for (let i = 0; i < 600; i++) stepAndMove(sparse);
     expect(physicsOutOfBounds(sparse)).toBe(0);
+  });
+
+  test('the bullet curtain keeps its population inside the play field and keeps colliding', () => {
+    const state = buildCurtain(400, 40);
+    let starts = 0;
+    state.world.onCollisionStart.add(() => starts++);
+    for (let i = 0; i < 600; i++) curtainFrame(state);
+    expect(curtainOutOfBoundsCount(state)).toBe(0);
+    expect(state.world.size).toBe(441);
+    // Bolts meet shots and the ship all run long; a curtain with no contacts
+    // would time an empty narrowphase.
+    expect(starts).toBeGreaterThan(100);
   });
 
   // The animation, postfx and tilemap rows each claim a population that stays

@@ -75,6 +75,7 @@ export const EXPECTED_SUITE_TITLES = [
   'RenderSystem',
   'ParticlesDraw',
   'ShapesDraw',
+  'PhysicsCurtain',
 ] as const;
 
 /**
@@ -90,8 +91,11 @@ export const EXPECTED_SUITE_TITLES = [
  * `check:perf-freshness` treats as the instrument for every node suite, so
  * commit the emptied list first and capture the node window on top of that
  * commit: then one window covers it and no second one is needed.
+ *
+ * `PhysicsCurtain` (#579) is the bullet-curtain suite over `CollisionWorld`,
+ * added after that recapture; the next one removes it from this list.
  */
-export const PENDING_FIRST_CAPTURE: readonly string[] = [];
+export const PENDING_FIRST_CAPTURE: readonly string[] = ['PhysicsCurtain'];
 
 export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   ECS: [
@@ -175,6 +179,11 @@ export const EXPECTED_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   RenderSystem: ['render.system  1000 sprites / 3 z layers interleaved'],
   ParticlesDraw: ['particles.draw  1000 coloured + fading / 1 atlas'],
   ShapesDraw: ['shapes.draw  1000 baked instances / 8 specs / 1 atlas'],
+  PhysicsCurtain: [
+    'physics.curtain  setPosition  2000 bolts + 100 shots + 1 ship',
+    'physics.curtain  step         2000 bolts + 100 shots + 1 ship',
+    'physics.curtain  frame        2000 bolts + 100 shots + 1 ship',
+  ],
 };
 
 export const EXPECTED_HEAP_SCENARIOS: readonly string[] = [

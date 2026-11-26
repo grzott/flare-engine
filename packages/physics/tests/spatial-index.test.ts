@@ -250,3 +250,213 @@ describe('SpatialIndex', () => {
     expect(hitsBeforeBoundary).not.toContain(2);
   });
 });
+
+describe('SpatialIndex update and bucket bookkeeping (#579)', () => {
+  type Box = { x: number; y: number; width: number; height: number };
+
+  function overlaps(a: Box, b: Box): boolean {
+    return (
+      a.x + a.width > b.x && a.x < b.x + b.width && a.y + a.height > b.y && a.y < b.y + b.height
+    );
+  }
+
+  // mulberry32 — a seeded stream, so a failure reproduces.
+  function rng(seed: number): () => number {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function countCellLookups(idx: SpatialIndex<number>, fn: () => void): number {
+    const cells = (idx as unknown as { _cells: Map<number, unknown[]> })._cells;
+    const realGet = cells.get.bind(cells);
+    let calls = 0;
+    cells.get = ((key: number) => {
+      calls++;
+      return realGet(key);
+    }) as typeof cells.get;
+    try {
+      fn();
+    } finally {
+      cells.get = realGet;
+    }
+    return calls;
+  }
+
+  it('an update inside the same cells refreshes the bounds queries test against', () => {
+    const idx = new SpatialIndex<number>();
+    idx.insert(1, { x: 2, y: 2, width: 8, height: 8 });
+    idx.insert(2, { x: 40, y: 40, width: 8, height: 8 });
+
+    // Both rects sit in cell (0, 0); the move never leaves it.
+    idx.update(1, { x: 30, y: 30, width: 8, height: 8 });
+
+    expect(idx.query({ x: 0, y: 0, width: 12, height: 12 })).toEqual([]);
+    expect(idx.query({ x: 28, y: 28, width: 4, height: 4 })).toEqual([1]);
+    expect(idx.query({ x: 0, y: 0, width: 64, height: 64 }).sort()).toEqual([1, 2]);
+    expect(idx.size).toBe(2);
+  });
+
+  it('an update inside the same cells does not touch the buckets', () => {
+    const idx = new SpatialIndex<number>();
+    // Spans cells (0..1, 0..1).
+    idx.insert(1, { x: 50, y: 50, width: 30, height: 30 });
+
+    const same = countCellLookups(idx, () => {
+      idx.update(1, { x: 40, y: 45, width: 60, height: 50 });
+    });
+    expect(same).toBe(0);
+
+    const crossing = countCellLookups(idx, () => {
+      idx.update(1, { x: 70, y: 70, width: 10, height: 10 });
+    });
+    expect(crossing).toBeGreaterThan(0);
+    expect(idx.query({ x: 0, y: 0, width: 64, height: 64 })).toEqual([]);
+    expect(idx.query({ x: 64, y: 64, width: 64, height: 64 })).toEqual([1]);
+  });
+
+  it('an update that crosses cells leaves the old cells and enters the new ones', () => {
+    const idx = new SpatialIndex<number>();
+    idx.insert(1, { x: 10, y: 10, width: 10, height: 10 });
+    idx.insert(2, { x: 20, y: 20, width: 10, height: 10 });
+
+    idx.update(1, { x: 200, y: -200, width: 10, height: 10 });
+    expect(idx.query({ x: 0, y: 0, width: 64, height: 64 })).toEqual([2]);
+    expect(idx.query({ x: 190, y: -210, width: 30, height: 30 })).toEqual([1]);
+
+    // Grow across a 3x3 block of cells, then shrink back into one of them.
+    idx.update(1, { x: -10, y: -10, width: 140, height: 140 });
+    expect(idx.query({ x: 100, y: 100, width: 5, height: 5 })).toEqual([1]);
+    expect(idx.query({ x: -5, y: 100, width: 2, height: 2 })).toEqual([1]);
+    idx.update(1, { x: 70, y: 70, width: 5, height: 5 });
+    expect(idx.query({ x: 100, y: 100, width: 5, height: 5 })).toEqual([]);
+    expect(idx.query({ x: -5, y: 100, width: 2, height: 2 })).toEqual([]);
+    expect(idx.query({ x: 64, y: 64, width: 64, height: 64 })).toEqual([1]);
+  });
+
+  it('a crowded bucket stays consistent through removals and moves out of it', () => {
+    const idx = new SpatialIndex<number>();
+    const N = 200;
+    for (let i = 0; i < N; i++) {
+      idx.insert(i, { x: (i % 20) * 3, y: Math.floor(i / 20) * 6, width: 2, height: 2 });
+    }
+    const cell = { x: 0, y: 0, width: 64, height: 64 };
+    expect(idx.query(cell).length).toBe(N);
+
+    // Remove from the front, the middle and the back of the bucket.
+    const removed = new Set([0, 1, 97, 98, 99, 198, 199]);
+    for (const id of removed) expect(idx.remove(id)).toBe(true);
+    // Move every third survivor into the next cell over.
+    const moved = new Set<number>();
+    for (let i = 0; i < N; i += 3) {
+      if (removed.has(i)) continue;
+      idx.update(i, { x: 70 + (i % 20), y: 5, width: 2, height: 2 });
+      moved.add(i);
+    }
+
+    const expectedHere: number[] = [];
+    for (let i = 0; i < N; i++) if (!removed.has(i) && !moved.has(i)) expectedHere.push(i);
+    expect(idx.query(cell).sort((a, b) => a - b)).toEqual(expectedHere);
+    expect(idx.query({ x: 64, y: 0, width: 64, height: 64 }).sort((a, b) => a - b)).toEqual(
+      [...moved].sort((a, b) => a - b),
+    );
+    expect(idx.size).toBe(N - removed.size);
+
+    // Every survivor can still be removed exactly once.
+    for (let i = 0; i < N; i++) expect(idx.remove(i)).toBe(!removed.has(i));
+    expect(idx.size).toBe(0);
+    expect(idx.query({ x: -1000, y: -1000, width: 2000, height: 2000 })).toEqual([]);
+  });
+
+  it('matches a brute-force overlap check across random inserts, updates and removals', () => {
+    const next = rng(0x5ca1ab1e);
+    const idx = new SpatialIndex<number>();
+    const model = new Map<number, Box>();
+    const IDS = 120;
+
+    const randomBox = (): Box => {
+      // Mostly small boxes, some spanning several cells, around the origin so
+      // negative cells and the zero boundary are exercised.
+      const big = next() < 0.15;
+      return {
+        x: next() * 600 - 300,
+        y: next() * 600 - 300,
+        width: big ? next() * 250 : next() * 20,
+        height: big ? next() * 250 : next() * 20,
+      };
+    };
+
+    for (let op = 0; op < 6000; op++) {
+      const id = Math.floor(next() * IDS);
+      const roll = next();
+      if (roll < 0.25) {
+        const box = randomBox();
+        idx.insert(id, box);
+        model.set(id, box);
+      } else if (roll < 0.7) {
+        const prev = model.get(id);
+        // Half the updates are small nudges that mostly stay in the same cells.
+        const box =
+          prev !== undefined && next() < 0.5
+            ? { ...prev, x: prev.x + next() * 6 - 3, y: prev.y + next() * 6 - 3 }
+            : randomBox();
+        idx.update(id, box);
+        if (prev !== undefined) model.set(id, box);
+      } else if (roll < 0.85) {
+        expect(idx.remove(id)).toBe(model.delete(id));
+      }
+
+      if (op % 7 === 0) {
+        const q = randomBox();
+        const got = idx.query(q).sort((a, b) => a - b);
+        const want: number[] = [];
+        for (const [k, box] of model) if (overlaps(box, q)) want.push(k);
+        expect(got).toEqual(want.sort((a, b) => a - b));
+      }
+      expect(idx.size).toBe(model.size);
+    }
+
+    const everything = idx.query({ x: -1000, y: -1000, width: 2000, height: 2000 });
+    expect(everything.sort((a, b) => a - b)).toEqual([...model.keys()].sort((a, b) => a - b));
+  });
+
+  it('non-finite updates terminate and the item is found again once finite', () => {
+    const idx = new SpatialIndex<number>();
+    idx.insert(1, { x: 5, y: 5, width: 10, height: 10 });
+    idx.insert(2, { x: 6, y: 6, width: 10, height: 10 });
+    const near = { x: 0, y: 0, width: 20, height: 20 };
+
+    idx.update(1, { x: Number.NaN, y: 5, width: 10, height: 10 });
+    expect(idx.query(near)).toEqual([2]);
+    // A second NaN update must not unlink what the first one never linked.
+    idx.update(1, { x: Number.NaN, y: Number.NaN, width: 10, height: 10 });
+    expect(idx.query(near)).toEqual([2]);
+    idx.update(1, { x: 5, y: 5, width: 10, height: 10 });
+    expect(idx.query(near).sort()).toEqual([1, 2]);
+
+    idx.update(1, { x: Number.NEGATIVE_INFINITY, y: 5, width: 10, height: 10 });
+    idx.update(1, { x: Number.NEGATIVE_INFINITY, y: 6, width: 10, height: 10 });
+    expect(idx.query(near)).toEqual([2]);
+    idx.update(1, { x: 5, y: 5, width: 10, height: 10 });
+    expect(idx.query(near).sort()).toEqual([1, 2]);
+
+    expect(idx.remove(1)).toBe(true);
+    expect(idx.remove(2)).toBe(true);
+    expect(idx.query(near)).toEqual([]);
+  });
+
+  it('clear drops every item and the index is usable again', () => {
+    const idx = new SpatialIndex<number>();
+    for (let i = 0; i < 10; i++) idx.insert(i, { x: i, y: i, width: 100, height: 100 });
+    idx.clear();
+    expect(idx.size).toBe(0);
+    idx.insert(3, { x: 0, y: 0, width: 10, height: 10 });
+    idx.update(3, { x: 2, y: 2, width: 10, height: 10 });
+    expect(idx.query({ x: 0, y: 0, width: 200, height: 200 })).toEqual([3]);
+  });
+});

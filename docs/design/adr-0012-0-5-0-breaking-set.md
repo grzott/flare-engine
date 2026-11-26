@@ -1,7 +1,9 @@
-# ADR-0012: 0.5.0 makes eleven breaking changes, each announced in a 0.4.x patch first, and `pop()` keeps its default
+# ADR-0012: 0.5.0 makes twelve breaking changes, each announced in a 0.4.x patch first, and `pop()` keeps its default
 
 - **Status**: Accepted <!-- owner, 2026-11-26 -->
 - **Date**: 2026-11-25
+- **Amended**: 2026-11-26. This adds row 12 (#100), which the first version missed although the owner
+  had moved #100 to 0.5.0 on 2026-11-12. It also gives row 8's `'hazard'` offset exactly.
 - **Consumer impact**: breaking
 - **Release level**: minor
 
@@ -13,9 +15,9 @@ and Berek.
 
 `docs/plans/versioning-and-announcements.md` holds breaking changes back for the planned minor,
 `0.5.0`. It removes a public symbol no earlier than the minor after a patch that marked it
-`@deprecated`, and it raises a peer floor only after a patch announced the new floor. Ten issues in
-the `0.5.0` milestone wait on an ADR: #172, #173, #175, #176, #177, #178, #179, #236, #375 and #426.
-`check:bump` refuses the minor changeset until an accepted ADR is cited. This ADR covers all ten, so
+`@deprecated`, and it raises a peer floor only after a patch announced the new floor. Eleven issues in
+the `0.5.0` milestone wait on an ADR: #100, #172, #173, #175, #176, #177, #178, #179, #236, #375 and
+#426. `check:bump` refuses the minor changeset until an accepted ADR is cited. This ADR covers all eleven, so
 that one document records what 0.5.0 changes, and so the announcement patch can ship before the cut. `@flare-engine/engine` re-exports every package, so each
 removal below also leaves the umbrella barrel.
 
@@ -72,6 +74,18 @@ Not yet announced:
   (`packages/react/package.json:68-69`, `packages/engine/package.json:82-83`). Reanimated's own
   compatibility table pairs 4.0.x only with worklets 0.4.x; worklets 0.7 needs Reanimated 4.1.
   Verified in #375 against `compatibility.json` at Reanimated `4.7.1`.
+- **`BitmapFont.kernings` (#100)** is keyed `first << 16 | second`, and the JSDoc of that exported
+  member documents the formula (`packages/render/src/sprite-font.ts:35`, `:75`, `:89`).
+  - `measureText` and `drawText` read text with `charCodeAt` (`:97`, `:126`). A glyph whose id is above
+    0xFFFF (emoji, supplementary-plane CJK) is therefore never matched, and the 16-bit shift aliases
+    kerning pairs above it.
+  - The fix in #322 reads text by code point and keys kerning `first * 0x200000 + second`. A code
+    point needs 21 bits. On 2026-11-12 the owner ruled the key change breaking: code that fills or
+    reads the map by hand with the documented formula would silently lose every kerning pair. #322
+    was closed unmerged; its diff stays at `refs/pull/322/head`.
+  - No known consumer touches the map: Pan Tvardowski (`698fa679`) and Berek (`3c81a15`) have no
+    `kernings` use, and flare-engine-page (`6dd954f`) has only its generated API pages. Checked
+    2026-11-26.
 - **`SceneManager.pop()` (#179)** destroys the popped scene unless `{ keep: true }`
   (`packages/scene/src/scene-manager.ts:170-180`), an opt-in since 0.4.9. Berek asked for keep as the
   default. No consumer calls the opt-in: Pan Tvardowski, flare-engine-page and Berek have no
@@ -79,7 +93,7 @@ Not yet announced:
 
 ## Decision
 
-`0.5.0` makes the eleven changes in the table, and only these. Each one not yet announced is announced in
+`0.5.0` makes the twelve changes in the table, and only these. Each one not yet announced is announced in
 one `0.4.x` patch before the cut: a `@deprecated` JSDoc tag naming the replacement on each symbol that
 goes, a JSDoc line naming the new default on each default that flips, and a changeset that lists them
 all. A change whose announcement has not been published when the 0.5.0 version PR is cut moves to the
@@ -98,6 +112,7 @@ next minor instead of shipping unannounced. The pop default (#179) does not flip
 | 9 | #426 | particles | `drawParticles`' `color` option defaults to `true`. | the announcement patch |
 | 10 | #178 | audio | `AudioContextLike.createBufferSource()` returns `AudioBufferSourceNodeLike \| PromiseLike<AudioBufferSourceNodeLike>`. | the announcement patch |
 | 11 | #375 | react, engine | The `react-native-reanimated` peer floor rises to `>=4.1.0`. | the announcement patch |
+| 12 | #100 | render | `BitmapFont.kernings` is keyed `first * 0x200000 + second`, and `measureText` and `drawText` read text by code point, so glyph ids above 0xFFFF measure, draw and kern. | the announcement patch |
 
 How each change is made:
 
@@ -116,8 +131,9 @@ How each change is made:
   - ecs is tier 1, so every bench lane is recaptured after the change.
 - **Row 8, the migration.**
   - `'friendly'` becomes `{ color: friendlyGlowArgb(), width: 3 }`, which draws the same pixels.
-  - `'hazard'` becomes `{ color: hazardGlowArgb(), width: 1 }`, which uses the same colour and about
-    the same amount of ink, but is one ring whose inner edge sits about 1.5 px further out.
+  - `'hazard'` becomes `{ color: hazardGlowArgb(), width: 1 }`, which uses the same colour and the same
+    1 px of stroke, but is one ring. Its inner edge moves from `r + 0.75` to `r + 2.5`; the ring's centre
+    moves 1.5 px.
   - `friendlyGlowArgb`, `hazardGlowArgb`, `applyFriendlyGlow` and `applyHazardGlow` stay exported.
     `applyHazardGlow` still draws the two-ring look for a caller that draws imperatively.
 - **Row 10, the audio contract.**
@@ -129,6 +145,9 @@ How each change is made:
   - `AudioState` is unchanged.
 - **Row 11, the floor.** Both manifests and `check:peers` agree on `>=4.1.0`. `@flare-engine/ui-fx`
   already declares `>=4.7.0` and is unaffected.
+- **Row 12, the kerning key.** `parseBMFontJSON` and `getKerning` move to the new key together, so a
+  map built and read through them behaves the same for every BMP pair. The code-point iteration is a
+  defect fix on its own; it ships in 0.5.0 only because it lands with the key change.
 
 ## Consumer impact
 
@@ -157,7 +176,10 @@ How each change is made:
       `SpriteBatch`, a `drawParticles` call becomes one run per image, no longer merged with
       neighbouring uncoloured sprites. A custom `flush` or `DrawSurfaceLike` that ignores `colors`
       draws particles at one alpha, or fully opaque.
-    - **Row 8, `'hazard'` only.** The ring moves about 1.5 px outward.
+    - **Row 8, `'hazard'` only.** The ring moves outward: its inner edge by 1.75 px, its centre by
+      1.5 px.
+    - **Row 12.** A kerning map filled or read by hand with `first << 16 | second` finds no pairs.
+      Text still draws, without kerning. `Map<number, number>` gives no compile error.
 - **Migration.**
 
   | Row | Edit |
@@ -173,6 +195,7 @@ How each change is made:
   | 9 | Pass `{ color: false }` to keep the old draw. |
   | 10 | `await` the result, or narrow it, wherever your code calls `createBufferSource()` itself. |
   | 11 | Install `react-native-reanimated` 4.1 or newer. Expo SDK 58 already pins 4.7.1. |
+  | 12 | Build and read `kernings` through `parseBMFontJSON` and `getKerning`. A map you build by hand is keyed `first * 0x200000 + second`. |
 
 - **Why now.** 0.5.0 is the planned minor (`versioning-and-announcements.md`, "Reserved numbers").
   Each item already waits on it, and the announcement patch has to publish before the cut, or its
@@ -183,13 +206,13 @@ How each change is made:
 
 ## Alternatives considered
 
-- **One ADR per issue.** This would mean ten documents with the same context, the same release, and
-  one posting obligation between them. It would also make the 0.5.0 changeset cite ten numbers.
+- **One ADR per issue.** This would mean eleven documents with the same context, the same release, and
+  one posting obligation between them. It would also make the 0.5.0 changeset cite eleven numbers.
   A single ADR that lists each change keeps the record in one place. Its rows can still be split off,
   by superseding the row, if one of them needs its own reversal.
 - **Remove only `'friendly'` (row 8)**, since its migration is exact, and keep `'hazard'` until
   `GlowSpec` can draw two rings. That keeps half of one game's palette in the engine for a
-  difference of about 1.5 px. Rejected by the owner on 2026-11-25.
+  difference of under 2 px. Rejected by the owner on 2026-11-25.
 - **Always return a `Promise` from `createBufferSource()` (row 10).** That gives one code path, but
   every play on native allocates a promise and starts a microtask later. Rejected.
 - **Document a Reanimated, worklets and RN support matrix instead of raising the floor (row 11).**
@@ -199,6 +222,10 @@ How each change is made:
   pushed again or the manager is destroyed. An app that pushes and pops many distinct scenes would
   retain all of them. No known consumer has used the opt-in since it shipped in 0.4.9. Declined, and #179
   closes with this ADR as its reason.
+- **Keep the old kerning key for BMP pairs and give astral pairs a disjoint range, or a second map
+  (row 12).** Either would fix #100 in a patch without a breaking change, at the cost of two key
+  formulas in one map, or two maps, for as long as the engine supports BMFont. Recorded on #100 and
+  rejected by the owner (2026-11-12, confirmed 2026-11-26).
 - **Lift the 32-type cap with a fixed four-word (128-type) mask (row 3)**, the original #173 plan.
   "Four words" would then be part of the contract, so the next raise would be its own breaking minor.
   Rejected in #173's 2026-11-17 scope additions.
@@ -216,3 +243,9 @@ How each change is made:
   migration recipe, written into the shapes README; no reversal is needed.
 - **`react-native-audio-api` makes `createBufferSource()` synchronous on the web.** The union stays,
   since it is the wider type, and the thenable path is kept for other async contexts.
+
+<!-- symbols-ok: e4290aa5, ContextState, charCodeAt, ComponentDef.word, FakeContext, DomBufferSourceLike -->
+<!-- reason: none is a Flare export. e4290aa5 is the commit the context was checked at;
+     ContextState is react-native-audio-api's type; charCodeAt is String.prototype's; ComponentDef.word
+     is the member this ADR decides not to add; FakeContext and DomBufferSourceLike are
+     flare-engine-page's own types. -->

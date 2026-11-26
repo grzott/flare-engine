@@ -428,6 +428,15 @@ describe('per-scenario deviation overrides', () => {
     expect(aggregateRuns(window(PLAIN, perRunUs)).ok).toBe(false);
   });
 
+  // The 0.4.19 step-2 window at 3a6e002a (2026-11-26), refused on this row alone.
+  test('folds the refused 2026-11-26 window of the curtain step row, and only that row', () => {
+    const perRunUs = [48.0, 57.3, 49.3, 59.7, 56.1];
+    const step = 'physics.curtain  step         2000 bolts + 100 shots + 1 ship';
+    const frame = 'physics.curtain  frame        2000 bolts + 100 shots + 1 ship';
+    expect(aggregateRuns(window(step, perRunUs)).ok).toBe(true);
+    expect(aggregateRuns(window(frame, perRunUs)).ok).toBe(false);
+  });
+
   // The first window the 2026-11-19 node recapture (#472) refused on churn 5000, runs 1-5 at ea64817.
   test('folds the refused 2026-11-19 churn 5000 window under its override', () => {
     const perRunUs = [283.0, 252.9, 319.1, 248.8, 213.2];

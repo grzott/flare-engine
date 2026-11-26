@@ -1,6 +1,6 @@
 # ADR-0012: 0.5.0 makes eleven breaking changes, each announced in a 0.4.x patch first, and `pop()` keeps its default
 
-- **Status**: Proposed <!-- Proposed | Accepted | Superseded by ADR-NNNN -->
+- **Status**: Accepted <!-- owner, 2026-11-26 -->
 - **Date**: 2026-11-25
 - **Consumer impact**: breaking
 - **Release level**: minor

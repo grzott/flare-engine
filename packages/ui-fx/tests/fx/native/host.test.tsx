@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { createRef, StrictMode } from 'react';
 import type { View } from 'react-native';
-import { shatter } from '../../../src/core/presets';
+import { dust, shatter } from '../../../src/core/presets';
 import type { FxRuntime } from '../../../src/runtime/contracts';
 import type { FlareContextValue } from '../../../src/runtime/provider-context';
 import { installDom, type Rendered, render } from '../../support/dom';
@@ -148,7 +148,7 @@ describe('FlareFxHost', () => {
       ),
     );
     if (fx === null) throw new Error('no runtime');
-    const { events } = start(fx, shatter());
+    const { events } = start(fx, dust());
     await settle();
 
     expect(events).toEqual(['fallback']);

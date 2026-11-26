@@ -34,11 +34,18 @@ export interface WebEffect {
   /** How many sprites a run draws, at least one. Called once per run. */
   sprites(run: WebRunState): number;
   /**
+   * The image the run's sprites are cut from, drawn from `capture`, the uploaded capture. Called
+   * once per run, after `sprites`. The runtime deletes `capture` when this returns, and the image
+   * it returned when the run ends. A throw makes the run fall back. Without `bake` the sprites
+   * are cut from the capture itself.
+   */
+  bake?(run: WebRunState, kit: CanvasKit, capture: CKImage): CKImage;
+  /**
    * Write the run's sprites into `pool` as they are `time` seconds after its first frame, and
    * return whether the effect is still playing. On `false` nothing is drawn and the run ends.
    *
-   * Source rects are in image pixels. Transforms are in layout pixels from the capture's top left
-   * corner, so the element's own box starts at (`image.padding`, `image.padding`), and a scale of
+   * Source rects are in pixels of the image the sprites are cut from. Transforms are in layout
+   * pixels from the capture's top left corner, so the element's own box starts at (`image.padding`, `image.padding`), and a scale of
    * `1 / image.pixelRatio` draws the capture at rest. Sprites past the run's own count are drawn
    * at zero scale whatever is written to them.
    *
@@ -327,7 +334,15 @@ export function createWebFxRuntime(o: {
         const count = effect.sprites(state);
         const pool = createAtlasPool(k, count);
         // `captureView` puts a canvas or a bitmap in `handle`. A tainted one throws here.
-        const atlas = k.MakeImageFromCanvasImageSource(image.handle as CanvasImageSource);
+        let atlas = k.MakeImageFromCanvasImageSource(image.handle as CanvasImageSource);
+        if (effect.bake !== undefined) {
+          const uploaded = atlas;
+          try {
+            atlas = effect.bake(state, k, uploaded);
+          } finally {
+            uploaded.delete();
+          }
+        }
         mine = {
           state,
           effect,
@@ -341,7 +356,7 @@ export function createWebFxRuntime(o: {
           interrupt,
         };
       } catch (error) {
-        warnOnce('upload', `A capture could not be uploaded. ${String(error)}`);
+        warnOnce('upload', `A capture could not be uploaded or baked. ${String(error)}`);
         fallBack();
         return;
       }

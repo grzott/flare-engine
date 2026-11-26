@@ -8,6 +8,8 @@ import {
 } from '../../runtime/provider-context';
 import { createWebFxRuntime, type WebEffects } from '../../web/fx-runtime';
 import { resolveCanvasKit } from '../../web/kit';
+import { isFragmentPreset } from '../fragments';
+import { shatterEffect } from './effects/shatter';
 
 export interface FlareFxHostProps {
   children?: ReactNode;
@@ -123,8 +125,8 @@ function nestedHost(
   return <WebFxHost canvasKit={canvasKit} wasmUrl={wasmUrl} effects={effects} />;
 }
 
-// No preset has a web effect yet, so every run plays its live fallback.
-const NO_EFFECTS: WebEffects = () => null;
+// A preset without a web effect plays its live fallback.
+const EFFECTS: WebEffects = (preset) => (isFragmentPreset(preset) ? shatterEffect : null);
 
 /**
  * The snapshot-effect host on the web, under react-native-web and plain React DOM alike: it gives
@@ -139,7 +141,7 @@ const NO_EFFECTS: WebEffects = () => null;
  */
 export function FlareFxHost({ children, canvasKit, wasmUrl }: FlareFxHostProps): ReactNode {
   return (
-    <WebFxHost canvasKit={canvasKit} wasmUrl={wasmUrl} effects={NO_EFFECTS}>
+    <WebFxHost canvasKit={canvasKit} wasmUrl={wasmUrl} effects={EFFECTS}>
       {children}
     </WebFxHost>
   );

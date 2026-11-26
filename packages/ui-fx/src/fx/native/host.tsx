@@ -41,7 +41,9 @@ import {
   type FlareContextValue,
   useFlareContext,
 } from '../../runtime/provider-context';
+import { isFragmentPreset } from '../fragments';
 import { acquireFastDisplayMode } from './display-mode';
+import { fragmentEffect } from './layers/shatter';
 import { createSpritePool, SPRITE_POOL_CAPACITY, type SpritePool } from './pool';
 
 declare const process: { env: { NODE_ENV?: string } } | undefined;
@@ -366,8 +368,13 @@ function nestedHost(android: FlareFxHostProps['android'], effects: NativeEffects
   return <NativeFxHost android={android} effects={effects} />;
 }
 
-// No preset has a native effect yet, so every run plays its live fallback.
-const NO_EFFECTS: NativeEffects = () => null;
+// A preset without a native effect plays its live fallback. So do `grid` and `cells`, the
+// rectangular meshes: `fragmentEffect` claims their pool sprites, but no layer draws them.
+const EFFECTS: NativeEffects = (preset) => {
+  if (!isFragmentPreset(preset)) return null;
+  const { pattern } = preset.fragment;
+  return pattern === 'grid' || pattern === 'cells' ? null : fragmentEffect;
+};
 
 /**
  * The snapshot-effect host on React Native: it gives the elements below it the runtime that
@@ -379,7 +386,7 @@ const NO_EFFECTS: NativeEffects = () => null;
  */
 export function FlareFxHost({ children, android }: FlareFxHostProps): ReactNode {
   return (
-    <NativeFxHost android={android} effects={NO_EFFECTS}>
+    <NativeFxHost android={android} effects={EFFECTS}>
       {children}
     </NativeFxHost>
   );

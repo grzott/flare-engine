@@ -1,5 +1,5 @@
 import { mock } from 'bun:test';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 type TimingCallback = (finished?: boolean) => void;
 
@@ -30,7 +30,14 @@ type StyleWorklet = () => Record<string, unknown>;
 
 const linear = (x: number): number => x;
 
+interface FrameInfo {
+  timestamp: number;
+  timeSincePreviousFrame: number | null;
+  timeSinceFirstFrame: number;
+}
+
 const running = new Map<object, Running>();
+const frameCallbacks = new Set<{ current: (info: FrameInfo) => void }>();
 const worklets = new WeakMap<object, StyleWorklet>();
 
 const isTimingRequest = (value: unknown): value is TimingRequest =>
@@ -111,6 +118,11 @@ export const reanimated = {
       }
     }
   },
+  /** One UI frame at `timestamp` milliseconds: calls every mounted `useFrameCallback`. */
+  frame(timestamp: number): void {
+    const info = { timestamp, timeSincePreviousFrame: null, timeSinceFirstFrame: 0 };
+    for (const callback of [...frameCallbacks]) callback.current(info);
+  },
   /** The animated part of a `style` prop, evaluated now. */
   styleOf(style: unknown): Record<string, unknown> {
     const parts = Array.isArray(style) ? style.flat(Number.POSITIVE_INFINITY) : [style];
@@ -141,6 +153,27 @@ const reanimatedModule = {
     worklets.set(style, worklet);
     return style;
   },
+  useDerivedValue<T>(worklet: () => T): { readonly value: T } {
+    const latest = useRef(worklet);
+    latest.current = worklet;
+    const derived = useRef<{ readonly value: T } | null>(null);
+    derived.current ??= {
+      get value(): T {
+        return latest.current();
+      },
+    };
+    return derived.current;
+  },
+  useFrameCallback(callback: (info: FrameInfo) => void): void {
+    const latest = useRef(callback);
+    latest.current = callback;
+    useEffect(() => {
+      frameCallbacks.add(latest);
+      return () => {
+        frameCallbacks.delete(latest);
+      };
+    }, []);
+  },
   withTiming(
     toValue: number,
     config?: TimingRequest['config'],
@@ -169,7 +202,8 @@ const workletsModule = {
  * module under test.
  *
  * A shared value is a plain `{ value }`. A `withTiming` assigned to one stays where it is until
- * `advance` or `flush`; `scheduleOnRN` calls straight through.
+ * `advance` or `flush`; `scheduleOnRN` calls straight through. A derived value runs its worklet
+ * on every read, and a frame callback runs on `reanimated.frame`.
  */
 export const installReanimatedMock = (): typeof reanimated => {
   mock.module('react-native-reanimated', () => reanimatedModule);

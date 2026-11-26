@@ -67,7 +67,7 @@ See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-
 
 ## React Native New Architecture
 
-Flare's headless packages are architecture-agnostic pure TypeScript. **`@flare-engine/react` requires the New Architecture.** It peers `react-native-reanimated >= 4.0.0` and `react-native-worklets >= 0.7.0`, and Reanimated 4 is New-Architecture-only — so an app using `<GameView>` must run with `newArchEnabled=true`.
+Flare's headless packages are architecture-agnostic pure TypeScript. **`@flare-engine/react` requires the New Architecture.** It peers `react-native-reanimated >= 4.0.0` (`>= 4.1.0` from 0.5.0, since worklets 0.7 needs Reanimated 4.1) and `react-native-worklets >= 0.7.0`, and Reanimated 4 is New-Architecture-only — so an app using `<GameView>` must run with `newArchEnabled=true`.
 
 In practice this costs nothing: the New Architecture has been RN's default since 0.76, and every `@flare-engine/create` template pins an Expo SDK whose React Native forces it on.
 

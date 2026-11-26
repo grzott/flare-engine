@@ -167,17 +167,25 @@ export function easeInOutBounce(t: number): number {
 // The `spring*` names are the Back curves above, kept for compatibility: one
 // overshoot, no oscillation. They are not damped springs.
 
-/** Alias of {@link easeInBack}, kept for compatibility. A Back curve, not a damped spring. */
+/**
+ * Alias of {@link easeInBack}, kept for compatibility. A Back curve, not a damped spring.
+ * @deprecated Removed in 0.5.0. Use {@link easeInBack}, which returns the same value.
+ */
 export function springIn(t: number): number {
   return easeInBack(t);
 }
-/** Alias of {@link easeOutBack}, kept for compatibility. A Back curve, not a damped spring. */
+/**
+ * Alias of {@link easeOutBack}, kept for compatibility. A Back curve, not a damped spring.
+ * @deprecated Removed in 0.5.0. Use {@link easeOutBack}, which returns the same value.
+ */
 export function springOut(t: number): number {
   return easeOutBack(t);
 }
 /**
  * The Back in-out curve under a second name, kept for compatibility. A Back
  * curve, not a damped spring.
+ * @deprecated Removed in 0.5.0. Use {@link easeInOutBack}, the same curve: the two
+ * round differently only where the result is subnormal.
  */
 export function springInOut(t: number): number {
   if (t < 0.5) {

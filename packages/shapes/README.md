@@ -66,7 +66,7 @@ function demo(skia: Skia, canvas: SkCanvas, paint: SkPaint): void {
 ## Composing entities
 
 ```ts
-import type { ShapeSpec } from '@flare-engine/shapes';
+import { friendlyGlowArgb, type ShapeSpec } from '@flare-engine/shapes';
 
 // A ship: hull + 2 weapons + engine, painted back-to-front.
 const playerShip: ShapeSpec = {
@@ -81,7 +81,7 @@ const playerShip: ShapeSpec = {
 
 // A pickup: ring + inner glow circle.
 const amulet: readonly ShapeSpec[] = [
-  { kind: 'ring', r: 9, stroke: 0xffc9a24a, strokeWidth: 2, glow: 'friendly' },
+  { kind: 'ring', r: 9, stroke: 0xffc9a24a, strokeWidth: 2, glow: { color: friendlyGlowArgb(), width: 3 } },
   { kind: 'circle', r: 3, fill: 0xffff2b2b },
 ];
 ```
@@ -125,6 +125,7 @@ import { SpriteBatch } from '@flare-engine/render';
 import {
   bakeShapeAtlas,
   drawBakedShape,
+  friendlyGlowArgb,
   rebakeShapeAtlas,
   type ShapeAtlasSkia,
   type ShapeSpec,
@@ -138,7 +139,7 @@ declare const pixelDensity: number;
 declare const zoom: number;
 
 const specs: ShapeSpec[] = [
-  { kind: 'circle', r: 10, fill: 0xffc9a24a, glow: 'friendly' },
+  { kind: 'circle', r: 10, fill: 0xffc9a24a, glow: { color: friendlyGlowArgb(), width: 3 } },
   { kind: 'star', points: 5, rOuter: 12, rInner: 5, fill: 0xffff2b2b, stroke: 0xff000000 },
 ];
 
@@ -203,6 +204,8 @@ Set `glow` on any primitive and `drawShape` paints a ring behind the body. Two n
 | `{ color, width }` | one `width` px ring in `color` (ARGB), inner edge 2.5 px outside the body | Any theme |
 
 `{ color: friendlyGlowArgb(), width: 3 }` paints exactly what `'friendly'` paints. The bounds helpers widen by `2.5 + width` for the object form, so an atlas tile or hitbox grows with the ring. A non-finite or negative `width` paints no ring and adds no reach. `applyGlow(canvas, paint, cx, cy, r, color, width)` draws the themed ring directly for custom compositing.
+
+**The `'friendly'` and `'hazard'` strings are deprecated and removed in 0.5.0.** Pass a `GlowSpec` instead: `'friendly'` becomes `{ color: friendlyGlowArgb(), width: 3 }`, which paints the same pixels; `'hazard'` becomes `{ color: hazardGlowArgb(), width: 1 }`, which keeps the colour and the 1 px of stroke but paints one ring instead of two, its inner edge 2.5 px outside the body instead of 0.75 px. `applyHazardGlow` stays exported for drawing the two-ring look yourself.
 
 ```ts
 import type { GlowSpec, ShapeSpec } from '@flare-engine/shapes';

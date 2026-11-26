@@ -94,7 +94,7 @@ The loop allocates nothing per particle, and skips any particle whose interpolat
 reached zero rather than paying for an invisible draw call.
 
 **Per-particle colour is opt-in:** `drawParticles(pool, batch, image, frame, { color: true })`.
-Each particle's interpolated `startR/G/B → endR/G/B` then goes to `drawRaw` as its trailing `color`
+The default becomes `true` in 0.5.0; pass `{ color: false }` to keep the colourless draw. Each particle's interpolated `startR/G/B → endR/G/B` then goes to `drawRaw` as its trailing `color`
 argument, an opaque packed ARGB (`0xAARRGGBB`) that multiplies the frame's texels: a white frame
 takes the colour exactly, and a particle left at the default white draws unchanged. Alpha stays the
 separate `alpha` argument. With a `@flare-engine/render` `SpriteBatch`, sprites drawn with a colour

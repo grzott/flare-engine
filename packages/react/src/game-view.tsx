@@ -33,6 +33,7 @@ import { Dimensions, PixelRatio, Platform, StyleSheet, View } from 'react-native
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { scheduleOnUI } from 'react-native-worklets';
+import { createContextLossWatch, findContextLossTarget } from './context-loss.js';
 import { GameContext, type GameContextValue } from './game-context.js';
 import { type SafeArea, SafeAreaContext } from './safe-area.js';
 import { createSceneCapture, type SceneCapture } from './scene-texture.js';
@@ -194,6 +195,24 @@ export function GameView({
   // and reintroduce the black-frame regression captureSceneOnUI exists to fix.
   const uiSurface = useSharedValue<SkSurface | null>(null);
   const uiSurfaceKey = useSharedValue(0);
+  // Web only: a lost WebGL context leaves the on-screen canvas black for good,
+  // so a loss rebuilds both surfaces. Bumping the epoch changes <Canvas>'s key,
+  // which remounts it onto a new <canvas> element and context; the capture is
+  // dropped with it because a GPU reset or a sleep loses every context, and the
+  // capture's own canvas is out of reach to listen on. The shared value is
+  // cleared because dispose() releases the image it holds.
+  const containerRef = useRef<View>(null);
+  const [canvasEpoch, setCanvasEpoch] = useState(0);
+  const lossWatch = useMemo(
+    () =>
+      createContextLossWatch(() => {
+        captureRef.current?.dispose();
+        captureRef.current = null;
+        sceneImage.value = null;
+        setCanvasEpoch(nextEpoch);
+      }),
+    [sceneImage],
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only
   const ctx = useMemo<GameContextValue>(() => {
@@ -241,6 +260,9 @@ export function GameView({
     });
 
     const unsubscribePre = ctx.loop.onPreRender.add(() => {
+      // A loss whose restore has not arrived by this frame is recovered here,
+      // before the capture below, so this frame already draws into new surfaces.
+      if (isWeb) lossWatch.flush();
       const w = ctx.camera.viewportWidth;
       const h = ctx.camera.viewportHeight;
       const pd = pdRef.current;
@@ -332,6 +354,16 @@ export function GameView({
       ctx.loop.stop();
     };
   }, []);
+
+  // Runs after each commit that mounted a <Canvas>: RN-Skia's web view renders
+  // its <canvas> in that same commit, and <Canvas> is the container's first
+  // child, so the first match is the on-screen canvas.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: canvasEpoch re-runs this for the remounted canvas
+  useEffect(() => {
+    if (!isWeb) return undefined;
+    lossWatch.attach(findContextLossTarget(containerRef.current));
+    return lossWatch.detach;
+  }, [canvasEpoch, isWeb, lossWatch]);
 
   const handleLayout = useCallback(
     (event: LayoutChangeEvent): void => {
@@ -462,6 +494,7 @@ export function GameView({
     <SafeAreaContext.Provider value={resolvedSafeArea}>
       <GameContext.Provider value={ctx}>
         <View
+          ref={containerRef}
           style={containerStyle}
           onLayout={handleLayout}
           onStartShouldSetResponder={returnTrue}
@@ -471,6 +504,7 @@ export function GameView({
           onResponderTerminate={onRelease}
         >
           <Canvas
+            key={canvasEpoch}
             ref={canvasRef as React.Ref<CanvasRef>}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
@@ -487,6 +521,11 @@ export function GameView({
 
 function returnTrue(): boolean {
   return true;
+}
+
+/** State updater for the `<Canvas>` key — module-level so a recovery allocates no closure. */
+function nextEpoch(epoch: number): number {
+  return epoch + 1;
 }
 
 /** Stable empty-chain reference — an empty `buildPostFxPasses` result collapses

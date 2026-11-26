@@ -1,0 +1,10 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.flareengine.uifx'
+
+android {
+  namespace 'com.flareengine.uifx'
+}

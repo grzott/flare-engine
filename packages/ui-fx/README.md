@@ -3,7 +3,7 @@
 Animated wrappers for React Native, react-native-web and React DOM components.
 
 **Status: private, not published.** The package is being built towards 0.5.0 and has no public API
-yet. Design: [docs/plans/ui-fx-2026-11.md](../../docs/plans/ui-fx-2026-11.md).
+yet. Design: [docs/plans/ui-fx-2026-11.md](https://github.com/grzott/flare-engine/blob/main/docs/plans/ui-fx-2026-11.md).
 
 ## Entry points
 

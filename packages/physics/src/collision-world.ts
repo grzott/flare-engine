@@ -47,6 +47,11 @@ function decodeHi(key: number): number {
 /**
  * AABB collision world. Manages entities with shapes, detects overlaps each step,
  * and emits collision/trigger signals.
+ *
+ * The broadphase is a uniform grid of fixed 64-world-unit cells, with no option to
+ * change it. It suits colliders of roughly 16-64 units. In a world of one unit per
+ * tile, colliders crowd a few cells and `step` and `raycast` approach a scan of
+ * every collider, so scale world units up to match.
  */
 export class CollisionWorld {
   readonly onCollisionStart = new Signal<CollisionPair>();
@@ -326,6 +331,13 @@ export class CollisionWorld {
    * `mask` is a layer bitmask filtered against each collider's `layer`, using the
    * bits colliders already carry; it defaults to every layer. Triggers are
    * included — a ray asking "what is over there" wants them.
+   *
+   * A ray that starts inside a collider hits that collider at its exit
+   * distance, not at 0. The hit's `normal` is then the outward normal of the
+   * face the ray entered through behind its origin for a box, and the outward
+   * normal at the exit point for a circle. To skip the collider a ray starts in,
+   * put it on a layer `mask` leaves out, or start the ray just past its edge: a
+   * ray that starts exactly on the edge still hits it, at distance 0.
    *
    * The returned record is **reused between calls**: read it, or copy what you
    * need, before casting again. That is what keeps a per-frame ray allocation-

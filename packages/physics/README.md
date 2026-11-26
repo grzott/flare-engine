@@ -68,6 +68,28 @@ by the `layer` bits colliders already carry (`mask` defaults to every layer). Th
 `raycast(ox, oy, dx, dy, maxDist, targets)` export remains for casting against an explicit list that
 is not in a world.
 
+**The broadphase cell is a fixed 64 world units.** Neither `CollisionWorld` nor `SpatialIndex` takes
+a cell-size option. It suits colliders of roughly 16-64 units. In a world of one unit per tile,
+every collider shares a few cells, so `raycast` and `step` approach a scan of every collider. Scale
+world units so a typical collider spans tens of units.
+
+**A ray that starts inside a collider hits it at its exit distance**, not at 0. In this world of
+unit tiles the ray starts in the box centred on (3.5, 3.5) and reports that box at 0.5:
+
+```ts
+import { AABB, CollisionWorld } from '@flare-engine/physics';
+
+const world = new CollisionWorld();
+let id = 1;
+for (let y = 0; y < 10; y++) for (let x = 0; x < 20; x++) world.add(id++, AABB(1, 1), x + 0.5, y + 0.5);
+const hit = world.raycast(3.5, 3.5, 1, 0, 5); // entity 64, distance 0.5
+```
+
+The `normal` of such a hit is the outward normal of the face the ray entered through behind its
+origin for a box, and the outward normal at the exit point for a circle. To skip the collider the
+ray starts in, put it on a layer the ray's `mask` leaves out, or start the ray just past its edge.
+A ray that starts exactly on the edge still hits it, at distance 0.
+
 **The returned hit record is reused between calls** — read it, or copy what you need, before casting
 again. That is what keeps a per-frame ray allocation-free; the standalone helper by contrast returns
 a fresh hit (plus two nested `Vec2`s) from each call that hits, which the caller may keep.

@@ -57,7 +57,7 @@ _None._ No package bundles a third-party runtime dependency; the broadphase is f
 | bitECS   | 4.4K    | —     | SoA data-oriented, high performance, ~5KB          | Good perf, weak DX |
 | miniplex | 2.5K    | 1K    | Object entities, archetype queries, React bindings | Best DX, npm stale |
 
-**Decision:** Build custom hybrid ECS. miniplex-style ergonomics (entities as typed objects) with optional SoA escape hatch for hot components. Avoids dependency on potentially unmaintained libraries.
+**Decision:** Build a custom ECS with miniplex-style ergonomics: numeric entities, components in a `Map` per `ComponentDef`, and a bitmask per entity for query matching (`api-specs.md`, ecs). An SoA typed-array path for hot components is deferred, not available: it is added only if benchmarks show it matters. Avoids dependency on potentially unmaintained libraries.
 
 ---
 

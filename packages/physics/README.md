@@ -72,6 +72,69 @@ is not in a world.
 again. That is what keeps a per-frame ray allocation-free; the standalone helper by contrast returns
 a fresh hit (plus two nested `Vec2`s) from each call that hits, which the caller may keep.
 
+## Pixel masks
+
+A `MaskShape` is a sprite's solid pixels as a bitmask, for contact that follows the art instead of
+its box. It sits beside `Shape`, not in it: `CollisionWorld` does not take one. Keep a box collider
+for the broadphase and refine the pairs it reports.
+
+```ts
+import {
+  createMaskPose,
+  createMaskShape,
+  maskOverlapsBox,
+  maskOverlapsCircle,
+  maskOverlapsMask,
+  rayVsMask,
+} from '@flare-engine/physics';
+
+declare const shipX: number, shipY: number, turn: number;
+declare const rock: ReturnType<typeof createMaskShape>;
+declare const rockPose: ReturnType<typeof createMaskPose>;
+
+// Built once, at load. `#` is solid.
+const ship = createMaskShape(['.#.', '###', '#.#']);
+
+// One pose per entity, reused every frame.
+const pose = createMaskPose();
+pose.px = 1.5; // the pivot, in mask px: the point that sits on the position
+pose.py = 1.5;
+pose.unit = 4; // world units per mask px
+
+pose.x = shipX;
+pose.y = shipY;
+pose.cos = Math.cos(turn);
+pose.sin = Math.sin(turn);
+
+maskOverlapsBox(ship, pose, 10, 10, 2, 2); // world box: centre, half extents
+maskOverlapsCircle(ship, pose, 10, 10, 3);
+maskOverlapsMask(ship, pose, rock, rockPose);
+rayVsMask(ship, pose, 0, 0, 1, 0, 500); // distance, 0 if it starts inside, -1 on a miss
+```
+
+A mask is `{ x, y, w, h, words }`: bounds in the sprite frame's px (`x` / `y` offset the solid region
+from the frame's corner, so a collider need not be centred on its entity) and `Math.ceil(w / 32)`
+32-bit words per row, bit `c & 31` of word `c >>> 5` for column `c`. `words` may be a `number[]` or
+a `Uint32Array`, so a generated table of that layout is a `MaskShape` as it stands.
+
+What each test promises:
+
+- **Touching is not overlapping**, as everywhere else in this package.
+- `maskOverlapsCircle`, `maskOverlapsMask` and `rayVsMask` work in the mask's own frame and are exact
+  at any turn, up to floating-point rounding.
+- `maskOverlapsBox` takes a box that is axis-aligned in the world. Against a turned mask it tests the
+  box's bounding box in the mask's frame: exact at a multiple of a quarter turn, generous by the
+  box's corners otherwise. Its `erode` flag tests the mask shrunk by 1 px.
+- `maskOverlapsSweptBox` samples `maskOverlapsBox` along a segment, at most half a px apart, so a
+  fast box cannot skip a 1 px feature. It takes at most 257 samples; a longer segment is sampled
+  more coarsely and can miss.
+- `maskStripStop` gives where an axis-aligned beam first meets the mask; a turned pixel counts by its
+  bounding box.
+- `maskBoundsInto` writes the world box around the posed bounds, for a broadphase query.
+
+None of these allocates. `maskOverlapsMask` walks the pixels of both masks inside the overlap of
+their bounds, so use it on pairs a box test already passed.
+
 See [API spec](https://github.com/grzott/flare-engine/blob/main/docs/design/api-specs.md#flare-enginephysics).
 
 ## License

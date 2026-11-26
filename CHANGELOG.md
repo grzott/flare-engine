@@ -69,6 +69,15 @@ changes. Nothing announced here changes in this release.
     begun. The target was never entered, and `push()` and `pop()` were ignored from then on.
   - **Now:** the scene that redirected stays current until its fade-out ends. An instant `go()` or a
     `destroy()` from that `onEnter` no longer leaves a fade-in running.
+- **`react`**: on the web, `GameView` draws again after its on-screen canvas loses its WebGL
+  context (#583).
+  - **What was wrong:** nothing listened for the loss, so the field stayed black while the loop and
+    the overlay children kept running.
+  - **Now:** it listens for `webglcontextlost` and `webglcontextrestored` on the on-screen canvas.
+    At the restore, or on the first frame after a loss with no restore by then, it rebuilds the scene
+    capture and remounts `<Canvas>` onto a new canvas and context. Native is unchanged.
+  - **Limits:** a loss of only the capture context is still not detected (#605). The recovery is
+    tested with mocked events, not yet against a real context loss in a browser (#604).
 - **`physics`**:
   - **A faster crowded broadphase (#579).** `CollisionWorld` has its own grid, which groups each
     cell's bodies by layer and mask, so `step()` tests layer and mask once per group. `setPosition`

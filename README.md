@@ -154,7 +154,7 @@ for a contributor.
 | `@flare-engine/math` | shipping | Vec2, Rect, Transform, Mat3, Color, Penner easings, seeded RNG, intersections |
 | `@flare-engine/events` | shipping | Type-safe `EventEmitter` and `Signal` |
 | `@flare-engine/core` | shipping | `GameLoop`, `Clock`, `AppLifecycle`, `ScreenManager`, coroutines, pool |
-| `@flare-engine/ecs` | shipping | Archetype-bitmask ECS — `World`, `Query`, systems, prefabs, FSM (32-type cap) |
+| `@flare-engine/ecs` | shipping | ECS with numeric entities, Map-backed components and bitmask-matched queries — `World`, `Query`, systems, prefabs, FSM (32-type cap) |
 | `@flare-engine/scene` | shipping | `SceneManager`, lifecycle, fade/slide transitions |
 | `@flare-engine/input` | shipping | `InputManager`, pointer/touch, gestures, joystick/button state |
 | `@flare-engine/assets` | shipping | `AssetManager`, TexturePacker/Aseprite parser, procedural atlas |

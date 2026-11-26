@@ -2,6 +2,9 @@
 // broadphase. Internal — not exported from the package.
 
 // Uniform grid cell size in world units. Tuned for typical game-object sizes (16–64 px).
+// It is fixed: neither SpatialIndex nor CollisionWorld takes a cell-size option. In a world
+// of one unit per tile, every collider shares a few cells, and a query or a step becomes a
+// scan of all of them. Scale world units so a typical collider spans tens of units.
 const CELL = 64;
 
 // Packed cell-key encoding.  Supports cell coords in [-32768, 32767],

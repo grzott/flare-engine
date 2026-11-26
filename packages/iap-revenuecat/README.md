@@ -1,6 +1,6 @@
 # @flare-engine/iap-revenuecat
 
-Concrete `IAPProvider` adapter for [@flare-engine/iap](../iap) backed by [RevenueCat](https://www.revenuecat.com/) (`react-native-purchases`).
+Concrete `IAPProvider` adapter for [@flare-engine/iap](https://github.com/grzott/flare-engine/tree/main/packages/iap) backed by [RevenueCat](https://www.revenuecat.com/) (`react-native-purchases`).
 
 ## Install
 

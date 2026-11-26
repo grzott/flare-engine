@@ -34,6 +34,13 @@ const scratchHit: RaycastHit = {
  *
  * The returned hit is a fresh object — the caller may keep it; later calls do
  * not overwrite it. Among targets at equal distance the first in `targets` wins.
+ *
+ * A ray that starts inside a collider hits that collider at its exit
+ * distance, not at 0. The hit's `normal` is then the outward normal of the
+ * face the ray entered through behind its origin for a box, and the outward
+ * normal at the exit point for a circle. To skip the collider a ray starts in,
+ * leave it out of `targets`, or start the ray just past its edge: a ray that
+ * starts exactly on the edge still hits it, at distance 0.
  * @param ox Ray origin X
  * @param oy Ray origin Y
  * @param dx Ray direction X (should be normalized)

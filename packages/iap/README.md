@@ -1,6 +1,6 @@
 # @flare-engine/iap
 
-In-app purchase interface + product catalog + entitlement store + content gates. Adapter-agnostic — wire a concrete `IAPProvider` (e.g. [`@flare-engine/iap-revenuecat`](../iap-revenuecat)) at the app boundary. `ProductCatalog` binds product ids to entitlement keys; `EntitlementStore` reactively tracks granted entitlements; `canAccessContent(spec, store)` is a pure boolean gate for paywalled zones / DLC.
+In-app purchase interface + product catalog + entitlement store + content gates. Adapter-agnostic — wire a concrete `IAPProvider` (e.g. [`@flare-engine/iap-revenuecat`](https://github.com/grzott/flare-engine/tree/main/packages/iap-revenuecat)) at the app boundary. `ProductCatalog` binds product ids to entitlement keys; `EntitlementStore` reactively tracks granted entitlements; `canAccessContent(spec, store)` is a pure boolean gate for paywalled zones / DLC.
 
 ## Install
 

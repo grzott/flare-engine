@@ -134,14 +134,14 @@ Note: the diagram groups packages by their `LAYER_MAP` tier (`scripts/check-deps
 
 | Package              | Purpose                                                                                        | Size target | Deps         |
 | -------------------- | ---------------------------------------------------------------------------------------------- | ----------- | ------------ |
-| `@flare-engine/core` | GameLoop (fixed+variable timestep), Clock, AppLifecycle, Coroutines, ObjectPool, ScreenManager | < 3KB       | math, events |
-| `@flare-engine/ecs`  | World, Query (archetype bitmask), defineComponent, defineSystem, Prefab, FSM                   | < 8KB       | math, events |
+| `@flare-engine/core` | GameLoop (fixed+variable timestep), Clock, AppLifecycle, CoroutineManager, Pool, ScreenManager | < 3KB       | math, events |
+| `@flare-engine/ecs`  | World, Query (bitmask-matched), defineComponent, defineSystem, Prefab, FSM                   | < 8KB       | math, events |
 
 ### Layer 2 — System Modules
 
 | Package                 | Purpose                                                                                 | Size target  | Peer deps              |
 | ----------------------- | --------------------------------------------------------------------------------------- | ------------ | ---------------------- |
-| `@flare-engine/render`  | Skia Atlas SpriteBatch, Camera2D, DrawOrder, SpriteEffects, SpriteFont                  | < 10KB       | react-native-skia      |
+| `@flare-engine/render`  | SpriteBatch (Skia atlas), Camera2D, sortByDrawOrder, SpriteEffect, BitmapFont text       | < 10KB       | — (deps: assets, ecs, math) |
 | `@flare-engine/input`   | InputManager (polling+events), Pointer, Touch, VirtualJoystick, VirtualButton, Gestures | < 6KB        | —                      |
 | `@flare-engine/physics` | AABB CollisionWorld, SpatialIndex (uniform grid), raycast                                | < 4KB        | —                      |
 | `@flare-engine/dynamics` | OBB rigid bodies, SAT + face-clip contact manifolds, sequential-impulse solver          | < 8KB        | math                   |
@@ -174,19 +174,24 @@ Note: the diagram groups packages by their `LAYER_MAP` tier (`scripts/check-deps
 
 ## Game Loop Order (per frame)
 
+`GameLoop.step(rawDt)` (`packages/core/src/game-loop.ts`), once per animation frame:
+
 ```
-1. Clock.tick()         — compute dt, elapsed
-2. Input.poll()         — snapshot touch/gesture state
-3. onPreUpdate signal
-4. Physics.step(fixedDt) — 0-N fixed steps (accumulator pattern)
-5. onUpdate(dt)         — ECS systems, game logic
-6. onLateUpdate(dt)     — camera follow, post-logic
-7. onPreRender signal
-8. Render.draw()        — Skia canvas drawing
-9. onPostRender signal
+1. clock.update(min(rawDt, maxDt)) — maxDt defaults to 0.25 s; dt = capped × clock.timescale
+2. onFixedUpdate(fixedDt)          — 0-N times: the accumulator gains dt and emits while it holds
+                                     a whole fixedDt (default 1/60 s)
+3. onUpdate(dt)                    — variable step: ECS systems, game logic
+4. onLateUpdate(dt)                — after logic: camera follow
+5. onPreRender()                   — draw here; read loop.alpha to interpolate
+6. onPostRender()
 ```
 
-Physics always runs at fixed rate (default 60Hz). Rendering interpolates between physics states.
+The loop polls no input, steps no physics and draws nothing itself: each of those runs only where
+something subscribes. Physics runs at the fixed rate when the caller subscribes it to
+`onFixedUpdate`. `GameView` (`@flare-engine/react`) subscribes `onLateUpdate` to update the camera
+and input, and `onPreRender` to draw the frame. Nothing interpolates on its own: the loop exposes
+`alpha`, the fraction of a fixed step left in the accumulator (0 when no `fixedDt` was configured),
+for the caller to blend the previous and current physics state with in `onPreRender`.
 
 ---
 
@@ -248,7 +253,7 @@ Two draw modes:
 | --------------------------------------------------------- | ------------------------------------------------ |
 | Vec2 as `{x, y}` objects, not class instances             | Avoids GC pressure in hot loops                  |
 | `vec2(x, y)` factory + `Vec2.add(a, b, out?)` static form | Zero-alloc output param for hot paths            |
-| Hybrid ECS (object entities + optional SoA typed arrays)  | Good DX for <2K entities, escape hatch for 2K-5K |
+| Custom ECS: numeric entities, Map-backed components, bitmask-matched queries | Good DX for <2K entities; SoA typed-array storage is deferred until a benchmark calls for it |
 | Scene-scoped ECS Worlds                                   | Clean memory on scene switch, no entity leaks    |
 | Coroutines via generators                                 | Eliminates callback hell for game sequences      |
 | `__DEV__` guards for debug code                           | Tree-shaken in production                        |

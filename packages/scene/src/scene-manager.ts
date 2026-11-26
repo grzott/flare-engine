@@ -75,6 +75,8 @@ export class SceneManager {
    * then onPreload → onInit → onEnter on the new scene.
    * A `go()` issued while an animated `go()` is still fading out supersedes
    * it: the superseded target gets `onDestroy` (never `onInit` / `onEnter`).
+   * `go()` may be called from a scene's `onEnter`; under an animated transition
+   * that scene stays current while it fades out to the new target.
    */
   async go(name: string, data?: unknown): Promise<void> {
     if (!this._factories.has(name)) {
@@ -317,6 +319,11 @@ export class SceneManager {
     this._pendingScene = null;
     this._pendingData = undefined;
 
+    // Start the fade-in before the lifecycle callbacks below, not after them: a
+    // callback may call go() or destroy(), and the transition state that call
+    // leaves (a new fade-out, or none) must not be overwritten by this fade-in.
+    this._transitionState = this._transition.start('in');
+
     if (pending) {
       this._teardownStack();
 
@@ -328,8 +335,6 @@ export class SceneManager {
       this._overlay.push(false);
       pending.onEnter?.(data);
     }
-
-    this._transitionState = this._transition.start('in');
   }
 
   /** Update then draw each live scene bottom-up: from the lowest scene not under an overlay to the top. */

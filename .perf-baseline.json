@@ -272,9 +272,9 @@
       "measuredAt": "2026-11-09"
     },
     "@flare-engine/physics": {
-      "ceiling": 74205,
-      "measured": 67459,
-      "measuredAt": "2026-11-25"
+      "ceiling": 99678,
+      "measured": 90616,
+      "measuredAt": "2026-11-26"
     },
     "@flare-engine/postfx": {
       "ceiling": 59875,
@@ -546,6 +546,10 @@
     {
       "date": "2026-11-26",
       "reason": "debug ceiling raised 21614 -> 32580 B (measured 29618 x1.1), pending the owner's approval of the ADR-0012 announcement PR (rows 5-11; #177). createStatsTracker() and its StatsTrackerHandle interface are added beside the now-deprecated StatsTracker class, which stays until 0.5.0. Measured 2026-11-26 against the published 0.4.18 tarball (21106 B; packages/debug/src has no commits on main since that release): the tarball grows 8512 B, but each file gzipped alone grows only 38087 -> 39997 B (+1910). The difference is the deflate window: the two source maps grow from 30164 to 32294 B each, and the tarball is one gzip stream that back-references only 32 KB, so the second map no longer compresses against the first. What an app bundles: dist/index.mjs 13049 -> 14027 B raw (4225 -> 4469 B gzipped, +244 B). Both the class and the factory ship until 0.5.0 removes the class. A deprecation announcement, not a regression."
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "physics ceiling raised 74205 -> 99678 B (measured 90616 x1.1), pending the owner's approval of the PR for issue #580. A new module, src/mask.ts, adds pixel-mask collision beside Shape and SolidGrid: the MaskShape and MaskPose types, createMaskShape, createMaskPose, isMaskSolidAt, maskBounds / maskBoundsInto, maskOverlapsBox, maskOverlapsSweptBox, maskOverlapsCircle, maskOverlapsMask, rayVsMask and maskStripStop, with a README section. Nothing existing changes. Measured 2026-11-26 against the 2026-11-25 measurement of main (67459 B, #592): the tarball grows 23157 B. It ships the new module in index.mjs, index.js and in both source maps' sourcesContent, plus its JSDoc in both .d.ts files, so it grows by more than an app bundles: dist/index.mjs is 32837 -> 44927 B raw. A feature, not a regression."
     }
   ]
 }

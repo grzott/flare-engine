@@ -15,6 +15,7 @@ changed in a given package, and it is not duplicated here.
 
 | Version | Date | Scoped packages | Summary |
 | --- | --- | --- | --- |
+| [0.4.19](#0419) | 2026-11-26 | 42 | Sprite shader effects show, a faster crowded broadphase, pixel-mask collision, the 0.5.0 announcements |
 | [0.4.18](#0418) | 2026-11-25 | 42 | `findPathJPS` follows `findPath`'s corner rule; corrected `GameView` `opaque` and `./headless` install advice |
 | [0.4.17](#0417) | 2026-11-23 | 42 | Frame-rate-independent camera shake, a live `GameView` pixel ratio, CanvasKit-assignable types |
 | [0.4.16](#0416) | 2026-11-20 | 42 | Shape paths work on react-native-skia 2.14, the version the templates pin |
@@ -40,6 +41,99 @@ changed in a given package, and it is not duplicated here.
 | [0.1.0](#010) | 2026-06-09 | 36 | First lockstep publish |
 
 ---
+
+## 0.4.19
+
+Fixes, additions and docs in 19 packages. The other 23 change only their version. There are
+behaviour changes in `render`, `scene` and `localization`. This release also announces the twelve
+changes that 0.5.0 makes ([ADR-0012](docs/design/adr-0012-0-5-0-breaking-set.md)), each in the
+JSDoc of what it changes. Nothing announced here changes in this release.
+
+- **`render`**: the shader sprite effects `custom`, `water`, `fog` and `fire` now show (#581).
+  - **What was wrong:** Skia ignores a paint's shader when the draw is a colour image, so these
+    effects drew the plain sprite. Each such sprite is now a `drawRect` over its destination, with
+    the shader on the paint.
+  - **Behaviour change:** the shader's output replaces the sprite. The atlas frame is not drawn and
+    is not passed to the shader.
+  - **Coordinates:** they are sprite-local, `(0, 0)` at the destination's top-left and
+    `(dstW, dstH)` at its bottom-right. Rotation and flips turn and mirror them with the sprite.
+    This is documented on `CustomShaderEffect`.
+  - **Alpha and blending:** alpha and `blend: 'additive'` apply to the shader's output. A per-sprite
+    colour contributes only its alpha. `stretch` and `setImageSampling` have no effect on these
+    draws.
+  - **No shader available:** without `Skia.RuntimeEffect`, or when a built-in shader fails to
+    compile, `water`, `fog` and `fire` still draw the plain sprite.
+- **`scene`**: `SceneManager.go()` called from a scene's `onEnter` now takes effect under an
+  animated transition (#582).
+  - **What was wrong:** the manager started its fade-in over the fade-out that the call had just
+    begun. The target was never entered, and `push()` and `pop()` were ignored from then on.
+  - **Now:** the scene that redirected stays current until its fade-out ends. An instant `go()` or a
+    `destroy()` from that `onEnter` no longer leaves a fade-in running.
+- **`react`**: on the web, `GameView` draws again after its on-screen canvas loses its WebGL
+  context (#583).
+  - **What was wrong:** nothing listened for the loss, so the field stayed black while the loop and
+    the overlay children kept running.
+  - **Now:** it listens for `webglcontextlost` and `webglcontextrestored` on the on-screen canvas.
+    At the restore, or on the first frame after a loss with no restore by then, it rebuilds the
+    scene capture and remounts `<Canvas>` onto a new canvas and context. Native is unchanged.
+  - **Limits:** a loss of only the capture context is still not detected (#605). The recovery is
+    tested with mocked events, not yet against a real context loss in a browser (#604).
+- **`physics`**:
+  - **A faster crowded broadphase (#579).** `CollisionWorld` has its own grid, which groups each
+    cell's bodies by layer and mask, so `step()` tests layer and mask once per group. `setPosition`
+    skips the relink while a body stays in the same cells, and so does `SpatialIndex.update`, which
+    also removes from a bucket in O(1).
+    - In the published benchmarks, `step()` over 1000 boxes takes 96 µs sparse and 424 µs dense
+      (0.4.18: 174 µs and 562 µs), and over 100 boxes 5.0 µs and 7.3 µs (10.5 µs and 17.2 µs).
+    - The new `physics.curtain` rows (2000 enemy bodies that never pair with each other, 100 shots
+      and a ship) publish at 68 µs for a `setPosition` pass and 50 µs for a `step()` on a frame
+      where nothing moved. On a shared CI runner, the same two rows went from 322-343 µs to
+      138-142 µs and from 1.27 ms to 117-126 µs.
+    - Which pairs a step reports, and which signal each gets, is unchanged. Two orders that were
+      never specified can differ: the order in which one `step()` emits pairs that share their lower
+      entity id, and which of two colliders `raycast` returns at exactly the same distance.
+  - **Pixel-mask collision (#580):** `MaskShape` and `MaskPose`, built with `createMaskShape` and
+    `createMaskPose`, tested with `maskOverlapsBox`, `maskOverlapsSweptBox`, `maskOverlapsCircle`
+    and `maskOverlapsMask`, plus `rayVsMask`, `maskStripStop`, `isMaskSolidAt` and `maskBounds` /
+    `maskBoundsInto`. A mask is not part of the `Shape` union: keep a box collider for the
+    broadphase and refine its pairs with these. None of the per-frame functions allocates.
+  - **Docs (#510):** the broadphase cell is a fixed 64 world units, so scale tile-sized worlds up. A
+    ray that starts inside a collider hits it at its exit distance.
+- **`leaderboards`, `achievements`, `analytics`, `haptics`, `iap`**: importing only a React-free
+  export, such as `createMemoryLeaderboards`, no longer pulls `react` into the bundle (#506). Each
+  package now builds one output file per source module, and its `createContext` call is marked
+  pure, so a bundler drops the context module with its `react` import. Checked with Bun's bundler;
+  other bundlers were not tested. The `exports` maps are unchanged.
+- **`localization`**: `pluralCategory` classifies negative and non-integer counts the way
+  `Intl.PluralRules` does (#508), and `formatMessage` and `LocalizationManager.t` change with it.
+  **Behaviour change:** the sign of a count is ignored (`en -1` is now `one`); in `pl`, `ru`, `uk`
+  and `ar` a non-integer count is `other`; in `fr` a count below 2 is `one`; `pt` follows CLDR's
+  `pt` rule (`0` is `one`), while `pt-PT` keeps the English rule. Checked against `Intl` over the
+  integers -100 to 100 and ±0.5, ±1.5, ±2.5.
+- **`tilemap`**: `parseTiled` throws `TilemapParseError`, naming where, for a `properties` that
+  is not an array and for a `tilesets` or `layers` entry that is not an object (#509). Both used
+  to escape as a raw `TypeError`. A `properties` of `false`, `0`, `""` or a string, and a primitive
+  `tilesets` entry, are now rejected too; they used to parse into empty or junk values.
+- **`debug`**: new `createStatsTracker()`, returning a `StatsTrackerHandle` with the same members as
+  the `StatsTracker` class (#177). The class is `@deprecated`.
+- **`ecs`**: the npm description and the README now describe the storage as `World` implements it:
+  numeric entities, Map-backed components and bitmask-matched queries (#514). Docs only.
+- **Announced for 0.5.0** (ADR-0012 rows 5-12; rows 1-4 were announced in 0.4.10 and 0.4.14):
+  - **`math`:** `springIn`, `springOut` and `springInOut` are removed. Use `easeInBack`,
+    `easeOutBack` and `easeInOutBack`.
+  - **`debug`:** the `StatsTracker` class is removed. Use `createStatsTracker()`, and annotate with
+    `StatsTrackerHandle`.
+  - **`ui`:** `refocusOnUnregister` defaults to `false`.
+  - **`shapes`:** `glow: 'friendly'` and `glow: 'hazard'` are removed.
+    - `'friendly'` becomes `{ color: friendlyGlowArgb(), width: 3 }`, the same pixels.
+    - `'hazard'` becomes `{ color: hazardGlowArgb(), width: 1 }`, one ring in place of two, its
+      inner edge 2.5 px outside the shape instead of 0.75 px.
+  - **`particles`:** `drawParticles`' `color` option defaults to `true`.
+  - **`audio`:** `AudioContextLike.createBufferSource()` may return a `PromiseLike`.
+  - **`react` and `engine`:** the `react-native-reanimated` peer floor rises to `>=4.1.0`.
+  - **`render`:** `BitmapFont.kernings` is keyed `first * 0x200000 + second`, and text is read by
+    code point, so glyph ids above 0xFFFF measure, draw and kern.
+  - `SceneManager.pop()` keeps its default (#179, declined).
 
 ## 0.4.18
 

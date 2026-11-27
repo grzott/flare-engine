@@ -2,9 +2,11 @@ import {
   Atlas,
   Canvas,
   type CanvasProps,
+  type SkColor,
   type SkHostRect,
   type SkImage,
   type SkRSXform,
+  useColorBuffer,
   useRectBuffer,
   useRSXformBuffer,
 } from '@shopify/react-native-skia';
@@ -276,7 +278,7 @@ const PoolAtlas = memo(function PoolAtlas({
   pool: SpritePool;
   image: SharedValue<SkImage | null>;
 }): ReactNode {
-  const { transforms, rects } = pool;
+  const { transforms, rects, colors } = pool;
   const xforms = useRSXformBuffer(pool.capacity, (xform: SkRSXform, i: number) => {
     'worklet';
     const buffer = transforms.value;
@@ -289,7 +291,25 @@ const PoolAtlas = memo(function PoolAtlas({
     const o = i * 4;
     rect.setXYWH(buffer[o]!, buffer[o + 1]!, buffer[o + 2]!, buffer[o + 3]!);
   });
-  return <Atlas image={image} sprites={sprites} transforms={xforms} />;
+  const tints = useColorBuffer(pool.capacity, (color: SkColor, i: number) => {
+    'worklet';
+    const buffer = colors.value;
+    const o = i * 4;
+    color[0] = buffer[o]!;
+    color[1] = buffer[o + 1]!;
+    color[2] = buffer[o + 2]!;
+    color[3] = buffer[o + 3]!;
+  });
+  return (
+    <Atlas
+      image={image}
+      sprites={sprites}
+      transforms={xforms}
+      colors={tints}
+      // The native default, dstOver, would ignore the colours.
+      blendMode="modulate"
+    />
+  );
 });
 
 /** `FlareFxHost` with the effect table given. `FlareFxHost` is the public form. */
@@ -368,13 +388,8 @@ function nestedHost(android: FlareFxHostProps['android'], effects: NativeEffects
   return <NativeFxHost android={android} effects={effects} />;
 }
 
-// A preset without a native effect plays its live fallback. So do `grid` and `cells`, the
-// rectangular meshes: `fragmentEffect` claims their pool sprites, but no layer draws them.
-const EFFECTS: NativeEffects = (preset) => {
-  if (!isFragmentPreset(preset)) return null;
-  const { pattern } = preset.fragment;
-  return pattern === 'grid' || pattern === 'cells' ? null : fragmentEffect;
-};
+// A preset without a native effect plays its live fallback.
+const EFFECTS: NativeEffects = (preset) => (isFragmentPreset(preset) ? fragmentEffect : null);
 
 /**
  * The snapshot-effect host on React Native: it gives the elements below it the runtime that

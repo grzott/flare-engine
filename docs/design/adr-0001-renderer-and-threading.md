@@ -58,6 +58,19 @@ app's UI*, which is the case where the JS thread is **not** idle.
 >
 > Everything below is left as written — it is the record of what was measured on 2026-08-31.
 
+> **Scope note, 2026-11-27.** The JS-thread rule in this ADR — the table's "Animation" row, and "the
+> UI thread is used for exactly one job" below — covers the **game runtime**: the loop, the
+> simulation and `<GameView>`. It does not cover the UI-thread packages, which are additive and
+> record their threading in their own plans:
+>
+> - **`@flare-engine/ui-fx`** animates host-app UI with Reanimated worklets on the UI thread —
+>   [`ui-fx-2026-11.md`](../plans/ui-fx-2026-11.md) §6.6 and §6.13 (its call C16).
+> - **`ui-canvas`** (planned, no package yet) draws its components with RN-Skia on the UI thread —
+>   [`ui-canvas-2026-11.md`](../plans/ui-canvas-2026-11.md) §3.1 (its decision D6).
+>
+> So the counts below ("exactly one package", "zero occurrences") describe 2026-08-31 and the game
+> runtime, not the repo as a whole. The decision itself is unchanged.
+
 Concretely, at HEAD:
 
 - `react-native-reanimated` is a **required** peer of `@flare-engine/react` at `>=3.19.1`

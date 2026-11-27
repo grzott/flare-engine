@@ -15,6 +15,11 @@ apps/*/android/
 apps/*/ios/
 apps/*/.expo/
 
+# Gradle state from building a package's Android module in place. Those packages list
+# `android` in `files`, so a local pack would otherwise ship it.
+packages/*/android/.gradle/
+packages/*/android/build/
+
 # JetBrains IDE local config
 .idea/
 

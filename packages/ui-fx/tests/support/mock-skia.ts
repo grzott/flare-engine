@@ -64,6 +64,8 @@ export const skia = {
   atlas: nodes(),
   image: nodes(),
   group: nodes(),
+  vertices: nodes(),
+  imageShader: nodes(),
   /** The `current` of the ref each `makeImageFromView` call was given. */
   captured: [] as unknown[],
   /** What the next `makeImageFromView` resolves with. `null` rejects instead. */
@@ -72,7 +74,14 @@ export const skia = {
   /** `Skia.Surface.Make` returns `null`. */
   failSurface: false,
   reset(): void {
-    for (const kind of [skia.canvas, skia.atlas, skia.image, skia.group]) {
+    for (const kind of [
+      skia.canvas,
+      skia.atlas,
+      skia.image,
+      skia.group,
+      skia.vertices,
+      skia.imageShader,
+    ]) {
       kind.mounts = 0;
       kind.unmounts = 0;
       kind.props = null;
@@ -84,7 +93,7 @@ export const skia = {
   },
 };
 
-const recorded = (kind: MockNodes, tag: string | null) =>
+const recorded = (kind: MockNodes, tag: string | null, withChildren = false) =>
   function Node(props: Props): ReactNode {
     kind.props = props;
     useEffect(() => {
@@ -93,7 +102,8 @@ const recorded = (kind: MockNodes, tag: string | null) =>
         kind.unmounts++;
       };
     }, []);
-    return tag === null ? null : createElement(tag, { 'data-skia': 'canvas' }, props.children);
+    if (tag === null) return withChildren ? props.children : null;
+    return createElement(tag, { 'data-skia': 'canvas' }, props.children);
   };
 
 const rect = (x: number, y: number, width: number, height: number): MockRect => {
@@ -146,6 +156,8 @@ const skiaModule = {
   Atlas: recorded(skia.atlas, null),
   Image: recorded(skia.image, null),
   Group: recorded(skia.group, null),
+  Vertices: recorded(skia.vertices, null, true),
+  ImageShader: recorded(skia.imageShader, null),
   FilterMode: { Nearest: 0, Linear: 1 },
   MipmapMode: { None: 0, Nearest: 1, Linear: 2 },
   useRSXformBuffer: buffer(() => rsxform(1, 0, 0, 0)),
@@ -194,8 +206,8 @@ const skiaModule = {
 /**
  * Replaces `@shopify/react-native-skia`. Call it before importing the module under test.
  *
- * `Canvas` renders a `div` around its children; `Atlas`, `Image` and `Group` render nothing. Each
- * records its mounts and its latest props. `makeImageFromView` resolves with `skia.nextImage`, and
+ * `Canvas` renders a `div` around its children and `Vertices` renders its children alone; `Atlas`,
+ * `Image`, `Group` and `ImageShader` render nothing. Each records its mounts and its latest props. `makeImageFromView` resolves with `skia.nextImage`, and
  * `Skia.Surface.Make` records what is drawn into the surface it returns.
  */
 export const installSkiaMock = (): typeof skia => {

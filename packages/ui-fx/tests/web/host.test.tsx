@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { StrictMode } from 'react';
-import { shatter } from '../../src/core/presets';
+import { dust, shatter } from '../../src/core/presets';
 import type { FxRuntime } from '../../src/runtime/contracts';
 import type { FlareContextValue } from '../../src/runtime/provider-context';
 import type { WebEffects } from '../../src/web/fx-runtime';
@@ -180,11 +180,22 @@ describe('FlareFxHost', () => {
 
   test('with no effect for a preset, the run falls back and no kit is loaded', async () => {
     const { fx } = mount({ noEffects: true, wasmUrl: '/canvaskit.wasm' });
-    const { events } = start(fx, shatter());
+    const { events } = start(fx, dust());
     await settle();
 
     expect(events).toEqual(['fallback']);
     expect(loadCanvasKit).not.toHaveBeenCalled();
+  });
+
+  test('plays shatter with its own effect: a baked shard atlas', async () => {
+    const { fx } = mount({ noEffects: true, wasmUrl: '/canvaskit.wasm' });
+    const { events } = start(fx, shatter());
+    await settle();
+    await flushFrames(1);
+
+    expect(events).toEqual(['handoff']);
+    expect(loadedKit.offscreen).toHaveLength(1);
+    expect(loadedKit.callsOf('drawAtlas')[0]?.args[0]).toBe(loadedKit.offscreen[0]?.snapshot);
   });
 });
 

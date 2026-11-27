@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { StrictMode } from 'react';
-import { dust, shatter } from '../../src/core/presets';
+import { disintegrate, dust, shatter } from '../../src/core/presets';
 import type { FxRuntime } from '../../src/runtime/contracts';
 import type { FlareContextValue } from '../../src/runtime/provider-context';
 import type { WebEffects } from '../../src/web/fx-runtime';
@@ -196,6 +196,30 @@ describe('FlareFxHost', () => {
     expect(events).toEqual(['handoff']);
     expect(loadedKit.offscreen).toHaveLength(1);
     expect(loadedKit.callsOf('drawAtlas')[0]?.args[0]).toBe(loadedKit.offscreen[0]?.snapshot);
+  });
+
+  test('plays a rectangular mesh as grains: cells of the capture, with no bake', async () => {
+    for (const preset of [disintegrate(), shatter({ fragment: { pattern: 'grid' } })]) {
+      loadedKit = makeMockKit();
+      const { fx } = mount({ noEffects: true, wasmUrl: '/canvaskit.wasm' });
+      const { events } = start(fx, preset);
+      await settle();
+      await flushFrames(1);
+
+      expect(events).toEqual(['handoff']);
+      expect(loadedKit.offscreen).toHaveLength(0);
+      expect(loadedKit.callsOf('drawAtlas')).toHaveLength(1);
+    }
+  });
+
+  test("disintegrate({ pattern: 'triangles' }) is shards: it bakes", async () => {
+    const { fx } = mount({ noEffects: true, wasmUrl: '/canvaskit.wasm' });
+    const { events } = start(fx, disintegrate({ fragment: { pattern: 'triangles' } }));
+    await settle();
+    await flushFrames(1);
+
+    expect(events).toEqual(['handoff']);
+    expect(loadedKit.offscreen).toHaveLength(1);
   });
 });
 

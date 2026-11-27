@@ -207,17 +207,26 @@ describe('routing by the mesh', () => {
     const preset = disintegrate();
     const { image } = await play(preset);
 
-    expect(fragmentEffect.sprites(preset, RECT, image)).toBe(meshOf(preset).count);
+    // Its cells are pixels of the capture, so the mesh is sized in image pixels.
+    const cells = generateFracture(
+      preset.fragment,
+      RECT.width * PIXEL_RATIO,
+      RECT.height * PIXEL_RATIO,
+    );
+    expect(cells.rectangular).toBe(true);
+    expect(fragmentEffect.sprites(preset, RECT, image)).toBe(cells.count);
     expect(skia.vertices.mounts).toBe(0);
   });
 
-  test('on the public host a rectangular run, which no layer draws, plays its live fallback', async () => {
+  test('on the public host a rectangular run draws from the pool, off the capture', async () => {
     for (const preset of [shatter({ fragment: { pattern: 'grid' } }), disintegrate()]) {
-      const { events, target } = await play(preset);
+      const { events, target, image } = await play(preset);
+      expect(poolImage()).toBe(image.handle);
 
-      expect(events).toEqual(['fallback']);
-      expect(target.hidden.value).toBe(0);
-      expect(poolImage()).toBeNull();
+      frame(0);
+      expect(events).toEqual(['handoff']);
+      expect(target.hidden.value).toBe(1);
+      expect(skia.vertices.mounts).toBe(0);
     }
   });
 

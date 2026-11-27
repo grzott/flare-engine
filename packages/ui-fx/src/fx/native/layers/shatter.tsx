@@ -19,6 +19,7 @@ import {
   isFragmentPreset,
 } from '../../fragments';
 import { type EffectLayerProps, handOff, type NativeEffect } from '../host';
+import { GrainLayer } from './grains';
 
 interface Point {
   x: number;
@@ -200,7 +201,7 @@ function ShardLayer({
   );
 }
 
-/** Ends a run that no layer draws, unfinished, as soon as it mounts. */
+/** Ends a run that nothing draws, unfinished, as soon as it mounts. */
 function Unplayed({ onDone }: Pick<EffectLayerProps, 'onDone'>): ReactNode {
   useLayoutEffect(() => {
     onDone(false);
@@ -211,17 +212,18 @@ function Unplayed({ onDone }: Pick<EffectLayerProps, 'onDone'>): ReactNode {
 /**
  * The layer of a fragment run. The run's mesh picks how it draws, whatever the preset is called
  * (C43): pieces that are not all rectangles are shards, drawn by a `<Vertices>` layer. A
- * rectangular mesh is grains, which draw from the pool sprites the run claimed; no layer here
- * draws those, so such a run ends at once.
+ * rectangular mesh is grains, which draw from the pool sprites the run claimed.
  */
 function FragmentLayer(props: EffectLayerProps): ReactNode {
-  const { preset, rect, direction, press } = props.run;
+  const { preset, rect, image, direction, press } = props.run;
+  const { pixelRatio } = image;
   const fragments = useMemo(() => {
     if (!isFragmentPreset(preset)) return null;
-    const mesh = fragmentMesh(preset, rect.width, rect.height, press);
+    const mesh = fragmentMesh(preset, rect.width, rect.height, press, pixelRatio);
     return createFragmentRun(preset, mesh, rect.width, rect.height, direction, press);
-  }, [preset, rect, direction, press]);
-  if (fragments === null || fragments.mesh.rectangular) return <Unplayed onDone={props.onDone} />;
+  }, [preset, rect, pixelRatio, direction, press]);
+  if (fragments === null) return <Unplayed onDone={props.onDone} />;
+  if (fragments.mesh.rectangular) return <GrainLayer {...props} fragments={fragments} />;
   return <ShardLayer {...props} fragments={fragments} />;
 }
 
@@ -230,11 +232,11 @@ function FragmentLayer(props: EffectLayerProps): ReactNode {
  * sprite per piece; any other mesh draws on its own layer and claims none.
  */
 export const fragmentEffect: NativeEffect = {
-  sprites(preset, rect) {
+  sprites(preset, rect, image) {
     if (!isFragmentPreset(preset)) return 0;
     // Whether a mesh is rectangular, and how many pieces it then has, does not depend on where
     // the press was.
-    const mesh = fragmentMesh(preset, rect.width, rect.height, null);
+    const mesh = fragmentMesh(preset, rect.width, rect.height, null, image.pixelRatio);
     return mesh.rectangular ? mesh.count : 0;
   },
   Layer: FragmentLayer,

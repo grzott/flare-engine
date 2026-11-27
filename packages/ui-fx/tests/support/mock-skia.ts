@@ -162,6 +162,7 @@ const skiaModule = {
   MipmapMode: { None: 0, Nearest: 1, Linear: 2 },
   useRSXformBuffer: buffer(() => rsxform(1, 0, 0, 0)),
   useRectBuffer: buffer(() => rect(0, 0, 0, 0)),
+  useColorBuffer: buffer(() => new Float32Array([0, 0, 0, 1])),
   makeImageFromView(ref: { current: unknown }): Promise<MockImage> {
     skia.captured.push(ref.current);
     const image = skia.nextImage;

@@ -86,6 +86,22 @@ describe('createSpritePool', () => {
     expect(pool.transforms.value.every((v) => v === 0)).toBe(true);
   });
 
+  test('starts with every sprite white, and a freed range is white again', () => {
+    const pool = createSpritePool(4);
+    const colors = pool.colors.value;
+    expect(colors).toHaveLength(16);
+    expect(colors.every((v) => v === 1)).toBe(true);
+
+    const start = pool.claim(2);
+    colors.fill(0.25);
+    pool.free(start, 2);
+
+    expect(pool.colors.value).toBe(colors);
+    expect([...colors]).toEqual([
+      1, 1, 1, 1, 1, 1, 1, 1, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+    ]);
+  });
+
   test('claims contiguous ranges that never overlap', () => {
     const pool = createSpritePool(10);
     expect(pool.claim(4)).toBe(0);

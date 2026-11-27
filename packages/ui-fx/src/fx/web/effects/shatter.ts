@@ -2,6 +2,7 @@ import { packShardsInto } from '../../../core/fracture/pack';
 import type { ShardPacking } from '../../../core/fracture/types';
 import { type FragmentPose, fragmentPoseInto } from '../../../core/motion/pose';
 import { CAPTURE_MAX_PX } from '../../../runtime/element';
+import type { AtlasPool } from '../../../web/atlas';
 import type { WebEffect, WebRunState } from '../../../web/fx-runtime';
 import {
   createFragmentRun,
@@ -34,12 +35,51 @@ const runs = new WeakMap<WebRunState, ShardRun>();
 
 const _pose: FragmentPose = { x: 0, y: 0, rotation: 0, scale: 1, alpha: 1 };
 
+/**
+ * A `WebEffect.frame` for the pieces of `fragments`: write one sprite per piece into `pool` as it
+ * is `time` seconds into `run`, and return whether the run is still playing. Piece `i` is cut
+ * from `srcs` at `i * 4` (left, top, right, bottom) and turns about `pivots` at `i * 2`, a point
+ * in that rect in its own pixels. `scale` is layout pixels per source pixel.
+ */
+export function pieceSpritesInto(
+  run: WebRunState,
+  pool: AtlasPool,
+  time: number,
+  fragments: FragmentRun,
+  srcs: Float32Array,
+  pivots: Float32Array,
+  scale: number,
+): boolean {
+  const { state, phys, delay, duration } = fragments;
+  const count = fragments.mesh.count;
+  const { progress } = run;
+  const playing = progress !== undefined || time < duration;
+  let seconds = duration;
+  if (progress !== undefined) seconds = progress.value * duration;
+  else if (playing) seconds = time;
+  const t = seconds > delay ? seconds - delay : 0;
+  // The capture's corner is the origin, and the element starts a padding in from it.
+  const inset = run.image.padding;
+  const { xforms, colors } = pool;
+
+  pool.srcs.set(srcs);
+  for (let i = 0; i < count; i++) {
+    fragmentPoseInto(state, i, t, phys, _pose);
+    _pose.x += inset;
+    _pose.y += inset;
+    shardXformInto(_pose, pivots[i * 2]!, pivots[i * 2 + 1]!, scale, xforms, i * 4);
+    const alpha = _pose.alpha < 0 ? 0 : _pose.alpha > 1 ? 1 : _pose.alpha;
+    colors[i] = (((alpha * 255) << 24) | 0xffffff) >>> 0;
+  }
+  return playing;
+}
+
 function shardRunOf(run: WebRunState): ShardRun {
   const { preset, rect, image } = run;
   if (!isFragmentPreset(preset)) {
     throw new Error(`the shatter effect cannot draw a ${preset.kind} preset`);
   }
-  const mesh = fragmentMesh(preset, rect.width, rect.height, run.press);
+  const mesh = fragmentMesh(preset, rect.width, rect.height, run.press, image.pixelRatio);
   const fragments = createFragmentRun(
     preset,
     mesh,
@@ -104,28 +144,14 @@ export const shatterEffect: WebEffect = {
   frame(run, pool, time) {
     const shards = runs.get(run);
     if (shards === undefined) return false;
-    const { fragments, pivots, scale } = shards;
-    const { state, phys, delay, duration } = fragments;
-    const count = fragments.mesh.count;
-    const { progress } = run;
-    const playing = progress !== undefined || time < duration;
-    let seconds = duration;
-    if (progress !== undefined) seconds = progress.value * duration;
-    else if (playing) seconds = time;
-    const t = seconds > delay ? seconds - delay : 0;
-    // The capture's corner is the origin, and the element starts a padding in from it.
-    const inset = run.image.padding;
-    const { xforms, colors } = pool;
-
-    pool.srcs.set(shards.srcs);
-    for (let i = 0; i < count; i++) {
-      fragmentPoseInto(state, i, t, phys, _pose);
-      _pose.x += inset;
-      _pose.y += inset;
-      shardXformInto(_pose, pivots[i * 2]!, pivots[i * 2 + 1]!, scale, xforms, i * 4);
-      const alpha = _pose.alpha < 0 ? 0 : _pose.alpha > 1 ? 1 : _pose.alpha;
-      colors[i] = (((alpha * 255) << 24) | 0xffffff) >>> 0;
-    }
-    return playing;
+    return pieceSpritesInto(
+      run,
+      pool,
+      time,
+      shards.fragments,
+      shards.srcs,
+      shards.pivots,
+      shards.scale,
+    );
   },
 };

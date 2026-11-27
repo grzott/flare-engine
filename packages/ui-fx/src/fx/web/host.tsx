@@ -9,6 +9,7 @@ import {
 import { createWebFxRuntime, type WebEffects } from '../../web/fx-runtime';
 import { resolveCanvasKit } from '../../web/kit';
 import { isFragmentPreset } from '../fragments';
+import { grainsEffect } from './effects/grains';
 import { shatterEffect } from './effects/shatter';
 
 export interface FlareFxHostProps {
@@ -125,8 +126,13 @@ function nestedHost(
   return <WebFxHost canvasKit={canvasKit} wasmUrl={wasmUrl} effects={effects} />;
 }
 
-// A preset without a web effect plays its live fallback.
-const EFFECTS: WebEffects = (preset) => (isFragmentPreset(preset) ? shatterEffect : null);
+// A preset without a web effect plays its live fallback. `grid` and `cells` are the patterns
+// whose mesh is rectangular: its pieces are grains, cut from the capture with no bake.
+const EFFECTS: WebEffects = (preset) => {
+  if (!isFragmentPreset(preset)) return null;
+  const { pattern } = preset.fragment;
+  return pattern === 'grid' || pattern === 'cells' ? grainsEffect : shatterEffect;
+};
 
 /**
  * The snapshot-effect host on the web, under react-native-web and plain React DOM alike: it gives

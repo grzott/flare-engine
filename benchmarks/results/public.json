@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "release": {
-    "version": "0.4.18"
+    "version": "0.4.19"
   },
   "lanes": [
     {
@@ -849,7 +849,7 @@
           "p95": null,
           "p99": 176449.9999999316,
           "samples": 100,
-          "note": "Held to a wider tolerance than every other row (30%, not 10%), and is less reproducible than its neighbours. Provisional (#617). Bimodal across 47.3-59.7 us (1.26x) over 10 pinned full-suite captures on 2026-11-26: 6 runs at 47.3-51.6 us and 4 at 56.1-59.7 us, while its setPosition and frame siblings stay tight. The folded median lands in whichever state that window caught. Read the spread column, not the median, for this row."
+          "note": null
         },
         {
           "id": "physics.curtain.frame",

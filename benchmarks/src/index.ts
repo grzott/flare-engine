@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { judgeAffinity, readAffinity } from './affinity.js';
 import { type AllocRow, allocRows } from './alloc.js';
 import { animationBenches } from './animation.bench.js';
+import { type CurtainProbeOutput, parseCurtainProbeOutput } from './curtain-probe.js';
 import { applyBenchDevFlag, assertDevFlagDefined, devFlagState } from './dev-flag.js';
 import { ecsBenches } from './ecs.bench.js';
 import {
@@ -26,7 +27,7 @@ import { mathBenches } from './math.bench.js';
 import { particlesBenches } from './particles.bench.js';
 import { particlesDrawBenches } from './particles-draw.bench.js';
 import { pathfindingBenches } from './pathfinding.bench.js';
-import { physicsBenches, physicsCurtainBenches } from './physics.bench.js';
+import { physicsBenches } from './physics.bench.js';
 import { postfxBenches } from './postfx.bench.js';
 import { judgePowerScheme, readPowerScheme } from './power.js';
 import { aggregateRuns } from './promote.js';
@@ -73,8 +74,31 @@ type Group = { title: string; results: BenchStats[] };
 
 const HEAP_SCENARIO_ENTITIES = [500, 1000, 2000] as const;
 
-function runAll(): Group[] {
-  return [
+/**
+ * Runs `curtain-probe.ts` in a fresh process (#617). The child inherits this process's CPU
+ * affinity, and its own CPU time comes back so the load window counts it as this capture's.
+ */
+function runCurtainProbe(): CurtainProbeOutput {
+  const probe = resolve(srcDir(), 'curtain-probe.ts');
+  const proc = Bun.spawnSync([process.execPath, 'run', probe], {
+    cwd: benchmarksDir(),
+    stdout: 'pipe',
+    stderr: 'inherit',
+  });
+  if (!proc.success) {
+    console.error(`curtain probe exited ${proc.exitCode} — aborting.`);
+    process.exit(1);
+  }
+  const parsed = parseCurtainProbeOutput(proc.stdout.toString());
+  if (typeof parsed === 'string') {
+    console.error(`curtain probe ${parsed} — aborting.`);
+    process.exit(1);
+  }
+  return parsed;
+}
+
+function runAll(): { groups: Group[]; childCpuMs: number } {
+  const groups: Group[] = [
     { title: 'ECS', results: ecsBenches() },
     { title: 'Physics', results: physicsBenches() },
     { title: 'Particles', results: particlesBenches() },
@@ -91,8 +115,12 @@ function runAll(): Group[] {
     { title: 'RenderSystem', results: renderSystemBenches() },
     { title: 'ParticlesDraw', results: particlesDrawBenches() },
     { title: 'ShapesDraw', results: shapesDrawBenches() },
-    { title: 'PhysicsCurtain', results: physicsCurtainBenches() },
   ];
+  // Last, as before, but out of process: in here its `step` row read the history the suites
+  // above left in `CollisionWorld.step`, not the curtain (#617, `curtain-probe.ts`).
+  const curtain = runCurtainProbe();
+  groups.push({ title: 'PhysicsCurtain', results: curtain.results });
+  return { groups, childCpuMs: curtain.cpuMs };
 }
 
 /**
@@ -556,7 +584,7 @@ function renderMarkdown(device: DeviceReport | null, capture: MicrobenchReport):
     "- **Tilemap** — `drawInto` queues the tiles an 800×600 camera sees on a 256×256 map of 16 px tiles (two layers, a quarter of the decor flipped), then clears the batch; flushing is the Render suite's cost. `getTileAt` reads every cell of one layer; `decodeGid` runs `decodeGidFlags` + `stripGidFlags` over 4096 non-empty gids.",
   );
   lines.push(
-    '- **PhysicsCurtain** — a bullet curtain in one `CollisionWorld`: 2000 enemy-layer 8×8 bodies that do not collide with each other, 100 player shots and one ship, in a 384×768 field (6×12 broadphase cells) that wraps at its edges. Enemy bodies collide with the shots and the ship; shots and the ship do not collide with each other. `setPosition` is one pass moving every body by its per-frame velocity; `step` is one `world.step()` on a frame that is not moving; `frame` is both.',
+    '- **PhysicsCurtain** — a bullet curtain in one `CollisionWorld`: 2000 enemy-layer 8×8 bodies that do not collide with each other, 100 player shots and one ship, in a 384×768 field (6×12 broadphase cells) that wraps at its edges. Enemy bodies collide with the shots and the ship; shots and the ship do not collide with each other. `setPosition` is one pass moving every body by its per-frame velocity; `step` is one `world.step()` on a frame that is not moving; `frame` is both. The suite runs in a fresh process of its own. In the shared one, `step` read 48-63 µs depending on which suites had run `CollisionWorld.step` first; alone it reads about 70 µs, the cost a game with one `CollisionWorld` pays (#617).',
   );
   lines.push(
     '- **Pathfinding** — "op" is one corner-to-corner search on a 128×128 grid: `open` has no walls, `maze` is a seeded perfect maze with one-cell corridors. The path array each search returns is the engine\'s own allocation. Since 0.4.18 both follow one corner rule, no diagonal step past the corner of a wall (see the pathfinding README), so on these uniform grids both return a path of the same cost. They do different work to find it: compare each row with itself across captures, not with the other.',
@@ -759,10 +787,11 @@ assertDevFlagDefined();
 
 // The load window brackets the timed suites and nothing else: the heap probes
 // fork children, whose CPU `process.cpuUsage()` cannot see and would therefore
-// misreport as a noisy neighbour (load.ts).
+// misreport as a noisy neighbour (load.ts). The curtain probe is a child inside
+// the window, so it reports its own CPU and the window credits it.
 const cpuBefore = sampleCpu();
-const groups = runAll();
-const load = measureLoad(cpuBefore, sampleCpu());
+const { groups, childCpuMs } = runAll();
+const load = measureLoad(cpuBefore, sampleCpu(), childCpuMs);
 // Counters and heap run after the timed suites: the allocation gate arms
 // __DEV__ (which turns on the pool's debug live-set) and the heap probes fork
 // processes, neither of which may touch a timing measurement.

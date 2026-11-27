@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type { AllocRow } from '../src/alloc.js';
-import { SCENARIO_DEVIATION_OVERRIDES } from '../src/load.js';
+import {
+  deviationLimitFor,
+  MAX_RUN_DEVIATION_PERCENT,
+  SCENARIO_DEVIATION_OVERRIDES,
+} from '../src/load.js';
 import { aggregateRuns } from '../src/promote.js';
 import { type MicrobenchReport, type MicrobenchResult, SCHEMA_VERSION } from '../src/results.js';
 import {
@@ -428,13 +432,14 @@ describe('per-scenario deviation overrides', () => {
     expect(aggregateRuns(window(PLAIN, perRunUs)).ok).toBe(false);
   });
 
-  // The 0.4.19 step-2 window at 3a6e002a (2026-11-26), refused on this row alone.
-  test('folds the refused 2026-11-26 window of the curtain step row, and only that row', () => {
-    const perRunUs = [48.0, 57.3, 49.3, 59.7, 56.1];
+  // #617: the curtain suite runs in its own process, so its step row carries no override.
+  test('holds the curtain step row to the global limit: in-process runs fail it, fresh ones fold', () => {
     const step = 'physics.curtain  step         2000 bolts + 100 shots + 1 ship';
-    const frame = 'physics.curtain  frame        2000 bolts + 100 shots + 1 ship';
-    expect(aggregateRuns(window(step, perRunUs)).ok).toBe(true);
-    expect(aggregateRuns(window(frame, perRunUs)).ok).toBe(false);
+    expect(deviationLimitFor(step)).toBe(MAX_RUN_DEVIATION_PERCENT);
+    // The 0.4.19 step-2 window at 3a6e002a (2026-11-26), measured in the shared process.
+    expect(aggregateRuns(window(step, [48.0, 57.3, 49.3, 59.7, 56.1])).ok).toBe(false);
+    // Five fresh pinned processes running only this suite (2026-11-27).
+    expect(aggregateRuns(window(step, [67.1, 68.2, 71.1, 71.8, 73.1])).ok).toBe(true);
   });
 
   // The first window the 2026-11-19 node recapture (#472) refused on churn 5000, runs 1-5 at ea64817.

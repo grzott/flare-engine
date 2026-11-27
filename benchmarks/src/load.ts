@@ -23,6 +23,8 @@ import { cpus } from 'node:os';
  *   1. `process.cpuUsage()` does not include spawned children, so the window
  *      must not span the heap probes (which fork). It is taken around the timed
  *      suites only — which is also the only place measurement quality matters.
+ *      The one timed suite that runs in a child, `PhysicsCurtain`, reports its
+ *      own CPU, and `measureLoad` adds it to this process's share.
  *   2. **A process can perturb a measurement without burning CPU.** Cache and
  *      memory-bandwidth pressure from a resident-but-idle neighbour is invisible
  *      here. A low reading is therefore weak evidence of a quiet machine, while
@@ -61,11 +63,12 @@ export type LoadWindow = {
   windowMs: number;
 };
 
-export function measureLoad(before: CpuSnapshot, after: CpuSnapshot): LoadWindow {
+/** `childOwnMs` is CPU the capture spent in child processes inside the window, which it owns. */
+export function measureLoad(before: CpuSnapshot, after: CpuSnapshot, childOwnMs = 0): LoadWindow {
   const totalDelta = after.totalMs - before.totalMs;
   if (totalDelta <= 0) return { foreignPercent: 0, ownPercent: 0, windowMs: 0 };
   const busyDelta = after.busyMs - before.busyMs;
-  const ownDelta = after.ownMs - before.ownMs;
+  const ownDelta = after.ownMs - before.ownMs + childOwnMs;
   // Clamp: the two clocks are sampled independently and can disagree slightly
   // at the margins, which must not produce a negative "foreign" reading.
   const foreignDelta = Math.max(0, busyDelta - ownDelta);
@@ -259,39 +262,6 @@ export const SCENARIO_DEVIATION_OVERRIDES: ReadonlyMap<string, ScenarioDeviation
   [
     'ecs.churn 5000 entities, 5%/step',
     { percent: 53, reason: CHURN_GC_STATE('213.2-323 us', '1.52x') },
-  ],
-  /**
-   * The `step` row of `PhysicsCurtain` (#579): one `world.step()` on a frame where nothing moved,
-   * which after #592 is almost all pair walking. **Provisional (#617)**, accepted by the owner on
-   * 2026-11-26 to unblock the 0.4.19 recapture after it refused the step-2 window.
-   *
-   * **Evidence, 2026-11-26,** fresh pinned processes on a quiet machine (i9-13900KF):
-   * - In the full bench, 10 captures read 47.3-51.6 us in 6 runs and 56.1-59.7 us in 4 (1.26x).
-   * - Its siblings in the same captures stay tight: `setPosition` 68.3-71.9 us, `frame`
-   *   172.4-184.4 us, `physics.step 1000 AABB dense` 414.6-424.5 us. One scenario shape over the
-   *   same `CollisionWorld` is bimodal and the others are not, which rules out the machine.
-   * - With the suite as the only work in a process, `step` reads 67.0-72.5 us over 6 processes,
-   *   slower than either full-suite state, so its cost depends on what the process ran before.
-   *   The cause, JIT history as for `updateTweens` or GC state as for `ecs.churn`, is not
-   *   established. **Exit condition (#617):** remove this entry once three consecutive node windows
-   *   fold the row at 10%, or replace "Provisional" with the evidence that explains its two states.
-   *
-   * The tolerance exceeds the row's measured max/min ratio.
-   *
-   * **What is given up:** this row can't catch a regression smaller than 30% on its own. The
-   * broadphase it measures is still guarded at the strict 10% by `frame`, which runs the same
-   * `step` after every body moves, and by all six `physics.step` rows.
-   */
-  [
-    'physics.curtain  step         2000 bolts + 100 shots + 1 ship',
-    {
-      percent: 30,
-      reason:
-        'Provisional (#617). Bimodal across 47.3-59.7 us (1.26x) over 10 pinned full-suite ' +
-        'captures on 2026-11-26: 6 runs at 47.3-51.6 us and 4 at 56.1-59.7 us, while its ' +
-        'setPosition and frame siblings stay tight. The folded median lands in whichever state ' +
-        'that window caught. Read the spread column, not the median, for this row.',
-    },
   ],
 ]);
 

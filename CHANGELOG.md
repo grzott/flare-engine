@@ -86,9 +86,12 @@ JSDoc of what it changes. Nothing announced here changes in this release.
     - In the published benchmarks, `step()` over 1000 boxes takes 96 µs sparse and 424 µs dense
       (0.4.18: 174 µs and 562 µs), and over 100 boxes 5.0 µs and 7.3 µs (10.5 µs and 17.2 µs).
     - The new `physics.curtain` rows (2000 enemy bodies that never pair with each other, 100 shots
-      and a ship) publish at 68 µs for a `setPosition` pass and 50 µs for a `step()` on a frame
+      and a ship) publish at 68 µs for a `setPosition` pass and 68 µs for a `step()` on a frame
       where nothing moved. On a shared CI runner, the same two rows went from 322-343 µs to
       138-142 µs and from 1.27 ms to 117-126 µs.
+      - **Corrected 2026-11-28:** this entry first gave 50 µs for the `step()` row. That figure
+        came from running the row in the same process as the other bench suites (#617). In its
+        own process it measures 68 µs (#627).
     - Which pairs a step reports, and which signal each gets, is unchanged. Two orders that were
       never specified can differ: the order in which one `step()` emits pairs that share their lower
       entity id, and which of two colliders `raycast` returns at exactly the same distance.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { act, type ComponentProps, type ReactNode, StrictMode } from 'react';
-import { fade, press, slide } from '../../src/core/presets';
+import { fade, flip, press, slide } from '../../src/core/presets';
 import { FlarePresence } from '../../src/runtime/presence';
 import { installDom, type Rendered, render } from '../support/dom';
 import { type FakeAnimation, installFakeAnimate } from '../support/fake-animate';
@@ -88,6 +88,18 @@ test("on the web the host gets the caller's style, with no animated style after 
   const r = mount(<FlareView testID="box" style={own} />);
   expect(rn.props(find(r, 'box')).style).toBe(own);
   expect(waapi.animations).toEqual([]);
+});
+
+test("on the web the origin of a flip follows the caller's style, and the flip plays in 3D", () => {
+  const own = { backgroundColor: 'red' };
+  const r = mount(
+    <FlareView testID="box" style={own} enter={flip({ origin: { x: 0, y: 0.5 } })} />,
+  );
+  expect(rn.props(find(r, 'box')).style).toEqual([own, { transformOrigin: '0% 50%' }]);
+  expect(waapi.animations[0]!.keyframes[0]!.transform).toBe(
+    'perspective(800px) translate(0px, 0px) rotateX(0deg) rotateY(90deg) rotate(0deg) scale(1)',
+  );
+  expect(reanimated.styleRenders).toBe(0);
 });
 
 test('an entering slide starts from its distance', () => {

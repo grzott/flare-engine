@@ -13,7 +13,11 @@ import {
   useCallback,
   useLayoutEffect,
   useRef,
+  useState,
 } from 'react';
+import type { Vec2Out } from '../core/conventions';
+import { transformOriginOf } from '../core/live';
+import type { LiveDriver } from '../runtime/contracts';
 import {
   type ElementPlatform,
   type FlareElementOptions,
@@ -72,6 +76,25 @@ function measuredSize(host: unknown): { w: number; h: number } | null {
 }
 
 /**
+ * `driver`, telling `apply` the transform origin of each preset before it plays: a
+ * `transform-origin` value, or `null` for a preset that sets none. `press` holds the last press
+ * point in element pixels.
+ */
+function withOrigin(
+  driver: LiveDriver,
+  press: { readonly current: Vec2Out | null },
+  apply: (origin: string | null) => void,
+): LiveDriver {
+  return {
+    ...driver,
+    play(c, direction, o) {
+      apply(transformOriginOf(c, press.current));
+      driver.play(c, direction, o);
+    },
+  };
+}
+
+/**
  * Wrap a tag or a component so it takes the Flare element options: `enter`, `exit`, `press`,
  * `exitOn` and the rest of `FlareElementOptions`. Call it once, at module scope, never during a
  * render.
@@ -80,6 +103,11 @@ function measuredSize(host: unknown): { w: number; h: number } | null {
  * pointer handlers and `onClick`) on to one DOM element. That element is animated through the Web
  * Animations API: the transform adds to its own, and the opacity replaces its own once a preset
  * has played.
+ *
+ * A preset with an origin, a `flip`, turns about it: from the moment it plays until a preset
+ * without one does, `style` also sets `transformOrigin`, over the caller's own, so the element's
+ * own transform turns about it too. An origin of `'press'` is the last press point on the
+ * element, or the centre before any press.
  *
  * The press point is where `onPointerDown` landed, measured from the top left of the element's
  * `getBoundingClientRect()`. A click completes a press, so `exitOn: 'press'` exits on a click.
@@ -115,6 +143,8 @@ export function createFlareComponent<T extends FlareHost>(host: T): FlareCompone
 
     const node = useRef<unknown>(null);
     const pressed = useRef(false);
+    const pressPoint = useRef<Vec2Out | null>(null);
+    const [origin, setOrigin] = useState<string | null>(null);
     const created = useRef<ElementPlatform | null>(null);
     created.current ??= {
       driver: null,
@@ -127,7 +157,7 @@ export function createFlareComponent<T extends FlareHost>(host: T): FlareCompone
     useLayoutEffect(() => {
       if (!isElement(node.current)) return;
       const driver = createWebLiveDriver(node.current);
-      platform.driver = driver;
+      platform.driver = withOrigin(driver, pressPoint, setOrigin);
       // The driver holds animations on the element. Left behind, as by the first of StrictMode's
       // two effect passes, their transforms would add to the next driver's.
       return () => {
@@ -196,8 +226,10 @@ export function createFlareComponent<T extends FlareHost>(host: T): FlareCompone
     const handlers: HostProps = {
       onPointerDown(event: PointerEvent) {
         const rect = event.currentTarget.getBoundingClientRect();
+        const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
         pressed.current = true;
-        handle.onPressIn({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+        pressPoint.current = point;
+        handle.onPressIn(point);
         onPointerDown?.(event);
       },
       onPointerUp: pressOut(onPointerUp),
@@ -212,14 +244,12 @@ export function createFlareComponent<T extends FlareHost>(host: T): FlareCompone
       };
     }
 
+    let hostStyle = style;
+    if (origin !== null) hostStyle = { ...hostStyle, transformOrigin: origin };
+    if (exiting) hostStyle = { ...hostStyle, pointerEvents: 'none' };
+
     return (
-      <Host
-        {...rest}
-        {...handlers}
-        {...exitA11yProps(exiting)}
-        ref={attach}
-        style={exiting ? { ...style, pointerEvents: 'none' } : style}
-      />
+      <Host {...rest} {...handlers} {...exitA11yProps(exiting)} ref={attach} style={hostStyle} />
     );
   }
 

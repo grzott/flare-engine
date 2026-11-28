@@ -5,6 +5,7 @@ import {
   emerge,
   type ForceSpec,
   fade,
+  flip,
   isSnapshotPreset,
   type LivePreset,
   liveFallbackOf,
@@ -113,6 +114,19 @@ describe('defaults', () => {
       shadow: { color: '#000', opacity: 0.6, lag: 0.3, blur: 8, length: 0 },
       sheen: null,
       duration: 0.45,
+    });
+  });
+
+  test('flip', () => {
+    expect(flip()).toEqual({
+      kind: 'flip',
+      axis: 'y',
+      angle: 90,
+      perspective: 800,
+      origin: 'center',
+      fadeAtEdge: true,
+      duration: 0.45,
+      easing: 'easeOutCubic',
     });
   });
 
@@ -245,9 +259,27 @@ describe('overrides', () => {
 
 describe('frozen results', () => {
   test('every factory returns a deeply frozen object', () => {
-    for (const p of [fade(), slide(), press(), emerge(), shatter(), disintegrate(), dust()]) {
+    for (const p of [
+      fade(),
+      slide(),
+      press(),
+      emerge(),
+      flip(),
+      shatter(),
+      disintegrate(),
+      dust(),
+    ]) {
       expect(isDeepFrozen(p)).toBe(true);
     }
+  });
+
+  test('a flip copies the origin it is given', () => {
+    const origin = { x: 0, y: 0.5 };
+    const p = flip({ origin });
+    expect(Object.isFrozen(origin)).toBe(false);
+    origin.x = 1;
+    expect(p.origin).toEqual({ x: 0, y: 0.5 });
+    expect(isDeepFrozen(p)).toBe(true);
   });
 
   test('caller-owned option objects are copied, not frozen or aliased', () => {
@@ -322,6 +354,49 @@ describe('validation', () => {
   test('emerge softness', () => {
     expect(messageOf(() => emerge({ softness: -0.1 }))).toBe(
       'emerge: softness must be in 0..1, got -0.1',
+    );
+  });
+
+  test('flip angle stays within half a turn either way', () => {
+    const wanted = (got: string) => `flip: angle must be in -180..180, got ${got}`;
+    expect(messageOf(() => flip({ angle: 181 }))).toBe(wanted('181'));
+    expect(messageOf(() => flip({ angle: -180.5 }))).toBe(wanted('-180.5'));
+    expect(messageOf(() => flip({ angle: Number.NaN }))).toBe(wanted('NaN'));
+    expect(messageOf(() => flip({ angle: Number.POSITIVE_INFINITY }))).toBe(wanted('Infinity'));
+    expect(messageOf(() => flip({ angle: Number.NEGATIVE_INFINITY }))).toBe(wanted('-Infinity'));
+    expect(messageOf(() => flip({ angle: '90' } as never))).toBe(wanted('90'));
+  });
+
+  test('flip perspective is at least 100', () => {
+    const wanted = (got: string) => `flip: perspective must be a finite number >= 100, got ${got}`;
+    expect(messageOf(() => flip({ perspective: 50 }))).toBe(wanted('50'));
+    expect(messageOf(() => flip({ perspective: 99.9 }))).toBe(wanted('99.9'));
+    expect(messageOf(() => flip({ perspective: 0 }))).toBe(wanted('0'));
+    expect(messageOf(() => flip({ perspective: -800 }))).toBe(wanted('-800'));
+    expect(messageOf(() => flip({ perspective: Number.NaN }))).toBe(wanted('NaN'));
+    expect(messageOf(() => flip({ perspective: Number.POSITIVE_INFINITY }))).toBe(
+      wanted('Infinity'),
+    );
+  });
+
+  test('flip origin has to be an origin', () => {
+    expect(messageOf(() => flip({ origin: { x: Number.NaN, y: 0 } }))).toBe(
+      'flip: origin.x must be a finite number, got NaN',
+    );
+    expect(messageOf(() => flip({ origin: { x: 0, y: Number.POSITIVE_INFINITY } }))).toBe(
+      'flip: origin.y must be a finite number, got Infinity',
+    );
+    expect(messageOf(() => flip(JSON.parse('{"origin":3}') as Parameters<typeof flip>[0]))).toBe(
+      "flip: origin must be 'center', 'press' or { x, y }, got 3",
+    );
+  });
+
+  test('flip takes the common timing checks', () => {
+    expect(messageOf(() => flip({ duration: -1 }))).toBe(
+      'flip: duration must be a finite number >= 0, got -1',
+    );
+    expect(messageOf(() => flip({ duration: 0.2, spring: { duration: 0.3 } }))).toBe(
+      'flip: a spring sets its own duration; do not combine it with duration or easing',
     );
   });
 
@@ -546,6 +621,16 @@ describe('validation', () => {
     expect(disintegrate({ fragment: { pattern: 'grid', count: 3000 } }).fragment.count).toBe(3000);
     expect(shatter({ forces: [{ strength: -400 }] }).forces[0]?.strength).toBe(-400);
     expect(slide({ start: -0.2, end: 1.3 }).end).toBe(1.3);
+    expect(flip({ angle: 180 }).angle).toBe(180);
+    expect(flip({ angle: -180 }).angle).toBe(-180);
+    expect(flip({ angle: 0 }).angle).toBe(0);
+    expect(flip({ perspective: 100 }).perspective).toBe(100);
+    expect(flip({ origin: { x: -0.5, y: 2 } }).origin).toEqual({ x: -0.5, y: 2 });
+    expect(flip({ origin: 'press', axis: 'x', fadeAtEdge: false })).toMatchObject({
+      origin: 'press',
+      axis: 'x',
+      fadeAtEdge: false,
+    });
   });
 });
 
@@ -559,12 +644,18 @@ describe('isSnapshotPreset', () => {
     for (const p of [shatter(), disintegrate(), dust()]) expect(isSnapshotPreset(p)).toBe(true);
     for (const p of [fade(), slide(), press()]) expect(isSnapshotPreset(p)).toBe(false);
   });
+
+  test('a flip is live', () => {
+    const live: LivePreset = flip();
+    expect(isSnapshotPreset(live)).toBe(false);
+  });
 });
 
 describe('liveFallbackOf', () => {
   test('defaults to a short fade', () => {
     expect(liveFallbackOf(shatter())).toEqual(fade({ opacity: 0, duration: 0.15 }));
     expect(liveFallbackOf(slide())).toEqual(fade({ opacity: 0, duration: 0.15 }));
+    expect(liveFallbackOf(flip())).toEqual(fade({ opacity: 0, duration: 0.15 }));
     expect(Object.isFrozen(liveFallbackOf(shatter()))).toBe(true);
   });
 
@@ -615,6 +706,8 @@ describe('presetDuration', () => {
     expect(presetDuration({ ...slide(), duration: undefined })).toBe(0.35);
     expect(presetDuration({ kind: 'press', scale: 0.9, opacity: 1, brightness: 1 })).toBe(0.12);
     expect(presetDuration({ ...emerge(), duration: undefined })).toBe(0.45);
+    expect(presetDuration({ ...flip(), duration: undefined })).toBe(0.45);
+    expect(presetDuration(flip({ delay: 0.1 }))).toBeCloseTo(0.55, 12);
     expect(presetDuration({ ...dust(), duration: undefined })).toBe(1.2);
     expect(presetDuration({ kind: 'fade', opacity: 0, delay: 0.5 })).toBe(0.75);
     expect(presetDuration({ kind: 'fade', opacity: 0, duration: 0 })).toBe(0);

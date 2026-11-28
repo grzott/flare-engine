@@ -8,6 +8,7 @@ import {
   useCallback,
   useLayoutEffect,
   useRef,
+  useState,
 } from 'react';
 import {
   findNodeHandle,
@@ -16,6 +17,8 @@ import {
   Platform,
 } from 'react-native';
 import { createAnimatedComponent } from 'react-native-reanimated';
+import type { Vec2Out } from '../core/conventions';
+import { transformOriginOf } from '../core/live';
 import { exitA11yProps, moveAccessibilityFocus } from '../native/a11y';
 import { useNativeLiveDriver } from '../native/live-driver';
 import type { LiveDriver } from '../runtime/contracts';
@@ -130,6 +133,25 @@ function driverFor(host: unknown, native: LiveDriver | null): LiveDriver | null 
   return isAnimatable(host) ? createWebLiveDriver(host) : null;
 }
 
+/**
+ * `driver`, telling `apply` the transform origin of each preset before it plays: a
+ * `transformOrigin` value, or `null` for a preset that sets none. `press` holds the last press
+ * point in element pixels.
+ */
+function withOrigin(
+  driver: LiveDriver,
+  press: { readonly current: Vec2Out | null },
+  apply: (origin: string | null) => void,
+): LiveDriver {
+  return {
+    ...driver,
+    play(c, direction, o) {
+      apply(transformOriginOf(c, press.current));
+      driver.play(c, direction, o);
+    },
+  };
+}
+
 function createFlareHost<C extends JSXElementConstructor<never>>(
   component: C,
   source: PressSource,
@@ -177,6 +199,8 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
     // that effect starts the animation before the first paint, so there is nothing to hide.
     const { driver, style: animated } = useLiveDriver(enter !== undefined && isPresent);
     const host = useRef<unknown>(null);
+    const pressPoint = useRef<Vec2Out | null>(null);
+    const [origin, setOrigin] = useState<string | null>(null);
     const layout = useRef<Size | null>(null);
     const created = useRef<ElementPlatform | null>(null);
     created.current ??= {
@@ -189,7 +213,7 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
     // Declared before `useFlareElement`, so its mount effect already finds the driver.
     useLayoutEffect(() => {
       const made = driverFor(host.current, driver);
-      platform.driver = made;
+      platform.driver = made === null ? null : withOrigin(made, pressPoint, setOrigin);
       if (made === null || made === driver) return;
       // A driver made here holds animations on the node. Left behind, as by the first of
       // StrictMode's two effect passes, their transforms would add to the next driver's.
@@ -245,7 +269,9 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
     if (handle.phase === 'released') return null;
 
     const pressIn: TouchHandler = (event) => {
-      handle.onPressIn({ x: event.nativeEvent.locationX, y: event.nativeEvent.locationY });
+      const point = { x: event.nativeEvent.locationX, y: event.nativeEvent.locationY };
+      pressPoint.current = point;
+      handle.onPressIn(point);
       (source === 'touch' ? onTouchStart : onPressIn)?.(event);
     };
     const pressOut =
@@ -279,13 +305,16 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
       };
     }
 
+    // The origin follows the caller's style and so overrides its `transformOrigin`.
+    const placed = origin === null ? style : [style, { transformOrigin: origin }];
+
     return (
       <Host
         {...rest}
         {...handlers}
         {...exitA11yProps(exiting)}
         ref={attach}
-        style={animated === undefined ? style : [style, animated]}
+        style={animated === undefined ? placed : [placed, animated]}
         pointerEvents={exiting ? 'none' : pointerEvents}
         onLayout={(event) => {
           layout.current ??= { w: 0, h: 0 };
@@ -307,6 +336,10 @@ function createFlareHost<C extends JSXElementConstructor<never>>(
  * `C` must pass its `ref` and the host props it is given (`style`, `pointerEvents`, `onLayout`,
  * the touch handlers and the accessibility props) on to one host view. The animated style comes
  * last in `style` and owns `opacity` and `transform`.
+ *
+ * A preset with an origin, a `flip`, turns about it: from the moment it plays until a preset
+ * without one does, `style` also sets `transformOrigin`, over the caller's own. An origin of
+ * `'press'` is the last press point on the element, or the centre before any press.
  *
  * On react-native-web `C` is used as it is, with no Reanimated around it, and its `ref` must
  * reach a DOM node. The element is animated through the Web Animations API instead: the

@@ -7,7 +7,7 @@ import {
   LIVE_POSE_STRIDE,
   sampleLivePosesInto,
 } from '../../src/core/live';
-import { emerge, fade, press, slide } from '../../src/core/presets';
+import { emerge, fade, flip, press, slide } from '../../src/core/presets';
 import type { LiveDriver } from '../../src/runtime/contracts';
 import { flipReflow } from '../../src/web/flip';
 import { createWebLiveDriver, poseRowsToKeyframes } from '../../src/web/live-driver';
@@ -111,6 +111,47 @@ test('a live emerge is played with the filter, a fade without it', () => {
 
   driver.play(compiled(fade()), 1, { onEnd() {} });
   for (const frame of waapi.animations[3]!.keyframes) expect('filter' in frame).toBe(false);
+});
+
+/** The names of the functions in a `transform` value, in order. */
+const functionsOf = (frame: Keyframe): string[] =>
+  String(frame.transform).match(/[a-zA-Z]+(?=\()/g) ?? [];
+
+test('an entering flip starts at perspective(800px) rotateY(90deg), invisible, and ends flat', () => {
+  const { driver } = mount();
+  driver.play(compiled(flip()), 1, { onEnd() {} });
+
+  const [transform, paint] = waapi.animations;
+  expect(transform!.keyframes).toHaveLength(28);
+  expect(transform!.keyframes[0]!.transform).toBe(
+    'perspective(800px) translate(0px, 0px) rotateX(0deg) rotateY(90deg) rotate(0deg) scale(1)',
+  );
+  expect(transform!.keyframes.at(-1)!.transform).toBe(
+    'perspective(800px) translate(0px, 0px) rotateX(0deg) rotateY(0deg) rotate(0deg) scale(1)',
+  );
+  expect(Number(paint!.keyframes[0]!.opacity)).toBeCloseTo(0, 6);
+  expect(paint!.keyframes.at(-1)!.opacity).toBe(1);
+  for (const frame of paint!.keyframes) expect('filter' in frame).toBe(false);
+});
+
+test('every keyframe of a flip has the same function list, in both directions', () => {
+  const { driver } = mount();
+  const expected = ['perspective', 'translate', 'rotateX', 'rotateY', 'rotate', 'scale'];
+  driver.play(compiled(flip()), 1, { onEnd() {} });
+  driver.play(compiled(flip({ axis: 'x', angle: -120, perspective: 400 })), -1, { onEnd() {} });
+
+  for (const index of [0, 2]) {
+    const frames = waapi.animations[index]!.keyframes;
+    expect(frames.length).toBeGreaterThan(2);
+    for (const frame of frames) expect(functionsOf(frame)).toEqual(expected);
+  }
+  const exited = waapi.animations[2]!.keyframes;
+  expect(exited[0]!.transform).toBe(
+    'perspective(400px) translate(0px, 0px) rotateX(0deg) rotateY(0deg) rotate(0deg) scale(1)',
+  );
+  expect(exited.at(-1)!.transform).toBe(
+    'perspective(400px) translate(0px, 0px) rotateX(-120deg) rotateY(0deg) rotate(0deg) scale(1)',
+  );
 });
 
 test('play(fade, 1) calls animate twice, with 16 keyframes for 0.25 s at 60 fps', () => {

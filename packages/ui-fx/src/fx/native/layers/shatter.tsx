@@ -202,7 +202,7 @@ function ShardLayer({
 }
 
 /** Ends a run that nothing draws, unfinished, as soon as it mounts. */
-function Unplayed({ onDone }: Pick<EffectLayerProps, 'onDone'>): ReactNode {
+export function Unplayed({ onDone }: Pick<EffectLayerProps, 'onDone'>): ReactNode {
   useLayoutEffect(() => {
     onDone(false);
   }, [onDone]);

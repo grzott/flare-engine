@@ -66,6 +66,14 @@ export const skia = {
   group: nodes(),
   vertices: nodes(),
   imageShader: nodes(),
+  rect: nodes(),
+  shader: nodes(),
+  /** The image filter. No effect may mount one: it is not implemented on the web (spec §3.3). */
+  runtimeShader: nodes(),
+  /** The source of every `Skia.RuntimeEffect.Make` call. */
+  effects: [] as string[],
+  /** `Skia.RuntimeEffect.Make` throws, as it does for SkSL that does not compile. */
+  failEffect: false,
   /** The `current` of the ref each `makeImageFromView` call was given. */
   captured: [] as unknown[],
   /** What the next `makeImageFromView` resolves with. `null` rejects instead. */
@@ -81,6 +89,9 @@ export const skia = {
       skia.group,
       skia.vertices,
       skia.imageShader,
+      skia.rect,
+      skia.shader,
+      skia.runtimeShader,
     ]) {
       kind.mounts = 0;
       kind.unmounts = 0;
@@ -90,6 +101,8 @@ export const skia = {
     skia.nextImage = null;
     skia.surfaces = [];
     skia.failSurface = false;
+    skia.effects = [];
+    skia.failEffect = false;
   },
 };
 
@@ -155,9 +168,12 @@ const skiaModule = {
   Canvas: recorded(skia.canvas, 'div'),
   Atlas: recorded(skia.atlas, null),
   Image: recorded(skia.image, null),
-  Group: recorded(skia.group, null),
+  Group: recorded(skia.group, null, true),
   Vertices: recorded(skia.vertices, null, true),
   ImageShader: recorded(skia.imageShader, null),
+  Rect: recorded(skia.rect, null, true),
+  Shader: recorded(skia.shader, null, true),
+  RuntimeShader: recorded(skia.runtimeShader, null, true),
   FilterMode: { Nearest: 0, Linear: 1 },
   MipmapMode: { None: 0, Nearest: 1, Linear: 2 },
   useRSXformBuffer: buffer(() => rsxform(1, 0, 0, 0)),
@@ -173,6 +189,13 @@ const skiaModule = {
   Skia: {
     XYWHRect: rect,
     RSXform: rsxform,
+    RuntimeEffect: {
+      Make(source: string): { source: string } {
+        skia.effects.push(source);
+        if (skia.failEffect) throw new Error('mock-skia: the SkSL did not compile');
+        return { source };
+      },
+    },
     Surface: {
       Make(width: number, height: number) {
         const surface: MockSurface = { width, height, draws: [], flushes: 0, snapshot: null };
@@ -207,9 +230,11 @@ const skiaModule = {
 /**
  * Replaces `@shopify/react-native-skia`. Call it before importing the module under test.
  *
- * `Canvas` renders a `div` around its children and `Vertices` renders its children alone; `Atlas`,
- * `Image`, `Group` and `ImageShader` render nothing. Each records its mounts and its latest props. `makeImageFromView` resolves with `skia.nextImage`, and
- * `Skia.Surface.Make` records what is drawn into the surface it returns.
+ * `Canvas` renders a `div` around its children, and `Group`, `Vertices`, `Rect`, `Shader` and
+ * `RuntimeShader` render their children alone; `Atlas`, `Image` and `ImageShader` render nothing.
+ * Each records its mounts and its latest props. `makeImageFromView` resolves with
+ * `skia.nextImage`, `Skia.Surface.Make` records what is drawn into the surface it returns, and
+ * `Skia.RuntimeEffect.Make` records the SkSL it is given.
  */
 export const installSkiaMock = (): typeof skia => {
   mock.module('@shopify/react-native-skia', () => skiaModule);

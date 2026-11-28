@@ -104,6 +104,13 @@ export {
 export { createStream, nextUnit, type PrngStream } from './core/prng';
 export { createPresetRegistry, type PresetRef, type PresetRegistry } from './core/registry';
 export {
+  DUST_SKSL,
+  DUST_UNIFORM_FLOATS,
+  DUST_UNIFORM_SIZES,
+  DUST_UNIFORMS,
+  packDustUniformsInto,
+} from './core/sksl';
+export {
   delay,
   type FlareTimeline,
   liveEntries,

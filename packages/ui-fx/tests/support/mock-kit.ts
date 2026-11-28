@@ -45,6 +45,12 @@ export interface MockKit {
   failSurface: boolean;
   /** `MakeImageFromCanvasImageSource` throws this, as it does for a tainted canvas. */
   uploadError: unknown;
+  /** The SkSL of every `RuntimeEffect.Make` call. */
+  effects: string[];
+  /** `RuntimeEffect.Make` returns `null`, as it does for SkSL that does not compile. */
+  failEffect: boolean;
+  /** The shaders made, by an image or by a runtime effect, and not deleted yet. */
+  liveShaders: number;
 }
 
 /**
@@ -59,6 +65,17 @@ export function makeMockKit(): MockKit {
       calls.push({ method, args });
     };
 
+  // The record is the shader itself, so a test can tell which shader a call was given.
+  const makeShader = <T extends object>(made: T): T & { delete(): void } => {
+    mock.liveShaders++;
+    return {
+      ...made,
+      delete() {
+        mock.liveShaders--;
+      },
+    };
+  };
+
   const makeSurface = (): Surface => {
     const canvas = {
       save: () => {
@@ -71,6 +88,7 @@ export function makeMockKit(): MockKit {
       rotate: record('rotate'),
       clear: record('clear'),
       drawAtlas: record('drawAtlas'),
+      drawRect: record('drawRect'),
     } as unknown as CKCanvas;
     return {
       getCanvas: () => canvas,
@@ -154,14 +172,34 @@ export function makeMockKit(): MockKit {
       mock.images.push(image);
       calls.push({ method: 'upload', args: [source] });
       return {
+        makeShaderOptions: (...args: unknown[]) => {
+          calls.push({ method: 'makeShaderOptions', args });
+          return makeShader({ image, args });
+        },
         delete: () => {
           image.deleted = true;
         },
       } as unknown as CKImage;
     },
+    RuntimeEffect: {
+      Make: (sksl: string) => {
+        mock.effects.push(sksl);
+        if (mock.failEffect) return null;
+        return {
+          makeShaderWithChildren: (...args: unknown[]) => {
+            calls.push({ method: 'makeShaderWithChildren', args });
+            return makeShader({ sksl, args });
+          },
+        };
+      },
+    },
+    TileMode: { Clamp: { name: 'Clamp' }, Decal: { name: 'Decal' } },
     Paint: class {
       constructor() {
         mock.paints++;
+      }
+      setShader(shader: unknown): void {
+        calls.push({ method: 'setShader', args: [shader] });
       }
       delete(): void {
         mock.deletedPaints++;
@@ -185,6 +223,9 @@ export function makeMockKit(): MockKit {
     deletedPaints: 0,
     failSurface: false,
     uploadError: null,
+    effects: [],
+    failEffect: false,
+    liveShaders: 0,
   };
   return mock;
 }

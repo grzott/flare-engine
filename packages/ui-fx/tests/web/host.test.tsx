@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { StrictMode } from 'react';
-import { disintegrate, dust, shatter } from '../../src/core/presets';
+import { disintegrate, dust, emerge, shatter } from '../../src/core/presets';
 import type { FxRuntime } from '../../src/runtime/contracts';
 import type { FlareContextValue } from '../../src/runtime/provider-context';
 import type { WebEffects } from '../../src/web/fx-runtime';
@@ -180,7 +180,7 @@ describe('FlareFxHost', () => {
 
   test('with no effect for a preset, the run falls back and no kit is loaded', async () => {
     const { fx } = mount({ noEffects: true, wasmUrl: '/canvaskit.wasm' });
-    const { events } = start(fx, dust());
+    const { events } = start(fx, emerge({ variant: 'shader' }));
     await settle();
 
     expect(events).toEqual(['fallback']);
@@ -220,6 +220,18 @@ describe('FlareFxHost', () => {
 
     expect(events).toEqual(['handoff']);
     expect(loadedKit.offscreen).toHaveLength(1);
+  });
+
+  test('plays dust with its own effect: a rect filled by the dust shader', async () => {
+    const { fx } = mount({ noEffects: true, wasmUrl: '/canvaskit.wasm' });
+    const { events } = start(fx, dust());
+    await settle();
+    await flushFrames(1);
+
+    expect(events).toEqual(['handoff']);
+    expect(loadedKit.effects).toHaveLength(1);
+    expect(loadedKit.callsOf('drawRect')).toHaveLength(1);
+    expect(loadedKit.callsOf('drawAtlas')).toHaveLength(0);
   });
 });
 

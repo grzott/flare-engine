@@ -5,9 +5,10 @@ import {
   type LivePose,
   livePoseAtInto,
   sampleLivePosesInto,
+  transformOriginOf,
 } from '../../src/core/live';
 import { buildArcTable } from '../../src/core/path/arc-table';
-import { dust, emerge, fade, type LivePreset, press, slide } from '../../src/core/presets';
+import { dust, emerge, fade, flip, type LivePreset, press, slide } from '../../src/core/presets';
 import { liveEntries, parallel, sequence } from '../../src/core/timeline';
 import { compileTiming, timingAt } from '../../src/core/timing';
 
@@ -309,6 +310,153 @@ describe('livePoseAtInto, live emerge', () => {
   });
 });
 
+describe('livePoseAtInto, flip', () => {
+  // The rest pose, but for the perspective a flip keeps from start to end.
+  const FLAT_ROW = [0, 0, 0, 0, 0, 800, 1, 1, 1, 1, 0];
+  const linear = (o: Parameters<typeof flip>[0] = {}) =>
+    flip({ easing: 'linear', duration: 0.4, ...o });
+  // smoothstep(0, 0.25, cos(rotation)), as the spec writes the edge fade.
+  const facing = (rotationDeg: number): number => {
+    const x = Math.min(Math.max(Math.cos((rotationDeg * Math.PI) / 180) / 0.25, 0), 1);
+    return x * x * (3 - 2 * x);
+  };
+
+  test('it enters edge-on and invisible, and rests flat and opaque', () => {
+    const start = poseAt(flip(), 0, ENTER);
+    expect(start.rotateYDeg).toBe(90);
+    expect(start.rotateXDeg).toBe(0);
+    expect(start.opacity).toBeCloseTo(0, 6);
+    expect(start.perspective).toBe(800);
+    expect(rowOf(poseAt(flip(), 0.45, ENTER))).toEqual(FLAT_ROW);
+    expect(rowOf(poseAt(flip(), 5, ENTER))).toEqual(FLAT_ROW);
+  });
+
+  test('the rotation follows the easing, and the opacity the cosine of the rotation', () => {
+    const half = poseAt(linear(), 0.2, ENTER);
+    expect(half.rotateYDeg).toBeCloseTo(45, 4);
+    expect(half.opacity).toBe(1);
+    const early = poseAt(linear(), 0.04, ENTER);
+    expect(early.rotateYDeg).toBeCloseTo(81, 4);
+    expect(early.opacity).toBeCloseTo(facing(81), 4);
+    expect(early.opacity).toBeGreaterThan(0);
+    expect(early.opacity).toBeLessThan(1);
+    expect(early.perspective).toBe(800);
+  });
+
+  test('it exits from rest to the same away rotation', () => {
+    expect(rowOf(poseAt(linear(), 0, EXIT))).toEqual(FLAT_ROW);
+    expect(poseAt(linear(), 0.1, EXIT).rotateYDeg).toBeCloseTo(22.5, 4);
+    const gone = poseAt(linear(), 0.4, EXIT);
+    expect(gone.rotateYDeg).toBe(90);
+    expect(gone.opacity).toBeCloseTo(0, 6);
+    expect(gone.perspective).toBe(800);
+  });
+
+  test("axis 'x' drives rotateXDeg only", () => {
+    const start = poseAt(flip({ axis: 'x' }), 0, ENTER);
+    expect(start.rotateXDeg).toBe(90);
+    expect(start.rotateYDeg).toBe(0);
+    expect(start.rotationDeg).toBe(0);
+    expect(start.opacity).toBeCloseTo(0, 6);
+    expect(poseAt(linear({ axis: 'x' }), 0.2, ENTER).rotateXDeg).toBeCloseTo(45, 4);
+    expect(poseAt(linear({ axis: 'x' }), 0.2, ENTER).rotateYDeg).toBe(0);
+  });
+
+  test('it leaves the translation, the scale and the brightness alone', () => {
+    const pose = poseAt(linear(), 0.1, ENTER);
+    expect([pose.tx, pose.ty, pose.rotationDeg, pose.scale, pose.brightness]).toEqual([
+      0, 0, 0, 1, 1,
+    ]);
+    expect([pose.shadowEdge, pose.shadowOpacity]).toEqual([1, 0]);
+  });
+
+  test('without fadeAtEdge the opacity stays 1', () => {
+    const preset = flip({ fadeAtEdge: false });
+    expect(poseAt(preset, 0, ENTER).opacity).toBe(1);
+    expect(poseAt(preset, 0, ENTER).rotateYDeg).toBe(90);
+    expect(poseAt(preset, 0.45, EXIT).opacity).toBe(1);
+  });
+
+  test('a negative angle turns the other way and fades the same', () => {
+    const start = poseAt(linear({ angle: -90 }), 0, ENTER);
+    expect(start.rotateYDeg).toBe(-90);
+    expect(start.opacity).toBeCloseTo(0, 6);
+    const early = poseAt(linear({ angle: -90 }), 0.04, ENTER);
+    expect(early.rotateYDeg).toBeCloseTo(-81, 4);
+    expect(early.opacity).toBeCloseTo(facing(81), 4);
+  });
+
+  test('past edge-on the back face stays invisible', () => {
+    const preset = linear({ angle: 180 });
+    expect(poseAt(preset, 0, ENTER).rotateYDeg).toBe(180);
+    expect(poseAt(preset, 0, ENTER).opacity).toBe(0);
+    expect(poseAt(preset, 0.1, ENTER).opacity).toBe(0);
+    expect(poseAt(preset, 0.2, ENTER).opacity).toBeCloseTo(0, 6);
+    expect(poseAt(preset, 0.3, ENTER).opacity).toBe(1);
+    expect(poseAt(linear({ angle: -180 }), 0.1, EXIT).opacity).toBe(1);
+    expect(poseAt(linear({ angle: -180 }), 0.4, EXIT).opacity).toBe(0);
+  });
+
+  test('an angle of 0 never leaves rest', () => {
+    for (const t of [0, 0.2, 0.4]) {
+      expect(rowOf(poseAt(linear({ angle: 0 }), t, ENTER))).toEqual(FLAT_ROW);
+      expect(rowOf(poseAt(linear({ angle: 0 }), t, EXIT))).toEqual(FLAT_ROW);
+    }
+  });
+
+  test('a delay holds the away state until it has passed', () => {
+    const preset = linear({ delay: 0.1 });
+    expect(poseAt(preset, 0.1, ENTER).rotateYDeg).toBe(90);
+    expect(poseAt(preset, 0.3, ENTER).rotateYDeg).toBeCloseTo(45, 4);
+    expect(poseAt(preset, 0.05, EXIT).rotateYDeg).toBe(0);
+  });
+
+  test('its perspective is the one given', () => {
+    expect(poseAt(flip({ perspective: 100 }), 0.1, ENTER).perspective).toBe(100);
+  });
+
+  test('pressT does not move it', () => {
+    expect(rowOf(poseAt(linear(), 0.1, ENTER, 1))).toEqual(rowOf(poseAt(linear(), 0.1, ENTER, 0)));
+  });
+});
+
+describe('transformOriginOf', () => {
+  const originOf = (
+    input: Parameters<typeof compileLive>[0],
+    press: { x: number; y: number } | null = null,
+  ): string | null => transformOriginOf(compileLive(input, W, H, false), press);
+
+  test('a preset without an origin asks for nothing, and the centre for the centre', () => {
+    expect(originOf(flip())).toBe('50% 50%');
+    expect(originOf(flip(), { x: 12, y: 5 })).toBe('50% 50%');
+    expect(originOf(fade())).toBeNull();
+    expect(originOf(slide(), { x: 12, y: 5 })).toBeNull();
+    expect(originOf([])).toBeNull();
+  });
+
+  test('an { x, y } origin is a percentage of the element', () => {
+    expect(originOf(flip({ origin: { x: 0, y: 1 } }))).toBe('0% 100%');
+    expect(originOf(flip({ origin: { x: 0.25, y: 0.5 } }))).toBe('25% 50%');
+    expect(originOf(flip({ origin: { x: -0.5, y: 2 } }))).toBe('-50% 200%');
+    expect(originOf(flip({ origin: { x: 0.5, y: 0.5 } }), { x: 12, y: 5 })).toBe('50% 50%');
+  });
+
+  test("'press' is the press point in pixels, or the centre without one", () => {
+    expect(originOf(flip({ origin: 'press' }), { x: 12, y: 5 })).toBe('12px 5px');
+    expect(originOf(flip({ origin: 'press' }), { x: 0, y: 0 })).toBe('0px 0px');
+    expect(originOf(flip({ origin: 'press' }))).toBe('50% 50%');
+  });
+
+  test('a list takes the origin of its first flip', () => {
+    const entries = [
+      { start: 0, preset: fade() },
+      { start: 0, preset: flip({ origin: { x: 0, y: 0 } }) },
+      { start: 0, preset: flip({ origin: { x: 1, y: 1 } }) },
+    ];
+    expect(originOf(entries)).toBe('0% 0%');
+  });
+});
+
 describe('compileLive', () => {
   test('one preset lasts its delay plus its duration', () => {
     expect(compileLive(fade(), W, H, false).duration).toBe(0.25);
@@ -325,7 +473,32 @@ describe('compileLive', () => {
     expect(along.path?.total).toBeCloseTo(buildArcTable(TURN).total, 6);
   });
 
-  test('uses3d is false for every preset', () => {
+  test('uses3d is true for a flip, alone or in a list', () => {
+    expect(compileLive(flip(), W, H, false).uses3d).toBe(true);
+    expect(compileLive(flip({ angle: 0 }), W, H, false).uses3d).toBe(true);
+    expect(compileLive(liveEntries(parallel(fade(), flip())), W, H, false).uses3d).toBe(true);
+  });
+
+  test('a flip compiles to a kind of its own, and lasts 0.45 s', () => {
+    const compiled = compileLive(flip(), W, H, false);
+    expect(compiled.kind).toBe(6);
+    expect(compiled.duration).toBe(0.45);
+    expect(compiled.path).toBeNull();
+  });
+
+  test('origin is that of the first flip, or null without one', () => {
+    expect(compileLive(fade(), W, H, false).origin).toBeNull();
+    expect(compileLive(flip(), W, H, false).origin).toBe('center');
+    expect(compileLive(flip({ origin: 'press' }), W, H, false).origin).toBe('press');
+    const origin = { x: 0, y: 1 };
+    const byHand: LivePreset = { ...flip(), origin };
+    const compiled = compileLive(byHand, W, H, false);
+    expect(compiled.origin).toEqual({ x: 0, y: 1 });
+    // A copy: a compiled preset is handed to the UI runtime, which freezes what it is given.
+    expect(compiled.origin).not.toBe(origin);
+  });
+
+  test('uses3d is false for every preset but a flip', () => {
     const presets = [fade(), slide(), slide({ path: TURN, autoRotate: true }), press(), emerge()];
     for (const preset of presets) {
       const compiled = compileLive(preset, W, H, false);
@@ -431,6 +604,33 @@ describe('compileLive, a timeline', () => {
     expect(pose.brightness).toBeCloseTo(0.5 * 0.8, 6);
   });
 
+  test('flips add their rotations per axis, and the smallest perspective wins', () => {
+    const entries = [
+      { start: 0, preset: flip({ fadeAtEdge: false }) },
+      { start: 0, preset: flip({ angle: 30, perspective: 400, fadeAtEdge: false }) },
+      { start: 0, preset: flip({ axis: 'x', angle: -45, perspective: 600, fadeAtEdge: false }) },
+      { start: 0, preset: fade({ opacity: 0.5 }) },
+    ];
+    const pose = poseAt(entries, 0, ENTER);
+    expect(pose.rotateYDeg).toBe(120);
+    expect(pose.rotateXDeg).toBe(-45);
+    expect(pose.perspective).toBe(400);
+    expect(pose.opacity).toBeCloseTo(0.5, 6);
+  });
+
+  test('the edge fade of a flip multiplies the opacity of the other entries', () => {
+    const entries = [
+      { start: 0, preset: flip({ angle: 80, easing: 'linear' }) },
+      { start: 0, preset: fade({ opacity: 0.5 }) },
+    ];
+    const edge = Math.cos((80 * Math.PI) / 180) / 0.25;
+    expect(poseAt(entries, 0, ENTER).opacity).toBeCloseTo(0.5 * edge * edge * (3 - 2 * edge), 5);
+  });
+
+  test('a list without a flip has no perspective', () => {
+    expect(poseAt(liveEntries(parallel(fade(), slide())), 0.1, ENTER).perspective).toBe(0);
+  });
+
   test('shadow values take the maximum', () => {
     const entries = [
       { start: 0, preset: emerge({ shadow: { opacity: 0.5 }, duration: 0.4 }) },
@@ -465,6 +665,19 @@ describe('sampleLivePosesInto', () => {
       const row = [...rows.subarray(i * LIVE_POSE_STRIDE, (i + 1) * LIVE_POSE_STRIDE)];
       expect(row).toEqual(rowOf(pose).map(Math.fround));
     }
+  });
+
+  test('the rows of a flip carry its rotation, perspective and opacity', () => {
+    const compiled = compileLive(flip(), W, H, false);
+    const rows = new Float32Array(32 * LIVE_POSE_STRIDE);
+    const count = sampleLivePosesInto(compiled, ENTER, 60, rows);
+    expect(count).toBe(28);
+    expect(rows[4]).toBe(90);
+    expect(rows[5]).toBe(800);
+    expect(rows[7]).toBeCloseTo(0, 6);
+    expect([...rows.subarray(27 * LIVE_POSE_STRIDE, 28 * LIVE_POSE_STRIDE)]).toEqual([
+      0, 0, 0, 0, 0, 800, 1, 1, 1, 1, 0,
+    ]);
   });
 
   test('a duration between two frames still ends on the final pose', () => {

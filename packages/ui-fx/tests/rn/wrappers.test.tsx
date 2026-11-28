@@ -12,7 +12,7 @@ import {
 } from 'react';
 import type { View as RNView } from 'react-native';
 import type { Vec2Out } from '../../src/core/conventions';
-import { fade, press, slide } from '../../src/core/presets';
+import { fade, flip, press, slide } from '../../src/core/presets';
 import { createPresetRegistry } from '../../src/core/registry';
 import { FlarePresence } from '../../src/runtime/presence';
 import { useFlareContext } from '../../src/runtime/provider-context';
@@ -171,6 +171,57 @@ test("the caller's style comes before the animated one", () => {
   expect(Array.isArray(style)).toBe(true);
   expect((style as unknown[])[0]).toBe(own);
   expect(styleOf(find(r, 'box')).opacity).toBe(1);
+});
+
+/** The `transformOrigin` of every part of the host's `style` that sets one. */
+const originsOf = (node: Element | null): unknown[] =>
+  [rn.props(node).style]
+    .flat(Number.POSITIVE_INFINITY)
+    .filter((part) => typeof part === 'object' && part !== null && 'transformOrigin' in part)
+    .map((part) => (part as { transformOrigin: unknown }).transformOrigin);
+
+test('a flip puts its origin on the host as transformOrigin, before the animated style', () => {
+  const own = { backgroundColor: 'red' };
+  const r = mount(
+    <FlareView testID="box" style={own} enter={flip({ origin: { x: 0, y: 0.5 } })} />,
+  );
+  const box = find(r, 'box');
+  expect(originsOf(box)).toEqual(['0% 50%']);
+
+  const parts = [rn.props(box).style].flat(Number.POSITIVE_INFINITY);
+  expect(parts[0]).toBe(own);
+  expect(parts).toHaveLength(3);
+  expect(parts[1]).toEqual({ transformOrigin: '0% 50%' });
+  expect(transformValue(styleOf(box), 'perspective')).toBe(800);
+  expect(transformValue(styleOf(box), 'rotateY')).toBe('90deg');
+});
+
+test('a flip about the centre says so, and a preset without an origin adds no transformOrigin', () => {
+  const r = mount(
+    <>
+      <FlareView testID="flip" enter={flip()} />
+      <FlareView testID="fade" enter={fade()} />
+    </>,
+  );
+  expect(originsOf(find(r, 'flip'))).toEqual(['50% 50%']);
+  expect(originsOf(find(r, 'fade'))).toEqual([]);
+  expect(rn.props(find(r, 'fade')).style).toHaveLength(2);
+});
+
+test("a flip with origin 'press' turns about the press point, in pixels", () => {
+  const r = mount(
+    <FlareButton testID="button" label="Delete" exit={flip({ origin: 'press' })} exitOn="press" />,
+  );
+  expect(originsOf(find(r, 'button'))).toEqual([]);
+  fire(find(r, 'button'), 'onPressIn', touch(12, 5));
+  fire(find(r, 'button'), 'onPress');
+  expect(originsOf(find(r, 'button'))).toEqual(['12px 5px']);
+});
+
+test("a flip with origin 'press' turns about the centre before any press", () => {
+  const r = mount(<FlareView testID="box" enter={flip({ origin: 'press' })} />);
+  expect(originsOf(find(r, 'box'))).toEqual(['50% 50%']);
+  expect(transformValue(styleOf(find(r, 'box')), 'rotateY')).toBe('90deg');
 });
 
 test('a FlareButton exitOn="press" plays its exit on press, then calls onExited(true)', () => {
@@ -660,6 +711,19 @@ test('useFlareFx plays a preset on the element its ref is on', async () => {
 
   // No snapshot runtime is mounted, so there is nothing to capture for.
   expect(await fx!.prepare()).toBe(false);
+});
+
+test('the origin of a played flip is dropped by the next preset that has none', () => {
+  let fx: ReturnType<typeof useFlareFx> | null = null;
+  const r = mount(<Player probe={(next) => (fx = next)} />);
+  act(() => {
+    fx!.play(flip({ origin: { x: 1, y: 1 } }));
+  });
+  expect(originsOf(find(r, 'box'))).toEqual(['100% 100%']);
+  act(() => {
+    fx!.play(fade({ opacity: 0.5 }));
+  });
+  expect(originsOf(find(r, 'box'))).toEqual([]);
 });
 
 test('useFlareFx is the same object on every render, and resolves false without an element', async () => {

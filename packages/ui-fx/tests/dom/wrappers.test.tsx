@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { act, type ComponentProps, createRef, type ReactNode, type Ref, StrictMode } from 'react';
 import type { Vec2Out } from '../../src/core/conventions';
-import { fade, press, slide } from '../../src/core/presets';
+import { fade, flip, press, slide } from '../../src/core/presets';
 import { createPresetRegistry } from '../../src/core/registry';
 import { FlarePresence } from '../../src/runtime/presence';
 import { useFlareContext } from '../../src/runtime/provider-context';
@@ -178,6 +178,55 @@ test('a FlareButton exitOn="press" plays its exit on click, then is released', a
   await finish(waapi.animations);
   expect(onExited.mock.calls).toEqual([[true]]);
   expect(find(r, 'button')).toBeNull();
+});
+
+test('a flip sets its origin as the transform-origin of the host, and plays in 3D', () => {
+  const r = mount(
+    <FlareDiv
+      data-testid="box"
+      style={{ color: 'red' }}
+      enter={flip({ origin: { x: 0, y: 0.5 } })}
+    />,
+  );
+  const box = find(r, 'box')!;
+  expect(box.style.transformOrigin).toBe('0% 50%');
+  expect(box.style.color).toBe('red');
+  expect(waapi.animations[0]!.keyframes[0]!.transform).toBe(
+    'perspective(800px) translate(0px, 0px) rotateX(0deg) rotateY(90deg) rotate(0deg) scale(1)',
+  );
+});
+
+test("a flip about the centre overrides the host's transform-origin; a preset without an origin leaves it alone", () => {
+  const style = { transformOrigin: 'top left' };
+  const r = mount(
+    <>
+      <FlareDiv data-testid="flip" style={style} enter={flip()} />
+      <FlareDiv data-testid="fade" style={style} enter={fade()} />
+      <FlareDiv data-testid="plain" enter={fade()} />
+    </>,
+  );
+  expect(find(r, 'flip')!.style.transformOrigin).toBe('50% 50%');
+  expect(find(r, 'fade')!.style.transformOrigin).toBe('top left');
+  expect(find(r, 'plain')!.style.transformOrigin).toBe('');
+});
+
+test("a flip with origin 'press' turns about the pointerdown point, in element pixels", () => {
+  const r = mount(
+    <FlareButton data-testid="button" exit={flip({ origin: 'press' })} exitOn="press" />,
+  );
+  const button = find(r, 'button')!;
+  placeAt(button, 100, 50);
+  pointer(button, 'pointerdown', 112, 55);
+  expect(button.style.transformOrigin).toBe('');
+  click(button);
+  expect(button.style.transformOrigin).toBe('12px 5px');
+  expect(button.style.pointerEvents).toBe('none');
+});
+
+test("a flip with origin 'press' turns about the centre before any press", () => {
+  const r = mount(<FlareDiv data-testid="box" enter={flip({ origin: 'press' })} />);
+  expect(find(r, 'box')!.style.transformOrigin).toBe('50% 50%');
+  expect(waapi.animations).toHaveLength(2);
 });
 
 test('a FlareButton without exitOn="press" stays after a click', () => {
@@ -548,6 +597,23 @@ test('useFlareFx plays a preset on the element its ref is on', async () => {
 
   // No snapshot runtime is mounted, so there is nothing to capture for.
   expect(await fx!.prepare()).toBe(false);
+});
+
+test("the origin of a played flip gives way to the host's own once a preset without one plays", () => {
+  let fx: ReturnType<typeof useFlareFx<HTMLDivElement>> | null = null;
+  function Owner(): ReactNode {
+    fx = useFlareFx<HTMLDivElement>();
+    return <FlareDiv data-testid="box" ref={fx.ref} style={{ transformOrigin: 'top left' }} />;
+  }
+  const r = mount(<Owner />);
+  act(() => {
+    fx!.play(flip({ origin: { x: 1, y: 1 } }));
+  });
+  expect(find(r, 'box')!.style.transformOrigin).toBe('100% 100%');
+  act(() => {
+    fx!.play(fade({ opacity: 0.5 }));
+  });
+  expect(find(r, 'box')!.style.transformOrigin).toBe('top left');
 });
 
 test('useFlareFx is the same object on every render, and resolves false without an element', async () => {

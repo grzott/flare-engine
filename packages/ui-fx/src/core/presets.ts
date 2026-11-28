@@ -55,6 +55,20 @@ export interface EmergePreset {
   sheen: { width: number; intensity: number; color: string; delay: number } | null;
 }
 
+/**
+ * A turn in 3D about the `x` or `y` axis through `origin`. `angle` is the away rotation in
+ * degrees: enter animates from it to 0, exit from 0 to it. `perspective` is the viewing distance
+ * in pixels. `fadeAtEdge` fades the element out as it nears edge-on, and hides its back face.
+ */
+export interface FlipPreset {
+  kind: 'flip';
+  axis: 'x' | 'y';
+  angle: number;
+  perspective: number;
+  origin: OriginSpec;
+  fadeAtEdge: boolean;
+}
+
 export interface FragmentSpec {
   pattern: 'grid' | 'jittered-grid' | 'triangles' | 'radial-glass' | 'cells';
   count: number;
@@ -162,7 +176,8 @@ export type LivePreset =
   | FadePreset
   | SlidePreset
   | PressPreset
-  | (EmergePreset & { variant: 'live' });
+  | (EmergePreset & { variant: 'live' })
+  | FlipPreset;
 
 /** Presets that hide the element and animate a capture of it. */
 export type SnapshotPreset =
@@ -213,7 +228,14 @@ const CELL_CAP = 3000;
  * Seconds a preset runs when it has neither a `duration` nor a spring. The factories and
  * `presetDuration` both read it, so a hand-written preset measures the same as a built one.
  */
-const DEFAULT_DURATION = { fade: 0.25, slide: 0.35, press: 0.12, emerge: 0.45, dust: 1.2 } as const;
+const DEFAULT_DURATION = {
+  fade: 0.25,
+  slide: 0.35,
+  press: 0.12,
+  emerge: 0.45,
+  flip: 0.45,
+  dust: 1.2,
+} as const;
 
 function check(
   name: string,
@@ -496,6 +518,33 @@ export function emerge(opts: PresetOptions<EmergePreset> = {}): EmergePreset & P
     shadow,
     sheen,
     ...commonOf('emerge', opts, DEFAULT_DURATION.emerge),
+  });
+}
+
+/**
+ * Turn in 3D between flat and the away `angle`. Defaults: `axis 'y'`, `angle 90`,
+ * `perspective 800`, `origin 'center'`, `fadeAtEdge true`, `duration 0.45`,
+ * `easing 'easeOutCubic'`.
+ *
+ * `angle` is in -180..180 and `perspective` at least 100; anything else throws a `RangeError`.
+ * With `fadeAtEdge` the opacity is `smoothstep(0, 0.25, cos(rotation))`: 1 up to about 75° either
+ * way, 0 edge-on and for as long as the back faces the viewer.
+ */
+export function flip(opts: PresetOptions<FlipPreset> = {}): FlipPreset & PresetCommon {
+  const angle = opts.angle ?? 90;
+  const perspective = opts.perspective ?? 800;
+  const origin = opts.origin ?? 'center';
+  check('flip', 'angle', angle, -180, 180);
+  check('flip', 'perspective', perspective, 100, Number.POSITIVE_INFINITY);
+  checkOrigin('flip', 'origin', origin);
+  return frozenCopy({
+    kind: 'flip',
+    axis: opts.axis ?? 'y',
+    angle,
+    perspective,
+    origin,
+    fadeAtEdge: opts.fadeAtEdge ?? true,
+    ...commonOf('flip', opts, DEFAULT_DURATION.flip, 'easeOutCubic'),
   });
 }
 

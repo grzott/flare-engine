@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { act, type ReactNode } from 'react';
 import { type CompiledLive, compileLive } from '../../src/core/live';
-import { fade, press, slide } from '../../src/core/presets';
+import { fade, flip, press, slide } from '../../src/core/presets';
 import type { LiveDriver } from '../../src/runtime/contracts';
 import { installDom, type Rendered, render } from '../support/dom';
 import { installReanimatedMock } from '../support/mock-reanimated';
@@ -171,6 +171,49 @@ test('a preset without 3D gets perspective 100000', () => {
   expect(c.uses3d).toBe(false);
   act(() => h.driver.play(c, 1, { onEnd() {} }));
   expect(transformValue(h.style(), 'perspective')).toBe(100000);
+});
+
+test('a flip and a fade both keep the seven-entry transform list', () => {
+  const h = mount();
+  act(() => h.driver.play(compiled(flip()), 1, { onEnd() {} }));
+  expect(keysOf(h.style())).toEqual(TRANSFORM_KEYS);
+  act(() => reanimated.advance(0.5));
+  expect(keysOf(h.style())).toEqual(TRANSFORM_KEYS);
+  act(() => reanimated.flush());
+  expect(keysOf(h.style())).toEqual(TRANSFORM_KEYS);
+
+  act(() => h.driver.play(compiled(fade()), -1, { onEnd() {} }));
+  expect(keysOf(h.style())).toEqual(TRANSFORM_KEYS);
+  act(() => reanimated.flush());
+  expect(keysOf(h.style())).toEqual(TRANSFORM_KEYS);
+});
+
+test('an entering flip starts edge-on and invisible at its perspective, and ends flat', () => {
+  const h = mount();
+  const c = compiled(flip());
+  expect(c.uses3d).toBe(true);
+  act(() => h.driver.play(c, 1, { onEnd() {} }));
+  expect(transformValue(h.style(), 'perspective')).toBe(800);
+  expect(transformValue(h.style(), 'rotateY')).toBe('90deg');
+  expect(transformValue(h.style(), 'rotateX')).toBe('0deg');
+  expect(h.style().opacity).toBeCloseTo(0, 6);
+
+  act(() => reanimated.flush());
+  expect(transformValue(h.style(), 'perspective')).toBe(800);
+  expect(transformValue(h.style(), 'rotateY')).toBe('0deg');
+  expect(h.style().opacity).toBe(1);
+});
+
+test('a flip about the x axis turns rotateX, and a fade after it is flat again', () => {
+  const h = mount();
+  act(() => h.driver.play(compiled(flip({ axis: 'x', angle: -90 })), -1, { onEnd() {} }));
+  act(() => reanimated.flush());
+  expect(transformValue(h.style(), 'rotateX')).toBe('-90deg');
+  expect(transformValue(h.style(), 'rotateY')).toBe('0deg');
+
+  act(() => h.driver.play(compiled(fade()), 1, { onEnd() {} }));
+  expect(transformValue(h.style(), 'perspective')).toBe(100000);
+  expect(transformValue(h.style(), 'rotateX')).toBe('0deg');
 });
 
 test('an entering slide starts at its distance and ends at rest', () => {

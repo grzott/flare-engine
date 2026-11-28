@@ -1,4 +1,4 @@
-import { directionInto, resolveEdge } from './conventions';
+import { directionInto, type OriginSpec, resolveEdge, type Vec2Out } from './conventions';
 import { type ArcTable, buildArcTable, pathPoseAtInto } from './path/arc-table';
 import { type LivePreset, type PresetCommon, presetDuration, type SlidePreset } from './presets';
 import { compileTiming, type TimingTable } from './timing';
@@ -30,13 +30,16 @@ export interface LivePose {
 /**
  * A live preset, or a timeline's live entries, compiled for `livePoseAtInto`.
  *
- * - `kind`: 0 fade, 1 slide, 2 slide along a path, 3 press, 4 emerge, 5 a list of entries.
+ * - `kind`: 0 fade, 1 slide, 2 slide along a path, 3 press, 4 emerge, 5 a list of entries,
+ *   6 flip.
  * - `params`: the entry count, then one record per entry, then the pose tables of the path slides.
  * - `timing`: for one preset, its timing table. For a list, the entries' samples one after
  *   another, with `delay` 0 and the `duration` of the whole list.
  * - `path`: the arc table of the first slide along a path, or `null` without one.
  * - `duration`: seconds until the last entry has ended, delays included.
  * - `uses3d`: whether any entry writes `rotateXDeg`, `rotateYDeg` or `perspective`.
+ * - `origin`: the transform origin of the first flip, or `null` without one. The pose does not
+ *   include it: whatever applies the pose sets it on the element (see `transformOriginOf`).
  */
 export interface CompiledLive {
   kind: number;
@@ -45,6 +48,7 @@ export interface CompiledLive {
   path: ArcTable | null;
   duration: number;
   uses3d: boolean;
+  origin: OriginSpec | null;
 }
 
 const FADE = 0;
@@ -53,6 +57,7 @@ const PATH_SLIDE = 2;
 const PRESS = 3;
 const EMERGE = 4;
 const LIST = 5;
+const FLIP = 6;
 
 // `params` starts with the entry count. Each record is its kind, the seconds at which its timing
 // starts (entry start plus delay), its duration, the index of its first sample in
@@ -62,6 +67,7 @@ const LIST = 5;
 //   path slide  index in `params` of its pose table
 //   press       scale, opacity, brightness
 //   emerge      away tx, away ty, shadow opacity, shadow lag
+//   flip        away angle, perspective, 1 about x or 0 about y, 1 with the edge fade
 const HEADER = 1;
 const KIND = 0;
 const START = 1;
@@ -79,6 +85,9 @@ const ENTRY_STRIDE = 9;
 // scratch object a worklet cannot own, and lets the rotation be unwrapped across ±180°.
 const PATH_ROW = 6;
 const EXIT_COLUMNS = 3;
+
+// The cosine of a flip's rotation at which its edge fade is done: fully opaque from there to flat.
+const FLIP_FADE_END = 0.25;
 
 const _direction = { x: 0, y: 0 };
 const _pathPose = { x: 0, y: 0, angleDeg: 0 };
@@ -154,7 +163,13 @@ function pushPathTable(
  *
  * In a list every entry runs on its own clock, `t − start`: it sits in its initial pose before
  * that and holds its final pose once it has ended. The entries compose: translations and
- * rotations add; scale, opacity and brightness multiply; the shadow values take the maximum.
+ * rotations add; scale, opacity and brightness multiply; the shadow values take the maximum; the
+ * perspective is the smallest any flip asks for.
+ *
+ * A flip turns by `angle × away` about its axis, where `away` runs from 1 to 0 entering and back
+ * exiting, and holds its `perspective` from start to end, at rest too. With `fadeAtEdge` its
+ * opacity is `smoothstep(0, 0.25, cos(rotation))`, so the element is gone edge-on and stays gone
+ * while its back faces the viewer.
  *
  * A slide along a path moves the point `alignOrigin` of the element along the stretch `start`
  * to `end` of the path, measured from that stretch's end, and ignores `from` and `distance`.
@@ -184,6 +199,8 @@ export function compileLive(
   let sampleCount = 0;
   let path: ArcTable | null = null;
   let duration = 0;
+  let uses3d = false;
+  let origin: OriginSpec | null = null;
 
   for (const entry of entries) {
     // The factories return presets that carry their timing; `LivePreset` alone does not list it.
@@ -234,6 +251,18 @@ export function compileLive(
       p1 = -_direction.y * preset.distance;
       p2 = preset.shadow.opacity;
       p3 = preset.shadow.lag;
+    } else if (preset.kind === 'flip') {
+      kind = FLIP;
+      p0 = preset.angle;
+      p1 = preset.perspective;
+      p2 = preset.axis === 'x' ? 1 : 0;
+      p3 = preset.fadeAtEdge ? 1 : 0;
+      uses3d = true;
+      // A copy: a compiled preset is handed to the UI runtime, which freezes what it is given.
+      origin ??=
+        typeof preset.origin === 'string'
+          ? preset.origin
+          : { x: preset.origin.x, y: preset.origin.y };
     } else {
       throw new RangeError(`compileLive: "${preset.kind}" is not a live preset`);
     }
@@ -277,8 +306,22 @@ export function compileLive(
     timing,
     path,
     duration,
-    uses3d: false,
+    uses3d,
+    origin,
   };
+}
+
+/**
+ * The transform origin `c` asks for, as a CSS or React Native `transformOrigin` value, or `null`
+ * when nothing in it sets one. `press` is the press point in element pixels; an origin of
+ * `'press'` without one is the centre.
+ */
+export function transformOriginOf(c: CompiledLive, press: Vec2Out | null): string | null {
+  const origin = c.origin;
+  if (origin === null) return null;
+  if (origin === 'press' && press !== null) return `${press.x}px ${press.y}px`;
+  if (typeof origin === 'string') return '50% 50%';
+  return `${origin.x * 100}% ${origin.y * 100}%`;
 }
 
 /**
@@ -302,6 +345,9 @@ export function livePoseAtInto(
   let tx = 0;
   let ty = 0;
   let rotation = 0;
+  let rotateX = 0;
+  let rotateY = 0;
+  let perspective = 0;
   let scale = 1;
   let opacity = 1;
   let brightness = 1;
@@ -355,6 +401,16 @@ export function livePoseAtInto(
     const away = 1 - rest;
     if (kind === FADE) {
       opacity *= 1 + (params[o + P0]! - 1) * away;
+    } else if (kind === FLIP) {
+      const turn = params[o + P0]! * away;
+      if (params[o + P2]! === 1) rotateX += turn;
+      else rotateY += turn;
+      const depth = params[o + P1]!;
+      if (perspective === 0 || depth < perspective) perspective = depth;
+      if (params[o + P3]! === 1) {
+        const facing = Math.min(Math.max(Math.cos((turn * Math.PI) / 180) / FLIP_FADE_END, 0), 1);
+        opacity *= facing * facing * (3 - 2 * facing);
+      }
     } else {
       tx += params[o + P0]! * away;
       ty += params[o + P1]! * away;
@@ -374,9 +430,9 @@ export function livePoseAtInto(
   out.tx = tx;
   out.ty = ty;
   out.rotationDeg = rotation;
-  out.rotateXDeg = 0;
-  out.rotateYDeg = 0;
-  out.perspective = 0;
+  out.rotateXDeg = rotateX;
+  out.rotateYDeg = rotateY;
+  out.perspective = perspective;
   out.scale = scale;
   out.opacity = opacity;
   out.brightness = brightness;

@@ -5,7 +5,7 @@ import type { FractureMesh } from '../../../src/core/fracture/types';
 import type { FragmentPose } from '../../../src/core/motion/pose';
 import {
   disintegrate,
-  dust,
+  emerge,
   presetDuration,
   type SnapshotPreset,
   shatter,
@@ -231,7 +231,7 @@ describe('routing by the mesh', () => {
   });
 
   test('a preset that is not a fragment preset still falls back', async () => {
-    const { events } = await play(dust());
+    const { events } = await play(emerge({ variant: 'shader' }));
     expect(events).toEqual(['fallback']);
     expect(skia.vertices.mounts).toBe(0);
   });

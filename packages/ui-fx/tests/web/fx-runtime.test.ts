@@ -536,6 +536,100 @@ describe('when capture or CanvasKit fails', () => {
   });
 });
 
+describe('an effect that paints', () => {
+  /** A sprite effect that also records its `prepare`, `paint` and `release` calls. */
+  const paintEffect = (frames: number, sprites: number): TestEffect & { log: string[] } => {
+    const effect = { ...spriteEffect(frames, sprites), log: [] as string[] };
+    const write = effect.frame;
+    effect.frame = (run, pool, time) => {
+      effect.log.push('frame');
+      return write(run, pool, time);
+    };
+    effect.prepare = () => {
+      effect.log.push('prepare');
+    };
+    effect.paint = (_run, canvas) => {
+      effect.log.push('paint');
+      canvas.drawRect(Float32Array.of(0, 0, 1, 1), null as never);
+    };
+    effect.release = () => {
+      effect.log.push('release');
+    };
+    return effect;
+  };
+
+  test('is prepared once, painted after each frame is written and under its sprites, and released once', async () => {
+    const effect = paintEffect(2, 1);
+    const { fx, mk } = mount(effect);
+    const { events } = start(fx, shatter());
+    await settle();
+    expect(effect.log).toEqual(['prepare']);
+
+    await flushFrames(3);
+    expect(events).toEqual(['handoff', 'end:true']);
+    // The third frame reports the end: nothing is painted for it.
+    expect(effect.log).toEqual(['prepare', 'frame', 'paint', 'frame', 'paint', 'frame', 'release']);
+    const order = methods(mk).filter((method) => method !== 'upload');
+    const first = order.slice(order.indexOf('save'), order.indexOf('restore') + 1);
+    expect(first).toEqual(['save', 'scale', 'translate', 'drawRect', 'drawAtlas', 'restore']);
+    // Released before the image it may hold a shader of is deleted.
+    expect(mk.images[0]!.deleted).toBe(true);
+  });
+
+  test('may draw no sprite at all: only its paint is drawn', async () => {
+    const effect = paintEffect(Number.POSITIVE_INFINITY, 0);
+    const { fx, mk } = mount(effect);
+    const { events } = start(fx, shatter());
+    await settle();
+    await flushFrames(2);
+
+    expect(events).toEqual(['handoff']);
+    expect(mk.callsOf('drawRect')).toHaveLength(2);
+    expect(mk.callsOf('drawAtlas')).toHaveLength(0);
+  });
+
+  test('an effect with neither a paint nor a sprite falls back', async () => {
+    const { fx } = mount(spriteEffect(Number.POSITIVE_INFINITY, 0));
+    const { events } = start(fx, shatter());
+    await settle();
+
+    expect(events).toEqual(['fallback']);
+    expect(pendingFrameCount()).toBe(0);
+  });
+
+  test('a prepare that throws falls back, and what it made is released with the image', async () => {
+    const effect = paintEffect(Number.POSITIVE_INFINITY, 1);
+    effect.prepare = () => {
+      effect.log.push('prepare');
+      throw new Error('bad shader');
+    };
+    const { fx, mk } = mount(effect);
+    const { events, target } = start(fx, shatter());
+    await settle();
+
+    expect(events).toEqual(['fallback']);
+    expect(effect.log).toEqual(['prepare', 'release']);
+    expect(mk.images[0]!.deleted).toBe(true);
+    expect(target.hidden.value).toBe(0);
+    expect(pendingFrameCount()).toBe(0);
+  });
+
+  test('a paint that throws on its first frame falls back', async () => {
+    const effect = paintEffect(Number.POSITIVE_INFINITY, 1);
+    effect.paint = () => {
+      throw new Error('bad paint');
+    };
+    const { fx } = mount(effect);
+    const { events, target } = start(fx, shatter());
+    await settle();
+    await flushFrames(1);
+
+    expect(events).toEqual(['fallback']);
+    expect(effect.log.at(-1)).toBe('release');
+    expect(target.hidden.value).toBe(0);
+  });
+});
+
 describe('a lost WebGL context', () => {
   const lose = (canvas: HTMLCanvasElement): Event => {
     const event = new Event('webglcontextlost', { cancelable: true });

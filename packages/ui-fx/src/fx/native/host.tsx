@@ -45,6 +45,7 @@ import {
 } from '../../runtime/provider-context';
 import { isFragmentPreset } from '../fragments';
 import { acquireFastDisplayMode } from './display-mode';
+import { dustEffect } from './layers/dust';
 import { fragmentEffect } from './layers/shatter';
 import { createSpritePool, SPRITE_POOL_CAPACITY, type SpritePool } from './pool';
 
@@ -375,10 +376,11 @@ export function NativeFxHost({
         pointerEvents="none"
         {...(surface === undefined ? undefined : { android: surface })}
       >
-        <PoolAtlas pool={host.pool} image={host.poolImage} />
         {layers.map(({ id, Layer, props }) => (
           <Layer key={id} {...props} />
         ))}
+        {/* Last, so the grains at a dust run's front draw over its rect. */}
+        <PoolAtlas pool={host.pool} image={host.poolImage} />
       </FxCanvas>
     </FlareContext.Provider>
   );
@@ -389,7 +391,10 @@ function nestedHost(android: FlareFxHostProps['android'], effects: NativeEffects
 }
 
 // A preset without a native effect plays its live fallback.
-const EFFECTS: NativeEffects = (preset) => (isFragmentPreset(preset) ? fragmentEffect : null);
+const EFFECTS: NativeEffects = (preset) => {
+  if (isFragmentPreset(preset)) return fragmentEffect;
+  return preset.kind === 'dust' ? dustEffect() : null;
+};
 
 /**
  * The snapshot-effect host on React Native: it gives the elements below it the runtime that

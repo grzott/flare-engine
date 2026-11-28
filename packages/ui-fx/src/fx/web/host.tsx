@@ -9,6 +9,7 @@ import {
 import { createWebFxRuntime, type WebEffects } from '../../web/fx-runtime';
 import { resolveCanvasKit } from '../../web/kit';
 import { isFragmentPreset } from '../fragments';
+import { dustEffect } from './effects/dust';
 import { grainsEffect } from './effects/grains';
 import { shatterEffect } from './effects/shatter';
 
@@ -129,6 +130,7 @@ function nestedHost(
 // A preset without a web effect plays its live fallback. `grid` and `cells` are the patterns
 // whose mesh is rectangular: its pieces are grains, cut from the capture with no bake.
 const EFFECTS: WebEffects = (preset) => {
+  if (preset.kind === 'dust') return dustEffect;
   if (!isFragmentPreset(preset)) return null;
   const { pattern } = preset.fragment;
   return pattern === 'grid' || pattern === 'cells' ? grainsEffect : shatterEffect;

@@ -29,9 +29,15 @@ export interface WebRunState {
   progress: ProgressSource | undefined;
 }
 
-/** How one snapshot preset draws on the web: as sprites cut from the capture. */
+/**
+ * How one snapshot preset draws on the web: as sprites cut from the capture, over what its
+ * `paint` draws when it has one.
+ */
 export interface WebEffect {
-  /** How many sprites a run draws, at least one. Called once per run. */
+  /**
+   * How many sprites a run draws. Called once per run. Only an effect with a `paint` may return
+   * 0: nothing but its `paint` is drawn then.
+   */
   sprites(run: WebRunState): number;
   /**
    * The image the run's sprites are cut from, drawn from `capture`, the uploaded capture. Called
@@ -40,6 +46,20 @@ export interface WebEffect {
    * are cut from the capture itself.
    */
   bake?(run: WebRunState, kit: CanvasKit, capture: CKImage): CKImage;
+  /**
+   * Make what `paint` draws with. Called once per run, after `bake`, with the image the sprites
+   * are cut from, which outlives the run's last `paint`. A throw makes the run fall back.
+   */
+  prepare?(run: WebRunState, kit: CanvasKit, image: CKImage): void;
+  /**
+   * Draw what the run shows under its sprites. Called on every frame that draws, after `frame`,
+   * with `canvas` in layout pixels from the capture's top left corner. It has to leave the
+   * canvas's matrix and clip as it found them. It runs every frame: allocate nothing that
+   * CanvasKit does not make it allocate.
+   */
+  paint?(run: WebRunState, canvas: CKCanvas): void;
+  /** Free what `prepare` made. Called once per run that `prepare` was called for. */
+  release?(run: WebRunState): void;
   /**
    * Write the run's sprites into `pool` as they are `time` seconds after its first frame, and
    * return whether the effect is still playing. On `false` nothing is drawn and the run ends.
@@ -162,8 +182,11 @@ export function createWebFxRuntime(o: {
     ck.scale(scale, scale);
     ck.translate(state.rect.x - state.image.padding, state.rect.y - state.image.padding);
     try {
-      // CanvasKit's default blend is SrcOver, which would ignore the colours.
-      ck.drawAtlas(d.atlas, pool.srcs, pool.xforms, p, k.BlendMode.Modulate, pool.colors);
+      d.effect.paint?.(state, ck);
+      if (d.count > 0) {
+        // CanvasKit's default blend is SrcOver, which would ignore the colours.
+        ck.drawAtlas(d.atlas, pool.srcs, pool.xforms, p, k.BlendMode.Modulate, pool.colors);
+      }
     } catch (error) {
       d.failed = true;
       warnOnce('frame', `A capture could not be drawn. ${String(error)}`);
@@ -242,6 +265,7 @@ export function createWebFxRuntime(o: {
       if (mine === null) return;
       const index = drawing.indexOf(mine);
       if (index >= 0) drawing.splice(index, 1);
+      mine.effect.release?.(mine.state);
       mine.atlas.delete();
       mine = null;
       if (drawing.length === 0) unschedule();
@@ -332,7 +356,8 @@ export function createWebFxRuntime(o: {
       };
       try {
         const count = effect.sprites(state);
-        const pool = createAtlasPool(k, count);
+        // A run that only paints still hands `frame` a pool.
+        const pool = createAtlasPool(k, effect.paint === undefined ? count : Math.max(1, count));
         // `captureView` puts a canvas or a bitmap in `handle`. A tainted one throws here.
         let atlas = k.MakeImageFromCanvasImageSource(image.handle as CanvasImageSource);
         if (effect.bake !== undefined) {
@@ -341,6 +366,15 @@ export function createWebFxRuntime(o: {
             atlas = effect.bake(state, k, uploaded);
           } finally {
             uploaded.delete();
+          }
+        }
+        if (effect.prepare !== undefined) {
+          try {
+            effect.prepare(state, k, atlas);
+          } catch (error) {
+            effect.release?.(state);
+            atlas.delete();
+            throw error;
           }
         }
         mine = {

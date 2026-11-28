@@ -1,4 +1,4 @@
-Standard version: 1 (2026-11-18)
+Standard version: 2 (2026-11-28)
 
 # Work tracking on GitHub issues
 
@@ -63,8 +63,7 @@ a doc.
 - **Open issues only.** A workflow removes `status:*` when an issue closes, and from a PR when
   it merges.
 - **No status means backlog,** and the issue is not approved.
-- **`status:ready`:** approved and pickable. Only the owner applies it, by hand or by setting
-  the `reviewed` flag of an import manifest.
+- **`status:ready`:** approved and pickable. Only the owner applies it, by hand.
 - **`status:in-progress`:** someone has claimed it. It is applied when work starts and removed
   if the work is abandoned.
 - **`status:in-review`:** its PR is open. Only in repos that use PRs.
@@ -81,11 +80,12 @@ a doc.
 
 ## 6. Epics and dependencies
 
-- **Epics.** A `type:epic` issue with native sub-issues. The body states the outcome; "all
-  sub-issues closed" is not an outcome. Epics carry no status and no size. Their progress is
-  the sub-issue bar. A parent and its sub-issues share an owner.
-- **Dependencies.** A native blocked-by link, plus a `**Depends on:**` line in the body. A
-  dependency on an issue under another owner is body text only.
+- **Epics.** A `type:epic` issue with native sub-issues, created and linked by hand. The body
+  states the outcome; "all sub-issues closed" is not an outcome. Epics carry no status and no
+  size. Their progress is the sub-issue bar. A parent and its sub-issues share an owner.
+- **Dependencies.** A `**Depends on:**` line in the body names each one. A native blocked-by
+  link may be added by hand as well; no tooling adds one. A dependency on an issue under another
+  owner is body text only.
 
 ## 7. Issue body and title
 
@@ -122,36 +122,32 @@ Source: <where the item came from>         (optional)
 
 ## 9. Tooling, copied per repo
 
-Each repo carries its own copy of the tooling. Copies are kept in step by hand, and the first
-line of this file records the version of the standard the repo carries.
+Each repo carries its own copy of the tooling, in the repo's own script language, so the paths
+below omit the extension. Copies are kept in step by hand, and the first line of this file
+records the version of the standard the repo carries.
 
 - **`.github/labels.json`:** the repo's full label set.
-- **`scripts/github/sync-labels.mjs`:** creates and updates labels to match the file. It deletes
-  undeclared labels only with `--prune`, and never deletes a label that open issues use.
-- **`scripts/github/import-issues.mjs`:**
-  - reads a JSON manifest and files milestones and issues, then sub-issue links, then
-    blocked-by links;
-  - renders the §7 body and is idempotent by `backlog-id`;
-  - validates the §1 families;
-  - lints every rendered string with `scripts/github/terms.mjs`;
-  - writes a readable dry-run report, which is what the owner reviews.
-
-  It applies `status:*` only from a manifest whose `reviewed` flag is `true`; otherwise it
-  rejects status labels.
+- **`scripts/github/sync-labels`:** creates and updates labels to match the file. It never
+  deletes a label; one that is no longer wanted is deleted by hand.
+- **`scripts/github/import-issues`:**
+  - reads a JSON manifest of milestones and issues, each issue with its title, its body
+    already written in the §7 form, its labels and its milestone, and files the milestones,
+    then the issues;
+  - adds the §7 marker to each body and is idempotent by `backlog-id`;
+  - validates the manifest before it writes anything: one each of the §1 families on every
+    issue, labels that `labels.json` declares, milestones that the manifest declares, and a
+    `Design:` line on a `size:l` issue that names a file tracked in the repo;
+  - rejects any `status:*` label: the owner applies status by hand once the issues exist;
+  - is dry-run by default and prints what it would create; it writes only with `--apply`.
 - **The importer only creates; it never reconciles.**
-  - Within one `--apply` run it creates the missing issues. It then fills the `**Depends on:**`
-    numbers and adds the sub-issue and blocked-by links, but only on issues it created in that
-    run.
-  - It never edits an issue it did not create in the current run, never edits a closed issue,
-    and never touches an issue without a marker.
+  - It never edits an issue it finds, with a marker or without one.
+  - It adds no links. Because every issue needs a `size:` and a `priority:`, it files no epics.
+    Sub-issue and blocked-by links are added by hand, and a `**Depends on:**` line that names an
+    issue filed in the same run gets its number after the run.
   - A re-run creates only what is missing, so "zero changes" means nothing is missing.
   - After a successful import, GitHub is the only source of truth. The manifest is archived and
     not edited again, which keeps status in one place.
-- **`scripts/github/terms.mjs`:** the wording lint. Every title, body, label, milestone and
-  comment written to GitHub passes it first.
 - **`.github/workflows/issue-closed.yml`:** strips `status:*` from an issue when it closes and
   from a PR when it merges.
-- **Issue forms:** `task.yml` and `defect.yml`, whose default labels come from this taxonomy;
-  blank issues stay enabled. No PR template in repos that commit to main.
-
-Scripts that write to GitHub are dry-run by default and write only with `--apply`.
+- **Issue forms** are optional. A repo that has them gives each form its default `type:` label
+  from this taxonomy, and blank issues stay enabled. No PR template in repos that commit to main.
